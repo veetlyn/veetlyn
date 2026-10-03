@@ -1,0 +1,22 @@
+{
+  "name": "@jendal-workspace/api",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jendal-workspace/auth": "workspace:*",
+    "@jendal-workspace/db": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@jendal-workspace/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

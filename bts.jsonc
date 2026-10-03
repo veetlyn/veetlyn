@@ -1,0 +1,28 @@
+// Better-T-Stack project metadata
+//
+// Keep this file to use the `add` command.
+// Add addons: pnpm dlx create-better-t-stack@latest add
+//
+// Docs: https://better-t-stack.dev/docs
+// Stack Builder: https://better-t-stack.dev/new
+
+{
+  "$schema": "https://r2.better-t-stack.dev/schema.json",
+  "version": "3.44.2",
+  "createdAt": "2026-10-03T20:01:01.785Z",
+  "reproducibleCommand": "pnpm create better-t-stack@latest jendal-workspace --frontend next --backend hono --runtime workers --database postgres --orm drizzle --api trpc --auth better-auth --payments none --addons evlog pwa turborepo --examples none --db-setup none --web-deploy cloudflare --server-deploy cloudflare --git --package-manager pnpm --install",
+  "database": "postgres",
+  "orm": "drizzle",
+  "backend": "hono",
+  "runtime": "workers",
+  "frontend": ["next"],
+  "addons": ["evlog", "pwa", "turborepo"],
+  "examples": [],
+  "auth": "better-auth",
+  "payments": "none",
+  "packageManager": "pnpm",
+  "dbSetup": "none",
+  "api": "trpc",
+  "webDeploy": "cloudflare",
+  "serverDeploy": "cloudflare",
+}
