@@ -1,0 +1,226 @@
+.gitignore
+  h_6877e5e7a06bc5 1-58
+README.md
+  h_6877e5e7a06bc5 1-135
+apps/server/.env.schema
+  h_6877e5e7a06bc5 1-20
+apps/server/.gitignore
+  h_6877e5e7a06bc5 1-58
+apps/server/bunfig.toml
+  h_6877e5e7a06bc5 1
+apps/server/cloudflare-env.d.ts
+  h_6877e5e7a06bc5 1-16
+apps/server/package.json
+  h_6877e5e7a06bc5 1-31
+apps/server/src/context.ts
+  h_6877e5e7a06bc5 1-24
+apps/server/src/env.server.ts
+  h_6877e5e7a06bc5 1-5
+apps/server/src/index.ts
+  h_6877e5e7a06bc5 1-57
+apps/server/src/services.ts
+  h_6877e5e7a06bc5 1-11
+apps/server/tsconfig.json
+  h_6877e5e7a06bc5 1-11
+apps/server/tsdown.config.ts
+  h_6877e5e7a06bc5 1-12
+apps/web/.env.schema
+  h_6877e5e7a06bc5 1-11
+apps/web/.gitignore
+  h_6877e5e7a06bc5 1-63
+apps/web/AGENTS.md
+  h_6877e5e7a06bc5 1-9
+apps/web/bunfig.toml
+  h_6877e5e7a06bc5 1
+apps/web/components.json
+  h_6877e5e7a06bc5 1-24
+apps/web/instrumentation.ts
+  h_6877e5e7a06bc5 1-5
+apps/web/next.config.ts
+  h_6877e5e7a06bc5 1-13
+apps/web/open-next.config.ts
+  h_6877e5e7a06bc5 1-3
+apps/web/package.json
+  h_6877e5e7a06bc5 1-47
+apps/web/postcss.config.mjs
+  h_6877e5e7a06bc5 1-5
+apps/web/public/favicon/favicon.svg
+  h_6877e5e7a06bc5 1-6
+apps/web/public/favicon/site.webmanifest
+  h_6877e5e7a06bc5 1-21
+apps/web/public/offline.html
+  h_6877e5e7a06bc5 1-30
+apps/web/public/sw.js
+  h_6877e5e7a06bc5 1-36
+apps/web/pwa.config.ts
+  h_6877e5e7a06bc5 1-22
+apps/web/src/app/dashboard/dashboard.tsx
+  h_6877e5e7a06bc5 1-16
+apps/web/src/app/dashboard/page.tsx
+  h_6877e5e7a06bc5 1-27
+apps/web/src/app/layout.tsx
+  h_6877e5e7a06bc5 1-43
+apps/web/src/app/login/page.tsx
+  h_6877e5e7a06bc5 1-16
+apps/web/src/app/manifest.ts
+  h_6877e5e7a06bc5 1-25
+apps/web/src/app/page.tsx
+  h_6877e5e7a06bc5 1-47
+apps/web/src/components/header.tsx
+  h_6877e5e7a06bc5 1-33
+apps/web/src/components/loader.tsx
+  h_6877e5e7a06bc5 1-9
+apps/web/src/components/mode-toggle.tsx
+  h_6877e5e7a06bc5 1-31
+apps/web/src/components/providers.tsx
+  h_6877e5e7a06bc5 1-21
+apps/web/src/components/pwa-registration.tsx
+  h_6877e5e7a06bc5 1-14
+apps/web/src/components/sign-in-form.tsx
+  h_6877e5e7a06bc5 1-131
+apps/web/src/components/sign-up-form.tsx
+  h_6877e5e7a06bc5 1-156
+apps/web/src/components/theme-provider.tsx
+  h_6877e5e7a06bc5 1-11
+apps/web/src/components/user-menu.tsx
+  h_6877e5e7a06bc5 1-61
+apps/web/src/index.css
+  h_6877e5e7a06bc5 1
+apps/web/src/lib/auth-client.ts
+  h_6877e5e7a06bc5 1-5
+apps/web/src/lib/evlog.ts
+  h_6877e5e7a06bc5 1-10
+apps/web/src/proxy.ts
+  h_6877e5e7a06bc5 1-7
+apps/web/src/utils/trpc.ts
+  h_6877e5e7a06bc5 1-39
+apps/web/tsconfig.json
+  h_6877e5e7a06bc5 1-37
+apps/web/wrangler.jsonc
+  h_6877e5e7a06bc5 1-14
+bts.jsonc
+  h_6877e5e7a06bc5 1-28
+bunfig.toml
+  h_6877e5e7a06bc5 1
+package.json
+  h_6877e5e7a06bc5 1-36
+packages/api/.gitignore
+  h_6877e5e7a06bc5 1-34
+packages/api/package.json
+  h_6877e5e7a06bc5 1-22
+packages/api/src/context.ts
+  h_6877e5e7a06bc5 1-7
+packages/api/src/index.ts
+  h_6877e5e7a06bc5 1-25
+packages/api/src/routers/index.ts
+  h_6877e5e7a06bc5 1-14
+packages/api/tsconfig.json
+  h_6877e5e7a06bc5 1-6
+packages/auth/.gitignore
+  h_6877e5e7a06bc5 1-34
+packages/auth/package.json
+  h_6877e5e7a06bc5 1-22
+packages/auth/src/index.ts
+  h_6877e5e7a06bc5 1-37
+packages/auth/tsconfig.json
+  h_6877e5e7a06bc5 1-6
+packages/config/package.json
+  h_6877e5e7a06bc5 1-5
+packages/config/tsconfig.base.json
+  h_6877e5e7a06bc5 1-22
+packages/db/.env.schema
+  h_6877e5e7a06bc5 1-3
+packages/db/.gitignore
+  h_6877e5e7a06bc5 1-38
+packages/db/drizzle.config.ts
+  h_6877e5e7a06bc5 1-12
+packages/db/package.json
+  h_6877e5e7a06bc5 1-27
+packages/db/src/config.ts
+  h_6877e5e7a06bc5 1-3
+packages/db/src/index.ts
+  h_6877e5e7a06bc5 1-13
+packages/db/src/migrations/.gitkeep
+  h_6877e5e7a06bc5 1
+packages/db/src/relations.ts
+  h_6877e5e7a06bc5 1-8
+packages/db/src/schema/auth.ts
+  h_6877e5e7a06bc5 1-99
+packages/db/src/schema/index.ts
+  h_6877e5e7a06bc5 1-2
+packages/db/tsconfig.json
+  h_6877e5e7a06bc5 1-6
+packages/infra/.env.schema
+  h_6877e5e7a06bc5 1-5
+packages/infra/alchemy.run.ts
+  h_6877e5e7a06bc5 1-59
+packages/infra/package.json
+  h_6877e5e7a06bc5 1-23
+packages/infra/tsconfig.json
+  h_6877e5e7a06bc5 1-4
+packages/ui/components.json
+  h_6877e5e7a06bc5 1-24
+packages/ui/package.json
+  h_6877e5e7a06bc5 1-37
+packages/ui/postcss.config.mjs
+  h_6877e5e7a06bc5 1-5
+packages/ui/src/components/attachment.tsx
+  h_6877e5e7a06bc5 1-198
+packages/ui/src/components/bubble.tsx
+  h_6877e5e7a06bc5 1-123
+packages/ui/src/components/button.tsx
+  h_6877e5e7a06bc5 1-55
+packages/ui/src/components/card.tsx
+  h_6877e5e7a06bc5 1-84
+packages/ui/src/components/checkbox.tsx
+  h_6877e5e7a06bc5 1-27
+packages/ui/src/components/dropdown-menu.tsx
+  h_6877e5e7a06bc5 1-254
+packages/ui/src/components/empty.tsx
+  h_6877e5e7a06bc5 1-93
+packages/ui/src/components/input-group.tsx
+  h_6877e5e7a06bc5 1-152
+packages/ui/src/components/input.tsx
+  h_6877e5e7a06bc5 1-19
+packages/ui/src/components/label.tsx
+  h_6877e5e7a06bc5 1-19
+packages/ui/src/components/marker.tsx
+  h_6877e5e7a06bc5 1-67
+packages/ui/src/components/message-scroller.tsx
+  h_6877e5e7a06bc5 1-129
+packages/ui/src/components/message.tsx
+  h_6877e5e7a06bc5 1-84
+packages/ui/src/components/skeleton.tsx
+  h_6877e5e7a06bc5 1-13
+packages/ui/src/components/sonner.tsx
+  h_6877e5e7a06bc5 1-45
+packages/ui/src/components/textarea.tsx
+  h_6877e5e7a06bc5 1-17
+packages/ui/src/components/tooltip.tsx
+  h_6877e5e7a06bc5 1-53
+packages/ui/src/lib/utils.ts
+  h_6877e5e7a06bc5 1
+packages/ui/src/styles/globals.css
+  h_6877e5e7a06bc5 1-130
+packages/ui/tsconfig.json
+  h_6877e5e7a06bc5 1-13
+pnpm-lock.yaml
+  h_6877e5e7a06bc5 1-10754
+pnpm-workspace.yaml
+  h_6877e5e7a06bc5 1-28
+tsconfig.json
+  h_6877e5e7a06bc5 1-3
+turbo.json
+  h_6877e5e7a06bc5 1-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e3c95baad771b55efd11f909f282199cb6b32550",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
