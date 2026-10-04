@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
-    "dev": "JENDAL_LOCAL_STAGE=dev alchemy dev --stage dev",
-    "dev:preprod": "JENDAL_LOCAL_STAGE=preprod alchemy dev --stage preprod",
+    "dev": "JENDAL_LOCAL_STAGE=dev varlock run -- alchemy dev --stage dev",
+    "dev:preprod": "JENDAL_LOCAL_STAGE=preprod varlock run -- alchemy dev --stage preprod",
     "tunnel": "node scripts/tunnel.ts run",
     "tunnel:setup": "node scripts/tunnel.ts setup",
     "deploy": "alchemy deploy",

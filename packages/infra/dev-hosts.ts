@@ -6,9 +6,12 @@
 
 export type LocalStage = "dev" | "preprod";
 
-const PORTS: Record<LocalStage, { web: number; api: number }> = {
-  dev: { web: 3001, api: 3000 },
-  preprod: { web: 3101, api: 3100 },
+// db is the loopback TLS proxy to the database (pg-tls-proxy.ts).
+type LocalPorts = { web: number; api: number; db: number };
+
+const PORTS: Record<LocalStage, LocalPorts> = {
+  dev: { web: 3001, api: 3000, db: 3002 },
+  preprod: { web: 3101, api: 3100, db: 3102 },
 };
 
 export type StageUrls = { platformDomain: string; admin: string };
@@ -19,7 +22,7 @@ export function parseLocalStage(value: string | undefined): LocalStage | undefin
   return value === "dev" || value === "preprod" ? value : undefined;
 }
 
-export function localPorts(stage: LocalStage): { web: number; api: number } {
+export function localPorts(stage: LocalStage): LocalPorts {
   return PORTS[stage];
 }
 

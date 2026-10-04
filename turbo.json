@@ -50,6 +50,7 @@
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
     "CI",
+    "DATABASE_CA_CERT",
     "DATABASE_URL",
     "NODE_ENV",
     "PAYPAL_CLIENT_ID",

@@ -48,6 +48,9 @@ lerna-debug.log*
 
 # Generated cloudflared config (pnpm tunnel)
 .tunnel
+
+# Database CA certificates for local stages
+.certs
 .vercel
 
 # Testing
