@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jendal",
+  title: "Payleor",
   description: "Agentic commerce on PayPal",
 };
 

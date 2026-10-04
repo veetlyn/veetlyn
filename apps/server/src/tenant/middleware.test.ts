@@ -46,9 +46,9 @@ function buildApp() {
     },
   };
 
-  const app = new Hono<AppEnv>({ getPath: (request) => routingPathFor(request, "jendal.app") });
+  const app = new Hono<AppEnv>({ getPath: (request) => routingPathFor(request, "payleor.app") });
   app.use(evlog());
-  app.use(tenantMiddleware({ platformDomain: "jendal.app", environment: "sandbox" }, () => ({ directory, cache })));
+  app.use(tenantMiddleware({ platformDomain: "payleor.app", environment: "sandbox" }, () => ({ directory, cache })));
   app.route("/", storeInfoRoute);
   app.get("*", (c) => c.json({ target: c.get("target").kind, store: c.get("tenant")?.slug ?? null }));
 
@@ -59,7 +59,7 @@ describe("tenantMiddleware", () => {
   it("resolves a store subdomain and exposes it to routes", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://acme.jendal.app/api/store");
+    const response = await app.request("https://acme.payleor.app/api/store");
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme" });
@@ -68,7 +68,7 @@ describe("tenantMiddleware", () => {
   it("resolves path-based store URLs", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://store.jendal.app/acme/products");
+    const response = await app.request("https://store.payleor.app/acme/products");
 
     expect(await response.json()).toEqual({ target: "store", store: "acme" });
   });
@@ -76,7 +76,7 @@ describe("tenantMiddleware", () => {
   it("routes path-based store URLs without their base path", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://store.jendal.app/acme/api/store");
+    const response = await app.request("https://store.payleor.app/acme/api/store");
 
     expect(await response.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme" });
   });
@@ -92,7 +92,7 @@ describe("tenantMiddleware", () => {
   it("passes platform hosts through without a tenant", async () => {
     const { app, directoryCalls } = buildApp();
 
-    const response = await app.request("https://api.jendal.app/anything");
+    const response = await app.request("https://api.payleor.app/anything");
 
     expect(await response.json()).toEqual({ target: "platform", store: null });
     expect(directoryCalls).toEqual([]);
@@ -101,7 +101,7 @@ describe("tenantMiddleware", () => {
   it("returns 404 for unknown, suspended and invalid store hosts", async () => {
     const { app } = buildApp();
 
-    for (const url of ["https://ghost.jendal.app/", "https://closed.jendal.app/", "https://docs.jendal.app/"]) {
+    for (const url of ["https://ghost.payleor.app/", "https://closed.payleor.app/", "https://docs.payleor.app/"]) {
       const response = await app.request(url);
       expect(response.status).toBe(404);
       expect(await response.json()).toEqual({ error: "store_not_found" });
@@ -111,8 +111,8 @@ describe("tenantMiddleware", () => {
   it("serves repeat lookups from the cache", async () => {
     const { app, directoryCalls } = buildApp();
 
-    await app.request("https://acme.jendal.app/");
-    await app.request("https://acme.jendal.app/");
+    await app.request("https://acme.payleor.app/");
+    await app.request("https://acme.payleor.app/");
 
     expect(directoryCalls).toEqual(["slug:acme"]);
   });
@@ -120,7 +120,7 @@ describe("tenantMiddleware", () => {
   it("reports that platform hosts have no store info", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://api.jendal.app/api/store");
+    const response = await app.request("https://api.payleor.app/api/store");
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "not_a_store_host" });

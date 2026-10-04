@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "jendal-workspace",
-    short_name: "jendal-workspace",
-    description: "my pwa app",
+    name: "Payleor",
+    short_name: "Payleor",
+    description: "Agentic commerce on PayPal",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

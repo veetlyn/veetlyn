@@ -2,7 +2,7 @@
 // alchemy.run.ts and scripts/tunnel.ts both read this file, so ports and hostnames stay in one place.
 //
 // The tunnel uses the production host layout on TUNNEL_DOMAIN (D): the web app on D and every
-// subdomain of D, the api on api.D. Moving to jendal.com only changes D.
+// subdomain of D, the api on api.D. Moving to payleor.com only changes D.
 
 export type LocalStage = "dev" | "preprod";
 
