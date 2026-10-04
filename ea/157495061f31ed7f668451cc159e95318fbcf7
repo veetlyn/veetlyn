@@ -1,0 +1,39 @@
+apps/web/src/app/layout.tsx
+  s_49e68fbf4bc1c4::t_bd278179711a12 33
+  s_49e68fbf4bc1c4::t_4239e932831ac1 19-20
+apps/web/src/app/admin/layout.tsx
+  s_49e68fbf4bc1c4::t_4e269943a70ed2 1-10
+apps/web/src/app/store/page.tsx
+  s_49e68fbf4bc1c4::t_b322abdeffebf0 1-15
+apps/web/src/components/header.tsx
+  s_49e68fbf4bc1c4::t_c69fd13a24338f 8
+apps/web/src/lib/host-routing.test.ts
+  s_49e68fbf4bc1c4::t_f779e7404a5c79 3,30-85
+apps/web/src/lib/host-routing.ts
+  s_49e68fbf4bc1c4::t_a0247d0eaa3f34 14-43
+apps/web/src/lib/server-api.ts
+  s_49e68fbf4bc1c4::t_bef48da63b8c24 1-23
+apps/web/src/proxy.ts
+  s_49e68fbf4bc1c4::t_939b5bf224197e 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ea157495061f31ed7f668451cc159e95318fbcf7",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_49e68fbf4bc1c4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f4bfe036-e789-483e-b8f9-fb9dfecb0abf",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
