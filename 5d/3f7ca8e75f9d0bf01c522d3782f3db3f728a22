@@ -1,0 +1,26 @@
+apps/web/src/app/admin/login/page.tsx
+  s_aecaf4ca6d8e10::t_9aa9447a1cdf24 12,14-28,30
+packages/ui/src/styles/globals.css
+  s_aecaf4ca6d8e10::t_36f8045f8e857c 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5d3f7ca8e75f9d0bf01c522d3782f3db3f728a22",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_aecaf4ca6d8e10": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3450eb6c-0b25-42d5-b27d-b0c87ad51bae",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
