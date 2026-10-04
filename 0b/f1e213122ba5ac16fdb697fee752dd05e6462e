@@ -1,0 +1,58 @@
+apps/web/next.config.ts
+  s_aecaf4ca6d8e10::t_cb151b218797cf 15
+  s_aecaf4ca6d8e10::t_b170e99f35e60e 7
+  s_aecaf4ca6d8e10::t_951f42eca3dad9 6,8,12-14
+packages/infra/dev-hosts.ts
+  s_aecaf4ca6d8e10::t_c5001587271045 1,3-5,9-11,15-16,23,26-32,35-42,44-51
+  s_aecaf4ca6d8e10::t_2087726857c59e 2,6-8,12-14,17-22,24-25,33-34,43,52
+turbo.json
+  s_aecaf4ca6d8e10::t_f765afe1f3d56e 57-58
+  s_aecaf4ca6d8e10::t_ac22371f3d69d8 20-23
+apps/server/tsconfig.json
+  s_aecaf4ca6d8e10::t_d0b46b1e6018b5 5-6
+.gitignore
+  s_aecaf4ca6d8e10::t_eed7c9782a7b9c 48-50
+packages/infra/alchemy.run.ts
+  s_aecaf4ca6d8e10::t_3ad5ca8006e5e1 55,58-59
+  s_aecaf4ca6d8e10::t_ee6da1cb78637c 7,12
+  s_aecaf4ca6d8e10::t_0753d087d49a2f 8-11,13,21,23,26-28
+apps/web/.gitignore
+  s_aecaf4ca6d8e10::t_79add78bf69541 16
+packages/infra/package.json
+  s_aecaf4ca6d8e10::t_8123609b3f3dcd 7-10
+packages/infra/.env.schema
+  s_aecaf4ca6d8e10::t_a585be78ab69d5 6,9
+  s_aecaf4ca6d8e10::t_b5144e48274594 7-8,10-14
+packages/infra/scripts/tunnel.ts
+  s_aecaf4ca6d8e10::t_e5830720086124 14
+  s_aecaf4ca6d8e10::t_c858eff8e1782c 25
+  s_aecaf4ca6d8e10::t_42516beb8d0c57 5,8
+  s_aecaf4ca6d8e10::t_4c578078875639 70,75-76
+  s_aecaf4ca6d8e10::t_955f6fee52caa2 4,6-7,9,11-13,15-21,24,29-44,51-52,55,57-62,64-67,69,73,77-81,83-86,88-97,99-101,103-104,109,112-117,120
+  s_aecaf4ca6d8e10::t_b8df98ffb572a5 1-3,10,22-23,26-28,45-50,53-54,56,63,68,71-72,74,82,87,98,102,105-108,110-111,118-119,121
+packages/infra/tsconfig.json
+  s_aecaf4ca6d8e10::t_4a9e85e39b3ba1 3-7
+package.json
+  s_aecaf4ca6d8e10::t_851690fabe264a 11-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0bf1e213122ba5ac16fdb697fee752dd05e6462e",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_aecaf4ca6d8e10": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3450eb6c-0b25-42d5-b27d-b0c87ad51bae",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
