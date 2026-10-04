@@ -1,0 +1,26 @@
+apps/web/src/components/paypal-sign-in-button.tsx
+  s_aecaf4ca6d8e10::t_06894ce5284e69 1-27
+apps/web/src/app/admin/login/page.tsx
+  s_aecaf4ca6d8e10::t_6d2955d70f84e0 5,12-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "64fe2e04ee691d4eecd418220f3592811b288e58",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_aecaf4ca6d8e10": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3450eb6c-0b25-42d5-b27d-b0c87ad51bae",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
