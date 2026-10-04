@@ -1,0 +1,122 @@
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+
+import { member } from "../schema/organization";
+import { storeDomains } from "../schema/stores";
+import {
+  addMember,
+  addTeamMember,
+  createTestDb,
+  hasTestDatabase,
+  seedOrganization,
+  seedStore,
+  truncateAll,
+} from "../testing/db";
+import { createStoreDirectory, findStoreAccess, isStoreSlugTaken, listOrganizationsWithStores } from "./stores";
+
+describe.skipIf(!hasTestDatabase)("store repository", () => {
+  const db = createTestDb();
+  const directory = createStoreDirectory(db);
+
+  beforeEach(() => truncateAll(db));
+  afterAll(() => db.$client.end());
+
+  it("finds a store by id and by slug", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme", name: "Acme" });
+
+    expect(store).toEqual({
+      id: expect.any(String),
+      organizationId,
+      slug: "acme",
+      name: "Acme",
+      status: "draft",
+      paypalMerchantId: null,
+    });
+    await expect(directory.findById(store.id)).resolves.toEqual(store);
+    await expect(directory.findBySlug("acme")).resolves.toEqual(store);
+  });
+
+  it("returns null for unknown stores", async () => {
+    await expect(directory.findBySlug("ghost")).resolves.toBeNull();
+    await expect(directory.findById("missing")).resolves.toBeNull();
+    await expect(directory.findByHostname("nowhere.example.com")).resolves.toBeNull();
+  });
+
+  it("finds stores by custom hostname only when the domain is active", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme" });
+    await db.insert(storeDomains).values([
+      { storeId: store.id, hostname: "shop.acme.com", status: "active" },
+      { storeId: store.id, hostname: "pending.acme.com", status: "pending" },
+    ]);
+
+    await expect(directory.findByHostname("shop.acme.com")).resolves.toEqual(store);
+    await expect(directory.findByHostname("pending.acme.com")).resolves.toBeNull();
+  });
+
+  it("reports whether a slug is taken", async () => {
+    const { organizationId } = await seedOrganization(db);
+    await seedStore(db, { organizationId, slug: "acme" });
+
+    await expect(isStoreSlugTaken(db, "acme")).resolves.toBe(true);
+    await expect(isStoreSlugTaken(db, "other")).resolves.toBe(false);
+  });
+
+  it("returns the role and team membership of users who belong to the store's organization", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme" });
+    const staffId = await addMember(db, { organizationId, role: "member" });
+    await addTeamMember(db, { teamId: store.id, userId: staffId });
+
+    await expect(findStoreAccess(db, { slug: "acme", userId: ownerId })).resolves.toEqual({
+      store,
+      role: "owner",
+      isTeamMember: false,
+    });
+    await expect(findStoreAccess(db, { slug: "acme", userId: staffId })).resolves.toEqual({
+      store,
+      role: "member",
+      isTeamMember: true,
+    });
+  });
+
+  it("returns no access for users outside the organization and for unknown slugs", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    await seedStore(db, { organizationId, slug: "acme" });
+    const outsider = await seedOrganization(db);
+
+    await expect(findStoreAccess(db, { slug: "acme", userId: outsider.userId })).resolves.toBeNull();
+    await expect(findStoreAccess(db, { slug: "ghost", userId })).resolves.toBeNull();
+  });
+
+  it("lists every organization of the user by name, with its stores by name and team membership", async () => {
+    const first = await seedOrganization(db, { name: "First" });
+    const beta = await seedStore(db, { organizationId: first.organizationId, slug: "beta" });
+    const acme = await seedStore(db, { organizationId: first.organizationId, slug: "acme" });
+    const empty = await seedOrganization(db, { name: "Empty" });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: empty.organizationId,
+      userId: first.userId,
+      role: "member",
+      createdAt: new Date(),
+    });
+    await addTeamMember(db, { teamId: beta.id, userId: first.userId });
+    const other = await seedOrganization(db, { name: "Other" });
+    await seedStore(db, { organizationId: other.organizationId, slug: "other" });
+
+    const result = await listOrganizationsWithStores(db, first.userId);
+
+    expect(result).toEqual([
+      { organization: { id: empty.organizationId, name: "Empty" }, role: "member", stores: [] },
+      {
+        organization: { id: first.organizationId, name: "First" },
+        role: "owner",
+        stores: [
+          { store: acme, isTeamMember: false },
+          { store: beta, isTeamMember: true },
+        ],
+      },
+    ]);
+  });
+});
