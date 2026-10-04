@@ -346,7 +346,7 @@ importers:
     devDependencies:
       '@alchemy.run/frontend-frameworks':
         specifier: 2.0.0-beta.80
-        version: 2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.11.4)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))
+        version: 2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.13.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))
       '@effect/platform-bun':
         specifier: 4.0.0
         version: 4.0.0(effect@4.0.0)
@@ -358,10 +358,13 @@ importers:
         version: link:../config
       alchemy:
         specifier: 2.0.0-beta.80
-        version: 2.0.0-beta.80(@alchemy.run/frontend-frameworks@2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.11.4)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1)))(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@effect/vitest@4.0.0(effect@4.0.0)(vitest@5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))))(@types/node@26.6.4)(@types/react@19.3.0)(effect@4.0.0)(hono@4.11.4)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))(ws@8.22.0)
+        version: 2.0.0-beta.80(@alchemy.run/frontend-frameworks@2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.13.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1)))(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@effect/vitest@4.0.0(effect@4.0.0)(vitest@5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))))(@types/node@26.6.4)(@types/react@19.3.0)(effect@4.0.0)(hono@4.13.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))(ws@8.22.0)
       effect:
         specifier: 4.0.0
         version: 4.0.0
+      hono:
+        specifier: ^4.13.12
+        version: 4.13.12
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -5888,7 +5891,7 @@ snapshots:
     dependencies:
       effect: 4.0.0
 
-  '@alchemy.run/frontend-frameworks@2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.11.4)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))':
+  '@alchemy.run/frontend-frameworks@2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.13.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))':
     dependencies:
       '@alchemy.run/cloudflare-runtime': 2.0.0-beta.80(@distilled.cloud/cloudflare@1.0.0-rc.13(effect@4.0.0))(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(rolldown@1.2.5)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))
       '@distilled.cloud/aws': 1.0.0-rc.13(effect@4.0.0)
@@ -5901,7 +5904,7 @@ snapshots:
     optionalDependencies:
       '@effect/platform-bun': 4.0.0(effect@4.0.0)
       '@effect/platform-node': 4.0.0(effect@4.0.0)(redis@6.3.0)
-      hono: 4.11.4
+      hono: 4.13.12
       vite: 8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@types/node'
@@ -7624,9 +7627,9 @@ snapshots:
 
   '@neon-rs/load@0.0.4': {}
 
-  '@neon/functions@0.11.0(hono@4.11.4)':
+  '@neon/functions@0.11.0(hono@4.13.12)':
     optionalDependencies:
-      hono: 4.11.4
+      hono: 4.13.12
 
   '@next/env@16.3.8': {}
 
@@ -8632,7 +8635,7 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  alchemy@2.0.0-beta.80(@alchemy.run/frontend-frameworks@2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.11.4)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1)))(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@effect/vitest@4.0.0(effect@4.0.0)(vitest@5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))))(@types/node@26.6.4)(@types/react@19.3.0)(effect@4.0.0)(hono@4.11.4)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))(ws@8.22.0):
+  alchemy@2.0.0-beta.80(@alchemy.run/frontend-frameworks@2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.13.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1)))(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@effect/vitest@4.0.0(effect@4.0.0)(vitest@5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))))(@types/node@26.6.4)(@types/react@19.3.0)(effect@4.0.0)(hono@4.13.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))(ws@8.22.0):
     dependencies:
       '@alchemy.run/cloudflare-runtime': 2.0.0-beta.80(@distilled.cloud/cloudflare@1.0.0-rc.13(effect@4.0.0))(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(rolldown@1.2.5)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))
       '@alchemy.run/floci': 2.0.0-beta.80(effect@4.0.0)
@@ -8657,7 +8660,7 @@ snapshots:
       '@effect/sql-d1': 4.0.0(effect@4.0.0)
       '@effect/sql-sqlite-do': 4.0.0(effect@4.0.0)
       '@libsql/client': 0.17.4
-      '@neon/functions': 0.11.0(hono@4.11.4)
+      '@neon/functions': 0.11.0(hono@4.13.12)
       '@octokit/rest': 22.0.1
       '@octokit/webhooks': 14.2.0
       '@prisma/dev': 0.20.0(typescript@6.0.3)
@@ -8672,7 +8675,7 @@ snapshots:
       tinyglobby: 0.2.17
       yaml: 2.9.1
     optionalDependencies:
-      '@alchemy.run/frontend-frameworks': 2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.11.4)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))
+      '@alchemy.run/frontend-frameworks': 2.0.0-beta.80(@effect/platform-bun@4.0.0(effect@4.0.0))(@effect/platform-node@4.0.0(effect@4.0.0)(redis@6.3.0))(@types/node@26.6.4)(effect@4.0.0)(hono@4.13.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1))
       '@effect/platform-bun': 4.0.0(effect@4.0.0)
       '@effect/platform-node': 4.0.0(effect@4.0.0)(redis@6.3.0)
       '@effect/vitest': 4.0.0(effect@4.0.0)(vitest@5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.1)))
