@@ -1,0 +1,38 @@
+packages/core/src/tenancy/slug.test.ts
+  s_aecaf4ca6d8e10::t_bf59b837f2b987 14-17
+  s_aecaf4ca6d8e10::t_1de21065d47ea4 34-39
+packages/core/src/tenancy/target.test.ts
+  s_aecaf4ca6d8e10::t_089093dfbeb275 101-106
+  s_aecaf4ca6d8e10::t_3b7570c95752bd 62-89
+packages/core/src/tenancy/resolve.test.ts
+  s_aecaf4ca6d8e10::t_c7ddd7519005de 44-46
+packages/core/src/tenancy/slug.ts
+  s_aecaf4ca6d8e10::t_929e73102a8a04 9-14
+packages/core/src/tenancy/access.ts
+  s_aecaf4ca6d8e10::t_9566c078d8523b 3
+packages/core/src/tenancy/store.ts
+  s_aecaf4ca6d8e10::t_e5a2f48a8be405 19,23
+packages/core/src/tenancy/target.ts
+  s_aecaf4ca6d8e10::t_fa01b05ddb9090 11-17,19,25-30,38,45,49-50,53-54,60-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "de9d62ef7013154480444de14169ea306a316c3b",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_aecaf4ca6d8e10": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3450eb6c-0b25-42d5-b27d-b0c87ad51bae",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
