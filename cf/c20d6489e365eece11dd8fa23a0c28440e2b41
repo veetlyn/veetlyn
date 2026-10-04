@@ -1,0 +1,38 @@
+packages/api/package.json
+  s_8372ad321d1fd4::t_48814eb297ba71 13-14
+packages/api/src/context.ts
+  s_8372ad321d1fd4::t_5aa015e8d74b36 2,8
+packages/api/src/routers/index.test.ts
+  s_8372ad321d1fd4::t_f6f8771e711436 1-15
+packages/api/src/routers/index.ts
+  s_8372ad321d1fd4::t_996d5f53373aca 1-4,7-8,11
+packages/api/src/routers/store.test.ts
+  s_8372ad321d1fd4::t_935d1f7aed3f79 1-108
+packages/api/src/routers/store.ts
+  s_8372ad321d1fd4::t_a799e1cb3661bd 1-21
+packages/api/src/store-procedure.ts
+  s_8372ad321d1fd4::t_a0d2f7ffe17e1b 1-24
+pnpm-lock.yaml
+  s_8372ad321d1fd4::t_4e2a19dd492565 248-250
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cfc20d6489e365eece11dd8fa23a0c28440e2b41",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_8372ad321d1fd4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "b5317b8c-a9a1-4435-8158-aef6f5b0d295",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
