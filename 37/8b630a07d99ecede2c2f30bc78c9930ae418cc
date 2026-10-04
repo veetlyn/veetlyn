@@ -1,0 +1,29 @@
+vitest.config.ts
+  s_f6f799fd0ff3f3::t_2fc970573df70a 1-15
+package.json
+  s_f6f799fd0ff3f3::t_e7214ff35a9e3c 16
+  s_f6f799fd0ff3f3::t_99256e8e6f97e1 37-38
+pnpm-lock.yaml
+  s_f6f799fd0ff3f3::t_79a4c38bcf7ac1 93-95,8383,8385,8435,8608,8739,8978,9132,10320,10381,10572
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "378b630a07d99ecede2c2f30bc78c9930ae418cc",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_f6f799fd0ff3f3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "9e8277f9-ea0a-430b-9d9d-7bdae85300e3",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
