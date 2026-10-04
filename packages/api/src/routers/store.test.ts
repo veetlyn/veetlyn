@@ -93,7 +93,10 @@ describe.skipIf(!hasTestDatabase)("store router", () => {
     await seedStore(db, { organizationId, slug: "acme" });
     const staffId = await addMember(db, { organizationId, role: "member" });
 
-    await expect(callerFor(staffId).store.get({ storeSlug: "acme" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(callerFor(staffId).store.get({ storeSlug: "acme" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Store not found.",
+    });
   });
 
   it("reports another merchant's store as not found", async () => {
@@ -103,6 +106,7 @@ describe.skipIf(!hasTestDatabase)("store router", () => {
 
     await expect(callerFor(outsider.userId).store.get({ storeSlug: "acme" })).rejects.toMatchObject({
       code: "NOT_FOUND",
+      message: "Store not found.",
     });
   });
 });
