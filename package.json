@@ -8,6 +8,9 @@
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:preprod": "turbo run dev:preprod -F @jendal-workspace/infra",
+    "tunnel": "pnpm -F @jendal-workspace/infra tunnel",
+    "tunnel:setup": "pnpm -F @jendal-workspace/infra tunnel:setup",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "dev:web": "turbo run dev:bare -F web --",

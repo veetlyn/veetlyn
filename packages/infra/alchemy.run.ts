@@ -4,6 +4,13 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import "varlock/auto-load";
 
+import { localPorts, parseLocalStage, stageUrls, tunnelSettings } from "./dev-hosts.ts";
+
+// Set only by the `dev` and `dev:preprod` scripts, so deployed stages keep their own Worker URLs.
+const localStage = parseLocalStage(process.env.JENDAL_LOCAL_STAGE);
+const ports = localPorts(localStage ?? "dev");
+const localUrls = localStage ? stageUrls(localStage, tunnelSettings(process.env)) : undefined;
+
 export const server = Cloudflare.Worker("server", {
   main: "../../apps/server/src/index.ts",
   compatibility: {
@@ -11,12 +18,14 @@ export const server = Cloudflare.Worker("server", {
   },
   env: {
     DATABASE_URL: Config.Redacted("DATABASE_URL"),
-    CORS_ORIGIN: Config.String("CORS_ORIGIN"),
+    CORS_ORIGIN: localUrls ? localUrls.web : Config.String("CORS_ORIGIN"),
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL: Cloudflare.Worker.URL,
+    BETTER_AUTH_URL: localUrls ? localUrls.api : Cloudflare.Worker.URL,
   },
   dev: {
-    port: 3000,
+    port: ports.api,
+    // Fail instead of drifting to the next port, which may belong to the other stage.
+    strictPort: true,
   },
 });
 
@@ -43,11 +52,11 @@ export default Alchemy.Stack(
       },
       env: {
         IMAGES: Cloudflare.Images.Images(),
-        NEXT_PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
+        NEXT_PUBLIC_SERVER_URL: localUrls ? localUrls.api : serverWorker.url.as<string>(),
       },
       dev: {
-        command: "pnpm run dev:bare",
-        url: "http://localhost:3001",
+        command: `pnpm exec next dev --port ${ports.web}`,
+        url: `http://localhost:${ports.web}`,
       },
     });
 

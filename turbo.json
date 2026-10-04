@@ -17,6 +17,10 @@
       "cache": false,
       "persistent": true
     },
+    "dev:preprod": {
+      "cache": false,
+      "persistent": true
+    },
     "db:push": {
       "cache": false,
       "interactive": true
@@ -50,6 +54,8 @@
     "DATABASE_URL",
     "NEXT_PUBLIC_SERVER_URL",
     "NODE_ENV",
+    "TUNNEL_DOMAIN",
+    "TUNNEL_STAGE",
     "VERCEL",
     "VERCEL_ENV",
     "VERCEL_PROJECT_PRODUCTION_URL",

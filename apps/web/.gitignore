@@ -13,6 +13,7 @@
 
 # Build outputs
 /.next/
+/.next-preprod/
 /out/
 /build/
 /dist/
