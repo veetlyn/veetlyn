@@ -12,6 +12,8 @@
     "@hono/trpc-server": "^0.4.2",
     "@jendal-workspace/api": "workspace:*",
     "@jendal-workspace/auth": "workspace:*",
+    "@jendal-workspace/core": "workspace:*",
+    "@jendal-workspace/core": "workspace:*",
     "@jendal-workspace/db": "workspace:*",
     "@trpc/server": "catalog:",
     "better-auth": "catalog:",
