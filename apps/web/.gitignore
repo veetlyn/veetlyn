@@ -62,3 +62,4 @@ dev-dist
 
 !.env.schema
 /src/env.ts
+.vinext/

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2022",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -13,25 +13,13 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"],
       "@jendal-workspace/ui/*": ["../../packages/ui/src/*"]
     },
-    "types": ["@cloudflare/workers-types"]
+    "types": ["vinext/types", "@cloudflare/workers-types"]
   },
-  "include": [
-    "../server/env.d.ts",
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ],
-  "exclude": ["./node_modules"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["./node_modules", "./dist"]
 }

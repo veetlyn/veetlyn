@@ -14,8 +14,6 @@
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "test": "vitest run",
-    "dev:web": "turbo run dev:bare -F web --",
-    "dev:server": "turbo run dev:bare -F hono --",
     "db:push": "turbo run db:push -F @jendal-workspace/db --",
     "db:studio": "turbo run db:studio -F @jendal-workspace/db --",
     "db:generate": "turbo run db:generate -F @jendal-workspace/db --",
