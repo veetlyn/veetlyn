@@ -1,0 +1,31 @@
+apps/server/src/tenant/kv-store-cache.test.ts
+  s_4d2a0b7e030529::t_ddf9b1168a89b0 1-68
+apps/server/package.json
+  s_4d2a0b7e030529::t_2ac2d9eab8ea6d 16
+  s_4d2a0b7e030529::t_a503d227749eae 15
+apps/server/src/tenant/kv-store-cache.ts
+  s_4d2a0b7e030529::t_ed0aba9f5e728c 1-37
+pnpm-lock.yaml
+  s_4d2a0b7e030529::t_5c69b3ddd81c5c 108-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "44f5fc6f1de21b5a13698d3bd1c882488559887d",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_4d2a0b7e030529": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "10025b24-d182-4bca-a2b5-8359d7aa15f1",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
