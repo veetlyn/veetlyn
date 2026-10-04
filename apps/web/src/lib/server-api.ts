@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { BASE_PATH_HEADER } from "./host-routing";
@@ -20,4 +21,16 @@ export async function fetchStoreInfo(): Promise<StoreInfo | null> {
   if (!response.ok) return null;
   const parsed = storeInfoSchema.safeParse(await response.json());
   return parsed.success ? parsed.data : null;
+}
+
+const sessionSchema = z.object({
+  user: z.object({ id: z.string(), name: z.string(), email: z.string() }),
+});
+
+export async function requireSession(): Promise<z.infer<typeof sessionSchema>> {
+  const cookie = (await headers()).get("cookie") ?? "";
+  const response = await callApi("/api/auth/get-session", { headers: { cookie } });
+  const parsed = sessionSchema.safeParse(response.ok ? await response.json() : null);
+  if (!parsed.success) redirect("/login");
+  return parsed.data;
 }
