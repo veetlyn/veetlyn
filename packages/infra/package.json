@@ -15,12 +15,14 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@alchemy.run/frontend-frameworks": "2.0.0-beta.80",
     "@effect/platform-bun": "4.0.0",
     "@effect/platform-node": "4.0.0",
     "@jendal-workspace/config": "workspace:*",
     "alchemy": "2.0.0-beta.80",
     "effect": "4.0.0",
     "typescript": "catalog:",
-    "varlock": "catalog:"
+    "varlock": "catalog:",
+    "vite": "^8.3.2"
   }
 }

@@ -11,7 +11,7 @@ const PORTS: Record<LocalStage, { web: number; api: number }> = {
   preprod: { web: 3101, api: 3100 },
 };
 
-export type StageUrls = { web: string; api: string };
+export type StageUrls = { platformDomain: string; admin: string };
 export type IngressRule = { hostname: string; port: number };
 export type TunnelSettings = { domain: string; stage: LocalStage };
 
@@ -35,10 +35,9 @@ export function tunnelSettings(env: Record<string, string | undefined>): TunnelS
 // Only the stage that owns the tunnel is reached through D; the other one stays on localhost.
 export function stageUrls(stage: LocalStage, tunnel: TunnelSettings | undefined): StageUrls {
   if (tunnel?.stage === stage) {
-    return { web: `https://${tunnel.domain}`, api: `https://api.${tunnel.domain}` };
+    return { platformDomain: tunnel.domain, admin: `https://admin.${tunnel.domain}` };
   }
-  const ports = PORTS[stage];
-  return { web: `http://localhost:${ports.web}`, api: `http://localhost:${ports.api}` };
+  return { platformDomain: "localhost", admin: `http://admin.localhost:${PORTS[stage].web}` };
 }
 
 // cloudflared uses the first matching rule, so api.D comes before the wildcard.

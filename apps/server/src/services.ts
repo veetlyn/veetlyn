@@ -4,8 +4,9 @@ import { type Database, createDb } from "@jendal-workspace/db";
 import { ENV } from "./env.server";
 
 export function getDb(): Database {
-  return createDb(ENV);
+  return createDb({ DATABASE_URL: ENV.HYPERDRIVE.connectionString });
 }
-export async function createAuth(database?: Database) {
-  return createConfiguredAuth(ENV, database ?? (await getDb()));
+
+export function createAuth(database: Database) {
+  return createConfiguredAuth(ENV, database);
 }

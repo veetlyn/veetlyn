@@ -1,24 +1,10 @@
 import type { Context as ApiContext } from "@jendal-workspace/api/context";
+import type { TenantEnvironment } from "@jendal-workspace/core";
 import type { Context as HonoContext } from "hono";
 
-import { getDb } from "./services";
-import { createAuth } from "./services";
+import type { AppEnv } from "./app-env";
 
-export type CreateContextOptions = {
-  context: HonoContext;
-};
-
-export async function createContext({ context }: CreateContextOptions): Promise<ApiContext> {
-  const db = await getDb();
-  const session = await (
-    await createAuth(db)
-  ).api.getSession({
-    headers: context.req.raw.headers,
-  });
-  return {
-    db,
-    session,
-  };
+export async function createContext(c: HonoContext<AppEnv>, environment: TenantEnvironment): Promise<ApiContext> {
+  const session = await c.get("auth").api.getSession({ headers: c.req.raw.headers });
+  return { db: c.get("db"), session, environment };
 }
-
-export type Context = Awaited<ReturnType<typeof createContext>>;
