@@ -3,12 +3,9 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import "varlock/auto-load";
 
 import { localPorts, parseLocalStage, stageUrls, tunnelSettings } from "./dev-hosts.ts";
-import { startPgTlsProxy } from "./pg-tls-proxy.ts";
 
 // Set only by the `dev` and `dev:preprod` scripts, so deployed stages keep their env values.
 const localStage = parseLocalStage(process.env.JENDAL_LOCAL_STAGE);
@@ -28,30 +25,21 @@ function postgresOrigin(connectionUri: string) {
   };
 }
 
-let devDatabaseProxy: Promise<unknown> | undefined;
-
-// The stack effect can run more than once per dev process, so the proxy starts once.
-function ensureDevDatabaseProxy(origin: ReturnType<typeof postgresOrigin>) {
-  const caPath = process.env.DATABASE_CA_CERT;
-  if (!caPath) throw new Error("Set DATABASE_CA_CERT in packages/infra/.env to run a local stage.");
-  devDatabaseProxy ??= startPgTlsProxy({
-    listenPort: ports.db,
-    host: origin.host,
-    port: origin.port,
-    ca: readFileSync(resolve(import.meta.dirname, caPath), "utf8"),
-  });
-  return devDatabaseProxy;
+// alchemy dev does not use the Hyperdrive service: the Worker connects to the dev origin itself, and
+// workerd only trusts public CAs, so it cannot reach Aiven (private CA). Local stages use a local database.
+function devDatabaseOrigin() {
+  const url = process.env.DEV_DATABASE_URL;
+  if (!url) throw new Error("Set DEV_DATABASE_URL in packages/infra/.env to run a local stage.");
+  return { ...postgresOrigin(url), sslmode: "disable" as const };
 }
 
 export const Database = Effect.gen(function* () {
   const origin = postgresOrigin(Redacted.value(yield* Config.Redacted("DATABASE_URL")));
-  if (localStage) yield* Effect.promise(() => ensureDevDatabaseProxy(origin));
   return yield* Cloudflare.Hyperdrive.Connection("Database", {
     origin,
     // Reads must see writes immediately (spec §2.1).
     caching: { disabled: true },
-    // alchemy dev hands the Worker this origin directly; the loopback proxy adds the TLS workerd cannot do.
-    dev: { ...origin, host: "127.0.0.1", port: ports.db, sslmode: "disable" },
+    dev: localStage ? devDatabaseOrigin() : undefined,
   });
 });
 

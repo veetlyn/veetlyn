@@ -18,6 +18,7 @@
     "db:studio": "turbo run db:studio -F @jendal-workspace/db --",
     "db:generate": "turbo run db:generate -F @jendal-workspace/db --",
     "db:migrate": "turbo run db:migrate -F @jendal-workspace/db --",
+    "db:migrate:dev": "pnpm -F @jendal-workspace/infra db:migrate:dev",
     "deploy": "turbo run deploy -F @jendal-workspace/infra --",
     "destroy": "turbo run destroy -F @jendal-workspace/infra --",
     "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",

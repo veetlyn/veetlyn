@@ -6,6 +6,7 @@
     "check-types": "tsc --noEmit",
     "dev": "JENDAL_LOCAL_STAGE=dev varlock run -- alchemy dev --stage dev",
     "dev:preprod": "JENDAL_LOCAL_STAGE=preprod varlock run -- alchemy dev --stage preprod",
+    "db:migrate:dev": "varlock run -- sh -c 'DATABASE_URL=\"$DEV_DATABASE_URL\" pnpm -F @jendal-workspace/db db:migrate'",
     "tunnel": "node scripts/tunnel.ts run",
     "tunnel:setup": "node scripts/tunnel.ts setup",
     "deploy": "alchemy deploy",

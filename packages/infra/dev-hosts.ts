@@ -6,12 +6,11 @@
 
 export type LocalStage = "dev" | "preprod";
 
-// db is the loopback TLS proxy to the database (pg-tls-proxy.ts).
-type LocalPorts = { web: number; api: number; db: number };
+type LocalPorts = { web: number; api: number };
 
 const PORTS: Record<LocalStage, LocalPorts> = {
-  dev: { web: 3001, api: 3000, db: 3002 },
-  preprod: { web: 3101, api: 3100, db: 3102 },
+  dev: { web: 3001, api: 3000 },
+  preprod: { web: 3101, api: 3100 },
 };
 
 export type StageUrls = { platformDomain: string; admin: string };
