@@ -1,0 +1,9 @@
+{
+  "extends": "@jendal-workspace/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ESNext"],
+    "types": []
+  },
+  "include": ["src"]
+}
