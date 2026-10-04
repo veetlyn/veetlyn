@@ -119,3 +119,33 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
     await expect(db.select().from(team).where(eq(team.organizationId, organizationId))).resolves.toEqual([]);
   });
 });
+
+describe.skipIf(!hasTestDatabase)("Log in with PayPal", () => {
+  const db = createTestDb();
+  afterAll(() => db.$client.end());
+
+  async function authorizeUrl(environment: string) {
+    const auth = createAuth({ ...config, PAYPAL_ENVIRONMENT: environment }, db);
+    const { url } = await auth.api.signInSocial({ body: { provider: "paypal", disableRedirect: true } });
+    if (!url) throw new Error("no authorize URL");
+    return new URL(url);
+  }
+
+  it("asks PayPal for the OpenID scopes, which its authorize page requires", async () => {
+    const url = await authorizeUrl("sandbox");
+
+    expect(url.origin + url.pathname).toBe("https://www.sandbox.paypal.com/signin/authorize");
+    expect(url.searchParams.get("scope")).toBe(
+      "openid profile email https://uri.paypal.com/services/paypalattributes",
+    );
+    expect(url.searchParams.get("redirect_uri")).toBe("http://admin.localhost:3001/api/auth/callback/paypal");
+    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+  });
+
+  it("uses the live authorize page in the live environment", async () => {
+    const url = await authorizeUrl("live");
+
+    expect(url.origin + url.pathname).toBe("https://www.paypal.com/signin/authorize");
+    expect(url.searchParams.get("scope")).toContain("openid");
+  });
+});

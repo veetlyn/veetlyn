@@ -40,7 +40,18 @@ async function claimStoreSlug(database: Database, input: unknown): Promise<strin
   return result.slug;
 }
 
+const PAYPAL_LOGIN_SCOPES = "openid profile email https://uri.paypal.com/services/paypalattributes";
+
+// PayPal's authorize page fails without a scope, but Better Auth's PayPal provider sends none and
+// ignores `scope`. It keeps query parameters already present on `authorizationEndpoint`.
+function paypalAuthorizationEndpoint(live: boolean): string {
+  const url = new URL(live ? "https://www.paypal.com/signin/authorize" : "https://www.sandbox.paypal.com/signin/authorize");
+  url.searchParams.set("scope", PAYPAL_LOGIN_SCOPES);
+  return url.toString();
+}
+
 export function createAuth(env: AuthConfig, database: Database) {
+  const paypalLive = env.PAYPAL_ENVIRONMENT === "live";
   return betterAuth({
     database: drizzleAdapter(database, { provider: "pg", schema }),
     emailAndPassword: { enabled: true },
@@ -48,7 +59,8 @@ export function createAuth(env: AuthConfig, database: Database) {
       paypal: {
         clientId: env.PAYPAL_CLIENT_ID,
         clientSecret: env.PAYPAL_CLIENT_SECRET,
-        environment: env.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox",
+        environment: paypalLive ? "live" : "sandbox",
+        authorizationEndpoint: paypalAuthorizationEndpoint(paypalLive),
       },
     },
     secret: env.BETTER_AUTH_SECRET,
