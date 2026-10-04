@@ -41,6 +41,9 @@ function fakeCache() {
     async put(key, store) {
       entries.set(key, store);
     },
+    async delete(key) {
+      entries.delete(key);
+    },
   };
   return { cache, entries };
 }

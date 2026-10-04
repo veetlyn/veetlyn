@@ -1,5 +1,6 @@
 const STORE_WIDE_ROLES = new Set(["owner", "admin"]);
 
+// `role` must be the user's role in the organization that owns the store, never their active organization's.
 export type StoreAccess = { role: string; isTeamMember: boolean };
 
 // Better Auth stores several roles as one comma-separated string.

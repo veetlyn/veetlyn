@@ -59,6 +59,34 @@ describe("parseRequestTarget", () => {
     });
     expect(parse("acme.jendal.app.")).toEqual({ kind: "store", slug: "acme", basePath: "" });
   });
+
+  it("treats labels named after built-in object properties as stores", () => {
+    expect(parse("constructor.jendal.app")).toEqual({ kind: "store", slug: "constructor", basePath: "" });
+    expect(parse("__proto__.jendal.app")).toEqual({ kind: "unknown" });
+  });
+
+  it("treats lookalike domains as custom domains, never as platform hosts", () => {
+    expect(parse("evil-jendal.app")).toEqual({ kind: "custom-domain", hostname: "evil-jendal.app" });
+    expect(parse("jendal.app.evil.com")).toEqual({ kind: "custom-domain", hostname: "jendal.app.evil.com" });
+  });
+
+  it("accepts bracketed IPv6 hosts with a port as custom domains", () => {
+    expect(parse("[::1]:8787")).toEqual({ kind: "custom-domain", hostname: "[::1]" });
+  });
+
+  it.each(["", " ", "acme.jendal.app..", "shop_1.example.com", "a b.example.com"])(
+    "returns unknown for the invalid hostname %j",
+    (hostname) => {
+      expect(parse(hostname)).toEqual({ kind: "unknown" });
+    },
+  );
+
+  it("only accepts a path-based store whose segment is already a clean slug", () => {
+    expect(parse("store.jendal.app", "/acme/")).toEqual({ kind: "store", slug: "acme", basePath: "/acme" });
+    for (const pathname of ["/ACME/x", "/ acme/x", "//acme", "/ac%6De"]) {
+      expect(parse("store.jendal.app", pathname)).toEqual({ kind: "unknown" });
+    }
+  });
 });
 
 describe("routingPath", () => {
@@ -68,6 +96,12 @@ describe("routingPath", () => {
 
   it("returns / for the root of a path-based store", () => {
     expect(routingPath(parse("store.jendal.app", "/acme"), "/acme")).toBe("/");
+  });
+
+  it("leaves a pathname that does not start with the base path segment unchanged", () => {
+    const target = parse("store.jendal.app", "/acme/x");
+    expect(routingPath(target, "/other/x")).toBe("/other/x");
+    expect(routingPath(target, "/acmex/y")).toBe("/acmex/y");
   });
 
   it("leaves every other target unchanged", () => {

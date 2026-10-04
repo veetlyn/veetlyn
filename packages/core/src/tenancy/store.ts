@@ -16,9 +16,11 @@ export interface StoreDirectory {
   findByHostname(hostname: string): Promise<StoreRecord | null>;
 }
 
+// Entries expire, but a slug, domain or status change must also delete the affected keys (W1-B, W1-C).
 export interface StoreLookupCache {
   get(key: string): Promise<StoreRecord | null>;
   put(key: string, store: StoreRecord): Promise<void>;
+  delete(key: string): Promise<void>;
 }
 
 export function isStoreReachable(store: StoreRecord): boolean {

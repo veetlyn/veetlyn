@@ -11,6 +11,10 @@ describe("validateStoreSlug", () => {
     expect(validateStoreSlug("  Acme ")).toEqual({ ok: true, slug: "acme" });
   });
 
+  it.each(["abc", "a".repeat(40)])("accepts %s at the length limits", (input) => {
+    expect(validateStoreSlug(input)).toEqual({ ok: true, slug: input });
+  });
+
   it.each(["ab", "-acme", "acme-", "acme_shop", "a--b", "acme.shop", "a".repeat(41)])(
     "rejects %s as a format error",
     (input) => {
@@ -27,6 +31,12 @@ describe("validateStoreSlug", () => {
     "store",
     "app",
     "docs",
+    "mail",
+    "status",
+    "help",
+    "support",
+    "blog",
+    "cdn",
     "login",
     "signup",
     "logout",
