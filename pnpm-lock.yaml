@@ -245,6 +245,9 @@ importers:
       '@jendal-workspace/auth':
         specifier: workspace:*
         version: link:../auth
+      '@jendal-workspace/core':
+        specifier: workspace:*
+        version: link:../core
       '@jendal-workspace/db':
         specifier: workspace:*
         version: link:../db
