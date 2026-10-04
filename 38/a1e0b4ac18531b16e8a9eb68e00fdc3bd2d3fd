@@ -1,0 +1,34 @@
+packages/infra/.env.schema
+  s_aecaf4ca6d8e10::t_6649b2d6d4e9c2 16-18
+package.json
+  s_aecaf4ca6d8e10::t_65c08b8882264f 21
+turbo.json
+  s_aecaf4ca6d8e10::t_ca07d4aaf7c785 54
+packages/infra/package.json
+  s_aecaf4ca6d8e10::t_08030f20801536 9
+packages/infra/alchemy.run.ts
+  s_aecaf4ca6d8e10::t_92a1d623e6703c 28-33,42
+packages/infra/dev-hosts.ts
+  s_aecaf4ca6d8e10::t_5d7d180e936a7f 9,12-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "38a1e0b4ac18531b16e8a9eb68e00fdc3bd2d3fd",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_aecaf4ca6d8e10": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3450eb6c-0b25-42d5-b27d-b0c87ad51bae",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
