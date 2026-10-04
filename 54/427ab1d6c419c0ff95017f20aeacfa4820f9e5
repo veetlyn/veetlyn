@@ -1,0 +1,28 @@
+packages/core/src/tenancy/target.ts
+  s_98ac097e124a3e::t_6a36e23f78ee71 1-48
+packages/core/src/tenancy/target.test.ts
+  s_98ac097e124a3e::t_1d178c91c902fc 1-77
+packages/core/src/index.ts
+  s_98ac097e124a3e::t_64822f62da5635 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "54427ab1d6c419c0ff95017f20aeacfa4820f9e5",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_98ac097e124a3e": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3e62ba8c-bee4-467f-ba02-4e27180c5d28",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
