@@ -1,0 +1,45 @@
+apps/server/.env.schema
+  s_2da60b398527d1::t_f2c7405b971b3e 13-14,17,20-32
+packages/infra/package.json
+  s_2da60b398527d1::t_8a69331246918f 18
+  s_2da60b398527d1::t_1e99080a9a2a17 25-26
+apps/server/src/context.ts
+  s_2da60b398527d1::t_236624edbc623d 2,5,7-9
+apps/server/src/index.ts
+  s_2da60b398527d1::t_9d9b03f846d1da 3-4,7,10,13-16,19,22,24,27,29-42,46-50,53,55,59-60,63
+  s_2da60b398527d1::t_c0022717b1a8b8 64
+apps/server/src/services.ts
+  s_2da60b398527d1::t_35e4e0a29b3ec5 7,9-11
+packages/infra/.env.schema
+  s_2da60b398527d1::t_390ac6065965fe 1
+packages/infra/dev-hosts.ts
+  s_2da60b398527d1::t_8efa9b01ec38c1 38,40
+  s_2da60b398527d1::t_8f4a5fe773c88c 14
+packages/infra/alchemy.run.ts
+  s_2da60b398527d1::t_3d58a7a2b02e68 5,10,14-45,52,54-55,57-61,72-91,100,103
+pnpm-lock.yaml
+  s_2da60b398527d1::t_e66c4a0c0d25f6 347-349,361,371-373,456-497,5368-5372,5891-5910,8635,8675,10411-10412
+turbo.json
+  s_2da60b398527d1::t_72396af72fce04 55-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "27d916f27f25326201b12e518bccaf03e71166b3",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_2da60b398527d1": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "a6bf94bf-1b78-4291-917c-f6222ea0d426",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
