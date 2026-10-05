@@ -1,5 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { validateStoreSlug } from "@jendal-workspace/core";
+import { storeSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
@@ -29,15 +29,12 @@ async function claimStoreSlug(database: Database, input: unknown): Promise<strin
   if (!result.ok) {
     throw new APIError("BAD_REQUEST", {
       code: result.reason === "reserved" ? "STORE_SLUG_RESERVED" : "STORE_SLUG_INVALID",
-      message:
-        result.reason === "reserved"
-          ? "This store address is reserved."
-          : "Use 3 to 40 lowercase letters, numbers or single hyphens.",
+      message: storeSlugProblem(result.reason),
     });
   }
   // The unique index on team.slug still guards against a concurrent claim.
   if (await isStoreSlugTaken(database, result.slug)) {
-    throw new APIError("CONFLICT", { code: "STORE_SLUG_TAKEN", message: "This store address is already taken." });
+    throw new APIError("CONFLICT", { code: "STORE_SLUG_TAKEN", message: storeSlugProblem("taken") });
   }
   return result.slug;
 }
