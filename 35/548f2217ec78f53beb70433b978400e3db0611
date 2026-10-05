@@ -1,0 +1,34 @@
+apps/web/src/app/admin/[storeSlug]/store-dashboard.tsx
+  s_1845c563687a7b::t_311a6cc2017236 3,8,30-37
+apps/web/src/app/admin/new/create-store-form.tsx
+  s_1845c563687a7b::t_3ad3c9d05b863c 1-98
+apps/web/src/lib/server-api.ts
+  s_1845c563687a7b::t_842f10e9d2dc22 62-81
+apps/web/src/app/admin/new/page.tsx
+  s_1845c563687a7b::t_c0faec927c45ab 1-16
+apps/web/src/components/setup-checklist.tsx
+  s_1845c563687a7b::t_039eabb41fdf25 1-36
+apps/web/src/app/admin/page.tsx
+  s_1845c563687a7b::t_23c1033863faad 1-3,5-8,11-13,17-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "35548f2217ec78f53beb70433b978400e3db0611",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_1845c563687a7b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "1895f29e-a252-45db-bd6b-3df0e250d3ae",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
