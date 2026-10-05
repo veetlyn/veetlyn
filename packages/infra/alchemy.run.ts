@@ -12,6 +12,9 @@ const localStage = parseLocalStage(process.env.JENDAL_LOCAL_STAGE);
 const ports = localPorts(localStage ?? "dev");
 const localUrls = localStage ? stageUrls(localStage, tunnelSettings(process.env)) : undefined;
 const platformDomain = localUrls ? localUrls.platformDomain : Config.String("PLATFORM_DOMAIN");
+const storeDomain = localUrls
+  ? localUrls.platformDomain
+  : Config.NonEmptyString("STORE_DOMAIN").pipe(Config.orElse(() => Config.String("PLATFORM_DOMAIN")));
 
 function postgresOrigin(connectionUri: string) {
   const url = new URL(connectionUri);
@@ -63,6 +66,7 @@ export const server = Cloudflare.Worker("server", {
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: localUrls ? localUrls.admin : Config.String("BETTER_AUTH_URL"),
     PLATFORM_DOMAIN: platformDomain,
+    STORE_DOMAIN: storeDomain,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
     PAYPAL_CLIENT_ID: Config.String("PAYPAL_CLIENT_ID"),
     PAYPAL_CLIENT_SECRET: Config.Redacted("PAYPAL_CLIENT_SECRET"),
@@ -88,6 +92,7 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
   env: {
     SERVER: server,
     PLATFORM_DOMAIN: platformDomain,
+    STORE_DOMAIN: storeDomain,
   },
   dev: {
     port: ports.web,

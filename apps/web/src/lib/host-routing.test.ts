@@ -1,9 +1,11 @@
+import type { HostDomains } from "@jendal-workspace/core";
 import { describe, expect, it } from "vitest";
 
 import { routeForHost, shouldForwardToApi } from "./host-routing";
 
-const DOMAIN = "payleor.app";
-const forwards = (href: string) => shouldForwardToApi(new URL(href), DOMAIN);
+const SAME: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.app" };
+const SPLIT: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.site" };
+const forwards = (href: string) => shouldForwardToApi(new URL(href));
 
 describe("shouldForwardToApi", () => {
   it("forwards auth and tRPC requests", () => {
@@ -11,9 +13,9 @@ describe("shouldForwardToApi", () => {
     expect(forwards("https://admin.payleor.app/trpc/store.listMine?batch=1")).toBe(true);
   });
 
-  it("forwards store API paths, including path-based stores", () => {
+  it("forwards store API paths", () => {
     expect(forwards("https://acme.payleor.app/api/store")).toBe(true);
-    expect(forwards("https://store.payleor.app/acme/api/store")).toBe(true);
+    expect(forwards("https://shop.example.com/api/store")).toBe(true);
   });
 
   it("leaves pages and look-alike paths to the web app", () => {
@@ -21,14 +23,14 @@ describe("shouldForwardToApi", () => {
       "https://admin.payleor.app/acme",
       "https://payleor.app/apiary",
       "https://admin.payleor.app/trpcx",
-      "https://store.payleor.app/acme/products",
+      "https://acme.payleor.app/products",
     ]) {
       expect(forwards(href)).toBe(false);
     }
   });
 });
 
-const route = (href: string) => routeForHost(new URL(href), DOMAIN);
+const route = (href: string, domains: HostDomains = SAME) => routeForHost(new URL(href), domains);
 
 describe("routeForHost", () => {
   it("passes marketing hosts through", () => {
@@ -37,38 +39,28 @@ describe("routeForHost", () => {
   });
 
   it("rewrites the admin host into /admin", () => {
-    expect(route("https://admin.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/admin", basePath: "" });
-    expect(route("https://admin.payleor.app/acme/orders")).toEqual({
-      kind: "rewrite",
-      pathname: "/admin/acme/orders",
-      basePath: "",
-    });
+    expect(route("https://admin.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/admin" });
+    expect(route("https://admin.payleor.app/acme/orders")).toEqual({ kind: "rewrite", pathname: "/admin/acme/orders" });
   });
 
   it("rewrites store subdomains into /store", () => {
-    expect(route("https://acme.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/store", basePath: "" });
-    expect(route("https://acme.payleor.app/products")).toEqual({
-      kind: "rewrite",
-      pathname: "/store/products",
-      basePath: "",
-    });
+    expect(route("https://acme.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/store" });
+    expect(route("https://acme.payleor.app/products")).toEqual({ kind: "rewrite", pathname: "/store/products" });
   });
 
-  it("rewrites path-based stores into /store and keeps their base path", () => {
-    expect(route("https://store.payleor.app/acme")).toEqual({ kind: "rewrite", pathname: "/store", basePath: "/acme" });
-    expect(route("https://store.payleor.app/acme/products")).toEqual({
-      kind: "rewrite",
-      pathname: "/store/products",
-      basePath: "/acme",
-    });
+  it("rewrites stores on a separate store domain, and nothing else under it", () => {
+    expect(route("https://acme.payleor.site/products", SPLIT)).toEqual({ kind: "rewrite", pathname: "/store/products" });
+    expect(route("https://acme.payleor.app/", SPLIT)).toEqual({ kind: "not-found" });
+    expect(route("https://payleor.site/", SPLIT)).toEqual({ kind: "not-found" });
+  });
+
+  it("serves nothing for the dropped path-based store URLs", () => {
+    expect(route("https://store.payleor.app/acme")).toEqual({ kind: "not-found" });
+    expect(route("https://store.payleor.app/acme/products")).toEqual({ kind: "not-found" });
   });
 
   it("rewrites custom domains into /store", () => {
-    expect(route("https://shop.example.com/products")).toEqual({
-      kind: "rewrite",
-      pathname: "/store/products",
-      basePath: "",
-    });
+    expect(route("https://shop.example.com/products")).toEqual({ kind: "rewrite", pathname: "/store/products" });
   });
 
   it("blocks direct requests for the internal route trees on every host", () => {

@@ -3,14 +3,17 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { BASE_PATH_HEADER } from "./host-routing";
+import { type StoreUrlParts, storeUrlParts } from "./store-url";
 
-// The api Worker resolves stores from the original host and path, so the request keeps both.
+// The api Worker resolves stores from the original host, so the request keeps it.
 export async function callApi(path: string, init?: RequestInit): Promise<Response> {
-  const incoming = await headers();
-  const host = incoming.get("host") ?? "localhost";
-  const basePath = incoming.get(BASE_PATH_HEADER) ?? "";
-  return env.SERVER.fetch(new Request(`http://${host}${basePath}${path}`, init));
+  const host = (await headers()).get("host") ?? "localhost";
+  return env.SERVER.fetch(new Request(`http://${host}${path}`, init));
+}
+
+export async function getStoreUrlParts(): Promise<StoreUrlParts> {
+  const host = (await headers()).get("host") ?? "";
+  return storeUrlParts(env.STORE_DOMAIN, host);
 }
 
 const storeInfoSchema = z.object({ storeId: z.string(), slug: z.string(), name: z.string() });

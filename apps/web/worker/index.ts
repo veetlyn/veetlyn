@@ -8,7 +8,7 @@ initWorkersLogger({ env: { service: "jendal-web" } });
 
 export default withEvlog<WebEnv>(async (request, env, ctx, log) => {
   // The original request keeps its host, so the api resolves the same store and cookies stay first-party.
-  if (shouldForwardToApi(new URL(request.url), env.PLATFORM_DOMAIN)) {
+  if (shouldForwardToApi(new URL(request.url))) {
     log.set({ forwardedTo: "api" });
     return env.SERVER.fetch(request);
   }

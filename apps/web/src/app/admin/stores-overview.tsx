@@ -6,9 +6,10 @@ import Link from "next/link";
 import CreateOrganizationForm from "@/components/create-organization-form";
 import CreateStoreForm from "@/components/create-store-form";
 import Loader from "@/components/loader";
+import type { StoreUrlParts } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
 
-export default function StoresOverview() {
+export default function StoresOverview({ urlParts }: { urlParts: StoreUrlParts }) {
   const organizations = useQuery(trpc.store.listMine.queryOptions());
 
   if (organizations.isPending) return <Loader />;
@@ -38,7 +39,7 @@ export default function StoresOverview() {
             </ul>
           )}
           {organization.canCreateStores ? (
-            <CreateStoreForm organizationId={organization.id} onCreated={refresh} />
+            <CreateStoreForm organizationId={organization.id} urlParts={urlParts} onCreated={refresh} />
           ) : null}
         </section>
       ))}

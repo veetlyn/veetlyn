@@ -50,7 +50,7 @@ function fakeCache() {
 
 describe("lookupForTarget", () => {
   it("looks up store targets by slug", () => {
-    expect(lookupForTarget({ kind: "store", slug: "acme", basePath: "" })).toEqual({ by: "slug", slug: "acme" });
+    expect(lookupForTarget({ kind: "store", slug: "acme" })).toEqual({ by: "slug", slug: "acme" });
   });
 
   it("prefers the Cloudflare for SaaS host metadata store id for custom domains", () => {

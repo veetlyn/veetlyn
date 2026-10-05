@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
+import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
 
-export default function StoreDashboard({ storeSlug }: { storeSlug: string }) {
+export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: string; urlParts: StoreUrlParts }) {
   const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
 
   if (store.isPending) return <Loader />;
@@ -21,6 +22,8 @@ export default function StoreDashboard({ storeSlug }: { storeSlug: string }) {
     );
   }
 
+  const url = storeUrl(store.data.slug, urlParts);
+
   return (
     <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
       <Link href="/" className="text-sm text-muted-foreground">
@@ -28,10 +31,14 @@ export default function StoreDashboard({ storeSlug }: { storeSlug: string }) {
       </Link>
       <h1 className="text-2xl font-semibold">{store.data.name}</h1>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-        <dt className="text-muted-foreground">Address</dt>
-        <dd>{store.data.slug}</dd>
+        <dt className="text-muted-foreground">Store URL</dt>
+        <dd>
+          <a href={url} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+            {url}
+          </a>
+        </dd>
         <dt className="text-muted-foreground">Status</dt>
-        <dd>{store.data.status}</dd>
+        <dd>{store.data.status === "draft" ? "Draft · Connect PayPal to start selling." : store.data.status}</dd>
         <dt className="text-muted-foreground">Your role</dt>
         <dd>{store.data.role}</dd>
         <dt className="text-muted-foreground">PayPal</dt>

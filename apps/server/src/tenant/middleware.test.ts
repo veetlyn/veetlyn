@@ -1,11 +1,11 @@
-import type { StoreDirectory, StoreLookupCache, StoreRecord } from "@jendal-workspace/core";
+import type { HostDomains, StoreDirectory, StoreLookupCache, StoreRecord } from "@jendal-workspace/core";
 import { evlog } from "evlog/hono";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 
 import type { AppEnv } from "../app-env";
 import { storeInfoRoute } from "../routes/store-info";
-import { routingPathFor, tenantMiddleware } from "./middleware";
+import { tenantMiddleware } from "./middleware";
 
 const acme: StoreRecord = {
   id: "store-1",
@@ -17,7 +17,10 @@ const acme: StoreRecord = {
 };
 const closed: StoreRecord = { ...acme, id: "store-2", slug: "closed", status: "suspended" };
 
-function buildApp() {
+const SAME: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.app" };
+const SPLIT: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.site" };
+
+function buildApp(domains: HostDomains = SAME) {
   const directoryCalls: string[] = [];
   const directory: StoreDirectory = {
     async findById(id) {
@@ -46,9 +49,9 @@ function buildApp() {
     },
   };
 
-  const app = new Hono<AppEnv>({ getPath: (request) => routingPathFor(request, "payleor.app") });
+  const app = new Hono<AppEnv>();
   app.use(evlog());
-  app.use(tenantMiddleware({ platformDomain: "payleor.app", environment: "sandbox" }, () => ({ directory, cache })));
+  app.use(tenantMiddleware({ domains, environment: "sandbox" }, () => ({ directory, cache })));
   app.route("/", storeInfoRoute);
   app.get("*", (c) => c.json({ target: c.get("target").kind, store: c.get("tenant")?.slug ?? null }));
 
@@ -65,20 +68,23 @@ describe("tenantMiddleware", () => {
     expect(await response.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme" });
   });
 
-  it("resolves path-based store URLs", async () => {
-    const { app } = buildApp();
-
-    const response = await app.request("https://store.payleor.app/acme/products");
-
-    expect(await response.json()).toEqual({ target: "store", store: "acme" });
-  });
-
-  it("routes path-based store URLs without their base path", async () => {
+  it("returns 404 for the dropped path-based store URLs", async () => {
     const { app } = buildApp();
 
     const response = await app.request("https://store.payleor.app/acme/api/store");
 
-    expect(await response.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme" });
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "store_not_found" });
+  });
+
+  it("resolves stores on a separate store domain only", async () => {
+    const { app } = buildApp(SPLIT);
+
+    const onStoreDomain = await app.request("https://acme.payleor.site/api/store");
+    const onPlatformDomain = await app.request("https://acme.payleor.app/api/store");
+
+    expect(await onStoreDomain.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme" });
+    expect(onPlatformDomain.status).toBe(404);
   });
 
   it("resolves active custom domains", async () => {

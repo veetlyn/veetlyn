@@ -13,7 +13,7 @@ import { ENV } from "./env.server";
 import { storeInfoRoute } from "./routes/store-info";
 import { createAuth, getDb } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
-import { routingPathFor, tenantMiddleware } from "./tenant/middleware";
+import { tenantMiddleware } from "./tenant/middleware";
 
 initLogger({
   env: { service: "jendal-api" },
@@ -21,7 +21,9 @@ initLogger({
 
 const environment: TenantEnvironment = ENV.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
 
-const app = new Hono<AppEnv>({ getPath: (request) => routingPathFor(request, ENV.PLATFORM_DOMAIN) });
+const domains = { platformDomain: ENV.PLATFORM_DOMAIN, storeDomain: ENV.STORE_DOMAIN || ENV.PLATFORM_DOMAIN };
+
+const app = new Hono<AppEnv>();
 
 app.use(evlog());
 
@@ -44,7 +46,7 @@ app.use("*", async (c, next) => {
 
 app.use(
   "/api/store",
-  tenantMiddleware({ platformDomain: ENV.PLATFORM_DOMAIN, environment }, (c) => ({
+  tenantMiddleware({ domains, environment }, (c) => ({
     directory: createStoreDirectory(c.get("db")),
     cache: createKvStoreCache(ENV.STORE_CACHE),
   })),

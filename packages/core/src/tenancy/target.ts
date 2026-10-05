@@ -4,9 +4,11 @@ export type PlatformApp = "www" | "admin" | "api" | "mcp";
 
 export type RequestTarget =
   | { kind: "platform"; app: PlatformApp }
-  | { kind: "store"; slug: string; basePath: string }
+  | { kind: "store"; slug: string }
   | { kind: "custom-domain"; hostname: string }
   | { kind: "unknown" };
+
+export type HostDomains = { platformDomain: string; storeDomain: string };
 
 // A Map, not an object literal, so labels such as "constructor" never match inherited properties.
 const PLATFORM_APPS = new Map<string, PlatformApp>([
@@ -15,7 +17,6 @@ const PLATFORM_APPS = new Map<string, PlatformApp>([
   ["api", "api"],
   ["mcp", "mcp"],
 ]);
-const PATH_STORE_LABEL = "store";
 const VALID_HOSTNAME = /^(?:[a-z0-9-]+(?:\.[a-z0-9-]+)*|\[[0-9a-f:.]+\])$/;
 
 export function normalizeHostname(hostname: string): string {
@@ -28,36 +29,29 @@ function exactSlug(candidate: string): string | null {
   return result.ok && result.slug === candidate ? result.slug : null;
 }
 
-export function parseRequestTarget(
-  input: { hostname: string; pathname: string },
-  platformDomain: string,
-): RequestTarget {
-  const hostname = normalizeHostname(input.hostname);
-  const domain = normalizeHostname(platformDomain);
-
-  if (!VALID_HOSTNAME.test(hostname) || !VALID_HOSTNAME.test(domain)) return { kind: "unknown" };
-  if (hostname === domain) return { kind: "platform", app: "www" };
-  if (!hostname.endsWith(`.${domain}`)) return { kind: "custom-domain", hostname };
-
+// The label directly under `domain`, "" for a deeper subdomain, or null when the host is not under it.
+function labelUnder(hostname: string, domain: string): string | null {
+  if (!hostname.endsWith(`.${domain}`)) return null;
   const label = hostname.slice(0, -(domain.length + 1));
-  if (label.includes(".")) return { kind: "unknown" };
-
-  const app = PLATFORM_APPS.get(label);
-  if (app) return { kind: "platform", app };
-
-  if (label === PATH_STORE_LABEL) {
-    const slug = exactSlug(input.pathname.split("/")[1] ?? "");
-    return slug ? { kind: "store", slug, basePath: `/${slug}` } : { kind: "unknown" };
-  }
-
-  const slug = exactSlug(label);
-  return slug ? { kind: "store", slug, basePath: "" } : { kind: "unknown" };
+  return label.includes(".") ? "" : label;
 }
 
-// Routes are written once; store.{domain}/{slug}/x is routed as /x, like {slug}.{domain}/x.
-export function routingPath(target: RequestTarget, pathname: string): string {
-  if (target.kind !== "store" || target.basePath === "") return pathname;
-  if (pathname === target.basePath) return "/";
-  if (!pathname.startsWith(`${target.basePath}/`)) return pathname;
-  return pathname.slice(target.basePath.length);
+export function parseRequestTarget(rawHostname: string, domains: HostDomains): RequestTarget {
+  const hostname = normalizeHostname(rawHostname);
+  const platform = normalizeHostname(domains.platformDomain);
+  const store = normalizeHostname(domains.storeDomain);
+  if (![hostname, platform, store].every((h) => VALID_HOSTNAME.test(h))) return { kind: "unknown" };
+  if (hostname === platform) return { kind: "platform", app: "www" };
+
+  const platformLabel = labelUnder(hostname, platform);
+  const app = platformLabel ? PLATFORM_APPS.get(platformLabel) : undefined;
+  if (app) return { kind: "platform", app };
+
+  const storeLabel = labelUnder(hostname, store);
+  if (storeLabel !== null) {
+    const slug = exactSlug(storeLabel);
+    return slug ? { kind: "store", slug } : { kind: "unknown" };
+  }
+  if (platformLabel !== null || hostname === store) return { kind: "unknown" };
+  return { kind: "custom-domain", hostname };
 }

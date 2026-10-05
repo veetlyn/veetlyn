@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { parseRequestTarget, routingPath } from "./target";
+import { parseRequestTarget } from "./target";
 
-const DOMAIN = "payleor.app";
-const parse = (hostname: string, pathname = "/") => parseRequestTarget({ hostname, pathname }, DOMAIN);
+const SAME = { platformDomain: "payleor.app", storeDomain: "payleor.app" };
+const SPLIT = { platformDomain: "payleor.app", storeDomain: "payleor.site" };
+const parse = (hostname: string) => parseRequestTarget(hostname, SAME);
+const parseSplit = (hostname: string) => parseRequestTarget(hostname, SPLIT);
 
-describe("parseRequestTarget", () => {
+describe("parseRequestTarget with one domain for platform and stores", () => {
   it("maps the apex domain to the www platform app", () => {
     expect(parse("payleor.app")).toEqual({ kind: "platform", app: "www" });
   });
@@ -19,29 +21,16 @@ describe("parseRequestTarget", () => {
     expect(parse(hostname)).toEqual({ kind: "platform", app });
   });
 
-  it("maps a store subdomain to a store with no base path", () => {
-    expect(parse("acme.payleor.app", "/products")).toEqual({ kind: "store", slug: "acme", basePath: "" });
+  it("maps a store subdomain to a store", () => {
+    expect(parse("acme.payleor.app")).toEqual({ kind: "store", slug: "acme" });
   });
 
-  it("maps store.payleor.app/{slug}/ to a store with a base path", () => {
-    expect(parse("store.payleor.app", "/acme/products/1")).toEqual({
-      kind: "store",
-      slug: "acme",
-      basePath: "/acme",
-    });
-  });
-
-  it("returns unknown for store.payleor.app without a slug", () => {
-    expect(parse("store.payleor.app", "/")).toEqual({ kind: "unknown" });
-  });
-
-  it("returns unknown for store.payleor.app with a reserved first segment", () => {
-    expect(parse("store.payleor.app", "/admin/x")).toEqual({ kind: "unknown" });
-  });
-
-  it("returns unknown for reserved subdomains that are not platform apps", () => {
-    expect(parse("docs.payleor.app")).toEqual({ kind: "unknown" });
-  });
+  it.each(["store.payleor.app", "docs.payleor.app", "checkout.payleor.app"])(
+    "returns unknown for the reserved subdomain %s",
+    (hostname) => {
+      expect(parse(hostname)).toEqual({ kind: "unknown" });
+    },
+  );
 
   it("returns unknown for nested subdomains", () => {
     expect(parse("a.b.payleor.app")).toEqual({ kind: "unknown" });
@@ -52,16 +41,14 @@ describe("parseRequestTarget", () => {
   });
 
   it("ignores case, port and a trailing dot", () => {
-    expect(parseRequestTarget({ hostname: "ACME.localhost:3001", pathname: "/" }, "localhost")).toEqual({
-      kind: "store",
-      slug: "acme",
-      basePath: "",
-    });
-    expect(parse("acme.payleor.app.")).toEqual({ kind: "store", slug: "acme", basePath: "" });
+    expect(parseRequestTarget("ACME.localhost:3001", { platformDomain: "localhost", storeDomain: "localhost" })).toEqual(
+      { kind: "store", slug: "acme" },
+    );
+    expect(parse("acme.payleor.app.")).toEqual({ kind: "store", slug: "acme" });
   });
 
   it("treats labels named after built-in object properties as stores", () => {
-    expect(parse("constructor.payleor.app")).toEqual({ kind: "store", slug: "constructor", basePath: "" });
+    expect(parse("constructor.payleor.app")).toEqual({ kind: "store", slug: "constructor" });
     expect(parse("__proto__.payleor.app")).toEqual({ kind: "unknown" });
   });
 
@@ -81,31 +68,31 @@ describe("parseRequestTarget", () => {
     },
   );
 
-  it("only accepts a path-based store whose segment is already a clean slug", () => {
-    expect(parse("store.payleor.app", "/acme/")).toEqual({ kind: "store", slug: "acme", basePath: "/acme" });
-    for (const pathname of ["/ACME/x", "/ acme/x", "//acme", "/ac%6De"]) {
-      expect(parse("store.payleor.app", pathname)).toEqual({ kind: "unknown" });
-    }
+  it("returns unknown when a configured domain is invalid", () => {
+    expect(parseRequestTarget("acme.payleor.app", { platformDomain: "payleor.app", storeDomain: "" })).toEqual({
+      kind: "unknown",
+    });
   });
 });
 
-describe("routingPath", () => {
-  it("strips the base path of path-based stores", () => {
-    expect(routingPath(parse("store.payleor.app", "/acme/api/store"), "/acme/api/store")).toBe("/api/store");
+describe("parseRequestTarget with a separate store domain", () => {
+  it("maps a subdomain of the store domain to a store", () => {
+    expect(parseSplit("acme.payleor.site")).toEqual({ kind: "store", slug: "acme" });
   });
 
-  it("returns / for the root of a path-based store", () => {
-    expect(routingPath(parse("store.payleor.app", "/acme"), "/acme")).toBe("/");
+  it("keeps the platform apps on the platform domain", () => {
+    expect(parseSplit("payleor.app")).toEqual({ kind: "platform", app: "www" });
+    expect(parseSplit("admin.payleor.app")).toEqual({ kind: "platform", app: "admin" });
   });
 
-  it("leaves a pathname that does not start with the base path segment unchanged", () => {
-    const target = parse("store.payleor.app", "/acme/x");
-    expect(routingPath(target, "/other/x")).toBe("/other/x");
-    expect(routingPath(target, "/acmex/y")).toBe("/acmex/y");
-  });
+  it.each(["acme.payleor.app", "payleor.site", "a.b.payleor.site", "a.b.payleor.app", "admin.payleor.site"])(
+    "returns unknown for %s",
+    (hostname) => {
+      expect(parseSplit(hostname)).toEqual({ kind: "unknown" });
+    },
+  );
 
-  it("leaves every other target unchanged", () => {
-    expect(routingPath(parse("acme.payleor.app", "/api/store"), "/api/store")).toBe("/api/store");
-    expect(routingPath(parse("admin.payleor.app", "/acme"), "/acme")).toBe("/acme");
+  it("treats other hostnames as custom domains", () => {
+    expect(parseSplit("shop.example.com")).toEqual({ kind: "custom-domain", hostname: "shop.example.com" });
   });
 });

@@ -4,7 +4,7 @@ import {
   lookupForTarget,
   parseRequestTarget,
   resolveStore,
-  routingPath,
+  type HostDomains,
   type StoreDirectory,
   type StoreLookupCache,
   type TenantEnvironment,
@@ -14,15 +14,8 @@ import { createMiddleware } from "hono/factory";
 
 import type { AppEnv } from "../app-env";
 
-export type TenantSettings = { platformDomain: string; environment: TenantEnvironment };
+export type TenantSettings = { domains: HostDomains; environment: TenantEnvironment };
 export type StoreLookupDeps = { directory: StoreDirectory; cache: StoreLookupCache };
-
-// Used as Hono's getPath, so routes match store.{domain}/{slug}/x as /x.
-export function routingPathFor(request: Request, platformDomain: string): string {
-  const url = new URL(request.url);
-  const target = parseRequestTarget({ hostname: url.hostname, pathname: url.pathname }, platformDomain);
-  return routingPath(target, url.pathname);
-}
 
 // Cloudflare for SaaS attaches custom hostname metadata to request.cf.
 function hostMetadataStoreId(request: Request): string | undefined {
@@ -39,7 +32,7 @@ export function tenantMiddleware(
 ) {
   return createMiddleware<AppEnv>(async (c, next) => {
     const url = new URL(c.req.url);
-    const target = parseRequestTarget({ hostname: url.hostname, pathname: url.pathname }, settings.platformDomain);
+    const target = parseRequestTarget(url.hostname, settings.domains);
     c.set("target", target);
     c.set("store", null);
     c.set("tenant", null);
