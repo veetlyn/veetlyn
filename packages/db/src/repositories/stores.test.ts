@@ -1,6 +1,7 @@
+import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { member } from "../schema/organization";
+import { member, team } from "../schema/organization";
 import { storeDomains } from "../schema/stores";
 import {
   addMember,
@@ -11,7 +12,13 @@ import {
   seedStore,
   truncateAll,
 } from "../testing/db";
-import { createStoreDirectory, findStoreAccess, isStoreSlugTaken, listOrganizationsWithStores } from "./stores";
+import {
+  createStoreDirectory,
+  findStoreAccess,
+  findStorePolicyInfo,
+  isStoreSlugTaken,
+  listOrganizationsWithStores,
+} from "./stores";
 
 describe.skipIf(!hasTestDatabase)("store repository", () => {
   const db = createTestDb();
@@ -118,5 +125,17 @@ describe.skipIf(!hasTestDatabase)("store repository", () => {
         ],
       },
     ]);
+  });
+
+  it("returns the support email and creation date used by the store policies", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme" });
+    await db.update(team).set({ supportEmail: "help@acme.test" }).where(eq(team.id, store.id));
+
+    await expect(findStorePolicyInfo(db, store.id)).resolves.toEqual({
+      supportEmail: "help@acme.test",
+      createdAt: expect.any(Date),
+    });
+    await expect(findStorePolicyInfo(db, "missing")).resolves.toBeNull();
   });
 });
