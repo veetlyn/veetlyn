@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@jendal-workspace/config": "workspace:*",
+    "drizzle-orm": "catalog:",
     "typescript": "catalog:"
   }
 }

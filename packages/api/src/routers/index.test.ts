@@ -1,3 +1,4 @@
+import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createTestDb, hasTestDatabase } from "@jendal-workspace/db/testing/db";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -8,7 +9,8 @@ describe.skipIf(!hasTestDatabase)("healthCheck", () => {
   afterAll(() => db.$client.end());
 
   it("answers OK once the database responds", async () => {
-    const caller = appRouter.createCaller({ db, session: null, environment: "sandbox" });
+    const { auth } = createTestAuth(db);
+    const caller = appRouter.createCaller({ db, session: null, environment: "sandbox", auth, headers: new Headers() });
 
     await expect(caller.healthCheck()).resolves.toBe("OK");
   });
