@@ -1,0 +1,18 @@
+{
+  "name": "@jendal-workspace/email",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@opencoredev/email-sdk": "2.0.0"
+  },
+  "devDependencies": {
+    "@jendal-workspace/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
