@@ -1,0 +1,32 @@
+packages/auth/src/index.ts
+  s_990badac31ce36::t_31907e93f903ff 6,21-33,38-42,60-67,71-114,132-138
+packages/auth/src/testing.ts
+  s_990badac31ce36::t_cb76adff637f03 1-48
+packages/auth/src/index.test.ts
+  s_990badac31ce36::t_710c68570e6905 1,7,9-15,19,25,34-35,40-47,50-52,60,92,119-303,309
+packages/auth/package.json
+  s_990badac31ce36::t_55bdae54bf8359 15
+pnpm-lock.yaml
+  s_990badac31ce36::t_403a8ade8a9391 309-311
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a95dac045dc9e794a913550e4adb9ea4b0a532a6",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_990badac31ce36": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "5b1417a1-ea45-4f12-8972-a76b12c31376",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
