@@ -1,0 +1,42 @@
+packages/email/src/templates.test.ts
+  s_4bed9d9dc8a8a5::t_3200e59fcbe649 1-35
+packages/email/src/fake.test.ts
+  s_4bed9d9dc8a8a5::t_470ac9ca70a66c 1-14
+packages/email/src/index.ts
+  s_4bed9d9dc8a8a5::t_7814d8de7ef746 1-4
+packages/email/tsconfig.json
+  s_4bed9d9dc8a8a5::t_e713d700f22b34 1-7
+packages/email/package.json
+  s_4bed9d9dc8a8a5::t_69dcfe1508b887 1-18
+packages/email/src/fake.ts
+  s_4bed9d9dc8a8a5::t_ab6fe8b69dec85 1-13
+packages/email/src/templates.ts
+  s_4bed9d9dc8a8a5::t_2862285122236f 1-59
+packages/email/src/smtp.ts
+  s_4bed9d9dc8a8a5::t_91fcb6ee8c3541 1-33
+packages/email/src/mailer.ts
+  s_4bed9d9dc8a8a5::t_94fa3f35c44ed8 1-10
+pnpm-lock.yaml
+  s_4bed9d9dc8a8a5::t_f66a5309d2ddeb 214,365-377,386,1782-1800,4770-4773,5856,6962-6968,7920,9436-9437
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "947d280e2dda98dd5a68ee385fd64111e8168e37",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_4bed9d9dc8a8a5": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "323c1830-5538-4738-ac5b-24f79aabceb7",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
