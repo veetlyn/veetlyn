@@ -1,0 +1,42 @@
+apps/web/src/app/(site)/legal/acceptable-use/page.tsx
+  s_9bdfadb9b0ea13::t_1ffa0749947438 1-16
+apps/web/src/app/(site)/legal/privacy/page.tsx
+  s_9bdfadb9b0ea13::t_f693ee4fd3b3f8 1-16
+apps/web/src/app/(site)/legal/terms/page.tsx
+  s_9bdfadb9b0ea13::t_408bf128add446 1-16
+apps/web/src/components/legal/legal-page.tsx
+  s_9bdfadb9b0ea13::t_ab2b004c9aed97 1-23
+apps/web/src/components/legal/mdx-components.tsx
+  s_9bdfadb9b0ea13::t_e98fe5a6ca0941 1-5
+apps/web/src/components/legal/prose.tsx
+  s_9bdfadb9b0ea13::t_2316b79585146e 1-27
+apps/web/src/content/legal/acceptable-use.mdx
+  s_9bdfadb9b0ea13::t_55233e994ad81b 1-40
+apps/web/src/content/legal/meta.ts
+  s_9bdfadb9b0ea13::t_8dba4d16803611 1-3
+apps/web/src/content/legal/privacy.mdx
+  s_9bdfadb9b0ea13::t_a49377443329d2 1-61
+apps/web/src/content/legal/terms.mdx
+  s_9bdfadb9b0ea13::t_993f58d8619efe 1-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3770b0b3c6ad55447258afc200fec714bac67ca2",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_9bdfadb9b0ea13": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "ffff9a41-366d-4e56-9db7-5f8fc3c33be8",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
