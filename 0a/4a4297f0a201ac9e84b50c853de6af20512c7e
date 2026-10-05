@@ -1,0 +1,46 @@
+apps/web/src/lib/auth-flow.test.ts
+  s_420e768a4cb9e6::t_c8732798f8786c 1-25
+apps/web/src/lib/auth-flow.ts
+  s_420e768a4cb9e6::t_dd880cb4dbf841 1-19
+apps/web/src/lib/legal-date.test.ts
+  s_420e768a4cb9e6::t_32e5c87f667cc5 1-9
+apps/web/src/lib/legal-date.ts
+  s_420e768a4cb9e6::t_74c2e9006c83ec 1-3
+apps/web/src/lib/platform-url.test.ts
+  s_420e768a4cb9e6::t_5981d6a113c0ef 1-23
+apps/web/src/lib/platform-url.ts
+  s_420e768a4cb9e6::t_c920f7f5938980 1-9
+apps/web/src/lib/sandbox-banner.test.ts
+  s_420e768a4cb9e6::t_b17a87c12f6ea6 1-33
+apps/web/src/lib/sandbox-banner.ts
+  s_420e768a4cb9e6::t_be8d28b0f0c30c 1-30
+apps/web/src/lib/slug-status.test.ts
+  s_420e768a4cb9e6::t_fca415fe68668c 1-33
+apps/web/src/lib/slug-status.ts
+  s_420e768a4cb9e6::t_4cd40c98ebd66b 1-26
+apps/web/src/lib/use-cooldown.ts
+  s_420e768a4cb9e6::t_09ce836febe131 1-14
+apps/web/src/lib/use-debounced-value.ts
+  s_420e768a4cb9e6::t_b4519ef35f84cf 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a4a4297f0a201ac9e84b50c853de6af20512c7e",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_420e768a4cb9e6": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "1ce1e88f-6959-4196-8821-4848d9504447",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
