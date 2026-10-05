@@ -1,0 +1,28 @@
+apps/web/src/app/admin/layout.tsx
+  s_183f1e33c7bc4f::t_463780085af321 5
+apps/web/src/app/layout.tsx
+  s_183f1e33c7bc4f::t_3844e279061136 7,31,33
+apps/web/src/components/sandbox-banner.tsx
+  s_183f1e33c7bc4f::t_520874bbd20ed4 1-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "647f93ee49fe5436dc4d6539424cbeb4d84a50fa",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_183f1e33c7bc4f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "24351796-7029-4923-bf43-89df3c78e25d",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
