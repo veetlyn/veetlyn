@@ -1,0 +1,28 @@
+packages/core/src/billing/plans.test.ts
+  s_8d883426cce151::t_c9230161f2eff5 1-37
+packages/core/src/billing/plans.ts
+  s_8d883426cce151::t_d0347b1a597430 1-82
+packages/core/src/index.ts
+  s_8d883426cce151::t_6587d57bcac445 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "132390b7fca21a5d4611dfe28be27b61d622940c",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_8d883426cce151": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "bf27ca89-a0e4-41bb-aef4-3a4f211b1472",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
