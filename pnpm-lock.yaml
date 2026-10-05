@@ -111,6 +111,9 @@ importers:
       '@jendal-workspace/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@jendal-workspace/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.19.0(typescript@6.0.3)
