@@ -59,3 +59,23 @@ export async function requireSession(): Promise<SessionInfo> {
 export async function redirectIfSignedIn(): Promise<void> {
   if (await fetchSession()) redirect("/");
 }
+
+const myStoresSchema = z.object({
+  result: z.object({
+    data: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        canCreateStores: z.boolean(),
+        stores: z.array(z.object({ id: z.string(), slug: z.string(), name: z.string(), status: z.string() })),
+      }),
+    ),
+  }),
+});
+export type MyOrganization = z.infer<typeof myStoresSchema>["result"]["data"][number];
+
+export async function listMyStores(): Promise<MyOrganization[]> {
+  const response = await callApiAsUser("/trpc/store.listMine");
+  if (!response.ok) throw new Error(`store.listMine answered ${response.status}`);
+  return myStoresSchema.parse(await response.json()).result.data;
+}
