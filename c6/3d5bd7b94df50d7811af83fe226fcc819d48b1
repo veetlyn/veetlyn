@@ -1,0 +1,70 @@
+packages/core/src/tenancy/resolve.test.ts
+  s_c0209e681a81c3::t_db12b8f6044b5f 53
+apps/web/src/lib/host-routing.ts
+  s_c0209e681a81c3::t_846ba92cfa8a4b 1,5-6,9,13,17-18,23,27
+packages/core/src/tenancy/slug.test.ts
+  s_c0209e681a81c3::t_8a53c922d68021 25,32,41-68
+packages/core/src/tenancy/target.test.ts
+  s_c0209e681a81c3::t_7e013483ceb649 3,5-8,10,24-25,28-33,44-47,51,71-74,78-80,83-85,88-93,95-96
+apps/web/src/lib/host-routing.test.ts
+  s_c0209e681a81c3::t_a27f37da7efb96 1,6-8,16,18,26,33,42-43,47-48,51-59,63
+packages/core/src/tenancy/target.ts
+  s_c0209e681a81c3::t_6b80e4fa0d05ec 7,11-12,32-34,36-37,39-47,50-53,55-56
+apps/web/src/lib/store-url.test.ts
+  s_c0209e681a81c3::t_0ca802c23637c3 1-23
+apps/web/src/components/create-store-form.tsx
+  s_c0209e681a81c3::t_2ec64399477f42 5,11,15,19,25,41-44,46,48-49,52-76,78
+apps/web/src/lib/store-url.ts
+  s_c0209e681a81c3::t_faef0f93a4a773 1-12
+packages/core/src/tenancy/slug.ts
+  s_c0209e681a81c3::t_e3f129beb4d3c5 2,8,17-49
+apps/server/.env.schema
+  s_c0209e681a81c3::t_9112663f84b8c4 25-28
+apps/server/src/index.ts
+  s_c0209e681a81c3::t_03cb74af379bee 16,24-26,49
+apps/server/src/tenant/middleware.test.ts
+  s_c0209e681a81c3::t_c03a1eff134dc2 1,8,20-23,52,54,71,74,76-77,80-81,83-84,86-87
+apps/server/src/tenant/middleware.ts
+  s_c0209e681a81c3::t_7d44d79e052a6e 7,17,35
+apps/web/src/app/admin/[storeSlug]/page.tsx
+  s_c0209e681a81c3::t_3e58c1014c8474 1,8,10
+apps/web/src/app/admin/[storeSlug]/store-dashboard.tsx
+  s_c0209e681a81c3::t_962b85d07a68cd 7,10,25-26,34-39,41
+apps/web/src/app/admin/page.tsx
+  s_c0209e681a81c3::t_436eddf299e2b0 1,7,12
+apps/web/src/app/admin/stores-overview.tsx
+  s_c0209e681a81c3::t_54c31dd6dc913c 9,12,42
+apps/web/src/lib/server-api.ts
+  s_c0209e681a81c3::t_78f522fb3312f6 6,8,10-16
+apps/web/src/proxy.ts
+  s_c0209e681a81c3::t_1a971c941a59c1 4,7-10,16-17
+apps/web/worker/index.ts
+  s_c0209e681a81c3::t_8eb729203d4a09 11
+packages/infra/.env.schema
+  s_c0209e681a81c3::t_2f2ea86273816b 1
+packages/infra/alchemy.run.ts
+  s_c0209e681a81c3::t_0d66d40fbb6be7 15-17,69,95
+turbo.json
+  s_c0209e681a81c3::t_dcbd364d1ca1d8 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c63d5bd7b94df50d7811af83fe226fcc819d48b1",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_c0209e681a81c3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "94c5da88-cd98-4c69-a30a-9d8d65bb6cdb",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
