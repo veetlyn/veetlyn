@@ -1,0 +1,29 @@
+apps/web/src/app/(site)/page.tsx
+  s_e52545ee672940::t_66aa75d699193f 3
+apps/web/src/app/admin/page.tsx
+  s_e52545ee672940::t_3ceaad0eb9b918 1
+apps/web/src/components/site/payouts-pricing.tsx
+  s_e52545ee672940::t_f84786919c5b31 1
+apps/web/src/components/site/site-header.tsx
+  s_e52545ee672940::t_160355c4ebee66 1
+packages/ui/src/components/button.tsx
+  s_e52545ee672940::t_700d42b75471cf 1-2,4,6
+packages/ui/src/lib/button-variants.ts
+  s_e52545ee672940::t_20a44705326000 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ae33f907fefa0210971605761a6facab3ed8dc9b",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
