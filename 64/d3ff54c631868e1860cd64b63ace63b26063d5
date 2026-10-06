@@ -1,0 +1,25 @@
+packages/db/src/repositories/discord.ts
+  s_e52545ee672940::t_e153d04e1f3781 1-65
+packages/db/src/repositories/payouts.test.ts
+  s_e52545ee672940::t_4580e1f1ea5ece 1-43
+packages/db/src/repositories/discord.test.ts
+  s_e52545ee672940::t_c931864f08ba15 1-75
+packages/db/src/repositories/payouts.ts
+  s_e52545ee672940::t_624b635ccfb6f3 1-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "64d3ff54c631868e1860cd64b63ace63b26063d5",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
