@@ -3,7 +3,8 @@ import { sql } from "drizzle-orm";
 import { createDb, type Database } from "../index";
 import { user } from "../schema/auth";
 import { member, organization, team, teamMember } from "../schema/organization";
-import { servicesTeamSettings } from "../schema/services-teams";
+import { project } from "../schema/projects";
+import { servicesTeamMember, servicesTeamSettings } from "../schema/services-teams";
 
 export const hasTestDatabase = Boolean(process.env.TEST_DATABASE_URL);
 
@@ -14,7 +15,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "services_team_settings", "services_team_member", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "outbox", "ledger_balance", "ledger_entry", "ledger_transfer", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "services_team_settings", "services_team_member", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }
@@ -117,4 +118,58 @@ export async function seedServicesTeam(
 
 export async function addTeamMember(db: Database, input: { teamId: string; userId: string }): Promise<void> {
   await db.insert(teamMember).values({ id: crypto.randomUUID(), ...input, createdAt: new Date() });
+}
+
+// A services team with its workspace and an owner, whose servicesTeamRoleFor is "admin"
+// (S1's effectiveServicesTeamRole maps workspace owner/admin to "admin").
+export async function seedServicesTeamWithAdmin(
+  db: Database,
+  options: { slug?: string } = {},
+): Promise<{ userId: string; organizationId: string; teamId: string }> {
+  const { userId, organizationId } = await seedOrganization(db);
+  const teamRow = await seedServicesTeam(db, { organizationId, slug: options.slug ?? "team" });
+  return { userId, organizationId, teamId: teamRow.id };
+}
+
+// Adds a freelancer or manager: the workspace member row (role "member") that S1's
+// servicesTeamRoleFor inner-joins, plus the services_team_member row that carries the role.
+export async function seedServicesTeamMember(
+  db: Database,
+  input: { organizationId: string; teamId: string; role: "manager" | "freelancer"; name?: string },
+): Promise<string> {
+  const userId = await seedUser(db, input.name ?? input.role);
+  await db.insert(member).values({
+    id: crypto.randomUUID(),
+    organizationId: input.organizationId,
+    userId,
+    role: "member",
+    createdAt: new Date(),
+  });
+  await db.insert(servicesTeamMember).values({
+    id: crypto.randomUUID(),
+    teamId: input.teamId,
+    userId,
+    role: input.role,
+    createdAt: new Date(),
+  });
+  return userId;
+}
+
+export async function seedProject(
+  db: Database,
+  input: { teamId: string; title?: string; clientEmail?: string },
+): Promise<string> {
+  const [row] = await db
+    .insert(project)
+    .values({
+      teamId: input.teamId,
+      title: input.title ?? "Website",
+      clientEmail: input.clientEmail ?? "client@example.com",
+      currency: "USD",
+      managementFeeBps: 1_000,
+      teamCutBps: 1_500,
+    })
+    .returning({ id: project.id });
+  if (!row) throw new Error("Insert into project returned no row");
+  return row.id;
 }
