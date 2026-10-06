@@ -11,3 +11,4 @@ export * from "./policies/store-policies";
 export * from "./services-teams/types";
 export * from "./services-teams/rates";
 export * from "./services-teams/permissions";
+export * from "./services-teams/setup-steps";
