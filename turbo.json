@@ -49,6 +49,7 @@
   "globalEnv": [
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
+    "CHANNEL3_API_KEY",
     "CI",
     "DATABASE_URL",
     "DEMO_STORE_SLUG",
