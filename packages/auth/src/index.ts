@@ -17,6 +17,8 @@ export type AuthConfig = {
   PAYPAL_CLIENT_ID: string;
   PAYPAL_CLIENT_SECRET: string;
   PAYPAL_ENVIRONMENT: string;
+  DISCORD_CLIENT_ID: string;
+  DISCORD_CLIENT_SECRET: string;
 };
 
 export type AuthEmailKind = "verification" | "password-reset";
@@ -122,6 +124,19 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
         environment: paypalLive ? "live" : "sandbox",
         authorizationEndpoint: paypalAuthorizationEndpoint(paypalLive),
         mapProfileToUser: (profile) => paypalEmail(profile),
+      },
+      discord: {
+        clientId: env.DISCORD_CLIENT_ID,
+        clientSecret: env.DISCORD_CLIENT_SECRET,
+      },
+    },
+    // "Link Discord" (services spec §4.2) and the payout destination's "Log in with PayPal" link a
+    // second identity onto a signed-in account; the two identities may use different email addresses.
+    // No trustedProviders: a trusted provider would let a sign-in with an unverified provider email
+    // take over the Payleor account with that email.
+    account: {
+      accountLinking: {
+        allowDifferentEmails: true,
       },
     },
     secret: env.BETTER_AUTH_SECRET,
