@@ -1,0 +1,14 @@
+packages/db/src/migrations/20261006125722_s3_paypal_onboarding/snapshot.json
+  h_6877e5e7a06bc5 4,6,75-86,938-950,1172-1327,1689-1709,1880-1930,2058-2077,2088-2099
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "803e202ee9d4f099d72ba94cbd4438e56fe30045",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
