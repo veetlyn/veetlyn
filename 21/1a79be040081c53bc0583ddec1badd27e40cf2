@@ -1,0 +1,21 @@
+apps/server/src/discord/rest.ts
+  s_e52545ee672940::t_e50efffd1a05df 1-44
+apps/server/src/discord/rest.test.ts
+  s_e52545ee672940::t_627b4e2441b2a8 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "211a79be040081c53bc0583ddec1badd27e40cf2",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
