@@ -24,7 +24,7 @@ function readSettings(): TunnelSettings {
   const envFile = join(PACKAGE_DIR, ".env");
   const fileEnv = existsSync(envFile) ? parseEnv(readFileSync(envFile, "utf8")) : {};
   const settings = tunnelSettings({ ...fileEnv, ...process.env });
-  if (!settings) fail("set TUNNEL_DOMAIN in packages/infra/.env (for example elysiumjs.com).");
+  if (!settings) fail("set TUNNEL_DOMAIN in packages/infra/.env (for example payleor.com).");
   return settings;
 }
 
