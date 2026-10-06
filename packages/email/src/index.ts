@@ -1,4 +1,5 @@
 export * from "./fake";
 export * from "./mailer";
-export * from "./smtp";
+export * from "./senders";
 export * from "./templates";
+export * from "./transport";
