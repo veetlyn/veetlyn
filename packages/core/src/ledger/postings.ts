@@ -1,0 +1,176 @@
+import type { MoneyCurrency } from "../money/money";
+import { freelancerEarningsMinor, teamCutMinor } from "../projects/pricing";
+import { ledgerAccounts as a } from "./accounts";
+import { type LedgerTransferDraft, transferFromMoves } from "./transfers";
+
+// One builder per event of services spec §6.3. Each returns one balanced transfer.
+
+type ProjectPosting = { currency: MoneyCurrency; projectId: string };
+
+// Deposit, amendment top-up or balance captured.
+export function paymentCapturedTransfer(
+  input: ProjectPosting & { paymentId: string; quotePartMinor: number; managementFeeMinor: number },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "payment_captured",
+    reference: `payment_captured:${input.paymentId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves: [
+      { from: a.paypalClearing, to: a.clientHeld(input.projectId), amountMinor: input.quotePartMinor },
+      { from: a.paypalClearing, to: a.teamRevenue, amountMinor: input.managementFeeMinor },
+    ],
+  });
+}
+
+// Amendment decrease: the overpaid management fee now counts toward the project's balance.
+export function managementFeeCreditTransfer(
+  input: ProjectPosting & { amendmentId: string; creditMinor: number },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "management_fee_credit",
+    reference: `management_fee_credit:${input.amendmentId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves: [{ from: a.teamRevenue, to: a.clientHeld(input.projectId), amountMinor: input.creditMinor }],
+  });
+}
+
+// Completion: the team cut and the freelancer's earnings, both from the final price.
+export function completionTransfer(
+  input: ProjectPosting & { freelancerId: string; finalPriceMinor: number; teamCutBps: number },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "completion",
+    reference: `completion:${input.projectId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves: [
+      {
+        from: a.clientHeld(input.projectId),
+        to: a.teamRevenue,
+        amountMinor: teamCutMinor(input.finalPriceMinor, input.teamCutBps),
+      },
+      {
+        from: a.clientHeld(input.projectId),
+        to: a.owedAvailable(input.freelancerId),
+        amountMinor: freelancerEarningsMinor(input.finalPriceMinor, input.teamCutBps),
+      },
+    ],
+  });
+}
+
+// Refund on completion or cancel, recorded when Payleor asks PayPal for it.
+export function refundRequestedTransfer(
+  input: ProjectPosting & { refundId: string; quotePartMinor: number; managementFeeMinor: number },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "refund_requested",
+    reference: `refund_requested:${input.refundId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves: [
+      { from: a.clientHeld(input.projectId), to: a.clientRefunds, amountMinor: input.quotePartMinor },
+      { from: a.teamRevenue, to: a.clientRefunds, amountMinor: input.managementFeeMinor },
+    ],
+  });
+}
+
+// PayPal confirmed the refund.
+export function refundConfirmedTransfer(
+  input: ProjectPosting & { refundId: string; amountMinor: number },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "refund_confirmed",
+    reference: `refund_confirmed:${input.refundId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves: [{ from: a.clientRefunds, to: a.paypalClearing, amountMinor: input.amountMinor }],
+  });
+}
+
+type PayoutPosting = { currency: MoneyCurrency; payoutRequestId: string; freelancerId: string; amountMinor: number };
+
+export function payoutRequestedTransfer(input: PayoutPosting): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "payout_requested",
+    reference: `payout_requested:${input.payoutRequestId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [
+      { from: a.owedAvailable(input.freelancerId), to: a.owedReserved(input.freelancerId), amountMinor: input.amountMinor },
+    ],
+  });
+}
+
+export function payoutSucceededTransfer(input: PayoutPosting): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "payout_succeeded",
+    reference: `payout_succeeded:${input.payoutRequestId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [{ from: a.owedReserved(input.freelancerId), to: a.paidOut(input.freelancerId), amountMinor: input.amountMinor }],
+  });
+}
+
+// Payout failed, returned, blocked or rejected: the reserved earnings become available again.
+export function payoutReleasedTransfer(input: PayoutPosting): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "payout_released",
+    reference: `payout_released:${input.payoutRequestId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [
+      { from: a.owedReserved(input.freelancerId), to: a.owedAvailable(input.freelancerId), amountMinor: input.amountMinor },
+    ],
+  });
+}
+
+// Case outcome after completion: earnings move to the team, or to client refunds when the client is refunded.
+export function penaltyAfterCompletionTransfer(
+  input: ProjectPosting & {
+    caseId: string;
+    freelancerId: string;
+    amountMinor: number;
+    destination: "team_revenue" | "client_refunds";
+  },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "penalty_after_completion",
+    reference: `penalty_after_completion:${input.caseId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves: [
+      {
+        from: a.owedAvailable(input.freelancerId),
+        to: input.destination === "team_revenue" ? a.teamRevenue : a.clientRefunds,
+        amountMinor: input.amountMinor,
+      },
+    ],
+  });
+}
+
+// Reverses a capture's entries. After completion the client money has already become the team cut and
+// earnings, so team_revenue absorbs the whole amount; changing earnings needs a case outcome.
+export function chargebackTransfer(
+  input: ProjectPosting & {
+    chargebackId: string;
+    quotePartMinor: number;
+    managementFeeMinor: number;
+    projectCompleted: boolean;
+  },
+): LedgerTransferDraft {
+  const moves = input.projectCompleted
+    ? [{ from: a.teamRevenue, to: a.paypalClearing, amountMinor: input.quotePartMinor + input.managementFeeMinor }]
+    : [
+        { from: a.clientHeld(input.projectId), to: a.paypalClearing, amountMinor: input.quotePartMinor },
+        { from: a.teamRevenue, to: a.paypalClearing, amountMinor: input.managementFeeMinor },
+      ];
+  return transferFromMoves({
+    kind: "chargeback",
+    reference: `chargeback:${input.chargebackId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves,
+  });
+}
