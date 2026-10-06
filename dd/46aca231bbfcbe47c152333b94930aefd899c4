@@ -1,0 +1,29 @@
+packages/email/src/transport.test.ts
+  s_b2b18d55a0efdf::t_88209957b9a757 16,29-30,35-38,43,54,77,95,103,106,109,112,119-120,123-125,132,153-155,161-162,167,169,173,178,185-186,190
+packages/email/src/transport.ts
+  s_b2b18d55a0efdf::t_914453bb31299e 32,54-55,57,98,101
+apps/server/.env.schema
+  s_b2b18d55a0efdf::t_89987ae94b472d 38-39,43
+apps/server/src/email-log.ts
+  s_b2b18d55a0efdf::t_03fb8c5dabef63 10
+packages/auth/src/index.test.ts
+  s_b2b18d55a0efdf::t_7b43b44424f231 350
+packages/infra/.env.schema
+  s_b2b18d55a0efdf::t_82a84bbe4c30b1 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd46aca231bbfcbe47c152333b94930aefd899c4",
+  "prompts": {},
+  "sessions": {
+    "s_b2b18d55a0efdf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "276280d7-38ec-4b73-9260-409f8beb3ee8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
