@@ -1,0 +1,25 @@
+apps/web/src/components/auth/sign-up-form.tsx
+  s_c0209e681a81c3::t_2c0b948c4db7a9 39-40
+apps/web/src/components/auth/sign-in-form.tsx
+  s_c0209e681a81c3::t_8950856317854e 39-40
+apps/web/src/components/auth/reset-password-form.tsx
+  s_c0209e681a81c3::t_75b1dd825dafce 45-46
+apps/web/src/components/auth/forgot-password-form.tsx
+  s_c0209e681a81c3::t_3d389ccfa55a4b 41-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "994a0d3ee0b5350e72e1da392a2e9cc3fe7afcc3",
+  "prompts": {},
+  "sessions": {
+    "s_c0209e681a81c3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "94c5da88-cd98-4c69-a30a-9d8d65bb6cdb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
