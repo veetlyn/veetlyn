@@ -1,0 +1,23 @@
+packages/core/src/projects/penalty.ts
+  s_5afd7092009288::t_d3e20d53507a10 1-24
+packages/core/src/projects/pricing.test.ts
+  s_5afd7092009288::t_07d44f3975f1cb 1-177
+packages/core/src/projects/pricing.ts
+  s_5afd7092009288::t_7e5f711dc26f19 1-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "344afe81a6066252be2e7132f1bd1ba3534a6297",
+  "prompts": {},
+  "sessions": {
+    "s_5afd7092009288": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "2209830b-dfb8-4d2e-85bc-bff53c515a62",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
