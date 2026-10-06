@@ -1,0 +1,53 @@
+packages/core/src/index.ts
+  s_9150ac4914bd81::t_a1c4bcf9b58a89 30-32
+packages/core/src/projects/events.ts
+  s_9150ac4914bd81::t_cab7efa0ab5e05 1-24
+packages/core/src/projects/permissions.test.ts
+  s_9150ac4914bd81::t_d4bae79495f3de 1-84
+packages/core/src/projects/permissions.ts
+  s_9150ac4914bd81::t_6e4bac2d245415 2-3,4-80
+packages/core/src/projects/quotes.test.ts
+  s_9150ac4914bd81::t_dc486dee705133 1-83
+packages/core/src/projects/quotes.ts
+  s_9150ac4914bd81::t_0307cc00b2e000 1-109
+packages/db/src/executor.ts
+  s_9150ac4914bd81::t_b78a4b569890ef 1-11
+packages/db/src/migrations/20261006135110_s4_ledger_projects/migration.sql
+  s_9150ac4914bd81::t_c56df1070a157c 1-179
+packages/db/src/migrations/20261006135110_s4_ledger_projects/snapshot.json
+  s_9150ac4914bd81::t_810c74e64aff5d 1-3,5,7-86,111-1335,1844-1846,1848-1849,1851-1852,1854-1855,1857,1859,1861-1862,1864-1865,1867-1868,1870,1872,1874-1875,1877-1878,1880-1881,1883-1885,1887-1888,1890-1891,1893-1894,1896,1898,1900-1901,1903-1904,1906-3380,3479-4000,4103-4618,4659-4862,4874-4895,4917-4989
+packages/db/src/schema/index.ts
+  s_9150ac4914bd81::t_fb2c3e89843eb1 8-10
+packages/db/src/schema/ledger.ts
+  s_9150ac4914bd81::t_f72fbc6719d033 1-76
+packages/db/src/schema/outbox.ts
+  s_9150ac4914bd81::t_25e63d05d734d7 1-27
+packages/db/src/schema/projects.ts
+  s_9150ac4914bd81::t_b55d54aeb94b69 1-182
+packages/db/src/testing/db.ts
+  s_e52545ee672940::t_9d202a56676663 6-7,122-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3187413a4056f7288800d2fe3cc23060170a77f8",
+  "prompts": {},
+  "sessions": {
+    "s_9150ac4914bd81": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84164c2d-cb6a-41e3-9918-ff12f89df375",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
