@@ -1,0 +1,36 @@
+apps/web/src/app/(site)/layout.tsx
+  s_8eb707de105d56::t_afadae1638c67a 1-14
+apps/web/src/app/(site)/page.tsx
+  s_8eb707de105d56::t_3e12bd3a92ceb3 1-221
+apps/web/src/app/layout.tsx
+  s_8eb707de105d56::t_2a43c318fd40f4 21
+apps/web/src/components/site/site-footer.tsx
+  s_8eb707de105d56::t_d02855e96bc657 1-29
+apps/web/src/components/site/pricing.tsx
+  s_8eb707de105d56::t_8491a01a4d2a14 1-60
+apps/web/src/components/site/payouts-pricing.tsx
+  s_8eb707de105d56::t_2df6277c5f3c6f 1-35
+apps/web/src/components/site/site-header.tsx
+  s_8eb707de105d56::t_87914a57cd7049 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f041555632b7582f99b722bea2ce123ace6422cc",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_8eb707de105d56": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "807db678-0993-49d2-9bfe-97da26b08f4d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
