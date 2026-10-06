@@ -19,8 +19,12 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
 
   const { team, role, settings } = result.data;
   const steps = servicesTeamSetupSteps(
-    { paypalMerchantId: team.paypalMerchantId, settingsSaved: settings?.settingsSavedAt != null },
-    { settings: `/${team.slug}/settings` },
+    {
+      paypalMerchantId: team.paypalMerchantId,
+      settingsSaved: settings?.settingsSavedAt != null,
+      discordGuildId: settings?.discordGuildId ?? null,
+    },
+    { settings: `/${team.slug}/settings`, linkDiscord: `/${team.slug}/discord` },
   );
 
   return (
