@@ -42,7 +42,8 @@ export default function ResetPasswordForm({ token }: { token: string }) {
   if (invalid) return <InvalidResetLink />;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    // method="post": a submit before hydration would otherwise be a native GET that puts the password in the URL.
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
       <TextField
         id="password"
         name="password"

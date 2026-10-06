@@ -38,7 +38,8 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    // method="post" keeps the email out of the URL if the form is submitted before hydration.
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
       <TextField id="email" name="email" label="Email" type="email" autoComplete="email" required />
       {error ? (
         <p role="alert" className="text-sm text-destructive">
