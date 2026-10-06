@@ -1,0 +1,41 @@
+apps/web/src/content/legal/acceptable-use.mdx
+  s_b2b18d55a0efdf::t_eafacbc2ac1b30 1
+apps/web/src/content/legal/meta.ts
+  s_b2b18d55a0efdf::t_930265bc3ebb66 2
+apps/web/src/content/legal/privacy.mdx
+  s_b2b18d55a0efdf::t_109b62d46d4374 1
+  s_b2b18d55a0efdf::t_fec2a3941ca75b 28
+apps/web/src/content/legal/terms.mdx
+  s_b2b18d55a0efdf::t_86bfd2391ecd87 1,15
+packages/email/src/transport.test.ts
+  s_b2b18d55a0efdf::t_6221f3429bf788 5,14-16,18-20,27-29,39-43,48-62,69-128,135-137,161,178-218,223,234,237,248,256-258,265-266,271,273,277-281,286-290
+packages/email/src/transport.ts
+  s_b2b18d55a0efdf::t_79bce37a2aa24e 3,10,20-21,29,39-41,58-64,66-68,74,85,98-99,107,125-126,128-131,136-137
+  s_b2b18d55a0efdf::t_3188f0c0e3c977 138-141
+packages/email/src/mailer.ts
+  s_b2b18d55a0efdf::t_d89c5ce7daf716 9-10
+apps/server/.env.schema
+  s_b2b18d55a0efdf::t_0b13661d3a10b5 38-44,48,61
+packages/infra/.env.schema
+  s_b2b18d55a0efdf::t_33d9cccf3088c1 1
+packages/infra/alchemy.run.ts
+  s_b2b18d55a0efdf::t_0c46473c47722e 85
+turbo.json
+  s_b2b18d55a0efdf::t_e871cbbb20d401 72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81ad62c23e6cfbe60c829e577688e9fd7dec3f8e",
+  "prompts": {},
+  "sessions": {
+    "s_b2b18d55a0efdf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "276280d7-38ec-4b73-9260-409f8beb3ee8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
