@@ -16,7 +16,7 @@ const ports = localPorts(localStage ?? "dev");
 const localUrls = localStage ? stageUrls(localStage, tunnelSettings(process.env)) : undefined;
 const platformDomain = localUrls ? localUrls.platformDomain : Config.String("PLATFORM_DOMAIN");
 const storeDomain = localUrls
-  ? localUrls.platformDomain
+  ? localUrls.storeDomain
   : Config.NonEmptyString("STORE_DOMAIN").pipe(Config.orElse(() => Config.String("PLATFORM_DOMAIN")));
 
 function postgresOrigin(connectionUri: string) {
