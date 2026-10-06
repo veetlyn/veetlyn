@@ -94,3 +94,15 @@ export async function listOrganizationsWithStores(db: Database, userId: string):
   }
   return [...byOrganization.values()];
 }
+
+export type StorePolicyInfo = { supportEmail: string | null; createdAt: Date };
+
+// Kept out of StoreRecord so the KV-cached store lookup stays small.
+export async function findStorePolicyInfo(db: Database, storeId: string): Promise<StorePolicyInfo | null> {
+  const [row] = await db
+    .select({ supportEmail: team.supportEmail, createdAt: team.createdAt })
+    .from(team)
+    .where(eq(team.id, storeId))
+    .limit(1);
+  return row ?? null;
+}

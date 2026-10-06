@@ -18,7 +18,7 @@
       "@/*": ["./src/*"],
       "@jendal-workspace/ui/*": ["../../packages/ui/src/*"]
     },
-    "types": ["vinext/types", "@cloudflare/workers-types"]
+    "types": ["vinext/types", "@cloudflare/workers-types", "mdx"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["./node_modules", "./dist"]

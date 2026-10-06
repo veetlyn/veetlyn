@@ -1,0 +1,30 @@
+export const SANDBOX_NOTICE = "Sandbox: payments use PayPal test accounts. No real money moves.";
+
+export type SandboxSettings = {
+  SANDBOX_BUYER_EMAIL?: string;
+  SANDBOX_BUYER_PASSWORD?: string;
+  SANDBOX_CARD_NUMBER?: string;
+  SANDBOX_CARD_EXPIRY?: string;
+  SANDBOX_CARD_CVV?: string;
+};
+
+export type SandboxBannerContent =
+  | { kind: "notice"; text: string }
+  | {
+      kind: "checkout";
+      text: string;
+      buyer: { email: string; password: string };
+      card: { number: string; expiry: string; cvv: string };
+    };
+
+export function sandboxBannerContent(variant: "default" | "checkout", settings: SandboxSettings): SandboxBannerContent {
+  const email = settings.SANDBOX_BUYER_EMAIL;
+  const password = settings.SANDBOX_BUYER_PASSWORD;
+  const number = settings.SANDBOX_CARD_NUMBER;
+  const expiry = settings.SANDBOX_CARD_EXPIRY;
+  const cvv = settings.SANDBOX_CARD_CVV;
+  if (variant === "checkout" && email && password && number && expiry && cvv) {
+    return { kind: "checkout", text: SANDBOX_NOTICE, buyer: { email, password }, card: { number, expiry, cvv } };
+  }
+  return { kind: "notice", text: SANDBOX_NOTICE };
+}

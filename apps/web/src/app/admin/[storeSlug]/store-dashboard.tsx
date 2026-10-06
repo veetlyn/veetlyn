@@ -1,9 +1,11 @@
 "use client";
 
+import { setupSteps } from "@jendal-workspace/core";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
+import SetupChecklist from "@/components/setup-checklist";
 import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
 
@@ -25,11 +27,14 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
   const url = storeUrl(store.data.slug, urlParts);
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
-      <Link href="/" className="text-sm text-muted-foreground">
-        All stores
-      </Link>
-      <h1 className="text-2xl font-semibold">{store.data.name}</h1>
+    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+      <div className="space-y-1">
+        <Link href="/" className="text-sm text-muted-foreground">
+          All stores
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight">{store.data.name}</h1>
+      </div>
+      <SetupChecklist steps={setupSteps(store.data, { storefrontUrl: url })} />
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-muted-foreground">Store URL</dt>
         <dd>

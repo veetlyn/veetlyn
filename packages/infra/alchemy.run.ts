@@ -7,6 +7,9 @@ import "varlock/auto-load";
 
 import { localPorts, parseLocalStage, stageUrls, tunnelSettings } from "./dev-hosts.ts";
 
+// Optional public settings; the web app treats "" as not set.
+const optionalString = (name: string) => Config.String(name).pipe(Config.withDefault(""));
+
 // Set only by the `dev` and `dev:preprod` scripts, so deployed stages keep their env values.
 const localStage = parseLocalStage(process.env.JENDAL_LOCAL_STAGE);
 const ports = localPorts(localStage ?? "dev");
@@ -70,6 +73,11 @@ export const server = Cloudflare.Worker("server", {
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
     PAYPAL_CLIENT_ID: Config.String("PAYPAL_CLIENT_ID"),
     PAYPAL_CLIENT_SECRET: Config.Redacted("PAYPAL_CLIENT_SECRET"),
+    SMTP_HOST: Config.String("SMTP_HOST"),
+    SMTP_PORT: Config.String("SMTP_PORT").pipe(Config.withDefault("587")),
+    SMTP_USER: Config.String("SMTP_USER"),
+    SMTP_PASS: Config.Redacted("SMTP_PASS"),
+    EMAIL_FROM: Config.String("EMAIL_FROM"),
   },
   dev: {
     port: ports.api,
@@ -93,6 +101,12 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
     SERVER: server,
     PLATFORM_DOMAIN: platformDomain,
     STORE_DOMAIN: storeDomain,
+    SANDBOX_BUYER_EMAIL: optionalString("SANDBOX_BUYER_EMAIL"),
+    SANDBOX_BUYER_PASSWORD: optionalString("SANDBOX_BUYER_PASSWORD"),
+    SANDBOX_CARD_NUMBER: optionalString("SANDBOX_CARD_NUMBER"),
+    SANDBOX_CARD_EXPIRY: optionalString("SANDBOX_CARD_EXPIRY"),
+    SANDBOX_CARD_CVV: optionalString("SANDBOX_CARD_CVV"),
+    DEMO_STORE_SLUG: optionalString("DEMO_STORE_SLUG"),
   },
   dev: {
     port: ports.web,

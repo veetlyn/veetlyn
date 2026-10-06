@@ -1,39 +1,28 @@
+import { user } from "@jendal-workspace/db/schema/auth";
 import { team } from "@jendal-workspace/db/schema/organization";
 import { createTestDb, hasTestDatabase, truncateAll } from "@jendal-workspace/db/testing/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { createAuth } from "./index";
+import { cookieHeaders, createTestAuth, signUpVerified, TEST_AUTH_CONFIG, TEST_PASSWORD } from "./testing";
 
-const config = {
-  BETTER_AUTH_URL: "http://admin.localhost:3001",
-  BETTER_AUTH_SECRET: "test-secret-that-is-at-least-32-characters",
-  PAYPAL_CLIENT_ID: "sandbox-client-id",
-  PAYPAL_CLIENT_SECRET: "sandbox-client-secret",
-  PAYPAL_ENVIRONMENT: "sandbox",
-};
+const BASE = TEST_AUTH_CONFIG.BETTER_AUTH_URL;
+
+function linkIn(text: string): URL {
+  const match = /https?:\/\/\S+/.exec(text);
+  if (!match) throw new Error(`No link in: ${text}`);
+  return new URL(match[0]);
+}
 
 describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
   const db = createTestDb();
-  const auth = createAuth(config, db);
+  const { auth } = createTestAuth(db);
 
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
 
-  async function signUp(email: string) {
-    const { headers, response } = await auth.api.signUpEmail({
-      body: { name: "Ada", email, password: "correct-horse-battery" },
-      returnHeaders: true,
-    });
-    const cookie = headers
-      .getSetCookie()
-      .map((c) => c.split(";")[0])
-      .join("; ");
-    return { userId: response.user.id, headers: new Headers({ cookie }) };
-  }
-
   async function ownerWithOrganization(slug = "acme-inc") {
-    const owner = await signUp(`owner-${slug}@example.com`);
+    const owner = await signUpVerified(auth, db, `owner-${slug}@example.com`);
     const organization = await auth.api.createOrganization({
       body: { name: "Acme Inc", slug },
       headers: owner.headers,
@@ -42,18 +31,25 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
     return { ...owner, organizationId: organization.id };
   }
 
-  it("creates a draft store from a normalized slug", async () => {
-    const { headers, organizationId } = await ownerWithOrganization();
+  it("creates a draft store from a normalized slug, with the creator's email as support email", async () => {
+    const { headers, organizationId, email } = await ownerWithOrganization();
 
     const store = await auth.api.createTeam({ body: { name: "Acme", organizationId, slug: " Acme " }, headers });
 
     const [row] = await db.select().from(team).where(eq(team.id, store.id));
-    expect(row).toMatchObject({ organizationId, name: "Acme", slug: "acme", status: "draft", paypalMerchantId: null });
+    expect(row).toMatchObject({
+      organizationId,
+      name: "Acme",
+      slug: "acme",
+      status: "draft",
+      paypalMerchantId: null,
+      supportEmail: email,
+    });
   });
 
-  it("ignores client attempts to set the status or PayPal merchant", async () => {
-    const { headers, organizationId } = await ownerWithOrganization();
-    const extra: Record<string, unknown> = { status: "active", paypalMerchantId: "FAKE" };
+  it("ignores client attempts to set the status, PayPal merchant or support email", async () => {
+    const { headers, organizationId, email } = await ownerWithOrganization();
+    const extra: Record<string, unknown> = { status: "active", paypalMerchantId: "FAKE", supportEmail: "x@evil.test" };
 
     const store = await auth.api.createTeam({
       body: { name: "Acme", organizationId, slug: "acme", ...extra },
@@ -61,7 +57,7 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
     });
 
     const [row] = await db.select().from(team).where(eq(team.id, store.id));
-    expect(row).toMatchObject({ status: "draft", paypalMerchantId: null });
+    expect(row).toMatchObject({ status: "draft", paypalMerchantId: null, supportEmail: email });
   });
 
   it("rejects reserved and malformed slugs", async () => {
@@ -93,7 +89,7 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
 
   it("only lets owners and admins create stores", async () => {
     const { organizationId } = await ownerWithOrganization();
-    const staff = await signUp("staff@example.com");
+    const staff = await signUpVerified(auth, db, "staff@example.com");
     await auth.api.addMember({ body: { userId: staff.userId, organizationId, role: "member" } });
 
     await expect(
@@ -120,12 +116,197 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
   });
 });
 
+describe.skipIf(!hasTestDatabase)("email verification", () => {
+  const db = createTestDb();
+  const { auth, mailer, settle } = createTestAuth(db);
+
+  beforeEach(async () => {
+    await truncateAll(db);
+    mailer.sent.length = 0;
+  });
+  afterAll(() => db.$client.end());
+
+  async function signUp(email = "ada@example.com") {
+    return auth.api.signUpEmail({
+      body: { name: "Ada", email, password: TEST_PASSWORD, callbackURL: "/new" },
+    });
+  }
+
+  it("sends one verification email on sign-up, linking back to /new, and starts no session", async () => {
+    const result = await signUp();
+    await settle();
+
+    expect(result.token).toBeNull();
+    expect(mailer.sent).toHaveLength(1);
+    const [message] = mailer.sent;
+    expect(message).toMatchObject({ to: "ada@example.com", subject: "Verify your email for Payleor" });
+    const link = linkIn(message?.text ?? "");
+    expect(link.origin + link.pathname).toBe(`${BASE}/api/auth/verify-email`);
+    expect(link.searchParams.get("callbackURL")).toBe("/new");
+  });
+
+  it("rejects passwords shorter than 10 characters", async () => {
+    await expect(
+      auth.api.signUpEmail({ body: { name: "Ada", email: "ada@example.com", password: "short-pw1" } }),
+    ).rejects.toMatchObject({ status: "BAD_REQUEST" });
+  });
+
+  it("refuses email sign-in before verification and sends a fresh link", async () => {
+    await signUp();
+
+    await expect(
+      auth.api.signInEmail({ body: { email: "ada@example.com", password: TEST_PASSWORD, callbackURL: "/new" } }),
+    ).rejects.toMatchObject({ status: "FORBIDDEN", body: { code: "EMAIL_NOT_VERIFIED" } });
+    await settle();
+    expect(mailer.sent).toHaveLength(2);
+  });
+
+  it("verifies the address and signs the user in from the emailed link", async () => {
+    await signUp();
+    await settle();
+    const link = linkIn(mailer.sent[0]?.text ?? "");
+
+    const response = await auth.handler(new Request(link));
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toMatch(/\/new$/);
+    const session = await auth.api.getSession({ headers: cookieHeaders(response.headers) });
+    expect(session?.user).toMatchObject({ email: "ada@example.com", emailVerified: true });
+  });
+
+  it("records when each new user accepted the terms", async () => {
+    const before = new Date();
+    const { user: created } = await signUp();
+
+    const [row] = await db.select().from(user).where(eq(user.id, created.id));
+    expect(row?.acceptedTermsAt).toBeInstanceOf(Date);
+    expect(row?.acceptedTermsAt?.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1000);
+  });
+});
+
+describe.skipIf(!hasTestDatabase)("password reset", () => {
+  const db = createTestDb();
+  const { auth, mailer, settle } = createTestAuth(db);
+
+  beforeEach(async () => {
+    await truncateAll(db);
+    mailer.sent.length = 0;
+  });
+  afterAll(() => db.$client.end());
+
+  async function resetToken(email: string): Promise<string> {
+    await auth.api.requestPasswordReset({ body: { email, redirectTo: "/reset-password" } });
+    await settle();
+    const message = mailer.sent.find((m) => m.subject === "Reset your Payleor password");
+    const response = await auth.handler(new Request(linkIn(message?.text ?? "")));
+    const location = new URL(response.headers.get("location") ?? "", BASE);
+    expect(location.pathname).toBe("/reset-password");
+    const token = location.searchParams.get("token");
+    if (!token) throw new Error("no token in the reset redirect");
+    return token;
+  }
+
+  it("emails a link that leads to the reset page with a token", async () => {
+    await signUpVerified(auth, db, "ada@example.com");
+
+    await expect(resetToken("ada@example.com")).resolves.toEqual(expect.any(String));
+  });
+
+  it("changes the password and signs out every session", async () => {
+    const { headers } = await signUpVerified(auth, db, "ada@example.com");
+    const token = await resetToken("ada@example.com");
+
+    await auth.api.resetPassword({ body: { newPassword: "a-brand-new-password", token } });
+
+    await expect(auth.api.getSession({ headers })).resolves.toBeNull();
+    await expect(
+      auth.api.signInEmail({ body: { email: "ada@example.com", password: TEST_PASSWORD } }),
+    ).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    await expect(
+      auth.api.signInEmail({ body: { email: "ada@example.com", password: "a-brand-new-password" } }),
+    ).resolves.toMatchObject({ user: { email: "ada@example.com" } });
+  });
+
+  it("rejects an unknown token", async () => {
+    await expect(
+      auth.api.resetPassword({ body: { newPassword: "a-brand-new-password", token: "nope" } }),
+    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "INVALID_TOKEN" } });
+  });
+});
+
+describe.skipIf(!hasTestDatabase)("rate limits", () => {
+  const db = createTestDb();
+  const { auth } = createTestAuth(db);
+
+  beforeEach(() => truncateAll(db));
+  afterAll(() => db.$client.end());
+
+  function post(path: string, ip: string, body: unknown): Request {
+    return new Request(`${BASE}/api/auth${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: BASE, "cf-connecting-ip": ip },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function statuses(count: number, request: () => Request): Promise<number[]> {
+    const result: number[] = [];
+    for (let i = 0; i < count; i++) result.push((await auth.handler(request())).status);
+    return result;
+  }
+
+  it("allows 5 email sign-in attempts per minute from one IP", async () => {
+    const attempt = () => post("/sign-in/email", "203.0.113.7", { email: "nobody@example.com", password: "wrong-password-1" });
+
+    const result = await statuses(6, attempt);
+
+    expect(result.slice(0, 5)).not.toContain(429);
+    expect(result[5]).toBe(429);
+  });
+
+  it("counts each IP separately", async () => {
+    await statuses(6, () => post("/sign-in/email", "203.0.113.7", { email: "a@example.com", password: "wrong-password-1" }));
+
+    const other = await auth.handler(
+      post("/sign-in/email", "203.0.113.8", { email: "a@example.com", password: "wrong-password-1" }),
+    );
+    expect(other.status).not.toBe(429);
+  });
+
+  it("allows 3 password reset requests per 10 minutes", async () => {
+    const request = () => post("/request-password-reset", "203.0.113.9", { email: "a@example.com", redirectTo: "/reset-password" });
+
+    const result = await statuses(4, request);
+
+    expect(result.slice(0, 3)).not.toContain(429);
+    expect(result[3]).toBe(429);
+  });
+});
+
+describe.skipIf(!hasTestDatabase)("email failures", () => {
+  const db = createTestDb();
+  const failing = { send: () => Promise.reject(new Error("SMTP down")) };
+  const { auth, emailErrors, settle } = createTestAuth(db, { mailer: failing });
+
+  beforeEach(() => truncateAll(db));
+  afterAll(() => db.$client.end());
+
+  it("completes sign-up and reports the failed send", async () => {
+    await expect(
+      auth.api.signUpEmail({ body: { name: "Ada", email: "ada@example.com", password: TEST_PASSWORD } }),
+    ).resolves.toMatchObject({ user: { email: "ada@example.com" } });
+    await settle();
+
+    expect(emailErrors).toEqual([{ kind: "verification", to: "ada@example.com" }]);
+  });
+});
+
 describe.skipIf(!hasTestDatabase)("Log in with PayPal", () => {
   const db = createTestDb();
   afterAll(() => db.$client.end());
 
   async function authorizeUrl(environment: string) {
-    const auth = createAuth({ ...config, PAYPAL_ENVIRONMENT: environment }, db);
+    const { auth } = createTestAuth(db, { config: { PAYPAL_ENVIRONMENT: environment } });
     const { url } = await auth.api.signInSocial({ body: { provider: "paypal", disableRedirect: true } });
     if (!url) throw new Error("no authorize URL");
     return new URL(url);

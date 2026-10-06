@@ -6,7 +6,8 @@ import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 
-export default function PayPalSignInButton() {
+// PayPal needs an HTTPS return URL, so this works on deployed hosts and the tunnel only (spec §5.3).
+export default function PayPalSignInButton({ label }: { label: string }) {
   const [pending, setPending] = useState(false);
 
   async function signIn() {
@@ -21,7 +22,7 @@ export default function PayPalSignInButton() {
 
   return (
     <Button type="button" variant="outline" className="w-full" onClick={signIn} disabled={pending}>
-      {pending ? "Redirecting to PayPal..." : "Continue with PayPal"}
+      {pending ? "Redirecting to PayPal…" : label}
     </Button>
   );
 }

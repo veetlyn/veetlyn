@@ -13,7 +13,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "rate_limit", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }

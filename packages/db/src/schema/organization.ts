@@ -53,7 +53,7 @@ export const invitation = pgTable(
   ],
 );
 
-// Each team is a store (spec §4.1). slug, status and paypalMerchantId are team additionalFields in packages/auth.
+// Each team is a store (spec §4.1). slug, status, paypalMerchantId and supportEmail are team additionalFields in packages/auth.
 export const team = pgTable(
   "team",
   {
@@ -67,6 +67,7 @@ export const team = pgTable(
       .default("draft")
       .notNull(),
     paypalMerchantId: text("paypal_merchant_id").unique(),
+    supportEmail: text("support_email"),
     memberCount: integer("member_count").default(0).notNull(),
     createdAt: timestamp("created_at").notNull(),
     updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),

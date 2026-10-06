@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../index.css";
 import Providers from "@/components/providers";
 import PwaRegistration from "@/components/pwa-registration";
+import SandboxBanner from "@/components/sandbox-banner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Payleor",
-  description: "Agentic commerce on PayPal",
+  description: "Stores and services teams, paid through PayPal",
 };
 
 export default function RootLayout({
@@ -27,9 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} flex min-h-svh flex-col antialiased`}>
         <PwaRegistration />
-
+        <SandboxBanner />
         <Providers>{children}</Providers>
       </body>
     </html>

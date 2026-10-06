@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { validateStoreSlug } from "./slug";
+import { storeSlugProblem, suggestStoreSlug, validateStoreSlug } from "./slug";
 
 describe("validateStoreSlug", () => {
   it("accepts lowercase letters, digits and single hyphens", () => {
@@ -81,5 +81,41 @@ describe("validateStoreSlug", () => {
     "static",
   ])("rejects reserved slug %s", (input) => {
     expect(validateStoreSlug(input)).toEqual({ ok: false, reason: "reserved" });
+  });
+});
+
+describe("suggestStoreSlug", () => {
+  it.each([
+    ["Acme Goods", "acme-goods"],
+    ["  Café Noël!  ", "cafe-noel"],
+    ["Bob's  Bikes & Boards", "bob-s-bikes-boards"],
+    ["Shop #2", "shop-2"],
+  ])("turns %j into %j", (name, slug) => {
+    expect(suggestStoreSlug(name)).toBe(slug);
+  });
+
+  it("adds -store to reserved or too-short results", () => {
+    expect(suggestStoreSlug("Demo")).toBe("demo-store");
+    expect(suggestStoreSlug("Login")).toBe("login-store");
+    expect(suggestStoreSlug("AB")).toBe("ab-store");
+  });
+
+  it("returns an empty string when nothing usable is left", () => {
+    expect(suggestStoreSlug("   ")).toBe("");
+    expect(suggestStoreSlug("日本の店")).toBe("");
+  });
+
+  it("keeps long names within 40 characters and valid", () => {
+    const slug = suggestStoreSlug("The Very Long Name Of A Store That Sells Many Things");
+    expect(slug.length).toBeLessThanOrEqual(40);
+    expect(validateStoreSlug(slug)).toEqual({ ok: true, slug });
+  });
+});
+
+describe("storeSlugProblem", () => {
+  it("explains each problem in plain words", () => {
+    expect(storeSlugProblem("format")).toBe("Use 3 to 40 lowercase letters, numbers or single hyphens.");
+    expect(storeSlugProblem("reserved")).toBe("This store address is reserved.");
+    expect(storeSlugProblem("taken")).toBe("This store address is already taken.");
   });
 });

@@ -29,7 +29,7 @@ app.use(evlog());
 
 app.use("*", async (c, next) => {
   const db = getDb();
-  const auth = createAuth(db);
+  const auth = createAuth(db, c.executionCtx);
   c.set("db", db);
   c.set("auth", auth);
   const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
@@ -45,7 +45,7 @@ app.use("*", async (c, next) => {
 });
 
 app.use(
-  "/api/store",
+  "/api/store/*",
   tenantMiddleware({ domains, environment }, (c) => ({
     directory: createStoreDirectory(c.get("db")),
     cache: createKvStoreCache(ENV.STORE_CACHE),

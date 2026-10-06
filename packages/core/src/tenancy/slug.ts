@@ -77,3 +77,40 @@ export function validateStoreSlug(input: string): SlugValidation {
   }
   return { ok: true, slug };
 }
+
+const SLUG_MAX_LENGTH = 40;
+const FALLBACK_SUFFIX = "-store";
+
+function trimHyphens(value: string): string {
+  return value.replace(/^-+|-+$/g, "");
+}
+
+// Returns "" when the name has no usable letters or digits; the merchant then types an address.
+export function suggestStoreSlug(name: string): string {
+  const base = trimHyphens(
+    trimHyphens(
+      name
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-"),
+    ).slice(0, SLUG_MAX_LENGTH),
+  );
+  if (!base) return "";
+  if (validateStoreSlug(base).ok) return base;
+  const withSuffix = `${trimHyphens(base.slice(0, SLUG_MAX_LENGTH - FALLBACK_SUFFIX.length))}${FALLBACK_SUFFIX}`;
+  return validateStoreSlug(withSuffix).ok ? withSuffix : "";
+}
+
+export type StoreSlugProblem = "format" | "reserved" | "taken";
+
+export function storeSlugProblem(problem: StoreSlugProblem): string {
+  switch (problem) {
+    case "format":
+      return "Use 3 to 40 lowercase letters, numbers or single hyphens.";
+    case "reserved":
+      return "This store address is reserved.";
+    case "taken":
+      return "This store address is already taken.";
+  }
+}

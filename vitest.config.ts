@@ -12,5 +12,7 @@ export default defineConfig({
     globalSetup: ["./packages/db/src/testing/global-setup.ts"],
     // DB tests share one database, so test files run one at a time.
     fileParallelism: false,
+    // Auth tests hash several passwords with scrypt per test, which can exceed 5s on a loaded machine.
+    testTimeout: 20_000,
   },
 });
