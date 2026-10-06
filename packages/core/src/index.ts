@@ -10,3 +10,4 @@ export * from "./onboarding/setup-steps";
 export * from "./policies/store-policies";
 export * from "./services-teams/types";
 export * from "./services-teams/rates";
+export * from "./services-teams/permissions";
