@@ -1,0 +1,23 @@
+apps/web/src/components/services-team/coming-soon.tsx
+  s_fa99e9105faab4::t_538df5cd9904d9 1-9
+apps/web/src/components/services-team/team-not-found.tsx
+  s_fa99e9105faab4::t_d3c6f6f4ca1415 1-15
+apps/web/src/components/setup-checklist.tsx
+  s_fa99e9105faab4::t_471a15ec734bf4 3,5-28,33,48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39147a8b29b6a168341c9b2757cdeded6aad96c7",
+  "prompts": {},
+  "sessions": {
+    "s_fa99e9105faab4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "1b566a56-bda2-4965-a32e-1d0cac1ee728",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
