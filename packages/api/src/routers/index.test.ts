@@ -2,6 +2,7 @@ import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createTestDb, hasTestDatabase } from "@jendal-workspace/db/testing/db";
 import { afterAll, describe, expect, it } from "vitest";
 
+import { createTestCatalogServices } from "../testing/catalog";
 import { appRouter } from "./index";
 
 describe.skipIf(!hasTestDatabase)("healthCheck", () => {
@@ -10,7 +11,14 @@ describe.skipIf(!hasTestDatabase)("healthCheck", () => {
 
   it("answers OK once the database responds", async () => {
     const { auth } = createTestAuth(db);
-    const caller = appRouter.createCaller({ db, session: null, environment: "sandbox", auth, headers: new Headers() });
+    const caller = appRouter.createCaller({
+      db,
+      session: null,
+      environment: "sandbox",
+      auth,
+      headers: new Headers(),
+      catalog: createTestCatalogServices(),
+    });
 
     await expect(caller.healthCheck()).resolves.toBe("OK");
   });

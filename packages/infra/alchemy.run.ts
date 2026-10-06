@@ -51,6 +51,8 @@ export const Database = Effect.gen(function* () {
 
 export const StoreCache = Cloudflare.KV.Namespace("StoreCache");
 
+export const ProductImages = Cloudflare.R2.Bucket("ProductImages");
+
 const observability = {
   enabled: true,
   logs: { enabled: true, invocationLogs: true },
@@ -80,6 +82,8 @@ export const server = Cloudflare.Worker("server", {
     SMTP_USER: Config.String("SMTP_USER"),
     SMTP_PASS: Config.Redacted("SMTP_PASS"),
     EMAIL_FROM: Config.String("EMAIL_FROM"),
+    PRODUCT_IMAGES: ProductImages,
+    CHANNEL3_API_KEY: Config.Redacted("CHANNEL3_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
   },
   dev: {
     port: ports.api,

@@ -3,6 +3,8 @@ import type { TenantEnvironment } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { PayPalClient } from "@jendal-workspace/paypal";
 
+import type { CatalogServices } from "./catalog/service";
+
 export type PayPalServices = {
   client: PayPalClient;
   partnerId: string;
@@ -20,4 +22,6 @@ export type Context = {
   headers: Headers;
   // Absent in tests and when PayPal is not configured; the paypal router then fails with PRECONDITION_FAILED.
   paypal?: PayPalServices;
+  // Ports the catalog procedures use; fakes in tests, the real adapters from the server app.
+  catalog: CatalogServices;
 };

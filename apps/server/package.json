@@ -12,6 +12,7 @@
     "@hono/trpc-server": "^0.4.2",
     "@jendal-workspace/api": "workspace:*",
     "@jendal-workspace/auth": "workspace:*",
+    "@jendal-workspace/channel3": "workspace:*",
     "@jendal-workspace/core": "workspace:*",
     "@jendal-workspace/db": "workspace:*",
     "@jendal-workspace/email": "workspace:*",

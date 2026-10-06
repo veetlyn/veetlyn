@@ -15,6 +15,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { makeSession } from "../testing";
+import { createTestCatalogServices } from "../testing/catalog";
 import { appRouter } from "./index";
 
 describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
@@ -31,12 +32,20 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       environment: "sandbox",
       auth,
       headers: new Headers(),
+      catalog: createTestCatalogServices(),
     });
 
   async function signedInCaller(email: string) {
     const { headers } = await signUpVerified(auth, db, email);
     const session = await auth.api.getSession({ headers });
-    return appRouter.createCaller({ db, session, environment: "sandbox", auth, headers });
+    return appRouter.createCaller({
+      db,
+      session,
+      environment: "sandbox",
+      auth,
+      headers,
+      catalog: createTestCatalogServices(),
+    });
   }
 
   it("rejects anonymous callers", async () => {

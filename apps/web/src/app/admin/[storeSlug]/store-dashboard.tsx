@@ -13,6 +13,7 @@ import { trpc } from "@/utils/trpc";
 
 export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: string; urlParts: StoreUrlParts }) {
   const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
+  const products = useQuery({ ...trpc.catalog.list.queryOptions({ storeSlug }), retry: false });
 
   if (store.isPending) return <Loader />;
   if (store.isError) return <TeamNotFound />;
@@ -27,8 +28,27 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">{store.data.name}</h1>
       </div>
-      <SetupChecklist steps={setupSteps(store.data, { storefrontUrl: url })} />
+      <SetupChecklist
+        steps={setupSteps(
+          store.data,
+          { storefrontUrl: url, productsUrl: `/${storeSlug}/products` },
+          { productCount: products.data?.length ?? 0 },
+        )}
+      />
       <PayPalConnectCard teamId={store.data.id} />
+      <section className="grid gap-2 border p-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="font-medium">Products</h2>
+          <Link href={`/${storeSlug}/products`} className="text-sm underline underline-offset-4">
+            {products.data && products.data.length > 0
+              ? `Manage ${products.data.length} ${products.data.length === 1 ? "product" : "products"}`
+              : "Add a product"}
+          </Link>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Start from a link or a photo with Channel3, set your prices, and publish when you're ready.
+        </p>
+      </section>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-muted-foreground">Store URL</dt>
         <dd>

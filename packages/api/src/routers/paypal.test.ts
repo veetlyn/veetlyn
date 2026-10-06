@@ -17,6 +17,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { Context, PayPalServices } from "../context";
 import { refreshPayPalOnboarding } from "../paypal/onboarding";
+import { createTestCatalogServices } from "../testing/catalog";
 import { appRouter } from "./index";
 
 type SessionValue = NonNullable<Context["session"]>;
@@ -102,6 +103,7 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
       auth,
       headers: new Headers(),
       paypal,
+      catalog: createTestCatalogServices(),
     });
 
   beforeEach(() => truncateAll(db));
