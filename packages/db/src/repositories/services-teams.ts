@@ -30,6 +30,7 @@ const settingsColumns = {
   quotingMode: servicesTeamSettings.quotingMode,
   payoutMode: servicesTeamSettings.payoutMode,
   settingsSavedAt: servicesTeamSettings.settingsSavedAt,
+  discordGuildId: servicesTeamSettings.discordGuildId,
 };
 
 export async function findServicesTeamBySlug(db: Database, slug: string): Promise<ServicesTeamRecord | null> {
