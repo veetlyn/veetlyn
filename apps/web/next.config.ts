@@ -1,13 +1,7 @@
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
 import { withPwa } from "./pwa.config";
 
-const nextConfig: NextConfig = {
-  typedRoutes: true,
-  reactCompiler: true,
-};
+const nextConfig: NextConfig = {};
 
 export default withPwa(nextConfig);
-
-initOpenNextCloudflareForDev();

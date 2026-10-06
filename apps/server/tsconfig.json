@@ -2,6 +2,8 @@
   "extends": "@jendal-workspace/config/tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
+    // cloudflare-env.d.ts pulls in packages/infra/alchemy.run.ts, which Node loads with explicit .ts imports.
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"]
     },

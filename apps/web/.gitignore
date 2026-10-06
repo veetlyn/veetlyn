@@ -13,6 +13,7 @@
 
 # Build outputs
 /.next/
+/.next-preprod/
 /out/
 /build/
 /dist/
@@ -61,3 +62,4 @@ dev-dist
 
 !.env.schema
 /src/env.ts
+.vinext/

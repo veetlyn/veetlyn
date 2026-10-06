@@ -17,6 +17,10 @@
       "cache": false,
       "persistent": true
     },
+    "dev:preprod": {
+      "cache": false,
+      "persistent": true
+    },
     "db:push": {
       "cache": false,
       "interactive": true
@@ -46,14 +50,16 @@
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
     "CI",
-    "CORS_ORIGIN",
     "DATABASE_URL",
-    "NEXT_PUBLIC_SERVER_URL",
+    "DEV_DATABASE_URL",
     "NODE_ENV",
-    "VERCEL",
-    "VERCEL_ENV",
-    "VERCEL_PROJECT_PRODUCTION_URL",
-    "VERCEL_URL",
+    "PAYPAL_CLIENT_ID",
+    "PAYPAL_CLIENT_SECRET",
+    "PAYPAL_ENVIRONMENT",
+    "PLATFORM_DOMAIN",
+    "STORE_DOMAIN",
+    "TUNNEL_DOMAIN",
+    "TUNNEL_STAGE",
     "_VARLOCK_ENV_KEY"
   ],
   "globalDependencies": [".env*", "apps/*/.env*", "packages/*/.env*"]

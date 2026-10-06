@@ -8,14 +8,17 @@
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:preprod": "turbo run dev:preprod -F @jendal-workspace/infra",
+    "tunnel": "pnpm -F @jendal-workspace/infra tunnel",
+    "tunnel:setup": "pnpm -F @jendal-workspace/infra tunnel:setup",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
-    "dev:web": "turbo run dev:bare -F web --",
-    "dev:server": "turbo run dev:bare -F hono --",
+    "test": "vitest run",
     "db:push": "turbo run db:push -F @jendal-workspace/db --",
     "db:studio": "turbo run db:studio -F @jendal-workspace/db --",
     "db:generate": "turbo run db:generate -F @jendal-workspace/db --",
     "db:migrate": "turbo run db:migrate -F @jendal-workspace/db --",
+    "db:migrate:dev": "pnpm -F @jendal-workspace/infra db:migrate:dev",
     "deploy": "turbo run deploy -F @jendal-workspace/infra --",
     "destroy": "turbo run destroy -F @jendal-workspace/infra --",
     "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",
@@ -30,7 +33,8 @@
     "@types/node": "catalog:",
     "turbo": "^2.10.12",
     "typescript": "catalog:",
-    "varlock": "catalog:"
+    "varlock": "catalog:",
+    "vitest": "^5.0.3"
   },
   "packageManager": "pnpm@10.30.2"
 }

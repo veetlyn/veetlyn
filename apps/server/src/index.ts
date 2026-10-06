@@ -1,54 +1,68 @@
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
+import type { TenantEnvironment } from "@jendal-workspace/core";
+import { createStoreDirectory } from "@jendal-workspace/db/repositories/stores";
 import { initLogger } from "evlog";
 import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
-import { evlog, type EvlogVariables } from "evlog/hono";
+import { evlog } from "evlog/hono";
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 
+import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
 import { ENV } from "./env.server";
-import { createAuth } from "./services";
+import { storeInfoRoute } from "./routes/store-info";
+import { createAuth, getDb } from "./services";
+import { createKvStoreCache } from "./tenant/kv-store-cache";
+import { tenantMiddleware } from "./tenant/middleware";
 
 initLogger({
-  env: { service: "jendal-workspace-server" },
+  env: { service: "jendal-api" },
 });
 
-const identifyUser = createAuthMiddleware((await createAuth()) as BetterAuthInstance, {
-  exclude: ["/api/auth/**"],
-  maskEmail: true,
-});
+const environment: TenantEnvironment = ENV.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
 
-const app = new Hono<EvlogVariables>();
+const domains = { platformDomain: ENV.PLATFORM_DOMAIN, storeDomain: ENV.STORE_DOMAIN || ENV.PLATFORM_DOMAIN };
+
+const app = new Hono<AppEnv>();
 
 app.use(evlog());
+
 app.use("*", async (c, next) => {
-  await identifyUser(c.get("log"), c.req.raw.headers, c.req.path);
-  await next();
+  const db = getDb();
+  const auth = createAuth(db);
+  c.set("db", db);
+  c.set("auth", auth);
+  const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
+    exclude: ["/api/auth/**"],
+    maskEmail: true,
+  });
+  try {
+    await identifyUser(c.get("log"), c.req.raw.headers, c.req.path);
+    await next();
+  } finally {
+    c.executionCtx.waitUntil(db.$client.end());
+  }
 });
 
 app.use(
-  "/*",
-  cors({
-    origin: ENV.CORS_ORIGIN,
-    allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  }),
+  "/api/store",
+  tenantMiddleware({ domains, environment }, (c) => ({
+    directory: createStoreDirectory(c.get("db")),
+    cache: createKvStoreCache(ENV.STORE_CACHE),
+  })),
 );
 
-app.on(["POST", "GET"], "/api/auth/*", async (c) => (await createAuth()).handler(c.req.raw));
+app.on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw));
 
-app.use(
-  "/trpc/*",
+app.use("/trpc/*", (c, next) =>
   trpcServer({
     endpoint: "/trpc",
     router: appRouter,
-    createContext: (_opts, context) => {
-      return createContext({ context });
-    },
-  }),
+    createContext: () => createContext(c, environment),
+  })(c, next),
 );
+
+app.route("/", storeInfoRoute);
 
 app.get("/", (c) => {
   return c.text("OK");

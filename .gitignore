@@ -45,6 +45,9 @@ lerna-debug.log*
 
 # Better-T-Stack
 .alchemy
+
+# Generated cloudflared config (pnpm tunnel)
+.tunnel
 .vercel
 
 # Testing

@@ -1,5 +1,7 @@
+import type { Auth } from "@jendal-workspace/auth";
+import { inferOrgAdditionalFields, organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_SERVER_URL!,
+  plugins: [organizationClient({ teams: { enabled: true }, schema: inferOrgAdditionalFields<Auth>() })],
 });
