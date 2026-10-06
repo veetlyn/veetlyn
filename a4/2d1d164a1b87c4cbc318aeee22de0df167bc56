@@ -1,0 +1,21 @@
+apps/web/src/lib/paypal-status.test.ts
+  s_c0209e681a81c3::t_a37550149a8b3e 18
+apps/web/src/lib/paypal-status.ts
+  s_c0209e681a81c3::t_c21828ddc82831 63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a42d1d164a1b87c4cbc318aeee22de0df167bc56",
+  "prompts": {},
+  "sessions": {
+    "s_c0209e681a81c3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "94c5da88-cd98-4c69-a30a-9d8d65bb6cdb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
