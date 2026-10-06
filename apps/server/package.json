@@ -6,6 +6,7 @@
     "build": "tsdown",
     "check-types": "tsc --noEmit",
     "compile": "bun build --compile --no-compile-autoload-dotenv --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+    "discord:register": "varlock run -- bun src/discord/register.ts",
     "env:generate": "varlock codegen"
   },
   "dependencies": {
