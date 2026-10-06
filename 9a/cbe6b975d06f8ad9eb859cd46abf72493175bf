@@ -1,0 +1,33 @@
+apps/web/src/components/paypal-connect-card.tsx
+  s_fa99e9105faab4::t_5548dece394b68 1-87
+apps/web/src/lib/paypal-status.test.ts
+  s_fa99e9105faab4::t_208557a94d3cb4 1-75
+apps/web/src/lib/paypal-status.ts
+  s_fa99e9105faab4::t_d18f725902c535 1-68
+apps/web/src/app/admin/[storeSlug]/store-dashboard.tsx
+  s_fa99e9105faab4::t_fe14e8926956e2 8
+  s_fa99e9105faab4::t_99c5e620114eda 31
+packages/db/src/migrations/20261006125722_s3_paypal_onboarding/snapshot.json
+  h_6877e5e7a06bc5 4,6,75-86,938-950,1172-1327,1689-1709,1880-1930,2058-2077,2088-2099
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9acbe6b975d06f8ad9eb859cd46abf72493175bf",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_fa99e9105faab4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "1b566a56-bda2-4965-a32e-1d0cac1ee728",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
