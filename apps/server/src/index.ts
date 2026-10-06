@@ -9,6 +9,7 @@ import { Hono } from "hono";
 
 import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
+import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
@@ -66,6 +67,7 @@ app.use("/trpc/*", (c, next) =>
 
 app.route("/api/paypal/onboarding/return", createPayPalOnboardingRoute(getPayPalServices()));
 
+app.route("/", discordRoute);
 app.route("/", storeInfoRoute);
 app.route("/", createCatalogImagesRoute(ENV.PRODUCT_IMAGES));
 

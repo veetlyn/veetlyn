@@ -386,3 +386,55 @@ describe.skipIf(!hasTestDatabase)("Log in with PayPal", () => {
     expect(url.searchParams.get("scope")).toContain("openid");
   });
 });
+
+describe.skipIf(!hasTestDatabase)("Discord sign-in and linking", () => {
+  const db = createTestDb();
+  const { auth } = createTestAuth(db);
+
+  beforeEach(() => truncateAll(db));
+  afterAll(() => db.$client.end());
+
+  it("starts Discord sign-in at Discord's authorize page with the identify and email scopes", async () => {
+    const { url } = await auth.api.signInSocial({ body: { provider: "discord", disableRedirect: true } });
+
+    const parsed = new URL(url ?? "");
+    expect(parsed.origin + parsed.pathname).toBe("https://discord.com/api/oauth2/authorize");
+    expect(parsed.searchParams.get("scope")).toBe("identify email");
+    expect(parsed.searchParams.get("redirect_uri")).toBe(`${BASE}/api/auth/callback/discord`);
+    expect(parsed.searchParams.get("client_id")).toBe("discord-client-id");
+  });
+
+  it("starts linking for a signed-in user", async () => {
+    const { headers } = await signUpVerified(auth, db, "ada@example.com");
+
+    const result = await auth.api.linkSocialAccount({
+      body: {
+        provider: "discord",
+        callbackURL: "/account",
+        errorCallbackURL: "/account?error=discord",
+        disableRedirect: true,
+      },
+      headers,
+    });
+
+    const parsed = new URL(result.url ?? "");
+    expect(parsed.origin + parsed.pathname).toBe("https://discord.com/api/oauth2/authorize");
+    expect(parsed.searchParams.get("redirect_uri")).toBe(`${BASE}/api/auth/callback/discord`);
+  });
+
+  it("requires a session to link Discord", async () => {
+    // linkSocial requires headers (Fact 11); empty ones reach the session check.
+    await expect(
+      auth.api.linkSocialAccount({ body: { provider: "discord", disableRedirect: true }, headers: new Headers() }),
+    ).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+  });
+
+  it("lets a signed-in user link a different email but trusts no provider for implicit linking", async () => {
+    const context = await auth.$context;
+
+    expect(context.options.account?.accountLinking?.allowDifferentEmails).toBe(true);
+    // A trusted provider would link a Discord or PayPal sign-in to any Payleor user with the same,
+    // possibly unverified, provider email (Fact 22).
+    expect(context.trustedProviders).toEqual([]);
+  });
+});

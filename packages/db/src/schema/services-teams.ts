@@ -43,4 +43,24 @@ export const servicesTeamSettings = pgTable("services_team_settings", {
     .default("manual")
     .notNull(),
   settingsSavedAt: timestamp("settings_saved_at"),
+  // S2: the guild this team is linked to; one server per team and one team per server (unique).
+  discordGuildId: text("discord_guild_id").unique(),
 });
+
+// S2: a one-time code an admin creates in the team admin and runs as /payleor link in their server
+// (services spec §4.2); consumed by deleting it (see the discord repository).
+export const discordLinkCode = pgTable(
+  "discord_link_code",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => team.id, { onDelete: "cascade" }),
+    code: text("code").notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("discord_link_code_teamId_idx").on(table.teamId)],
+);

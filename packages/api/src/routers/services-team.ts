@@ -7,6 +7,7 @@ import {
   teamSlugProblem,
   validateStoreSlug,
 } from "@jendal-workspace/core";
+import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
 import {
   addServicesTeamMember,
   findUserByEmail,
@@ -102,6 +103,12 @@ export const servicesTeamRouter = router({
       });
       return { ...saved, settingsSavedAt: isoOrNull(saved.settingsSavedAt) };
     }),
+
+  createDiscordLinkCode: servicesTeamProcedure.mutation(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "manage_connections", "Only an admin can link the Discord server.");
+    const { code, expiresAt } = await createDiscordLinkCode(ctx.db, ctx.servicesTeam.id);
+    return { code, expiresAt: expiresAt.toISOString() };
+  }),
 
   listMembers: servicesTeamProcedure.query(async ({ ctx }) => {
     requireAction(ctx.servicesTeamRole, "view_members", "Only managers and admins can see the member list.");

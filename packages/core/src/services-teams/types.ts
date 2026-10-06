@@ -29,6 +29,8 @@ export type ServicesTeamSettings = {
   payoutMode: PayoutMode;
   // Null until an admin saves the settings once; the setup checklist reads it.
   settingsSavedAt: Date | null;
+  // S2: the guild this team is linked to; unique across teams (one server per team, one team per server).
+  discordGuildId: string | null;
 };
 
 export type ServicesTeamSettingsInput = Pick<
@@ -48,6 +50,7 @@ export function defaultServicesTeamSettings(teamId: string): ServicesTeamSetting
     quotingMode: "assigned",
     payoutMode: "manual",
     settingsSavedAt: null,
+    discordGuildId: null,
   };
 }
 

@@ -11,6 +11,8 @@ export const TEST_AUTH_CONFIG: AuthConfig = {
   PAYPAL_CLIENT_ID: "sandbox-client-id",
   PAYPAL_CLIENT_SECRET: "sandbox-client-secret",
   PAYPAL_ENVIRONMENT: "sandbox",
+  DISCORD_CLIENT_ID: "discord-client-id",
+  DISCORD_CLIENT_SECRET: "discord-client-secret",
 };
 
 export const TEST_PASSWORD = "correct-horse-battery";

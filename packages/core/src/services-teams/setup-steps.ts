@@ -1,6 +1,6 @@
 import type { SetupStep } from "../onboarding/setup-steps";
 
-// Later plans add the missing links: S3 Connect PayPal, the payouts plan credentials, S2 Discord.
+// Later plans add the missing links: S3 Connect PayPal, the payouts plan credentials.
 // A step without a link renders as plain text (the checklist shows it as not yet available).
 export type ServicesTeamSetupLinks = {
   settings: string;
@@ -14,7 +14,7 @@ function step(id: string, label: string, done: boolean, href?: string): SetupSte
 }
 
 export function servicesTeamSetupSteps(
-  state: { paypalMerchantId: string | null; settingsSaved: boolean },
+  state: { paypalMerchantId: string | null; settingsSaved: boolean; discordGuildId: string | null },
   links: ServicesTeamSetupLinks,
 ): SetupStep[] {
   return [
@@ -22,6 +22,6 @@ export function servicesTeamSetupSteps(
     step("set-rates", "Set your rates", state.settingsSaved, links.settings),
     step("connect-paypal", "Connect PayPal", state.paypalMerchantId !== null, links.connectPaypal),
     step("add-payout-credentials", "Add payout credentials", false, links.payoutCredentials),
-    step("link-discord", "Link Discord", false, links.linkDiscord),
+    step("link-discord", "Link Discord", state.discordGuildId !== null, links.linkDiscord),
   ];
 }

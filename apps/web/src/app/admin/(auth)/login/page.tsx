@@ -3,6 +3,7 @@ import Link from "next/link";
 import AuthCard from "@/components/auth/auth-card";
 import OrDivider from "@/components/auth/or-divider";
 import SignInForm from "@/components/auth/sign-in-form";
+import DiscordSignInButton from "@/components/discord-sign-in-button";
 import PayPalSignInButton from "@/components/paypal-sign-in-button";
 import { getPlatformOrigins } from "@/lib/server-api";
 
@@ -39,6 +40,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <SignInForm siteOrigin={origins.site} />
       <OrDivider />
       <PayPalSignInButton label="Log in with PayPal" />
+      <DiscordSignInButton label="Continue with Discord" />
     </AuthCard>
   );
 }
