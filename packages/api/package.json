@@ -16,11 +16,11 @@
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "better-auth": "catalog:",
+    "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@jendal-workspace/config": "workspace:*",
-    "drizzle-orm": "catalog:",
     "typescript": "catalog:"
   }
 }
