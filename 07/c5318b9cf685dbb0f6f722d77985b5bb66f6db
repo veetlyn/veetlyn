@@ -1,0 +1,41 @@
+apps/server/src/catalog/image-downloader.test.ts
+  s_0cb84cc6e370cf::t_b44e325c69be15 1-43
+apps/server/src/catalog/image-downloader.ts
+  s_0cb84cc6e370cf::t_12469b61ac85d1 1-22
+apps/server/src/catalog/image-store.test.ts
+  s_0cb84cc6e370cf::t_6f8b48aca39b63 1-41
+apps/server/src/catalog/image-store.ts
+  s_0cb84cc6e370cf::t_cfad180115d86f 1-20
+apps/server/src/catalog/text-cache.test.ts
+  s_0cb84cc6e370cf::t_21df49b168ec39 1-29
+apps/server/src/catalog/text-cache.ts
+  s_0cb84cc6e370cf::t_8a13cf725dd106 1-15
+apps/server/src/routes/catalog-images.test.ts
+  s_fa99e9105faab4::t_e70ae3bc6a5003 1-112
+apps/server/src/routes/catalog-images.ts
+  s_0cb84cc6e370cf::t_80a0fd4455b2cc 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "07c5318b9cf685dbb0f6f722d77985b5bb66f6db",
+  "prompts": {},
+  "sessions": {
+    "s_0cb84cc6e370cf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "016e6666-774e-4a33-8c16-82bf46d5ad79",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_fa99e9105faab4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "1b566a56-bda2-4965-a32e-1d0cac1ee728",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
