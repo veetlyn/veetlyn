@@ -8,6 +8,7 @@ import {
   parseMajorAmount,
   projectStatusLabel,
   quoteAuthor,
+  quoteAuthorRefusalMessage,
   quoteTotalMinor,
   type MoneyCurrency,
   type QuoteItemDraft,
@@ -153,15 +154,14 @@ export default function ProjectDetail({
   const pendingAmendment = amendments.find((a) => a.status === "pending");
   const days = Number(deliveryDays);
   const quoteItems = parseRows(quoteRows);
-  const canQuote =
-    project.status === "quoting" &&
-    quoteAuthor({
-      role,
-      actorId: viewerId,
-      quotingMode,
-      assignedFreelancerId: project.assignedFreelancerId,
-      freelancerId: quoteFreelancerId || null,
-    }).ok;
+  const author = quoteAuthor({
+    role,
+    actorId: viewerId,
+    quotingMode,
+    assignedFreelancerId: project.assignedFreelancerId,
+    freelancerId: quoteFreelancerId || null,
+  });
+  const canQuote = project.status === "quoting" && author.ok;
   // Staff name the freelancer in team mode and in open mode; only assigned mode implies them.
   const needsFreelancerName = role !== "freelancer" && quotingMode !== "assigned";
 
@@ -280,6 +280,8 @@ export default function ProjectDetail({
             ) : (
               <p className="text-sm text-destructive">Each line needs a description and an amount above zero.</p>
             )}
+            {/* Without this, Send quote stays disabled with no reason given (for example, nobody assigned yet). */}
+            {!author.ok ? <p className="text-sm text-muted-foreground">{quoteAuthorRefusalMessage(author.reason)}</p> : null}
             {addQuote.error ? <p className="text-sm text-destructive">{addQuote.error.message}</p> : null}
           </form>
         ) : null}
