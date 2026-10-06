@@ -1,0 +1,24 @@
+apps/server/src/trpc-error-log.ts
+  s_c0209e681a81c3::t_e8dc4936f3bdd5 1-32
+apps/server/src/index.ts
+  s_c0209e681a81c3::t_2413d39677ad38 20
+  s_c0209e681a81c3::t_82a0a6e6bc3b1e 66-69
+apps/server/src/trpc-error-log.test.ts
+  s_c0209e681a81c3::t_d9624c68cbd354 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68947f7d4b4594ffbd188aefb1ae9eceb6436923",
+  "prompts": {},
+  "sessions": {
+    "s_c0209e681a81c3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "94c5da88-cd98-4c69-a30a-9d8d65bb6cdb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
