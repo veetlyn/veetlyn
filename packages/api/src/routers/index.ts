@@ -2,6 +2,7 @@ import { pingDatabase } from "@jendal-workspace/db/health";
 
 import { publicProcedure, router } from "../index";
 import { catalogRouter } from "./catalog";
+import { payoutDestinationRouter } from "./payout-destination";
 import { paypalRouter } from "./paypal";
 import { projectRouter } from "./project";
 import { servicesTeamRouter } from "./services-team";
@@ -13,6 +14,7 @@ export const appRouter = router({
     return "OK";
   }),
   catalog: catalogRouter,
+  payoutDestination: payoutDestinationRouter,
   paypal: paypalRouter,
   project: projectRouter,
   servicesTeam: servicesTeamRouter,
