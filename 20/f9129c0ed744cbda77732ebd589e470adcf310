@@ -1,0 +1,23 @@
+packages/infra/alchemy.run.ts
+  s_e52545ee672940::t_561f4581636900 80-84
+turbo.json
+  s_e52545ee672940::t_538fc277e95699 57-61
+apps/server/.env.schema
+  s_e52545ee672940::t_78317e2dd1b6b6 54,68-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "20f9129c0ed744cbda77732ebd589e470adcf310",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}

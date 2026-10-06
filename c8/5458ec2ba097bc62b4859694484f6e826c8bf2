@@ -1,0 +1,23 @@
+packages/auth/src/index.test.ts
+  s_e52545ee672940::t_d8a945f58a3514 389-440
+packages/auth/src/index.ts
+  s_e52545ee672940::t_13678c6cb8e8d8 20-21,128-140
+packages/auth/src/testing.ts
+  s_e52545ee672940::t_81d0744928d5a9 14-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c85458ec2ba097bc62b4859694484f6e826c8bf2",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
