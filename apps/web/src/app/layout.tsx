@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Payleor",
-  description: "Agentic commerce on PayPal",
+  description: "Stores and services teams, paid through PayPal",
 };
 
 export default function RootLayout({
