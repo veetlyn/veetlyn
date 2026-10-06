@@ -105,6 +105,9 @@ importers:
       '@jendal-workspace/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@jendal-workspace/channel3':
+        specifier: workspace:*
+        version: link:../../packages/channel3
       '@jendal-workspace/core':
         specifier: workspace:*
         version: link:../../packages/core

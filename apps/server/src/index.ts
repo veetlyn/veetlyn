@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
 import { ENV } from "./env.server";
+import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { storeInfoRoute } from "./routes/store-info";
 import { createAuth, getDb, getPayPalServices } from "./services";
@@ -66,6 +67,7 @@ app.use("/trpc/*", (c, next) =>
 app.route("/api/paypal/onboarding/return", createPayPalOnboardingRoute(getPayPalServices()));
 
 app.route("/", storeInfoRoute);
+app.route("/", createCatalogImagesRoute(ENV.PRODUCT_IMAGES));
 
 app.get("/", (c) => {
   return c.text("OK");
