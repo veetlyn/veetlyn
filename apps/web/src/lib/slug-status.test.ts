@@ -30,4 +30,15 @@ describe("slugStatus", () => {
       text: "This store address is reserved.",
     });
   });
+
+  it("words the problems for services teams", () => {
+    expect(slugStatus("acme", { status: "taken", slug: "acme" }, url, "services")).toEqual({
+      tone: "problem",
+      text: "This team address is already taken.",
+    });
+    expect(slugStatus("login", { status: "invalid", reason: "reserved" }, url, "services")).toEqual({
+      tone: "problem",
+      text: "This team address is reserved.",
+    });
+  });
 });
