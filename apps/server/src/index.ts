@@ -17,6 +17,7 @@ import { storeInfoRoute } from "./routes/store-info";
 import { createAuth, getDb, getPayPalServices } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 import { tenantMiddleware } from "./tenant/middleware";
+import { trpcErrorContext } from "./trpc-error-log";
 
 initLogger({
   env: { service: "jendal-api" },
@@ -62,6 +63,10 @@ app.use("/trpc/*", (c, next) =>
     endpoint: "/trpc",
     router: appRouter,
     createContext: () => createContext(c, environment),
+    onError: ({ error, path }) => {
+      const context = trpcErrorContext(error, path);
+      if (context) c.get("log").error(context.error, context.fields);
+    },
   })(c, next),
 );
 
