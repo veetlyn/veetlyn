@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { storeSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
+import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { createServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
 import { type EmailMessage, type Mailer, passwordResetEmail, verificationEmail } from "@jendal-workspace/email";
@@ -30,9 +31,11 @@ export type AuthServices = {
 
 const ONE_HOUR_IN_SECONDS = 60 * 60;
 
-// A store is a team (spec §4.1). Fields with input: false are set by our own code only.
-const storeFields = {
+// A store or a services team is a Better Auth team (services spec §3). Fields with input: false are set by our own
+// code only; product must be settable at creation, so it is input: true, and the hooks keep it valid.
+const teamFields = {
   slug: { type: "string", required: true, unique: true, input: true },
+  product: { type: "string", required: false, defaultValue: "store", input: true },
   status: { type: "string", required: true, defaultValue: "draft", input: false },
   paypalMerchantId: { type: "string", required: false, unique: true, input: false },
   supportEmail: { type: "string", required: false, input: false },
@@ -42,17 +45,17 @@ const userFields = {
   acceptedTermsAt: { type: "date", required: false, input: false },
 } as const;
 
-async function claimStoreSlug(database: Database, input: unknown): Promise<string> {
+async function claimTeamSlug(database: Database, input: unknown, product: TeamProduct): Promise<string> {
   const result = validateStoreSlug(typeof input === "string" ? input : "");
   if (!result.ok) {
     throw new APIError("BAD_REQUEST", {
-      code: result.reason === "reserved" ? "STORE_SLUG_RESERVED" : "STORE_SLUG_INVALID",
-      message: storeSlugProblem(result.reason),
+      code: result.reason === "reserved" ? "TEAM_SLUG_RESERVED" : "TEAM_SLUG_INVALID",
+      message: teamSlugProblem(result.reason, product),
     });
   }
-  // The unique index on team.slug still guards against a concurrent claim.
+  // The unique index on team.slug still guards against a concurrent claim; stores and services teams share it.
   if (await isStoreSlugTaken(database, result.slug)) {
-    throw new APIError("CONFLICT", { code: "STORE_SLUG_TAKEN", message: storeSlugProblem("taken") });
+    throw new APIError("CONFLICT", { code: "TEAM_SLUG_TAKEN", message: teamSlugProblem("taken", product) });
   }
   return result.slug;
 }
@@ -127,22 +130,44 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
       organization({
         // A store needs a slug, so no team is created automatically with an organization.
         teams: { enabled: true, defaultTeam: { enabled: false } },
-        schema: { team: { additionalFields: storeFields } },
+        schema: { team: { additionalFields: teamFields } },
         organizationHooks: {
-          beforeCreateTeam: async ({ team, user }) => ({
-            data: {
-              slug: await claimStoreSlug(database, team.slug),
-              status: "draft",
-              paypalMerchantId: null,
-              supportEmail: user?.email ?? null,
-            },
-          }),
+          beforeCreateTeam: async ({ team, user }) => {
+            if (team.product !== undefined && team.product !== null && !isTeamProduct(team.product)) {
+              throw new APIError("BAD_REQUEST", {
+                code: "TEAM_PRODUCT_INVALID",
+                message: "A team's product is 'store' or 'services'.",
+              });
+            }
+            const product: TeamProduct = team.product === "services" ? "services" : "store";
+            const slug = await claimTeamSlug(database, team.slug, product);
+            // The store columns stay on every team (contract §4.2); services teams never read them.
+            return {
+              data: {
+                slug,
+                product,
+                status: "draft",
+                paypalMerchantId: null,
+                supportEmail: product === "store" ? (user?.email ?? null) : null,
+              },
+            };
+          },
+          afterCreateTeam: async ({ team }) => {
+            if (team.product === "services") await createServicesTeamSettings(database, team.id);
+          },
           // Store URLs and the KV cache are keyed by slug, so slugs cannot change until W1-C adds invalidation.
+          // A team's product picks its repository filters and dashboard; changing it would strand its data.
           beforeUpdateTeam: async ({ team, updates }) => {
             if (updates.slug !== undefined && updates.slug !== team.slug) {
               throw new APIError("BAD_REQUEST", {
-                code: "STORE_SLUG_IMMUTABLE",
-                message: "A store address cannot be changed.",
+                code: "TEAM_SLUG_IMMUTABLE",
+                message: "A team address cannot be changed.",
+              });
+            }
+            if (updates.product !== undefined && updates.product !== team.product) {
+              throw new APIError("BAD_REQUEST", {
+                code: "TEAM_PRODUCT_IMMUTABLE",
+                message: "A team's product cannot be changed.",
               });
             }
           },

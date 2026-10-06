@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
+import TeamNotFound from "@/components/services-team/team-not-found";
 import SetupChecklist from "@/components/setup-checklist";
 import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
@@ -13,16 +14,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
   const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
 
   if (store.isPending) return <Loader />;
-  if (store.isError) {
-    return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <h1 className="text-2xl font-semibold">Store not found</h1>
-        <Link href="/" className="underline">
-          Back to your stores
-        </Link>
-      </main>
-    );
-  }
+  if (store.isError) return <TeamNotFound />;
 
   const url = storeUrl(store.data.slug, urlParts);
 

@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { type PlatformOrigins, platformOrigins } from "./platform-url";
 import { type StoreUrlParts, storeUrlParts } from "./store-url";
+import { mergeWorkspaces, type WorkspaceOrganization } from "./workspaces";
 
 async function requestHost(): Promise<string> {
   return (await headers()).get("host") ?? "";
@@ -66,6 +67,7 @@ const myStoresSchema = z.object({
       z.object({
         id: z.string(),
         name: z.string(),
+        role: z.string(),
         canCreateStores: z.boolean(),
         stores: z.array(z.object({ id: z.string(), slug: z.string(), name: z.string(), status: z.string() })),
       }),
@@ -78,6 +80,42 @@ export async function listMyStores(): Promise<MyOrganization[]> {
   const response = await callApiAsUser("/trpc/store.listMine");
   if (!response.ok) throw new Error(`store.listMine answered ${response.status}`);
   return myStoresSchema.parse(await response.json()).result.data;
+}
+
+const myServicesTeamsSchema = z.object({
+  result: z.object({
+    data: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        role: z.string(),
+        servicesTeams: z.array(
+          z.object({ id: z.string(), slug: z.string(), name: z.string(), role: z.string() }),
+        ),
+      }),
+    ),
+  }),
+});
+export type MyServicesTeamOrganization = z.infer<typeof myServicesTeamsSchema>["result"]["data"][number];
+
+export async function listMyServicesTeams(): Promise<MyServicesTeamOrganization[]> {
+  const response = await callApiAsUser("/trpc/servicesTeam.listMine");
+  if (!response.ok) throw new Error(`servicesTeam.listMine answered ${response.status}`);
+  return myServicesTeamsSchema.parse(await response.json()).result.data;
+}
+
+// The workspace home shows stores and services teams together (services spec §9).
+export async function listMyWorkspaces(): Promise<WorkspaceOrganization[]> {
+  const [stores, servicesTeams] = await Promise.all([listMyStores(), listMyServicesTeams()]);
+  return mergeWorkspaces(stores, servicesTeams);
+}
+
+// tRPC speaks plain JSON here (no transformer), so the input is the raw JSON of the procedure input.
+export async function isServicesTeamSlug(slug: string): Promise<boolean> {
+  const input = encodeURIComponent(JSON.stringify({ teamSlug: slug }));
+  const response = await callApiAsUser(`/trpc/servicesTeam.get?input=${input}`);
+  // Unknown slugs, stores and outsiders all answer with an error; only "this is your services team" is ok.
+  return response.ok;
 }
 
 const storePolicyInfoSchema = z.object({

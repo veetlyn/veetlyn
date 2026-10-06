@@ -1,4 +1,4 @@
-import { storeSlugProblem } from "@jendal-workspace/core";
+import { type TeamProduct, teamSlugProblem } from "@jendal-workspace/core";
 
 export type SlugCheckResult =
   | { status: "available"; slug: string }
@@ -11,16 +11,17 @@ export type SlugStatus = { tone: "pending" | "available" | "problem"; text: stri
 export function slugStatus(
   slug: string,
   result: SlugCheckResult | undefined,
-  storeUrl: (slug: string) => string,
+  teamUrl: (slug: string) => string,
+  product: TeamProduct = "store",
 ): SlugStatus | null {
   if (!slug) return null;
   if (!result) return { tone: "pending", text: "Checking the address…" };
   switch (result.status) {
     case "available":
-      return { tone: "available", text: `${storeUrl(result.slug)} is available.` };
+      return { tone: "available", text: `${teamUrl(result.slug)} is available.` };
     case "taken":
-      return { tone: "problem", text: storeSlugProblem("taken") };
+      return { tone: "problem", text: teamSlugProblem("taken", product) };
     case "invalid":
-      return { tone: "problem", text: storeSlugProblem(result.reason) };
+      return { tone: "problem", text: teamSlugProblem(result.reason, product) };
   }
 }

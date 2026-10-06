@@ -14,14 +14,25 @@ const storeColumns = {
   paypalMerchantId: team.paypalMerchantId,
 };
 
+// Services teams share the team table and the slug namespace, but never resolve as stores.
+const isStore = () => eq(team.product, "store");
+
 export function createStoreDirectory(db: Database): StoreDirectory {
   return {
     async findById(id) {
-      const [row] = await db.select(storeColumns).from(team).where(eq(team.id, id)).limit(1);
+      const [row] = await db
+        .select(storeColumns)
+        .from(team)
+        .where(and(eq(team.id, id), isStore()))
+        .limit(1);
       return row ?? null;
     },
     async findBySlug(slug) {
-      const [row] = await db.select(storeColumns).from(team).where(eq(team.slug, slug)).limit(1);
+      const [row] = await db
+        .select(storeColumns)
+        .from(team)
+        .where(and(eq(team.slug, slug), isStore()))
+        .limit(1);
       return row ?? null;
     },
     async findByHostname(hostname) {
@@ -29,7 +40,7 @@ export function createStoreDirectory(db: Database): StoreDirectory {
         .select(storeColumns)
         .from(storeDomains)
         .innerJoin(team, eq(storeDomains.storeId, team.id))
-        .where(and(eq(storeDomains.hostname, hostname), eq(storeDomains.status, "active")))
+        .where(and(eq(storeDomains.hostname, hostname), eq(storeDomains.status, "active"), isStore()))
         .limit(1);
       return row ?? null;
     },
@@ -53,7 +64,7 @@ export async function findStoreAccess(
     .from(team)
     .innerJoin(member, and(eq(member.organizationId, team.organizationId), eq(member.userId, input.userId)))
     .leftJoin(teamMember, and(eq(teamMember.teamId, team.id), eq(teamMember.userId, input.userId)))
-    .where(eq(team.slug, input.slug))
+    .where(and(eq(team.slug, input.slug), isStore()))
     .limit(1);
   if (!row) return null;
   const { role, teamMemberId, ...store } = row;
@@ -77,7 +88,7 @@ export async function listOrganizationsWithStores(db: Database, userId: string):
     })
     .from(member)
     .innerJoin(organization, eq(organization.id, member.organizationId))
-    .leftJoin(team, eq(team.organizationId, organization.id))
+    .leftJoin(team, and(eq(team.organizationId, organization.id), isStore()))
     .leftJoin(teamMember, and(eq(teamMember.teamId, team.id), eq(teamMember.userId, userId)))
     .where(eq(member.userId, userId))
     // Ordering by name keeps the dashboard list stable; created_at can tie within a millisecond.

@@ -12,35 +12,8 @@ import { team } from "@jendal-workspace/db/schema/organization";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import type { Context } from "../context";
+import { makeSession } from "../testing";
 import { appRouter } from "./index";
-
-type SessionValue = NonNullable<Context["session"]>;
-
-function makeSession(userId: string): SessionValue {
-  const now = new Date();
-  return {
-    session: {
-      id: "session-1",
-      token: "token-1",
-      userId,
-      expiresAt: new Date(now.getTime() + 60_000),
-      createdAt: now,
-      updatedAt: now,
-      ipAddress: null,
-      userAgent: null,
-    },
-    user: {
-      id: userId,
-      name: "Someone",
-      email: `${userId}@example.com`,
-      emailVerified: true,
-      image: null,
-      createdAt: now,
-      updatedAt: now,
-    },
-  };
-}
 
 describe.skipIf(!hasTestDatabase)("store router", () => {
   const db = createTestDb();
@@ -190,6 +163,15 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
       message: "This store address is reserved.",
     });
     await expect(caller.store.listMine()).resolves.toEqual([]);
+  });
+
+  it("creates stores with the store product", async () => {
+    const caller = await signedInCaller();
+
+    await caller.store.create({ name: "Acme", slug: "acme" });
+
+    const [row] = await db.select().from(team).where(eq(team.slug, "acme"));
+    expect(row?.product).toBe("store");
   });
 
   it("rejects anonymous callers", async () => {
