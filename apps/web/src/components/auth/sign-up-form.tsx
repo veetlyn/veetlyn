@@ -36,7 +36,8 @@ export default function SignUpForm({ siteOrigin }: { siteOrigin: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    // method="post": a submit before hydration would otherwise be a native GET that puts the password in the URL.
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
       <TextField id="name" name="name" label="Your name" autoComplete="name" required minLength={2} />
       <TextField id="email" name="email" label="Email" type="email" autoComplete="email" required />
       <TextField
