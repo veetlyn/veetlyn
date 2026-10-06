@@ -13,8 +13,7 @@ const TONE_CLASS = {
   problem: "text-destructive",
 } as const;
 
-// Generic PayPal connection card, keyed by team id: the store dashboard mounts it, and S1
-// mounts the same component on the services dashboard without changes.
+// Generic PayPal connection card, keyed by team id: the store and services team dashboards mount it.
 export default function PayPalConnectCard({ teamId }: { teamId: string }) {
   const queryClient = useQueryClient();
   const status = useQuery({ ...trpc.paypal.onboardingStatus.queryOptions({ teamId, refresh: false }), retry: false });
@@ -42,11 +41,13 @@ export default function PayPalConnectCard({ teamId }: { teamId: string }) {
       queryClient.setQueryData(trpc.paypal.onboardingStatus.queryKey({ teamId, refresh: false }), result.data);
       // team.paypal_merchant_id may have changed: refresh whatever shows the team record.
       await queryClient.invalidateQueries({ queryKey: [["store"]] });
+      await queryClient.invalidateQueries({ queryKey: [["servicesTeam"]] });
     }
   }
 
   return (
-    <Card>
+    // id="paypal": the setup checklists' "Connect PayPal" step links here.
+    <Card id="paypal" className="scroll-mt-6">
       <CardHeader>
         <CardTitle>PayPal payments</CardTitle>
       </CardHeader>
