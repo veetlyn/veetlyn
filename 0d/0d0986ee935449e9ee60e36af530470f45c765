@@ -1,0 +1,14 @@
+packages/db/src/migrations/20261006135110_s4_ledger_projects/snapshot.json
+  h_6877e5e7a06bc5 4,6,87-110,1336-1843,1847,1850,1853,1856,1858,1860,1863,1866,1869,1871,1873,1876,1879,1882,1886,1889,1892,1895,1897,1899,1902,1905,3381-3478,4001-4102,4619-4658,4863-4873,4896-4916
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0d0d0986ee935449e9ee60e36af530470f45c765",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
