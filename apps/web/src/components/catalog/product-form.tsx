@@ -51,6 +51,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
   const [link, setLink] = useState("");
   const [matches, setMatches] = useState<SourceMatch[]>([]);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const photoInput = useRef<HTMLInputElement>(null);
 
@@ -87,7 +88,14 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
 
   async function handleLookup() {
     setLookupMessage(null);
-    const result = await lookup.mutateAsync({ storeSlug, url: link.trim() });
+    setLookupError(null);
+    let result;
+    try {
+      result = await lookup.mutateAsync({ storeSlug, url: link.trim() });
+    } catch {
+      setLookupError("The product lookup failed. Try again, or fill in the details yourself.");
+      return;
+    }
     if (result.status === "ok") {
       applyPrefill(result.prefill);
       if (result.alternatives.length > 0) setMatches(result.alternatives);
@@ -103,7 +111,14 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
     event.target.value = "";
     if (!file) return;
     setLookupMessage(null);
-    const result = await photoLookup.mutateAsync({ storeSlug, base64Image: encodeBase64(await file.arrayBuffer()) });
+    setLookupError(null);
+    let result;
+    try {
+      result = await photoLookup.mutateAsync({ storeSlug, base64Image: encodeBase64(await file.arrayBuffer()) });
+    } catch {
+      setLookupError("The photo search failed. Try again, or fill in the details yourself.");
+      return;
+    }
     if (result.status === "ok") {
       setMatches(result.matches);
       setLookupMessage("Pick the matching product to import its details.");
@@ -115,7 +130,14 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
   }
 
   async function handlePickMatch(productId: string) {
-    const result = await prefillMatch.mutateAsync({ storeSlug, productId });
+    setLookupError(null);
+    let result;
+    try {
+      result = await prefillMatch.mutateAsync({ storeSlug, productId });
+    } catch {
+      setLookupError("That match could not be loaded. Try again, or fill in the details yourself.");
+      return;
+    }
     if (result.status === "ok") applyPrefill(result.prefill);
     else setLookupMessage("That match could not be loaded. Fill in the details yourself.");
   }
@@ -186,6 +208,11 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
             <input ref={photoInput} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
           </div>
           {lookupMessage && <p className="text-sm text-muted-foreground">{lookupMessage}</p>}
+          {lookupError && (
+            <p role="alert" className="text-sm text-destructive">
+              {lookupError}
+            </p>
+          )}
           {matches.length > 0 && (
             <ul className="grid gap-2 sm:grid-cols-2">
               {matches.map((match) => (
