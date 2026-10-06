@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { TRIAL_DAYS } from "@jendal-workspace/core";
-import { buttonVariants } from "@jendal-workspace/ui/components/button";
+import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import { Bot, Briefcase, Check, Scale, Store, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 

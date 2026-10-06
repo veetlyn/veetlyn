@@ -1,4 +1,4 @@
-import { buttonVariants } from "@jendal-workspace/ui/components/button";
+import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import Link from "next/link";
 
 export default function SiteHeader({ adminOrigin }: { adminOrigin: string }) {
