@@ -15,6 +15,7 @@
     "@jendal-workspace/core": "workspace:*",
     "@jendal-workspace/db": "workspace:*",
     "@jendal-workspace/email": "workspace:*",
+    "@jendal-workspace/paypal": "workspace:*",
     "@trpc/server": "catalog:",
     "better-auth": "catalog:",
     "evlog": "catalog:",

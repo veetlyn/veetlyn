@@ -73,6 +73,8 @@ export const server = Cloudflare.Worker("server", {
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
     PAYPAL_CLIENT_ID: Config.String("PAYPAL_CLIENT_ID"),
     PAYPAL_CLIENT_SECRET: Config.Redacted("PAYPAL_CLIENT_SECRET"),
+    PAYPAL_PARTNER_ID: Config.String("PAYPAL_PARTNER_ID").pipe(Config.withDefault("")),
+    PAYPAL_ATTRIBUTION_ID: Config.String("PAYPAL_ATTRIBUTION_ID").pipe(Config.withDefault("")),
     SMTP_HOST: Config.String("SMTP_HOST"),
     SMTP_PORT: Config.String("SMTP_PORT").pipe(Config.withDefault("587")),
     SMTP_USER: Config.String("SMTP_USER"),

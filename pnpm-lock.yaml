@@ -114,6 +114,9 @@ importers:
       '@jendal-workspace/email':
         specifier: workspace:*
         version: link:../../packages/email
+      '@jendal-workspace/paypal':
+        specifier: workspace:*
+        version: link:../../packages/paypal
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.19.0(typescript@6.0.3)
