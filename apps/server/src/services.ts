@@ -4,7 +4,7 @@ import { createAuth as createConfiguredAuth } from "@jendal-workspace/auth";
 import { createChannel3Client } from "@jendal-workspace/channel3";
 import type { TenantEnvironment } from "@jendal-workspace/core";
 import { type Database, createDb } from "@jendal-workspace/db";
-import { createSmtpMailer } from "@jendal-workspace/email";
+import { createMailer } from "@jendal-workspace/email";
 import { createKvTokenCache, createPayPalClient } from "@jendal-workspace/paypal";
 import type { ExecutionContext } from "hono";
 
@@ -21,7 +21,7 @@ export function getDb(): Database {
 
 export function createAuth(database: Database, executionCtx: ExecutionContext) {
   return createConfiguredAuth(ENV, database, {
-    mailer: createSmtpMailer(ENV),
+    mailer: createMailer(ENV),
     waitUntil: (promise) => executionCtx.waitUntil(promise),
     onEmailError: logEmailError,
   });

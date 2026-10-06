@@ -7,7 +7,7 @@ export async function hashRecipient(email: string): Promise<string> {
   return [...new Uint8Array(digest).slice(0, 8)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-// SMTP error messages can quote the recipient, so only the error's name and code are logged.
+// Email provider error messages can quote the recipient, so only the error's name and code are logged.
 export async function logEmailError(error: unknown, email: { kind: AuthEmailKind; to: string }): Promise<void> {
   const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : undefined;
   log.error({

@@ -4,7 +4,13 @@ import type { Database } from "@jendal-workspace/db";
 import { createServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
-import { type EmailMessage, type Mailer, passwordResetEmail, verificationEmail } from "@jendal-workspace/email";
+import {
+  type EmailContent,
+  type EmailMessage,
+  type Mailer,
+  passwordResetEmail,
+  verificationEmail,
+} from "@jendal-workspace/email";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { organization } from "better-auth/plugins/organization";
@@ -63,7 +69,8 @@ async function claimTeamSlug(database: Database, input: unknown, product: TeamPr
 }
 
 // Not awaited, so response times do not reveal whether an account exists (spec §5.1).
-function sendInBackground(services: AuthServices, kind: AuthEmailKind, message: EmailMessage): void {
+function sendInBackground(services: AuthServices, kind: AuthEmailKind, content: EmailContent & { to: string }): void {
+  const message: EmailMessage = { sender: "accounts", tag: kind, ...content };
   services.waitUntil(
     services.mailer.send(message).catch((error: unknown) => services.onEmailError(error, { kind, to: message.to })),
   );
