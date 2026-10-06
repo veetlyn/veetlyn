@@ -22,6 +22,7 @@ describe("defaultServicesTeamSettings", () => {
       quotingMode: "assigned",
       payoutMode: "manual",
       settingsSavedAt: null,
+      discordGuildId: null,
     });
   });
 });

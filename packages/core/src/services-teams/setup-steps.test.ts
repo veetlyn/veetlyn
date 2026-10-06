@@ -6,7 +6,7 @@ import { servicesTeamSetupSteps } from "./setup-steps";
 describe("servicesTeamSetupSteps", () => {
   it("starts a new team with only the first step done; steps without a link have no href", () => {
     const steps = servicesTeamSetupSteps(
-      { paypalMerchantId: null, settingsSaved: false },
+      { paypalMerchantId: null, settingsSaved: false, discordGuildId: null },
       { settings: "/acme-studio/settings" },
     );
 
@@ -20,13 +20,17 @@ describe("servicesTeamSetupSteps", () => {
     expect(countDone(steps)).toBe(1);
   });
 
-  it("links the steps whose target exists, and marks rates and PayPal done", () => {
+  it("links the steps whose target exists, and marks rates, PayPal and Discord done", () => {
     const steps = servicesTeamSetupSteps(
-      { paypalMerchantId: "MERCHANT1", settingsSaved: true },
-      { settings: "/acme-studio/settings", connectPaypal: "https://www.paypal.com" },
+      { paypalMerchantId: "MERCHANT1", settingsSaved: true, discordGuildId: "guild-1" },
+      {
+        settings: "/acme-studio/settings",
+        connectPaypal: "https://www.paypal.com",
+        linkDiscord: "/acme-studio/discord",
+      },
     );
 
-    expect(steps.map((s) => s.done)).toEqual([true, true, true, false, false]);
-    expect(steps.find((s) => s.id === "connect-paypal")?.href).toBe("https://www.paypal.com");
+    expect(steps.map((s) => s.done)).toEqual([true, true, true, false, true]);
+    expect(steps.find((s) => s.id === "link-discord")?.href).toBe("/acme-studio/discord");
   });
 });

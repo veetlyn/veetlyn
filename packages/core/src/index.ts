@@ -30,3 +30,4 @@ export * from "./ledger/ledger";
 export * from "./projects/quotes";
 export * from "./projects/permissions";
 export * from "./projects/events";
+export * from "./payouts/destination";

@@ -82,6 +82,11 @@ describe("validateStoreSlug", () => {
   ])("rejects reserved slug %s", (input) => {
     expect(validateStoreSlug(input)).toEqual({ ok: false, reason: "reserved" });
   });
+
+  it("can never produce the freelancer portal's /me path", () => {
+    expect(validateStoreSlug("me")).toEqual({ ok: false, reason: "format" });
+    expect(validateStoreSlug(" ME ")).toEqual({ ok: false, reason: "format" });
+  });
 });
 
 describe("suggestStoreSlug", () => {
