@@ -1,0 +1,30 @@
+apps/web/src/app/admin/account/page.tsx
+  s_e52545ee672940::t_fda93e78d36c2b 1-9
+apps/web/src/components/discord-sign-in-button.tsx
+  s_e52545ee672940::t_6dfc0f0acb39e3 1-27
+apps/web/src/app/admin/account/account-settings.tsx
+  s_e52545ee672940::t_83bc20f6df5cc3 1-34,36-66
+  s_e52545ee672940::t_0b81ae99a18f77 35
+apps/web/src/app/admin/(auth)/login/page.tsx
+  s_e52545ee672940::t_3d6ceaccc6075d 6,43
+apps/web/src/app/admin/(auth)/signup/page.tsx
+  s_e52545ee672940::t_6c6a6002780c58 6,29
+apps/web/src/components/user-menu.tsx
+  s_e52545ee672940::t_47808c3617ba41 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4875d0d65b5a73c59240076ace239dd198e8352f",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
