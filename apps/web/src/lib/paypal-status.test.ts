@@ -15,7 +15,7 @@ describe("payPalCardModel", () => {
     expect(payPalCardModel(base)).toEqual({
       tone: "muted",
       title: "Not connected",
-      detail: "Connect PayPal so this store can accept payments.",
+      detail: "Connect PayPal to accept payments.",
       action: "connect",
       actionLabel: "Connect PayPal",
     });
