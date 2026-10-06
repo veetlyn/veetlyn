@@ -1,0 +1,21 @@
+packages/core/src/projects/state-machine.test.ts
+  s_9150ac4914bd81::t_021d0b84d33868 1-117
+packages/core/src/projects/state-machine.ts
+  s_9150ac4914bd81::t_a9df059eeb94fc 1-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a9e95a8197e851dbfce9aa39f3e00dcd2c0dc13e",
+  "prompts": {},
+  "sessions": {
+    "s_9150ac4914bd81": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84164c2d-cb6a-41e3-9918-ff12f89df375",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
