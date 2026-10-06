@@ -1,12 +1,14 @@
 import {
   canAssignFreelancer,
   canStartProject,
+  depositDue,
   quoteAuthor,
   quoteAuthorRefusalMessage,
   quoteItemsProblem,
   quoteItemsProblemMessage,
   quoteTotalMinor,
   transitionProject,
+  paymentLines,
   transitionRefusalMessage,
   type ProjectEvent,
   type ProjectFacts,
@@ -23,7 +25,7 @@ import {
   runInTransaction,
   type UnitOfWork,
 } from "@jendal-workspace/db/repositories/unit-of-work";
-import { project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
+import { payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamMember } from "@jendal-workspace/db/schema/services-teams";
 import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -203,5 +205,51 @@ export async function addQuote(
     });
     await tx.insert(quoteItem).values(items.map((item, position) => ({ quoteId, position, ...item })));
     return { quoteId };
+  });
+}
+
+// Services spec §5.2 step 3: only the project's client accepts a quote (the router checks the client
+// token). Accepting moves the project to awaiting_deposit and creates the deposit payment.
+export async function acceptQuote(
+  db: Database,
+  input: { projectId: string; quoteId: string },
+): Promise<{ paymentId: string; amountMinor: number }> {
+  return runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireProject(tx, input.projectId);
+    const status = checkTransition(row.status, "accept_quote");
+    const [found] = await tx
+      .select()
+      .from(quote)
+      .where(and(eq(quote.id, input.quoteId), eq(quote.projectId, row.id)))
+      .limit(1);
+    if (!found || found.status !== "proposed") fail("BAD_REQUEST", "This quote is not waiting for an answer.");
+    const deposit = depositDue(found.amountMinor, row.managementFeeBps);
+    const paymentId = crypto.randomUUID();
+    await uow.apply({
+      project: row,
+      // The quote names the freelancer who does the work; accepting it assigns them (§5.2 step 3).
+      set: { status, assignedFreelancerId: found.freelancerId },
+      events: [
+        { type: "quote.accepted", data: { quoteId: found.id, version: found.version, amountMinor: found.amountMinor } },
+        { type: "payment.created", data: { paymentId, kind: "deposit", amountMinor: deposit.totalMinor } },
+      ],
+    });
+    await tx.update(quote).set({ status: "accepted", acceptedAt: new Date() }).where(eq(quote.id, found.id));
+    await tx
+      .update(quote)
+      .set({ status: "superseded" })
+      .where(and(eq(quote.projectId, row.id), eq(quote.status, "proposed")));
+    await tx.insert(payment).values({
+      id: paymentId,
+      projectId: row.id,
+      teamId: row.teamId,
+      kind: "deposit",
+      currency: row.currency,
+      quotePartMinor: deposit.quotePartMinor,
+      managementFeeMinor: deposit.managementFeeMinor,
+      amountMinor: deposit.totalMinor,
+      lines: paymentLines("deposit", deposit, row.managementFeeBps),
+    });
+    return { paymentId, amountMinor: deposit.totalMinor };
   });
 }

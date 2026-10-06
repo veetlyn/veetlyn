@@ -1,5 +1,6 @@
 import { MAX_QUOTE_ITEMS } from "@jendal-workspace/core";
 import {
+  findProjectById,
   listProjectAmendments,
   listProjectPayments,
   listProjectQuotes,
@@ -13,10 +14,10 @@ import { asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { signClientLink } from "../client-links";
-import { router } from "../index";
+import { signClientLink, verifyClientLink } from "../client-links";
+import { publicProcedure, router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
-import { addQuote, assignFreelancer, startProject } from "../use-cases/projects";
+import { acceptQuote, addQuote, assignFreelancer, startProject } from "../use-cases/projects";
 
 const quoteItemInput = z.object({
   description: z.string().trim().min(1).max(200),
@@ -33,6 +34,12 @@ function clientLinkSecret(auth: { options: Record<string, unknown> }): string {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The client link secret is not configured." });
   }
   return secret;
+}
+
+async function projectIdFromToken(auth: { options: Record<string, unknown> }, token: string): Promise<string> {
+  const projectId = await verifyClientLink(clientLinkSecret(auth), token);
+  if (!projectId) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
+  return projectId;
 }
 
 export const projectRouter = router({
@@ -138,5 +145,69 @@ export const projectRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       return addQuote(ctx.db, { teamId: ctx.servicesTeam.id, role: ctx.servicesTeamRole, actorId: ctx.session.user.id }, input);
+    }),
+
+  // The client project page (services spec §5.2): signed link, no account. Internal user ids
+  // (freelancerId, authorId, proposedById) and the PayPal ids stay server-side; the link holder
+  // sees only what the page renders.
+  clientGet: publicProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ ctx, input }) => {
+    const projectId = await projectIdFromToken(ctx.auth, input.token);
+    const row = await findProjectById(ctx.db, projectId);
+    if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
+    const [quotes, amendments, payments] = await Promise.all([
+      listProjectQuotes(ctx.db, projectId),
+      listProjectAmendments(ctx.db, projectId),
+      listProjectPayments(ctx.db, projectId),
+    ]);
+    return {
+      project: {
+        id: row.id,
+        title: row.title,
+        brief: row.brief,
+        status: row.status,
+        currency: row.currency,
+        managementFeeBps: row.managementFeeBps,
+      },
+      quotes: quotes.map((q) => ({
+        id: q.id,
+        version: q.version,
+        status: q.status,
+        amountMinor: q.amountMinor,
+        deliveryDays: q.deliveryDays,
+        createdAt: q.createdAt,
+        acceptedAt: q.acceptedAt,
+        items: q.items.map((item) => ({
+          id: item.id,
+          description: item.description,
+          amountMinor: item.amountMinor,
+          extraDays: item.extraDays,
+        })),
+      })),
+      amendments: amendments.map((a) => ({
+        id: a.id,
+        status: a.status,
+        note: a.note,
+        addItems: a.addItems,
+        deltaMinor: a.deltaMinor,
+        newAmountMinor: a.newAmountMinor,
+        extraDays: a.extraDays,
+        createdAt: a.createdAt,
+      })),
+      payments: payments.map((p) => ({
+        id: p.id,
+        kind: p.kind,
+        status: p.status,
+        amountMinor: p.amountMinor,
+        lines: p.lines,
+        createdAt: p.createdAt,
+      })),
+    };
+  }),
+
+  clientAcceptQuote: publicProcedure
+    .input(z.object({ token: z.string().min(1), quoteId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const projectId = await projectIdFromToken(ctx.auth, input.token);
+      return acceptQuote(ctx.db, { projectId, quoteId: input.quoteId });
     }),
 });

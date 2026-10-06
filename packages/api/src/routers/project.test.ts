@@ -8,6 +8,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { findProjectById, listProjectQuotes } from "@jendal-workspace/db/repositories/projects";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
+import { payment } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
@@ -179,5 +180,107 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(detail.project.id).toBe(projectId);
     expect(detail.clientPath).toBe(`/c/${await clientToken(projectId)}`);
     expect(detail.quotes).toEqual([]);
+  });
+
+  it("accepts a quote through the client link and creates the $600 deposit payment (§5.3)", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({
+      teamSlug: "team",
+      projectId,
+      items: ITEMS,
+      deliveryDays: 14,
+    });
+
+    const token = await clientToken(projectId);
+    const result = await callerFor(null).project.clientAcceptQuote({ token, quoteId });
+    expect(result).toEqual({ paymentId: expect.any(String), amountMinor: 60_000 });
+
+    const row = await findProjectById(db, projectId);
+    expect(row).toMatchObject({ status: "awaiting_deposit" });
+    const payments = await db.select().from(payment);
+    expect(payments).toEqual([
+      expect.objectContaining({
+        id: result.paymentId,
+        kind: "deposit",
+        status: "pending",
+        quotePartMinor: 50_000,
+        managementFeeMinor: 10_000,
+        amountMinor: 60_000,
+        lines: [
+          { kind: "deposit", label: "Deposit (50% of the quote)", amountMinor: 50_000 },
+          { kind: "management_fee", label: "Management fee (10%)", amountMinor: 10_000 },
+        ],
+      }),
+    ]);
+    const quotes = await listProjectQuotes(db, projectId);
+    expect(quotes.find((q) => q.id === quoteId)).toMatchObject({ status: "accepted", acceptedAt: expect.any(Date) });
+    expect((await db.select().from(outbox)).map((e) => e.type)).toEqual([
+      "project.created",
+      "project.assigned",
+      "quote.created",
+      "quote.accepted",
+      "payment.created",
+    ]);
+  });
+
+  it("rejects a forged or missing client token", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await createProject(userId);
+    await expect(callerFor(null).project.clientGet({ token: `${projectId}.forged` })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await expect(callerFor(null).project.clientAcceptQuote({ token: "nope", quoteId: crypto.randomUUID() })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
+  it("assigns the freelancer the quote names when the client accepts (open and team modes)", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+
+    // Open mode: the quoting freelancer.
+    await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const { projectId } = await createProject(userId);
+    const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 7 });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBe(freelancer);
+
+    // Team mode: the freelancer the staff member named.
+    await db.update(servicesTeamSettings).set({ quotingMode: "team" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const { projectId: second } = await createProject(userId);
+    const { quoteId: staffQuote } = await callerFor(userId).project.addQuote({
+      teamSlug: "team",
+      projectId: second,
+      items: ITEMS,
+      deliveryDays: 7,
+      freelancerId: freelancer,
+    });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(second), quoteId: staffQuote });
+    expect((await findProjectById(db, second))?.assignedFreelancerId).toBe(freelancer);
+  });
+  it("rolls everything back when the client accepts a quote on a project that changed underneath", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await createProject(userId);
+    await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({
+      teamSlug: "team",
+      projectId,
+      items: ITEMS,
+      deliveryDays: 7,
+    });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+
+    // Accepting again is refused by the state machine and changes nothing.
+    await expect(
+      callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const payments = await db.select().from(payment).where(eq(payment.projectId, projectId));
+    expect(payments).toHaveLength(1);
+    const quotes = await listProjectQuotes(db, projectId);
+    expect(quotes.filter((q) => q.status === "accepted")).toHaveLength(1);
   });
 });
