@@ -1,0 +1,25 @@
+apps/web/src/content/legal/acceptable-use.mdx
+  s_b2b18d55a0efdf::t_eafacbc2ac1b30 1
+apps/web/src/content/legal/meta.ts
+  s_b2b18d55a0efdf::t_930265bc3ebb66 2
+apps/web/src/content/legal/privacy.mdx
+  s_b2b18d55a0efdf::t_109b62d46d4374 1,28
+apps/web/src/content/legal/terms.mdx
+  s_b2b18d55a0efdf::t_86bfd2391ecd87 1,15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5089b32b7df041e3a7294c06f608227706fd7e3",
+  "prompts": {},
+  "sessions": {
+    "s_b2b18d55a0efdf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "276280d7-38ec-4b73-9260-409f8beb3ee8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
