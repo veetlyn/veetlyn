@@ -1,5 +1,7 @@
+import { defaultServicesTeamSettings } from "@jendal-workspace/core";
 import { user } from "@jendal-workspace/db/schema/auth";
 import { team } from "@jendal-workspace/db/schema/organization";
+import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import { createTestDb, hasTestDatabase, truncateAll } from "@jendal-workspace/db/testing/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
@@ -65,10 +67,10 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
 
     await expect(
       auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "login" }, headers }),
-    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "STORE_SLUG_RESERVED" } });
+    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "TEAM_SLUG_RESERVED" } });
     await expect(
       auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "a_b" }, headers }),
-    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "STORE_SLUG_INVALID" } });
+    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "TEAM_SLUG_INVALID" } });
   });
 
   it("rejects a slug that another store already uses", async () => {
@@ -84,7 +86,7 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
         body: { name: "Other", organizationId: second.organizationId, slug: "acme" },
         headers: second.headers,
       }),
-    ).rejects.toMatchObject({ status: "CONFLICT", body: { code: "STORE_SLUG_TAKEN" } });
+    ).rejects.toMatchObject({ status: "CONFLICT", body: { code: "TEAM_SLUG_TAKEN" } });
   });
 
   it("only lets owners and admins create stores", async () => {
@@ -103,10 +105,64 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
 
     await expect(
       auth.api.updateTeam({ body: { teamId: store.id, data: { slug: "other" } }, headers }),
-    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "STORE_SLUG_IMMUTABLE" } });
+    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "TEAM_SLUG_IMMUTABLE" } });
 
     const renamed = await auth.api.updateTeam({ body: { teamId: store.id, data: { name: "Acme Goods" } }, headers });
     expect(renamed).toMatchObject({ name: "Acme Goods", slug: "acme" });
+  });
+
+  it("gives a team the store product when none is passed, and a services team its settings", async () => {
+    const { headers, organizationId, email } = await ownerWithOrganization();
+
+    const store = await auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "acme" }, headers });
+    const studio = await auth.api.createTeam({
+      body: { name: "Acme Studio", organizationId, slug: "acme-studio", product: "services" },
+      headers,
+    });
+
+    const teams = await db.select().from(team).where(eq(team.organizationId, organizationId));
+    expect(teams.find((t) => t.id === store.id)).toMatchObject({ product: "store", supportEmail: email });
+    expect(teams.find((t) => t.id === studio.id)).toMatchObject({ product: "services", supportEmail: null });
+    await expect(
+      db.select().from(servicesTeamSettings).where(eq(servicesTeamSettings.teamId, studio.id)),
+    ).resolves.toEqual([defaultServicesTeamSettings(studio.id)]);
+  });
+
+  it("rejects an unknown product with the same codes the slug rules use", async () => {
+    const { headers, organizationId } = await ownerWithOrganization();
+
+    await expect(
+      auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "acme", product: "shop" as never }, headers }),
+    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "TEAM_PRODUCT_INVALID" } });
+  });
+
+  it("words slug errors for a services team", async () => {
+    const { headers, organizationId } = await ownerWithOrganization();
+
+    await expect(
+      auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "login", product: "services" }, headers }),
+    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "TEAM_SLUG_RESERVED", message: "This team address is reserved." } });
+  });
+
+  it("rejects a slug that a services team already uses, for a store", async () => {
+    const { headers, organizationId } = await ownerWithOrganization();
+    await auth.api.createTeam({ body: { name: "Acme Studio", organizationId, slug: "acme-studio", product: "services" }, headers });
+
+    await expect(
+      auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "acme-studio" }, headers }),
+    ).rejects.toMatchObject({ status: "CONFLICT", body: { code: "TEAM_SLUG_TAKEN" } });
+  });
+
+  it("refuses to change a team's product, and still allows renaming", async () => {
+    const { headers, organizationId } = await ownerWithOrganization();
+    const store = await auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "acme" }, headers });
+
+    await expect(
+      auth.api.updateTeam({ body: { teamId: store.id, data: { product: "services" } }, headers }),
+    ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "TEAM_PRODUCT_IMMUTABLE" } });
+
+    const renamed = await auth.api.updateTeam({ body: { teamId: store.id, data: { name: "Acme Goods" } }, headers });
+    expect(renamed).toMatchObject({ name: "Acme Goods", product: "store" });
   });
 
   it("does not create a default team with a new organization", async () => {
