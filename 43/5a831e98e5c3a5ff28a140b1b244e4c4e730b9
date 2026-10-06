@@ -1,0 +1,41 @@
+packages/channel3/package.json
+  s_0cb84cc6e370cf::t_24a61bc033be11 1-19
+packages/channel3/src/client.test.ts
+  s_0cb84cc6e370cf::t_5939601295a496 1-177
+packages/channel3/src/client.ts
+  s_0cb84cc6e370cf::t_33b5d005e1700d 1-78
+packages/channel3/src/index.ts
+  s_0cb84cc6e370cf::t_014c8d6932af01 1-3
+packages/channel3/src/map.ts
+  s_0cb84cc6e370cf::t_7ee36e412e6fc8 1-32
+packages/channel3/src/schemas.ts
+  s_0cb84cc6e370cf::t_ef052669f13e5f 1-41
+packages/channel3/tsconfig.json
+  s_0cb84cc6e370cf::t_2619ba735f2266 1-7
+pnpm-lock.yaml
+  s_0595ccbad8afd9::t_efb4b105c14775 338-353
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "435a831e98e5c3a5ff28a140b1b244e4c4e730b9",
+  "prompts": {},
+  "sessions": {
+    "s_0595ccbad8afd9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "282a04a1-dd05-4423-8055-edec1a5fcd5b",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_0cb84cc6e370cf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "016e6666-774e-4a33-8c16-82bf46d5ad79",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
