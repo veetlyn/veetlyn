@@ -1,0 +1,41 @@
+packages/paypal/src/testing.ts
+  s_fa99e9105faab4::t_fd5fd6e8b53fd4 1-32
+packages/paypal/src/auth-assertion.ts
+  s_fa99e9105faab4::t_97770e66d44100 1-7
+packages/paypal/src/token.test.ts
+  s_fa99e9105faab4::t_c0977af0b7b8ad 1-58
+packages/paypal/src/client.test.ts
+  s_fa99e9105faab4::t_4d078474a9f80f 1-245
+packages/paypal/src/index.ts
+  s_fa99e9105faab4::t_6f904110276f24 1-4
+packages/paypal/tsconfig.json
+  s_fa99e9105faab4::t_95147d0d499966 1-7
+packages/paypal/package.json
+  s_fa99e9105faab4::t_4ef2e83c425eca 1-15
+packages/paypal/src/token.ts
+  s_fa99e9105faab4::t_4d0652a8c16174 1-51
+packages/paypal/src/auth-assertion.test.ts
+  s_fa99e9105faab4::t_67fb4b881fca4a 1-15
+packages/paypal/src/client.ts
+  s_fa99e9105faab4::t_0d591817ccd021 1-151
+packages/paypal/src/errors.ts
+  s_fa99e9105faab4::t_c05503b51e5ee7 1-57
+pnpm-lock.yaml
+  s_fa99e9105faab4::t_800e542cfa030e 421-429
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "785be2f037718502de919a05cb3c8f8ce5e1c8ab",
+  "prompts": {},
+  "sessions": {
+    "s_fa99e9105faab4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "1b566a56-bda2-4965-a32e-1d0cac1ee728",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
