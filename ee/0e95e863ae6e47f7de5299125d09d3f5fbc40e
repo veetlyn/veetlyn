@@ -1,0 +1,33 @@
+apps/server/.env.schema
+  s_b2b18d55a0efdf::t_cc7e1e6055c8e5 21,25,38-45,48,51,54,57-61,63
+apps/server/src/email-log.ts
+  s_b2b18d55a0efdf::t_51d5415202b663 10
+apps/server/src/services.ts
+  s_b2b18d55a0efdf::t_f6565c8bfc1f41 7,24
+packages/auth/src/index.test.ts
+  s_b2b18d55a0efdf::t_42cbccd1994b3e 198-203,262
+packages/auth/src/index.ts
+  s_b2b18d55a0efdf::t_992f2addc3e3b8 7-13,72-73
+packages/infra/.env.schema
+  s_b2b18d55a0efdf::t_d9e4577c520aab 1
+packages/infra/alchemy.run.ts
+  s_b2b18d55a0efdf::t_cc6e62bab72a35 85-86,88-91
+turbo.json
+  s_b2b18d55a0efdf::t_e4594ed65b9ea6 52,63-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee0e95e863ae6e47f7de5299125d09d3f5fbc40e",
+  "prompts": {},
+  "sessions": {
+    "s_b2b18d55a0efdf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "276280d7-38ec-4b73-9260-409f8beb3ee8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
