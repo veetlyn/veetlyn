@@ -1,0 +1,28 @@
+apps/web/src/components/catalog/product-form.tsx
+  s_0cb84cc6e370cf::t_c2805888005f29 129-134
+  s_0cb84cc6e370cf::t_08909cadc91b51 126-128
+  s_0cb84cc6e370cf::t_60b19044acf2bd 135-137
+  s_0cb84cc6e370cf::t_a7887b95ca739c 1-125,138-376
+apps/web/src/components/catalog/market-price-panel.tsx
+  s_0cb84cc6e370cf::t_69faf917ddc58f 1-75
+apps/web/src/lib/product-form-state.test.ts
+  s_0cb84cc6e370cf::t_5b93f4b5799714 1-65
+apps/web/src/lib/product-form-state.ts
+  s_0cb84cc6e370cf::t_06312f7d748276 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "960b7a3ca40a9f3b480ffb8d7866c67151fc3d36",
+  "prompts": {},
+  "sessions": {
+    "s_0cb84cc6e370cf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "016e6666-774e-4a33-8c16-82bf46d5ad79",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
