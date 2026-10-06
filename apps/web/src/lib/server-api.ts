@@ -79,3 +79,18 @@ export async function listMyStores(): Promise<MyOrganization[]> {
   if (!response.ok) throw new Error(`store.listMine answered ${response.status}`);
   return myStoresSchema.parse(await response.json()).result.data;
 }
+
+const storePolicyInfoSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  supportEmail: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type StorePolicyInfo = z.infer<typeof storePolicyInfoSchema>;
+
+export async function fetchStorePolicyInfo(): Promise<StorePolicyInfo | null> {
+  const response = await callApi("/api/store/policy-info");
+  if (!response.ok) return null;
+  const parsed = storePolicyInfoSchema.safeParse(await response.json());
+  return parsed.success ? parsed.data : null;
+}
