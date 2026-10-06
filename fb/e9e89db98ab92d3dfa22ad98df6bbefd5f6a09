@@ -1,0 +1,23 @@
+apps/web/src/app/admin/[storeSlug]/discord/discord-link.tsx
+  s_e52545ee672940::t_4a3591717d8250 1-85
+apps/web/src/app/admin/[storeSlug]/discord/page.tsx
+  s_e52545ee672940::t_3e2d72c59c6ec4 1-13
+apps/web/src/app/admin/[storeSlug]/services-team-dashboard.tsx
+  s_e52545ee672940::t_341abfa96dddeb 22-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fbe9e89db98ab92d3dfa22ad98df6bbefd5f6a09",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}

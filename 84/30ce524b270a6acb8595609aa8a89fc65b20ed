@@ -1,0 +1,37 @@
+packages/db/src/schema/services-teams.ts
+  s_e52545ee672940::t_69806a217c2237 46-47,49-66
+packages/db/src/schema/payouts.ts
+  s_e52545ee672940::t_91d32b3eb82b36 1-14
+packages/db/src/migrations/20261006140639_s2_discord/migration.sql
+  s_e52545ee672940::t_e8e30d91fc9f93 1-20
+packages/db/src/repositories/services-teams.test.ts
+  s_e52545ee672940::t_98afba7a859b61 74
+packages/db/src/repositories/services-teams.ts
+  s_e52545ee672940::t_c32ea6f91a177d 33
+packages/db/src/schema/index.ts
+  s_e52545ee672940::t_eccf8e856f2fdb 11
+packages/db/src/repositories/discord.ts
+  s_e52545ee672940::t_e153d04e1f3781 1-65
+packages/db/src/repositories/payouts.test.ts
+  s_e52545ee672940::t_4580e1f1ea5ece 1-43
+packages/db/src/repositories/discord.test.ts
+  s_e52545ee672940::t_c931864f08ba15 1-75
+packages/db/src/repositories/payouts.ts
+  s_e52545ee672940::t_624b635ccfb6f3 1-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8430ce524b270a6acb8595609aa8a89fc65b20ed",
+  "prompts": {},
+  "sessions": {
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
