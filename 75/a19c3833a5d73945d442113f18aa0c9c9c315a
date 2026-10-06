@@ -1,0 +1,19 @@
+packages/db/src/migrations/20261006130858_s5_catalog/snapshot.json
+  s_d43a412527f101::t_9aa54a67c153c7 4,6,75-92,956-968,1190-1475,2084-2104,2373-2440,2636-2665,2696-2707,2796-2806
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "75a19c3833a5d73945d442113f18aa0c9c9c315a",
+  "prompts": {},
+  "sessions": {
+    "s_d43a412527f101": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "43b250d4-565b-4d38-b799-e5c6576bb764",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
