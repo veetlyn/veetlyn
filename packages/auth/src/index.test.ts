@@ -195,7 +195,12 @@ describe.skipIf(!hasTestDatabase)("email verification", () => {
     expect(result.token).toBeNull();
     expect(mailer.sent).toHaveLength(1);
     const [message] = mailer.sent;
-    expect(message).toMatchObject({ to: "ada@example.com", subject: "Verify your email for Payleor" });
+    expect(message).toMatchObject({
+      sender: "accounts",
+      tag: "verification",
+      to: "ada@example.com",
+      subject: "Verify your email for Payleor",
+    });
     const link = linkIn(message?.text ?? "");
     expect(link.origin + link.pathname).toBe(`${BASE}/api/auth/verify-email`);
     expect(link.searchParams.get("callbackURL")).toBe("/new");
@@ -254,6 +259,7 @@ describe.skipIf(!hasTestDatabase)("password reset", () => {
     await auth.api.requestPasswordReset({ body: { email, redirectTo: "/reset-password" } });
     await settle();
     const message = mailer.sent.find((m) => m.subject === "Reset your Payleor password");
+    expect(message).toMatchObject({ sender: "accounts", tag: "password-reset", to: email });
     const response = await auth.handler(new Request(linkIn(message?.text ?? "")));
     const location = new URL(response.headers.get("location") ?? "", BASE);
     expect(location.pathname).toBe("/reset-password");
@@ -341,7 +347,7 @@ describe.skipIf(!hasTestDatabase)("rate limits", () => {
 
 describe.skipIf(!hasTestDatabase)("email failures", () => {
   const db = createTestDb();
-  const failing = { send: () => Promise.reject(new Error("SMTP down")) };
+  const failing = { send: () => Promise.reject(new Error("email provider down")) };
   const { auth, emailErrors, settle } = createTestAuth(db, { mailer: failing });
 
   beforeEach(() => truncateAll(db));
