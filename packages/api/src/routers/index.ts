@@ -3,6 +3,7 @@ import { pingDatabase } from "@jendal-workspace/db/health";
 import { publicProcedure, router } from "../index";
 import { catalogRouter } from "./catalog";
 import { paypalRouter } from "./paypal";
+import { projectRouter } from "./project";
 import { servicesTeamRouter } from "./services-team";
 import { storeRouter } from "./store";
 
@@ -13,6 +14,7 @@ export const appRouter = router({
   }),
   catalog: catalogRouter,
   paypal: paypalRouter,
+  project: projectRouter,
   servicesTeam: servicesTeamRouter,
   store: storeRouter,
 });
