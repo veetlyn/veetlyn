@@ -10,8 +10,9 @@ import { Hono } from "hono";
 import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
 import { ENV } from "./env.server";
+import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { storeInfoRoute } from "./routes/store-info";
-import { createAuth, getDb } from "./services";
+import { createAuth, getDb, getPayPalServices } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 import { tenantMiddleware } from "./tenant/middleware";
 
@@ -61,6 +62,8 @@ app.use("/trpc/*", (c, next) =>
     createContext: () => createContext(c, environment),
   })(c, next),
 );
+
+app.route("/api/paypal/onboarding/return", createPayPalOnboardingRoute(getPayPalServices()));
 
 app.route("/", storeInfoRoute);
 

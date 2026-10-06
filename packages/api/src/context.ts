@@ -1,6 +1,15 @@
 import type { Auth, Session } from "@jendal-workspace/auth";
 import type { TenantEnvironment } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import type { PayPalClient } from "@jendal-workspace/paypal";
+
+export type PayPalServices = {
+  client: PayPalClient;
+  partnerId: string;
+  returnUrl: string;
+  // Called after team.paypal_merchant_id changes; the api Worker invalidates the KV store cache (Fact 10).
+  onTeamMerchantChanged?: (team: { id: string; slug: string }) => void | Promise<void>;
+};
 
 export type Context = {
   session: Session | null;
@@ -9,4 +18,6 @@ export type Context = {
   // Procedures that act through Better Auth (organizations, stores) pass the caller's headers on.
   auth: Auth;
   headers: Headers;
+  // Absent in tests and when PayPal is not configured; the paypal router then fails with PRECONDITION_FAILED.
+  paypal?: PayPalServices;
 };

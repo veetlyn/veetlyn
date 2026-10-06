@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
+import PayPalConnectCard from "@/components/paypal-connect-card";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import SetupChecklist from "@/components/setup-checklist";
 import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
@@ -27,6 +28,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
         <h1 className="text-2xl font-semibold tracking-tight">{store.data.name}</h1>
       </div>
       <SetupChecklist steps={setupSteps(store.data, { storefrontUrl: url })} />
+      <PayPalConnectCard teamId={store.data.id} />
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-muted-foreground">Store URL</dt>
         <dd>

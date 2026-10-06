@@ -114,6 +114,9 @@ importers:
       '@jendal-workspace/email':
         specifier: workspace:*
         version: link:../../packages/email
+      '@jendal-workspace/paypal':
+        specifier: workspace:*
+        version: link:../../packages/paypal
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.19.0(typescript@6.0.3)
@@ -275,6 +278,9 @@ importers:
       '@jendal-workspace/db':
         specifier: workspace:*
         version: link:../db
+      '@jendal-workspace/paypal':
+        specifier: workspace:*
+        version: link:../paypal
       '@trpc/client':
         specifier: 'catalog:'
         version: 11.19.0(@trpc/server@11.19.0(typescript@6.0.3))(typescript@6.0.3)
@@ -417,6 +423,15 @@ importers:
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+
+  packages/paypal:
+    devDependencies:
+      '@jendal-workspace/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/ui:
     dependencies:

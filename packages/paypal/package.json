@@ -1,0 +1,15 @@
+{
+  "name": "@jendal-workspace/paypal",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@jendal-workspace/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
