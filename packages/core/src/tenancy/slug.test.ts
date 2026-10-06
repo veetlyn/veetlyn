@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { storeSlugProblem, suggestStoreSlug, validateStoreSlug } from "./slug";
+import { storeSlugProblem, suggestStoreSlug, teamSlugProblem, validateStoreSlug } from "./slug";
 
 describe("validateStoreSlug", () => {
   it("accepts lowercase letters, digits and single hyphens", () => {
@@ -117,5 +117,21 @@ describe("storeSlugProblem", () => {
     expect(storeSlugProblem("format")).toBe("Use 3 to 40 lowercase letters, numbers or single hyphens.");
     expect(storeSlugProblem("reserved")).toBe("This store address is reserved.");
     expect(storeSlugProblem("taken")).toBe("This store address is already taken.");
+  });
+});
+
+describe("teamSlugProblem", () => {
+  it("speaks of a store address for stores", () => {
+    expect(teamSlugProblem("reserved", "store")).toBe("This store address is reserved.");
+    expect(teamSlugProblem("taken", "store")).toBe("This store address is already taken.");
+  });
+
+  it("speaks of a team address for services teams", () => {
+    expect(teamSlugProblem("reserved", "services")).toBe("This team address is reserved.");
+    expect(teamSlugProblem("taken", "services")).toBe("This team address is already taken.");
+  });
+
+  it("explains the format the same way for both", () => {
+    expect(teamSlugProblem("format", "services")).toBe(storeSlugProblem("format"));
   });
 });

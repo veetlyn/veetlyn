@@ -1,3 +1,5 @@
+import type { TeamProduct } from "./team-product";
+
 export const RESERVED_SLUGS: readonly string[] = [
   // Platform host labels
   "www",
@@ -104,13 +106,19 @@ export function suggestStoreSlug(name: string): string {
 
 export type StoreSlugProblem = "format" | "reserved" | "taken";
 
-export function storeSlugProblem(problem: StoreSlugProblem): string {
+// Stores and services teams share one slug namespace; only the noun in the message differs.
+export function teamSlugProblem(problem: StoreSlugProblem, product: TeamProduct): string {
+  const noun = product === "store" ? "store" : "team";
   switch (problem) {
     case "format":
       return "Use 3 to 40 lowercase letters, numbers or single hyphens.";
     case "reserved":
-      return "This store address is reserved.";
+      return `This ${noun} address is reserved.`;
     case "taken":
-      return "This store address is already taken.";
+      return `This ${noun} address is already taken.`;
   }
+}
+
+export function storeSlugProblem(problem: StoreSlugProblem): string {
+  return teamSlugProblem(problem, "store");
 }
