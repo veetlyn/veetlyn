@@ -1,0 +1,19 @@
+packages/core/src/projects/permissions.ts
+  s_ccc06a9bbf01d8::t_f731ddf94e2415 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3038a07c6085f0e6c611624de4bedae867c03dd6",
+  "prompts": {},
+  "sessions": {
+    "s_ccc06a9bbf01d8": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "8069f41e-f7af-422b-a738-f479dde7d458",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
