@@ -1,4 +1,5 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
+import { paymentCapturedTransfer } from "@jendal-workspace/core";
 import {
   createTestDb,
   hasTestDatabase,
@@ -6,9 +7,11 @@ import {
   seedServicesTeamMember,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
-import { findProjectById, listProjectQuotes } from "@jendal-workspace/db/repositories/projects";
+import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
+import { findProjectById, getProjectFacts, listProjectQuotes } from "@jendal-workspace/db/repositories/projects";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { payment } from "@jendal-workspace/db/schema/projects";
+import { ledgerBalance } from "@jendal-workspace/db/schema/ledger";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
@@ -282,5 +285,138 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(payments).toHaveLength(1);
     const quotes = await listProjectQuotes(db, projectId);
     expect(quotes.filter((q) => q.status === "accepted")).toHaveLength(1);
+  });
+
+  async function projectInProgress(userId: string, organizationId: string, teamId: string, items = ITEMS) {
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({
+      teamSlug: "team",
+      projectId,
+      items,
+      deliveryDays: 14,
+    });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    // The deposit capture is S6's; here the payment_captured posting moves the project along.
+    const [deposit] = await db.select().from(payment).where(eq(payment.projectId, projectId));
+    await runInTransaction(db, async (tx, uow) => {
+      const row = await findProjectById(tx, projectId);
+      if (!row || !deposit) throw new Error("missing rows");
+      await tx.update(payment).set({ status: "captured", capturedAt: new Date() }).where(eq(payment.id, deposit.id));
+      await uow.apply({
+        project: row,
+        set: { status: "in_progress" },
+        transfers: [
+          paymentCapturedTransfer({
+            currency: "USD",
+            projectId,
+            paymentId: deposit.id,
+            quotePartMinor: deposit.quotePartMinor,
+            managementFeeMinor: deposit.managementFeeMinor,
+          }),
+        ],
+        events: [{ type: "payment.captured", data: { paymentId: deposit.id } }],
+      });
+    });
+    return { projectId, freelancer };
+  }
+
+  it("runs an increase amendment: top-up payment, new quote version (§5.5 +$400)", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await projectInProgress(userId, organizationId, teamId);
+
+    const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+      teamSlug: "team",
+      projectId,
+      add: [{ description: "Blog", amountMinor: 40_000, extraDays: 3 }],
+      removeItemIds: [],
+    });
+
+    const token = await clientToken(projectId);
+    const result = await callerFor(null).project.clientAcceptAmendment({ token, amendmentId });
+    expect(result).toEqual({ quoteVersion: 2, topUpPaymentId: expect.any(String) });
+
+    const quotes = await listProjectQuotes(db, projectId);
+    expect(quotes.map((q) => [q.version, q.status, q.amountMinor])).toEqual([
+      [1, "superseded", 100_000],
+      [2, "accepted", 140_000],
+    ]);
+    expect(quotes[1]?.items.map((i) => i.description)).toEqual(["Design", "Build", "Blog"]);
+    const payments = await db.select().from(payment).where(eq(payment.projectId, projectId));
+    const topUp = payments.find((p) => p.kind === "top_up");
+    expect(topUp).toMatchObject({
+      amendmentId,
+      quotePartMinor: 20_000,
+      managementFeeMinor: 4_000,
+      amountMinor: 24_000,
+      status: "pending",
+    });
+    const facts = await getProjectFacts(db, projectId);
+    expect(facts.unpaidTopUp).toBe(true);
+    expect((await db.select().from(outbox)).map((e) => e.type)).toContain("amendment.accepted");
+  });
+
+  it("runs the §5.5 decrease amendment: −$300 on the $1,000 quote credits the $30 fee", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    // §5.5's example: a $1,000 quote (Design $300 + Build $700) loses the $300 item.
+    const { projectId } = await projectInProgress(userId, organizationId, teamId, [
+      { description: "Design", amountMinor: 30_000, extraDays: 0 },
+      { description: "Build", amountMinor: 70_000, extraDays: 0 },
+    ]);
+    const quotes = await listProjectQuotes(db, projectId);
+    const designItem = quotes[0]?.items.find((i) => i.description === "Design");
+    if (!designItem) throw new Error("missing item");
+
+    const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+      teamSlug: "team",
+      projectId,
+      add: [],
+      removeItemIds: [designItem.id],
+    });
+    const result = await callerFor(null).project.clientAcceptAmendment({ token: await clientToken(projectId), amendmentId });
+    expect(result).toEqual({ quoteVersion: 2, topUpPaymentId: null });
+
+    const versions = await listProjectQuotes(db, projectId);
+    expect(versions.map((q) => [q.version, q.status, q.amountMinor])).toEqual([
+      [1, "superseded", 100_000],
+      [2, "accepted", 70_000],
+    ]);
+    const balances = await db.select().from(ledgerBalance);
+    // The $30 overpaid management fee moved from team_revenue back to client_held (§5.5).
+    expect(balances).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ account: "team_revenue", balanceMinor: 7_000 }),
+        expect.objectContaining({ account: `client_held:${projectId}`, balanceMinor: 53_000 }),
+      ]),
+    );
+    const facts = await getProjectFacts(db, projectId);
+    expect(facts.managementFeeCreditedMinor).toBe(3_000);
+    const payments = await db.select().from(payment).where(eq(payment.projectId, projectId));
+    expect(payments.filter((p) => p.kind === "top_up")).toHaveLength(0);
+  });
+
+  it("blocks a second pending amendment and declines the first", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await projectInProgress(userId, organizationId, teamId);
+    const input = {
+      teamSlug: "team",
+      projectId,
+      add: [{ description: "Extra", amountMinor: 5_000, extraDays: 0 }],
+      removeItemIds: [],
+    };
+    await callerFor(userId).project.proposeAmendment(input);
+    await expect(callerFor(userId).project.proposeAmendment(input)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "An amendment is waiting for the client's answer.",
+    });
+
+    const token = await clientToken(projectId);
+    const page = await callerFor(null).project.clientGet({ token });
+    const pending = page.amendments.find((a) => a.status === "pending");
+    if (!pending) throw new Error("no pending amendment");
+    await callerFor(null).project.clientDeclineAmendment({ token, amendmentId: pending.id });
+    // After the decline another amendment can be proposed.
+    await callerFor(userId).project.proposeAmendment(input);
   });
 });

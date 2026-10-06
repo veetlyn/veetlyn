@@ -17,7 +17,15 @@ import { z } from "zod";
 import { signClientLink, verifyClientLink } from "../client-links";
 import { publicProcedure, router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
-import { acceptQuote, addQuote, assignFreelancer, startProject } from "../use-cases/projects";
+import {
+  acceptAmendment,
+  acceptQuote,
+  addQuote,
+  assignFreelancer,
+  declineAmendment,
+  proposeAmendment,
+  startProject,
+} from "../use-cases/projects";
 
 const quoteItemInput = z.object({
   description: z.string().trim().min(1).max(200),
@@ -147,6 +155,22 @@ export const projectRouter = router({
       return addQuote(ctx.db, { teamId: ctx.servicesTeam.id, role: ctx.servicesTeamRole, actorId: ctx.session.user.id }, input);
     }),
 
+  proposeAmendment: servicesTeamProcedure
+    .input(
+      projectIdInput.extend({
+        add: z.array(quoteItemInput).max(MAX_QUOTE_ITEMS).default([]),
+        removeItemIds: z.array(z.string().uuid()).max(MAX_QUOTE_ITEMS).default([]),
+        note: z.string().max(2000).default(""),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return proposeAmendment(
+        ctx.db,
+        { teamId: ctx.servicesTeam.id, role: ctx.servicesTeamRole, actorId: ctx.session.user.id },
+        input,
+      );
+    }),
+
   // The client project page (services spec §5.2): signed link, no account. Internal user ids
   // (freelancerId, authorId, proposedById) and the PayPal ids stay server-side; the link holder
   // sees only what the page renders.
@@ -209,5 +233,19 @@ export const projectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const projectId = await projectIdFromToken(ctx.auth, input.token);
       return acceptQuote(ctx.db, { projectId, quoteId: input.quoteId });
+    }),
+
+  clientAcceptAmendment: publicProcedure
+    .input(z.object({ token: z.string().min(1), amendmentId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const projectId = await projectIdFromToken(ctx.auth, input.token);
+      return acceptAmendment(ctx.db, { projectId, amendmentId: input.amendmentId });
+    }),
+
+  clientDeclineAmendment: publicProcedure
+    .input(z.object({ token: z.string().min(1), amendmentId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const projectId = await projectIdFromToken(ctx.auth, input.token);
+      await declineAmendment(ctx.db, { projectId, amendmentId: input.amendmentId });
     }),
 });

@@ -1,14 +1,19 @@
 import {
+  amendmentEffect,
+  amendmentProblemMessage,
+  amendQuoteItems,
   canAssignFreelancer,
+  canProposeAmendment,
   canStartProject,
   depositDue,
+  managementFeeCreditTransfer,
+  paymentLines,
   quoteAuthor,
   quoteAuthorRefusalMessage,
   quoteItemsProblem,
   quoteItemsProblemMessage,
   quoteTotalMinor,
   transitionProject,
-  paymentLines,
   transitionRefusalMessage,
   type ProjectEvent,
   type ProjectFacts,
@@ -18,14 +23,21 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
-import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
+import {
+  findProjectById,
+  getCurrentQuote,
+  getProjectFacts,
+  type ProjectRow,
+  type QuoteWithItems,
+} from "@jendal-workspace/db/repositories/projects";
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import {
   ProjectConflictError,
   runInTransaction,
+  type OutboxEventInput,
   type UnitOfWork,
 } from "@jendal-workspace/db/repositories/unit-of-work";
-import { payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
+import { amendment, payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamMember } from "@jendal-workspace/db/schema/services-teams";
 import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -251,5 +263,182 @@ export async function acceptQuote(
       lines: paymentLines("deposit", deposit, row.managementFeeBps),
     });
     return { paymentId, amountMinor: deposit.totalMinor };
+  });
+}
+
+async function requireCurrentQuote(tx: Transaction, row: ProjectRow): Promise<QuoteWithItems> {
+  const current = await getCurrentQuote(tx, row.id);
+  // The status guard already proved the project is past acceptance, so this cannot be missing.
+  if (!current) throw new Error(`Project ${row.id} is ${row.status} without an accepted quote`);
+  return current;
+}
+
+// Services spec §5.5: the assigned freelancer or a manager proposes an amendment in in_progress or
+// delivered; a pending amendment or unpaid top-up blocks a new one.
+export async function proposeAmendment(
+  db: Database,
+  actor: ProjectActor,
+  input: { projectId: string; add: QuoteItemDraft[]; removeItemIds: string[]; note?: string },
+): Promise<{ amendmentId: string }> {
+  return runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireTeamProject(tx, actor, input.projectId);
+    if (!canProposeAmendment({ role: actor.role, actorId: actor.actorId, assignedFreelancerId: row.assignedFreelancerId })) {
+      fail("FORBIDDEN", "Only the assigned freelancer or a manager proposes amendments.");
+    }
+    const facts = await getProjectFacts(tx, row.id);
+    checkTransition(row.status, "propose_amendment", facts);
+    const current = await requireCurrentQuote(tx, row);
+    const amended = amendQuoteItems(current.items, { add: input.add, removeItemIds: input.removeItemIds });
+    if (!amended.ok) fail("BAD_REQUEST", amendmentProblemMessage(amended.problem));
+    const amendmentId = crypto.randomUUID();
+    const newAmountMinor = quoteTotalMinor(amended.items);
+    await uow.apply({
+      project: row,
+      set: {},
+      events: [
+        {
+          type: "amendment.proposed",
+          data: { amendmentId, projectId: row.id, deltaMinor: newAmountMinor - current.amountMinor, newAmountMinor },
+        },
+      ],
+    });
+    await tx.insert(amendment).values({
+      id: amendmentId,
+      projectId: row.id,
+      teamId: actor.teamId,
+      baseQuoteId: current.id,
+      proposedById: actor.actorId,
+      note: input.note?.trim() ?? "",
+      addItems: input.add,
+      removeItemIds: input.removeItemIds,
+      deltaMinor: newAmountMinor - current.amountMinor,
+      newAmountMinor,
+      extraDays: amended.extraDays,
+    });
+    return { amendmentId };
+  });
+}
+
+// The client accepts an amendment (§5.5): it becomes the current quote version; an increase creates
+// the top-up payment, a decrease credits the overpaid management fee to the project.
+export async function acceptAmendment(
+  db: Database,
+  input: { projectId: string; amendmentId: string },
+): Promise<{ quoteVersion: number; topUpPaymentId: string | null }> {
+  return runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireProject(tx, input.projectId);
+    const facts = await getProjectFacts(tx, row.id);
+    checkTransition(row.status, "accept_amendment", facts);
+    const [found] = await tx
+      .select()
+      .from(amendment)
+      .where(and(eq(amendment.id, input.amendmentId), eq(amendment.projectId, row.id)))
+      .limit(1);
+    if (!found || found.status !== "pending") fail("BAD_REQUEST", "This amendment is not waiting for an answer.");
+    const current = await requireCurrentQuote(tx, row);
+    if (found.baseQuoteId !== current.id) {
+      throw new Error(`Amendment ${found.id} is based on quote ${found.baseQuoteId}, not the current ${current.id}`);
+    }
+    const effect = amendmentEffect({
+      previousQuoteMinor: current.amountMinor,
+      newQuoteMinor: found.newAmountMinor,
+      managementFeeBps: row.managementFeeBps,
+    });
+    const amended = amendQuoteItems(current.items, { add: found.addItems, removeItemIds: found.removeItemIds });
+    if (!amended.ok) throw new Error(`Amendment ${found.id} no longer applies: ${amended.problem}`);
+
+    const events: OutboxEventInput[] = [
+      {
+        type: "amendment.accepted",
+        data: { amendmentId: found.id, projectId: row.id, quoteVersion: current.version + 1, newAmountMinor: found.newAmountMinor },
+      },
+    ];
+    let topUpPaymentId: string | null = null;
+    if (effect.kind === "increase") {
+      topUpPaymentId = crypto.randomUUID();
+      events.push({
+        type: "payment.created",
+        data: { paymentId: topUpPaymentId, kind: "top_up", amountMinor: effect.topUp.totalMinor },
+      });
+    }
+    await uow.apply({
+      project: row,
+      set: {},
+      transfers:
+        effect.kind === "decrease" && effect.managementFeeCreditMinor > 0
+          ? [
+              managementFeeCreditTransfer({
+                currency: row.currency,
+                projectId: row.id,
+                amendmentId: found.id,
+                creditMinor: effect.managementFeeCreditMinor,
+              }),
+            ]
+          : [],
+      events,
+    });
+    await tx.update(quote).set({ status: "superseded" }).where(eq(quote.id, current.id));
+    const [newQuote] = await tx
+      .insert(quote)
+      .values({
+        projectId: row.id,
+        teamId: row.teamId,
+        version: current.version + 1,
+        status: "accepted",
+        freelancerId: current.freelancerId,
+        authorId: found.proposedById,
+        amountMinor: found.newAmountMinor,
+        deliveryDays: current.deliveryDays,
+        previousQuoteId: current.id,
+        amendmentId: found.id,
+        acceptedAt: new Date(),
+      })
+      .returning({ id: quote.id });
+    if (!newQuote) throw new Error("Insert into quote returned no row");
+    await tx.insert(quoteItem).values(amended.items.map((item, position) => ({ quoteId: newQuote.id, position, ...item })));
+    await tx
+      .update(amendment)
+      .set({
+        status: "accepted",
+        decidedAt: new Date(),
+        resultingQuoteId: newQuote.id,
+        managementFeeCreditMinor: effect.kind === "decrease" ? effect.managementFeeCreditMinor : 0,
+      })
+      .where(eq(amendment.id, found.id));
+    if (effect.kind === "increase" && topUpPaymentId) {
+      await tx.insert(payment).values({
+        id: topUpPaymentId,
+        projectId: row.id,
+        teamId: row.teamId,
+        kind: "top_up",
+        currency: row.currency,
+        amendmentId: found.id,
+        quotePartMinor: effect.topUp.quotePartMinor,
+        managementFeeMinor: effect.topUp.managementFeeMinor,
+        amountMinor: effect.topUp.totalMinor,
+        lines: paymentLines("top_up", effect.topUp, row.managementFeeBps),
+      });
+    }
+    return { quoteVersion: current.version + 1, topUpPaymentId };
+  });
+}
+
+export async function declineAmendment(db: Database, input: { projectId: string; amendmentId: string }): Promise<void> {
+  await runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireProject(tx, input.projectId);
+    const facts = await getProjectFacts(tx, row.id);
+    checkTransition(row.status, "decline_amendment", facts);
+    const [found] = await tx
+      .select()
+      .from(amendment)
+      .where(and(eq(amendment.id, input.amendmentId), eq(amendment.projectId, row.id)))
+      .limit(1);
+    if (!found || found.status !== "pending") fail("BAD_REQUEST", "This amendment is not waiting for an answer.");
+    await uow.apply({
+      project: row,
+      set: {},
+      events: [{ type: "amendment.declined", data: { amendmentId: found.id, projectId: row.id } }],
+    });
+    await tx.update(amendment).set({ status: "declined", decidedAt: new Date() }).where(eq(amendment.id, found.id));
   });
 }
