@@ -9,6 +9,7 @@ import {
   createTestDb,
   hasTestDatabase,
   seedOrganization,
+  seedServicesTeam,
   seedStore,
   truncateAll,
 } from "../testing/db";
@@ -137,5 +138,40 @@ describe.skipIf(!hasTestDatabase)("store repository", () => {
       createdAt: expect.any(Date),
     });
     await expect(findStorePolicyInfo(db, "missing")).resolves.toBeNull();
+  });
+
+  it("leaves services teams out of store lookups and lists, but counts their slugs as taken", async () => {
+    const { userId, organizationId } = await seedOrganization(db, { name: "Acme Inc" });
+    const acme = await seedStore(db, { organizationId, slug: "acme", name: "Acme" });
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+
+    await expect(directory.findById(studio.id)).resolves.toBeNull();
+    await expect(directory.findBySlug("acme-studio")).resolves.toBeNull();
+    await expect(findStoreAccess(db, { slug: "acme-studio", userId })).resolves.toBeNull();
+    await expect(listOrganizationsWithStores(db, userId)).resolves.toEqual([
+      {
+        organization: { id: organizationId, name: "Acme Inc" },
+        role: "owner",
+        stores: [{ store: acme, isTeamMember: false }],
+      },
+    ]);
+    await expect(isStoreSlugTaken(db, "acme-studio")).resolves.toBe(true);
+  });
+
+  it("keeps an organization that has only services teams in the store list, with no stores", async () => {
+    const { userId, organizationId } = await seedOrganization(db, { name: "Acme Inc" });
+    await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+
+    await expect(listOrganizationsWithStores(db, userId)).resolves.toEqual([
+      { organization: { id: organizationId, name: "Acme Inc" }, role: "owner", stores: [] },
+    ]);
+  });
+
+  it("gives new stores the store product", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme" });
+
+    const [row] = await db.select({ product: team.product }).from(team).where(eq(team.id, store.id));
+    expect(row?.product).toBe("store");
   });
 });

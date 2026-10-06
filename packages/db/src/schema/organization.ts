@@ -53,7 +53,8 @@ export const invitation = pgTable(
   ],
 );
 
-// Each team is a store (spec §4.1). slug, status, paypalMerchantId and supportEmail are team additionalFields in packages/auth.
+// Each team is a store or a services team (services spec §3). slug, product, status, paypalMerchantId and
+// supportEmail are team additionalFields in packages/auth. status and supportEmail only apply to stores.
 export const team = pgTable(
   "team",
   {
@@ -63,6 +64,9 @@ export const team = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
     slug: text("slug").notNull().unique(),
+    product: text("product", { enum: ["store", "services"] })
+      .default("store")
+      .notNull(),
     status: text("status", { enum: ["draft", "active", "suspended"] })
       .default("draft")
       .notNull(),
