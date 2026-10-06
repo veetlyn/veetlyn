@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { makeSession } from "../testing";
+import { createTestCatalogServices } from "../testing/catalog";
 import { appRouter } from "./index";
 
 describe.skipIf(!hasTestDatabase)("store router", () => {
@@ -25,6 +26,7 @@ describe.skipIf(!hasTestDatabase)("store router", () => {
       environment: "sandbox",
       auth,
       headers: new Headers(),
+      catalog: createTestCatalogServices(),
     });
 
   beforeEach(() => truncateAll(db));
@@ -104,7 +106,14 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
   async function signedInCaller(email = "ada@example.com") {
     const { headers } = await signUpVerified(auth, db, email);
     const session = await auth.api.getSession({ headers });
-    return appRouter.createCaller({ db, session, environment: "sandbox", auth, headers });
+    return appRouter.createCaller({
+      db,
+      session,
+      environment: "sandbox",
+      auth,
+      headers,
+      catalog: createTestCatalogServices(),
+    });
   }
 
   it("reports an address as available, taken or invalid", async () => {
@@ -175,7 +184,14 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
   });
 
   it("rejects anonymous callers", async () => {
-    const caller = appRouter.createCaller({ db, session: null, environment: "sandbox", auth, headers: new Headers() });
+    const caller = appRouter.createCaller({
+      db,
+      session: null,
+      environment: "sandbox",
+      auth,
+      headers: new Headers(),
+      catalog: createTestCatalogServices(),
+    });
 
     await expect(caller.store.create({ name: "Acme", slug: "acme" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
