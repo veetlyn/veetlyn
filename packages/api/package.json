@@ -12,6 +12,7 @@
     "@jendal-workspace/auth": "workspace:*",
     "@jendal-workspace/core": "workspace:*",
     "@jendal-workspace/db": "workspace:*",
+    "@jendal-workspace/paypal": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "better-auth": "catalog:",

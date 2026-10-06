@@ -275,6 +275,9 @@ importers:
       '@jendal-workspace/db':
         specifier: workspace:*
         version: link:../db
+      '@jendal-workspace/paypal':
+        specifier: workspace:*
+        version: link:../paypal
       '@trpc/client':
         specifier: 'catalog:'
         version: 11.19.0(@trpc/server@11.19.0(typescript@6.0.3))(typescript@6.0.3)
