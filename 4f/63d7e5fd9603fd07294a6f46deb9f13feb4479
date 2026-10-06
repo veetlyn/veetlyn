@@ -1,0 +1,23 @@
+packages/core/src/ledger/postings.test.ts
+  s_9150ac4914bd81::t_3b3e34c0c4846f 1-165
+packages/core/src/ledger/postings.ts
+  s_9150ac4914bd81::t_bf43dde122c863 1-176
+packages/core/src/testing/random.ts
+  s_9150ac4914bd81::t_813ccbf5644fd5 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4f63d7e5fd9603fd07294a6f46deb9f13feb4479",
+  "prompts": {},
+  "sessions": {
+    "s_9150ac4914bd81": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84164c2d-cb6a-41e3-9918-ff12f89df375",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
