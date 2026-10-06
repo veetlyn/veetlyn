@@ -1,5 +1,7 @@
 import { buildAuthAssertion } from "./auth-assertion";
 import { payPalErrorFromResponse } from "./errors";
+import { createMerchantIntegrations } from "./merchant-integrations";
+import { createPartnerReferrals } from "./partner-referrals";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
 
 export type PayPalEnvironment = "sandbox" | "live";
@@ -41,6 +43,8 @@ export type PayPalRequest = <T>(options: PayPalRequestOptions) => Promise<T>;
 
 export interface PayPalClient {
   request: PayPalRequest;
+  partnerReferrals: ReturnType<typeof createPartnerReferrals>;
+  merchantIntegrations: ReturnType<typeof createMerchantIntegrations>;
 }
 
 type ResolvedConfig = {
@@ -147,5 +151,9 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     return (await response.json()) as T;
   }
 
-  return { request };
+  return {
+    request,
+    partnerReferrals: createPartnerReferrals(request),
+    merchantIntegrations: createMerchantIntegrations(request),
+  };
 }
