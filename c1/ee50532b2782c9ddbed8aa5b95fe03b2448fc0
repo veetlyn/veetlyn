@@ -1,0 +1,21 @@
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_c0209e681a81c3::t_eb0d541a1f9674 283-284
+  s_c0209e681a81c3::t_35c80aeaa0a589 11
+  s_c0209e681a81c3::t_2540833a90f300 157-164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c1ee50532b2782c9ddbed8aa5b95fe03b2448fc0",
+  "prompts": {},
+  "sessions": {
+    "s_c0209e681a81c3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "94c5da88-cd98-4c69-a30a-9d8d65bb6cdb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
