@@ -168,7 +168,6 @@ export const projectRouter = router({
       listProjectPayments(ctx.db, projectId),
     ]);
     const secret = linkSecret(ctx.auth);
-    // Pending and failed payments can be paid; the pay link names the payment, never the amount (§5.4).
     const paymentViews = await Promise.all(
       payments.map(async (p) => ({
         id: p.id,
@@ -177,7 +176,12 @@ export const projectRouter = router({
         amountMinor: p.amountMinor,
         lines: p.lines,
         createdAt: p.createdAt,
-        payPath: p.status === "pending" || p.status === "failed" ? `/pay/${await signPayLink(secret, p.id)}` : null,
+        // Pending and failed payments can be paid; the pay link names the payment, never the amount (§5.4).
+        // Balances open in run 2, once deliveries can be accepted.
+        payPath:
+          p.kind !== "balance" && (p.status === "pending" || p.status === "failed")
+            ? `/pay/${await signPayLink(secret, p.id)}`
+            : null,
       })),
     );
     return {

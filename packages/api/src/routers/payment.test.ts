@@ -295,6 +295,20 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       await expect(callerFor(null).payment.payStart({ token })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     });
 
+    it("limits how often one payment can be started or captured", async () => {
+      const { token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi({ capture: () => jsonResponse(422, DECLINED) });
+      const caller = callerFor(null, makePayPal(fetch));
+
+      for (let i = 0; i < 10; i++) await caller.payment.payStart({ token });
+      await expect(caller.payment.payStart({ token })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+
+      for (let i = 0; i < 20; i++) {
+        await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject({ code: "UNPROCESSABLE_CONTENT" });
+      }
+      await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    });
+
     it("creates an order for the team with Payleor's 1% Team fee", async () => {
       const { paymentId, token } = await connectedDeposit();
       const { requests, fetch } = fakePayPalApi();
