@@ -1,0 +1,23 @@
+packages/db/src/migrations/20261007170325_r1a_payment_platform_fee/migration.sql
+  s_69baab503dd65f::t_4f5882d1f02732 1-2
+packages/db/src/migrations/20261007170325_r1a_payment_platform_fee/snapshot.json
+  s_69baab503dd65f::t_69568bdaf7069c 1-5248
+packages/db/src/schema/projects.ts
+  s_69baab503dd65f::t_be4f8042047a19 167-168,183-186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0463e853f9ab1711276f573dbf4d017944c61906",
+  "prompts": {},
+  "sessions": {
+    "s_69baab503dd65f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "b051543a-0ffc-4f52-8ab0-0d254222387c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
