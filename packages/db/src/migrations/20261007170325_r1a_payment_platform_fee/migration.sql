@@ -1,0 +1,2 @@
+ALTER TABLE "payment" ADD COLUMN "platform_fee_minor" bigint;--> statement-breakpoint
+ALTER TABLE "payment" ADD CONSTRAINT "payment_platform_fee_check" CHECK (platform_fee_minor is null or (platform_fee_minor >= 0 and platform_fee_minor <= amount_minor));

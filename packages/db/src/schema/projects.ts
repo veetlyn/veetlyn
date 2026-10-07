@@ -164,6 +164,8 @@ export const payment = pgTable(
     quotePartMinor: minor("quote_part_minor").notNull(),
     managementFeeMinor: minor("management_fee_minor").notNull(),
     amountMinor: minor("amount_minor").notNull(),
+    // Payleor's fee on the payment's current PayPal order, at the seller plan's rate; set when the order is created.
+    platformFeeMinor: minor("platform_fee_minor"),
     lines: jsonb("lines").$type<PaymentLine[]>().notNull(),
     amendmentId: text("amendment_id").references(() => amendment.id, { onDelete: "restrict" }),
     paypalOrderId: text("paypal_order_id").unique(),
@@ -178,5 +180,9 @@ export const payment = pgTable(
     uniqueIndex("payment_balance_idx").on(t.projectId).where(sql`kind = 'balance'`),
     check("payment_parts_check", sql`quote_part_minor >= 0 and management_fee_minor >= 0`),
     check("payment_amount_check", sql`amount_minor > 0 and amount_minor = quote_part_minor + management_fee_minor`),
+    check(
+      "payment_platform_fee_check",
+      sql`platform_fee_minor is null or (platform_fee_minor >= 0 and platform_fee_minor <= amount_minor)`,
+    ),
   ],
 );
