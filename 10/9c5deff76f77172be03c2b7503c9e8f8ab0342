@@ -1,0 +1,23 @@
+apps/web/src/app/(site)/pay/[token]/page.tsx
+  s_a2b6bd264ed4ba::t_a395676b68e366 1-6
+apps/web/src/app/(site)/pay/[token]/pay-page.tsx
+  s_a2b6bd264ed4ba::t_b6369e154c8a5a 1-75
+apps/web/src/app/(site)/pay/[token]/paypal-checkout.tsx
+  s_a2b6bd264ed4ba::t_353e5f656c0548 1-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "109c5deff76f77172be03c2b7503c9e8f8ab0342",
+  "prompts": {},
+  "sessions": {
+    "s_a2b6bd264ed4ba": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "aaaa114c-2446-40f2-9da1-a83e89673b72",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
