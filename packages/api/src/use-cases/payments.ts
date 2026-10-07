@@ -2,9 +2,9 @@ import { paymentCapturedTransfer, transitionProject, transitionRefusalMessage } 
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
 import { findProjectById, getCurrentQuote, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
-import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
+import { ProjectConflictError, runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { payment, type project } from "@jendal-workspace/db/schema/projects";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 
 // One capture as PayPal reports it: from a capture response, an order lookup or a webhook (R1c).
 export type CaptureFact = {
@@ -17,10 +17,13 @@ export type CaptureFact = {
   currency: string | null;
 };
 
-// "stale": the fact is about an order this payment no longer uses, and no money moved.
+// "stale": the fact changes nothing. It is about an order or a payment state the payment has moved past.
 export type CaptureFactResult = "applied" | "already_applied" | "pending" | "failed" | "stale";
 
 const DAY_MS = 86_400_000;
+
+// The fact is idempotent, so losing a race with another project change is retried, not reported.
+const MAX_CONFLICT_ATTEMPTS = 3;
 
 type PaymentRow = typeof payment.$inferSelect;
 
@@ -72,9 +75,75 @@ async function recordPendingCapture(db: Database, fact: CaptureFact): Promise<Ca
   const updated = await db
     .update(payment)
     .set({ paypalCaptureId: fact.captureId })
-    .where(and(eq(payment.id, fact.paymentId), eq(payment.status, "pending"), eq(payment.paypalOrderId, fact.orderId)))
+    .where(
+      and(
+        eq(payment.id, fact.paymentId),
+        eq(payment.status, "pending"),
+        eq(payment.paypalOrderId, fact.orderId),
+        or(isNull(payment.paypalCaptureId), eq(payment.paypalCaptureId, fact.captureId)),
+      ),
+    )
     .returning({ id: payment.id });
   return updated.length > 0 ? "pending" : "stale";
+}
+
+function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFactResult> {
+  return runInTransaction(db, async (tx, uow) => {
+    const row = await lockPayment(tx, fact.paymentId);
+    checkCaptureBelongs(row, fact);
+    if (row.status === "cancelled") {
+      if (fact.status === "COMPLETED") throw new Error(`Capture ${fact.captureId} completed on cancelled payment ${row.id}`);
+      throw new StaleFact();
+    }
+    if (row.status === "captured" || (row.status === "failed" && row.paypalCaptureId === fact.captureId)) {
+      throw new FactAlreadyApplied();
+    }
+    const projectRow = await findProjectById(tx, row.projectId);
+    if (!projectRow) throw new Error(`Payment ${row.id} has no project`);
+
+    if (fact.status === "COMPLETED") {
+      if (fact.amountMinor !== row.amountMinor || fact.currency !== row.currency) {
+        throw new Error(
+          `Capture ${fact.captureId} (${fact.currency} ${fact.amountMinor}) does not match payment ${row.id} (${row.currency} ${row.amountMinor})`,
+        );
+      }
+      await tx
+        .update(payment)
+        .set({ status: "captured", paypalCaptureId: fact.captureId, capturedAt: new Date(), version: row.version + 1 })
+        .where(eq(payment.id, row.id));
+      await uow.apply({
+        project: projectRow,
+        set: await projectChangeOnCapture(tx, projectRow, row.kind),
+        transfers: [
+          paymentCapturedTransfer({
+            currency: row.currency,
+            projectId: row.projectId,
+            paymentId: row.id,
+            quotePartMinor: row.quotePartMinor,
+            managementFeeMinor: row.managementFeeMinor,
+          }),
+        ],
+        events: [
+          {
+            type: "payment.captured",
+            data: { paymentId: row.id, kind: row.kind, amountMinor: row.amountMinor, captureId: fact.captureId },
+          },
+        ],
+      });
+      return "applied";
+    }
+
+    await tx
+      .update(payment)
+      .set({ status: "failed", paypalCaptureId: fact.captureId, version: row.version + 1 })
+      .where(eq(payment.id, row.id));
+    await uow.apply({
+      project: projectRow,
+      set: {},
+      events: [{ type: "payment.failed", data: { paymentId: row.id, kind: row.kind, captureId: fact.captureId, status: fact.status } }],
+    });
+    return "failed";
+  });
 }
 
 // Services spec §6.4: applies each capture outcome at most once, whichever input reports it first. The
@@ -85,63 +154,15 @@ export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise
     // REFUNDED and PARTIALLY_REFUNDED are refund news, handled with refunds.
     throw new Error(`Capture ${fact.captureId} has status ${fact.status}, which is not a capture outcome`);
   }
-  try {
-    return await runInTransaction(db, async (tx, uow) => {
-      const row = await lockPayment(tx, fact.paymentId);
-      checkCaptureBelongs(row, fact);
-      if (row.status === "captured" || (row.status === "failed" && row.paypalCaptureId === fact.captureId)) {
-        throw new FactAlreadyApplied();
-      }
-      const projectRow = await findProjectById(tx, row.projectId);
-      if (!projectRow) throw new Error(`Payment ${row.id} has no project`);
-
-      if (fact.status === "COMPLETED") {
-        if (fact.amountMinor !== row.amountMinor || fact.currency !== row.currency) {
-          throw new Error(
-            `Capture ${fact.captureId} (${fact.currency} ${fact.amountMinor}) does not match payment ${row.id} (${row.currency} ${row.amountMinor})`,
-          );
-        }
-        await tx
-          .update(payment)
-          .set({ status: "captured", paypalCaptureId: fact.captureId, capturedAt: new Date(), version: row.version + 1 })
-          .where(eq(payment.id, row.id));
-        await uow.apply({
-          project: projectRow,
-          set: await projectChangeOnCapture(tx, projectRow, row.kind),
-          transfers: [
-            paymentCapturedTransfer({
-              currency: row.currency,
-              projectId: row.projectId,
-              paymentId: row.id,
-              quotePartMinor: row.quotePartMinor,
-              managementFeeMinor: row.managementFeeMinor,
-            }),
-          ],
-          events: [
-            {
-              type: "payment.captured",
-              data: { paymentId: row.id, kind: row.kind, amountMinor: row.amountMinor, captureId: fact.captureId },
-            },
-          ],
-        });
-        return "applied";
-      }
-
-      await tx
-        .update(payment)
-        .set({ status: "failed", paypalCaptureId: fact.captureId, version: row.version + 1 })
-        .where(eq(payment.id, row.id));
-      await uow.apply({
-        project: projectRow,
-        set: {},
-        events: [{ type: "payment.failed", data: { paymentId: row.id, kind: row.kind, captureId: fact.captureId, status: fact.status } }],
-      });
-      return "failed";
-    });
-  } catch (error) {
-    // Thrown inside the transaction to roll it back: nothing was written.
-    if (error instanceof FactAlreadyApplied) return "already_applied";
-    if (error instanceof StaleFact) return "stale";
-    throw error;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await applyInTransaction(db, fact);
+    } catch (error) {
+      // Thrown inside the transaction to roll it back: nothing was written.
+      if (error instanceof FactAlreadyApplied) return "already_applied";
+      if (error instanceof StaleFact) return "stale";
+      if (error instanceof ProjectConflictError && attempt < MAX_CONFLICT_ATTEMPTS) continue;
+      throw error;
+    }
   }
 }

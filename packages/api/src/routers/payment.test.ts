@@ -160,6 +160,24 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       );
     });
 
+    it("ignores news about a cancelled payment, unless money moved", async () => {
+      const { paymentId } = await depositWithOrder();
+      await db.update(payment).set({ status: "cancelled" }).where(eq(payment.id, paymentId));
+
+      expect(await applyCaptureFact(db, fact(paymentId, { status: "DECLINED" }))).toBe("stale");
+      await expect(applyCaptureFact(db, fact(paymentId))).rejects.toThrow(/cancelled payment/);
+      expect((await paymentRow(paymentId))?.status).toBe("cancelled");
+    });
+
+    it("keeps the first pending capture when PayPal reports another", async () => {
+      const { paymentId } = await depositWithOrder();
+      const pending = { status: "PENDING", amountMinor: null, currency: null };
+
+      expect(await applyCaptureFact(db, fact(paymentId, pending))).toBe("pending");
+      expect(await applyCaptureFact(db, fact(paymentId, { ...pending, captureId: "CAPTURE2" }))).toBe("stale");
+      expect((await paymentRow(paymentId))?.paypalCaptureId).toBe("CAPTURE1");
+    });
+
     it("refuses a second capture for the same payment", async () => {
       const { paymentId } = await depositWithOrder();
       await applyCaptureFact(db, fact(paymentId));
