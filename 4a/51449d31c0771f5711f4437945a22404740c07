@@ -1,0 +1,26 @@
+packages/api/src/routers/payment.test.ts
+  s_2f829368e5808d::t_24169a5f43f410 312,315-318
+packages/api/src/use-cases/payments.ts
+  s_2f829368e5808d::t_8881ffde306bd5 292-296
+packages/paypal/src/orders.ts
+  s_2f829368e5808d::t_42160a24f3fbf1 37-50
+  s_2f829368e5808d::t_688708eacdc966 22-24
+packages/paypal/src/orders.test.ts
+  s_2f829368e5808d::t_849146e7ac7ccc 98-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a51449d31c0771f5711f4437945a22404740c07",
+  "prompts": {},
+  "sessions": {
+    "s_2f829368e5808d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f371ab79-4ed7-49b7-b0b3-155828d84a6a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
