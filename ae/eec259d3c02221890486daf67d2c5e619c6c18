@@ -1,0 +1,19 @@
+packages/db/src/repositories/request-limits.test.ts
+  s_2f829368e5808d::t_8fe3148d858d26 1-2,5,25-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aeeec259d3c02221890486daf67d2c5e619c6c18",
+  "prompts": {},
+  "sessions": {
+    "s_2f829368e5808d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f371ab79-4ed7-49b7-b0b3-155828d84a6a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
