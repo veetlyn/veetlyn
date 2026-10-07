@@ -1,5 +1,5 @@
-import { hasStoreWideRole, type StoreRecord } from "@jendal-workspace/core";
-import { findTeamAccess } from "@jendal-workspace/db/repositories/teams";
+import { hasStoreWideRole } from "@jendal-workspace/core";
+import { findTeamAccess, type TeamAccessRow } from "@jendal-workspace/db/repositories/teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -25,24 +25,24 @@ function requirePayPal(ctx: AuthedContext): PayPalOnboardingDeps {
 
 // Connecting PayPal is an admin power (services spec §4.1): the workspace's owners and admins.
 // Same leak rule as storeProcedure: a team the caller cannot administer reads as missing.
-async function requireTeamAdmin(ctx: AuthedContext, teamId: string): Promise<StoreRecord> {
+async function requireTeamAdmin(ctx: AuthedContext, teamId: string): Promise<TeamAccessRow> {
   const access = await findTeamAccess(ctx.db, { teamId, userId: ctx.session.user.id });
   if (!access || !hasStoreWideRole(access.role)) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Team not found." });
   }
-  return access.team;
+  return access;
 }
 
 export const paypalRouter = router({
   startOnboarding: protectedProcedure.input(teamIdInput).mutation(async ({ ctx, input }) => {
-    const team = await requireTeamAdmin(ctx, input.teamId);
-    return startPayPalOnboarding(requirePayPal(ctx), team);
+    const { team, product } = await requireTeamAdmin(ctx, input.teamId);
+    return startPayPalOnboarding(requirePayPal(ctx), team, product);
   }),
 
   onboardingStatus: protectedProcedure
     .input(teamIdInput.extend({ refresh: z.boolean().default(false) }))
     .query(async ({ ctx, input }) => {
-      const team = await requireTeamAdmin(ctx, input.teamId);
+      const { team } = await requireTeamAdmin(ctx, input.teamId);
       const deps = requirePayPal(ctx);
       return input.refresh ? refreshPayPalOnboarding(deps, team) : getPayPalOnboardingView(deps, team);
     }),

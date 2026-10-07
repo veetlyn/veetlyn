@@ -19,8 +19,8 @@ const teamRow = {
   paypalMerchantId: null,
 };
 const session = { user: { id: "user-1" }, session: { id: "session-1" } };
-// findTeamAccess returns the team columns plus role and teamMemberId (null = not a team member).
-const ownerAccess = { ...teamRow, role: "owner", teamMemberId: null };
+// findTeamAccess selects the team columns plus product, role and teamMemberId (null = not a team member).
+const ownerAccess = { ...teamRow, product: "store", role: "owner", teamMemberId: null };
 
 // Minimal drizzle query-builder stand-ins: select().from().innerJoin().leftJoin().where().limit()
 // for findTeamAccess, insert().values().onConflictDoUpdate().returning() for the integration

@@ -1,4 +1,4 @@
-import type { StoreRecord } from "@jendal-workspace/core";
+import type { StoreRecord, TeamProduct } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import {
   findPayPalOnboarding,
@@ -7,7 +7,7 @@ import {
   savePayPalIntegration,
   savePayPalReferral,
 } from "@jendal-workspace/db/repositories/paypal-onboarding";
-import { actionUrlFromLinks, type PayPalClient } from "@jendal-workspace/paypal";
+import { actionUrlFromLinks, PARTNER_REFERRAL_FEATURES, type PayPalClient } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 
 // Assembled by the router (tRPC) and by the return route (Hono) from Context["paypal"] plus the db.
@@ -62,9 +62,17 @@ export function viewFor(team: StoreRecord, row: PayPalOnboardingRow | null): Pay
 // PayPal caps tracking_id and return_url at 127 characters (Fact 2).
 const PAYPAL_URL_MAX_LENGTH = 127;
 
+// Services teams ship nothing, so they leave shipment tracking out. PayPal rejects the whole referral
+// with 422 FEATURES_UNAUTHORIZED when the partner app is not approved for any feature it asks for.
+export function partnerReferralFeaturesFor(product: TeamProduct): readonly string[] {
+  if (product === "store") return PARTNER_REFERRAL_FEATURES;
+  return PARTNER_REFERRAL_FEATURES.filter((feature) => feature !== "TRACKING_SHIPMENT_READWRITE");
+}
+
 export async function startPayPalOnboarding(
   deps: PayPalOnboardingDeps,
   team: StoreRecord,
+  product: TeamProduct,
 ): Promise<{ actionUrl: string }> {
   if (team.paypalMerchantId) {
     throw new TRPCError({ code: "CONFLICT", message: "This team already has a PayPal account connected." });
@@ -77,6 +85,7 @@ export async function startPayPalOnboarding(
     returnUrl: deps.returnUrl,
     // A fresh suffix per attempt: a used action_url cannot be reopened, so every start mints a new link (Fact 6).
     requestId: `partner-referral:${team.id}:${crypto.randomUUID()}`,
+    features: partnerReferralFeaturesFor(product),
   });
   const actionUrl = actionUrlFromLinks(referral.links);
   if (!actionUrl) throw new Error("PayPal's partner referral response has no action_url link.");
