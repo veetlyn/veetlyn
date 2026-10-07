@@ -1,0 +1,25 @@
+packages/api/src/routers/project.test.ts
+  s_78ac34a42db426::t_d366d15562c0ec 146-161
+packages/api/src/routers/project.ts
+  s_78ac34a42db426::t_a115aa811a15c3 10,103-104
+packages/api/src/use-cases/projects.ts
+  s_78ac34a42db426::t_09eae44e7ec446 33,84,86
+packages/db/src/repositories/services-teams.ts
+  s_78ac34a42db426::t_2ea34746be1973 11,77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5da23935e4546cb060bbb6c5f5261effdae251cd",
+  "prompts": {},
+  "sessions": {
+    "s_78ac34a42db426": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4ee2dcf0-5123-448b-8e35-bfdf3593d6da",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
