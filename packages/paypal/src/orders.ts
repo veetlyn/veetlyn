@@ -19,6 +19,9 @@ export type CreateSellerOrderInput = {
   customId: string;
   description: string;
   brandName: string;
+  // One line per item, quantity 1, so the buyer's receipt matches the pay page. Their values must add up
+  // to `value`; PayPal rejects the order otherwise.
+  items?: { name: string; value: string }[];
 };
 
 // PayPal caps description and brand_name at 127 characters (R1 facts §1).
@@ -31,7 +34,20 @@ function sellerOrderBody(input: Omit<CreateSellerOrderInput, "requestId">) {
       {
         custom_id: input.customId,
         description: input.description.slice(0, MAX_TEXT),
-        amount: { currency_code: input.currency, value: input.value },
+        amount: {
+          currency_code: input.currency,
+          value: input.value,
+          ...(input.items?.length ? { breakdown: { item_total: { currency_code: input.currency, value: input.value } } } : {}),
+        },
+        ...(input.items?.length
+          ? {
+              items: input.items.map((item) => ({
+                name: item.name.slice(0, MAX_TEXT),
+                quantity: "1",
+                unit_amount: { currency_code: input.currency, value: item.value },
+              })),
+            }
+          : {}),
         payee: { merchant_id: input.merchantId },
         ...(input.platformFeeValue === null
           ? {}

@@ -95,6 +95,36 @@ describe("orders.create", () => {
     expect(body.purchase_units[0].description).toHaveLength(127);
     expect(body.payment_source.paypal.experience_context.brand_name).toHaveLength(127);
   });
+
+  it("lists the items and their total when given items", async () => {
+    const { client, requests } = clientWith(() => jsonResponse(201, { id: "ORDER3", status: "CREATED" }));
+
+    await client.orders.create({
+      requestId: "order:pay-3:abc",
+      merchantId: "SELLER1",
+      currency: "USD",
+      value: "180.00",
+      platformFeeValue: "1.80",
+      customId: "pay-3",
+      description: "Landing page",
+      brandName: "Walk Crew",
+      items: [
+        { name: "Deposit (50% of the quote)", value: "150.00" },
+        { name: "n".repeat(200), value: "30.00" },
+      ],
+    });
+
+    const unit = JSON.parse(recordedAt(requests, 1).body ?? "").purchase_units[0];
+    expect(unit.amount).toEqual({
+      currency_code: "USD",
+      value: "180.00",
+      breakdown: { item_total: { currency_code: "USD", value: "180.00" } },
+    });
+    expect(unit.items).toEqual([
+      { name: "Deposit (50% of the quote)", quantity: "1", unit_amount: { currency_code: "USD", value: "150.00" } },
+      { name: "n".repeat(127), quantity: "1", unit_amount: { currency_code: "USD", value: "30.00" } },
+    ]);
+  });
 });
 
 describe("orders.capture and orders.get", () => {

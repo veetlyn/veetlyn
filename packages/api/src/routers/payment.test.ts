@@ -309,9 +309,13 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
         custom_id: paymentId,
         description: "Website redesign",
-        amount: { currency_code: "USD", value: "600.00" },
+        amount: { currency_code: "USD", value: "600.00", breakdown: { item_total: { currency_code: "USD", value: "600.00" } } },
         payee: { merchant_id: "SELLER1" },
         payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "6.00" } }] },
+        items: [
+          { name: "Deposit (50% of the quote)", quantity: "1", unit_amount: { currency_code: "USD", value: "500.00" } },
+          { name: "Management fee (10%)", quantity: "1", unit_amount: { currency_code: "USD", value: "100.00" } },
+        ],
       });
       expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 600, status: "pending" });
     });

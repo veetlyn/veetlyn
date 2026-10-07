@@ -289,6 +289,11 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
     customId: row.id,
     description: projectRow.title,
     brandName: seller.name,
+    // The lines always add up to the amount (core paymentLines); the check keeps a bad row from failing the order.
+    items:
+      row.lines.reduce((sum, line) => sum + line.amountMinor, 0) === row.amountMinor
+        ? row.lines.map((line) => ({ name: line.label, value: toPayPalValue(line.amountMinor) }))
+        : undefined,
   });
   const updated = await deps.db
     .update(payment)
