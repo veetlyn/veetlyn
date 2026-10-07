@@ -6,12 +6,13 @@ import {
   createTestDb,
   hasTestDatabase,
   seedOrganization,
+  seedServicesTeam,
   seedStore,
   seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
-import { createPayPalClient, type FetchLike } from "@jendal-workspace/paypal";
-import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse } from "@jendal-workspace/paypal/testing";
+import { createPayPalClient, type FetchLike, PARTNER_REFERRAL_FEATURES } from "@jendal-workspace/paypal";
+import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -92,6 +93,13 @@ function fakePayPalApi(options: { integration: Record<string, unknown> | null })
   });
 }
 
+// The features list from a recorded partner referral request body.
+function referralFeatures(requests: RecordedRequest[]): unknown {
+  const call = requests.find((r) => r.url.endsWith("/v2/customer/partner-referrals"));
+  const body = JSON.parse(call?.body ?? "{}");
+  return body.operations?.[0]?.api_integration_preference?.rest_api_integration?.third_party_details?.features;
+}
+
 describe.skipIf(!hasTestDatabase)("paypal router", () => {
   const db = createTestDb();
   const { auth } = createTestAuth(db);
@@ -160,6 +168,34 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
     });
     const row = await findPayPalOnboarding(db, store.id);
     expect(row).toMatchObject({ trackingId: store.id, actionUrl: ACTION_URL, status: "pending", merchantId: null });
+  });
+
+  it("asks PayPal for shipment tracking when a store connects", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme" });
+    const { requests, fetch } = fakePayPalApi({ integration: null });
+
+    await callerFor(userId, makePayPal(fetch)).paypal.startOnboarding({ teamId: store.id });
+
+    expect(referralFeatures(requests)).toEqual([...PARTNER_REFERRAL_FEATURES]);
+  });
+
+  it("does not ask PayPal for shipment tracking when a services team connects", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "studio" });
+    const { requests, fetch } = fakePayPalApi({ integration: null });
+
+    const started = await callerFor(userId, makePayPal(fetch)).paypal.startOnboarding({ teamId: studio.id });
+
+    expect(started).toEqual({ actionUrl: ACTION_URL });
+    expect(referralFeatures(requests)).toEqual([
+      "PAYMENT",
+      "REFUND",
+      "PARTNER_FEE",
+      "READ_SELLER_DISPUTE",
+      "UPDATE_SELLER_DISPUTE",
+      "ACCESS_MERCHANT_INFORMATION",
+    ]);
   });
 
   it("refuses a start when the return URL is longer than PayPal's 127-character limit", async () => {
