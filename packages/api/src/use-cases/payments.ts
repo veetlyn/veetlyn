@@ -1,10 +1,23 @@
-import { paymentCapturedTransfer, transitionProject, transitionRefusalMessage } from "@jendal-workspace/core";
+import {
+  parseMajorAmount,
+  paymentCapturedTransfer,
+  platformFeeMinor,
+  sellerPlanFor,
+  toPayPalValue,
+  transitionProject,
+  transitionRefusalMessage,
+} from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
 import { findProjectById, getCurrentQuote, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
+import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { ProjectConflictError, runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { payment, type project } from "@jendal-workspace/db/schema/projects";
+import { captureFromOrder, PayPalError, type PayPalOrder } from "@jendal-workspace/paypal";
+import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, or } from "drizzle-orm";
+
+import type { PayPalServices } from "../context";
 
 // One capture as PayPal reports it: from a capture response, an order lookup or a webhook (R1c).
 export type CaptureFact = {
@@ -165,4 +178,135 @@ export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise
       throw error;
     }
   }
+}
+
+export type PaymentDeps = { db: Database; paypal: PayPalServices };
+
+async function requirePayment(db: Database, paymentId: string): Promise<PaymentRow> {
+  const [row] = await db.select().from(payment).where(eq(payment.id, paymentId)).limit(1);
+  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
+  return row;
+}
+
+async function requireSeller(db: Database, teamId: string): Promise<{ merchantId: string; name: string }> {
+  const team = await findTeamById(db, teamId);
+  if (!team?.paypalMerchantId) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This team cannot take PayPal payments yet." });
+  }
+  return { merchantId: team.paypalMerchantId, name: team.name };
+}
+
+export async function getPayPage(deps: { db: Database; paypal: PayPalServices | undefined }, paymentId: string) {
+  const row = await requirePayment(deps.db, paymentId);
+  const [projectRow, team] = await Promise.all([findProjectById(deps.db, row.projectId), findTeamById(deps.db, row.teamId)]);
+  if (!projectRow || !team) throw new Error(`Payment ${row.id} has no project or team`);
+  return {
+    payment: {
+      id: row.id,
+      kind: row.kind,
+      status: row.status,
+      currency: row.currency,
+      amountMinor: row.amountMinor,
+      lines: row.lines,
+      capturedAt: row.capturedAt,
+    },
+    project: { id: projectRow.id, title: projectRow.title },
+    team: { name: team.name },
+    // Null until the server has PayPal configured and the team has connected its account.
+    paypal: deps.paypal && team.paypalMerchantId ? { ...deps.paypal.sdk, merchantId: team.paypalMerchantId } : null,
+  };
+}
+
+// Services spec §5.4. Every start creates a fresh order for the payment's amount and makes it the only
+// order this payment can be captured on, so an abandoned order can never be paid as well.
+export async function startPayment(deps: PaymentDeps, paymentId: string): Promise<{ orderId: string }> {
+  const row = await requirePayment(deps.db, paymentId);
+  if (row.status === "captured") throw new TRPCError({ code: "CONFLICT", message: "This payment is already paid." });
+  if (row.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "This payment was cancelled." });
+  if (row.status === "pending" && row.paypalCaptureId) {
+    throw new TRPCError({ code: "CONFLICT", message: "PayPal is still processing this payment. Check back soon." });
+  }
+  if (row.kind === "balance") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Balance payments open once deliveries can be accepted." });
+  }
+  const projectRow = await findProjectById(deps.db, row.projectId);
+  if (!projectRow) throw new Error(`Payment ${row.id} has no project`);
+  const seller = await requireSeller(deps.db, row.teamId);
+  const fee = platformFeeMinor(row.amountMinor, sellerPlanFor({ id: row.teamId }).feeBps);
+  const order = await deps.paypal.client.orders.create({
+    // A new key per start: each start is a new order, while the client's own retries reuse this key.
+    requestId: `order:${row.id}:${crypto.randomUUID()}`,
+    merchantId: seller.merchantId,
+    currency: row.currency,
+    value: toPayPalValue(row.amountMinor),
+    platformFeeValue: fee > 0 ? toPayPalValue(fee) : null,
+    customId: row.id,
+    description: projectRow.title,
+    brandName: seller.name,
+  });
+  const updated = await deps.db
+    .update(payment)
+    .set({ paypalOrderId: order.id, platformFeeMinor: fee, status: "pending", paypalCaptureId: null, version: row.version + 1 })
+    .where(and(eq(payment.id, row.id), eq(payment.version, row.version)))
+    .returning({ id: payment.id });
+  if (updated.length === 0) {
+    throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });
+  }
+  return { orderId: order.id };
+}
+
+export type CaptureOutcome = "captured" | "pending" | "declined";
+
+function hasIssue(error: PayPalError, issue: string): boolean {
+  return error.details.some((detail) => detail.issue === issue);
+}
+
+export async function capturePayment(
+  deps: PaymentDeps,
+  input: { paymentId: string; orderId: string },
+): Promise<{ outcome: CaptureOutcome }> {
+  const row = await requirePayment(deps.db, input.paymentId);
+  if (row.paypalOrderId !== input.orderId) {
+    throw new TRPCError({ code: "CONFLICT", message: "This payment was restarted. Reload the page and try again." });
+  }
+  if (row.status === "captured") return { outcome: "captured" };
+  const seller = await requireSeller(deps.db, row.teamId);
+  let order: PayPalOrder;
+  try {
+    order = await deps.paypal.client.orders.capture({
+      orderId: input.orderId,
+      // A new key per attempt: after INSTRUMENT_DECLINED the client approves again, and a reused key would
+      // replay the decline. PayPal refuses a second capture of the order (ORDER_ALREADY_CAPTURED).
+      requestId: `capture:${input.orderId}:${crypto.randomUUID()}`,
+      merchantId: seller.merchantId,
+    });
+  } catch (error) {
+    if (!(error instanceof PayPalError)) throw error;
+    if (hasIssue(error, "INSTRUMENT_DECLINED")) {
+      throw new TRPCError({
+        code: "UNPROCESSABLE_CONTENT",
+        message: "PayPal declined this payment method. Choose another way to pay.",
+        cause: error,
+      });
+    }
+    if (!hasIssue(error, "ORDER_ALREADY_CAPTURED")) throw error;
+    // An earlier capture succeeded but its answer was lost: the order holds the capture to apply.
+    order = await deps.paypal.client.orders.get({ orderId: input.orderId, merchantId: seller.merchantId });
+  }
+  const capture = captureFromOrder(order);
+  if (!capture) throw new Error(`PayPal order ${input.orderId} has no capture`);
+  const result = await applyCaptureFact(deps.db, {
+    paymentId: row.id,
+    orderId: input.orderId,
+    captureId: capture.id,
+    status: capture.status,
+    amountMinor: capture.amount ? parseMajorAmount(capture.amount.value) : null,
+    currency: capture.amount?.currency_code ?? null,
+  });
+  if (result === "stale") {
+    throw new TRPCError({ code: "CONFLICT", message: "This payment was restarted. Reload the page and try again." });
+  }
+  if (capture.status === "COMPLETED") return { outcome: "captured" };
+  if (capture.status === "PENDING") return { outcome: "pending" };
+  return { outcome: "declined" };
 }

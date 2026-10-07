@@ -14,7 +14,7 @@ import { asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { linkSecret, signClientLink, verifyClientLink } from "../client-links";
+import { linkSecret, signClientLink, signPayLink, verifyClientLink } from "../client-links";
 import { publicProcedure, router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
 import {
@@ -174,6 +174,19 @@ export const projectRouter = router({
       listProjectAmendments(ctx.db, projectId),
       listProjectPayments(ctx.db, projectId),
     ]);
+    const secret = linkSecret(ctx.auth);
+    // Pending and failed payments can be paid; the pay link names the payment, never the amount (§5.4).
+    const paymentViews = await Promise.all(
+      payments.map(async (p) => ({
+        id: p.id,
+        kind: p.kind,
+        status: p.status,
+        amountMinor: p.amountMinor,
+        lines: p.lines,
+        createdAt: p.createdAt,
+        payPath: p.status === "pending" || p.status === "failed" ? `/pay/${await signPayLink(secret, p.id)}` : null,
+      })),
+    );
     return {
       project: {
         id: row.id,
@@ -208,14 +221,7 @@ export const projectRouter = router({
         extraDays: a.extraDays,
         createdAt: a.createdAt,
       })),
-      payments: payments.map((p) => ({
-        id: p.id,
-        kind: p.kind,
-        status: p.status,
-        amountMinor: p.amountMinor,
-        lines: p.lines,
-        createdAt: p.createdAt,
-      })),
+      payments: paymentViews,
     };
   }),
 

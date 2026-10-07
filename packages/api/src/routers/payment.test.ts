@@ -1,5 +1,6 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
 import { ledgerAccounts } from "@jendal-workspace/core";
+import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
@@ -11,10 +12,12 @@ import {
   seedServicesTeamWithAdmin,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
+import { buildAuthAssertion, createPayPalClient } from "@jendal-workspace/paypal";
+import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { signClientLink } from "../client-links";
+import { signClientLink, signPayLink, verifyPayLink } from "../client-links";
 import type { PayPalServices } from "../context";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
@@ -27,6 +30,60 @@ const ITEMS = [
   { description: "Design", amountMinor: 40_000, extraDays: 0 },
   { description: "Build", amountMinor: 60_000, extraDays: 0 },
 ];
+
+function capturedOrder(status: string, value = "600.00") {
+  return {
+    id: "ORDER1",
+    status: status === "COMPLETED" ? "COMPLETED" : "PENDING",
+    purchase_units: [{ payments: { captures: [{ id: "CAPTURE1", status, amount: { currency_code: "USD", value } }] } }],
+  };
+}
+
+const DECLINED = {
+  name: "UNPROCESSABLE_ENTITY",
+  message: "The requested action could not be performed.",
+  debug_id: "d422",
+  details: [{ issue: "INSTRUMENT_DECLINED", description: "The instrument presented was declined." }],
+};
+
+const ALREADY_CAPTURED = { ...DECLINED, details: [{ issue: "ORDER_ALREADY_CAPTURED", description: "Already captured." }] };
+
+// A fake PayPal API: token, order create (always ORDER1), capture and order lookup.
+function fakePayPalApi(options: { capture?: () => Response; lookup?: () => Response } = {}) {
+  return fakeFetch((request) => {
+    if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
+    if (request.method === "POST" && request.url.endsWith("/v2/checkout/orders")) {
+      return jsonResponse(201, { id: "ORDER1", status: "CREATED" });
+    }
+    if (request.url.endsWith("/v2/checkout/orders/ORDER1/capture")) {
+      return options.capture?.() ?? jsonResponse(201, capturedOrder("COMPLETED"));
+    }
+    if (request.method === "GET" && request.url.endsWith("/v2/checkout/orders/ORDER1")) {
+      return options.lookup?.() ?? jsonResponse(200, capturedOrder("COMPLETED"));
+    }
+    return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
+  });
+}
+
+function makePayPal(fetchImpl: Parameters<typeof createPayPalClient>[0]["fetch"]): PayPalServices {
+  return {
+    client: createPayPalClient({
+      clientId: "partner-client-id",
+      clientSecret: "partner-secret",
+      environment: "sandbox",
+      fetch: fetchImpl,
+      sleep: () => Promise.resolve(),
+      partnerAttributionId: "PAYLEOR_BN",
+    }),
+    partnerId: "PARTNER42",
+    returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
+    sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+  };
+}
+
+function calls(requests: RecordedRequest[], suffix: string): RecordedRequest[] {
+  return requests.filter((r) => r.url.endsWith(suffix));
+}
 
 describe.skipIf(!hasTestDatabase)("payments", () => {
   const db = createTestDb();
@@ -184,5 +241,154 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
       await expect(applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" }))).rejects.toThrow(/already has capture/);
     });
+  });
+
+  async function connectedDeposit() {
+    const seeded = await pendingDeposit();
+    await markTeamPayPalMerchant(db, { teamId: seeded.teamId, merchantId: "SELLER1" });
+    return { ...seeded, token: await signPayLink(SECRET, seeded.paymentId) };
+  }
+
+  describe("payment router", () => {
+    it("shows the pay page with the SDK settings and a way back to the project", async () => {
+      const { projectId, paymentId, token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi();
+
+      const page = await callerFor(null, makePayPal(fetch)).payment.payGet({ token });
+
+      expect(page).toMatchObject({
+        payment: { id: paymentId, kind: "deposit", status: "pending", currency: "USD", amountMinor: 60_000 },
+        project: { id: projectId, title: "Website redesign" },
+        team: { name: "team" },
+        paypal: {
+          clientId: "partner-client-id",
+          partnerAttributionId: "PAYLEOR_BN",
+          environment: "sandbox",
+          merchantId: "SELLER1",
+        },
+        clientPath: `/c/${await signClientLink(SECRET, projectId)}`,
+      });
+      await expect(callerFor(null).payment.payGet({ token: `${paymentId}.bad` })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    });
+
+    it("says PayPal is not available while the team is not connected", async () => {
+      const { paymentId } = await pendingDeposit();
+      const { fetch } = fakePayPalApi();
+      const token = await signPayLink(SECRET, paymentId);
+
+      expect((await callerFor(null, makePayPal(fetch)).payment.payGet({ token })).paypal).toBeNull();
+      await expect(callerFor(null, makePayPal(fetch)).payment.payStart({ token })).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+      });
+      await expect(callerFor(null).payment.payStart({ token })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    });
+
+    it("creates an order for the team with Payleor's 1% Team fee", async () => {
+      const { paymentId, token } = await connectedDeposit();
+      const { requests, fetch } = fakePayPalApi();
+
+      expect(await callerFor(null, makePayPal(fetch)).payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
+
+      const [create] = calls(requests, "/v2/checkout/orders");
+      expect(create?.headers.get("paypal-auth-assertion")).toBe(
+        buildAuthAssertion({ clientId: "partner-client-id", payerId: "SELLER1" }),
+      );
+      expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
+        custom_id: paymentId,
+        description: "Website redesign",
+        amount: { currency_code: "USD", value: "600.00" },
+        payee: { merchant_id: "SELLER1" },
+        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "6.00" } }] },
+      });
+      expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 600, status: "pending" });
+    });
+
+    it("captures the deposit, starts the work, and answers a repeated capture without calling PayPal again", async () => {
+      const { projectId, token } = await connectedDeposit();
+      const { requests, fetch } = fakePayPalApi();
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
+      expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
+
+      expect(calls(requests, "/capture")).toHaveLength(1);
+      expect(calls(requests, "/capture")[0]?.headers.get("paypal-request-id")).toMatch(/^capture:ORDER1:/);
+      expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
+    });
+
+    it("lets the client choose another way to pay after INSTRUMENT_DECLINED", async () => {
+      const { paymentId, token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi({ capture: () => jsonResponse(422, DECLINED) });
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject({
+        code: "UNPROCESSABLE_CONTENT",
+        message: "PayPal declined this payment method. Choose another way to pay.",
+      });
+      expect((await paymentRow(paymentId))?.status).toBe("pending");
+      expect(await caller.payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
+    });
+
+    it("applies the capture from the order when PayPal says it is already captured", async () => {
+      const { projectId, token } = await connectedDeposit();
+      const { requests, fetch } = fakePayPalApi({ capture: () => jsonResponse(422, ALREADY_CAPTURED) });
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
+
+      expect(requests.some((r) => r.method === "GET" && r.url.endsWith("/v2/checkout/orders/ORDER1"))).toBe(true);
+      expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
+    });
+
+    it("reports a declined capture and lets the client start again", async () => {
+      const { paymentId, token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi({ capture: () => jsonResponse(201, capturedOrder("DECLINED")) });
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "declined" });
+      expect((await paymentRow(paymentId))?.status).toBe("failed");
+
+      expect(await caller.payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "pending", paypalCaptureId: null });
+    });
+
+    it("reports a pending capture and refuses to start a second order while PayPal finishes it", async () => {
+      const { paymentId, token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi({ capture: () => jsonResponse(201, capturedOrder("PENDING")) });
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "pending" });
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "pending", paypalCaptureId: "CAPTURE1" });
+      await expect(caller.payment.payStart({ token })).rejects.toMatchObject({ code: "CONFLICT" });
+    });
+
+    it("refuses to capture an order the payment no longer uses", async () => {
+      const { token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi();
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      await expect(caller.payment.payCapture({ token, orderId: "ORDER9" })).rejects.toMatchObject({ code: "CONFLICT" });
+    });
+  });
+
+  it("gives the client page a pay path for a payment that can be paid, and none once it is paid", async () => {
+    const { projectId, paymentId, token } = await connectedDeposit();
+    const clientToken = await signClientLink(SECRET, projectId);
+
+    const before = await callerFor(null).project.clientGet({ token: clientToken });
+    const payPath = before.payments[0]?.payPath ?? "";
+    expect(payPath).toBe(`/pay/${token}`);
+    expect(await verifyPayLink(SECRET, payPath.slice("/pay/".length))).toBe(paymentId);
+
+    await db.update(payment).set({ paypalOrderId: "ORDER1" }).where(eq(payment.id, paymentId));
+    await applyCaptureFact(db, fact(paymentId));
+    const after = await callerFor(null).project.clientGet({ token: clientToken });
+    expect(after.payments[0]?.payPath).toBeNull();
   });
 });
