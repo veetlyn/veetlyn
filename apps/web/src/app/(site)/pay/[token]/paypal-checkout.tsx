@@ -1,6 +1,6 @@
 "use client";
 
-import { loadCoreSdkScript } from "@paypal/paypal-js/sdk-v6";
+import { loadCoreSdkScript, type OneTimePaymentSession } from "@paypal/paypal-js/sdk-v6";
 import { useEffect, useRef, useState } from "react";
 
 import { captureOutcomeProblem, sdkEnvironment } from "@/lib/pay-page";
@@ -27,6 +27,12 @@ export default function PayPalCheckout({ token, currency, paypal }: { token: str
 
   useEffect(() => {
     let stopped = false;
+    let session: OneTimePaymentSession | null = null;
+    // The SDK reports a refused order through start() and onError with its own wording; the server's message is the useful one.
+    let startError: unknown = null;
+    // Covers the popup being open and the capture after it, so repeat clicks and key presses cannot start a second payment.
+    let starting = false;
+    let capturing = false;
     const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.payment.payGet.queryKey({ token }) });
 
     async function mount() {
@@ -45,8 +51,10 @@ export default function PayPalCheckout({ token, currency, paypal }: { token: str
         setProblem("PayPal is not available for this payment.");
         return;
       }
-      const session = instance.createPayPalOneTimePaymentSession({
+      const created = instance.createPayPalOneTimePaymentSession({
         onApprove: async ({ orderId }) => {
+          starting = false;
+          capturing = true;
           setBusy(true);
           try {
             const { outcome } = await trpcClient.payment.payCapture.mutate({ token, orderId });
@@ -54,23 +62,46 @@ export default function PayPalCheckout({ token, currency, paypal }: { token: str
           } catch (error) {
             setProblem(messageOf(error));
           } finally {
-            setBusy(false);
+            // Refresh first so the button does not come back before the page shows the result.
             await refresh();
+            capturing = false;
+            setBusy(false);
           }
         },
-        onCancel: () => setProblem(null),
-        onError: () => setProblem("PayPal could not finish the payment. Try again."),
+        onCancel: () => {
+          starting = false;
+          setProblem(null);
+        },
+        onError: () => {
+          starting = false;
+          if (!startError) setProblem("PayPal could not finish the payment. Try again.");
+        },
       });
+      session = created;
       const button = document.createElement("paypal-button");
       button.type = "pay";
       button.addEventListener("click", () => {
+        if (capturing || starting) return;
+        starting = true;
+        startError = null;
         setProblem(null);
-        // start() must run inside the click so the popup is allowed, and takes the order promise itself.
         const order = trpcClient.payment.payStart.mutate({ token });
-        session.start({ presentationMode: "auto" }, order).catch((error: unknown) => {
+        // A side branch: the SDK still receives the same promise and sees its rejection.
+        order.catch((error: unknown) => {
+          starting = false;
+          startError = error;
           setProblem(messageOf(error));
           void refresh();
         });
+        // start() must run inside the click so the popup is allowed, and takes the order promise itself.
+        created
+          .start({ presentationMode: "auto" }, order)
+          .catch((error: unknown) => {
+            if (!startError) setProblem(messageOf(error));
+          })
+          .finally(() => {
+            if (!capturing) starting = false;
+          });
       });
       container.current?.replaceChildren(button);
     }
@@ -81,6 +112,7 @@ export default function PayPalCheckout({ token, currency, paypal }: { token: str
     const mounted = container.current;
     return () => {
       stopped = true;
+      session?.destroy();
       mounted?.replaceChildren();
     };
   }, [token, currency, clientId, partnerAttributionId, environment, merchantId]);
@@ -88,12 +120,15 @@ export default function PayPalCheckout({ token, currency, paypal }: { token: str
   return (
     <div className="space-y-2">
       <div ref={container} aria-busy={busy} className={busy ? "pointer-events-none opacity-50" : undefined} />
-      {busy ? <p className="text-sm text-muted-foreground">Confirming your payment…</p> : null}
-      {problem ? (
-        <p role="alert" className="text-sm text-destructive">
-          {problem}
+      {busy ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Confirming your payment…
         </p>
       ) : null}
+      {/* Always mounted so screen readers announce a new problem reliably. */}
+      <p role="alert" className="text-sm text-destructive">
+        {problem}
+      </p>
     </div>
   );
 }

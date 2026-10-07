@@ -526,6 +526,12 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     const payPath = before.payments[0]?.payPath ?? "";
     expect(payPath).toBe(`/pay/${token}`);
     expect(await verifyPayLink(SECRET, payPath.slice("/pay/".length))).toBe(paymentId);
+    expect(before.payments[0]?.processing).toBe(false);
+
+    await db.update(payment).set({ paypalCaptureId: "CAPTURE-PENDING" }).where(eq(payment.id, paymentId));
+    const processing = await callerFor(null).project.clientGet({ token: clientToken });
+    expect(processing.payments[0]?.processing).toBe(true);
+    await db.update(payment).set({ paypalCaptureId: null }).where(eq(payment.id, paymentId));
 
     await db.update(payment).set({ paypalOrderId: "ORDER1" }).where(eq(payment.id, paymentId));
     await applyCaptureFact(db, fact(paymentId));

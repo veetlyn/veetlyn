@@ -176,6 +176,8 @@ export const projectRouter = router({
         amountMinor: p.amountMinor,
         lines: p.lines,
         createdAt: p.createdAt,
+        // PayPal holds a capture it has not finished; the id itself stays server-side.
+        processing: p.status === "pending" && p.paypalCaptureId !== null,
         // Pending and failed payments can be paid; the pay link names the payment, never the amount (§5.4).
         // Balances open in run 2, once deliveries can be accepted.
         payPath:

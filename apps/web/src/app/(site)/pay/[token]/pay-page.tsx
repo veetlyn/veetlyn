@@ -2,9 +2,10 @@
 
 import { formatMoney, money, type MoneyCurrency } from "@jendal-workspace/core";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 import Loader from "@/components/loader";
-import { payPageState, paymentKindLabel } from "@/lib/pay-page";
+import { type PayPageState, payPageState, paymentKindLabel } from "@/lib/pay-page";
 import { trpc } from "@/utils/trpc";
 
 import PayPalCheckout from "./paypal-checkout";
@@ -18,9 +19,30 @@ export default function PayPage({ token }: { token: string }) {
     // A pending capture settles on PayPal's side; check back until it does.
     refetchInterval: (query) => (query.state.data?.payment.processing ? 5_000 : false),
   });
+  const statusRef = useRef<HTMLParagraphElement>(null);
+  const previousView = useRef<PayPageState["view"] | null>(null);
+
+  const data = view.data;
+  const state = data
+    ? payPageState({
+        kind: data.payment.kind,
+        status: data.payment.status,
+        processing: data.payment.processing,
+        paypalReady: data.paypal !== null,
+      })
+    : null;
+  const currentView = state?.view ?? null;
+
+  // Move focus to the result when the page changes under the client (after a capture), not on first load.
+  useEffect(() => {
+    if (currentView === null) return;
+    const previous = previousView.current;
+    previousView.current = currentView;
+    if (previous !== null && previous !== currentView && currentView !== "pay") statusRef.current?.focus();
+  }, [currentView]);
 
   if (view.isPending) return <Loader />;
-  if (view.isError) {
+  if (view.isError || !state) {
     return (
       <main className="container mx-auto max-w-lg space-y-4 px-4 py-16">
         <h1 className="text-2xl font-semibold">This link is not valid</h1>
@@ -31,12 +53,6 @@ export default function PayPage({ token }: { token: string }) {
 
   const { payment, project, team, paypal, clientPath } = view.data;
   const currency = payment.currency as MoneyCurrency;
-  const state = payPageState({
-    kind: payment.kind,
-    status: payment.status,
-    processing: payment.processing,
-    paypalReady: paypal !== null,
-  });
 
   return (
     <main className="container mx-auto max-w-lg space-y-6 px-4 py-10">
@@ -62,7 +78,7 @@ export default function PayPage({ token }: { token: string }) {
       {state.view === "pay" && paypal ? (
         <PayPalCheckout token={token} currency={payment.currency} paypal={paypal} />
       ) : (
-        <p role="status" className={state.view === "paid" ? "font-medium" : "text-sm text-muted-foreground"}>
+        <p ref={statusRef} tabIndex={-1} role="status" className={state.view === "paid" ? "font-medium" : "text-sm text-muted-foreground"}>
           {state.view === "pay" ? null : state.message}
         </p>
       )}

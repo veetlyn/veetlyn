@@ -141,7 +141,11 @@ export default function ClientProject({ token }: { token: string }) {
               </ul>
               {payment.payPath ? (
                 <a href={payment.payPath} className={buttonVariants()}>
-                  {payment.status === "failed" ? "Try paying again" : "Pay with PayPal"}
+                  {payment.processing
+                    ? "See payment status"
+                    : payment.status === "failed"
+                      ? "Try paying again"
+                      : "Pay with PayPal"}
                 </a>
               ) : payment.status === "pending" && payment.kind === "balance" ? (
                 <p className="text-xs text-muted-foreground">The balance opens once you accept the delivery.</p>
