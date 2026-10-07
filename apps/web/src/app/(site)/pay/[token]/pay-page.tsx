@@ -42,7 +42,8 @@ export default function PayPage({ token }: { token: string }) {
   }, [currentView]);
 
   if (view.isPending) return <Loader />;
-  if (view.isError || !state) {
+  // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
+  if (!data || !state) {
     return (
       <main className="container mx-auto max-w-lg space-y-4 px-4 py-16">
         <h1 className="text-2xl font-semibold">This link is not valid</h1>
@@ -51,7 +52,7 @@ export default function PayPage({ token }: { token: string }) {
     );
   }
 
-  const { payment, project, team, paypal, clientPath } = view.data;
+  const { payment, project, team, paypal, clientPath } = data;
   const currency = payment.currency as MoneyCurrency;
 
   return (
