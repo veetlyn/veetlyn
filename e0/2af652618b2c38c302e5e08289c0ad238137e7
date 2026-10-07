@@ -1,0 +1,27 @@
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_a2b6bd264ed4ba::t_f2004e4b1e9352 144-148
+packages/api/src/routers/project.ts
+  s_a2b6bd264ed4ba::t_22319640ec638e 179-180
+packages/api/src/routers/payment.test.ts
+  s_a2b6bd264ed4ba::t_d17b52da71e08c 529-534
+apps/web/src/app/(site)/pay/[token]/pay-page.tsx
+  s_a2b6bd264ed4ba::t_b73f8ff16aceec 5,8,22-42,45,81
+apps/web/src/app/(site)/pay/[token]/paypal-checkout.tsx
+  s_a2b6bd264ed4ba::t_c489fa2ef5aaae 3,30-35,54,56-57,65,67-68,71-78,80,84-86,89-92,96-104,115,123-125,128-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e02af652618b2c38c302e5e08289c0ad238137e7",
+  "prompts": {},
+  "sessions": {
+    "s_a2b6bd264ed4ba": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "aaaa114c-2446-40f2-9da1-a83e89673b72",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
