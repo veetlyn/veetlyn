@@ -1,0 +1,21 @@
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_a2b6bd264ed4ba::t_61efce936c7b55 142-147
+  s_a2b6bd264ed4ba::t_785241bcc26a43 33
+  s_a2b6bd264ed4ba::t_b3ca7e53b83ea0 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "14a522f6de9086c873d7f54d7c9f7d3aeca74d8b",
+  "prompts": {},
+  "sessions": {
+    "s_a2b6bd264ed4ba": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "aaaa114c-2446-40f2-9da1-a83e89673b72",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
