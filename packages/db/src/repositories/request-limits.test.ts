@@ -1,5 +1,8 @@
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { relations } from "../relations";
 import { createTestDb, hasTestDatabase, truncateAll } from "../testing/db";
 import { hitRequestLimit } from "./request-limits";
 
@@ -19,8 +22,15 @@ describe.skipIf(!hasTestDatabase)("hitRequestLimit", () => {
   });
 
   it("counts keys separately and holds under concurrent hits", async () => {
-    const results = await Promise.all(Array.from({ length: 5 }, () => hitRequestLimit(db, { ...limit, now: 1_000 })));
-    expect(results.filter(Boolean)).toHaveLength(2);
+    // The shared test pool has one connection, so the hits need their own pool to really run in parallel.
+    const client = postgres(process.env.TEST_DATABASE_URL ?? "", { max: 5, fetch_types: false });
+    try {
+      const parallel = drizzle({ client, relations });
+      const results = await Promise.all(Array.from({ length: 5 }, () => hitRequestLimit(parallel, { ...limit, now: 1_000 })));
+      expect(results.filter(Boolean)).toHaveLength(2);
+    } finally {
+      await client.end();
+    }
     expect(await hitRequestLimit(db, { ...limit, key: "pay-start:p2", now: 1_000 })).toBe(true);
   });
 });
