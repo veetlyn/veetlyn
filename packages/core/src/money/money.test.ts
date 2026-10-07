@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { addMoney, bpsOf, formatMoney, MAX_AMOUNT_MINOR, money, parseMajorAmount, subtractMoney } from "./money";
+import { addMoney, bpsOf, formatMoney, MAX_AMOUNT_MINOR, money, parseMajorAmount, subtractMoney, toPayPalValue } from "./money";
 
 describe("money", () => {
   it("holds whole minor units only", () => {
@@ -49,5 +49,21 @@ describe("money", () => {
 
   it.each(["", "0", "0.00", "-5", "1.234", "abc", "1e3", "10000000000"])("rejects %j", (input) => {
     expect(parseMajorAmount(input)).toBeNull();
+  });
+});
+
+describe("toPayPalValue", () => {
+  it.each([
+    [0, "0.00"],
+    [5, "0.05"],
+    [60_000, "600.00"],
+    [123_456, "1234.56"],
+  ])("writes %i minor units as %s", (minor, value) => {
+    expect(toPayPalValue(minor)).toBe(value);
+  });
+
+  it("rejects negative and fractional amounts", () => {
+    expect(() => toPayPalValue(-1)).toThrow(RangeError);
+    expect(() => toPayPalValue(1.5)).toThrow(RangeError);
   });
 });

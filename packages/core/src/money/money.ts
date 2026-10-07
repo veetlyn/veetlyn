@@ -63,6 +63,12 @@ export function formatMoney(value: Money): string {
   return formatter.format(value.minor / 100);
 }
 
+// PayPal amount strings ("1234.56"). USD and EUR both have two decimals.
+export function toPayPalValue(minor: number): string {
+  assertAmount(minor, "amount");
+  return `${Math.floor(minor / 100)}.${String(minor % 100).padStart(2, "0")}`;
+}
+
 // "1,000.50" or "1000.5" in major units to minor units; null unless it is a positive amount
 // with at most two decimals and at most MAX_AMOUNT_MINOR.
 export function parseMajorAmount(input: string): number | null {
