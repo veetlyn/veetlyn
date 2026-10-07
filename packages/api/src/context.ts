@@ -9,6 +9,8 @@ export type PayPalServices = {
   client: PayPalClient;
   partnerId: string;
   returnUrl: string;
+  // What the browser's JS SDK v6 needs. All public values (R1 facts §5).
+  sdk: { clientId: string; partnerAttributionId: string; environment: "sandbox" | "live" };
   // Called after team.paypal_merchant_id changes; the api Worker invalidates the KV store cache (Fact 10).
   onTeamMerchantChanged?: (team: { id: string; slug: string }) => void | Promise<void>;
 };

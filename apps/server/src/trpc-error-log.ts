@@ -14,10 +14,11 @@ export type TrpcErrorContext = {
   };
 };
 
-// Client errors (4xx codes) are already explained to the caller; only server errors need a log trail.
+// Client errors (4xx codes) are already explained to the caller, so only server errors need a log trail.
+// Errors PayPal caused are the exception: a declined payment method still needs its debug_id on record.
 // PayPal detail values can echo request data, so only the issue and the field are kept.
 export function trpcErrorContext(error: TRPCError, path: string | undefined): TrpcErrorContext | null {
-  if (error.code !== "INTERNAL_SERVER_ERROR") return null;
+  if (error.code !== "INTERNAL_SERVER_ERROR" && !(error.cause instanceof PayPalError)) return null;
   const cause = error.cause instanceof Error ? error.cause : error;
   const fields: TrpcErrorContext["fields"] = { trpc: { path: path ?? "unknown", code: error.code } };
   if (cause instanceof PayPalError) {

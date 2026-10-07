@@ -39,4 +39,29 @@ describe("trpcErrorContext", () => {
     });
     expect(JSON.stringify(context?.fields)).not.toContain("seller@example.com");
   });
+
+  it("logs a client error caused by PayPal, so a declined card keeps its debug_id", () => {
+    const cause = new PayPalError({
+      status: 422,
+      message: "The instrument presented was declined.",
+      debugId: "d422",
+      name: "UNPROCESSABLE_ENTITY",
+      details: [{ issue: "INSTRUMENT_DECLINED", description: "Declined", value: "secret-ish" }],
+    });
+
+    const context = trpcErrorContext(new TRPCError({ code: "UNPROCESSABLE_CONTENT", cause }), "payment.payCapture");
+
+    expect(context).toEqual({
+      error: cause,
+      fields: {
+        trpc: { path: "payment.payCapture", code: "UNPROCESSABLE_CONTENT" },
+        paypal: {
+          status: 422,
+          name: "UNPROCESSABLE_ENTITY",
+          debugId: "d422",
+          details: [{ issue: "INSTRUMENT_DECLINED", field: undefined }],
+        },
+      },
+    });
+  });
 });

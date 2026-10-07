@@ -1,14 +1,14 @@
 import { assertAmount, assertBps, bpsOf } from "../money/money";
 
-export const PAYLEOR_FEE_BPS = 50;
-export const PAYLEOR_FEE_FIXED_MINOR = 10;
 export const DEPOSIT_BPS = 5_000;
 
-// Services spec §3 goal 7: 0.5% + 0.10 in the team currency on each client payment, taken as PayPal platform_fees.
-export function payleorFeeMinor(paymentMinor: number): number {
+// Payleor's fee on one client payment or store order, at the seller plan's rate (pricing proposal §4).
+// A tiny payment can round to zero; the order then carries no platform_fees.
+export function platformFeeMinor(paymentMinor: number, feeBps: number): number {
   assertAmount(paymentMinor, "payment");
   if (paymentMinor === 0) throw new RangeError("A client payment must be positive");
-  return bpsOf(paymentMinor, PAYLEOR_FEE_BPS) + PAYLEOR_FEE_FIXED_MINOR;
+  assertBps(feeBps, "platform fee");
+  return bpsOf(paymentMinor, feeBps);
 }
 
 // Services spec §5.3: from the current quote, never reduced by penalties.

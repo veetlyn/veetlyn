@@ -6,6 +6,7 @@ export * from "./tenancy/store";
 export * from "./tenancy/target";
 export * from "./tenancy/team-product";
 export * from "./billing/plans";
+export * from "./billing/seller-plans";
 export * from "./onboarding/setup-steps";
 export * from "./policies/store-policies";
 export * from "./services-teams/types";

@@ -6,7 +6,7 @@ import {
   finalPriceMinor,
   freelancerEarningsMinor,
   managementFeeMinor,
-  payleorFeeMinor,
+  platformFeeMinor,
   teamCutMinor,
 } from "./pricing";
 import { daysLate, penaltyMinor } from "./penalty";
@@ -55,26 +55,29 @@ describe("services spec §5.3 worked example", () => {
     expect(teamCutMinor(85_000, CUT_BPS) + managementFeeMinor(quote, FEE_BPS)).toBe(22_750);
   });
 
-  it("takes $3.10 on $600 and $1.85 on $350", () => {
-    expect(payleorFeeMinor(60_000)).toBe(310);
-    expect(payleorFeeMinor(35_000)).toBe(185);
+  it("takes Payleor's 1% Team fee: $6 on $600 and $3.50 on $350", () => {
+    expect(platformFeeMinor(60_000, 100)).toBe(600);
+    expect(platformFeeMinor(35_000, 100)).toBe(350);
   });
 });
 
-describe("payleorFeeMinor", () => {
+describe("platformFeeMinor", () => {
   it.each([
-    [1, 10],
-    [100, 11], // 0.5 rounds up
-    [99, 10], // 0.495 rounds down
-    [301, 12], // 1.505 rounds up
-  ])("charges %i → %i", (payment, fee) => {
-    expect(payleorFeeMinor(payment)).toBe(fee);
+    [1, 100, 0], // 0.01 rounds down: no fee on the order
+    [50, 100, 1], // 0.5 rounds up
+    [149, 100, 1],
+    [150, 100, 2], // 1.5 rounds up
+    [60_000, 25, 150],
+    [60_000, 200, 1_200],
+  ])("charges %i at %i bps → %i", (payment, bps, fee) => {
+    expect(platformFeeMinor(payment, bps)).toBe(fee);
   });
 
-  it("rejects zero, negative and fractional payments", () => {
-    expect(() => payleorFeeMinor(0)).toThrow(RangeError);
-    expect(() => payleorFeeMinor(-100)).toThrow(RangeError);
-    expect(() => payleorFeeMinor(10.5)).toThrow(RangeError);
+  it("rejects zero, negative and fractional payments, and rates outside 0–10000 bps", () => {
+    expect(() => platformFeeMinor(0, 100)).toThrow(RangeError);
+    expect(() => platformFeeMinor(-100, 100)).toThrow(RangeError);
+    expect(() => platformFeeMinor(10.5, 100)).toThrow(RangeError);
+    expect(() => platformFeeMinor(100, 10_001)).toThrow(RangeError);
   });
 });
 

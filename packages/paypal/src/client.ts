@@ -1,6 +1,7 @@
 import { buildAuthAssertion } from "./auth-assertion";
 import { payPalErrorFromResponse } from "./errors";
 import { createMerchantIntegrations } from "./merchant-integrations";
+import { createOrders } from "./orders";
 import { createPartnerReferrals } from "./partner-referrals";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
 
@@ -37,6 +38,8 @@ export type PayPalRequestOptions = {
   requestId?: string;
   // Adds PayPal-Auth-Assertion to act on behalf of this connected merchant (Fact 7).
   merchantId?: string;
+  // Sent as the Prefer header; captures use return=representation to get the capture back (R1 facts §3).
+  prefer?: "return=representation" | "return=minimal";
 };
 
 export type PayPalRequest = <T>(options: PayPalRequestOptions) => Promise<T>;
@@ -45,6 +48,7 @@ export interface PayPalClient {
   request: PayPalRequest;
   partnerReferrals: ReturnType<typeof createPartnerReferrals>;
   merchantIntegrations: ReturnType<typeof createMerchantIntegrations>;
+  orders: ReturnType<typeof createOrders>;
 }
 
 type ResolvedConfig = {
@@ -137,6 +141,7 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     if (options.merchantId) {
       headers["PayPal-Auth-Assertion"] = buildAuthAssertion({ clientId: config.clientId, payerId: options.merchantId });
     }
+    if (options.prefer) headers.Prefer = options.prefer;
     const response = await send(
       resolved,
       () =>
@@ -155,5 +160,6 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     request,
     partnerReferrals: createPartnerReferrals(request),
     merchantIntegrations: createMerchantIntegrations(request),
+    orders: createOrders(request),
   };
 }
