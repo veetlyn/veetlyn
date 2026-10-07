@@ -30,7 +30,7 @@ import {
   type ProjectRow,
   type QuoteWithItems,
 } from "@jendal-workspace/db/repositories/projects";
-import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import {
   ProjectConflictError,
   runInTransaction,
@@ -38,7 +38,6 @@ import {
   type UnitOfWork,
 } from "@jendal-workspace/db/repositories/unit-of-work";
 import { amendment, payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
-import { servicesTeamMember } from "@jendal-workspace/db/schema/services-teams";
 import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -82,13 +81,9 @@ async function requireTeamProject(tx: Transaction, actor: ProjectActor, projectI
   return row;
 }
 
+// Workspace owners and admins are team admins without a services_team_member row (S1).
 async function requireTeamMember(tx: Transaction, teamId: string, userId: string): Promise<void> {
-  const [membership] = await tx
-    .select({ id: servicesTeamMember.id })
-    .from(servicesTeamMember)
-    .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, userId)))
-    .limit(1);
-  if (!membership) fail("BAD_REQUEST", "That person is not a member of this team.");
+  if (!(await servicesTeamRoleFor(tx, teamId, userId))) fail("BAD_REQUEST", "That person is not a member of this team.");
 }
 
 const MAX_TITLE = 120;

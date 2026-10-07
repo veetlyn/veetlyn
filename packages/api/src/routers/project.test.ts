@@ -143,6 +143,22 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     ]);
   });
 
+  it("lets the workspace owner be assigned and quote without a services team member row", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await createProject(userId);
+
+    const members = await callerFor(userId).project.members({ teamSlug: "team" });
+    expect(members).toEqual([expect.objectContaining({ id: userId, role: "admin" })]);
+
+    await expect(
+      callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: "someone-else" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "That person is not a member of this team." });
+
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: userId });
+    const { quoteId } = await callerFor(userId).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
+    expect((await listProjectQuotes(db, projectId))[0]).toMatchObject({ id: quoteId, freelancerId: userId });
+  });
+
   it("lets any freelancer quote in open mode, and staff quote for a named freelancer in team mode", async () => {
     const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));

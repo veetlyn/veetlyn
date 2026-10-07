@@ -8,6 +8,7 @@ import {
 } from "@jendal-workspace/core";
 import { and, eq } from "drizzle-orm";
 
+import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
 import { user } from "../schema/auth";
 import { member, organization, team } from "../schema/organization";
@@ -73,7 +74,7 @@ export async function saveServicesTeamSettings(
 
 // Null when the team is not a services team, or the user is not in its organization or has no role in it.
 export async function servicesTeamRoleFor(
-  db: Database,
+  db: DbExecutor,
   teamId: string,
   userId: string,
 ): Promise<ServicesTeamRole | null> {
