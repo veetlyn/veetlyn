@@ -6,6 +6,7 @@ import {
   createTestDb,
   hasTestDatabase,
   seedOrganization,
+  seedServicesTeam,
   seedStore,
   seedUser,
   truncateAll,
@@ -24,7 +25,17 @@ describe.skipIf(!hasTestDatabase)("team repository", () => {
 
     const access = await findTeamAccess(db, { teamId: store.id, userId });
 
-    expect(access).toEqual({ team: store, role: "owner", isTeamMember: false });
+    expect(access).toEqual({ team: store, product: "store", role: "owner", isTeamMember: false });
+  });
+
+  it("returns a services team's product next to the team record", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "studio" });
+
+    const access = await findTeamAccess(db, { teamId: studio.id, userId });
+
+    expect(access).toMatchObject({ team: { id: studio.id, slug: "studio" }, product: "services", role: "owner" });
+    expect(access?.team).not.toHaveProperty("product");
   });
 
   it("marks organization membership without team membership", async () => {

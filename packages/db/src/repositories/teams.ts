@@ -1,4 +1,4 @@
-import type { StoreRecord } from "@jendal-workspace/core";
+import type { StoreRecord, TeamProduct } from "@jendal-workspace/core";
 import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../index";
@@ -13,7 +13,7 @@ const teamColumns = {
   paypalMerchantId: team.paypalMerchantId,
 };
 
-export type TeamAccessRow = { team: StoreRecord; role: string; isTeamMember: boolean };
+export type TeamAccessRow = { team: StoreRecord; product: TeamProduct; role: string; isTeamMember: boolean };
 
 // Null when the team does not exist or the user is not a member of its organization.
 // Same access shape as findStoreAccess, keyed by team id instead of slug.
@@ -22,15 +22,15 @@ export async function findTeamAccess(
   input: { teamId: string; userId: string },
 ): Promise<TeamAccessRow | null> {
   const [row] = await db
-    .select({ ...teamColumns, role: member.role, teamMemberId: teamMember.id })
+    .select({ ...teamColumns, product: team.product, role: member.role, teamMemberId: teamMember.id })
     .from(team)
     .innerJoin(member, and(eq(member.organizationId, team.organizationId), eq(member.userId, input.userId)))
     .leftJoin(teamMember, and(eq(teamMember.teamId, team.id), eq(teamMember.userId, input.userId)))
     .where(eq(team.id, input.teamId))
     .limit(1);
   if (!row) return null;
-  const { role, teamMemberId, ...teamRecord } = row;
-  return { team: teamRecord, role, isTeamMember: teamMemberId !== null };
+  const { role, teamMemberId, product, ...teamRecord } = row;
+  return { team: teamRecord, product, role, isTeamMember: teamMemberId !== null };
 }
 
 export async function findTeamById(db: Database, teamId: string): Promise<StoreRecord | null> {
