@@ -89,11 +89,9 @@ export function createOrders(request: PayPalRequest) {
   };
 }
 
-// request() casts response bodies without validating them, so each field is checked here.
-export function captureFromOrder(order: PayPalOrder): PayPalCapture | null {
-  const capture: unknown = order.purchase_units?.[0]?.payments?.captures?.[0];
-  if (typeof capture !== "object" || capture === null) return null;
-  const record = capture as Record<string, unknown>;
+function parseCapture(value: unknown): PayPalCapture | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
   if (typeof record.id !== "string" || typeof record.status !== "string") return null;
   const amount = typeof record.amount === "object" && record.amount !== null ? (record.amount as Record<string, unknown>) : null;
   return {
@@ -105,4 +103,18 @@ export function captureFromOrder(order: PayPalOrder): PayPalCapture | null {
         : undefined,
     custom_id: typeof record.custom_id === "string" ? record.custom_id : undefined,
   };
+}
+
+// An order with intent CAPTURE holds one capture, but a declined attempt may sit next to a later one, so a
+// completed capture wins, then a pending one. request() casts bodies without validating them, so each field is checked.
+export function captureFromOrder(order: PayPalOrder): PayPalCapture | null {
+  const raw: unknown = order.purchase_units?.[0]?.payments?.captures;
+  if (!Array.isArray(raw)) return null;
+  const captures = raw.map(parseCapture).filter((capture): capture is PayPalCapture => capture !== null);
+  return (
+    captures.find((capture) => capture.status === "COMPLETED") ??
+    captures.find((capture) => capture.status === "PENDING") ??
+    captures[0] ??
+    null
+  );
 }

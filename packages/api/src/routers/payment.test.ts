@@ -471,6 +471,33 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
       expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
     });
+
+    it("keeps the capture's own error when the order lookup fails too", async () => {
+      const { token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi({
+        capture: () => jsonResponse(500, { name: "INTERNAL_SERVER_ERROR", message: "x", debug_id: "d500" }),
+        lookup: () => jsonResponse(403, { name: "NOT_AUTHORIZED", message: "x", debug_id: "d403" }),
+      });
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      const rejection = await caller.payment.payCapture({ token, orderId: "ORDER1" }).catch((error: unknown) => error);
+      expect(rejection).toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+      const cause = (rejection as { cause?: unknown }).cause;
+      expect(cause).toBeInstanceOf(PayPalError);
+      expect(cause).toMatchObject({ debugId: "d500" });
+    });
+
+    it("restarts in one go after a declined capture whose answer was lost", async () => {
+      const { paymentId, token } = await connectedDeposit();
+      const { requests, fetch } = fakePayPalApi({ lookup: () => jsonResponse(200, capturedOrder("DECLINED")) });
+      const caller = callerFor(null, makePayPal(fetch));
+      await caller.payment.payStart({ token });
+
+      expect(await caller.payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
+      expect(calls(requests, "/v2/checkout/orders")).toHaveLength(2);
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "pending", paypalCaptureId: null });
+    });
   });
 
   it("gives the client page a pay path for a payment that can be paid, and none once it is paid", async () => {

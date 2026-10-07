@@ -269,8 +269,14 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
   const projectRow = await findProjectById(deps.db, row.projectId);
   if (!projectRow) throw new Error(`Payment ${row.id} has no project`);
   const seller = await requireSeller(deps.db, row.teamId);
-  if (row.paypalOrderId && (await keepsCurrentOrder(deps, row, seller.merchantId))) {
-    return { orderId: row.paypalOrderId };
+  let current = row;
+  if (row.paypalOrderId) {
+    if (await keepsCurrentOrder(deps, row, seller.merchantId)) return { orderId: row.paypalOrderId };
+    // Applying a capture the lookup found changed the row, and the compare-and-set below needs its new version.
+    current = await requirePayment(deps.db, row.id);
+    if (current.status !== "pending" && current.status !== "failed") {
+      throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });
+    }
   }
   const fee = platformFeeMinor(row.amountMinor, sellerPlanFor({ id: row.teamId }).feeBps);
   const order = await deps.paypal.client.orders.create({
@@ -286,8 +292,8 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
   });
   const updated = await deps.db
     .update(payment)
-    .set({ paypalOrderId: order.id, platformFeeMinor: fee, status: "pending", paypalCaptureId: null, version: row.version + 1 })
-    .where(and(eq(payment.id, row.id), eq(payment.version, row.version)))
+    .set({ paypalOrderId: order.id, platformFeeMinor: fee, status: "pending", paypalCaptureId: null, version: current.version + 1 })
+    .where(and(eq(payment.id, current.id), eq(payment.version, current.version)))
     .returning({ id: payment.id });
   if (updated.length === 0) {
     throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });
@@ -334,7 +340,13 @@ export async function capturePayment(
       });
     }
     // A capture that raced another, or whose answer was lost, may still have gone through: the order tells.
-    const current = await deps.paypal.client.orders.get({ orderId: input.orderId, merchantId: seller.merchantId });
+    let current: PayPalOrder;
+    try {
+      current = await deps.paypal.client.orders.get({ orderId: input.orderId, merchantId: seller.merchantId });
+    } catch {
+      // The capture's own error, with its debug_id, is the one worth logging.
+      throw error;
+    }
     if (!captureFromOrder(current)) throw error;
     order = current;
   }

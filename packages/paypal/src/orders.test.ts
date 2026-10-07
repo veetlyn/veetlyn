@@ -134,6 +134,24 @@ describe("captureFromOrder", () => {
     });
   });
 
+  it("prefers a completed capture over a declined attempt beside it", () => {
+    const order: PayPalOrder = {
+      id: "ORDER1",
+      status: "COMPLETED",
+      purchase_units: [
+        {
+          payments: {
+            captures: [
+              { id: "C1", status: "DECLINED", amount: { currency_code: "USD", value: "600.00" } },
+              { id: "C2", status: "COMPLETED", amount: { currency_code: "USD", value: "600.00" } },
+            ],
+          },
+        },
+      ],
+    };
+    expect(captureFromOrder(order)).toMatchObject({ id: "C2", status: "COMPLETED" });
+  });
+
   it("returns null when the order has no usable capture", () => {
     expect(captureFromOrder({ id: "ORDER1", status: "CREATED" })).toBeNull();
     expect(captureFromOrder({ id: "ORDER1", status: "COMPLETED", purchase_units: [{ payments: { captures: [] } }] })).toBeNull();
