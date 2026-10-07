@@ -1,0 +1,21 @@
+apps/web/src/lib/pay-page.test.ts
+  s_a2b6bd264ed4ba::t_d30c41475f9f67 1-51
+apps/web/src/lib/pay-page.ts
+  s_a2b6bd264ed4ba::t_8c7fefc6b1fbf7 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "809790efb80ccccd5ec67faf6c4da8dc74b8bfa0",
+  "prompts": {},
+  "sessions": {
+    "s_a2b6bd264ed4ba": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "aaaa114c-2446-40f2-9da1-a83e89673b72",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
