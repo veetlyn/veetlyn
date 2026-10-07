@@ -1,0 +1,23 @@
+apps/web/src/utils/trpc.ts
+  s_a2b6bd264ed4ba::t_ea9e7ab4c373a9 22
+apps/web/package.json
+  s_a2b6bd264ed4ba::t_bef0249c5cb8d2 15
+pnpm-lock.yaml
+  s_a2b6bd264ed4ba::t_08bc81b27edaa6 172-174,1976-1978,4959-4961,7051-7054,9616-9617
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c3bfc4d893c73eaccd95b4add134b040b5e7ddef",
+  "prompts": {},
+  "sessions": {
+    "s_a2b6bd264ed4ba": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "aaaa114c-2446-40f2-9da1-a83e89673b72",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
