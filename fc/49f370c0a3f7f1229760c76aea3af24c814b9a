@@ -1,0 +1,31 @@
+packages/db/src/repositories/request-limits.ts
+  s_2f829368e5808d::t_f2aa8b2cb06137 1-27
+packages/db/src/migrations/20261007225759_r1b_request_limit/migration.sql
+  s_2f829368e5808d::t_d3344e272286a8 1-5
+packages/db/src/migrations/20261007225759_r1b_request_limit/snapshot.json
+  s_2f829368e5808d::t_d31dde1dc58246 1-5303
+packages/db/src/repositories/request-limits.test.ts
+  s_2f829368e5808d::t_b045183fb6d4b0 1-26
+packages/db/src/schema/index.ts
+  s_2f829368e5808d::t_7373deea5532b5 12
+packages/db/src/schema/limits.ts
+  s_2f829368e5808d::t_0406d1af3eaecb 1-8
+packages/db/src/testing/db.ts
+  s_2f829368e5808d::t_ffd95e5b930b99 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc49f370c0a3f7f1229760c76aea3af24c814b9a",
+  "prompts": {},
+  "sessions": {
+    "s_2f829368e5808d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f371ab79-4ed7-49b7-b0b3-155828d84a6a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
