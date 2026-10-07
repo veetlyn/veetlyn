@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { signClientLink, verifyClientLink } from "./client-links";
+import { signClientLink, signPayLink, verifyClientLink, verifyPayLink } from "./client-links";
 
 const SECRET = "test-secret-that-is-at-least-32-characters";
 
@@ -18,5 +18,22 @@ describe("client links", () => {
     await expect(verifyClientLink("another-secret-that-is-at-least-32-chars", token)).resolves.toBeNull();
     await expect(verifyClientLink(SECRET, "")).resolves.toBeNull();
     await expect(verifyClientLink(SECRET, "proj-123.!!!not-base64!!!")).resolves.toBeNull();
+  });
+});
+
+describe("pay links", () => {
+  it("round-trips a payment id", async () => {
+    const token = await signPayLink(SECRET, "payment-1");
+    expect(await verifyPayLink(SECRET, token)).toBe("payment-1");
+  });
+
+  it("never accepts a client link as a pay link, or a pay link as a client link", async () => {
+    expect(await verifyPayLink(SECRET, await signClientLink(SECRET, "id-1"))).toBeNull();
+    expect(await verifyClientLink(SECRET, await signPayLink(SECRET, "id-1"))).toBeNull();
+  });
+
+  it("rejects a tampered pay link", async () => {
+    const token = await signPayLink(SECRET, "payment-1");
+    expect(await verifyPayLink(SECRET, token.replace("payment-1", "payment-2"))).toBeNull();
   });
 });

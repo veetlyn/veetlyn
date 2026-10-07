@@ -14,7 +14,7 @@ import { asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { signClientLink, verifyClientLink } from "../client-links";
+import { linkSecret, signClientLink, verifyClientLink } from "../client-links";
 import { publicProcedure, router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
 import {
@@ -35,17 +35,8 @@ const quoteItemInput = z.object({
 
 const projectIdInput = z.object({ projectId: z.string().uuid() });
 
-// The client link token is signed with the Better Auth secret (see client-links.ts).
-function clientLinkSecret(auth: { options: Record<string, unknown> }): string {
-  const secret = auth.options.secret;
-  if (typeof secret !== "string" || secret.length === 0) {
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The client link secret is not configured." });
-  }
-  return secret;
-}
-
 async function projectIdFromToken(auth: { options: Record<string, unknown> }, token: string): Promise<string> {
-  const projectId = await verifyClientLink(clientLinkSecret(auth), token);
+  const projectId = await verifyClientLink(linkSecret(auth), token);
   if (!projectId) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
   return projectId;
 }
@@ -98,7 +89,7 @@ export const projectRouter = router({
       listProjectAmendments(ctx.db, row.id),
       listProjectPayments(ctx.db, row.id),
     ]);
-    const clientToken = await signClientLink(clientLinkSecret(ctx.auth), row.id);
+    const clientToken = await signClientLink(linkSecret(ctx.auth), row.id);
     return {
       project: row,
       quotes,
@@ -133,7 +124,7 @@ export const projectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const actor = { teamId: ctx.servicesTeam.id, role: ctx.servicesTeamRole, actorId: ctx.session.user.id };
       const { projectId } = await startProject(ctx.db, actor, input);
-      const clientToken = await signClientLink(clientLinkSecret(ctx.auth), projectId);
+      const clientToken = await signClientLink(linkSecret(ctx.auth), projectId);
       return { projectId, clientPath: `/c/${clientToken}` };
     }),
 

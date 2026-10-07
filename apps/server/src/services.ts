@@ -42,6 +42,7 @@ export function getPayPalServices(): PayPalServices | undefined {
     partnerId: ENV.PAYPAL_PARTNER_ID,
     // BETTER_AUTH_URL is the admin origin (apps/server/.env.schema).
     returnUrl: `${ENV.BETTER_AUTH_URL}/api/paypal/onboarding/return`,
+    sdk: { clientId: ENV.PAYPAL_CLIENT_ID, partnerAttributionId: ENV.PAYPAL_ATTRIBUTION_ID, environment },
     // team.paypal_merchant_id changed: drop the cached storefront lookups (cacheKeyFor in
     // packages/core/src/tenancy/resolve.ts). host: entries cannot be enumerated; they expire
     // within the 300-second TTL.
