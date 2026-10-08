@@ -242,7 +242,13 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       lookup: () => jsonResponse(200, capturedOrder("COMPLETED", "600.00", breakdown)),
     });
 
-    await expect(processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }))).rejects.toThrow();
+    const error = await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId })).then(
+      () => null,
+      (thrown: unknown) => thrown,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(PayPalError);
+    expect(error).toMatchObject({ cause: { constraint_name: "payment_paypal_fee_check" } });
     expect(await paymentRow(paymentId)).toMatchObject({ status: "captured", paypalFeeMinor: null });
   });
 

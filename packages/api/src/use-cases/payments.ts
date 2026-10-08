@@ -183,6 +183,17 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
   });
 }
 
+// A Drizzle error's message is the whole query with its parameters, so only the name and the Postgres code and
+// constraint from its cause are logged.
+function databaseErrorFields(error: unknown): { name: string; code?: string; constraint?: string } {
+  const name = error instanceof Error ? error.name : typeof error;
+  const cause = error instanceof Error && typeof error.cause === "object" && error.cause !== null ? error.cause : null;
+  const code = cause && "code" in cause && typeof cause.code === "string" ? cause.code : undefined;
+  const constraint =
+    cause && "constraint_name" in cause && typeof cause.constraint_name === "string" ? cause.constraint_name : undefined;
+  return { name, code, constraint };
+}
+
 // Services spec §6.4: applies each capture outcome at most once, whichever input reports it first. The
 // payment row stays locked for the transaction, so the pay page and a webhook cannot both apply it.
 export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise<CaptureFactResult> {
@@ -215,7 +226,7 @@ export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise
       log.error({
         action: "payment.fees",
         payment: { id: fact.paymentId },
-        error: error instanceof Error ? { name: error.name, message: error.message } : { name: typeof error, message: String(error) },
+        error: databaseErrorFields(error),
       });
     }
   }
