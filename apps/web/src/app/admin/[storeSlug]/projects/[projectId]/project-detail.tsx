@@ -3,6 +3,7 @@
 import {
   canAssignFreelancer,
   canProposeAmendment,
+  canSubmitDelivery,
   formatMoney,
   money,
   parseMajorAmount,
@@ -26,6 +27,7 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
+import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { trpc } from "@/utils/trpc";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
@@ -130,10 +132,21 @@ export default function ProjectDetail({
   const [note, setNote] = useState("");
   const [addRows, setAddRows] = useState<ItemRow[]>([]);
   const [removeItemIds, setRemoveItemIds] = useState<string[]>([]);
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [deliveryLink, setDeliveryLink] = useState("");
 
   const assign = useMutation(trpc.project.assign.mutationOptions({ onSuccess: refresh }));
   const addQuote = useMutation(trpc.project.addQuote.mutationOptions({ onSuccess: refresh }));
   const proposeAmendment = useMutation(trpc.project.proposeAmendment.mutationOptions({ onSuccess: refresh }));
+  const deliver = useMutation(
+    trpc.project.deliver.mutationOptions({
+      onSuccess: () => {
+        setDeliveryNote("");
+        setDeliveryLink("");
+        return refresh();
+      },
+    }),
+  );
 
   if (detail.isPending) return <Loader />;
   if (detail.isError) {
@@ -147,7 +160,7 @@ export default function ProjectDetail({
     );
   }
 
-  const { project, quotes, amendments, payments, clientPath, role, quotingMode, viewerId } = detail.data;
+  const { project, quotes, amendments, payments, deliveries, clientPath, role, quotingMode, viewerId } = detail.data;
   const currency = project.currency as MoneyCurrency;
   const currentQuote = quotes.find((q) => q.status === "accepted");
   const proposedQuotes = quotes.filter((q) => q.status === "proposed");
@@ -164,6 +177,12 @@ export default function ProjectDetail({
   const canQuote = project.status === "quoting" && author.ok;
   // Staff name the freelancer in team mode and in open mode; only assigned mode implies them.
   const needsFreelancerName = role !== "freelancer" && quotingMode !== "assigned";
+  const canDeliver =
+    project.status === "in_progress" &&
+    canSubmitDelivery({ role, actorId: viewerId, assignedFreelancerId: project.assignedFreelancerId });
+  const deliveryProblem = deliveryDraftProblem({ note: deliveryNote, link: deliveryLink });
+  // An untouched form only disables the button; the hint appears once something is typed.
+  const deliveryDraftTouched = deliveryNote !== "" || deliveryLink !== "";
 
   function handleAssign(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -190,6 +209,12 @@ export default function ProjectDetail({
     proposeAmendment.mutate({ teamSlug, projectId, add: add ?? [], removeItemIds, note });
   }
 
+  function handleDeliver(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (deliveryProblem || deliver.isPending) return;
+    deliver.mutate({ teamSlug, projectId, note: deliveryNote, link: deliveryLink });
+  }
+
   return (
     <main className="container mx-auto max-w-3xl space-y-8 px-4 py-6">
       <div className="space-y-1">
@@ -199,6 +224,7 @@ export default function ProjectDetail({
         <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
         <p className="text-sm text-muted-foreground">
           {projectStatusLabel(project.status)} · {project.clientEmail ?? project.clientDiscordId ?? "No client contact"}
+          {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
         <p className="text-sm">
@@ -334,6 +360,62 @@ export default function ProjectDetail({
               Propose amendment
             </Button>
             {proposeAmendment.error ? <p className="text-sm text-destructive">{proposeAmendment.error.message}</p> : null}
+          </form>
+        ) : null}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Deliveries</h2>
+        {deliveries.length === 0 ? <p className="text-sm text-muted-foreground">No deliveries yet.</p> : null}
+        {newestFirst(deliveries).map((delivery) => (
+          <div key={delivery.id} className="space-y-2 rounded-lg border p-4 text-sm">
+            <div className="flex items-center justify-between">
+              <p className="font-medium">Delivered {new Date(delivery.createdAt).toLocaleString()}</p>
+              <span className="text-muted-foreground">{deliveryStaffStatusLabel(delivery.status)}</span>
+            </div>
+            {delivery.note ? <p className="whitespace-pre-wrap">{delivery.note}</p> : null}
+            {delivery.link ? (
+              <a href={delivery.link} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 break-all">
+                {delivery.link}
+              </a>
+            ) : null}
+            {delivery.status === "changes_requested" && delivery.clientNote ? (
+              <div className="rounded-md bg-muted p-3">
+                <p className="font-medium">The client asked for changes</p>
+                <p className="whitespace-pre-wrap">{delivery.clientNote}</p>
+              </div>
+            ) : null}
+          </div>
+        ))}
+        {project.status === "delivered" ? (
+          <p className="text-sm text-muted-foreground">Waiting for the client to accept the delivery or ask for changes.</p>
+        ) : null}
+        {canDeliver ? (
+          <form onSubmit={handleDeliver} className="space-y-3 rounded-lg border p-4">
+            <h3 className="font-medium">Deliver</h3>
+            <div className="space-y-2">
+              <Label htmlFor="delivery-note">Note for the client</Label>
+              <Textarea id="delivery-note" rows={4} value={deliveryNote} onChange={(e) => setDeliveryNote(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="delivery-link">Link</Label>
+              <Input
+                id="delivery-link"
+                inputMode="url"
+                placeholder="https://"
+                value={deliveryLink}
+                onChange={(e) => setDeliveryLink(e.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={deliveryProblem !== null || deliver.isPending}>
+              Submit delivery
+            </Button>
+            {deliveryDraftTouched && deliveryProblem ? <p className="text-sm text-destructive">{deliveryProblem}</p> : null}
+            {deliver.error ? (
+              <p role="alert" className="text-sm text-destructive">
+                {deliver.error.message}
+              </p>
+            ) : null}
           </form>
         ) : null}
       </section>
