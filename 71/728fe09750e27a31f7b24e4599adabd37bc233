@@ -1,0 +1,24 @@
+packages/infra/.env.schema
+  s_6aef7c4dffa70a::t_8994ab2fa5b01a 24-38,42,44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "71728fe09750e27a31f7b24e4599adabd37bc233",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_6aef7c4dffa70a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "20524647-f1c3-4ba0-9dff-2bae30f8d35f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
