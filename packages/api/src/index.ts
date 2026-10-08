@@ -2,7 +2,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 
 import type { Context } from "./context";
 
-export const t = initTRPC.context<Context>().create();
+// Error responses never carry stack traces; server logs keep them (apps/server trpc-error-log).
+export const t = initTRPC.context<Context>().create({ isDev: false });
 
 export const router = t.router;
 

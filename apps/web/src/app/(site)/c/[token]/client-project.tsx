@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney, money, projectStatusLabel, type MoneyCurrency } from "@jendal-workspace/core";
-import { Button } from "@jendal-workspace/ui/components/button";
+import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Loader from "@/components/loader";
@@ -30,7 +30,7 @@ export default function ClientProject({ token }: { token: string }) {
 
   const { project, quotes, amendments, payments } = view.data;
   const currency = project.currency as MoneyCurrency;
-  const pendingPayments = payments.filter((p) => p.status === "pending");
+  const pendingPayments = payments.filter((p) => p.payPath !== null);
   const actionError = acceptQuote.error ?? acceptAmendment.error ?? declineAmendment.error;
 
   return (
@@ -139,11 +139,16 @@ export default function ClientProject({ token }: { token: string }) {
                   <span>{formatMoney(money(currency, payment.amountMinor))}</span>
                 </li>
               </ul>
-              {payment.status === "pending" ? (
-                <div className="space-y-1">
-                  <Button disabled>Pay with PayPal</Button>
-                  <p className="text-xs text-muted-foreground">Payment coming soon — the team will share the pay link shortly.</p>
-                </div>
+              {payment.payPath ? (
+                <a href={payment.payPath} className={buttonVariants()}>
+                  {payment.processing
+                    ? "See payment status"
+                    : payment.status === "failed"
+                      ? "Try paying again"
+                      : "Pay with PayPal"}
+                </a>
+              ) : payment.status === "pending" && payment.kind === "balance" ? (
+                <p className="text-xs text-muted-foreground">The balance opens once you accept the delivery.</p>
               ) : null}
             </div>
           ))}

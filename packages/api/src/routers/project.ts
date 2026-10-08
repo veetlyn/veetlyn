@@ -7,10 +7,7 @@ import {
   listTeamProjects,
 } from "@jendal-workspace/db/repositories/projects";
 import { canSeeProject, type QuotingMode } from "@jendal-workspace/core";
-import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
-import { user } from "@jendal-workspace/db/schema/auth";
-import { servicesTeamMember } from "@jendal-workspace/db/schema/services-teams";
-import { asc, eq } from "drizzle-orm";
+import { getServicesTeamSettings, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -103,12 +100,8 @@ export const projectRouter = router({
   }),
 
   members: servicesTeamProcedure.query(async ({ ctx }) => {
-    return ctx.db
-      .select({ id: user.id, name: user.name, email: user.email, role: servicesTeamMember.role })
-      .from(servicesTeamMember)
-      .innerJoin(user, eq(user.id, servicesTeamMember.userId))
-      .where(eq(servicesTeamMember.teamId, ctx.servicesTeam.id))
-      .orderBy(asc(user.name), asc(user.id));
+    const rows = await listServicesTeamMembers(ctx.db, ctx.servicesTeam);
+    return rows.map((row) => ({ id: row.userId, name: row.name, email: row.email, role: row.role }));
   }),
 
   create: servicesTeamProcedure
@@ -175,7 +168,6 @@ export const projectRouter = router({
       listProjectPayments(ctx.db, projectId),
     ]);
     const secret = linkSecret(ctx.auth);
-    // Pending and failed payments can be paid; the pay link names the payment, never the amount (§5.4).
     const paymentViews = await Promise.all(
       payments.map(async (p) => ({
         id: p.id,
@@ -184,7 +176,14 @@ export const projectRouter = router({
         amountMinor: p.amountMinor,
         lines: p.lines,
         createdAt: p.createdAt,
-        payPath: p.status === "pending" || p.status === "failed" ? `/pay/${await signPayLink(secret, p.id)}` : null,
+        // PayPal holds a capture it has not finished; the id itself stays server-side.
+        processing: p.status === "pending" && p.paypalCaptureId !== null,
+        // Pending and failed payments can be paid; the pay link names the payment, never the amount (§5.4).
+        // Balances open in run 2, once deliveries can be accepted.
+        payPath:
+          p.kind !== "balance" && (p.status === "pending" || p.status === "failed")
+            ? `/pay/${await signPayLink(secret, p.id)}`
+            : null,
       })),
     );
     return {

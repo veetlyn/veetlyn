@@ -143,6 +143,22 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     ]);
   });
 
+  it("lets the workspace owner be assigned and quote without a services team member row", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await createProject(userId);
+
+    const members = await callerFor(userId).project.members({ teamSlug: "team" });
+    expect(members).toEqual([expect.objectContaining({ id: userId, role: "admin" })]);
+
+    await expect(
+      callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: "someone-else" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "That person is not a member of this team." });
+
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: userId });
+    const { quoteId } = await callerFor(userId).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
+    expect((await listProjectQuotes(db, projectId))[0]).toMatchObject({ id: quoteId, freelancerId: userId });
+  });
+
   it("lets any freelancer quote in open mode, and staff quote for a named freelancer in team mode", async () => {
     const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
@@ -227,6 +243,30 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       "quote.accepted",
       "payment.created",
     ]);
+  });
+
+  it("gives a pay link for deposits and top-ups but not yet for the balance", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
+    const token = await clientToken(projectId);
+    const { paymentId } = await callerFor(null).project.clientAcceptQuote({ token, quoteId });
+    await db.insert(payment).values({
+      projectId,
+      teamId,
+      kind: "balance",
+      currency: "USD",
+      quotePartMinor: 50_000,
+      managementFeeMinor: 0,
+      amountMinor: 50_000,
+      lines: [{ kind: "balance", label: "Balance", amountMinor: 50_000 }],
+    });
+
+    const view = await callerFor(null).project.clientGet({ token });
+    expect(view.payments.find((p) => p.id === paymentId)?.payPath).toMatch(/^\/pay\//);
+    expect(view.payments.find((p) => p.kind === "balance")?.payPath).toBeNull();
   });
 
   it("rejects a forged or missing client token", async () => {

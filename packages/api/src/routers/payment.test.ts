@@ -295,6 +295,20 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       await expect(callerFor(null).payment.payStart({ token })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     });
 
+    it("limits how often one payment can be started or captured", async () => {
+      const { token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi({ capture: () => jsonResponse(422, DECLINED) });
+      const caller = callerFor(null, makePayPal(fetch));
+
+      for (let i = 0; i < 10; i++) await caller.payment.payStart({ token });
+      await expect(caller.payment.payStart({ token })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+
+      for (let i = 0; i < 20; i++) {
+        await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject({ code: "UNPROCESSABLE_CONTENT" });
+      }
+      await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    });
+
     it("creates an order for the team with Payleor's 1% Team fee", async () => {
       const { paymentId, token } = await connectedDeposit();
       const { requests, fetch } = fakePayPalApi();
@@ -309,9 +323,13 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
         custom_id: paymentId,
         description: "Website redesign",
-        amount: { currency_code: "USD", value: "600.00" },
+        amount: { currency_code: "USD", value: "600.00", breakdown: { item_total: { currency_code: "USD", value: "600.00" } } },
         payee: { merchant_id: "SELLER1" },
         payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "6.00" } }] },
+        items: [
+          { name: "Deposit (50% of the quote)", quantity: "1", unit_amount: { currency_code: "USD", value: "500.00" } },
+          { name: "Management fee (10%)", quantity: "1", unit_amount: { currency_code: "USD", value: "100.00" } },
+        ],
       });
       expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 600, status: "pending" });
     });
@@ -508,6 +526,12 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     const payPath = before.payments[0]?.payPath ?? "";
     expect(payPath).toBe(`/pay/${token}`);
     expect(await verifyPayLink(SECRET, payPath.slice("/pay/".length))).toBe(paymentId);
+    expect(before.payments[0]?.processing).toBe(false);
+
+    await db.update(payment).set({ paypalCaptureId: "CAPTURE-PENDING" }).where(eq(payment.id, paymentId));
+    const processing = await callerFor(null).project.clientGet({ token: clientToken });
+    expect(processing.payments[0]?.processing).toBe(true);
+    await db.update(payment).set({ paypalCaptureId: null }).where(eq(payment.id, paymentId));
 
     await db.update(payment).set({ paypalOrderId: "ORDER1" }).where(eq(payment.id, paymentId));
     await applyCaptureFact(db, fact(paymentId));
