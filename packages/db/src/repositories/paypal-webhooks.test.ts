@@ -93,14 +93,18 @@ describe.skipIf(!hasTestDatabase)("paypal webhook events", () => {
       await seedEvent("WH-recent", minutesAgo(20));
       await seedEvent("WH-processed", minutesAgo(6_000), "processed");
 
-      expect(await failStuckWebhookEvents(db, { receivedBefore: minutesAgo(4_320), note: "Stuck." })).toBe(2);
+      const failed = await failStuckWebhookEvents(db, { receivedBefore: minutesAgo(4_320), note: "Stuck." });
+      expect(failed.toSorted((a, b) => a.id.localeCompare(b.id))).toEqual([
+        { id: "WH-old", eventType: "PAYMENT.CAPTURE.COMPLETED" },
+        { id: "WH-older", eventType: "PAYMENT.CAPTURE.COMPLETED" },
+      ]);
 
       for (const id of ["WH-old", "WH-older"]) {
         expect(await findWebhookEvent(db, id)).toMatchObject({ status: "failed", note: "Stuck.", processedAt: expect.any(Date) });
       }
       expect(await findWebhookEvent(db, "WH-recent")).toMatchObject({ status: "received", note: null, processedAt: null });
       expect(await findWebhookEvent(db, "WH-processed")).toMatchObject({ status: "processed", note: null });
-      expect(await failStuckWebhookEvents(db, { receivedBefore: minutesAgo(4_320), note: "Stuck." })).toBe(0);
+      expect(await failStuckWebhookEvents(db, { receivedBefore: minutesAgo(4_320), note: "Stuck." })).toEqual([]);
     });
   });
 });

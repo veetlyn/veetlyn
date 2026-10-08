@@ -88,6 +88,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
   it("re-sends stale events, fails stuck ones, and deletes expired limits and leftover uploads", async () => {
     const { leftover, attached, recent } = await seedEverything();
     const info = vi.spyOn(log, "info");
+    const error = vi.spyOn(log, "error");
     const d = deps();
 
     const report = await runMaintenance(d);
@@ -112,6 +113,14 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(await findFileUpload(db, attached.id)).not.toBeNull();
     expect(await findFileUpload(db, recent.id)).not.toBeNull();
     expect(info).toHaveBeenCalledWith({ action: "maintenance.webhooks", maintenance: { requeued: 1, failed: 1 } });
+    expect(error).toHaveBeenCalledExactlyOnceWith({
+      action: "maintenance.webhooks.failed",
+      paypalWebhook: {
+        eventIds: ["WH-stuck"],
+        eventTypes: ["PAYMENT.CAPTURE.COMPLETED"],
+        note: "Stuck in received for 3 days.",
+      },
+    });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.requestLimits", maintenance: { deleted: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.uploads", maintenance: { deleted: 1 } });
   });
@@ -139,7 +148,10 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(report).toMatchObject({ requestLimitsDeleted: 1, uploadsDeleted: 1, errors: ["webhooks"] });
     expect(await requestLimitKeys()).toEqual(["current"]);
     expect(await findFileUpload(db, leftover.id)).toBeNull();
-    expect(error).toHaveBeenCalledWith({ action: "maintenance.webhooks", error: { name: "TypeError" } });
+    expect(error).toHaveBeenCalledWith({
+      action: "maintenance.webhooks",
+      error: { name: "TypeError", note: "TypeError: Queue send failed" },
+    });
   });
 
   it("keeps the uploads when deleting their objects fails", async () => {
@@ -157,6 +169,9 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
 
     expect(report).toMatchObject({ webhookEventsRequeued: 1, requestLimitsDeleted: 1, uploadsDeleted: 0, errors: ["uploads"] });
     expect(await findFileUpload(db, leftover.id)).not.toBeNull();
-    expect(error).toHaveBeenCalledWith({ action: "maintenance.uploads", error: { name: "Error" } });
+    expect(error).toHaveBeenCalledWith({
+      action: "maintenance.uploads",
+      error: { name: "Error", note: "Error: R2 unavailable" },
+    });
   });
 });

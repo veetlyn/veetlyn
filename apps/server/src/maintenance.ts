@@ -6,6 +6,8 @@ import { failStuckWebhookEvents, listStaleWebhookEvents } from "@jendal-workspac
 import { deleteExpiredRequestLimits } from "@jendal-workspace/db/repositories/request-limits";
 import { log } from "evlog";
 
+import { errorNote } from "./paypal-webhook-queue";
+
 export const STALE_WEBHOOK_MS = 15 * 60_000;
 export const STUCK_WEBHOOK_MS = 3 * 24 * 3_600_000;
 export const WEBHOOK_BATCH = 100;
@@ -49,16 +51,28 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
       log.info({ action, maintenance: await run() });
     } catch (error) {
       report.errors.push(name);
-      log.error({ action, error: databaseErrorFields(error) });
+      log.error({ action, error: { ...databaseErrorFields(error), note: errorNote(error) } });
     }
   }
 
   // Stuck events are failed first so they are not re-sent once more in the same run.
   await sweep("webhooks", async () => {
-    report.webhookEventsFailed = await failStuckWebhookEvents(deps.db, {
+    const failed = await failStuckWebhookEvents(deps.db, {
       receivedBefore: new Date(now - STUCK_WEBHOOK_MS),
       note: STUCK_WEBHOOK_NOTE,
     });
+    report.webhookEventsFailed = failed.length;
+    if (failed.length > 0) {
+      // These events will never be applied, so someone has to look at them.
+      log.error({
+        action: "maintenance.webhooks.failed",
+        paypalWebhook: {
+          eventIds: failed.map((event) => event.id),
+          eventTypes: [...new Set(failed.map((event) => event.eventType))],
+          note: STUCK_WEBHOOK_NOTE,
+        },
+      });
+    }
     const stale = await listStaleWebhookEvents(deps.db, {
       receivedBefore: new Date(now - STALE_WEBHOOK_MS),
       limit: WEBHOOK_BATCH,

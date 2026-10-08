@@ -1,0 +1,1 @@
+CREATE INDEX "file_upload_unattached_idx" ON "file_upload" ("created_at") WHERE attached_at is null;

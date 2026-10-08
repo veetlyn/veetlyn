@@ -75,11 +75,13 @@ export async function listStaleWebhookEvents(
   return rows.map((row) => row.id);
 }
 
-export async function failStuckWebhookEvents(db: DbExecutor, input: { receivedBefore: Date; note: string }): Promise<number> {
-  const rows = await db
+export async function failStuckWebhookEvents(
+  db: DbExecutor,
+  input: { receivedBefore: Date; note: string },
+): Promise<{ id: string; eventType: string }[]> {
+  return db
     .update(paypalWebhookEvent)
     .set({ status: "failed", note: input.note.slice(0, MAX_NOTE_LENGTH), processedAt: new Date() })
     .where(and(eq(paypalWebhookEvent.status, "received"), lt(paypalWebhookEvent.receivedAt, input.receivedBefore)))
-    .returning({ id: paypalWebhookEvent.id });
-  return rows.length;
+    .returning({ id: paypalWebhookEvent.id, eventType: paypalWebhookEvent.eventType });
 }
