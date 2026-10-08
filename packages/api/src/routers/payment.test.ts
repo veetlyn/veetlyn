@@ -281,6 +281,16 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       );
     });
 
+    it("keeps a committed capture applied when its fee step fails", async () => {
+      const { paymentId } = await depositWithOrder();
+
+      // The payment's check constraint refuses a platform fee above the amount.
+      expect(await applyCaptureFact(db, fact(paymentId, { paypalFeeMinor: 100, platformFeeMinor: 70_000 }))).toBe("applied");
+
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "captured", paypalFeeMinor: null });
+      expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "payment_fees"))).toHaveLength(0);
+    });
+
     it("reports money PayPal moved without Payleor asking as a conflict", async () => {
       const { paymentId } = await depositWithOrder();
       await expect(applyCaptureFact(db, fact(paymentId, { amountMinor: 1 }))).rejects.toBeInstanceOf(CaptureFactConflict);

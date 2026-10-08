@@ -1,8 +1,10 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
+import { ledgerAccounts } from "@jendal-workspace/core";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
-import { ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
+import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
+import { team } from "@jendal-workspace/db/schema/organization";
 import { payment } from "@jendal-workspace/db/schema/projects";
 import {
   createTestDb,
@@ -48,14 +50,14 @@ function capturedOrder(status: string, value = "600.00", extra: Record<string, u
 }
 
 // A fake PayPal API: token, order create (always ORDER1), capture and order lookup.
-function fakePayPalApi(options: { lookup?: () => Response } = {}) {
+function fakePayPalApi(options: { capture?: () => Response; lookup?: () => Response } = {}) {
   return fakeFetch((request) => {
     if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
     if (request.method === "POST" && request.url.endsWith("/v2/checkout/orders")) {
       return jsonResponse(201, { id: "ORDER1", status: "CREATED" });
     }
     if (request.url.endsWith("/v2/checkout/orders/ORDER1/capture")) {
-      return jsonResponse(201, capturedOrder("COMPLETED", "600.00", FEE_BREAKDOWN));
+      return options.capture?.() ?? jsonResponse(201, capturedOrder("COMPLETED", "600.00", FEE_BREAKDOWN));
     }
     if (request.method === "GET" && request.url.endsWith("/v2/checkout/orders/ORDER1")) {
       return options.lookup?.() ?? jsonResponse(200, { id: "ORDER1", status: "APPROVED" });
@@ -148,7 +150,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
   }
 
   // A connected deposit whose client has approved ORDER1 but whose browser never reported back.
-  async function startedDeposit(options: { lookup?: () => Response } = {}) {
+  async function startedDeposit(options: { capture?: () => Response; lookup?: () => Response } = {}) {
     const seeded = await connectedDeposit();
     const api = fakePayPalApi(options);
     const paypal = makePayPal(api.fetch);
@@ -183,6 +185,65 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     });
     expect((await paymentRow(paymentId))?.capturedAt?.toISOString()).toBe("2026-10-08T00:00:00.000Z");
     expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
+    expect(await transfersOf("payment_fees")).toHaveLength(1);
+    expect(await db.select().from(ledgerBalance)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ account: ledgerAccounts.paypalFees, balanceMinor: 2_370 }),
+        expect.objectContaining({ account: ledgerAccounts.payleorFees, balanceMinor: 600 }),
+      ]),
+    );
+  });
+
+  it("finds the payment by its order id alone", async () => {
+    const { paymentId, deps } = await startedDeposit({ lookup: completedLookup });
+
+    expect(await processPayPalWebhookEvent(deps, storedEvent({ customId: null, orderId: "ORDER1" }))).toEqual({
+      status: "processed",
+      note: "applied",
+    });
+    expect((await paymentRow(paymentId))?.status).toBe("captured");
+  });
+
+  it("leaves a capture event to the queue's retries while the order shows no capture yet", async () => {
+    const { paymentId, deps } = await startedDeposit();
+
+    await expect(processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }))).rejects.toThrow(/has no capture yet/);
+    expect((await paymentRow(paymentId))?.status).toBe("pending");
+  });
+
+  it("records a pending capture's id and keeps the payment pending", async () => {
+    const { paymentId, deps } = await startedDeposit({ lookup: () => jsonResponse(200, capturedOrder("PENDING")) });
+
+    expect(
+      await processPayPalWebhookEvent(deps, storedEvent({ eventType: "PAYMENT.CAPTURE.PENDING", customId: paymentId })),
+    ).toEqual({ status: "processed", note: "pending" });
+    expect(await paymentRow(paymentId)).toMatchObject({ status: "pending", paypalCaptureId: "CAPTURE1" });
+  });
+
+  it("marks the payment failed for a declined capture", async () => {
+    const { paymentId, deps } = await startedDeposit({ lookup: () => jsonResponse(200, capturedOrder("DECLINED")) });
+
+    expect(
+      await processPayPalWebhookEvent(deps, storedEvent({ eventType: "PAYMENT.CAPTURE.DECLINED", customId: paymentId })),
+    ).toEqual({ status: "processed", note: "failed" });
+    expect((await paymentRow(paymentId))?.status).toBe("failed");
+  });
+
+  it("retries the fee step visibly when it keeps failing", async () => {
+    const breakdown = {
+      ...FEE_BREAKDOWN,
+      seller_receivable_breakdown: {
+        ...FEE_BREAKDOWN.seller_receivable_breakdown,
+        // Above the amount: the payment's check constraint refuses it.
+        paypal_fee: { currency_code: "USD", value: "700.00" },
+      },
+    };
+    const { paymentId, deps } = await startedDeposit({
+      lookup: () => jsonResponse(200, capturedOrder("COMPLETED", "600.00", breakdown)),
+    });
+
+    await expect(processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }))).rejects.toThrow();
+    expect(await paymentRow(paymentId)).toMatchObject({ status: "captured", paypalFeeMinor: null });
   });
 
   it("changes nothing for a redelivered or late event", async () => {
@@ -211,6 +272,32 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
 
     expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "nothing to do" });
     expect(captures(requests)).toHaveLength(1);
+  });
+
+  it("counts an approval PayPal declines as processed, with the decline", async () => {
+    const declined = {
+      name: "UNPROCESSABLE_ENTITY",
+      message: "The requested action could not be performed.",
+      debug_id: "d422",
+      details: [{ issue: "INSTRUMENT_DECLINED", description: "The instrument presented was declined." }],
+    };
+    const { paymentId, deps } = await startedDeposit({ capture: () => jsonResponse(422, declined) });
+    const event = storedEvent({ eventType: "CHECKOUT.ORDER.APPROVED", resourceType: "checkout-order", customId: paymentId });
+
+    expect(await processPayPalWebhookEvent(deps, event)).toEqual({
+      status: "processed",
+      note: "PayPal declined this payment method. Choose another way to pay.",
+    });
+  });
+
+  it("parks a completed capture on a cancelled payment", async () => {
+    const { paymentId, deps } = await startedDeposit({ lookup: completedLookup });
+    await db.update(payment).set({ status: "cancelled" }).where(eq(payment.id, paymentId));
+
+    const outcome = await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }));
+
+    expect(outcome.status).toBe("parked");
+    expect(outcome.note).toContain("cancelled payment");
   });
 
   it("ignores events about other payments and events it does not handle", async () => {
@@ -265,11 +352,30 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     expect(lookups(requests)).toHaveLength(0);
   });
 
-  it("leaves a PayPal outage to the queue's retries, and parks an order PayPal no longer has", async () => {
+  it("parks an event for a team that has no PayPal merchant", async () => {
+    const { paymentId, requests, deps } = await startedDeposit({ lookup: completedLookup });
+    await db.update(team).set({ paypalMerchantId: null });
+
+    expect(await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }))).toEqual({
+      status: "parked",
+      note: "team has no PayPal merchant",
+    });
+    expect(lookups(requests)).toHaveLength(0);
+  });
+
+  it("leaves a PayPal outage, 401 and 429 to the queue's retries, and parks an order PayPal no longer has", async () => {
     const outage = await startedDeposit({ lookup: () => jsonResponse(503, { name: "SERVICE_UNAVAILABLE", debug_id: "d503" }) });
     await expect(processPayPalWebhookEvent(outage.deps, storedEvent({ customId: outage.paymentId }))).rejects.toBeInstanceOf(
       PayPalError,
     );
+
+    for (const status of [401, 429]) {
+      await truncateAll(db);
+      const refused = await startedDeposit({ lookup: () => jsonResponse(status, { name: "REFUSED", debug_id: "d4xx" }) });
+      await expect(
+        processPayPalWebhookEvent(refused.deps, storedEvent({ customId: refused.paymentId })),
+      ).rejects.toBeInstanceOf(PayPalError);
+    }
 
     await truncateAll(db);
     const gone = await startedDeposit({ lookup: () => jsonResponse(404, { name: "RESOURCE_NOT_FOUND", debug_id: "d404" }) });

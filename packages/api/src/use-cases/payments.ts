@@ -24,6 +24,7 @@ import {
 } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
+import { log } from "evlog";
 
 import type { PayPalServices } from "../context";
 
@@ -206,13 +207,24 @@ export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise
       throw error;
     }
   }
-  if (result === "applied" || result === "already_applied") await recordCaptureFees(db, fact);
+  if (result === "applied" || result === "already_applied") {
+    try {
+      await recordCaptureFees(db, fact);
+    } catch (error) {
+      // The capture is committed; the webhook re-fetch records the fees again and fails visibly there.
+      log.error({
+        action: "payment.fees",
+        payment: { id: fact.paymentId },
+        error: error instanceof Error ? { name: error.name, message: error.message } : { name: typeof error, message: String(error) },
+      });
+    }
+  }
   return result;
 }
 
 // Records PayPal's fee and Payleor's fee for a captured payment, once: the first fact that carries the
 // breakdown wins, whether it is the capture itself or a later webhook re-fetch.
-async function recordCaptureFees(db: Database, fact: CaptureFact): Promise<void> {
+export async function recordCaptureFees(db: Database, fact: CaptureFact): Promise<void> {
   const { paypalFeeMinor } = fact;
   if (fact.status !== "COMPLETED" || paypalFeeMinor === null) return;
   await db.transaction(async (tx) => {
