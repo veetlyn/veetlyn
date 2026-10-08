@@ -202,7 +202,7 @@ export default async function LandingPage() {
 
           <div className="space-y-2 text-center text-sm text-muted-foreground">
             <p className="font-medium text-foreground">Using both? Bundles of both products are coming.</p>
-            <p>PayPal's processing fees apply and are charged by PayPal.</p>
+            <p>PayPal's processing fees apply and are charged by PayPal; their rate varies by country.</p>
           </div>
         </div>
       </section>
