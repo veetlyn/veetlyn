@@ -7,6 +7,7 @@ import {
   canProposeAmendment,
   canStartProject,
   canSubmitDelivery,
+  checkUploadFile,
   completionPostings,
   completionRefundId,
   depositDue,
@@ -24,10 +25,11 @@ import {
   type ProjectFacts,
   type ProjectStatus,
   type QuoteItemDraft,
+  type FileStore,
   type ServicesTeamRole,
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
-import type { Transaction } from "@jendal-workspace/db/executor";
+import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
   findProjectById,
   getCurrentQuote,
@@ -36,6 +38,13 @@ import {
   type ProjectRow,
   type QuoteWithItems,
 } from "@jendal-workspace/db/repositories/projects";
+import {
+  findFileUpload,
+  insertFileUpload,
+  lockFileUploadForAttach,
+  markFileUploadAttached,
+} from "@jendal-workspace/db/repositories/files";
+import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import {
   ProjectConflictError,
@@ -43,13 +52,14 @@ import {
   type OutboxEventInput,
   type UnitOfWork,
 } from "@jendal-workspace/db/repositories/unit-of-work";
+import { fileUpload } from "@jendal-workspace/db/schema/files";
 import { amendment, delivery, payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
 import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export type ProjectActor = { teamId: string; role: ServicesTeamRole; actorId: string };
 
-function fail(code: "NOT_FOUND" | "FORBIDDEN" | "BAD_REQUEST", message: string): never {
+function fail(code: "NOT_FOUND" | "FORBIDDEN" | "BAD_REQUEST" | "TOO_MANY_REQUESTS", message: string): never {
   throw new TRPCError({ code, message });
 }
 
@@ -74,13 +84,13 @@ function checkTransition(status: ProjectStatus, event: ProjectEvent, facts?: Par
   return result.to;
 }
 
-async function requireProject(tx: Transaction, projectId: string): Promise<ProjectRow> {
+async function requireProject(tx: DbExecutor, projectId: string): Promise<ProjectRow> {
   const row = await findProjectById(tx, projectId);
   if (!row) fail("NOT_FOUND", "Project not found.");
   return row;
 }
 
-async function requireTeamProject(tx: Transaction, actor: ProjectActor, projectId: string): Promise<ProjectRow> {
+async function requireTeamProject(tx: DbExecutor, actor: ProjectActor, projectId: string): Promise<ProjectRow> {
   const row = await requireProject(tx, projectId);
   // An id from another team is reported exactly like a missing one.
   if (row.teamId !== actor.teamId) fail("NOT_FOUND", "Project not found.");
@@ -447,10 +457,13 @@ export async function declineAmendment(db: Database, input: { projectId: string;
 const MAX_DELIVERY_NOTE = 5_000;
 const MAX_DELIVERY_LINK = 2_000;
 
-function deliveryInput(input: { note: string; link: string }): { note: string; link: string | null } {
+function deliveryInput(input: { note: string; link: string; fileUploadId?: string }): {
+  note: string;
+  link: string | null;
+} {
   const note = input.note.trim();
   const link = input.link.trim();
-  if (!note && !link) fail("BAD_REQUEST", "Add a note or a link.");
+  if (!note && !link && !input.fileUploadId) fail("BAD_REQUEST", "Add a note, a link or a file.");
   if (note.length > MAX_DELIVERY_NOTE) fail("BAD_REQUEST", "The note is too long.");
   if (link) {
     // The client opens the link from the client page, so only web links are accepted.
@@ -465,19 +478,89 @@ function deliveryInput(input: { note: string; link: string }): { note: string; l
   return { note, link: link || null };
 }
 
+const SUBMIT_DELIVERY_REFUSAL = "Only the assigned freelancer or a manager can deliver.";
+const FILE_UNUSABLE = "This file cannot be used for this delivery.";
+const UPLOAD_URL_SECONDS = 900;
+const DOWNLOAD_URL_SECONDS = 300;
+const UPLOAD_LIMIT = { max: 20, windowMs: 600_000 };
+
+// Sellers design §5.1: the browser uploads the delivery file straight to the bucket with a presigned PUT;
+// the row records what was announced so the delivery can check the object against it.
+export async function startDeliveryUpload(
+  db: Database,
+  files: FileStore,
+  actor: ProjectActor,
+  input: { projectId: string; fileName: string; sizeBytes: number },
+): Promise<{ uploadId: string; url: string; headers: Record<string, string> }> {
+  const checked = checkUploadFile({ name: input.fileName, sizeBytes: input.sizeBytes });
+  if (!checked.ok) fail("BAD_REQUEST", checked.problem);
+  const allowed = await hitRequestLimit(db, { key: `delivery-upload:${actor.actorId}`, ...UPLOAD_LIMIT });
+  if (!allowed) fail("TOO_MANY_REQUESTS", "Too many uploads. Wait a few minutes and try again.");
+  const row = await requireTeamProject(db, actor, input.projectId);
+  if (!canSubmitDelivery({ role: actor.role, actorId: actor.actorId, assignedFreelancerId: row.assignedFreelancerId })) {
+    fail("FORBIDDEN", SUBMIT_DELIVERY_REFUSAL);
+  }
+  if (row.status !== "in_progress") fail("BAD_REQUEST", "Files can be added while the project is in progress.");
+  const uploadId = crypto.randomUUID();
+  const key = `deliveries/${row.teamId}/${row.id}/${uploadId}`;
+  await insertFileUpload(db, {
+    id: uploadId,
+    teamId: row.teamId,
+    projectId: row.id,
+    purpose: "delivery",
+    r2Key: key,
+    fileName: checked.fileName,
+    contentType: checked.contentType,
+    sizeBytes: input.sizeBytes,
+    createdById: actor.actorId,
+  });
+  const { url, headers } = await files.presignPut({
+    key,
+    contentType: checked.contentType,
+    sizeBytes: input.sizeBytes,
+    expiresInSeconds: UPLOAD_URL_SECONDS,
+  });
+  return { uploadId, url, headers };
+}
+
+// The bucket is asked before the transaction so no row lock waits on the network. Only an upload of this
+// team and project is looked up there; any other id gets the same answer as an unknown one.
+async function requireUploadedFile(
+  db: Database,
+  files: FileStore,
+  actor: ProjectActor,
+  input: { projectId: string; fileUploadId: string },
+): Promise<void> {
+  const upload = await findFileUpload(db, input.fileUploadId);
+  if (!upload || upload.teamId !== actor.teamId || upload.projectId !== input.projectId) {
+    fail("BAD_REQUEST", FILE_UNUSABLE);
+  }
+  const stored = await files.head(upload.r2Key);
+  if (!stored || stored.sizeBytes !== upload.sizeBytes) fail("BAD_REQUEST", "The file did not finish uploading.");
+}
+
 // Services spec §5.2 step 5: the assigned freelancer or a manager submits the work for the client's answer.
 export async function submitDelivery(
   db: Database,
+  files: FileStore,
   actor: ProjectActor,
-  input: { projectId: string; note: string; link: string },
+  input: { projectId: string; note: string; link: string; fileUploadId?: string },
 ): Promise<{ deliveryId: string }> {
   const { note, link } = deliveryInput(input);
+  const { fileUploadId } = input;
+  if (fileUploadId) await requireUploadedFile(db, files, actor, { projectId: input.projectId, fileUploadId });
   return runProjectTransaction(db, async (tx, uow) => {
     const row = await requireTeamProject(tx, actor, input.projectId);
     if (!canSubmitDelivery({ role: actor.role, actorId: actor.actorId, assignedFreelancerId: row.assignedFreelancerId })) {
-      fail("FORBIDDEN", "Only the assigned freelancer or a manager can deliver.");
+      fail("FORBIDDEN", SUBMIT_DELIVERY_REFUSAL);
     }
     const status = checkTransition(row.status, "submit_delivery");
+    if (
+      fileUploadId &&
+      !(await lockFileUploadForAttach(tx, { id: fileUploadId, teamId: row.teamId, projectId: row.id, purpose: "delivery" }))
+    ) {
+      fail("BAD_REQUEST", FILE_UNUSABLE);
+    }
     const deliveryId = crypto.randomUUID();
     await uow.apply({
       project: row,
@@ -491,9 +574,28 @@ export async function submitDelivery(
       submittedById: actor.actorId,
       note,
       link,
+      fileUploadId: fileUploadId ?? null,
     });
+    if (fileUploadId) await markFileUploadAttached(tx, fileUploadId);
     return { deliveryId };
   });
+}
+
+// Callers check access to the project first; the link names the file so the browser saves it under that name.
+export async function deliveryFileUrl(
+  db: Database,
+  files: FileStore,
+  input: { projectId: string; deliveryId: string },
+): Promise<{ url: string }> {
+  const [found] = await db
+    .select({ r2Key: fileUpload.r2Key, fileName: fileUpload.fileName })
+    .from(delivery)
+    .innerJoin(fileUpload, eq(delivery.fileUploadId, fileUpload.id))
+    .where(and(eq(delivery.id, input.deliveryId), eq(delivery.projectId, input.projectId)))
+    .limit(1);
+  if (!found) fail("BAD_REQUEST", "This delivery has no file.");
+  const url = await files.presignGet({ key: found.r2Key, fileName: found.fileName, expiresInSeconds: DOWNLOAD_URL_SECONDS });
+  return { url };
 }
 
 async function requireOpenDelivery(tx: Transaction, projectId: string, deliveryId: string): Promise<DeliveryRow> {

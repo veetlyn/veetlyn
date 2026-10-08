@@ -1,4 +1,4 @@
-import type { DeliveryStatus } from "@jendal-workspace/core";
+import { checkUploadFile, type DeliveryStatus } from "@jendal-workspace/core";
 
 // Mirrors the server's delivery rules (packages/api/src/use-cases/projects.ts) so the form can
 // explain a refusal before submitting.
@@ -13,12 +13,20 @@ function isHttpsUrl(value: string): boolean {
   }
 }
 
-export function deliveryDraftProblem(draft: { note: string; link: string }): string | null {
+export function deliveryDraftProblem(draft: {
+  note: string;
+  link: string;
+  file: { name: string; size: number } | null;
+}): string | null {
   const note = draft.note.trim();
   const link = draft.link.trim();
-  if (!note && !link) return "Add a note or a link.";
+  if (!note && !link && !draft.file) return "Add a note, a link or a file.";
   if (note.length > MAX_DELIVERY_NOTE) return "The note is too long.";
   if (link && (!isHttpsUrl(link) || link.length > MAX_DELIVERY_LINK)) return "Use an https link.";
+  if (draft.file) {
+    const check = checkUploadFile({ name: draft.file.name, sizeBytes: draft.file.size });
+    if (!check.ok) return check.problem;
+  }
   return null;
 }
 

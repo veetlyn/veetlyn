@@ -1,5 +1,5 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
-import { ledgerAccounts } from "@jendal-workspace/core";
+import { ledgerAccounts, createFakeFileStore } from "@jendal-workspace/core";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
@@ -106,6 +106,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       headers: new Headers(),
       paypal,
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
   beforeEach(() => truncateAll(db));

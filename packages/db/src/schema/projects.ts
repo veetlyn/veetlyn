@@ -12,6 +12,7 @@ import { sql } from "drizzle-orm";
 import { bigint, check, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
+import { fileUpload } from "./files";
 import { team } from "./organization";
 
 const CURRENCIES = ["USD", "EUR"] as const;
@@ -215,11 +216,13 @@ export const delivery = pgTable(
     status: text("status", { enum: DELIVERY_STATUSES }).notNull().default("submitted"),
     // The client's request when they asked for changes.
     clientNote: text("client_note").notNull().default(""),
+    fileUploadId: text("file_upload_id").references(() => fileUpload.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     decidedAt: timestamp("decided_at"),
   },
   (t) => [
     index("delivery_projectId_idx").on(t.projectId),
+    uniqueIndex("delivery_fileUploadId_idx").on(t.fileUploadId),
     // One delivery waits for the client at a time.
     uniqueIndex("delivery_open_idx").on(t.projectId).where(sql`status = 'submitted'`),
   ],

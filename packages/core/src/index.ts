@@ -33,3 +33,6 @@ export * from "./projects/permissions";
 export * from "./projects/completion";
 export * from "./projects/events";
 export * from "./payouts/destination";
+export * from "./files/rules";
+export * from "./files/store";
+export * from "./files/testing";

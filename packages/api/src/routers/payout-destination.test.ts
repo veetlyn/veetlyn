@@ -1,4 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
+import { createFakeFileStore } from "@jendal-workspace/core";
 import { account } from "@jendal-workspace/db/schema/auth";
 import { createTestDb, hasTestDatabase, seedUser, truncateAll } from "@jendal-workspace/db/testing/db";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -36,6 +37,7 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
   async function linkPayPal(userId: string) {
@@ -62,6 +64,7 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
           auth,
           headers: new Headers(),
           catalog: createTestCatalogServices(),
+          files: createFakeFileStore(),
         })
         .payoutDestination.get(),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });

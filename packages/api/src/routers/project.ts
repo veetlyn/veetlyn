@@ -7,7 +7,9 @@ import {
   listProjectQuotes,
   listTeamProjects,
 } from "@jendal-workspace/db/repositories/projects";
-import { canSeeProject, type QuotingMode } from "@jendal-workspace/core";
+import { canSeeProject, type QuotingMode, type ServicesTeamRole } from "@jendal-workspace/core";
+import type { Database } from "@jendal-workspace/db";
+import { listDeliveryFiles } from "@jendal-workspace/db/repositories/files";
 import { getServicesTeamSettings, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -22,8 +24,10 @@ import {
   addQuote,
   assignFreelancer,
   declineAmendment,
+  deliveryFileUrl,
   proposeAmendment,
   requestChanges,
+  startDeliveryUpload,
   startProject,
   submitDelivery,
 } from "../use-cases/projects";
@@ -40,6 +44,49 @@ async function projectIdFromToken(auth: { options: Record<string, unknown> }, to
   const projectId = await verifyClientLink(linkSecret(auth), token);
   if (!projectId) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
   return projectId;
+}
+
+type TeamViewer = {
+  db: Database;
+  servicesTeam: { id: string };
+  servicesTeamRole: ServicesTeamRole;
+  session: { user: { id: string } };
+};
+
+// A project the caller may not see is reported exactly like a missing one.
+async function requireVisibleProject(ctx: TeamViewer, projectId: string) {
+  const [settings, projects] = await Promise.all([
+    getServicesTeamSettings(ctx.db, ctx.servicesTeam.id),
+    listTeamProjects(ctx.db, ctx.servicesTeam.id),
+  ]);
+  const row = projects.find((p) => p.id === projectId);
+  if (
+    !row ||
+    !canSeeProject({
+      role: ctx.servicesTeamRole,
+      actorId: ctx.session.user.id,
+      assignedFreelancerId: row.assignedFreelancerId,
+      status: row.status,
+      quotingMode: (settings?.quotingMode ?? "assigned") as QuotingMode,
+    })
+  ) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
+  }
+  return { row, settings };
+}
+
+// The storage key stays server-side; pages get the name and size, and a signed link on request.
+async function withDeliveryFiles<T extends { id: string }>(
+  db: Database,
+  deliveries: T[],
+): Promise<(T & { file: { name: string; sizeBytes: number } | null })[]> {
+  const files = await listDeliveryFiles(db, deliveries.map((d) => d.id));
+  const byDelivery = new Map(files.map((f) => [f.deliveryId, { name: f.fileName, sizeBytes: f.sizeBytes }]));
+  return deliveries.map((d) => ({ ...d, file: byDelivery.get(d.id) ?? null }));
+}
+
+function teamActor(ctx: TeamViewer) {
+  return { teamId: ctx.servicesTeam.id, role: ctx.servicesTeamRole, actorId: ctx.session.user.id };
 }
 
 export const projectRouter = router({
@@ -68,23 +115,7 @@ export const projectRouter = router({
   }),
 
   get: servicesTeamProcedure.input(projectIdInput).query(async ({ ctx, input }) => {
-    const [settings, projects] = await Promise.all([
-      getServicesTeamSettings(ctx.db, ctx.servicesTeam.id),
-      listTeamProjects(ctx.db, ctx.servicesTeam.id),
-    ]);
-    const row = projects.find((p) => p.id === input.projectId);
-    if (
-      !row ||
-      !canSeeProject({
-        role: ctx.servicesTeamRole,
-        actorId: ctx.session.user.id,
-        assignedFreelancerId: row.assignedFreelancerId,
-        status: row.status,
-        quotingMode: (settings?.quotingMode ?? "assigned") as QuotingMode,
-      })
-    ) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
-    }
+    const { row, settings } = await requireVisibleProject(ctx, input.projectId);
     const [quotes, amendments, payments, deliveries] = await Promise.all([
       listProjectQuotes(ctx.db, row.id),
       listProjectAmendments(ctx.db, row.id),
@@ -97,7 +128,7 @@ export const projectRouter = router({
       quotes,
       amendments,
       payments,
-      deliveries,
+      deliveries: await withDeliveryFiles(ctx.db, deliveries),
       clientPath: `/c/${clientToken}`,
       role: ctx.servicesTeamRole,
       quotingMode: settings?.quotingMode ?? "assigned",
@@ -161,15 +192,30 @@ export const projectRouter = router({
       );
     }),
 
+  deliveryUploadStart: servicesTeamProcedure
+    .input(projectIdInput.extend({ fileName: z.string().min(1).max(1_000), sizeBytes: z.number().int().nonnegative() }))
+    .mutation(async ({ ctx, input }) => {
+      return startDeliveryUpload(ctx.db, ctx.files, teamActor(ctx), input);
+    }),
+
   deliver: servicesTeamProcedure
     // Abuse caps only: the use-case trims and gives the friendly length messages.
-    .input(projectIdInput.extend({ note: z.string().max(10_000).default(""), link: z.string().max(10_000).default("") }))
+    .input(
+      projectIdInput.extend({
+        note: z.string().max(10_000).default(""),
+        link: z.string().max(10_000).default(""),
+        fileUploadId: z.string().uuid().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      return submitDelivery(
-        ctx.db,
-        { teamId: ctx.servicesTeam.id, role: ctx.servicesTeamRole, actorId: ctx.session.user.id },
-        input,
-      );
+      return submitDelivery(ctx.db, ctx.files, teamActor(ctx), input);
+    }),
+
+  deliveryFileUrl: servicesTeamProcedure
+    .input(projectIdInput.extend({ deliveryId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const { row } = await requireVisibleProject(ctx, input.projectId);
+      return deliveryFileUrl(ctx.db, ctx.files, { projectId: row.id, deliveryId: input.deliveryId });
     }),
 
   // The client project page (services spec §5.2): signed link, no account. Internal user ids
@@ -236,15 +282,18 @@ export const projectRouter = router({
         createdAt: a.createdAt,
       })),
       payments: paymentViews,
-      deliveries: deliveries.map((d) => ({
-        id: d.id,
-        status: d.status,
-        note: d.note,
-        link: d.link,
-        clientNote: d.clientNote,
-        createdAt: d.createdAt,
-        decidedAt: d.decidedAt,
-      })),
+      deliveries: await withDeliveryFiles(
+        ctx.db,
+        deliveries.map((d) => ({
+          id: d.id,
+          status: d.status,
+          note: d.note,
+          link: d.link,
+          clientNote: d.clientNote,
+          createdAt: d.createdAt,
+          decidedAt: d.decidedAt,
+        })),
+      ),
     };
   }),
 
@@ -274,6 +323,13 @@ export const projectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const projectId = await projectIdFromToken(ctx.auth, input.token);
       await requestChanges(ctx.db, { projectId, deliveryId: input.deliveryId, note: input.note });
+    }),
+
+  clientDeliveryFileUrl: publicProcedure
+    .input(z.object({ token: z.string().min(1), deliveryId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const projectId = await projectIdFromToken(ctx.auth, input.token);
+      return deliveryFileUrl(ctx.db, ctx.files, { projectId, deliveryId: input.deliveryId });
     }),
 
   clientAcceptDelivery: publicProcedure

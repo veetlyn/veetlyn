@@ -3,28 +3,41 @@ import { deliveryDraftProblem, deliveryStaffStatusLabel, deliveryStatusLabel, ne
 
 describe("deliveryDraftProblem", () => {
   it("needs a note or an https link", () => {
-    expect(deliveryDraftProblem({ note: "", link: "" })).toBe("Add a note or a link.");
-    expect(deliveryDraftProblem({ note: "Done", link: "" })).toBeNull();
-    expect(deliveryDraftProblem({ note: "", link: "https://figma.com/file/1" })).toBeNull();
-    expect(deliveryDraftProblem({ note: "", link: "http://figma.com" })).toBe("Use an https link.");
-    expect(deliveryDraftProblem({ note: "", link: "not a url" })).toBe("Use an https link.");
+    expect(deliveryDraftProblem({ note: "", link: "", file: null })).toBe("Add a note, a link or a file.");
+    expect(deliveryDraftProblem({ note: "Done", link: "", file: null })).toBeNull();
+    expect(deliveryDraftProblem({ note: "", link: "https://figma.com/file/1", file: null })).toBeNull();
+    expect(deliveryDraftProblem({ note: "", link: "http://figma.com", file: null })).toBe("Use an https link.");
+    expect(deliveryDraftProblem({ note: "", link: "not a url", file: null })).toBe("Use an https link.");
   });
 
   it("trims before checking, like the server", () => {
-    expect(deliveryDraftProblem({ note: "   ", link: "  \n" })).toBe("Add a note or a link.");
-    expect(deliveryDraftProblem({ note: "", link: "  https://figma.com/file/1  " })).toBeNull();
+    expect(deliveryDraftProblem({ note: "   ", link: "  \n", file: null })).toBe("Add a note, a link or a file.");
+    expect(deliveryDraftProblem({ note: "", link: "  https://figma.com/file/1  ", file: null })).toBeNull();
   });
 
   it("checks the link even when there is a note", () => {
-    expect(deliveryDraftProblem({ note: "Done", link: "ftp://files.example.com" })).toBe("Use an https link.");
+    expect(deliveryDraftProblem({ note: "Done", link: "ftp://files.example.com", file: null })).toBe("Use an https link.");
+  });
+
+  it("accepts a file on its own and checks it like the server", () => {
+    expect(deliveryDraftProblem({ note: "", link: "", file: { name: "a.pdf", size: 10 } })).toBeNull();
+    expect(deliveryDraftProblem({ note: "", link: "", file: { name: "run.exe", size: 10 } })).toBe("This file type is not allowed.");
+    expect(deliveryDraftProblem({ note: "", link: "", file: { name: "a.pdf", size: 100 * 1024 * 1024 + 1 } })).toBe(
+      "Files can be up to 100 MB.",
+    );
+    expect(deliveryDraftProblem({ note: "", link: "", file: { name: "a.pdf", size: 0 } })).toBe("The file is empty.");
+  });
+
+  it("checks the file even when there is a note", () => {
+    expect(deliveryDraftProblem({ note: "Done", link: "", file: { name: "run.exe", size: 10 } })).toBe("This file type is not allowed.");
   });
 
   it("caps the note at 5000 characters and the link at 2000", () => {
-    expect(deliveryDraftProblem({ note: "a".repeat(5000), link: "" })).toBeNull();
-    expect(deliveryDraftProblem({ note: "a".repeat(5001), link: "" })).toBe("The note is too long.");
+    expect(deliveryDraftProblem({ note: "a".repeat(5000), link: "", file: null })).toBeNull();
+    expect(deliveryDraftProblem({ note: "a".repeat(5001), link: "", file: null })).toBe("The note is too long.");
     const base = "https://example.com/";
-    expect(deliveryDraftProblem({ note: "", link: base + "a".repeat(2000 - base.length) })).toBeNull();
-    expect(deliveryDraftProblem({ note: "", link: base + "a".repeat(2001 - base.length) })).toBe("Use an https link.");
+    expect(deliveryDraftProblem({ note: "", link: base + "a".repeat(2000 - base.length), file: null })).toBeNull();
+    expect(deliveryDraftProblem({ note: "", link: base + "a".repeat(2001 - base.length), file: null })).toBe("Use an https link.");
   });
 });
 

@@ -55,6 +55,24 @@ export const PayPalWebhookQueue = Cloudflare.Queues.Queue("PayPalWebhooks");
 
 export const ProductImages = Cloudflare.R2.Bucket("ProductImages");
 
+// The platform site and the admin app (apps/web/src/lib/platform-url.ts).
+const platformOrigins = localUrls
+  ? [localUrls.platform, localUrls.admin]
+  : Config.String("PLATFORM_DOMAIN").pipe(Config.map((domain) => [`https://${domain}`, `https://admin.${domain}`]));
+
+// Private files (delivery files now, digital products later). Browsers upload and download them through
+// presigned URLs, so the bucket allows PUT and GET from our hosts. alchemy dev's local S3 endpoint ignores CORS.
+export const Files = Cloudflare.R2.Bucket("Files", {
+  cors: [
+    {
+      allowedMethods: ["PUT", "GET", "HEAD"],
+      allowedOrigins: platformOrigins,
+      allowedHeaders: ["content-type"],
+      maxAgeSeconds: 3600,
+    },
+  ],
+});
+
 const observability = {
   enabled: true,
   logs: { enabled: true, invocationLogs: true },
@@ -90,6 +108,8 @@ export const server = Cloudflare.Worker("server", {
     EMAIL_DOMAIN: Config.String("EMAIL_DOMAIN").pipe(Config.withDefault("payleor.com")),
     EMAIL_REPLY_TO: Config.String("EMAIL_REPLY_TO").pipe(Config.withDefault("support@payleor.com")),
     PRODUCT_IMAGES: ProductImages,
+    FILES: Files,
+    FILES_S3: Cloudflare.R2.S3Credentials(Files, { access: "read-write" }),
     CHANNEL3_API_KEY: Config.Redacted("CHANNEL3_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
   },
   dev: {

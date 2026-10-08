@@ -1,4 +1,4 @@
-import { defaultServicesTeamSettings } from "@jendal-workspace/core";
+import { defaultServicesTeamSettings, createFakeFileStore } from "@jendal-workspace/core";
 import { createTestAuth, signUpVerified } from "@jendal-workspace/auth/testing";
 import { addServicesTeamMember } from "@jendal-workspace/db/repositories/services-teams";
 import {
@@ -33,6 +33,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
   async function signedInCaller(email: string) {
@@ -45,6 +46,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       auth,
       headers,
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
   }
 

@@ -2,7 +2,7 @@ import type { CatalogServices } from "@jendal-workspace/api/catalog/service";
 import type { PayPalServices } from "@jendal-workspace/api/context";
 import { createAuth as createConfiguredAuth } from "@jendal-workspace/auth";
 import { createChannel3Client } from "@jendal-workspace/channel3";
-import type { TenantEnvironment } from "@jendal-workspace/core";
+import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
 import { type Database, createDb } from "@jendal-workspace/db";
 import { createMailer } from "@jendal-workspace/email";
 import { createKvTokenCache, createPayPalClient } from "@jendal-workspace/paypal";
@@ -13,6 +13,7 @@ import { createR2ImageStore } from "./catalog/image-store";
 import { createKvTextCache } from "./catalog/text-cache";
 import { logEmailError } from "./email-log";
 import { ENV } from "./env.server";
+import { createR2FileStore } from "./files/file-store";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 
 export function getDb(): Database {
@@ -66,4 +67,8 @@ export function createCatalogServices(): CatalogServices {
     // Store currency lands with the store settings workstream; everything is USD until then.
     currency: "USD",
   };
+}
+
+export function createFileStore(): FileStore {
+  return createR2FileStore(ENV.FILES, ENV.FILES_S3);
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  ALLOWED_FILE_EXTENSIONS,
   canAssignFreelancer,
   canProposeAmendment,
   canSubmitDelivery,
+  formatBytes,
   formatMoney,
   money,
   parseMajorAmount,
@@ -26,16 +28,26 @@ import { type FormEvent, useState } from "react";
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
-import { trpc } from "@/utils/trpc";
+import { uploadToPresignedUrl } from "@/lib/upload";
+import { trpc, trpcClient } from "@/utils/trpc";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
 
 type ItemRow = { description: string; amount: string; extraDays: string };
 
 const EMPTY_ROW: ItemRow = { description: "", amount: "", extraDays: "0" };
+
+const FILE_ACCEPT = ALLOWED_FILE_EXTENSIONS.map((extension) => `.${extension}`).join(",");
+
+// The deliver form is disabled while it submits, which drops keyboard focus; the error takes it back.
+// Defined outside the component so React calls it only when the element mounts, not on every render.
+function focusOnMount(node: HTMLElement | null) {
+  node?.focus();
+}
 
 function parseRows(rows: ItemRow[]): QuoteItemDraft[] | null {
   const items: QuoteItemDraft[] = [];
@@ -135,19 +147,41 @@ export default function ProjectDetail({
   const [removeItemIds, setRemoveItemIds] = useState<string[]>([]);
   const [deliveryNote, setDeliveryNote] = useState("");
   const [deliveryLink, setDeliveryLink] = useState("");
+  const [deliveryFile, setDeliveryFile] = useState<File | null>(null);
+  // Remounting the file input clears it, so picking the same file again still fires onChange.
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const assign = useMutation(trpc.project.assign.mutationOptions({ onSuccess: refresh }));
   const addQuote = useMutation(trpc.project.addQuote.mutationOptions({ onSuccess: refresh }));
   const proposeAmendment = useMutation(trpc.project.proposeAmendment.mutationOptions({ onSuccess: refresh }));
-  const deliver = useMutation(
-    trpc.project.deliver.mutationOptions({
-      onSuccess: () => {
-        setDeliveryNote("");
-        setDeliveryLink("");
-        return refresh();
-      },
-    }),
-  );
+  function removeDeliveryFile() {
+    setDeliveryFile(null);
+    setFileInputKey((key) => key + 1);
+  }
+  const deliver = useMutation({
+    mutationFn: async (draft: { note: string; link: string; file: File | null }) => {
+      let fileUploadId: string | undefined;
+      if (draft.file) {
+        const file = draft.file;
+        const upload = await trpcClient.project.deliveryUploadStart.mutate({ teamSlug, projectId, fileName: file.name, sizeBytes: file.size });
+        setUploadProgress(0);
+        try {
+          await uploadToPresignedUrl({ url: upload.url, headers: upload.headers, file, onProgress: setUploadProgress });
+        } finally {
+          setUploadProgress(null);
+        }
+        fileUploadId = upload.uploadId;
+      }
+      return trpcClient.project.deliver.mutate({ teamSlug, projectId, note: draft.note, link: draft.link, fileUploadId });
+    },
+    onSuccess: () => {
+      setDeliveryNote("");
+      setDeliveryLink("");
+      removeDeliveryFile();
+      return refresh();
+    },
+  });
 
   if (detail.isPending) return <Loader />;
   if (detail.isError) {
@@ -181,9 +215,13 @@ export default function ProjectDetail({
   const canDeliver =
     project.status === "in_progress" &&
     canSubmitDelivery({ role, actorId: viewerId, assignedFreelancerId: project.assignedFreelancerId });
-  const deliveryProblem = deliveryDraftProblem({ note: deliveryNote, link: deliveryLink });
-  // An untouched form only disables the button; the hint appears once something is typed.
-  const deliveryDraftTouched = deliveryNote !== "" || deliveryLink !== "";
+  const deliveryProblem = deliveryDraftProblem({
+    note: deliveryNote,
+    link: deliveryLink,
+    file: deliveryFile ? { name: deliveryFile.name, size: deliveryFile.size } : null,
+  });
+  // An untouched form only disables the button; the hint appears once something is typed or picked.
+  const deliveryDraftTouched = deliveryNote !== "" || deliveryLink !== "" || deliveryFile !== null;
   const deliveryHint = deliveryDraftTouched ? deliveryProblem : null;
 
   function handleAssign(event: FormEvent<HTMLFormElement>) {
@@ -214,7 +252,7 @@ export default function ProjectDetail({
   function handleDeliver(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (deliveryProblem || deliver.isPending) return;
-    deliver.mutate({ teamSlug, projectId, note: deliveryNote, link: deliveryLink });
+    deliver.mutate({ note: deliveryNote, link: deliveryLink, file: deliveryFile });
   }
 
   return (
@@ -377,6 +415,12 @@ export default function ProjectDetail({
             </div>
             {delivery.note ? <p className="whitespace-pre-wrap">{delivery.note}</p> : null}
             <DeliveryLink link={delivery.link} />
+            {delivery.file ? (
+              <DeliveryFile
+                file={delivery.file}
+                getUrl={async () => (await trpcClient.project.deliveryFileUrl.query({ teamSlug, projectId, deliveryId: delivery.id })).url}
+              />
+            ) : null}
             {delivery.status === "changes_requested" && delivery.clientNote ? (
               <div className="rounded-md bg-muted p-3">
                 <p className="font-medium">The client asked for changes</p>
@@ -391,36 +435,65 @@ export default function ProjectDetail({
         {canDeliver ? (
           <form onSubmit={handleDeliver} className="space-y-3 rounded-lg border p-4">
             <h3 className="font-medium">Deliver</h3>
-            <div className="space-y-2">
-              <Label htmlFor="delivery-note">Note for the client</Label>
-              <Textarea
-                id="delivery-note"
-                rows={4}
-                aria-describedby={deliveryHint ? "delivery-problem" : undefined}
-                value={deliveryNote}
-                onChange={(e) => setDeliveryNote(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="delivery-link">Link</Label>
-              <Input
-                id="delivery-link"
-                aria-describedby={deliveryHint ? "delivery-problem" : undefined}
-                inputMode="url"
-                placeholder="https://"
-                value={deliveryLink}
-                onChange={(e) => setDeliveryLink(e.target.value)}
-              />
-            </div>
-            <Button type="submit" disabled={deliveryProblem !== null || deliver.isPending}>
-              Submit delivery
-            </Button>
+            <fieldset disabled={deliver.isPending} className="min-w-0 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="delivery-note">Note for the client</Label>
+                <Textarea
+                  id="delivery-note"
+                  rows={4}
+                  aria-describedby={deliveryHint ? "delivery-problem" : undefined}
+                  value={deliveryNote}
+                  onChange={(e) => setDeliveryNote(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="delivery-link">Link</Label>
+                <Input
+                  id="delivery-link"
+                  aria-describedby={deliveryHint ? "delivery-problem" : undefined}
+                  inputMode="url"
+                  placeholder="https://"
+                  value={deliveryLink}
+                  onChange={(e) => setDeliveryLink(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="delivery-file">File (optional)</Label>
+                <Input
+                  key={fileInputKey}
+                  id="delivery-file"
+                  type="file"
+                  accept={FILE_ACCEPT}
+                  aria-describedby={deliveryHint ? "delivery-problem" : undefined}
+                  onChange={(e) => setDeliveryFile(e.target.files?.[0] ?? null)}
+                />
+                {deliveryFile ? (
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="min-w-0 truncate">
+                      {deliveryFile.name} ({formatBytes(deliveryFile.size)})
+                    </span>
+                    <Button type="button" variant="outline" size="sm" onClick={removeDeliveryFile}>
+                      Remove file
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+              <Button type="submit" disabled={deliveryProblem !== null || deliver.isPending}>
+                {deliver.isPending && uploadProgress === null ? "Saving…" : "Submit delivery"}
+              </Button>
+            </fieldset>
+            {uploadProgress !== null ? (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Uploading… {Math.round(uploadProgress * 100)}%</p>
+                <progress aria-label="Upload progress" max={1} value={uploadProgress} className="w-full" />
+              </div>
+            ) : null}
             {/* Always mounted so screen readers pick up the message when it appears. */}
             <p id="delivery-problem" aria-live="polite" className="text-sm text-destructive empty:hidden">
               {deliveryHint}
             </p>
             {deliver.error ? (
-              <p role="alert" className="text-sm text-destructive">
+              <p ref={focusOnMount} role="alert" tabIndex={-1} className="text-sm text-destructive outline-none">
                 {deliver.error.message}
               </p>
             ) : null}

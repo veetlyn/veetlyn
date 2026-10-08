@@ -1,5 +1,5 @@
 import type { Auth, Session } from "@jendal-workspace/auth";
-import type { TenantEnvironment } from "@jendal-workspace/core";
+import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { PayPalClient } from "@jendal-workspace/paypal";
 
@@ -26,4 +26,6 @@ export type Context = {
   paypal?: PayPalServices;
   // Ports the catalog procedures use; fakes in tests, the real adapters from the server app.
   catalog: CatalogServices;
+  // Private files (delivery files); a fake in tests, the R2 adapter from the server app.
+  files: FileStore;
 };
