@@ -32,6 +32,7 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
+import { PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
 
@@ -134,7 +135,12 @@ export default function ProjectDetail({
   siteOrigin: string;
 }) {
   const queryClient = useQueryClient();
-  const detail = useQuery({ ...trpc.project.get.queryOptions({ teamSlug, projectId }), retry: false });
+  const detail = useQuery({
+    ...trpc.project.get.queryOptions({ teamSlug, projectId }),
+    retry: false,
+    refetchInterval: (query) => (query.state.data && teamWaitsOnClient(query.state.data) ? PROJECT_REFRESH_MS : false),
+    meta: { quietRefetchErrors: true },
+  });
   const members = useQuery({ ...trpc.project.members.queryOptions({ teamSlug }), retry: false });
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.project.get.queryOptions({ teamSlug, projectId }).queryKey });
 
@@ -184,7 +190,8 @@ export default function ProjectDetail({
   });
 
   if (detail.isPending) return <Loader />;
-  if (detail.isError) {
+  // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
+  if (!detail.data) {
     return (
       <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
         <h1 className="text-2xl font-semibold">Project not found</h1>

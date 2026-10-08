@@ -7,6 +7,8 @@ import { toast } from "sonner";
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
+      // A polled page keeps its last data on a failed poll; a toast per missed poll would pile up.
+      if (query.meta?.quietRefetchErrors === true && query.state.data !== undefined) return;
       toast.error(error.message, {
         action: {
           label: "retry",
