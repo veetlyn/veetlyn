@@ -1,0 +1,29 @@
+packages/db/src/repositories/seller-page.test.ts
+  s_56372337eb4587::t_c9070f9140c310 1-93
+packages/db/src/repositories/seller-page.ts
+  s_56372337eb4587::t_06611033ebf0ef 1-63
+packages/db/src/repositories/services-teams.test.ts
+  s_56372337eb4587::t_6227b66ea9dc69 56-62
+packages/db/src/repositories/stores.test.ts
+  s_56372337eb4587::t_f94eca7e1ce497 4,18,24,147,151,153-155,176-212
+packages/db/src/repositories/stores.ts
+  s_56372337eb4587::t_c0a98144ff0d25 2,5,19,28,36,45,122-142
+packages/db/src/testing/db.ts
+  s_56372337eb4587::t_9f8de8b2c68248 97-104,113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "46ece6cf0f7e559fa63bff51cd6b8dd7f269b447",
+  "prompts": {},
+  "sessions": {
+    "s_56372337eb4587": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "8209f281-e803-4fa9-9901-30cfd06a1676",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
