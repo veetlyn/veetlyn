@@ -7,10 +7,11 @@ import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
+import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
-import { trpc } from "@/utils/trpc";
+import { trpc, trpcClient } from "@/utils/trpc";
 
 // The client project page (services spec §5.2): the signed link is the credential, so this page
 // works without an account. Accepting a quote or an amendment is one click from here.
@@ -159,6 +160,12 @@ export default function ClientProject({ token }: { token: string }) {
               </div>
               {delivery.note ? <p className="text-sm whitespace-pre-wrap">{delivery.note}</p> : null}
               <DeliveryLink link={delivery.link} className="text-sm" />
+              {delivery.file ? (
+                <DeliveryFile
+                  file={delivery.file}
+                  getUrl={async () => (await trpcClient.project.clientDeliveryFileUrl.query({ token, deliveryId: delivery.id })).url}
+                />
+              ) : null}
               {delivery.status === "changes_requested" && delivery.clientNote ? (
                 <div className="rounded-md bg-muted p-3 text-sm">
                   <p className="font-medium">Your request</p>
