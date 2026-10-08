@@ -11,7 +11,7 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
-import { clientWaitsOnTeam, PROJECT_REFRESH_MS } from "@/lib/project-refresh";
+import { clientWaitsOnTeam, isNotFoundError, PROJECT_REFRESH_MS } from "@/lib/project-refresh";
 import { trpc, trpcClient } from "@/utils/trpc";
 
 // The client project page (services spec §5.2): the signed link is the credential, so this page
@@ -21,7 +21,8 @@ export default function ClientProject({ token }: { token: string }) {
   const view = useQuery({
     ...trpc.project.clientGet.queryOptions({ token }),
     retry: false,
-    refetchInterval: (query) => (query.state.data && clientWaitsOnTeam(query.state.data) ? PROJECT_REFRESH_MS : false),
+    refetchInterval: (query) =>
+      query.state.data && !isNotFoundError(query.state.error) && clientWaitsOnTeam(query.state.data) ? PROJECT_REFRESH_MS : false,
     meta: { quietRefetchErrors: true },
   });
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.project.clientGet.queryOptions({ token }).queryKey });

@@ -22,6 +22,11 @@ export function teamWaitsOnClient(view: ProjectWaitView): boolean {
   return CLIENT_TURN_STATUSES.has(view.project.status) || hasProposedQuote(view) || hasPendingAmendment(view);
 }
 
+// A NOT_FOUND will not fix itself, so polling stops; other errors may be transient and polling goes on.
+export function isNotFoundError(error: { data?: { code?: string } | null } | null | undefined): boolean {
+  return error?.data?.code === "NOT_FOUND";
+}
+
 export function clientWaitsOnTeam(view: ProjectWaitView): boolean {
   if (view.project.status === "quoting") return !hasProposedQuote(view);
   if (view.project.status === "in_progress") return !hasPendingAmendment(view);

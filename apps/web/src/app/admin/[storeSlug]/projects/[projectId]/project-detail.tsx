@@ -32,7 +32,7 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
-import { PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
+import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
 
@@ -138,7 +138,8 @@ export default function ProjectDetail({
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ teamSlug, projectId }),
     retry: false,
-    refetchInterval: (query) => (query.state.data && teamWaitsOnClient(query.state.data) ? PROJECT_REFRESH_MS : false),
+    refetchInterval: (query) =>
+      query.state.data && !isNotFoundError(query.state.error) && teamWaitsOnClient(query.state.data) ? PROJECT_REFRESH_MS : false,
     meta: { quietRefetchErrors: true },
   });
   const members = useQuery({ ...trpc.project.members.queryOptions({ teamSlug }), retry: false });

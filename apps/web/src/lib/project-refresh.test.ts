@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientWaitsOnTeam, PROJECT_REFRESH_MS, teamWaitsOnClient, type ProjectWaitView } from "./project-refresh";
+import { clientWaitsOnTeam, isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient, type ProjectWaitView } from "./project-refresh";
 
 function view(status: string, quotes: string[] = [], amendments: string[] = []): ProjectWaitView {
   return {
@@ -60,5 +60,18 @@ describe("clientWaitsOnTeam", () => {
     for (const status of ["awaiting_deposit", "delivered", "awaiting_balance", "completed", "cancelled"]) {
       expect(clientWaitsOnTeam(view(status, ["accepted"]))).toBe(false);
     }
+  });
+});
+
+describe("isNotFoundError", () => {
+  it("is true for a tRPC NOT_FOUND", () => {
+    expect(isNotFoundError({ data: { code: "NOT_FOUND" } })).toBe(true);
+  });
+
+  it("is false for no error and for transient errors", () => {
+    expect(isNotFoundError(null)).toBe(false);
+    expect(isNotFoundError(undefined)).toBe(false);
+    expect(isNotFoundError({ data: null })).toBe(false);
+    expect(isNotFoundError({ data: { code: "INTERNAL_SERVER_ERROR" } })).toBe(false);
   });
 });
