@@ -1,0 +1,29 @@
+packages/core/src/files/rules.ts
+  s_632dcb0393d516::t_eb343de23c1b80 1-137
+packages/core/src/files/testing.test.ts
+  s_632dcb0393d516::t_34f5bd85fe2de0 1-39
+packages/core/src/files/rules.test.ts
+  s_632dcb0393d516::t_722fe8fc35d291 1-103
+packages/core/src/files/testing.ts
+  s_632dcb0393d516::t_5e59d7b6477c2e 1-35
+packages/core/src/files/store.ts
+  s_632dcb0393d516::t_145e96b0ac0ee5 1-11
+packages/core/src/index.ts
+  s_632dcb0393d516::t_4a56b577312cbf 36-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "984a7f4ea0661d2a53ceb79ec2977ab560972f30",
+  "prompts": {},
+  "sessions": {
+    "s_632dcb0393d516": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "b71e7f37-2ded-4c81-a2c1-3081909e7cab",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
