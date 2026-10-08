@@ -3,6 +3,7 @@ import { isLedgerAccountKey, type LedgerAccountKey } from "./accounts";
 
 export const LEDGER_TRANSFER_KINDS = [
   "payment_captured",
+  "payment_fees",
   "management_fee_credit",
   "completion",
   "refund_requested",

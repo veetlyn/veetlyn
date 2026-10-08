@@ -6,7 +6,9 @@ export type LedgerAccountKey =
   | `owed:${string}:reserved`
   | `paid_out:${string}`
   | "client_refunds"
-  | "paypal_clearing";
+  | "paypal_clearing"
+  | "paypal_fees"
+  | "payleor_fees";
 
 export type LedgerAccountKind =
   | "client_held"
@@ -15,7 +17,9 @@ export type LedgerAccountKind =
   | "owed_reserved"
   | "paid_out"
   | "client_refunds"
-  | "paypal_clearing";
+  | "paypal_clearing"
+  | "paypal_fees"
+  | "payleor_fees";
 
 // IDs are embedded in keys, so a ":" would make a key ambiguous.
 function keyPart(id: string): string {
@@ -31,10 +35,20 @@ export const ledgerAccounts = {
   paidOut: (freelancerId: string) => `paid_out:${keyPart(freelancerId)}` as const,
   clientRefunds: "client_refunds",
   paypalClearing: "paypal_clearing",
+  paypalFees: "paypal_fees",
+  payleorFees: "payleor_fees",
 } as const;
 
 export function ledgerAccountKind(key: string): LedgerAccountKind | null {
-  if (key === "team_revenue" || key === "client_refunds" || key === "paypal_clearing") return key;
+  if (
+    key === "team_revenue" ||
+    key === "paypal_fees" ||
+    key === "payleor_fees" ||
+    key === "client_refunds" ||
+    key === "paypal_clearing"
+  ) {
+    return key;
+  }
   const parts = key.split(":");
   if (parts.length === 2 && parts[1]) {
     if (parts[0] === "client_held") return "client_held";
