@@ -1,4 +1,6 @@
 import {
+  completionTransfer,
+  type LedgerTransferDraft,
   parseMajorAmount,
   paymentCapturedTransfer,
   paymentFeesTransfer,
@@ -13,7 +15,11 @@ import type { Transaction } from "@jendal-workspace/db/executor";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { findProjectById, getCurrentQuote, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
-import { ProjectConflictError, runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
+import {
+  type OutboxEventInput,
+  ProjectConflictError,
+  runInTransaction,
+} from "@jendal-workspace/db/repositories/unit-of-work";
 import { payment, type project } from "@jendal-workspace/db/schema/projects";
 import {
   captureFromOrder,
@@ -83,16 +89,41 @@ function checkCaptureBelongs(row: PaymentRow, fact: CaptureFact): void {
   }
 }
 
+type CaptureChange = {
+  set: Partial<typeof project.$inferInsert>;
+  transfers: LedgerTransferDraft[];
+  events: OutboxEventInput[];
+};
+
 async function projectChangeOnCapture(
   tx: Transaction,
   row: ProjectRow,
   kind: PaymentRow["kind"],
   capturedAt: Date,
-): Promise<Partial<typeof project.$inferInsert>> {
-  if (kind === "top_up") return {};
+): Promise<CaptureChange> {
+  if (kind === "top_up") return { set: {}, transfers: [], events: [] };
   if (kind === "balance") {
-    // The balance capture completes the project with the completion postings (services spec §6.3, run 2).
-    throw new Error(`Payment kind ${kind} cannot be captured yet`);
+    // Services spec §5.2 step 7: the balance capture completes the project with the completion postings.
+    const result = transitionProject(row.status, "balance_captured");
+    if (!result.ok) {
+      throw new Error(`Project ${row.id} cannot take its balance: ${transitionRefusalMessage(result.reason)}`);
+    }
+    const freelancerId = row.assignedFreelancerId;
+    if (row.finalPriceMinor === null || !freelancerId) {
+      throw new Error(`Project ${row.id} has a balance without a final price or freelancer`);
+    }
+    const transfer = completionTransfer({
+      currency: row.currency,
+      projectId: row.id,
+      freelancerId,
+      finalPriceMinor: row.finalPriceMinor,
+      teamCutBps: row.teamCutBps,
+    });
+    return {
+      set: { status: result.to },
+      transfers: [transfer],
+      events: [{ type: "project.completed", data: { finalPriceMinor: row.finalPriceMinor } }],
+    };
   }
   const result = transitionProject(row.status, "deposit_captured");
   if (!result.ok) {
@@ -101,7 +132,11 @@ async function projectChangeOnCapture(
   const quote = await getCurrentQuote(tx, row.id);
   if (!quote) throw new Error(`Project ${row.id} has a deposit but no accepted quote`);
   // Services spec §5.2 step 4: the deadline runs from the capture.
-  return { status: result.to, deadlineAt: new Date(capturedAt.getTime() + quote.deliveryDays * DAY_MS) };
+  return {
+    set: { status: result.to, deadlineAt: new Date(capturedAt.getTime() + quote.deliveryDays * DAY_MS) },
+    transfers: [],
+    events: [],
+  };
 }
 
 // A pending capture changes no money: it only records the capture id, so the later outcome matches it.
@@ -148,9 +183,12 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
         .update(payment)
         .set({ status: "captured", paypalCaptureId: fact.captureId, capturedAt, version: row.version + 1 })
         .where(eq(payment.id, row.id));
+      const change = await projectChangeOnCapture(tx, projectRow, row.kind, capturedAt);
       await uow.apply({
         project: projectRow,
-        set: await projectChangeOnCapture(tx, projectRow, row.kind, capturedAt),
+        set: change.set,
+        // Posted in the same batch as the capture: completion takes out of client_held the money the capture puts
+        // in, and the ledger checks the batch's net balances.
         transfers: [
           paymentCapturedTransfer({
             currency: row.currency,
@@ -159,12 +197,14 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
             quotePartMinor: row.quotePartMinor,
             managementFeeMinor: row.managementFeeMinor,
           }),
+          ...change.transfers,
         ],
         events: [
           {
             type: "payment.captured",
             data: { paymentId: row.id, kind: row.kind, amountMinor: row.amountMinor, captureId: fact.captureId },
           },
+          ...change.events,
         ],
       });
       return "applied";
@@ -350,9 +390,6 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
   if (row.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "This payment was cancelled." });
   if (row.status === "pending" && row.paypalCaptureId) {
     throw new TRPCError({ code: "CONFLICT", message: "PayPal is still processing this payment. Check back soon." });
-  }
-  if (row.kind === "balance") {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Balance payments open once deliveries can be accepted." });
   }
   const projectRow = await findProjectById(deps.db, row.projectId);
   if (!projectRow) throw new Error(`Payment ${row.id} has no project`);

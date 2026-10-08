@@ -1,5 +1,6 @@
 import {
   AMENDMENT_STATUSES,
+  DELIVERY_STATUSES,
   PAYMENT_KINDS,
   PAYMENT_STATUSES,
   type PaymentLine,
@@ -43,6 +44,8 @@ export const project = pgTable(
     teamCutBps: integer("team_cut_bps").notNull(),
     revisions: integer("revisions").notNull().default(0),
     deadlineAt: timestamp("deadline_at"),
+    // The price the client accepted the delivery at (services spec §5.3); null until then.
+    finalPriceMinor: minor("final_price_minor"),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -190,5 +193,34 @@ export const payment = pgTable(
       "payment_paypal_fee_check",
       sql`paypal_fee_minor is null or (paypal_fee_minor >= 0 and paypal_fee_minor <= amount_minor)`,
     ),
+  ],
+);
+
+// Services spec §5.2 step 5: what the freelancer handed over, and the client's answer.
+export const delivery = pgTable(
+  "delivery",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => team.id, { onDelete: "restrict" }),
+    submittedById: text("submitted_by_id").references(() => user.id, { onDelete: "set null" }),
+    note: text("note").notNull().default(""),
+    link: text("link"),
+    status: text("status", { enum: DELIVERY_STATUSES }).notNull().default("submitted"),
+    // The client's request when they asked for changes.
+    clientNote: text("client_note").notNull().default(""),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    decidedAt: timestamp("decided_at"),
+  },
+  (t) => [
+    index("delivery_projectId_idx").on(t.projectId),
+    // One delivery waits for the client at a time.
+    uniqueIndex("delivery_open_idx").on(t.projectId).where(sql`status = 'submitted'`),
   ],
 );

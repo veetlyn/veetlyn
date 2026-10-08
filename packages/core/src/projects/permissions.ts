@@ -67,6 +67,15 @@ export function canProposeAmendment(input: {
   return isProjectStaff(input.role) || input.actorId === input.assignedFreelancerId;
 }
 
+// Services spec §5.2 step 5: the assigned freelancer submits the delivery; staff can submit it for them.
+export function canSubmitDelivery(input: {
+  role: ServicesTeamRole;
+  actorId: string;
+  assignedFreelancerId: string | null;
+}): boolean {
+  return isProjectStaff(input.role) || input.actorId === input.assignedFreelancerId;
+}
+
 // Freelancers see the projects assigned to them, and quoting projects when anyone in the team may quote.
 export function canSeeProject(input: {
   role: ServicesTeamRole;

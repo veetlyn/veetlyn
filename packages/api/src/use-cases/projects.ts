@@ -2,10 +2,15 @@ import {
   amendmentEffect,
   amendmentProblemMessage,
   amendQuoteItems,
+  balanceDue,
   canAssignFreelancer,
   canProposeAmendment,
   canStartProject,
+  canSubmitDelivery,
+  completionPostings,
+  completionRefundId,
   depositDue,
+  finalPriceMinor,
   managementFeeCreditTransfer,
   paymentLines,
   quoteAuthor,
@@ -27,6 +32,7 @@ import {
   findProjectById,
   getCurrentQuote,
   getProjectFacts,
+  type DeliveryRow,
   type ProjectRow,
   type QuoteWithItems,
 } from "@jendal-workspace/db/repositories/projects";
@@ -37,7 +43,7 @@ import {
   type OutboxEventInput,
   type UnitOfWork,
 } from "@jendal-workspace/db/repositories/unit-of-work";
-import { amendment, payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
+import { amendment, delivery, payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
 import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -435,5 +441,176 @@ export async function declineAmendment(db: Database, input: { projectId: string;
       events: [{ type: "amendment.declined", data: { amendmentId: found.id, projectId: row.id } }],
     });
     await tx.update(amendment).set({ status: "declined", decidedAt: new Date() }).where(eq(amendment.id, found.id));
+  });
+}
+
+const MAX_DELIVERY_NOTE = 5_000;
+const MAX_DELIVERY_LINK = 2_000;
+
+function deliveryInput(input: { note: string; link: string }): { note: string; link: string | null } {
+  const note = input.note.trim();
+  const link = input.link.trim();
+  if (!note && !link) fail("BAD_REQUEST", "Add a note or a link.");
+  if (note.length > MAX_DELIVERY_NOTE) fail("BAD_REQUEST", "The note is too long.");
+  if (link) {
+    // The client opens the link from the client page, so only web links are accepted.
+    let protocol: string | null = null;
+    try {
+      protocol = new URL(link).protocol;
+    } catch {
+      protocol = null;
+    }
+    if (protocol !== "https:" || link.length > MAX_DELIVERY_LINK) fail("BAD_REQUEST", "Use an https link.");
+  }
+  return { note, link: link || null };
+}
+
+// Services spec §5.2 step 5: the assigned freelancer or a manager submits the work for the client's answer.
+export async function submitDelivery(
+  db: Database,
+  actor: ProjectActor,
+  input: { projectId: string; note: string; link: string },
+): Promise<{ deliveryId: string }> {
+  const { note, link } = deliveryInput(input);
+  return runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireTeamProject(tx, actor, input.projectId);
+    if (!canSubmitDelivery({ role: actor.role, actorId: actor.actorId, assignedFreelancerId: row.assignedFreelancerId })) {
+      fail("FORBIDDEN", "Only the assigned freelancer or a manager can deliver.");
+    }
+    const status = checkTransition(row.status, "submit_delivery");
+    const deliveryId = crypto.randomUUID();
+    await uow.apply({
+      project: row,
+      set: { status },
+      events: [{ type: "delivery.submitted", data: { deliveryId } }],
+    });
+    await tx.insert(delivery).values({
+      id: deliveryId,
+      projectId: row.id,
+      teamId: row.teamId,
+      submittedById: actor.actorId,
+      note,
+      link,
+    });
+    return { deliveryId };
+  });
+}
+
+async function requireOpenDelivery(tx: Transaction, projectId: string, deliveryId: string): Promise<DeliveryRow> {
+  const [found] = await tx
+    .select()
+    .from(delivery)
+    .where(and(eq(delivery.id, deliveryId), eq(delivery.projectId, projectId)))
+    .limit(1);
+  if (!found || found.status !== "submitted") fail("BAD_REQUEST", "This delivery is not waiting for an answer.");
+  return found;
+}
+
+// Services spec §5.2 step 6: the client sends the work back with what should change; it counts a revision.
+export async function requestChanges(
+  db: Database,
+  input: { projectId: string; deliveryId: string; note: string },
+): Promise<void> {
+  const note = input.note.trim();
+  if (!note) fail("BAD_REQUEST", "Say what should change.");
+  if (note.length > MAX_DELIVERY_NOTE) fail("BAD_REQUEST", "The note is too long.");
+  await runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireProject(tx, input.projectId);
+    const found = await requireOpenDelivery(tx, row.id, input.deliveryId);
+    const status = checkTransition(row.status, "request_changes");
+    await uow.apply({
+      project: row,
+      set: { status, revisions: row.revisions + 1 },
+      events: [{ type: "delivery.changes_requested", data: { deliveryId: found.id } }],
+    });
+    await tx
+      .update(delivery)
+      .set({ status: "changes_requested", clientNote: note, decidedAt: new Date() })
+      .where(eq(delivery.id, found.id));
+  });
+}
+
+// Services spec §5.2 step 6 and §5.3: accepting fixes the final price and opens the balance payment, or
+// completes the project at once when nothing is left to pay.
+export async function acceptDelivery(
+  db: Database,
+  input: { projectId: string; deliveryId: string },
+): Promise<{ status: "awaiting_balance" | "completed"; balancePaymentId: string | null }> {
+  return runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireProject(tx, input.projectId);
+    const found = await requireOpenDelivery(tx, row.id, input.deliveryId);
+    const current = await requireCurrentQuote(tx, row);
+    const facts = await getProjectFacts(tx, row.id);
+    const finalPrice = finalPriceMinor(current.amountMinor, 0);
+    const balance = balanceDue({
+      quoteMinor: current.amountMinor,
+      managementFeeBps: row.managementFeeBps,
+      finalPriceMinor: finalPrice,
+      paidQuoteMinor: facts.paidQuoteMinor,
+      paidManagementFeeMinor: facts.paidManagementFeeMinor,
+      managementFeeCreditedMinor: facts.managementFeeCreditedMinor,
+    });
+    const status = checkTransition(row.status, "accept_delivery", { ...facts, balanceDueMinor: balance.dueMinor });
+    const accepted: OutboxEventInput = {
+      type: "delivery.accepted",
+      data: { deliveryId: found.id, finalPriceMinor: finalPrice },
+    };
+
+    let balancePaymentId: string | null = null;
+    if (status === "awaiting_balance") {
+      balancePaymentId = crypto.randomUUID();
+      await uow.apply({
+        project: row,
+        set: { status, finalPriceMinor: finalPrice },
+        events: [
+          accepted,
+          { type: "payment.created", data: { paymentId: balancePaymentId, kind: "balance", amountMinor: balance.dueMinor } },
+        ],
+      });
+      const split = {
+        quotePartMinor: balance.quotePartMinor,
+        managementFeeMinor: balance.managementFeePartMinor,
+        totalMinor: balance.dueMinor,
+      };
+      await tx.insert(payment).values({
+        id: balancePaymentId,
+        projectId: row.id,
+        teamId: row.teamId,
+        kind: "balance",
+        currency: row.currency,
+        quotePartMinor: split.quotePartMinor,
+        managementFeeMinor: split.managementFeeMinor,
+        amountMinor: split.totalMinor,
+        lines: paymentLines("balance", split, row.managementFeeBps),
+      });
+    } else if (status === "completed") {
+      // Quoting assigns the freelancer, so an accepted quote without one is a broken invariant.
+      if (!row.assignedFreelancerId) throw new Error(`Project ${row.id} is ${row.status} without an assigned freelancer`);
+      const completion = completionPostings({
+        currency: row.currency,
+        projectId: row.id,
+        freelancerId: row.assignedFreelancerId,
+        finalPriceMinor: finalPrice,
+        teamCutBps: row.teamCutBps,
+        balance,
+      });
+      const events: OutboxEventInput[] = [accepted, { type: "project.completed", data: { finalPriceMinor: finalPrice } }];
+      if (completion.refundMinor > 0) {
+        events.push({
+          type: "refund.requested",
+          data: { amountMinor: completion.refundMinor, refundId: completionRefundId(row.id) },
+        });
+      }
+      await uow.apply({
+        project: row,
+        set: { status, finalPriceMinor: finalPrice },
+        transfers: completion.transfers,
+        events,
+      });
+    } else {
+      throw new Error(`accept_delivery moved project ${row.id} to ${status}`);
+    }
+    await tx.update(delivery).set({ status: "accepted", decidedAt: new Date() }).where(eq(delivery.id, found.id));
+    return { status, balancePaymentId };
   });
 }

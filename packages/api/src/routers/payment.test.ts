@@ -572,6 +572,114 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     });
   });
 
+  describe("balance", () => {
+    // The deposit captured, the work delivered and accepted: a pending $500 balance (no fee left to pay).
+    async function awaitingBalance() {
+      const seeded = await connectedDeposit();
+      // PayPal order and capture ids are unique across payments; the balance gets ORDER1 and CAPTURE1.
+      await db.update(payment).set({ paypalOrderId: "ORDER-DEPOSIT" }).where(eq(payment.id, seeded.paymentId));
+      const deposit = fact(seeded.paymentId, { orderId: "ORDER-DEPOSIT", captureId: "CAPTURE-DEPOSIT" });
+      expect(await applyCaptureFact(db, deposit)).toBe("applied");
+      const project = await findProjectById(db, seeded.projectId);
+      const freelancerId = project?.assignedFreelancerId;
+      if (!freelancerId) throw new Error("no freelancer");
+      const { deliveryId } = await callerFor(freelancerId).project.deliver({
+        teamSlug: "team",
+        projectId: seeded.projectId,
+        note: "Here it is",
+      });
+      const clientToken = await signClientLink(SECRET, seeded.projectId);
+      const { balancePaymentId } = await callerFor(null).project.clientAcceptDelivery({ token: clientToken, deliveryId });
+      if (!balancePaymentId) throw new Error("no balance payment");
+      return {
+        projectId: seeded.projectId,
+        freelancerId,
+        balancePaymentId,
+        token: await signPayLink(SECRET, balancePaymentId),
+      };
+    }
+
+    function balanceFact(paymentId: string): CaptureFact {
+      return fact(paymentId, { amountMinor: 50_000 });
+    }
+
+    async function balanceOf(account: string) {
+      const [row] = await db.select().from(ledgerBalance).where(eq(ledgerBalance.account, account));
+      return row?.balanceMinor ?? 0;
+    }
+
+    async function outboxTypes(projectId: string) {
+      const rows = await db.select().from(outbox).where(eq(outbox.projectId, projectId));
+      return rows.sort((a, b) => a.sequence - b.sequence).map((e) => e.type);
+    }
+
+    // The $100 management fee plus the 15% team cut of the $1,000 final price, less the fees posted so far.
+    async function expectCompleted(projectId: string, freelancerId: string, feesMinor = 0) {
+      expect((await findProjectById(db, projectId))?.status).toBe("completed");
+      expect(await balanceOf(ledgerAccounts.clientHeld(projectId))).toBe(0);
+      expect(await balanceOf(ledgerAccounts.teamRevenue)).toBe(10_000 + 15_000 - feesMinor);
+      expect(await balanceOf(`owed:${freelancerId}:available`)).toBe(85_000);
+      expect((await outboxTypes(projectId)).slice(-2)).toEqual(["payment.captured", "project.completed"]);
+      const [completed] = await db.select().from(outbox).where(eq(outbox.type, "project.completed"));
+      expect(completed?.data).toEqual({ finalPriceMinor: 100_000 });
+    }
+
+    it("starts the balance payment and completes the project with its capture", async () => {
+      const { projectId, freelancerId, balancePaymentId, token } = await awaitingBalance();
+      const { requests, fetch } = fakePayPalApi({
+        capture: () =>
+          jsonResponse(
+            201,
+            capturedOrder("COMPLETED", "500.00", {
+              create_time: "2026-11-01T00:00:00Z",
+              seller_receivable_breakdown: {
+                gross_amount: { currency_code: "USD", value: "500.00" },
+                paypal_fee: { currency_code: "USD", value: "19.94" },
+                platform_fees: [{ amount: { currency_code: "USD", value: "5.00" } }],
+                net_amount: { currency_code: "USD", value: "475.06" },
+              },
+            }),
+          ),
+      });
+      const caller = callerFor(null, makePayPal(fetch));
+
+      expect(await caller.payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
+      const [create] = calls(requests, "/v2/checkout/orders");
+      expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
+        amount: { currency_code: "USD", value: "500.00" },
+        items: [{ name: "Balance", unit_amount: { currency_code: "USD", value: "500.00" } }],
+      });
+
+      expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
+      expect(await paymentRow(balancePaymentId)).toMatchObject({
+        status: "captured",
+        paypalCaptureId: "CAPTURE1",
+        paypalFeeMinor: 1_994,
+        platformFeeMinor: 500,
+      });
+      // The webhook for the same capture arrives afterwards.
+      expect(await applyCaptureFact(db, balanceFact(balancePaymentId))).toBe("already_applied");
+
+      const fees = await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.reference, `payment_fees:${balancePaymentId}`));
+      expect(fees).toEqual([expect.objectContaining({ kind: "payment_fees", projectId })]);
+      expect(await balanceOf(ledgerAccounts.paypalFees)).toBe(1_994);
+      expect(await balanceOf(ledgerAccounts.payleorFees)).toBe(500);
+      await expectCompleted(projectId, freelancerId, 1_994 + 500);
+    });
+
+    it("completes the project from a webhook capture, and posts the completion once", async () => {
+      const { projectId, freelancerId, balancePaymentId } = await awaitingBalance();
+      await db.update(payment).set({ paypalOrderId: "ORDER1" }).where(eq(payment.id, balancePaymentId));
+
+      expect(await applyCaptureFact(db, balanceFact(balancePaymentId))).toBe("applied");
+      expect(await applyCaptureFact(db, balanceFact(balancePaymentId))).toBe("already_applied");
+
+      await expectCompleted(projectId, freelancerId);
+      expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.reference, `completion:${projectId}`))).toHaveLength(1);
+      expect(await db.select().from(outbox).where(eq(outbox.type, "project.completed"))).toHaveLength(1);
+    });
+  });
+
   it("gives the client page a pay path for a payment that can be paid, and none once it is paid", async () => {
     const { projectId, paymentId, token } = await connectedDeposit();
     const clientToken = await signClientLink(SECRET, projectId);
