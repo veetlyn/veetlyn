@@ -57,7 +57,7 @@ export const ProductImages = Cloudflare.R2.Bucket("ProductImages");
 
 // The platform site and the admin app (apps/web/src/lib/platform-url.ts).
 const platformOrigins = localUrls
-  ? [localUrls.admin.replace("://admin.", "://"), localUrls.admin]
+  ? [localUrls.platform, localUrls.admin]
   : Config.String("PLATFORM_DOMAIN").pipe(Config.map((domain) => [`https://${domain}`, `https://admin.${domain}`]));
 
 // Private files (delivery files now, digital products later). Browsers upload and download them through

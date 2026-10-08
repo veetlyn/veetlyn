@@ -96,9 +96,17 @@ describe("createR2FileStore", () => {
     });
   });
 
-  it("rejects credentials without the S3 fields", () => {
-    const incomplete = JSON.stringify({ endpoint: "http://localhost:3000", bucketName: "files" });
-    expect(() => createR2FileStore(fakeBucket(), incomplete)).toThrow(/S3 credentials/);
-    expect(() => createR2FileStore(fakeBucket(), "not json")).toThrow(/S3 credentials/);
+  it.each([
+    ["missing fields", JSON.stringify({ endpoint: "http://localhost:3000", bucketName: "files" })],
+    ["not JSON", "not json"],
+  ])("rejects presigning with bad credentials (%s) but keeps head working", async (_case, credentials) => {
+    const store = createR2FileStore(fakeBucket({ k: 7 }), credentials);
+    await expect(
+      store.presignPut({ key: "k", contentType: "application/zip", sizeBytes: 1, expiresInSeconds: 900 }),
+    ).rejects.toThrow(/S3 credentials/);
+    await expect(store.presignGet({ key: "k", fileName: "a.zip", expiresInSeconds: 300 })).rejects.toThrow(
+      /S3 credentials/,
+    );
+    expect(await store.head("k")).toEqual({ sizeBytes: 7 });
   });
 });

@@ -31,19 +31,27 @@ function parseCredentials(json: string) {
   return parsed.data;
 }
 
-export function createR2FileStore(bucket: SizedBucket, credentialsJson: string): FileStore {
+function createSigner(credentialsJson: string) {
   const { endpoint, bucketName, region, accessKeyId, secretAccessKey } = parseCredentials(credentialsJson);
   const client = new AwsClient({ accessKeyId, secretAccessKey, region, service: "s3" });
-
   function objectUrl(key: string, expiresInSeconds: number) {
     const path = key.split("/").map(encodeURIComponent).join("/");
     const url = new URL(`${endpoint}/${encodeURIComponent(bucketName)}/${path}`);
     url.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
     return url;
   }
+  return { client, objectUrl };
+}
+
+// The store is built when the Worker module loads, so the credentials are parsed on first use: a bad
+// value then fails only the presign calls instead of every request.
+export function createR2FileStore(bucket: SizedBucket, credentialsJson: string): FileStore {
+  let signer: ReturnType<typeof createSigner> | undefined;
+  const getSigner = () => (signer ??= createSigner(credentialsJson));
 
   return {
     async presignPut({ key, contentType, sizeBytes, expiresInSeconds }) {
+      const { client, objectUrl } = getSigner();
       // Content type and length are signed so the browser can only upload what the server allowed.
       // aws4fetch leaves both out of SignedHeaders unless allHeaders is set.
       const signed = await client.sign(objectUrl(key, expiresInSeconds).toString(), {
@@ -55,6 +63,7 @@ export function createR2FileStore(bucket: SizedBucket, credentialsJson: string):
       return { url: signed.url, headers: { "content-type": contentType } };
     },
     async presignGet({ key, fileName, expiresInSeconds }) {
+      const { client, objectUrl } = getSigner();
       const url = objectUrl(key, expiresInSeconds);
       url.searchParams.set("response-content-disposition", attachmentDisposition(fileName));
       // An SVG served as image/svg+xml runs its scripts if a browser ever ignores the disposition.
