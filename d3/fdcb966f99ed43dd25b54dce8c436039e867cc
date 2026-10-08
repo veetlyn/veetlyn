@@ -1,0 +1,28 @@
+packages/api/src/routers/project.test.ts
+  s_e7dd0851443b2b::t_dfa189280627d5 527
+  s_e7dd0851443b2b::t_dd960aeebee27a 768-998
+  s_e7dd0851443b2b::t_28479a4a673345 71,79
+  s_e7dd0851443b2b::t_83b8166ac9a955 2
+  s_e7dd0851443b2b::t_fdc581d9bc1161 12
+  s_e7dd0851443b2b::t_e079361ae996a2 545
+packages/api/src/routers/project.ts
+  s_e7dd0851443b2b::t_02764e2988868c 10-12,27,30,49-91,118,131,195-200,203-209,211-218,285-296,328-334
+packages/api/src/use-cases/projects.ts
+  s_e7dd0851443b2b::t_ac0e61ce9f1bd7 10,28,32,41-47,55,62,87,93,460-463,466,481-541,545,547,550-551,555,558-563,577,579,584-600
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d3fdcb966f99ed43dd25b54dce8c436039e867cc",
+  "prompts": {},
+  "sessions": {
+    "s_e7dd0851443b2b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84fed5c7-0ac4-4383-98d0-0bd5fad1aa3f",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
