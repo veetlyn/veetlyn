@@ -1,5 +1,6 @@
 import { PayPalError } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
+import { createRequestLogger } from "evlog";
 import { describe, expect, it } from "vitest";
 
 import { trpcErrorContext } from "./trpc-error-log";
@@ -63,5 +64,28 @@ describe("trpcErrorContext", () => {
         },
       },
     });
+  });
+
+  it("emits a PayPal error through evlog without its detail values", () => {
+    const cause = new PayPalError({
+      status: 422,
+      message: "The instrument presented was declined.",
+      debugId: "d422",
+      name: "UNPROCESSABLE_ENTITY",
+      details: [
+        { issue: "INSTRUMENT_DECLINED", field: "/payment_source", value: "4111111111111111", description: "secret detail" },
+      ],
+    });
+    const context = trpcErrorContext(new TRPCError({ code: "UNPROCESSABLE_CONTENT", cause }), "payment.payCapture");
+    if (!context) throw new Error("expected a log context for a PayPal error");
+
+    const logger = createRequestLogger({ method: "POST", path: "/trpc/payment.payCapture" });
+    logger.error(context.error, context.fields);
+    const emitted = JSON.stringify(logger.emit());
+
+    expect(emitted).toContain("INSTRUMENT_DECLINED");
+    expect(emitted).toContain("d422");
+    expect(emitted).not.toContain("4111111111111111");
+    expect(emitted).not.toContain("secret detail");
   });
 });
