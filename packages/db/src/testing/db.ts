@@ -4,6 +4,7 @@ import { createDb, type Database } from "../index";
 import { user } from "../schema/auth";
 import { member, organization, team, teamMember } from "../schema/organization";
 import { project } from "../schema/projects";
+import { servicesOffering } from "../schema/services-catalog";
 import { servicesTeamMember, servicesTeamSettings } from "../schema/services-teams";
 
 export const hasTestDatabase = Boolean(process.env.TEST_DATABASE_URL);
@@ -15,7 +16,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "outbox", "paypal_webhook_event", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "outbox", "paypal_webhook_event", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }
@@ -92,7 +93,7 @@ export async function seedStore(
 // Mirrors what the Better Auth create hooks do for a services team: the team row and its default settings.
 export async function seedServicesTeam(
   db: Database,
-  input: { organizationId: string; slug: string; name?: string; withSettings?: boolean },
+  input: { organizationId: string; slug: string; name?: string; withSettings?: boolean; solo?: boolean },
 ) {
   const [row] = await db
     .insert(team)
@@ -112,8 +113,38 @@ export async function seedServicesTeam(
       paypalMerchantId: team.paypalMerchantId,
     });
   if (!row) throw new Error("Insert into team returned no row");
-  if (input.withSettings ?? true) await db.insert(servicesTeamSettings).values({ teamId: row.id });
+  if (input.withSettings ?? true) {
+    await db.insert(servicesTeamSettings).values(
+      input.solo ? { teamId: row.id, solo: true, teamCutBps: 10_000, managementFeeBps: 0 } : { teamId: row.id },
+    );
+  }
   return row;
+}
+
+// A catalog service (sellers design §4.1); prices in minor units, days as a range.
+export async function seedServicesOffering(
+  db: Database,
+  input: { teamId: string; name?: string; departmentId?: string; active?: boolean },
+): Promise<string> {
+  const [row] = await db
+    .insert(servicesOffering)
+    .values({
+      teamId: input.teamId,
+      departmentId: input.departmentId ?? null,
+      name: input.name ?? "Logo design",
+      description: "",
+      priceMinMinor: 10_000,
+      priceMaxMinor: 40_000,
+      daysMin: 2,
+      daysMax: 5,
+      intakeQuestions: [],
+      active: input.active ?? true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning({ id: servicesOffering.id });
+  if (!row) throw new Error("Insert into services_offering returned no row");
+  return row.id;
 }
 
 export async function addTeamMember(db: Database, input: { teamId: string; userId: string }): Promise<void> {

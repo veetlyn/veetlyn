@@ -3,6 +3,7 @@ export * from "./auth-relations";
 export * from "./organization";
 export * from "./stores";
 export * from "./services-teams";
+export * from "./services-catalog";
 export * from "./paypal";
 export * from "./paypal-webhooks";
 export * from "./catalog";

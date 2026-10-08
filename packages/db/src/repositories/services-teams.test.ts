@@ -71,7 +71,15 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
 
     const saved = await saveServicesTeamSettings(db, studio.id, input);
 
-    expect(saved).toEqual({ teamId: studio.id, ...input, settingsSavedAt: expect.any(Date), discordGuildId: null });
+    expect(saved).toEqual({
+      teamId: studio.id,
+      solo: false,
+      storeEnabled: false,
+      bio: "",
+      ...input,
+      settingsSavedAt: expect.any(Date),
+      discordGuildId: null,
+    });
     await expect(getServicesTeamSettings(db, studio.id)).resolves.toEqual(saved);
     const again = await saveServicesTeamSettings(db, studio.id, { ...input, teamCutBps: 2500 });
     expect(again.teamCutBps).toBe(2500);

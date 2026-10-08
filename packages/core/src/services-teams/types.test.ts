@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bioProblem,
   CURRENCIES,
   defaultServicesTeamSettings,
   isCurrency,
@@ -10,20 +11,39 @@ import {
   PAYOUT_MODES,
   QUOTING_MODES,
   SERVICES_TEAM_ROLES,
+  soloServicesTeamSettings,
 } from "./types";
 
 describe("defaultServicesTeamSettings", () => {
-  it("starts in USD with a 15% cut, a 10% management fee, assigned quotes and manual payouts", () => {
-    expect(defaultServicesTeamSettings("team-1")).toEqual({
-      teamId: "team-1",
+  it("defaults a team to a 15% cut and a 10% management fee, not solo, no bio", () => {
+    expect(defaultServicesTeamSettings("t1")).toEqual({
+      teamId: "t1",
+      solo: false,
+      storeEnabled: false,
+      bio: "",
       currency: "USD",
-      teamCutBps: 1500,
-      managementFeeBps: 1000,
+      teamCutBps: 1_500,
+      managementFeeBps: 1_000,
       quotingMode: "assigned",
       payoutMode: "manual",
       settingsSavedAt: null,
       discordGuildId: null,
     });
+  });
+
+  it("defaults a solo seller to the whole price (sellers design §3.1)", () => {
+    expect(soloServicesTeamSettings("t1")).toEqual({
+      ...defaultServicesTeamSettings("t1"),
+      solo: true,
+      teamCutBps: 10_000,
+      managementFeeBps: 0,
+    });
+  });
+
+  it("keeps a bio under 280 characters", () => {
+    expect(bioProblem("  We design logos.  ")).toBeNull();
+    expect(bioProblem("x".repeat(280))).toBeNull();
+    expect(bioProblem("x".repeat(281))).toBe("Keep your bio under 280 characters.");
   });
 });
 

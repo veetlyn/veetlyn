@@ -4,6 +4,7 @@ import {
   PAYMENT_KINDS,
   PAYMENT_STATUSES,
   type PaymentLine,
+  PROJECT_SOURCES,
   PROJECT_STATUSES,
   QUOTE_STATUSES,
   type QuoteItemDraft,
@@ -14,6 +15,7 @@ import { bigint, check, index, integer, jsonb, pgTable, text, timestamp, unique,
 import { user } from "./auth";
 import { fileUpload } from "./files";
 import { team } from "./organization";
+import { servicesOffering } from "./services-catalog";
 
 const CURRENCIES = ["USD", "EUR"] as const;
 
@@ -38,6 +40,10 @@ export const project = pgTable(
     clientEmail: text("client_email"),
     clientDiscordId: text("client_discord_id"),
     channelId: text("channel_id"),
+    // The catalog service this project is for; null when it matched none (sellers design §4.2).
+    offeringId: text("offering_id").references(() => servicesOffering.id, { onDelete: "set null" }),
+    // "web" is a request from the seller page (run 3b); everything else starts in the admin.
+    source: text("source", { enum: PROJECT_SOURCES }).notNull().default("admin"),
     assignedFreelancerId: text("assigned_freelancer_id").references(() => user.id, { onDelete: "set null" }),
     // Copied from the team settings when the project starts, so later settings changes leave it alone.
     currency: text("currency", { enum: CURRENCIES }).notNull(),

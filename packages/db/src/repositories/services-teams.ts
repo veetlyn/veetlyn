@@ -25,6 +25,9 @@ const servicesTeamColumns = {
 // Listed explicitly so columns added by later plans do not change what these functions return.
 const settingsColumns = {
   teamId: servicesTeamSettings.teamId,
+  solo: servicesTeamSettings.solo,
+  storeEnabled: servicesTeamSettings.storeEnabled,
+  bio: servicesTeamSettings.bio,
   currency: servicesTeamSettings.currency,
   teamCutBps: servicesTeamSettings.teamCutBps,
   managementFeeBps: servicesTeamSettings.managementFeeBps,
