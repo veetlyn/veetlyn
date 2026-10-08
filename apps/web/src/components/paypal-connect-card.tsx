@@ -42,6 +42,8 @@ export default function PayPalConnectCard({ teamId }: { teamId: string }) {
       // team.paypal_merchant_id may have changed: refresh whatever shows the team record.
       await queryClient.invalidateQueries({ queryKey: [["store"]] });
       await queryClient.invalidateQueries({ queryKey: [["servicesTeam"]] });
+      // Publishing needs PayPal, so the publish card's rule check changes too.
+      await queryClient.invalidateQueries({ queryKey: [["seller"]] });
     }
   }
 

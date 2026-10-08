@@ -2,8 +2,7 @@ import { countDone, type SetupStep } from "@jendal-workspace/core";
 import { Circle, CircleCheck } from "lucide-react";
 import Link from "next/link";
 
-// Internal hrefs navigate in-app, "#…" jumps to a section of the same page, and external ones
-// (storefront, PayPal) open in a new tab.
+// Internal hrefs navigate in-app, "#…" jumps to a section of the same page, and external ones open in a new tab.
 function StepLink({ step }: { step: SetupStep }) {
   if (!step.href) return <span>{step.label}</span>;
   if (step.href.startsWith("#")) {
