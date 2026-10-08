@@ -43,6 +43,12 @@ const EMPTY_ROW: ItemRow = { description: "", amount: "", extraDays: "0" };
 
 const FILE_ACCEPT = ALLOWED_FILE_EXTENSIONS.map((extension) => `.${extension}`).join(",");
 
+// The deliver form is disabled while it submits, which drops keyboard focus; the error takes it back.
+// Defined outside the component so React calls it only when the element mounts, not on every render.
+function focusOnMount(node: HTMLElement | null) {
+  node?.focus();
+}
+
 function parseRows(rows: ItemRow[]): QuoteItemDraft[] | null {
   const items: QuoteItemDraft[] = [];
   for (const row of rows) {
@@ -473,7 +479,7 @@ export default function ProjectDetail({
                 ) : null}
               </div>
               <Button type="submit" disabled={deliveryProblem !== null || deliver.isPending}>
-                Submit delivery
+                {deliver.isPending && uploadProgress === null ? "Saving…" : "Submit delivery"}
               </Button>
             </fieldset>
             {uploadProgress !== null ? (
@@ -487,7 +493,7 @@ export default function ProjectDetail({
               {deliveryHint}
             </p>
             {deliver.error ? (
-              <p role="alert" className="text-sm text-destructive">
+              <p ref={focusOnMount} role="alert" tabIndex={-1} className="text-sm text-destructive outline-none">
                 {deliver.error.message}
               </p>
             ) : null}
