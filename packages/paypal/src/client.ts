@@ -128,6 +128,10 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
   async function accessToken(): Promise<string> {
     const cached = await resolved.tokenCache.get();
     if (cached && cached.expiresAt - TOKEN_EXPIRY_SKEW_MS > resolved.now()) return cached.accessToken;
+    return freshAccessToken();
+  }
+
+  async function freshAccessToken(): Promise<string> {
     const token = await fetchToken();
     await resolved.tokenCache.set(token);
     return token.accessToken;
@@ -137,8 +141,8 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     if (options.method === "POST" && !options.requestId) {
       throw new Error("PayPal POST calls require options.requestId, sent as PayPal-Request-Id.");
     }
-    const token = await accessToken();
-    const headers: Record<string, string> = { authorization: `Bearer ${token}` };
+    let token = await accessToken();
+    const headers: Record<string, string> = {};
     if (options.body !== undefined || options.rawBody !== undefined) headers["content-type"] = "application/json";
     if (options.requestId) headers["PayPal-Request-Id"] = options.requestId;
     if (resolved.partnerAttributionId) headers["PayPal-Partner-Attribution-Id"] = resolved.partnerAttributionId;
@@ -146,15 +150,20 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
       headers["PayPal-Auth-Assertion"] = buildAuthAssertion({ clientId: config.clientId, payerId: options.merchantId });
     }
     if (options.prefer) headers.Prefer = options.prefer;
-    const response = await send(
-      resolved,
-      () =>
-        new Request(`${baseUrl}${options.path}`, {
-          method: options.method,
-          headers,
-          body: options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
-        }),
-    );
+    const build = () =>
+      new Request(`${baseUrl}${options.path}`, {
+        method: options.method,
+        headers: { ...headers, authorization: `Bearer ${token}` },
+        body: options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
+      });
+    let response = await send(resolved, build);
+    // A token can be revoked before it expires; one fresh token and one retry, then the error stands.
+    if (response.status === 401) {
+      await response.body?.cancel();
+      await resolved.tokenCache.clear();
+      token = await freshAccessToken();
+      response = await send(resolved, build);
+    }
     if (!response.ok) throw await payPalErrorFromResponse(response);
     if (response.status === 204) return undefined as T;
     return (await response.json()) as T;
