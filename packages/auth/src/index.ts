@@ -164,13 +164,14 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
             const product: TeamProduct = team.product === "services" ? "services" : "store";
             const slug = await claimTeamSlug(database, team.slug, product);
             // The store columns stay on every team (contract §4.2); services teams never read them.
+            // The support email is the seller's contact address on its policies and seller page (run 3b).
             return {
               data: {
                 slug,
                 product,
                 status: "draft",
                 paypalMerchantId: null,
-                supportEmail: product === "store" ? (user?.email ?? null) : null,
+                supportEmail: user?.email ?? null,
               },
             };
           },

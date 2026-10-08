@@ -1,8 +1,11 @@
 import {
+  bioProblem,
   canServicesTeam,
   hasStoreWideRole,
   MAX_RATE_BPS,
   SERVICES_TEAM_ROLES,
+  SOLO_MANAGEMENT_FEE_BPS,
+  SOLO_TEAM_CUT_BPS,
   type ServicesTeamRole,
   teamSlugProblem,
   validateStoreSlug,
@@ -10,12 +13,17 @@ import {
 import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
 import {
   addServicesTeamMember,
+  applySoloTeamDefaults,
+  findServicesTeamBySlug,
   findUserByEmail,
   getServicesTeamSettings,
   listOrganizationsWithServicesTeams,
   listServicesTeamMembers,
+  saveServicesTeamBio,
   saveServicesTeamSettings,
   setServicesTeamMemberRole,
+  setServicesTeamMemberTitle,
+  switchToTeam as switchTeamToTeamMode,
   workspaceRoleFor,
 } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
@@ -54,7 +62,7 @@ export const servicesTeamRouter = router({
 
   // Same organization rule as store.create (services spec §3).
   create: protectedProcedure
-    .input(z.object({ name: z.string().trim().min(2).max(80), slug: slugInput }))
+    .input(z.object({ name: z.string().trim().min(2).max(80), slug: slugInput, solo: z.boolean().default(false) }))
     .mutation(async ({ ctx, input }) => {
       const slug = validateStoreSlug(input.slug);
       if (!slug.ok) throw new TRPCError({ code: "BAD_REQUEST", message: teamSlugProblem(slug.reason, "services") });
@@ -66,6 +74,12 @@ export const servicesTeamRouter = router({
           body: { name: input.name, organizationId, slug: slug.slug, product: "services" },
           headers: ctx.headers,
         });
+        if (input.solo) {
+          // The hooks made the row with the team defaults; a solo seller keeps the whole price instead.
+          const created = await findServicesTeamBySlug(ctx.db, slug.slug);
+          if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The team was not created." });
+          await applySoloTeamDefaults(ctx.db, created.id);
+        }
         return { slug: slug.slug };
       } catch (error) {
         throw toTRPCError(error);
@@ -94,6 +108,13 @@ export const servicesTeamRouter = router({
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_settings", "Only an admin can change the team settings.");
       const { currency, teamCutBps, managementFeeBps, quotingMode, payoutMode } = input;
+      const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+      if (settings?.solo && (teamCutBps !== SOLO_TEAM_CUT_BPS || managementFeeBps !== SOLO_MANAGEMENT_FEE_BPS)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "A solo seller keeps the whole price. Switch to a team to set a team cut and a management fee.",
+        });
+      }
       const saved = await saveServicesTeamSettings(ctx.db, ctx.servicesTeam.id, {
         currency,
         teamCutBps,
@@ -103,6 +124,30 @@ export const servicesTeamRouter = router({
       });
       return { ...saved, settingsSavedAt: isoOrNull(saved.settingsSavedAt) };
     }),
+
+  // Sellers design §3.2: the bio is not part of the rates, so it does not mark "Set your rates" done.
+  updateBio: servicesTeamProcedure
+    .input(z.object({ bio: z.string().max(2_000) }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "manage_settings", "Only an admin can change the team settings.");
+      const problem = bioProblem(input.bio);
+      if (problem) throw new TRPCError({ code: "BAD_REQUEST", message: problem });
+      const bio = input.bio.trim();
+      await saveServicesTeamBio(ctx.db, ctx.servicesTeam.id, bio);
+      return { bio };
+    }),
+
+  // Sellers design §3.1: one-way; a team cannot go back to being a solo seller.
+  switchToTeam: servicesTeamProcedure.mutation(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "manage_settings", "Only an admin can change the team settings.");
+    const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+    if (settings && !settings.solo) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "This seller is already a team." });
+    }
+    await switchTeamToTeamMode(ctx.db, ctx.servicesTeam.id);
+    const switched = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+    return switched ? { ...switched, settingsSavedAt: isoOrNull(switched.settingsSavedAt) } : null;
+  }),
 
   createDiscordLinkCode: servicesTeamProcedure.mutation(async ({ ctx }) => {
     requireAction(ctx.servicesTeamRole, "manage_connections", "Only an admin can link the Discord server.");
@@ -163,5 +208,19 @@ export const servicesTeamRouter = router({
       });
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "This user is not on the team." });
       return { userId: input.userId, role: input.role };
+    }),
+
+  // Sellers design §4.1: a free-text label shown next to the member's name; an empty string clears it.
+  setMemberTitle: servicesTeamProcedure
+    .input(z.object({ userId: z.string().min(1), title: z.string().trim().max(80) }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "manage_members", "Only an admin can manage members.");
+      const updated = await setServicesTeamMemberTitle(ctx.db, {
+        teamId: ctx.servicesTeam.id,
+        userId: input.userId,
+        title: input.title || null,
+      });
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "This user is not on the team." });
+      return { userId: input.userId, title: input.title || null };
     }),
 });

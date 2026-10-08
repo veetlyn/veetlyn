@@ -122,7 +122,7 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
 
     const teams = await db.select().from(team).where(eq(team.organizationId, organizationId));
     expect(teams.find((t) => t.id === store.id)).toMatchObject({ product: "store", supportEmail: email });
-    expect(teams.find((t) => t.id === studio.id)).toMatchObject({ product: "services", supportEmail: null });
+    expect(teams.find((t) => t.id === studio.id)).toMatchObject({ product: "services", supportEmail: email });
     await expect(
       db.select().from(servicesTeamSettings).where(eq(servicesTeamSettings.teamId, studio.id)),
     ).resolves.toEqual([defaultServicesTeamSettings(studio.id)]);

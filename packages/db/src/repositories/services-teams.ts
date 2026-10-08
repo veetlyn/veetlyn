@@ -1,12 +1,14 @@
 import {
   effectiveServicesTeamRole,
   hasStoreWideRole,
+  SOLO_MANAGEMENT_FEE_BPS,
+  SOLO_TEAM_CUT_BPS,
   type ServicesTeamRecord,
   type ServicesTeamRole,
   type ServicesTeamSettings,
   type ServicesTeamSettingsInput,
 } from "@jendal-workspace/core";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
@@ -57,6 +59,51 @@ export async function getServicesTeamSettings(db: Database, teamId: string): Pro
 
 export async function createServicesTeamSettings(db: Database, teamId: string): Promise<void> {
   await db.insert(servicesTeamSettings).values({ teamId }).onConflictDoNothing();
+}
+
+// Sellers design §3.1: a solo seller keeps the whole price. Written right after createTeam, which made the
+// row with the team defaults; settings_saved_at stays null so the setup checklist still asks for the rates.
+export async function applySoloTeamDefaults(db: Database, teamId: string): Promise<void> {
+  const values = { solo: true, teamCutBps: SOLO_TEAM_CUT_BPS, managementFeeBps: SOLO_MANAGEMENT_FEE_BPS };
+  await db
+    .insert(servicesTeamSettings)
+    .values({ teamId, ...values })
+    .onConflictDoUpdate({ target: servicesTeamSettings.teamId, set: values });
+}
+
+// The bio is not part of the rates, so saving it does not count as "Set your rates" for the checklist.
+export async function saveServicesTeamBio(db: Database, teamId: string, bio: string): Promise<void> {
+  const values = { bio };
+  await db
+    .insert(servicesTeamSettings)
+    .values({ teamId, ...values })
+    .onConflictDoUpdate({ target: servicesTeamSettings.teamId, set: values });
+}
+
+// Sellers design §3.1: a solo seller can become a team; the cut and the fee go back to the team defaults
+// (1500/1000, the column defaults) unless the seller already set other rates.
+export async function switchToTeam(db: Database, teamId: string): Promise<void> {
+  await db
+    .update(servicesTeamSettings)
+    .set({
+      solo: false,
+      teamCutBps: sql`case when ${servicesTeamSettings.teamCutBps} = ${SOLO_TEAM_CUT_BPS} then 1500 else ${servicesTeamSettings.teamCutBps} end`,
+      managementFeeBps: sql`case when ${servicesTeamSettings.managementFeeBps} = ${SOLO_MANAGEMENT_FEE_BPS} then 1000 else ${servicesTeamSettings.managementFeeBps} end`,
+    })
+    .where(eq(servicesTeamSettings.teamId, teamId));
+}
+
+// Null clears the title; false when the user has no row in this team.
+export async function setServicesTeamMemberTitle(
+  db: Database,
+  input: { teamId: string; userId: string; title: string | null },
+): Promise<boolean> {
+  const updated = await db
+    .update(servicesTeamMember)
+    .set({ title: input.title })
+    .where(and(eq(servicesTeamMember.teamId, input.teamId), eq(servicesTeamMember.userId, input.userId)))
+    .returning({ id: servicesTeamMember.id });
+  return updated.length > 0;
 }
 
 // An upsert, so a team whose settings row is missing can still save.
@@ -118,6 +165,8 @@ export type ServicesTeamMemberRow = {
   name: string;
   email: string;
   role: ServicesTeamRole;
+  // Sellers design §4.1: a free-text label ("Brand designer") shown next to the member's name.
+  title: string | null;
   // True when the role comes from being a workspace owner or admin; such a role cannot be changed here.
   workspaceAdmin: boolean;
 };
@@ -133,6 +182,7 @@ export async function listServicesTeamMembers(
       email: user.email,
       workspaceRole: member.role,
       teamRole: servicesTeamMember.role,
+      title: servicesTeamMember.title,
     })
     .from(member)
     .innerJoin(user, eq(user.id, member.userId))
