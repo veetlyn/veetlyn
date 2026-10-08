@@ -1,0 +1,40 @@
+packages/core/src/services-teams/setup-steps.ts
+  s_bce00082843922::t_9b6b4fab7ee591 7,18-24,28-30,32-34
+packages/core/src/services-teams/setup-steps.test.ts
+  s_bce00082843922::t_46f022e7eb475e 9-10,15,17,24,26,29,35-36,39-51
+  s_bce00082843922::t_5ff50352893daf 52
+packages/api/src/routers/services-team.test.ts
+  s_bce00082843922::t_d973afc44cd640 224
+packages/api/src/routers/services-catalog.test.ts
+  s_bce00082843922::t_4deeaf6cf2b2af 121
+  s_bce00082843922::t_49076a81605d31 1-120,122-297,299-300,302-306
+  s_bce00082843922::t_b5487939d0871e 298,301
+packages/api/src/routers/services-catalog.ts
+  s_bce00082843922::t_a70d6e045ef15d 75
+  s_bce00082843922::t_5dc1c82e211e4c 1-14,16-74,76-195
+  s_bce00082843922::t_8b1d8fbe206b6e 15
+packages/api/src/routers/index.ts
+  s_bce00082843922::t_35d4ff7acde0e3 23
+  s_bce00082843922::t_0367d657685638 9
+apps/web/src/app/admin/[storeSlug]/services-team-dashboard.tsx
+  s_bce00082843922::t_bedaf8b1b971a5 21,27-34
+packages/api/src/routers/services-team.ts
+  s_bce00082843922::t_bd7fb0be61c77c 91-95,100
+  s_bce00082843922::t_09c948314a9cef 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "06f5e9a52a8fafaf40550b1c0334921a5eb98fbe",
+  "prompts": {},
+  "sessions": {
+    "s_bce00082843922": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "e73e177f-4e06-460c-87c8-c06536354b41",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
