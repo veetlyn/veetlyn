@@ -1,0 +1,21 @@
+packages/core/src/services-teams/catalog.test.ts
+  s_2bf51ad3810ee4::t_636e2c56986d4a 1-83
+packages/core/src/services-teams/catalog.ts
+  s_2bf51ad3810ee4::t_a4965b3d0bab89 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61652f54f7950d9a54b46da88545acf893c81939",
+  "prompts": {},
+  "sessions": {
+    "s_2bf51ad3810ee4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "7c58dfc6-b0bd-4881-9aba-2aed4ab78650",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
