@@ -5,6 +5,7 @@ import {
   canProposeAmendment,
   canSeeProject,
   canStartProject,
+  canSubmitDelivery,
   quoteAuthor,
   quoteAuthorRefusalMessage,
 } from "./permissions";
@@ -80,5 +81,14 @@ describe("project permissions", () => {
     expect(
       canSeeProject({ role: "freelancer", actorId: "u2", assignedFreelancerId: null, status: "quoting", quotingMode: "open" }),
     ).toBe(true);
+  });
+  describe("canSubmitDelivery", () => {
+    it("lets the assigned freelancer and staff deliver, and no one else", () => {
+      const project = { assignedFreelancerId: "u1" };
+      expect(canSubmitDelivery({ role: "freelancer", actorId: "u1", ...project })).toBe(true);
+      expect(canSubmitDelivery({ role: "freelancer", actorId: "u2", ...project })).toBe(false);
+      expect(canSubmitDelivery({ role: "manager", actorId: "u2", ...project })).toBe(true);
+      expect(canSubmitDelivery({ role: "admin", actorId: "u3", ...project })).toBe(true);
+    });
   });
 });

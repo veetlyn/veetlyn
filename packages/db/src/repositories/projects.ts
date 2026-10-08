@@ -2,13 +2,14 @@ import type { ProjectPaid } from "@jendal-workspace/core";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
-import { amendment, payment, project, quote, quoteItem } from "../schema/projects";
+import { amendment, delivery, payment, project, quote, quoteItem } from "../schema/projects";
 
 export type ProjectRow = typeof project.$inferSelect;
 export type QuoteRow = typeof quote.$inferSelect;
 export type QuoteItemRow = typeof quoteItem.$inferSelect;
 export type AmendmentRow = typeof amendment.$inferSelect;
 export type PaymentRow = typeof payment.$inferSelect;
+export type DeliveryRow = typeof delivery.$inferSelect;
 export type QuoteWithItems = QuoteRow & { items: QuoteItemRow[] };
 
 export async function findProjectById(tx: DbExecutor, id: string): Promise<ProjectRow | null> {
@@ -104,4 +105,12 @@ export async function getProjectFacts(tx: DbExecutor, projectId: string): Promis
     pendingAmendment: pendingAmendment !== undefined,
     unpaidTopUp: unpaidTopUp !== undefined,
   };
+}
+
+export async function listProjectDeliveries(tx: DbExecutor, projectId: string): Promise<DeliveryRow[]> {
+  return tx
+    .select()
+    .from(delivery)
+    .where(eq(delivery.projectId, projectId))
+    .orderBy(asc(delivery.createdAt), asc(delivery.id));
 }

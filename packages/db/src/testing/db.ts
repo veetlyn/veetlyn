@@ -15,7 +15,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "outbox", "paypal_webhook_event", "ledger_balance", "ledger_entry", "ledger_transfer", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "outbox", "paypal_webhook_event", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }
