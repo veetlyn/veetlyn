@@ -21,23 +21,32 @@ import { signClientLink, signPayLink, verifyPayLink } from "../client-links";
 import type { PayPalServices } from "../context";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
-import { applyCaptureFact, type CaptureFact } from "../use-cases/payments";
+import { applyCaptureFact, type CaptureFact, CaptureFactConflict } from "../use-cases/payments";
 import { appRouter } from "./index";
 
 const SECRET = TEST_AUTH_CONFIG.BETTER_AUTH_SECRET;
-const DAY_MS = 86_400_000;
 const ITEMS = [
   { description: "Design", amountMinor: 40_000, extraDays: 0 },
   { description: "Build", amountMinor: 60_000, extraDays: 0 },
 ];
 
-function capturedOrder(status: string, value = "600.00") {
+function capturedOrder(status: string, value = "600.00", extra: Record<string, unknown> = {}) {
   return {
     id: "ORDER1",
     status: status === "COMPLETED" ? "COMPLETED" : "PENDING",
-    purchase_units: [{ payments: { captures: [{ id: "CAPTURE1", status, amount: { currency_code: "USD", value } }] } }],
+    purchase_units: [{ payments: { captures: [{ id: "CAPTURE1", status, amount: { currency_code: "USD", value }, ...extra }] } }],
   };
 }
+
+const FEE_BREAKDOWN = {
+  create_time: "2026-10-08T00:00:00Z",
+  seller_receivable_breakdown: {
+    gross_amount: { currency_code: "USD", value: "600.00" },
+    paypal_fee: { currency_code: "USD", value: "23.70" },
+    platform_fees: [{ amount: { currency_code: "USD", value: "6.00" } }],
+    net_amount: { currency_code: "USD", value: "570.30" },
+  },
+};
 
 const DECLINED = {
   name: "UNPROCESSABLE_ENTITY",
@@ -139,6 +148,9 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       status: "COMPLETED",
       amountMinor: 60_000,
       currency: "USD",
+      capturedAt: null,
+      paypalFeeMinor: null,
+      platformFeeMinor: null,
       ...overrides,
     };
   }
@@ -151,16 +163,15 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
   describe("applyCaptureFact", () => {
     it("applies a completed deposit capture once: payment, ledger, project and outbox", async () => {
       const { projectId, paymentId } = await depositWithOrder();
-      const before = Date.now();
-
-      expect(await applyCaptureFact(db, fact(paymentId))).toBe("applied");
+      expect(await applyCaptureFact(db, fact(paymentId, { capturedAt: new Date("2026-10-08T00:00:00Z") }))).toBe("applied");
       expect(await applyCaptureFact(db, fact(paymentId))).toBe("already_applied");
 
       expect(await paymentRow(paymentId)).toMatchObject({ status: "captured", paypalCaptureId: "CAPTURE1" });
       const project = await findProjectById(db, projectId);
       expect(project?.status).toBe("in_progress");
-      // Services spec §5.2 step 4: the deadline runs from the capture, for the quote's 14 days.
-      expect(project?.deadlineAt?.getTime() ?? 0).toBeGreaterThanOrEqual(before + 14 * DAY_MS);
+      // Services spec §5.2 step 4: the deadline runs from PayPal's capture time, for the quote's 14 days.
+      expect(project?.deadlineAt?.toISOString()).toBe("2026-10-22T00:00:00.000Z");
+      expect((await paymentRow(paymentId))?.capturedAt?.toISOString()).toBe("2026-10-08T00:00:00.000Z");
       expect(await db.select().from(ledgerTransfer)).toHaveLength(1);
       expect(await db.select().from(ledgerBalance)).toEqual(
         expect.arrayContaining([
@@ -245,6 +256,36 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       await applyCaptureFact(db, fact(paymentId));
 
       await expect(applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" }))).rejects.toThrow(/already has capture/);
+    });
+
+    it("records the fees once, with the capture or from a later fact", async () => {
+      const { projectId, paymentId } = await depositWithOrder();
+
+      expect(await applyCaptureFact(db, fact(paymentId))).toBe("applied");
+      expect(await paymentRow(paymentId)).toMatchObject({ paypalFeeMinor: null });
+
+      const withFees = fact(paymentId, { paypalFeeMinor: 2_370, platformFeeMinor: 600 });
+      expect(await applyCaptureFact(db, withFees)).toBe("already_applied");
+      expect(await applyCaptureFact(db, withFees)).toBe("already_applied");
+
+      expect(await paymentRow(paymentId)).toMatchObject({ paypalFeeMinor: 2_370, platformFeeMinor: 600 });
+      const fees = await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "payment_fees"));
+      expect(fees).toHaveLength(1);
+      expect(fees[0]?.projectId).toBe(projectId);
+      expect(await db.select().from(ledgerBalance)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ account: ledgerAccounts.teamRevenue, balanceMinor: 10_000 - 2_970 }),
+          expect.objectContaining({ account: ledgerAccounts.paypalFees, balanceMinor: 2_370 }),
+          expect.objectContaining({ account: ledgerAccounts.payleorFees, balanceMinor: 600 }),
+        ]),
+      );
+    });
+
+    it("reports money PayPal moved without Payleor asking as a conflict", async () => {
+      const { paymentId } = await depositWithOrder();
+      await expect(applyCaptureFact(db, fact(paymentId, { amountMinor: 1 }))).rejects.toBeInstanceOf(CaptureFactConflict);
+      await applyCaptureFact(db, fact(paymentId));
+      await expect(applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" }))).rejects.toBeInstanceOf(CaptureFactConflict);
     });
   });
 
@@ -335,12 +376,15 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     });
 
     it("captures the deposit, starts the work, and answers a repeated capture without calling PayPal again", async () => {
-      const { projectId, token } = await connectedDeposit();
-      const { requests, fetch } = fakePayPalApi();
+      const { projectId, paymentId, token } = await connectedDeposit();
+      const { requests, fetch } = fakePayPalApi({
+        capture: () => jsonResponse(201, capturedOrder("COMPLETED", "600.00", FEE_BREAKDOWN)),
+      });
       const caller = callerFor(null, makePayPal(fetch));
       await caller.payment.payStart({ token });
 
       expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
+      expect(await paymentRow(paymentId)).toMatchObject({ paypalFeeMinor: 2_370, platformFeeMinor: 600 });
       expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
 
       expect(calls(requests, "/capture")).toHaveLength(1);

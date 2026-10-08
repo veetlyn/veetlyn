@@ -1,6 +1,7 @@
 import {
   parseMajorAmount,
   paymentCapturedTransfer,
+  paymentFeesTransfer,
   platformFeeMinor,
   sellerPlanFor,
   toPayPalValue,
@@ -9,11 +10,18 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
+import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { findProjectById, getCurrentQuote, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { ProjectConflictError, runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { payment, type project } from "@jendal-workspace/db/schema/projects";
-import { captureFromOrder, type PayPalCapture, PayPalError, type PayPalOrder } from "@jendal-workspace/paypal";
+import {
+  captureFromOrder,
+  type PayPalCapture,
+  PayPalError,
+  type PayPalMoney,
+  type PayPalOrder,
+} from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
@@ -28,7 +36,18 @@ export type CaptureFact = {
   // Null when PayPal sent no amount (a pending capture can omit it).
   amountMinor: number | null;
   currency: string | null;
+  // PayPal's capture time (create_time); the deadline runs from it. Null when PayPal sent none.
+  capturedAt: Date | null;
+  // From the seller receivable breakdown, in the payment's currency; null while PayPal has not reported them.
+  paypalFeeMinor: number | null;
+  platformFeeMinor: number | null;
 };
+
+// Money moved in a way Payleor did not ask for (a second capture, a capture on an abandoned order or a
+// cancelled payment, a wrong amount). A person has to look; retrying cannot fix it.
+export class CaptureFactConflict extends Error {
+  override name = "CaptureFactConflict";
+}
 
 // "stale": the fact changes nothing. It is about an order or a payment state the payment has moved past.
 export type CaptureFactResult = "applied" | "already_applied" | "pending" | "failed" | "stale";
@@ -53,11 +72,11 @@ async function lockPayment(tx: Transaction, paymentId: string): Promise<PaymentR
 // moved in a way Payleor did not ask for; that needs a person, so it throws instead of guessing.
 function checkCaptureBelongs(row: PaymentRow, fact: CaptureFact): void {
   if (row.paypalCaptureId && row.paypalCaptureId !== fact.captureId) {
-    throw new Error(`Payment ${row.id} already has capture ${row.paypalCaptureId}; PayPal reported ${fact.captureId}`);
+    throw new CaptureFactConflict(`Payment ${row.id} already has capture ${row.paypalCaptureId}; PayPal reported ${fact.captureId}`);
   }
   if (row.paypalOrderId !== fact.orderId && row.paypalCaptureId !== fact.captureId) {
     if (fact.status === "COMPLETED") {
-      throw new Error(`Capture ${fact.captureId} completed on order ${fact.orderId}, which payment ${row.id} no longer uses`);
+      throw new CaptureFactConflict(`Capture ${fact.captureId} completed on order ${fact.orderId}, which payment ${row.id} no longer uses`);
     }
     throw new StaleFact();
   }
@@ -67,6 +86,7 @@ async function projectChangeOnCapture(
   tx: Transaction,
   row: ProjectRow,
   kind: PaymentRow["kind"],
+  capturedAt: Date,
 ): Promise<Partial<typeof project.$inferInsert>> {
   if (kind === "top_up") return {};
   if (kind === "balance") {
@@ -80,7 +100,7 @@ async function projectChangeOnCapture(
   const quote = await getCurrentQuote(tx, row.id);
   if (!quote) throw new Error(`Project ${row.id} has a deposit but no accepted quote`);
   // Services spec §5.2 step 4: the deadline runs from the capture.
-  return { status: result.to, deadlineAt: new Date(Date.now() + quote.deliveryDays * DAY_MS) };
+  return { status: result.to, deadlineAt: new Date(capturedAt.getTime() + quote.deliveryDays * DAY_MS) };
 }
 
 // A pending capture changes no money: it only records the capture id, so the later outcome matches it.
@@ -105,7 +125,9 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
     const row = await lockPayment(tx, fact.paymentId);
     checkCaptureBelongs(row, fact);
     if (row.status === "cancelled") {
-      if (fact.status === "COMPLETED") throw new Error(`Capture ${fact.captureId} completed on cancelled payment ${row.id}`);
+      if (fact.status === "COMPLETED") {
+        throw new CaptureFactConflict(`Capture ${fact.captureId} completed on cancelled payment ${row.id}`);
+      }
       throw new StaleFact();
     }
     if (row.status === "captured" || (row.status === "failed" && row.paypalCaptureId === fact.captureId)) {
@@ -115,18 +137,19 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
     if (!projectRow) throw new Error(`Payment ${row.id} has no project`);
 
     if (fact.status === "COMPLETED") {
+      const capturedAt = fact.capturedAt ?? new Date();
       if (fact.amountMinor !== row.amountMinor || fact.currency !== row.currency) {
-        throw new Error(
+        throw new CaptureFactConflict(
           `Capture ${fact.captureId} (${fact.currency} ${fact.amountMinor}) does not match payment ${row.id} (${row.currency} ${row.amountMinor})`,
         );
       }
       await tx
         .update(payment)
-        .set({ status: "captured", paypalCaptureId: fact.captureId, capturedAt: new Date(), version: row.version + 1 })
+        .set({ status: "captured", paypalCaptureId: fact.captureId, capturedAt, version: row.version + 1 })
         .where(eq(payment.id, row.id));
       await uow.apply({
         project: projectRow,
-        set: await projectChangeOnCapture(tx, projectRow, row.kind),
+        set: await projectChangeOnCapture(tx, projectRow, row.kind, capturedAt),
         transfers: [
           paymentCapturedTransfer({
             currency: row.currency,
@@ -167,17 +190,48 @@ export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise
     // REFUNDED and PARTIALLY_REFUNDED are refund news, handled with refunds.
     throw new Error(`Capture ${fact.captureId} has status ${fact.status}, which is not a capture outcome`);
   }
+  let result: CaptureFactResult;
   for (let attempt = 1; ; attempt++) {
     try {
-      return await applyInTransaction(db, fact);
+      result = await applyInTransaction(db, fact);
+      break;
     } catch (error) {
       // Thrown inside the transaction to roll it back: nothing was written.
-      if (error instanceof FactAlreadyApplied) return "already_applied";
+      if (error instanceof FactAlreadyApplied) {
+        result = "already_applied";
+        break;
+      }
       if (error instanceof StaleFact) return "stale";
       if (error instanceof ProjectConflictError && attempt < MAX_CONFLICT_ATTEMPTS) continue;
       throw error;
     }
   }
+  if (result === "applied" || result === "already_applied") await recordCaptureFees(db, fact);
+  return result;
+}
+
+// Records PayPal's fee and Payleor's fee for a captured payment, once: the first fact that carries the
+// breakdown wins, whether it is the capture itself or a later webhook re-fetch.
+async function recordCaptureFees(db: Database, fact: CaptureFact): Promise<void> {
+  const { paypalFeeMinor } = fact;
+  if (fact.status !== "COMPLETED" || paypalFeeMinor === null) return;
+  await db.transaction(async (tx) => {
+    const row = await lockPayment(tx, fact.paymentId);
+    if (row.status !== "captured" || row.paypalCaptureId !== fact.captureId || row.paypalFeeMinor !== null) return;
+    const platformFeeMinor = fact.platformFeeMinor ?? 0;
+    await tx
+      .update(payment)
+      .set({ paypalFeeMinor, platformFeeMinor, version: row.version + 1 })
+      .where(eq(payment.id, row.id));
+    const transfer = paymentFeesTransfer({
+      currency: row.currency,
+      projectId: row.projectId,
+      paymentId: row.id,
+      paypalFeeMinor,
+      platformFeeMinor,
+    });
+    if (transfer) await createPostgresLedger(row.teamId, tx).post([transfer]);
+  });
 }
 
 export type PaymentDeps = { db: Database; paypal: PayPalServices };
@@ -218,14 +272,25 @@ export async function getPayPage(deps: { db: Database; paypal: PayPalServices | 
   };
 }
 
-function captureFact(paymentId: string, orderId: string, capture: PayPalCapture): CaptureFact {
+function minorIn(currency: string | null, money: PayPalMoney | undefined): number | null {
+  return money && money.currency_code === currency ? parseMajorAmount(money.value) : null;
+}
+
+export function captureFact(paymentId: string, orderId: string, capture: PayPalCapture): CaptureFact {
+  const currency = capture.amount?.currency_code ?? null;
+  const breakdown = capture.seller_receivable_breakdown;
+  const capturedAt = capture.create_time ? new Date(capture.create_time) : null;
   return {
     paymentId,
     orderId,
     captureId: capture.id,
     status: capture.status,
     amountMinor: capture.amount ? parseMajorAmount(capture.amount.value) : null,
-    currency: capture.amount?.currency_code ?? null,
+    currency,
+    capturedAt: capturedAt && !Number.isNaN(capturedAt.getTime()) ? capturedAt : null,
+    // A fee in another currency (a converted receivable) is not posted; the reconciliation job will show it.
+    paypalFeeMinor: breakdown ? minorIn(currency, breakdown.paypal_fee) : null,
+    platformFeeMinor: breakdown ? (minorIn(currency, breakdown.platform_fees[0]?.amount) ?? 0) : null,
   };
 }
 
