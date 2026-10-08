@@ -1,0 +1,38 @@
+packages/core/src/billing/seller-plans.ts
+  s_ed5344d6917ca7::t_853bf04e4fc4e6 123-126
+packages/api/src/routers/project.test.ts
+  s_ed5344d6917ca7::t_c7f1c8046950c3 6-7
+  s_ed5344d6917ca7::t_3d021e4ff349f9 157-188
+packages/api/src/use-cases/projects.ts
+  s_ed5344d6917ca7::t_8f0b59872633f8 203
+packages/api/src/use-cases/payments.ts
+  s_ed5344d6917ca7::t_706f08959d4e38 409
+  s_ed5344d6917ca7::t_35addc7983ce79 17
+  s_ed5344d6917ca7::t_3ab7800957cf88 309,314-316
+packages/api/src/routers/payment.test.ts
+  s_ed5344d6917ca7::t_a48273202d8532 11-12
+  s_ed5344d6917ca7::t_e5a0566b36549f 391-419
+packages/core/src/billing/seller-plans.test.ts
+  s_ed5344d6917ca7::t_23414dfec5ce10 38-40
+packages/core/src/projects/permissions.ts
+  s_ed5344d6917ca7::t_99412ae86fd0b3 28,31-32
+packages/core/src/projects/permissions.test.ts
+  s_ed5344d6917ca7::t_fb221810db2456 65-81
+  s_ed5344d6917ca7::t_d4daedb7d919e2 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5014d3eef2bb29e69d45fc8c69ce6cb616779bf5",
+  "prompts": {},
+  "sessions": {
+    "s_ed5344d6917ca7": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "55aedaf6-adb6-470a-b96e-5f934e67f76f",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
