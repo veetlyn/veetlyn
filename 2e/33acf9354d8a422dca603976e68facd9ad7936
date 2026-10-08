@@ -1,0 +1,44 @@
+packages/auth/src/index.test.ts
+  s_68b2a8e19862cf::t_4b73d5f69a667e 125
+packages/db/src/repositories/services-teams.test.ts
+  s_68b2a8e19862cf::t_b08712527d2729 194-231,235-237,240-244
+  s_68b2a8e19862cf::t_5390e7524319cc 232,238
+  s_68b2a8e19862cf::t_46e2b312c2e366 233,239
+  s_68b2a8e19862cf::t_6ce50a320154cf 92-141
+  s_68b2a8e19862cf::t_1f4d0cf0fcfe49 1,16,23,27-28
+packages/api/src/routers/services-team.test.ts
+  s_68b2a8e19862cf::t_cc912dc3361f56 60,68,73-74,76-119,121-133,135-176,178-196
+  s_68b2a8e19862cf::t_8e2d414584e9bc 120
+  s_68b2a8e19862cf::t_9dea009a96fbc9 75
+  s_68b2a8e19862cf::t_2012e465b2a40f 177
+  s_68b2a8e19862cf::t_1255d169df614f 134
+packages/auth/src/index.ts
+  s_68b2a8e19862cf::t_89bf4fdc1c6a19 167,174
+packages/db/src/repositories/services-teams.ts
+  s_68b2a8e19862cf::t_f764b34e0888e6 185
+  s_68b2a8e19862cf::t_d6f655a219a11c 4-5,11
+  s_68b2a8e19862cf::t_c4629a07a42747 64-108
+  s_68b2a8e19862cf::t_07a0c30e06399c 168-169
+packages/api/src/routers/services-team.ts
+  s_68b2a8e19862cf::t_85cc0c4ce6fb97 65,77-82
+  s_68b2a8e19862cf::t_476ffcd1736b23 212-225
+  s_68b2a8e19862cf::t_66d4763b5efdb7 2,7-8,16-17,22,25-26
+  s_68b2a8e19862cf::t_b6486efb169763 111-117,128-150
+  s_68b2a8e19862cf::t_e004c7ab1ce081 151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2e33acf9354d8a422dca603976e68facd9ad7936",
+  "prompts": {},
+  "sessions": {
+    "s_68b2a8e19862cf": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3d6622b3-8da5-46ec-905e-60bd8872fdd0",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
