@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { QUOTING_MODES } from "../services-teams/types";
 import { effectiveServicesTeamRole } from "../services-teams/permissions";
 import {
   canAssignFreelancer,
@@ -59,6 +60,23 @@ describe("project permissions", () => {
         freelancerId: "u2",
       });
       expect(quoteAuthor({ ...base, role: "manager", quotingMode: "team" })).toEqual({ ok: false, reason: "freelancer_required" });
+    });
+
+    it("lets a solo seller quote as themselves without an assignment (sellers design §3.1)", () => {
+      for (const quotingMode of QUOTING_MODES) {
+        expect(quoteAuthor({ ...base, role: "admin", quotingMode, solo: true })).toEqual({ ok: true, freelancerId: "u1" });
+      }
+      expect(quoteAuthor({ ...base, role: "manager", quotingMode: "assigned", solo: true })).toEqual({
+        ok: true,
+        freelancerId: "u1",
+      });
+    });
+
+    it("still refuses a freelancer on a solo team they are not", () => {
+      expect(quoteAuthor({ ...base, role: "freelancer", quotingMode: "assigned", solo: true })).toEqual({
+        ok: false,
+        reason: "not_assigned",
+      });
     });
 
     it("explains refusals", () => {

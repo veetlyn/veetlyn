@@ -3,6 +3,8 @@ import { paymentCapturedTransfer, createFakeFileStore, type FileStore } from "@j
 import {
   createTestDb,
   hasTestDatabase,
+  seedOrganization,
+  seedServicesTeam,
   seedServicesTeamWithAdmin,
   seedServicesTeamMember,
   truncateAll,
@@ -150,6 +152,38 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       ["Design", 40_000],
       ["Build", 60_000],
     ]);
+  });
+
+  it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    const soloCaller = callerFor(userId);
+
+    const { projectId } = await soloCaller.project.create({
+      teamSlug: "solo",
+      title: "Solo site",
+      clientEmail: "client@example.com",
+    });
+    const { quoteId } = await soloCaller.project.addQuote({ teamSlug: "solo", projectId, items: ITEMS, deliveryDays: 14 });
+
+    const quote = (await listProjectQuotes(db, projectId))[0];
+    expect(quote).toMatchObject({ id: quoteId, freelancerId: userId, authorId: userId, status: "proposed" });
+    // Solo quotes do not assign the freelancer; accepting the quote does (§5.2 step 3).
+    expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBeNull();
+
+    const team = await seedServicesTeamWithAdmin(db);
+    const teamCaller = callerFor(team.userId);
+    const teamProject = await teamCaller.project.create({
+      teamSlug: "team",
+      title: "Team site",
+      clientEmail: "client@example.com",
+    });
+    await expect(
+      teamCaller.project.addQuote({ teamSlug: "team", projectId: teamProject.projectId, items: ITEMS, deliveryDays: 14 }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Assign a freelancer first; in this team the assigned freelancer quotes.",
+    });
   });
 
   it("lets the workspace owner be assigned and quote without a services team member row", async () => {

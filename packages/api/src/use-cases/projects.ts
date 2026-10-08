@@ -200,6 +200,7 @@ export async function addQuote(
       quotingMode: settings.quotingMode,
       assignedFreelancerId: row.assignedFreelancerId,
       freelancerId: input.freelancerId ?? null,
+      solo: settings.solo,
     });
     if (!author.ok) {
       fail(author.reason === "not_allowed" ? "FORBIDDEN" : "BAD_REQUEST", quoteAuthorRefusalMessage(author.reason));

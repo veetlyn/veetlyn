@@ -120,8 +120,8 @@ export function getSellerPlan(id: SellerPlanId): SellerPlan {
   return plan;
 }
 
-// Until billing ships (pricing proposal §6), every services team is on Team. Sellers who work alone
-// move to Solo once the "Just me" setting exists.
-export function sellerPlanFor(_team: { id: string }): SellerPlan {
-  return getSellerPlan("team");
+// Until billing ships (pricing proposal §6) the plan follows the seller's shape: a solo seller is on Solo,
+// a team on Team. Run 8 replaces this with the plan the seller subscribed to.
+export function sellerPlanFor(team: { id: string; solo?: boolean }): SellerPlan {
+  return getSellerPlan(team.solo ? "solo" : "team");
 }

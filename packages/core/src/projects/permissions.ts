@@ -25,8 +25,11 @@ export function quoteAuthor(input: {
   quotingMode: QuotingMode;
   assignedFreelancerId: string | null;
   freelancerId?: string | null;
+  solo?: boolean;
 }): QuoteAuthorResult {
   const staff = isProjectStaff(input.role);
+  // Sellers design §3.1: a solo seller is the freelancer, so there is no assignment step (backlog, run 3).
+  if (input.solo && staff) return { ok: true, freelancerId: input.actorId };
   const named = input.freelancerId ?? null;
   switch (input.quotingMode) {
     case "open":

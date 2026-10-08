@@ -8,6 +8,8 @@ import { payment } from "@jendal-workspace/db/schema/projects";
 import {
   createTestDb,
   hasTestDatabase,
+  seedOrganization,
+  seedServicesTeam,
   seedServicesTeamMember,
   seedServicesTeamWithAdmin,
   truncateAll,
@@ -384,6 +386,35 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         ],
       });
       expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 600, status: "pending" });
+    });
+
+    it("creates an order for a solo seller with Payleor's 2% Solo fee", async () => {
+      const { userId, organizationId } = await seedOrganization(db);
+      const { id: soloTeamId } = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+      const caller = callerFor(userId);
+      const { projectId } = await caller.project.create({
+        teamSlug: "solo",
+        title: "Solo site",
+        clientEmail: "client@example.com",
+      });
+      const { quoteId } = await caller.project.addQuote({ teamSlug: "solo", projectId, items: ITEMS, deliveryDays: 14 });
+      const { paymentId } = await callerFor(null).project.clientAcceptQuote({
+        token: await signClientLink(SECRET, projectId),
+        quoteId,
+      });
+      await markTeamPayPalMerchant(db, { teamId: soloTeamId, merchantId: "SELLER1" });
+      const token = await signPayLink(SECRET, paymentId);
+      const { requests, fetch } = fakePayPalApi();
+
+      expect(await callerFor(null, makePayPal(fetch)).payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
+
+      // Solo keeps the whole price (no management fee), so the deposit is half the quote and Payleor takes 2%.
+      const [create] = calls(requests, "/v2/checkout/orders");
+      expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
+        amount: { currency_code: "USD", value: "500.00" },
+        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "10.00" } }] },
+      });
+      expect(await paymentRow(paymentId)).toMatchObject({ platformFeeMinor: 1_000, status: "pending" });
     });
 
     it("captures the deposit, starts the work, and answers a repeated capture without calling PayPal again", async () => {
