@@ -1,0 +1,26 @@
+packages/core/src/projects/state-machine.ts
+  s_0cc778d42c027b::t_db147704594ead 91
+  s_0cc778d42c027b::t_371d93c92dc474 51-58
+packages/core/src/sellers/quote-request.test.ts
+  s_0cc778d42c027b::t_a940b8b038d24a 1-70
+packages/core/src/index.ts
+  s_0cc778d42c027b::t_5b4ba9d3856f84 13
+packages/core/src/sellers/quote-request.ts
+  s_0cc778d42c027b::t_102d5e77067230 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6519281e66c5e6a4ea4b03ca63c0ff335f345ec",
+  "prompts": {},
+  "sessions": {
+    "s_0cc778d42c027b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "79d55f69-beb8-47db-8222-bab2e47818dd",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
