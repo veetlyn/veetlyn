@@ -4,6 +4,7 @@ export * from "./organization";
 export * from "./stores";
 export * from "./services-teams";
 export * from "./paypal";
+export * from "./paypal-webhooks";
 export * from "./catalog";
 export * from "./projects";
 export * from "./ledger";

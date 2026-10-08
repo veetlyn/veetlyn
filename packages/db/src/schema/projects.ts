@@ -164,8 +164,10 @@ export const payment = pgTable(
     quotePartMinor: minor("quote_part_minor").notNull(),
     managementFeeMinor: minor("management_fee_minor").notNull(),
     amountMinor: minor("amount_minor").notNull(),
-    // Payleor's fee on the payment's current PayPal order, at the seller plan's rate; set when the order is created.
+    // Payleor's fee: set at order creation at the plan's rate, then replaced by the fee PayPal charged once known.
     platformFeeMinor: minor("platform_fee_minor"),
+    // PayPal's fee on the capture, from its seller receivable breakdown; null until a fact carried it (R1c).
+    paypalFeeMinor: minor("paypal_fee_minor"),
     lines: jsonb("lines").$type<PaymentLine[]>().notNull(),
     amendmentId: text("amendment_id").references(() => amendment.id, { onDelete: "restrict" }),
     paypalOrderId: text("paypal_order_id").unique(),
@@ -183,6 +185,10 @@ export const payment = pgTable(
     check(
       "payment_platform_fee_check",
       sql`platform_fee_minor is null or (platform_fee_minor >= 0 and platform_fee_minor <= amount_minor)`,
+    ),
+    check(
+      "payment_paypal_fee_check",
+      sql`paypal_fee_minor is null or (paypal_fee_minor >= 0 and paypal_fee_minor <= amount_minor)`,
     ),
   ],
 );
