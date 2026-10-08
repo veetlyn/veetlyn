@@ -162,7 +162,8 @@ export const projectRouter = router({
     }),
 
   deliver: servicesTeamProcedure
-    .input(projectIdInput.extend({ note: z.string().max(5_000).default(""), link: z.string().max(2_000).default("") }))
+    // Abuse caps only: the use-case trims and gives the friendly length messages.
+    .input(projectIdInput.extend({ note: z.string().max(10_000).default(""), link: z.string().max(10_000).default("") }))
     .mutation(async ({ ctx, input }) => {
       return submitDelivery(
         ctx.db,
@@ -269,7 +270,7 @@ export const projectRouter = router({
     }),
 
   clientRequestChanges: publicProcedure
-    .input(z.object({ token: z.string().min(1), deliveryId: z.string().uuid(), note: z.string().max(5_000) }))
+    .input(z.object({ token: z.string().min(1), deliveryId: z.string().uuid(), note: z.string().max(10_000) }))
     .mutation(async ({ ctx, input }) => {
       const projectId = await projectIdFromToken(ctx.auth, input.token);
       await requestChanges(ctx.db, { projectId, deliveryId: input.deliveryId, note: input.note });

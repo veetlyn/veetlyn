@@ -8,6 +8,7 @@ import {
   canStartProject,
   canSubmitDelivery,
   completionPostings,
+  completionRefundId,
   depositDue,
   finalPriceMinor,
   managementFeeCreditTransfer,
@@ -595,7 +596,10 @@ export async function acceptDelivery(
       });
       const events: OutboxEventInput[] = [accepted, { type: "project.completed", data: { finalPriceMinor: finalPrice } }];
       if (completion.refundMinor > 0) {
-        events.push({ type: "refund.requested", data: { amountMinor: completion.refundMinor } });
+        events.push({
+          type: "refund.requested",
+          data: { amountMinor: completion.refundMinor, refundId: completionRefundId(row.id) },
+        });
       }
       await uow.apply({
         project: row,

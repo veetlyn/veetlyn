@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { completionPostings } from "./completion";
+import { completionPostings, completionRefundId } from "./completion";
 import { balanceDue } from "./pricing";
 
 const base = { currency: "USD", projectId: "p1", freelancerId: "f1", teamCutBps: 1_500 } as const;
@@ -56,7 +56,7 @@ describe("completionPostings", () => {
     });
     const { transfers, refundMinor } = completionPostings({ ...base, finalPriceMinor: 30_000, balance });
     expect(refundMinor).toBe(27_000);
-    expect(transfers.map((t) => t.reference)).toEqual(["completion:p1", "refund_requested:completion-p1"]);
+    expect(transfers.map((t) => t.reference)).toEqual(["completion:p1", `refund_requested:${completionRefundId("p1")}`]);
     expect(transfers[1]?.entries).toEqual([
       { account: "client_held:p1", currency: "USD", amountMinor: -27_000 },
       { account: "client_refunds", currency: "USD", amountMinor: 27_000 },

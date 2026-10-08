@@ -3,6 +3,11 @@ import type { LedgerTransferDraft } from "../ledger/transfers";
 import type { MoneyCurrency } from "../money/money";
 import type { Balance } from "./pricing";
 
+// One refund per completed project; the ledger reference and the refund.requested event share it.
+export function completionRefundId(projectId: string): string {
+  return `completion-${projectId}`;
+}
+
 // Services spec §6.3: on completion the final price leaves client_held as the team cut and the freelancer's
 // earnings; money the client paid above the final price (amendment decreases) is owed back to them.
 export function completionPostings(input: {
@@ -31,7 +36,7 @@ export function completionPostings(input: {
       refundRequestedTransfer({
         currency,
         projectId,
-        refundId: `completion-${projectId}`,
+        refundId: completionRefundId(projectId),
         quotePartMinor: balance.refundQuoteMinor,
         managementFeeMinor: balance.refundManagementFeeMinor,
       }),

@@ -1,5 +1,5 @@
 import type { ProjectPaid } from "@jendal-workspace/core";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { amendment, delivery, payment, project, quote, quoteItem } from "../schema/projects";
@@ -93,10 +93,13 @@ export async function getProjectFacts(tx: DbExecutor, projectId: string): Promis
     .from(amendment)
     .where(and(eq(amendment.projectId, projectId), eq(amendment.status, "pending")))
     .limit(1);
+  // A failed top-up can still be paid, so it is as unpaid as a pending one.
   const [unpaidTopUp] = await tx
     .select({ id: payment.id })
     .from(payment)
-    .where(and(eq(payment.projectId, projectId), eq(payment.kind, "top_up"), eq(payment.status, "pending")))
+    .where(
+      and(eq(payment.projectId, projectId), eq(payment.kind, "top_up"), inArray(payment.status, ["pending", "failed"])),
+    )
     .limit(1);
   return {
     paidQuoteMinor: paid?.paidQuoteMinor ?? 0,

@@ -540,7 +540,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       await expect(
         callerFor(freelancer).project.deliver({ teamSlug: "team", projectId, note: "  ", link: "" }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Add a note or a link." });
-      for (const link of ["http://x", "javascript:alert(1)", "not a url"]) {
+      await expect(
+        callerFor(freelancer).project.deliver({ teamSlug: "team", projectId, note: "a".repeat(5_001), link: "" }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "The note is too long." });
+      for (const link of ["http://x", "javascript:alert(1)", "not a url", `https://example.com/${"a".repeat(2_000)}`]) {
         await expect(
           callerFor(freelancer).project.deliver({ teamSlug: "team", projectId, note: "", link }),
         ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Use an https link." });
@@ -647,6 +650,55 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       expect((await outboxTypes(projectId)).slice(-2)).toEqual(["delivery.accepted", "project.completed"]);
     });
 
+    it("completes and refunds the client when a decrease left them overpaid", async () => {
+      const { userId, freelancer, projectId, token } = await workingProject();
+      const [current] = await listProjectQuotes(db, projectId);
+      const build = current?.items.find((i) => i.description === "Build");
+      if (!build) throw new Error("missing item");
+      const { deliveryId } = await deliver(freelancer, projectId);
+      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+        teamSlug: "team",
+        projectId,
+        add: [],
+        removeItemIds: [build.id],
+      });
+      await callerFor(null).project.clientAcceptAmendment({ token, amendmentId });
+      expect(await balanceOf(`client_held:${projectId}`)).toBe(56_000);
+      expect(await balanceOf("team_revenue")).toBe(4_000);
+
+      const result = await callerFor(null).project.clientAcceptDelivery({ token, deliveryId });
+      expect(result).toEqual({ status: "completed", balancePaymentId: null });
+      expect(await findProjectById(db, projectId)).toMatchObject({ status: "completed", finalPriceMinor: 40_000 });
+      expect(await balanceOf(`client_held:${projectId}`)).toBe(0);
+      expect(await balanceOf("client_refunds")).toBe(16_000);
+      expect(await balanceOf("team_revenue")).toBe(10_000);
+      expect(await balanceOf(`owed:${freelancer}:available`)).toBe(34_000);
+      expect((await outboxTypes(projectId)).slice(-3)).toEqual(["delivery.accepted", "project.completed", "refund.requested"]);
+      const [event] = await db.select().from(outbox).where(eq(outbox.type, "refund.requested"));
+      expect(event?.data).toEqual({ amountMinor: 16_000, refundId: `completion-${projectId}` });
+    });
+
+    it("refuses to accept the delivery while a failed top-up is still unpaid", async () => {
+      const { userId, freelancer, projectId, token } = await workingProject();
+      const { deliveryId } = await deliver(freelancer, projectId);
+      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+        teamSlug: "team",
+        projectId,
+        add: [{ description: "Blog", amountMinor: 40_000, extraDays: 3 }],
+        removeItemIds: [],
+      });
+      const { topUpPaymentId } = await callerFor(null).project.clientAcceptAmendment({ token, amendmentId });
+      if (!topUpPaymentId) throw new Error("missing top-up");
+      // A failed payment can still be paid, so it blocks acceptance like a pending one.
+      await db.update(payment).set({ status: "failed" }).where(eq(payment.id, topUpPaymentId));
+
+      await expect(callerFor(null).project.clientAcceptDelivery({ token, deliveryId })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "The top-up for the last amendment is not paid yet.",
+      });
+      expect((await findProjectById(db, projectId))?.status).toBe("delivered");
+    });
+
     it("refuses to accept the delivery while an amendment waits for the client", async () => {
       const { userId, freelancer, projectId, token } = await workingProject();
       const { deliveryId } = await deliver(freelancer, projectId);
@@ -668,7 +720,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     it("answers only the open delivery of the token's project", async () => {
       const first = await workingProject();
       const { deliveryId } = await deliver(first.freelancer, first.projectId);
-      // A second project of the same team, delivered too.
+      // A second project of the same team, with an accepted quote.
       const { projectId: otherId } = await createProject(first.userId);
       await callerFor(first.userId).project.assign({ teamSlug: "team", projectId: otherId, freelancerId: first.freelancer });
       const { quoteId } = await callerFor(first.freelancer).project.addQuote({
