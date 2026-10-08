@@ -13,6 +13,7 @@ describe("ledger accounts", () => {
       "client_refunds",
       "paypal_clearing",
     ]);
+    expect([ledgerAccounts.paypalFees, ledgerAccounts.payleorFees]).toEqual(["paypal_fees", "payleor_fees"]);
   });
 
   it("rejects ids that would make a key ambiguous", () => {
@@ -28,6 +29,8 @@ describe("ledger accounts", () => {
     ["paid_out:u1", "paid_out"],
     ["client_refunds", "client_refunds"],
     ["paypal_clearing", "paypal_clearing"],
+    ["paypal_fees", "paypal_fees"],
+    ["payleor_fees", "payleor_fees"],
     ["owed:u1:spent", null],
     ["client_held:", null],
     ["cash", null],

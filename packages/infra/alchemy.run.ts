@@ -51,6 +51,8 @@ export const Database = Effect.gen(function* () {
 
 export const StoreCache = Cloudflare.KV.Namespace("StoreCache");
 
+export const PayPalWebhookQueue = Cloudflare.Queues.Queue("PayPalWebhooks");
+
 export const ProductImages = Cloudflare.R2.Bucket("ProductImages");
 
 const observability = {
@@ -77,6 +79,8 @@ export const server = Cloudflare.Worker("server", {
     PAYPAL_CLIENT_SECRET: Config.Redacted("PAYPAL_CLIENT_SECRET"),
     PAYPAL_PARTNER_ID: Config.String("PAYPAL_PARTNER_ID").pipe(Config.withDefault("")),
     PAYPAL_ATTRIBUTION_ID: Config.String("PAYPAL_ATTRIBUTION_ID").pipe(Config.withDefault("")),
+    PAYPAL_WEBHOOK_ID: Config.String("PAYPAL_WEBHOOK_ID").pipe(Config.withDefault("")),
+    PAYPAL_WEBHOOKS: PayPalWebhookQueue,
     DISCORD_CLIENT_ID: Config.String("DISCORD_CLIENT_ID"),
     DISCORD_CLIENT_SECRET: Config.Redacted("DISCORD_CLIENT_SECRET"),
     DISCORD_APP_ID: Config.String("DISCORD_APP_ID"),
@@ -132,6 +136,14 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const serverWorker = yield* server;
+    const webhookQueue = yield* PayPalWebhookQueue;
+    // One consumer: the api Worker's queue() handler. maxRetries is above the handler's own limit (5), so the
+    // handler always records the final outcome itself.
+    yield* Cloudflare.Queues.Consumer("PayPalWebhooksConsumer", {
+      queueId: webhookQueue.queueId,
+      scriptName: serverWorker.workerName,
+      settings: { batchSize: 10, maxRetries: 10, maxWaitTimeMs: 1000, retryDelay: 30 },
+    });
     const web = yield* Web;
 
     return {

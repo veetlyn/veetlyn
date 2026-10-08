@@ -5,3 +5,4 @@ export * from "./token";
 export * from "./merchant-integrations";
 export * from "./partner-referrals";
 export * from "./orders";
+export * from "./webhooks";

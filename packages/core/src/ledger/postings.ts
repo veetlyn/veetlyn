@@ -7,6 +7,25 @@ import { type LedgerTransferDraft, transferFromMoves } from "./transfers";
 
 type ProjectPosting = { currency: MoneyCurrency; projectId: string };
 
+// The team bears PayPal's fee and Payleor's platform fee (services spec §5); both leave the team's PayPal
+// balance at capture. Null when PayPal charged nothing.
+export function paymentFeesTransfer(
+  input: ProjectPosting & { paymentId: string; paypalFeeMinor: number; platformFeeMinor: number },
+): LedgerTransferDraft | null {
+  const moves = [
+    { from: a.teamRevenue, to: a.paypalFees, amountMinor: input.paypalFeeMinor },
+    { from: a.teamRevenue, to: a.payleorFees, amountMinor: input.platformFeeMinor },
+  ].filter((move) => move.amountMinor > 0);
+  if (moves.length === 0) return null;
+  return transferFromMoves({
+    kind: "payment_fees",
+    reference: `payment_fees:${input.paymentId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves,
+  });
+}
+
 // Deposit, amendment top-up or balance captured.
 export function paymentCapturedTransfer(
   input: ProjectPosting & { paymentId: string; quotePartMinor: number; managementFeeMinor: number },

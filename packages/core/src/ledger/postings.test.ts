@@ -6,6 +6,7 @@ import {
   completionTransfer,
   managementFeeCreditTransfer,
   paymentCapturedTransfer,
+  paymentFeesTransfer,
   payoutReleasedTransfer,
   payoutRequestedTransfer,
   payoutSucceededTransfer,
@@ -161,5 +162,32 @@ describe("every posting builder balances (property-style, 500 random cases each)
       const transfer = completionTransfer({ ...base, freelancerId: "f1", finalPriceMinor, teamCutBps: bps() });
       expect(transfer.entries.find((e) => e.account === "client_held:p1")?.amountMinor).toBe(-finalPriceMinor);
     }
+  });
+});
+
+describe("paymentFeesTransfer", () => {
+  it("charges PayPal's fee and Payleor's fee to the team's revenue", () => {
+    expect(
+      paymentFeesTransfer({ currency: "USD", projectId: "p1", paymentId: "pay1", paypalFeeMinor: 498, platformFeeMinor: 120 }),
+    ).toEqual({
+      kind: "payment_fees",
+      reference: "payment_fees:pay1",
+      projectId: "p1",
+      entries: [
+        { account: "team_revenue", currency: "USD", amountMinor: -618 },
+        { account: "paypal_fees", currency: "USD", amountMinor: 498 },
+        { account: "payleor_fees", currency: "USD", amountMinor: 120 },
+      ],
+    });
+  });
+
+  it("leaves out a fee of zero, and returns null when there is no fee at all", () => {
+    expect(
+      paymentFeesTransfer({ currency: "USD", projectId: "p1", paymentId: "pay1", paypalFeeMinor: 498, platformFeeMinor: 0 })?.entries,
+    ).toEqual([
+      { account: "team_revenue", currency: "USD", amountMinor: -498 },
+      { account: "paypal_fees", currency: "USD", amountMinor: 498 },
+    ]);
+    expect(paymentFeesTransfer({ currency: "USD", projectId: "p1", paymentId: "pay1", paypalFeeMinor: 0, platformFeeMinor: 0 })).toBeNull();
   });
 });

@@ -17,6 +17,7 @@
     "@trpc/server": "catalog:",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
+    "evlog": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

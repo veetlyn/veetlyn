@@ -4,6 +4,7 @@ import { createMerchantIntegrations } from "./merchant-integrations";
 import { createOrders } from "./orders";
 import { createPartnerReferrals } from "./partner-referrals";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
+import { createWebhooks } from "./webhooks";
 
 export type PayPalEnvironment = "sandbox" | "live";
 
@@ -40,6 +41,8 @@ export type PayPalRequestOptions = {
   merchantId?: string;
   // Sent as the Prefer header; captures use return=representation to get the capture back (R1 facts §3).
   prefer?: "return=representation" | "return=minimal";
+  // Sent as is instead of JSON.stringify(body): webhook verification must echo PayPal's bytes (R1 facts §4).
+  rawBody?: string;
 };
 
 export type PayPalRequest = <T>(options: PayPalRequestOptions) => Promise<T>;
@@ -49,6 +52,7 @@ export interface PayPalClient {
   partnerReferrals: ReturnType<typeof createPartnerReferrals>;
   merchantIntegrations: ReturnType<typeof createMerchantIntegrations>;
   orders: ReturnType<typeof createOrders>;
+  webhooks: ReturnType<typeof createWebhooks>;
 }
 
 type ResolvedConfig = {
@@ -135,7 +139,7 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     }
     const token = await accessToken();
     const headers: Record<string, string> = { authorization: `Bearer ${token}` };
-    if (options.body !== undefined) headers["content-type"] = "application/json";
+    if (options.body !== undefined || options.rawBody !== undefined) headers["content-type"] = "application/json";
     if (options.requestId) headers["PayPal-Request-Id"] = options.requestId;
     if (resolved.partnerAttributionId) headers["PayPal-Partner-Attribution-Id"] = resolved.partnerAttributionId;
     if (options.merchantId) {
@@ -148,7 +152,7 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
         new Request(`${baseUrl}${options.path}`, {
           method: options.method,
           headers,
-          body: options.body === undefined ? undefined : JSON.stringify(options.body),
+          body: options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
         }),
     );
     if (!response.ok) throw await payPalErrorFromResponse(response);
@@ -161,5 +165,6 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     partnerReferrals: createPartnerReferrals(request),
     merchantIntegrations: createMerchantIntegrations(request),
     orders: createOrders(request),
+    webhooks: createWebhooks(request),
   };
 }
