@@ -26,6 +26,7 @@ import {
   switchToTeam as switchTeamToTeamMode,
   workspaceRoleFor,
 } from "@jendal-workspace/db/repositories/services-teams";
+import { countServicesOfferings } from "@jendal-workspace/db/repositories/services-catalog";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -87,11 +88,16 @@ export const servicesTeamRouter = router({
     }),
 
   get: servicesTeamProcedure.query(async ({ ctx }) => {
-    const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+    const [settings, offeringCount] = await Promise.all([
+      getServicesTeamSettings(ctx.db, ctx.servicesTeam.id),
+      // All offerings count: a draft service still counts as "added" to the checklist.
+      countServicesOfferings(ctx.db, ctx.servicesTeam.id),
+    ]);
     return {
       team: ctx.servicesTeam,
       role: ctx.servicesTeamRole,
       settings: settings ? { ...settings, settingsSavedAt: isoOrNull(settings.settingsSavedAt) } : null,
+      offeringCount,
     };
   }),
 

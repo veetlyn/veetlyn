@@ -221,6 +221,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       team: studio,
       role: "admin",
       settings: { ...defaultServicesTeamSettings(studio.id), settingsSavedAt: null },
+      offeringCount: 0,
     });
     await expect(callerFor(outsider.userId).servicesTeam.get({ teamSlug: "acme-studio" })).rejects.toMatchObject({
       code: "NOT_FOUND",

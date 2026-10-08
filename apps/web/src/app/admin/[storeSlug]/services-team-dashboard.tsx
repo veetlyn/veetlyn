@@ -18,14 +18,21 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings } = result.data;
+  const { team, role, settings, offeringCount } = result.data;
   const steps = servicesTeamSetupSteps(
     {
       paypalMerchantId: team.paypalMerchantId,
       settingsSaved: settings?.settingsSavedAt != null,
       discordGuildId: settings?.discordGuildId ?? null,
+      solo: settings?.solo ?? false,
+      offeringCount,
     },
-    { settings: `/${team.slug}/settings`, connectPaypal: "#paypal", linkDiscord: `/${team.slug}/discord` },
+    {
+      settings: `/${team.slug}/settings`,
+      services: `/${team.slug}/services`,
+      connectPaypal: "#paypal",
+      linkDiscord: `/${team.slug}/discord`,
+    },
   );
 
   return (
