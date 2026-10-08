@@ -185,7 +185,7 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
 
 // A Drizzle error's message is the whole query with its parameters, so only the name and the Postgres code and
 // constraint from its cause are logged.
-function databaseErrorFields(error: unknown): { name: string; code?: string; constraint?: string } {
+export function databaseErrorFields(error: unknown): { name: string; code?: string; constraint?: string } {
   const name = error instanceof Error ? error.name : typeof error;
   const cause = error instanceof Error && typeof error.cause === "object" && error.cause !== null ? error.cause : null;
   const code = cause && "code" in cause && typeof cause.code === "string" ? cause.code : undefined;

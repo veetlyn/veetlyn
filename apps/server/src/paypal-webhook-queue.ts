@@ -1,3 +1,4 @@
+import { databaseErrorFields } from "@jendal-workspace/api/use-cases/payments";
 import type { WebhookOutcome } from "@jendal-workspace/api/use-cases/paypal-webhooks";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { log } from "evlog";
@@ -28,7 +29,10 @@ function eventIdOf(body: unknown): string | null {
   return typeof body.eventId === "string" ? body.eventId : null;
 }
 
-function errorNote(error: unknown): string {
+// The note is stored. A database error's message is its query with parameters, so only its code is kept.
+export function errorNote(error: unknown): string {
+  const { name, code, constraint } = databaseErrorFields(error);
+  if (code) return `${name} (${code}${constraint ? ` ${constraint}` : ""})`;
   return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 }
 

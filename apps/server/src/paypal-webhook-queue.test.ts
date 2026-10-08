@@ -2,7 +2,12 @@ import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/pa
 import { log } from "evlog";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { handlePayPalWebhookBatch, MAX_WEBHOOK_ATTEMPTS, type PayPalWebhookQueueDeps } from "./paypal-webhook-queue";
+import {
+  errorNote,
+  handlePayPalWebhookBatch,
+  MAX_WEBHOOK_ATTEMPTS,
+  type PayPalWebhookQueueDeps,
+} from "./paypal-webhook-queue";
 
 function eventRow(overrides: Partial<PayPalWebhookEventRow> = {}): PayPalWebhookEventRow {
   return {
@@ -99,6 +104,25 @@ describe("handlePayPalWebhookBatch", () => {
     expect(third.retry).toHaveBeenCalledWith({ delaySeconds: 90 });
     expect(first.ack).not.toHaveBeenCalled();
     expect(deps.finish).not.toHaveBeenCalled();
+  });
+
+  it("stores only the name and database code of a database error, never its query", async () => {
+    const queryError = new Error('Failed query: update "payment" set "paypal_fee_minor" = $1\nparams: 70000', {
+      cause: { code: "23514", constraint_name: "payment_paypal_fee_check", message: "violates check constraint" },
+    });
+    queryError.name = "DrizzleQueryError";
+    const deps = makeDeps({
+      process: vi.fn(async () => {
+        throw queryError;
+      }),
+    });
+    const noCode = new Error("lost", { cause: { code: "08006" } });
+
+    await handlePayPalWebhookBatch([message({ eventId: "WH-1" })], deps);
+
+    expect(deps.noteAttempt).toHaveBeenCalledWith("WH-1", "DrizzleQueryError (23514 payment_paypal_fee_check)");
+    expect(errorNote(noCode)).toBe("Error (08006)");
+    expect(errorNote(new Error("PayPal answered 503"))).toBe("Error: PayPal answered 503");
   });
 
   it("marks the event failed on the last attempt and acks", async () => {

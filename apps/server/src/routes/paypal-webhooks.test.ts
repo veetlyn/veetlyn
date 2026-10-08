@@ -7,7 +7,7 @@ import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AppEnv } from "../app-env";
-import { createPayPalWebhookRoute, type PayPalWebhookRouteDeps } from "./paypal-webhooks";
+import { APPROVAL_DELAY_SECONDS, createPayPalWebhookRoute, type PayPalWebhookRouteDeps } from "./paypal-webhooks";
 
 const VERIFY_PATH = "/v1/notifications/verify-webhook-signature";
 
@@ -23,13 +23,13 @@ const SIGNATURE_HEADERS = {
 const RAW_BODY =
   '{"id":"WH-1",  "event_type":"PAYMENT.CAPTURE.COMPLETED","resource_type":"capture","resource":{"id":"CAPTURE-1","custom_id":"payment-1","payee":{"merchant_id":"SELLER1"},"supplementary_data":{"related_ids":{"order_id":"ORDER-1"}}}}';
 
-type VerifyAnswer = "SUCCESS" | "FAILURE" | 503;
+type VerifyAnswer = "SUCCESS" | "FAILURE" | number;
 
 function makePayPal(answer: VerifyAnswer) {
   const { fetch, requests } = fakeFetch((request) => {
     if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
     if (request.url.endsWith(VERIFY_PATH)) {
-      if (answer === 503) return jsonResponse(503, { name: "SERVICE_UNAVAILABLE", debug_id: "d503" });
+      if (typeof answer === "number") return jsonResponse(answer, { name: "PAYPAL_REFUSED", debug_id: `d${answer}` });
       return jsonResponse(200, { verification_status: answer });
     }
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
@@ -56,6 +56,7 @@ function buildApp(
     webhookId?: string;
     stored?: "received" | "processed";
     enqueue?: PayPalWebhookRouteDeps["enqueue"];
+    events?: Record<string, unknown>[];
   } = {},
 ) {
   const { paypal, requests } = makePayPal(options.answer ?? "SUCCESS");
@@ -63,7 +64,8 @@ function buildApp(
   const enqueue = vi.fn(options.enqueue ?? (async () => undefined));
   const db = {} as Database;
   const app = new Hono<AppEnv>();
-  app.use(evlog());
+  const events = options.events;
+  app.use(evlog(events ? { drain: ({ event }) => void events.push(event) } : undefined));
   app.use("*", async (c, next) => {
     c.set("db", db);
     await next();
@@ -106,7 +108,7 @@ describe("POST /webhooks/paypal", () => {
       orderId: "ORDER-1",
       merchantId: "SELLER1",
     });
-    expect(enqueue).toHaveBeenCalledWith({ id: "WH-1", eventType: "PAYMENT.CAPTURE.COMPLETED" });
+    expect(enqueue).toHaveBeenCalledWith("WH-1", {});
     const [verify] = verifyRequests(requests);
     expect(verify?.body).toBeDefined();
     expect(verify?.body?.endsWith(`,"webhook_event":${RAW_BODY}}`)).toBe(true);
@@ -116,6 +118,59 @@ describe("POST /webhooks/paypal", () => {
       transmission_sig: "SIGNATURE",
       webhook_id: "WEBHOOK-1",
     });
+  });
+
+  it("delays an approval event so the pay page's own capture usually comes first", async () => {
+    const { app, enqueue } = buildApp();
+    const approval = JSON.stringify({
+      id: "WH-2",
+      event_type: "CHECKOUT.ORDER.APPROVED",
+      resource_type: "checkout-order",
+      resource: { id: "ORDER-1", purchase_units: [{ custom_id: "payment-1", payee: { merchant_id: "SELLER1" } }] },
+    });
+
+    expect((await post(app, approval)).status).toBe(200);
+    expect(enqueue).toHaveBeenCalledWith("WH-2", { delaySeconds: APPROVAL_DELAY_SECONDS });
+    expect(APPROVAL_DELAY_SECONDS).toBe(60);
+  });
+
+  it("refuses a body over 1 MB before reading it or asking PayPal", async () => {
+    const { app, requests, record } = buildApp();
+    const oversized = JSON.stringify({ id: "WH-1", event_type: "PAYMENT.CAPTURE.COMPLETED", padding: "x".repeat(1024 * 1024) });
+
+    const res = await post(app, oversized);
+
+    expect(res.status).toBe(413);
+    expect(requests).toHaveLength(0);
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it("answers 400 when PayPal's verification rejects the delivery itself, and logs no error", async () => {
+    for (const status of [400, 403, 404, 422]) {
+      const events: Record<string, unknown>[] = [];
+      const { app, record } = buildApp({ answer: status, events });
+
+      const res = await post(app);
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "verification_rejected" });
+      expect(record).not.toHaveBeenCalled();
+      await vi.waitFor(() => expect(events).toHaveLength(1));
+      expect(events[0]).toMatchObject({
+        level: "info",
+        paypalWebhook: { refused: "verification_rejected" },
+        paypal: { status, debugId: `d${status}` },
+      });
+    }
+  });
+
+  it("answers 502 when PayPal's own state may change on retry: 401, 429 and 5xx", async () => {
+    for (const status of [401, 429, 500, 503]) {
+      const { app, record } = buildApp({ answer: status });
+
+      expect((await post(app)).status).toBe(502);
+      expect(record).not.toHaveBeenCalled();
+    }
   });
 
   it("acknowledges a redelivered event already processed without enqueuing it", async () => {

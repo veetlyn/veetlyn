@@ -86,13 +86,7 @@ app.route(
   createPayPalWebhookRoute({
     paypal: getPayPalServices(),
     webhookId: ENV.PAYPAL_WEBHOOK_ID,
-    // The pay page captures right after approval; the delay lets it win, so the webhook usually finds the
-    // payment already captured instead of racing it.
-    enqueue: ({ id, eventType }) =>
-      ENV.PAYPAL_WEBHOOKS.send(
-        { eventId: id },
-        eventType === "CHECKOUT.ORDER.APPROVED" ? { delaySeconds: 60 } : undefined,
-      ),
+    enqueue: (eventId, options) => ENV.PAYPAL_WEBHOOKS.send({ eventId }, options),
   }),
 );
 
