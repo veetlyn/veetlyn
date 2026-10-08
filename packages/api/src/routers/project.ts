@@ -2,6 +2,7 @@ import { MAX_QUOTE_ITEMS } from "@jendal-workspace/core";
 import {
   findProjectById,
   listProjectAmendments,
+  listProjectDeliveries,
   listProjectPayments,
   listProjectQuotes,
   listTeamProjects,
@@ -16,12 +17,15 @@ import { publicProcedure, router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
 import {
   acceptAmendment,
+  acceptDelivery,
   acceptQuote,
   addQuote,
   assignFreelancer,
   declineAmendment,
   proposeAmendment,
+  requestChanges,
   startProject,
+  submitDelivery,
 } from "../use-cases/projects";
 
 const quoteItemInput = z.object({
@@ -81,10 +85,11 @@ export const projectRouter = router({
     ) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
     }
-    const [quotes, amendments, payments] = await Promise.all([
+    const [quotes, amendments, payments, deliveries] = await Promise.all([
       listProjectQuotes(ctx.db, row.id),
       listProjectAmendments(ctx.db, row.id),
       listProjectPayments(ctx.db, row.id),
+      listProjectDeliveries(ctx.db, row.id),
     ]);
     const clientToken = await signClientLink(linkSecret(ctx.auth), row.id);
     return {
@@ -92,6 +97,7 @@ export const projectRouter = router({
       quotes,
       amendments,
       payments,
+      deliveries,
       clientPath: `/c/${clientToken}`,
       role: ctx.servicesTeamRole,
       quotingMode: settings?.quotingMode ?? "assigned",
@@ -155,6 +161,16 @@ export const projectRouter = router({
       );
     }),
 
+  deliver: servicesTeamProcedure
+    .input(projectIdInput.extend({ note: z.string().max(5_000).default(""), link: z.string().max(2_000).default("") }))
+    .mutation(async ({ ctx, input }) => {
+      return submitDelivery(
+        ctx.db,
+        { teamId: ctx.servicesTeam.id, role: ctx.servicesTeamRole, actorId: ctx.session.user.id },
+        input,
+      );
+    }),
+
   // The client project page (services spec §5.2): signed link, no account. Internal user ids
   // (freelancerId, authorId, proposedById) and the PayPal ids stay server-side; the link holder
   // sees only what the page renders.
@@ -162,10 +178,11 @@ export const projectRouter = router({
     const projectId = await projectIdFromToken(ctx.auth, input.token);
     const row = await findProjectById(ctx.db, projectId);
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-    const [quotes, amendments, payments] = await Promise.all([
+    const [quotes, amendments, payments, deliveries] = await Promise.all([
       listProjectQuotes(ctx.db, projectId),
       listProjectAmendments(ctx.db, projectId),
       listProjectPayments(ctx.db, projectId),
+      listProjectDeliveries(ctx.db, projectId),
     ]);
     const secret = linkSecret(ctx.auth);
     const paymentViews = await Promise.all(
@@ -179,11 +196,7 @@ export const projectRouter = router({
         // PayPal holds a capture it has not finished; the id itself stays server-side.
         processing: p.status === "pending" && p.paypalCaptureId !== null,
         // Pending and failed payments can be paid; the pay link names the payment, never the amount (§5.4).
-        // Balances open in run 2, once deliveries can be accepted.
-        payPath:
-          p.kind !== "balance" && (p.status === "pending" || p.status === "failed")
-            ? `/pay/${await signPayLink(secret, p.id)}`
-            : null,
+        payPath: p.status === "pending" || p.status === "failed" ? `/pay/${await signPayLink(secret, p.id)}` : null,
       })),
     );
     return {
@@ -194,6 +207,7 @@ export const projectRouter = router({
         status: row.status,
         currency: row.currency,
         managementFeeBps: row.managementFeeBps,
+        finalPriceMinor: row.finalPriceMinor,
       },
       quotes: quotes.map((q) => ({
         id: q.id,
@@ -221,6 +235,15 @@ export const projectRouter = router({
         createdAt: a.createdAt,
       })),
       payments: paymentViews,
+      deliveries: deliveries.map((d) => ({
+        id: d.id,
+        status: d.status,
+        note: d.note,
+        link: d.link,
+        clientNote: d.clientNote,
+        createdAt: d.createdAt,
+        decidedAt: d.decidedAt,
+      })),
     };
   }),
 
@@ -243,5 +266,19 @@ export const projectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const projectId = await projectIdFromToken(ctx.auth, input.token);
       await declineAmendment(ctx.db, { projectId, amendmentId: input.amendmentId });
+    }),
+
+  clientRequestChanges: publicProcedure
+    .input(z.object({ token: z.string().min(1), deliveryId: z.string().uuid(), note: z.string().max(5_000) }))
+    .mutation(async ({ ctx, input }) => {
+      const projectId = await projectIdFromToken(ctx.auth, input.token);
+      await requestChanges(ctx.db, { projectId, deliveryId: input.deliveryId, note: input.note });
+    }),
+
+  clientAcceptDelivery: publicProcedure
+    .input(z.object({ token: z.string().min(1), deliveryId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const projectId = await projectIdFromToken(ctx.auth, input.token);
+      return acceptDelivery(ctx.db, { projectId, deliveryId: input.deliveryId });
     }),
 });
