@@ -1,0 +1,39 @@
+packages/core/src/index.ts
+  s_b043d5fe240787::t_5d52ea894e0228 33
+packages/core/src/projects/completion.test.ts
+  s_b043d5fe240787::t_9569a51b8ffbcc 1-77
+packages/core/src/projects/completion.ts
+  s_b043d5fe240787::t_6d253a0db4e3ad 1-41
+packages/core/src/projects/events.ts
+  s_b043d5fe240787::t_0868be6f7004cd 14,17
+packages/core/src/projects/permissions.test.ts
+  s_b043d5fe240787::t_d0503dd92e826a 8,85-93
+packages/core/src/projects/permissions.ts
+  s_b043d5fe240787::t_2875ce06ca1e8d 70-78
+packages/db/src/migrations/20261008121830_r2_deliveries/migration.sql
+  s_b043d5fe240787::t_3de01e811bf60a 1-19
+packages/db/src/migrations/20261008121830_r2_deliveries/snapshot.json
+  s_b043d5fe240787::t_c2a81fa3cf70e1 1-5775
+packages/db/src/repositories/projects.ts
+  s_b043d5fe240787::t_ae79ac41e27331 5,12,109-116
+packages/db/src/schema/projects.ts
+  s_b043d5fe240787::t_11a32b949bdfc7 46-47,197-227
+packages/db/src/testing/db.ts
+  s_b043d5fe240787::t_169d4285889e4f 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e57237cc660d2ec1e15460c81466606ec1d869eb",
+  "prompts": {},
+  "sessions": {
+    "s_b043d5fe240787": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "15114c30-23b3-414a-acf2-6de634c6b367",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
