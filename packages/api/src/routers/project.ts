@@ -132,6 +132,7 @@ export const projectRouter = router({
       clientPath: `/c/${clientToken}`,
       role: ctx.servicesTeamRole,
       quotingMode: settings?.quotingMode ?? "assigned",
+      solo: settings?.solo ?? false,
       viewerId: ctx.session.user.id,
     };
   }),
@@ -149,6 +150,7 @@ export const projectRouter = router({
         clientEmail: z.string().max(200).default(""),
         clientDiscordId: z.string().max(64).default(""),
         channelId: z.string().max(64).default(""),
+        offeringId: z.string().min(1).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

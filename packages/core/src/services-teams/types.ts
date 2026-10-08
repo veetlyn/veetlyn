@@ -21,6 +21,12 @@ export type ServicesTeamRecord = {
 
 export type ServicesTeamSettings = {
   teamId: string;
+  // Sellers design §3.1: a solo seller is a team of one; its owner does the work and keeps the whole price.
+  solo: boolean;
+  // Sellers design §3.2: the store section of the seller page. Run 4 fills it; the column exists now.
+  storeEnabled: boolean;
+  // Sellers design §3.2: up to MAX_BIO_CHARS characters, shown on the seller page.
+  bio: string;
   currency: Currency;
   // Basis points: 1500 = 15%.
   teamCutBps: number;
@@ -40,10 +46,15 @@ export type ServicesTeamSettingsInput = Pick<
 
 export const MAX_RATE_BPS = 10_000;
 
+export const MAX_BIO_CHARS = 280;
+
 // Must match the column defaults of services_team_settings in packages/db.
 export function defaultServicesTeamSettings(teamId: string): ServicesTeamSettings {
   return {
     teamId,
+    solo: false,
+    storeEnabled: false,
+    bio: "",
     currency: "USD",
     teamCutBps: 1500,
     managementFeeBps: 1000,
@@ -52,6 +63,23 @@ export function defaultServicesTeamSettings(teamId: string): ServicesTeamSetting
     settingsSavedAt: null,
     discordGuildId: null,
   };
+}
+
+// Sellers design §3.1: a solo seller keeps the whole price, so completion owes no earnings and no payout runs.
+export const SOLO_TEAM_CUT_BPS = 10_000;
+export const SOLO_MANAGEMENT_FEE_BPS = 0;
+
+export function soloServicesTeamSettings(teamId: string): ServicesTeamSettings {
+  return {
+    ...defaultServicesTeamSettings(teamId),
+    solo: true,
+    teamCutBps: SOLO_TEAM_CUT_BPS,
+    managementFeeBps: SOLO_MANAGEMENT_FEE_BPS,
+  };
+}
+
+export function bioProblem(bio: string): string | null {
+  return bio.trim().length > MAX_BIO_CHARS ? `Keep your bio under ${MAX_BIO_CHARS} characters.` : null;
 }
 
 function oneOf<T extends string>(values: readonly T[], value: unknown): value is T {

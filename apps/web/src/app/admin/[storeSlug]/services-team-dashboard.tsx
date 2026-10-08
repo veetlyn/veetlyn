@@ -18,14 +18,22 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings } = result.data;
+  const { team, role, settings, offeringCount } = result.data;
+  const solo = settings?.solo ?? false;
   const steps = servicesTeamSetupSteps(
     {
       paypalMerchantId: team.paypalMerchantId,
       settingsSaved: settings?.settingsSavedAt != null,
       discordGuildId: settings?.discordGuildId ?? null,
+      solo,
+      offeringCount,
     },
-    { settings: `/${team.slug}/settings`, connectPaypal: "#paypal", linkDiscord: `/${team.slug}/discord` },
+    {
+      settings: `/${team.slug}/settings`,
+      services: `/${team.slug}/services`,
+      connectPaypal: "#paypal",
+      linkDiscord: `/${team.slug}/discord`,
+    },
   );
 
   return (
@@ -40,12 +48,17 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
         <Link href={`/${team.slug}/projects`} className="underline underline-offset-4">
           Projects
         </Link>
+        <Link href={`/${team.slug}/services`} className="underline underline-offset-4">
+          Services
+        </Link>
         <Link href={`/${team.slug}/settings`} className="underline underline-offset-4">
           Settings
         </Link>
-        <Link href={`/${team.slug}/members`} className="underline underline-offset-4">
-          Members
-        </Link>
+        {!solo ? (
+          <Link href={`/${team.slug}/members`} className="underline underline-offset-4">
+            Members
+          </Link>
+        ) : null}
       </nav>
       <SetupChecklist steps={steps} title="Set up your team" />
       <PayPalConnectCard teamId={team.id} />
@@ -60,13 +73,26 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
           Start a project for a client, send quotes, and share a private link where they follow and pay.
         </p>
       </section>
+      <section className="grid gap-2 border p-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="font-medium">Services</h2>
+          <Link href={`/${team.slug}/services`} className="text-sm underline underline-offset-4">
+            Open services
+          </Link>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          What you sell, with a usual price range and time. Clients pick one when they ask for a quote.
+        </p>
+      </section>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-muted-foreground">Your role</dt>
         <dd>{SERVICES_TEAM_ROLE_LABELS[role] ?? role}</dd>
         <dt className="text-muted-foreground">PayPal</dt>
         <dd>{team.paypalMerchantId ?? "Not connected"}</dd>
+        <dt className="text-muted-foreground">Selling as</dt>
+        <dd>{solo ? "Just me" : "A team"}</dd>
       </dl>
-      <ComingSoon title="Payouts" />
+      {!solo ? <ComingSoon title="Payouts" /> : null}
     </main>
   );
 }

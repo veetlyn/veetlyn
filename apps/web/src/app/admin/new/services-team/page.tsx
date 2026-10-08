@@ -8,9 +8,9 @@ export default async function NewServicesTeamPage() {
 
   return (
     <main className="container mx-auto max-w-lg px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Create your services team</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Sell your services</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        You can rename the team later. Its address cannot be changed.
+        A seller is a team of one or a team of many. You can rename it later; its address cannot be changed.
       </p>
       <CreateServicesTeamForm adminOrigin={origins.admin} />
     </main>

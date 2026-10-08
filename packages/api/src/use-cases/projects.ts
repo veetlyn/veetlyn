@@ -45,6 +45,7 @@ import {
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
+import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import {
   ProjectConflictError,
@@ -109,7 +110,14 @@ const MAX_DELIVERY_DAYS = 365;
 export async function startProject(
   db: Database,
   actor: ProjectActor,
-  input: { title: string; brief?: string; clientEmail?: string; clientDiscordId?: string; channelId?: string },
+  input: {
+    title: string;
+    brief?: string;
+    clientEmail?: string;
+    clientDiscordId?: string;
+    channelId?: string;
+    offeringId?: string | null;
+  },
 ): Promise<{ projectId: string }> {
   if (!canStartProject(actor.role)) fail("FORBIDDEN", "Only admins and managers start projects.");
   const title = input.title.trim();
@@ -124,6 +132,11 @@ export async function startProject(
   if (!clientEmail && !clientDiscordId) fail("BAD_REQUEST", "Add the client's email or Discord user.");
   const settings = await getServicesTeamSettings(db, actor.teamId);
   if (!settings) fail("NOT_FOUND", "Services team settings not found.");
+  const offeringId = input.offeringId?.trim() || null;
+  if (offeringId) {
+    const offering = await findServicesOffering(db, { id: offeringId, teamId: actor.teamId });
+    if (!offering?.active) fail("BAD_REQUEST", "That service is not on your team's list.");
+  }
 
   return runProjectTransaction(db, async (tx, uow) => {
     const [row] = await tx
@@ -135,6 +148,8 @@ export async function startProject(
         clientEmail,
         clientDiscordId,
         channelId: input.channelId?.trim() || null,
+        offeringId,
+        source: "admin",
         currency: settings.currency,
         managementFeeBps: settings.managementFeeBps,
         teamCutBps: settings.teamCutBps,
@@ -200,6 +215,7 @@ export async function addQuote(
       quotingMode: settings.quotingMode,
       assignedFreelancerId: row.assignedFreelancerId,
       freelancerId: input.freelancerId ?? null,
+      solo: settings.solo,
     });
     if (!author.ok) {
       fail(author.reason === "not_allowed" ? "FORBIDDEN" : "BAD_REQUEST", quoteAuthorRefusalMessage(author.reason));

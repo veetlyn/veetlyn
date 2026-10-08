@@ -14,6 +14,7 @@ import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { findProjectById, getCurrentQuote, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
+import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import {
   type OutboxEventInput,
@@ -305,12 +306,14 @@ async function requirePayment(db: Database, paymentId: string): Promise<PaymentR
   return row;
 }
 
-async function requireSeller(db: Database, teamId: string): Promise<{ merchantId: string; name: string }> {
+async function requireSeller(db: Database, teamId: string): Promise<{ merchantId: string; name: string; solo: boolean }> {
   const team = await findTeamById(db, teamId);
   if (!team?.paypalMerchantId) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This team cannot take PayPal payments yet." });
   }
-  return { merchantId: team.paypalMerchantId, name: team.name };
+  // Payleor's fee follows the seller's plan (pricing proposal §1): Solo 2%, Team 1%.
+  const settings = await getServicesTeamSettings(db, teamId);
+  return { merchantId: team.paypalMerchantId, name: team.name, solo: settings?.solo ?? false };
 }
 
 export async function getPayPage(deps: { db: Database; paypal: PayPalServices | undefined }, paymentId: string) {
@@ -403,7 +406,7 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
       throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });
     }
   }
-  const fee = platformFeeMinor(row.amountMinor, sellerPlanFor({ id: row.teamId }).feeBps);
+  const fee = platformFeeMinor(row.amountMinor, sellerPlanFor({ id: row.teamId, solo: seller.solo }).feeBps);
   const order = await deps.paypal.client.orders.create({
     // A new key per start: each start is a new order, while the client's own retries reuse this key.
     requestId: `order:${row.id}:${crypto.randomUUID()}`,

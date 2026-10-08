@@ -15,6 +15,50 @@ import { trpc } from "@/utils/trpc";
 
 const SELECT_CLASS = "h-9 rounded-md border bg-transparent px-2 text-sm";
 
+type Member = {
+  userId: string;
+  name: string;
+  title: string | null;
+};
+
+// One input per row: its own local state so invalidating the list does not clobber what the admin is typing.
+function MemberTitle({ teamSlug, member }: { teamSlug: string; member: Member }) {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState(member.title ?? "");
+  const save = useMutation(
+    trpc.servicesTeam.setMemberTitle.mutationOptions({
+      onSuccess: (data) => {
+        setTitle(data.title ?? "");
+        void queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.listMembers.queryKey({ teamSlug }) });
+      },
+    }),
+  );
+  return (
+    <div className="w-full space-y-1">
+      <Input
+        aria-label={`Title for ${member.name}`}
+        value={title}
+        maxLength={80}
+        placeholder="Title (for example Brand designer)"
+        onChange={(e) => {
+          setTitle(e.target.value);
+          save.reset();
+        }}
+        onBlur={() => {
+          const value = title.trim();
+          if (value !== (member.title ?? "")) save.mutate({ teamSlug, userId: member.userId, title: value });
+        }}
+        className="h-8 max-w-80 text-sm"
+      />
+      {save.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {save.error.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
   const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
@@ -40,6 +84,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   if (team.isError) return <TeamNotFound />;
 
   const isAdmin = team.data.role === "admin";
+  const solo = team.data.settings?.solo ?? false;
   // Managers see the list; only admins change it. Freelancers get a FORBIDDEN from listMembers.
   const listForbidden = members.isError;
 
@@ -55,7 +100,17 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
       </Link>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight">Members</h1>
 
-      {listForbidden ? (
+      {solo ? (
+        <div className="mt-6 grid gap-2 border border-dashed p-6">
+          <p className="font-medium">You work alone</p>
+          <p className="text-sm text-muted-foreground">
+            A solo seller has no members and no payouts. Switch to a team in Settings to add people.
+          </p>
+          <Link href={`/${team.data.team.slug}/settings`} className="text-sm underline underline-offset-4">
+            Open settings
+          </Link>
+        </div>
+      ) : listForbidden ? (
         <p className="mt-6 text-sm text-muted-foreground">Only managers and admins can see the member list.</p>
       ) : (
         <>
@@ -65,6 +120,12 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                 <div className="min-w-0">
                   <p className="truncate font-medium">{member.name}</p>
                   <p className="truncate text-sm text-muted-foreground">{member.email}</p>
+                  {/* Workspace admins have no team member row, so there is no title to save. */}
+                  {isAdmin && !member.workspaceAdmin ? (
+                    <MemberTitle teamSlug={teamSlug} member={member} />
+                  ) : member.title ? (
+                    <p className="truncate text-sm text-muted-foreground">{member.title}</p>
+                  ) : null}
                 </div>
                 {member.workspaceAdmin ? (
                   <span className="shrink-0 text-sm text-muted-foreground" title="Set by the workspace">

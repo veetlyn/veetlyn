@@ -3,7 +3,10 @@ import { paymentCapturedTransfer, createFakeFileStore, type FileStore } from "@j
 import {
   createTestDb,
   hasTestDatabase,
+  seedOrganization,
+  seedServicesTeam,
   seedServicesTeamWithAdmin,
+  seedServicesOffering,
   seedServicesTeamMember,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
@@ -17,7 +20,7 @@ import {
   listProjectQuotes,
 } from "@jendal-workspace/db/repositories/projects";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
-import { payment } from "@jendal-workspace/db/schema/projects";
+import { payment, project } from "@jendal-workspace/db/schema/projects";
 import { ledgerBalance } from "@jendal-workspace/db/schema/ledger";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import { eq } from "drizzle-orm";
@@ -122,6 +125,50 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
   });
 
+  it("stores the team's own active offering and the admin source", async () => {
+    const { userId, teamId } = await seedServicesTeamWithAdmin(db);
+    const offeringId = await seedServicesOffering(db, { teamId, name: "Logo design" });
+
+    const caller = callerFor(userId);
+    const { projectId } = await caller.project.create({
+      teamSlug: "team",
+      title: "Website redesign",
+      clientEmail: "client@example.com",
+      offeringId,
+    });
+
+    const row = await findProjectById(db, projectId);
+    expect(row).toMatchObject({ offeringId, source: "admin" });
+  });
+
+  it("refuses another team's offering and the team's own inactive offering", async () => {
+    const { userId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { teamId: otherTeamId } = await seedServicesTeamWithAdmin(db, { slug: "other" });
+    const foreignOfferingId = await seedServicesOffering(db, { teamId: otherTeamId, name: "Their service" });
+    const inactiveOfferingId = await seedServicesOffering(db, { teamId, name: "Paused service", active: false });
+
+    const caller = callerFor(userId);
+    for (const offeringId of [foreignOfferingId, inactiveOfferingId]) {
+      await expect(
+        caller.project.create({
+          teamSlug: "team",
+          title: "Website redesign",
+          clientEmail: "client@example.com",
+          offeringId,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "That service is not on your team's list." });
+    }
+    expect(await db.select({ id: project.id }).from(project)).toEqual([]);
+  });
+
+  it("starts a project without an offering, recording a null offering and the admin source", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await createProject(userId);
+
+    const row = await findProjectById(db, projectId);
+    expect(row).toMatchObject({ offeringId: null, source: "admin" });
+  });
+
   it("quotes in assigned mode only through the assigned freelancer", async () => {
     const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
     const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
@@ -150,6 +197,55 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       ["Design", 40_000],
       ["Build", 60_000],
     ]);
+  });
+
+  it("tells the project page whether the seller is solo", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    await seedServicesTeam(db, { organizationId, slug: "studio" });
+    const caller = callerFor(userId);
+
+    const solo = await caller.project.create({ teamSlug: "solo", title: "Solo site", clientEmail: "c@example.com" });
+    const studio = await caller.project.create({ teamSlug: "studio", title: "Team site", clientEmail: "c@example.com" });
+
+    await expect(caller.project.get({ teamSlug: "solo", projectId: solo.projectId })).resolves.toMatchObject({
+      solo: true,
+    });
+    await expect(caller.project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
+      solo: false,
+    });
+  });
+
+  it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    const soloCaller = callerFor(userId);
+
+    const { projectId } = await soloCaller.project.create({
+      teamSlug: "solo",
+      title: "Solo site",
+      clientEmail: "client@example.com",
+    });
+    const { quoteId } = await soloCaller.project.addQuote({ teamSlug: "solo", projectId, items: ITEMS, deliveryDays: 14 });
+
+    const quote = (await listProjectQuotes(db, projectId))[0];
+    expect(quote).toMatchObject({ id: quoteId, freelancerId: userId, authorId: userId, status: "proposed" });
+    // Solo quotes do not assign the freelancer; accepting the quote does (§5.2 step 3).
+    expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBeNull();
+
+    const team = await seedServicesTeamWithAdmin(db);
+    const teamCaller = callerFor(team.userId);
+    const teamProject = await teamCaller.project.create({
+      teamSlug: "team",
+      title: "Team site",
+      clientEmail: "client@example.com",
+    });
+    await expect(
+      teamCaller.project.addQuote({ teamSlug: "team", projectId: teamProject.projectId, items: ITEMS, deliveryDays: 14 }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Assign a freelancer first; in this team the assigned freelancer quotes.",
+    });
   });
 
   it("lets the workspace owner be assigned and quote without a services team member row", async () => {

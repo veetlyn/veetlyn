@@ -35,7 +35,9 @@ describe("seller plans", () => {
     ]);
   });
 
-  it("puts every services team on Team until billing ships", () => {
+  it("puts a solo seller on Solo and a team on Team until billing ships", () => {
+    expect(sellerPlanFor({ id: "team-1", solo: true })).toBe(getSellerPlan("solo"));
+    expect(sellerPlanFor({ id: "team-1", solo: false })).toBe(getSellerPlan("team"));
     expect(sellerPlanFor({ id: "team-1" })).toBe(getSellerPlan("team"));
   });
 

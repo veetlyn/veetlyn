@@ -21,6 +21,7 @@ const TONE_CLASS = {
 
 export default function CreateServicesTeamForm({ adminOrigin }: { adminOrigin: string }) {
   const router = useRouter();
+  const [solo, setSolo] = useState(true);
   const [name, setName] = useState("");
   const [typedSlug, setTypedSlug] = useState<string | null>(null);
   // The address follows the name until the user edits it.
@@ -44,13 +45,50 @@ export default function CreateServicesTeamForm({ adminOrigin }: { adminOrigin: s
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (canSubmit) create.mutate({ name: name.trim(), slug });
+    if (canSubmit) create.mutate({ name: name.trim(), slug, solo });
   }
 
   return (
     <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Who is selling?</legend>
+        <div className="grid gap-2">
+          <label className="flex items-start gap-3 border p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
+            <input
+              type="radio"
+              name="seller-kind"
+              value="solo"
+              checked={solo}
+              onChange={() => setSolo(true)}
+              className="mt-1 accent-current"
+            />
+            <span>
+              <span className="block font-medium">Just me</span>
+              <span className="block text-sm text-muted-foreground">
+                You do the work and keep the whole price. No members, no payouts.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 border p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
+            <input
+              type="radio"
+              name="seller-kind"
+              value="team"
+              checked={!solo}
+              onChange={() => setSolo(false)}
+              className="mt-1 accent-current"
+            />
+            <span>
+              <span className="block font-medium">A team</span>
+              <span className="block text-sm text-muted-foreground">
+                Members share the price: your team cut and a management fee apply.
+              </span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
       <div className="space-y-2">
-        <Label htmlFor="team-name">Team name</Label>
+        <Label htmlFor="team-name">Name</Label>
         <Input
           id="team-name"
           value={name}
@@ -65,7 +103,7 @@ export default function CreateServicesTeamForm({ adminOrigin }: { adminOrigin: s
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="team-slug">Team address</Label>
+        <Label htmlFor="team-slug">Address</Label>
         <InputGroup>
           <InputGroupAddon>
             <InputGroupText>{adminOrigin}/</InputGroupText>
@@ -90,7 +128,7 @@ export default function CreateServicesTeamForm({ adminOrigin }: { adminOrigin: s
         </p>
       </div>
       <Button type="submit" disabled={!canSubmit} className="justify-self-start">
-        {create.isPending ? "Creating your team…" : "Create services team"}
+        {create.isPending ? "Creating…" : solo ? "Create my seller page" : "Create our team"}
       </Button>
     </form>
   );

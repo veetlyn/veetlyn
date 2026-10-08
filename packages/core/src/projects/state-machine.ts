@@ -10,6 +10,10 @@ export const PROJECT_STATUSES = [
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
+// Where a project came from: the admin, or a request from the seller page (sellers design §4.2, run 3b).
+export const PROJECT_SOURCES = ["admin", "web"] as const;
+export type ProjectSource = (typeof PROJECT_SOURCES)[number];
+
 export const PROJECT_EVENTS = [
   "add_quote",
   "assign_freelancer",

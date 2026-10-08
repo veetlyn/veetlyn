@@ -54,7 +54,8 @@ export const invitation = pgTable(
 );
 
 // Each team is a store or a services team (services spec §3). slug, product, status, paypalMerchantId and
-// supportEmail are team additionalFields in packages/auth. status and supportEmail only apply to stores.
+// supportEmail are team additionalFields in packages/auth. status applies to stores and services teams alike
+// (publishing, run 3b); supportEmail is the seller's contact address for both.
 export const team = pgTable(
   "team",
   {

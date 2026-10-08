@@ -1,4 +1,4 @@
-import { defaultServicesTeamSettings } from "@jendal-workspace/core";
+import { defaultServicesTeamSettings, soloServicesTeamSettings } from "@jendal-workspace/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -13,15 +13,19 @@ import {
 } from "../testing/db";
 import {
   addServicesTeamMember,
+  applySoloTeamDefaults,
   createServicesTeamSettings,
   findServicesTeamBySlug,
   findUserByEmail,
   getServicesTeamSettings,
   listOrganizationsWithServicesTeams,
   listServicesTeamMembers,
+  saveServicesTeamBio,
   saveServicesTeamSettings,
   servicesTeamRoleFor,
   setServicesTeamMemberRole,
+  setServicesTeamMemberTitle,
+  switchToTeam,
   workspaceRoleFor,
 } from "./services-teams";
 
@@ -71,10 +75,70 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
 
     const saved = await saveServicesTeamSettings(db, studio.id, input);
 
-    expect(saved).toEqual({ teamId: studio.id, ...input, settingsSavedAt: expect.any(Date), discordGuildId: null });
+    expect(saved).toEqual({
+      teamId: studio.id,
+      solo: false,
+      storeEnabled: false,
+      bio: "",
+      ...input,
+      settingsSavedAt: expect.any(Date),
+      discordGuildId: null,
+    });
     await expect(getServicesTeamSettings(db, studio.id)).resolves.toEqual(saved);
     const again = await saveServicesTeamSettings(db, studio.id, { ...input, teamCutBps: 2500 });
     expect(again.teamCutBps).toBe(2500);
+  });
+
+  it("applies the solo defaults right after create, without marking the rates saved", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio", withSettings: false });
+
+    await applySoloTeamDefaults(db, studio.id);
+
+    await expect(getServicesTeamSettings(db, studio.id)).resolves.toEqual(soloServicesTeamSettings(studio.id));
+  });
+
+  it("saves the bio without touching the rates or the setup checklist", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+
+    await saveServicesTeamBio(db, studio.id, "We design logos.");
+
+    await expect(getServicesTeamSettings(db, studio.id)).resolves.toEqual({
+      ...defaultServicesTeamSettings(studio.id),
+      bio: "We design logos.",
+    });
+  });
+
+  it("switches a solo seller to a team, restoring the team rates it never changed", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio", solo: true });
+
+    await switchToTeam(db, studio.id);
+
+    await expect(getServicesTeamSettings(db, studio.id)).resolves.toEqual(defaultServicesTeamSettings(studio.id));
+  });
+
+  it("keeps the rates a solo seller changed when it becomes a team, but asks the team to confirm them", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio", solo: true });
+    await saveServicesTeamSettings(db, studio.id, {
+      currency: "USD",
+      teamCutBps: 2000,
+      managementFeeBps: 500,
+      quotingMode: "assigned",
+      payoutMode: "manual",
+    });
+    expect((await getServicesTeamSettings(db, studio.id))?.settingsSavedAt).toBeInstanceOf(Date);
+
+    await switchToTeam(db, studio.id);
+
+    await expect(getServicesTeamSettings(db, studio.id)).resolves.toMatchObject({
+      solo: false,
+      teamCutBps: 2000,
+      managementFeeBps: 500,
+      settingsSavedAt: null,
+    });
   });
 
   it("makes workspace owners and admins team admins, and reads other members' team roles", async () => {
@@ -129,10 +193,57 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
     await addServicesTeamMember(db, { teamId: studio.id, userId: bobId, role: "manager" });
 
     await expect(listServicesTeamMembers(db, studio)).resolves.toEqual([
-      { userId: bobId, name: "Bob", email: `${bobId}@example.com`, role: "manager", workspaceAdmin: false },
-      { userId: ownerId, name: "Owner", email: `${ownerId}@example.com`, role: "admin", workspaceAdmin: true },
-      { userId: zoeId, name: "Zoe", email: `${zoeId}@example.com`, role: "freelancer", workspaceAdmin: false },
+      {
+        userId: bobId,
+        name: "Bob",
+        email: `${bobId}@example.com`,
+        role: "manager",
+        title: null,
+        workspaceAdmin: false,
+      },
+      {
+        userId: ownerId,
+        name: "Owner",
+        email: `${ownerId}@example.com`,
+        role: "admin",
+        title: null,
+        workspaceAdmin: true,
+      },
+      {
+        userId: zoeId,
+        name: "Zoe",
+        email: `${zoeId}@example.com`,
+        role: "freelancer",
+        title: null,
+        workspaceAdmin: false,
+      },
     ]);
+  });
+
+  it("stores and clears member titles, and refuses a user with no row", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const userId = await addMember(db, { organizationId, role: "member" });
+    const strangerId = await seedUser(db);
+    await addServicesTeamMember(db, { teamId: studio.id, userId, role: "freelancer" });
+
+    await expect(
+      setServicesTeamMemberTitle(db, { teamId: studio.id, userId, title: "Brand designer" }),
+    ).resolves.toBe(true);
+    await expect(listServicesTeamMembers(db, studio)).resolves.toEqual([
+      expect.objectContaining({ role: "admin", workspaceAdmin: true }),
+      expect.objectContaining({ userId, role: "freelancer", title: "Brand designer" }),
+    ]);
+
+    await expect(setServicesTeamMemberTitle(db, { teamId: studio.id, userId, title: null })).resolves.toBe(true);
+    await expect(listServicesTeamMembers(db, studio)).resolves.toEqual([
+      expect.objectContaining({ role: "admin", workspaceAdmin: true }),
+      expect.objectContaining({ userId, title: null }),
+    ]);
+
+    await expect(
+      setServicesTeamMemberTitle(db, { teamId: studio.id, userId: strangerId, title: "Designer" }),
+    ).resolves.toBe(false);
   });
 
   it("adds a member once and changes the role of members only", async () => {

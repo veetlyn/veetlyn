@@ -4,12 +4,14 @@ import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { trpc } from "@/utils/trpc";
+
+const SELECT_CLASS = "h-9 w-full rounded-md border bg-transparent px-3 text-sm";
 
 export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   const router = useRouter();
@@ -17,6 +19,9 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   const [clientEmail, setClientEmail] = useState("");
   const [clientDiscordId, setClientDiscordId] = useState("");
   const [brief, setBrief] = useState("");
+  const [offeringId, setOfferingId] = useState("");
+
+  const catalog = useQuery({ ...trpc.servicesCatalog.list.queryOptions({ teamSlug }), retry: false });
 
   const create = useMutation(
     trpc.project.create.mutationOptions({
@@ -31,7 +36,7 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
-    create.mutate({ teamSlug, title, brief, clientEmail, clientDiscordId, channelId: "" });
+    create.mutate({ teamSlug, title, brief, clientEmail, clientDiscordId, channelId: "", offeringId: offeringId || undefined });
   }
 
   return (
@@ -49,6 +54,25 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
         <div className="space-y-2">
           <Label htmlFor="project-title">Title</Label>
           <Input id="project-title" value={title} onChange={(e) => setTitle(e.target.value)} required minLength={3} maxLength={120} autoFocus />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="project-offering">Service</Label>
+          <select
+            id="project-offering"
+            value={offeringId}
+            onChange={(e) => setOfferingId(e.target.value)}
+            className={SELECT_CLASS}
+          >
+            <option value="">Not one of my services</option>
+            {(catalog.data?.offerings ?? [])
+              .filter((offering) => offering.active)
+              .map((offering) => (
+                <option key={offering.id} value={offering.id}>
+                  {offering.name}
+                </option>
+              ))}
+          </select>
+          <p className="text-xs text-muted-foreground">Optional. It tells you later what the client asked for.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="client-email">Client email</Label>
