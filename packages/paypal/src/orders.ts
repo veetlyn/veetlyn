@@ -122,17 +122,21 @@ function parseMoney(value: unknown): PayPalMoney | undefined {
     : undefined;
 }
 
+// A fee that is present but unreadable makes the whole breakdown unknown: dropping it would later record
+// the fee as zero.
 function parseBreakdown(value: unknown): PayPalCaptureBreakdown | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const record = value as Record<string, unknown>;
-  const fees = Array.isArray(record.platform_fees) ? record.platform_fees : [];
-  return {
-    paypal_fee: parseMoney(record.paypal_fee),
-    platform_fees: fees.flatMap((fee) => {
-      const amount = typeof fee === "object" && fee !== null ? parseMoney((fee as Record<string, unknown>).amount) : undefined;
-      return amount ? [{ amount }] : [];
-    }),
-  };
+  const paypalFee = parseMoney(record.paypal_fee);
+  if (record.paypal_fee !== undefined && !paypalFee) return undefined;
+  if (record.platform_fees !== undefined && !Array.isArray(record.platform_fees)) return undefined;
+  const platformFees: { amount: PayPalMoney }[] = [];
+  for (const fee of record.platform_fees ?? []) {
+    const amount = typeof fee === "object" && fee !== null ? parseMoney((fee as Record<string, unknown>).amount) : undefined;
+    if (!amount) return undefined;
+    platformFees.push({ amount });
+  }
+  return { paypal_fee: paypalFee, platform_fees: platformFees };
 }
 
 function parseCapture(value: unknown): PayPalCapture | null {

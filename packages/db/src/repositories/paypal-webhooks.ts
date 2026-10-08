@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { type PayPalWebhookEventStatus, paypalWebhookEvent } from "../schema/paypal-webhooks";
@@ -14,6 +14,8 @@ export type PayPalWebhookEventInput = {
 };
 
 export type PayPalWebhookEventRow = typeof paypalWebhookEvent.$inferSelect;
+
+const MAX_NOTE_LENGTH = 500;
 
 // PayPal redelivers until it gets a 2xx; the event id makes every redelivery a no-op. Returns the stored status,
 // so the caller enqueues only events still waiting.
@@ -34,23 +36,27 @@ export async function findWebhookEvent(db: DbExecutor, id: string): Promise<PayP
   return row ?? null;
 }
 
+// Only an event still "received" changes: two queue messages for the same event can be in flight, and a slow
+// retry must not turn a processed event into a failed one. Returns whether this call finished it.
 export async function finishWebhookEvent(
   db: DbExecutor,
   id: string,
   outcome: { status: Exclude<PayPalWebhookEventStatus, "received">; note?: string },
-): Promise<void> {
-  await db
+): Promise<boolean> {
+  const rows = await db
     .update(paypalWebhookEvent)
-    .set({ status: outcome.status, note: outcome.note ?? null, processedAt: new Date() })
-    .where(eq(paypalWebhookEvent.id, id));
+    .set({ status: outcome.status, note: outcome.note?.slice(0, MAX_NOTE_LENGTH) ?? null, processedAt: new Date() })
+    .where(and(eq(paypalWebhookEvent.id, id), eq(paypalWebhookEvent.status, "received")))
+    .returning({ id: paypalWebhookEvent.id });
+  return rows.length > 0;
 }
 
-// Returns the attempt count after this one.
-export async function noteWebhookAttempt(db: DbExecutor, id: string, error: string): Promise<number> {
+// Returns the attempt count after this one, or null when the event is no longer "received".
+export async function noteWebhookAttempt(db: DbExecutor, id: string, error: string): Promise<number | null> {
   const [row] = await db
     .update(paypalWebhookEvent)
-    .set({ attempts: sql`${paypalWebhookEvent.attempts} + 1`, note: error.slice(0, 500) })
-    .where(eq(paypalWebhookEvent.id, id))
+    .set({ attempts: sql`${paypalWebhookEvent.attempts} + 1`, note: error.slice(0, MAX_NOTE_LENGTH) })
+    .where(and(eq(paypalWebhookEvent.id, id), eq(paypalWebhookEvent.status, "received")))
     .returning({ attempts: paypalWebhookEvent.attempts });
-  return row?.attempts ?? 0;
+  return row?.attempts ?? null;
 }

@@ -231,9 +231,56 @@ describe("captureFromOrder", () => {
         { payments: { captures: [{ id: "C", status: "COMPLETED", seller_receivable_breakdown: { paypal_fee: { value: 4.98 } } }] } },
       ],
     };
-    expect(captureFromOrder(malformed as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual({
-      paypal_fee: undefined,
-      platform_fees: [],
+    expect(captureFromOrder(malformed as unknown as PayPalOrder)?.seller_receivable_breakdown).toBeUndefined();
+  });
+
+  it("drops the whole breakdown when one platform fee is malformed", () => {
+    const malformed = {
+      id: "ORDER1",
+      status: "COMPLETED",
+      purchase_units: [
+        {
+          payments: {
+            captures: [
+              {
+                id: "C",
+                status: "COMPLETED",
+                seller_receivable_breakdown: {
+                  paypal_fee: { currency_code: "USD", value: "4.98" },
+                  platform_fees: [{ amount: { currency_code: "USD", value: "1.20" } }, { amount: { value: 1 } }],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    expect(captureFromOrder(malformed as unknown as PayPalOrder)?.seller_receivable_breakdown).toBeUndefined();
+  });
+
+  it("reads a breakdown without platform fees as no platform fee", () => {
+    const breakdown = (platformFees?: unknown[]) => ({
+      id: "ORDER1",
+      status: "COMPLETED",
+      purchase_units: [
+        {
+          payments: {
+            captures: [
+              {
+                id: "C",
+                status: "COMPLETED",
+                seller_receivable_breakdown: {
+                  paypal_fee: { currency_code: "USD", value: "4.98" },
+                  ...(platformFees ? { platform_fees: platformFees } : {}),
+                },
+              },
+            ],
+          },
+        },
+      ],
     });
+    const expected = { paypal_fee: { currency_code: "USD", value: "4.98" }, platform_fees: [] };
+    expect(captureFromOrder(breakdown() as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual(expected);
+    expect(captureFromOrder(breakdown([]) as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual(expected);
   });
 });

@@ -37,4 +37,21 @@ describe.skipIf(!hasTestDatabase)("paypal webhook events", () => {
     expect(await findWebhookEvent(db, "WH-1")).toMatchObject({ status: "received", attempts: 2, note: "PayPal 503 again" });
     expect(await findWebhookEvent(db, "WH-404")).toBeNull();
   });
+
+  it("leaves a finished event alone when a slower retry finishes it or notes an attempt", async () => {
+    await recordWebhookEvent(db, EVENT);
+    await noteWebhookAttempt(db, "WH-1", "PayPal 503");
+    expect(await finishWebhookEvent(db, "WH-1", { status: "processed", note: "applied" })).toBe(true);
+    expect(await finishWebhookEvent(db, "WH-1", { status: "failed", note: "out of retries" })).toBe(false);
+    expect(await noteWebhookAttempt(db, "WH-1", "PayPal 503 again")).toBeNull();
+    expect(await findWebhookEvent(db, "WH-1")).toMatchObject({ status: "processed", note: "applied", attempts: 1 });
+  });
+
+  it("keeps notes to 500 characters", async () => {
+    await recordWebhookEvent(db, EVENT);
+    await noteWebhookAttempt(db, "WH-1", "x".repeat(600));
+    expect((await findWebhookEvent(db, "WH-1"))?.note).toHaveLength(500);
+    await finishWebhookEvent(db, "WH-1", { status: "parked", note: "y".repeat(600) });
+    expect((await findWebhookEvent(db, "WH-1"))?.note).toBe("y".repeat(500));
+  });
 });

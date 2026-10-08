@@ -42,6 +42,8 @@ describe("webhooks.verifySignature", () => {
         rawBody +
         "}",
     );
+    // A fresh id per call: keyed on the transmission alone, an idempotent replay could answer for another body.
+    expect(call.headers.get("PayPal-Request-Id")).toMatch(/^verify:[0-9a-f-]{36}$/);
   });
 
   it("reports a failed verification", async () => {
@@ -90,6 +92,41 @@ describe("parseWebhookEvent", () => {
       resourceId: "ORDER1",
       customId: "pay-1",
       orderId: "ORDER1",
+      merchantId: "SELLER1",
+    });
+  });
+
+  it("reads the order ids of any event whose resource is an order", () => {
+    expect(
+      parseWebhookEvent({
+        id: "WH-4",
+        event_type: "CHECKOUT.PAYMENT-APPROVAL.REVERSED",
+        resource_type: "checkout-order",
+        resource: { id: "ORDER1", purchase_units: [{ custom_id: "pay-1", payee: { merchant_id: "SELLER1" } }] },
+      }),
+    ).toMatchObject({ resourceId: "ORDER1", customId: "pay-1", orderId: "ORDER1", merchantId: "SELLER1" });
+  });
+
+  it("reads a refund's seller from its payer and not its custom_id", () => {
+    expect(
+      parseWebhookEvent({
+        id: "WH-5",
+        event_type: "PAYMENT.CAPTURE.REFUNDED",
+        resource_type: "refund",
+        resource: {
+          id: "REFUND1",
+          custom_id: "refund-own-value",
+          payer: { merchant_id: "SELLER1" },
+          links: [{ rel: "up", href: "https://api.sandbox.paypal.com/v2/payments/captures/CAPTURE1" }],
+        },
+      }),
+    ).toEqual({
+      id: "WH-5",
+      eventType: "PAYMENT.CAPTURE.REFUNDED",
+      resourceType: "refund",
+      resourceId: "REFUND1",
+      customId: null,
+      orderId: null,
       merchantId: "SELLER1",
     });
   });
