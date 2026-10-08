@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { type PayPalWebhookEventStatus, paypalWebhookEvent } from "../schema/paypal-webhooks";
@@ -59,4 +59,27 @@ export async function noteWebhookAttempt(db: DbExecutor, id: string, error: stri
     .where(and(eq(paypalWebhookEvent.id, id), eq(paypalWebhookEvent.status, "received")))
     .returning({ attempts: paypalWebhookEvent.attempts });
   return row?.attempts ?? null;
+}
+
+// Events the queue never finished (a lost message, or the consumer was down), oldest first, for re-sending.
+export async function listStaleWebhookEvents(
+  db: DbExecutor,
+  input: { receivedBefore: Date; limit: number },
+): Promise<string[]> {
+  const rows = await db
+    .select({ id: paypalWebhookEvent.id })
+    .from(paypalWebhookEvent)
+    .where(and(eq(paypalWebhookEvent.status, "received"), lt(paypalWebhookEvent.receivedAt, input.receivedBefore)))
+    .orderBy(asc(paypalWebhookEvent.receivedAt))
+    .limit(input.limit);
+  return rows.map((row) => row.id);
+}
+
+export async function failStuckWebhookEvents(db: DbExecutor, input: { receivedBefore: Date; note: string }): Promise<number> {
+  const rows = await db
+    .update(paypalWebhookEvent)
+    .set({ status: "failed", note: input.note.slice(0, MAX_NOTE_LENGTH), processedAt: new Date() })
+    .where(and(eq(paypalWebhookEvent.status, "received"), lt(paypalWebhookEvent.receivedAt, input.receivedBefore)))
+    .returning({ id: paypalWebhookEvent.id });
+  return rows.length;
 }

@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { lt, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { requestLimit } from "../schema/limits";
@@ -24,4 +24,12 @@ export async function hitRequestLimit(
     .returning({ count: requestLimit.count });
   if (!row) throw new Error("Upsert into request_limit returned no row");
   return row.count <= input.max;
+}
+
+export async function deleteExpiredRequestLimits(db: DbExecutor, input: { windowStartedBefore: number }): Promise<number> {
+  const rows = await db
+    .delete(requestLimit)
+    .where(lt(requestLimit.windowStart, input.windowStartedBefore))
+    .returning({ key: requestLimit.key });
+  return rows.length;
 }

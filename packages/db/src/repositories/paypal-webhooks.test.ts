@@ -1,7 +1,15 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { type PayPalWebhookEventStatus, paypalWebhookEvent } from "../schema/paypal-webhooks";
 import { createTestDb, hasTestDatabase, truncateAll } from "../testing/db";
-import { findWebhookEvent, finishWebhookEvent, noteWebhookAttempt, recordWebhookEvent } from "./paypal-webhooks";
+import {
+  failStuckWebhookEvents,
+  findWebhookEvent,
+  finishWebhookEvent,
+  listStaleWebhookEvents,
+  noteWebhookAttempt,
+  recordWebhookEvent,
+} from "./paypal-webhooks";
 
 const EVENT = {
   id: "WH-1",
@@ -53,5 +61,46 @@ describe.skipIf(!hasTestDatabase)("paypal webhook events", () => {
     expect((await findWebhookEvent(db, "WH-1"))?.note).toHaveLength(500);
     await finishWebhookEvent(db, "WH-1", { status: "parked", note: "y".repeat(600) });
     expect((await findWebhookEvent(db, "WH-1"))?.note).toBe("y".repeat(500));
+  });
+
+  describe("sweeps", () => {
+    const NOW = new Date("2026-03-01T12:00:00Z");
+    const minutesAgo = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000);
+
+    async function seedEvent(id: string, receivedAt: Date, status: PayPalWebhookEventStatus = "received") {
+      await db.insert(paypalWebhookEvent).values({ ...EVENT, id, receivedAt, status });
+    }
+
+    it("lists received events older than the cutoff, oldest first, up to the limit", async () => {
+      await seedEvent("WH-new", minutesAgo(5));
+      await seedEvent("WH-20", minutesAgo(20));
+      await seedEvent("WH-60", minutesAgo(60));
+      await seedEvent("WH-30", minutesAgo(30));
+      await seedEvent("WH-processed", minutesAgo(90), "processed");
+      await seedEvent("WH-parked", minutesAgo(90), "parked");
+
+      expect(await listStaleWebhookEvents(db, { receivedBefore: minutesAgo(15), limit: 10 })).toEqual([
+        "WH-60",
+        "WH-30",
+        "WH-20",
+      ]);
+      expect(await listStaleWebhookEvents(db, { receivedBefore: minutesAgo(15), limit: 2 })).toEqual(["WH-60", "WH-30"]);
+    });
+
+    it("fails received events older than the cutoff and leaves the rest alone", async () => {
+      await seedEvent("WH-old", minutesAgo(5_000));
+      await seedEvent("WH-older", minutesAgo(6_000));
+      await seedEvent("WH-recent", minutesAgo(20));
+      await seedEvent("WH-processed", minutesAgo(6_000), "processed");
+
+      expect(await failStuckWebhookEvents(db, { receivedBefore: minutesAgo(4_320), note: "Stuck." })).toBe(2);
+
+      for (const id of ["WH-old", "WH-older"]) {
+        expect(await findWebhookEvent(db, id)).toMatchObject({ status: "failed", note: "Stuck.", processedAt: expect.any(Date) });
+      }
+      expect(await findWebhookEvent(db, "WH-recent")).toMatchObject({ status: "received", note: null, processedAt: null });
+      expect(await findWebhookEvent(db, "WH-processed")).toMatchObject({ status: "processed", note: null });
+      expect(await failStuckWebhookEvents(db, { receivedBefore: minutesAgo(4_320), note: "Stuck." })).toBe(0);
+    });
   });
 });

@@ -5,7 +5,11 @@ import { z } from "zod";
 // The subset of R2Bucket this adapter uses; a real R2Bucket satisfies it.
 export interface SizedBucket {
   head(key: string): Promise<{ size: number } | null>;
+  delete(keys: string[]): Promise<void>;
 }
+
+// R2Bucket.delete takes at most 1000 keys per call.
+const DELETE_BATCH = 1000;
 
 // Cloudflare.R2.S3Credentials value (alchemy): path-style addressing, `{endpoint}/{bucketName}/{key}`.
 const s3CredentialsSchema = z.object({
@@ -76,6 +80,11 @@ export function createR2FileStore(bucket: SizedBucket, credentialsJson: string):
     async head(key) {
       const object = await bucket.head(key);
       return object ? { sizeBytes: object.size } : null;
+    },
+    async delete(keys) {
+      for (let start = 0; start < keys.length; start += DELETE_BATCH) {
+        await bucket.delete(keys.slice(start, start + DELETE_BATCH));
+      }
     },
   };
 }

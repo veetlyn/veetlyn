@@ -7,15 +7,18 @@ export function createFakeFileStore(): FileStore & {
   objects: Map<string, number>;
   puts: PresignPutInput[];
   gets: PresignGetInput[];
+  deletes: string[][];
   put(key: string, sizeBytes: number): void;
 } {
   const objects = new Map<string, number>();
   const puts: PresignPutInput[] = [];
   const gets: PresignGetInput[] = [];
+  const deletes: string[][] = [];
   return {
     objects,
     puts,
     gets,
+    deletes,
     put(key, sizeBytes) {
       objects.set(key, sizeBytes);
     },
@@ -30,6 +33,10 @@ export function createFakeFileStore(): FileStore & {
     async head(key) {
       const sizeBytes = objects.get(key);
       return sizeBytes === undefined ? null : { sizeBytes };
+    },
+    async delete(keys) {
+      deletes.push([...keys]);
+      for (const key of keys) objects.delete(key);
     },
   };
 }

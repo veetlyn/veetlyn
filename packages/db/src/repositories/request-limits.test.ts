@@ -3,10 +3,11 @@ import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { relations } from "../relations";
+import { requestLimit } from "../schema/limits";
 import { createTestDb, hasTestDatabase, truncateAll } from "../testing/db";
-import { hitRequestLimit } from "./request-limits";
+import { deleteExpiredRequestLimits, hitRequestLimit } from "./request-limits";
 
-describe.skipIf(!hasTestDatabase)("hitRequestLimit", () => {
+describe.skipIf(!hasTestDatabase)("request limits", () => {
   const db = createTestDb();
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
@@ -32,5 +33,17 @@ describe.skipIf(!hasTestDatabase)("hitRequestLimit", () => {
       await client.end();
     }
     expect(await hitRequestLimit(db, { ...limit, key: "pay-start:p2", now: 1_000 })).toBe(true);
+  });
+
+  it("deletes windows that started before the cutoff", async () => {
+    await db.insert(requestLimit).values([
+      { key: "old-1", windowStart: 1_000, count: 3 },
+      { key: "old-2", windowStart: 4_999, count: 1 },
+      { key: "current", windowStart: 5_000, count: 2 },
+    ]);
+
+    expect(await deleteExpiredRequestLimits(db, { windowStartedBefore: 5_000 })).toBe(2);
+
+    expect(await db.select({ key: requestLimit.key }).from(requestLimit)).toEqual([{ key: "current" }]);
   });
 });
