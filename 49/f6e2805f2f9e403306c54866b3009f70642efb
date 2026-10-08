@@ -1,0 +1,20 @@
+packages/email/src/templates.ts
+  s_d8d0f67a017e70::t_f092fdfcd70eb3 20
+  s_d8d0f67a017e70::t_72800ed1c4ae78 32-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "49f6e2805f2f9e403306c54866b3009f70642efb",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
