@@ -178,6 +178,9 @@ export async function assignFreelancer(
   input: { projectId: string; freelancerId: string },
 ): Promise<void> {
   if (!canAssignFreelancer(actor.role)) fail("FORBIDDEN", "Only admins and managers assign freelancers.");
+  const settings = await getServicesTeamSettings(db, actor.teamId);
+  if (!settings) fail("NOT_FOUND", "Services team settings not found.");
+  if (settings.solo) fail("BAD_REQUEST", "A solo seller does the work; there is no one to assign.");
   await runProjectTransaction(db, async (tx, uow) => {
     const row = await requireTeamProject(tx, actor, input.projectId);
     checkTransition(row.status, "assign_freelancer");

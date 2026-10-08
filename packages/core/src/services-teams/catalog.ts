@@ -41,7 +41,7 @@ export function validateOfferingDraft(draft: OfferingDraft): OfferingProblem[] {
     problems.push({ field: "description", message: `Keep the description under ${MAX_OFFERING_DESCRIPTION} characters.` });
   }
   if (!isWholeMinor(draft.priceMinMinor) || !isWholeMinor(draft.priceMaxMinor)) {
-    problems.push({ field: "price", message: "Enter both prices as whole amounts." });
+    problems.push({ field: "price", message: "Enter both prices as amounts, for example 150 or 19.99." });
   } else if (draft.priceMaxMinor < draft.priceMinMinor) {
     problems.push({ field: "price", message: "The top of the range cannot be below its bottom." });
   }

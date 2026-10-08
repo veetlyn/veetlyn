@@ -248,6 +248,27 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
   });
 
+  it("refuses assignment on a solo team, while the client's acceptance still assigns the seller", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    const caller = callerFor(userId);
+    const { projectId } = await caller.project.create({
+      teamSlug: "solo",
+      title: "Solo site",
+      clientEmail: "client@example.com",
+    });
+
+    await expect(caller.project.assign({ teamSlug: "solo", projectId, freelancerId: userId })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "A solo seller does the work; there is no one to assign.",
+    });
+    expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBeNull();
+
+    const { quoteId } = await caller.project.addQuote({ teamSlug: "solo", projectId, items: ITEMS, deliveryDays: 14 });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    expect(await findProjectById(db, projectId)).toMatchObject({ status: "awaiting_deposit", assignedFreelancerId: userId });
+  });
+
   it("lets the workspace owner be assigned and quote without a services team member row", async () => {
     const { userId } = await seedServicesTeamWithAdmin(db);
     const { projectId } = await createProject(userId);
