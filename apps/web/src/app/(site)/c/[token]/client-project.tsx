@@ -7,8 +7,9 @@ import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
+import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
-import { deliveryStatusLabel, newestFirst } from "@/lib/delivery";
+import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
 import { trpc } from "@/utils/trpc";
 
 // The client project page (services spec §5.2): the signed link is the credential, so this page
@@ -50,10 +51,11 @@ export default function ClientProject({ token }: { token: string }) {
   const awaitingDelivery = project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
   const deliveryBusy = acceptDelivery.isPending || requestChanges.isPending;
   const deliveryError = acceptDelivery.error ?? requestChanges.error;
+  const changesNoteTooLong = changesNote.trim().length > MAX_DELIVERY_NOTE;
 
   function handleRequestChanges(event: FormEvent<HTMLFormElement>, deliveryId: string) {
     event.preventDefault();
-    if (changesNote.trim() === "" || deliveryBusy) return;
+    if (changesNote.trim() === "" || changesNoteTooLong || deliveryBusy) return;
     requestChanges.mutate({ token, deliveryId, note: changesNote });
   }
   const actionError = acceptQuote.error ?? acceptAmendment.error ?? declineAmendment.error;
@@ -156,16 +158,7 @@ export default function ClientProject({ token }: { token: string }) {
                 <span className="text-muted-foreground">{deliveryStatusLabel(delivery.status)}</span>
               </div>
               {delivery.note ? <p className="text-sm whitespace-pre-wrap">{delivery.note}</p> : null}
-              {delivery.link ? (
-                <a
-                  href={delivery.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-sm underline underline-offset-4 break-all"
-                >
-                  {delivery.link}
-                </a>
-              ) : null}
+              <DeliveryLink link={delivery.link} className="text-sm" />
               {delivery.status === "changes_requested" && delivery.clientNote ? (
                 <div className="rounded-md bg-muted p-3 text-sm">
                   <p className="font-medium">Your request</p>
@@ -180,15 +173,30 @@ export default function ClientProject({ token }: { token: string }) {
                       <Textarea
                         id={`changes-note-${delivery.id}`}
                         rows={4}
+                        autoFocus
+                        aria-describedby={changesNoteTooLong ? `changes-note-problem-${delivery.id}` : undefined}
                         value={changesNote}
                         onChange={(e) => setChangesNote(e.target.value)}
                       />
                     </div>
+                    {changesNoteTooLong ? (
+                      <p id={`changes-note-problem-${delivery.id}`} role="alert" className="text-sm text-destructive">
+                        The note is too long.
+                      </p>
+                    ) : null}
                     <div className="flex gap-2">
-                      <Button type="submit" disabled={changesNote.trim() === "" || deliveryBusy}>
+                      <Button type="submit" disabled={changesNote.trim() === "" || changesNoteTooLong || deliveryBusy}>
                         Send request
                       </Button>
-                      <Button type="button" variant="outline" disabled={deliveryBusy} onClick={() => setChangesOpen(false)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={deliveryBusy}
+                        onClick={() => {
+                          requestChanges.reset();
+                          setChangesOpen(false);
+                        }}
+                      >
                         Cancel
                       </Button>
                     </div>
@@ -198,7 +206,15 @@ export default function ClientProject({ token }: { token: string }) {
                     <Button disabled={deliveryBusy} onClick={() => acceptDelivery.mutate({ token, deliveryId: delivery.id })}>
                       Accept delivery
                     </Button>
-                    <Button variant="outline" disabled={deliveryBusy} onClick={() => setChangesOpen(true)}>
+                    <Button
+                      variant="outline"
+                      disabled={deliveryBusy}
+                      onClick={() => {
+                        acceptDelivery.reset();
+                        requestChanges.reset();
+                        setChangesOpen(true);
+                      }}
+                    >
                       Request changes
                     </Button>
                   </div>

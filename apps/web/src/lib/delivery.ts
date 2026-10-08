@@ -2,24 +2,30 @@ import type { DeliveryStatus } from "@jendal-workspace/core";
 
 // Mirrors the server's delivery rules (packages/api/src/use-cases/projects.ts) so the form can
 // explain a refusal before submitting.
-const MAX_DELIVERY_NOTE = 5_000;
+export const MAX_DELIVERY_NOTE = 5_000;
 const MAX_DELIVERY_LINK = 2_000;
+
+function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export function deliveryDraftProblem(draft: { note: string; link: string }): string | null {
   const note = draft.note.trim();
   const link = draft.link.trim();
   if (!note && !link) return "Add a note or a link.";
   if (note.length > MAX_DELIVERY_NOTE) return "The note is too long.";
-  if (link) {
-    let protocol: string | null = null;
-    try {
-      protocol = new URL(link).protocol;
-    } catch {
-      protocol = null;
-    }
-    if (protocol !== "https:" || link.length > MAX_DELIVERY_LINK) return "Use an https link.";
-  }
+  if (link && (!isHttpsUrl(link) || link.length > MAX_DELIVERY_LINK)) return "Use an https link.";
   return null;
+}
+
+// Stored links are rendered as anchors; re-checking keeps a javascript: or http link out of href
+// even if one ever reaches the database.
+export function safeHttpsLink(link: string | null): string | null {
+  return link !== null && isHttpsUrl(link) ? link : null;
 }
 
 const CLIENT_LABELS: Record<DeliveryStatus, string> = {

@@ -26,6 +26,7 @@ import { type FormEvent, useState } from "react";
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { trpc } from "@/utils/trpc";
@@ -183,6 +184,7 @@ export default function ProjectDetail({
   const deliveryProblem = deliveryDraftProblem({ note: deliveryNote, link: deliveryLink });
   // An untouched form only disables the button; the hint appears once something is typed.
   const deliveryDraftTouched = deliveryNote !== "" || deliveryLink !== "";
+  const deliveryHint = deliveryDraftTouched ? deliveryProblem : null;
 
   function handleAssign(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -374,11 +376,7 @@ export default function ProjectDetail({
               <span className="text-muted-foreground">{deliveryStaffStatusLabel(delivery.status)}</span>
             </div>
             {delivery.note ? <p className="whitespace-pre-wrap">{delivery.note}</p> : null}
-            {delivery.link ? (
-              <a href={delivery.link} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 break-all">
-                {delivery.link}
-              </a>
-            ) : null}
+            <DeliveryLink link={delivery.link} />
             {delivery.status === "changes_requested" && delivery.clientNote ? (
               <div className="rounded-md bg-muted p-3">
                 <p className="font-medium">The client asked for changes</p>
@@ -395,12 +393,19 @@ export default function ProjectDetail({
             <h3 className="font-medium">Deliver</h3>
             <div className="space-y-2">
               <Label htmlFor="delivery-note">Note for the client</Label>
-              <Textarea id="delivery-note" rows={4} value={deliveryNote} onChange={(e) => setDeliveryNote(e.target.value)} />
+              <Textarea
+                id="delivery-note"
+                rows={4}
+                aria-describedby={deliveryHint ? "delivery-problem" : undefined}
+                value={deliveryNote}
+                onChange={(e) => setDeliveryNote(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="delivery-link">Link</Label>
               <Input
                 id="delivery-link"
+                aria-describedby={deliveryHint ? "delivery-problem" : undefined}
                 inputMode="url"
                 placeholder="https://"
                 value={deliveryLink}
@@ -410,7 +415,10 @@ export default function ProjectDetail({
             <Button type="submit" disabled={deliveryProblem !== null || deliver.isPending}>
               Submit delivery
             </Button>
-            {deliveryDraftTouched && deliveryProblem ? <p className="text-sm text-destructive">{deliveryProblem}</p> : null}
+            {/* Always mounted so screen readers pick up the message when it appears. */}
+            <p id="delivery-problem" aria-live="polite" className="text-sm text-destructive empty:hidden">
+              {deliveryHint}
+            </p>
             {deliver.error ? (
               <p role="alert" className="text-sm text-destructive">
                 {deliver.error.message}
@@ -438,7 +446,7 @@ export default function ProjectDetail({
               ))}
             </ul>
             {payment.status === "pending" ? (
-              <p className="mt-2 text-muted-foreground">Waiting for the client. Payment capture ships in a later plan.</p>
+              <p className="mt-2 text-muted-foreground">Waiting for the client to pay.</p>
             ) : null}
           </div>
         ))}

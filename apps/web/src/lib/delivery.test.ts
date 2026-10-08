@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deliveryDraftProblem, deliveryStaffStatusLabel, deliveryStatusLabel, newestFirst } from "./delivery";
+import { deliveryDraftProblem, deliveryStaffStatusLabel, deliveryStatusLabel, newestFirst, safeHttpsLink } from "./delivery";
 
 describe("deliveryDraftProblem", () => {
   it("needs a note or an https link", () => {
@@ -53,5 +53,15 @@ describe("newestFirst", () => {
     ];
     expect(newestFirst(input).map((d) => d.id)).toEqual(["c", "b", "a"]);
     expect(input.map((d) => d.id)).toEqual(["a", "c", "b"]);
+  });
+});
+
+describe("safeHttpsLink", () => {
+  it("keeps https links and drops anything else", () => {
+    expect(safeHttpsLink("https://figma.com/file/1")).toBe("https://figma.com/file/1");
+    expect(safeHttpsLink("javascript:alert(1)")).toBeNull();
+    expect(safeHttpsLink("http://figma.com")).toBeNull();
+    expect(safeHttpsLink("not a url")).toBeNull();
+    expect(safeHttpsLink(null)).toBeNull();
   });
 });
