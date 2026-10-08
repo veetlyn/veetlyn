@@ -11,11 +11,16 @@ const CREDENTIALS = JSON.stringify({
   secretAccessKey: "secret",
 });
 
-function fakeBucket(objects: Record<string, number> = {}): SizedBucket {
+function fakeBucket(objects: Record<string, number> = {}): SizedBucket & { deletes: string[][] } {
+  const deletes: string[][] = [];
   return {
+    deletes,
     async head(key) {
       const size = objects[key];
       return size === undefined ? null : { size };
+    },
+    async delete(keys) {
+      deletes.push([...keys]);
     },
   };
 }
@@ -93,6 +98,27 @@ describe("createR2FileStore", () => {
     it("returns null for a missing object", async () => {
       const store = createR2FileStore(fakeBucket(), CREDENTIALS);
       expect(await store.head("missing")).toBeNull();
+    });
+  });
+
+  describe("delete", () => {
+    it("deletes the objects from the bucket", async () => {
+      const bucket = fakeBucket();
+      await createR2FileStore(bucket, CREDENTIALS).delete(["a", "b"]);
+      expect(bucket.deletes).toEqual([["a", "b"]]);
+    });
+
+    it("deletes at most 1000 keys per bucket call", async () => {
+      const bucket = fakeBucket();
+      const keys = Array.from({ length: 1001 }, (_, index) => `k${index}`);
+      await createR2FileStore(bucket, CREDENTIALS).delete(keys);
+      expect(bucket.deletes).toEqual([keys.slice(0, 1000), ["k1000"]]);
+    });
+
+    it("does not call the bucket without keys", async () => {
+      const bucket = fakeBucket();
+      await createR2FileStore(bucket, CREDENTIALS).delete([]);
+      expect(bucket.deletes).toEqual([]);
     });
   });
 

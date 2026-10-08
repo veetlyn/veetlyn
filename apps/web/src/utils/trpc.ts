@@ -4,9 +4,17 @@ import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { toast } from "sonner";
 
+declare module "@tanstack/react-query" {
+  interface Register {
+    queryMeta: { quietRefetchErrors?: boolean };
+  }
+}
+
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
+      // A polled page keeps its last data on a failed poll; a toast per missed poll would pile up.
+      if (query.meta?.quietRefetchErrors === true && query.state.data !== undefined) return;
       toast.error(error.message, {
         action: {
           label: "retry",

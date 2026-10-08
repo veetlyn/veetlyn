@@ -18,6 +18,7 @@ export default function PayPage({ token }: { token: string }) {
     retry: false,
     // A pending capture settles on PayPal's side; check back until it does.
     refetchInterval: (query) => (query.state.data?.payment.processing ? 5_000 : false),
+    meta: { quietRefetchErrors: true },
   });
   const statusRef = useRef<HTMLParagraphElement>(null);
   const previousView = useRef<PayPageState["view"] | null>(null);

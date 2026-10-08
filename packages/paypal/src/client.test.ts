@@ -193,6 +193,100 @@ describe("retries", () => {
   });
 });
 
+describe("revoked token", () => {
+  function tokenCalls(requests: ReturnType<typeof fakeFetch>["requests"]) {
+    return requests.filter((r) => r.url.endsWith("/v1/oauth2/token"));
+  }
+
+  function fakeWithApiStatuses(statuses: number[]) {
+    let tokenCount = 0;
+    let apiCount = 0;
+    return fakeFetch((request) => {
+      if (request.url.endsWith("/v1/oauth2/token")) {
+        tokenCount += 1;
+        return jsonResponse(200, { access_token: `token-${tokenCount}`, expires_in: 32400 });
+      }
+      const status = statuses[apiCount] ?? 200;
+      apiCount += 1;
+      return status === 401
+        ? jsonResponse(401, { name: "AUTHENTICATION_FAILURE", message: "Authentication failed.", debug_id: "d401" })
+        : jsonResponse(status, { ok: true });
+    });
+  }
+
+  it("clears the cached token, fetches a new one and repeats the call once after a 401", async () => {
+    const { requests, fetch } = fakeWithApiStatuses([401, 200]);
+    const client = clientWith(fetch);
+
+    await expect(client.request({ method: "GET", path: "/v1/example" })).resolves.toEqual({ ok: true });
+
+    expect(tokenCalls(requests)).toHaveLength(2);
+    expect(recordedAt(requests, 1).headers.get("authorization")).toBe("Bearer token-1");
+    expect(recordedAt(requests, 3).headers.get("authorization")).toBe("Bearer token-2");
+
+    await client.request({ method: "GET", path: "/v1/example" });
+    expect(tokenCalls(requests)).toHaveLength(2);
+    expect(recordedAt(requests, 4).headers.get("authorization")).toBe("Bearer token-2");
+  });
+
+  it("clears the configured token cache before fetching the new token", async () => {
+    const events: string[] = [];
+    let stored: { accessToken: string; expiresAt: number } | null = null;
+    const tokenCache = {
+      async get() {
+        events.push("get");
+        return stored;
+      },
+      async set(token: { accessToken: string; expiresAt: number }) {
+        events.push(`set:${token.accessToken}`);
+        stored = token;
+      },
+      async clear() {
+        events.push("clear");
+        stored = null;
+      },
+    };
+    const { fetch } = fakeWithApiStatuses([401, 200]);
+
+    await clientWith(fetch, { tokenCache }).request({ method: "GET", path: "/v1/example" });
+
+    expect(events).toEqual(["get", "set:token-1", "clear", "set:token-2"]);
+  });
+
+  it("throws the usual PayPalError when the repeat also gets a 401, without a third token", async () => {
+    const { requests, fetch } = fakeWithApiStatuses([401, 401, 200]);
+
+    const error = await clientWith(fetch).request({ method: "GET", path: "/v1/example" }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(PayPalError);
+    expect(error).toMatchObject({ status: 401, name: "AUTHENTICATION_FAILURE", debugId: "d401" });
+    expect(tokenCalls(requests)).toHaveLength(2);
+    expect(requests).toHaveLength(4);
+  });
+
+  it("does not retry a 401 from the token endpoint", async () => {
+    const { requests, fetch } = fakeFetch(() =>
+      jsonResponse(401, { name: "AUTHENTICATION_FAILURE", message: "Authentication failed.", debug_id: "d1" }),
+    );
+
+    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/example" })).rejects.toMatchObject({ status: 401 });
+    expect(requests).toHaveLength(1);
+  });
+
+  it("keeps the PayPal-Request-Id and body when a POST is repeated", async () => {
+    const { requests, fetch } = fakeWithApiStatuses([401, 200]);
+
+    await clientWith(fetch).request({ method: "POST", path: "/v2/example", body: { a: 1 }, requestId: "req-401" });
+
+    const first = recordedAt(requests, 1);
+    const repeat = recordedAt(requests, 3);
+    expect(first.headers.get("paypal-request-id")).toBe("req-401");
+    expect(repeat.headers.get("paypal-request-id")).toBe("req-401");
+    expect(repeat.body).toBe(JSON.stringify({ a: 1 }));
+    expect(repeat.headers.get("authorization")).toBe("Bearer token-2");
+  });
+});
+
 describe("error mapping", () => {
   it("carries status, debug id, name and details", async () => {
     const { fetch } = fakeFetch((request) =>

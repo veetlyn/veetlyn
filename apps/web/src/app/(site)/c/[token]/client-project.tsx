@@ -11,13 +11,20 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
+import { clientWaitsOnTeam, isNotFoundError, PROJECT_REFRESH_MS } from "@/lib/project-refresh";
 import { trpc, trpcClient } from "@/utils/trpc";
 
 // The client project page (services spec §5.2): the signed link is the credential, so this page
 // works without an account. Accepting a quote or an amendment is one click from here.
 export default function ClientProject({ token }: { token: string }) {
   const queryClient = useQueryClient();
-  const view = useQuery({ ...trpc.project.clientGet.queryOptions({ token }), retry: false });
+  const view = useQuery({
+    ...trpc.project.clientGet.queryOptions({ token }),
+    retry: false,
+    refetchInterval: (query) =>
+      query.state.data && !isNotFoundError(query.state.error) && clientWaitsOnTeam(query.state.data) ? PROJECT_REFRESH_MS : false,
+    meta: { quietRefetchErrors: true },
+  });
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.project.clientGet.queryOptions({ token }).queryKey });
 
   const acceptQuote = useMutation(trpc.project.clientAcceptQuote.mutationOptions({ onSuccess: refresh }));
@@ -37,7 +44,8 @@ export default function ClientProject({ token }: { token: string }) {
   );
 
   if (view.isPending) return <Loader />;
-  if (view.isError) {
+  // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
+  if (!view.data) {
     return (
       <main className="container mx-auto max-w-2xl space-y-4 px-4 py-16">
         <h1 className="text-2xl font-semibold">This link is not valid</h1>

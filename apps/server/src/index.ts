@@ -17,12 +17,13 @@ import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
 import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
+import { runMaintenance } from "./maintenance";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
 import { storeInfoRoute } from "./routes/store-info";
-import { createAuth, getDb, getPayPalServices } from "./services";
+import { createAuth, createFileStore, getDb, getPayPalServices } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 import { tenantMiddleware } from "./tenant/middleware";
 import { trpcErrorContext } from "./trpc-error-log";
@@ -112,6 +113,19 @@ export default {
         },
         finish: (eventId, outcome) => finishWebhookEvent(db, eventId, outcome),
         noteAttempt: (eventId, error) => noteWebhookAttempt(db, eventId, error),
+      });
+    } finally {
+      ctx.waitUntil(db.$client.end());
+    }
+  },
+  async scheduled(_controller, _env, ctx) {
+    const db = getDb();
+    try {
+      await runMaintenance({
+        db,
+        enqueueWebhookEvents: (eventIds) =>
+          ENV.PAYPAL_WEBHOOKS.sendBatch(eventIds.map((eventId) => ({ body: { eventId } }))).then(() => undefined),
+        files: createFileStore(),
       });
     } finally {
       ctx.waitUntil(db.$client.end());

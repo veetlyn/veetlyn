@@ -36,4 +36,15 @@ describe("createFakeFileStore", () => {
     expect(url).toBe("https://files.test/teams/t1/files/a.zip?op=get");
     expect(store.gets).toEqual([{ key: "teams/t1/files/a.zip", fileName: "Brand.zip", expiresInSeconds: 300 }]);
   });
+
+  it("deletes stored objects and records each call", async () => {
+    const store = createFakeFileStore();
+    store.put("teams/t1/files/a.zip", 42);
+    store.put("teams/t1/files/b.zip", 7);
+
+    await store.delete(["teams/t1/files/a.zip", "teams/t1/files/missing.zip"]);
+
+    expect([...store.objects.keys()]).toEqual(["teams/t1/files/b.zip"]);
+    expect(store.deletes).toEqual([["teams/t1/files/a.zip", "teams/t1/files/missing.zip"]]);
+  });
 });

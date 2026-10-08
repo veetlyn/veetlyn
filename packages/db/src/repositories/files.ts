@@ -1,5 +1,5 @@
 import type { FilePurpose } from "@jendal-workspace/core";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { fileUpload } from "../schema/files";
@@ -61,4 +61,26 @@ export async function listDeliveryFiles(tx: DbExecutor, deliveryIds: string[]): 
     .from(delivery)
     .innerJoin(fileUpload, eq(delivery.fileUploadId, fileUpload.id))
     .where(inArray(delivery.id, deliveryIds));
+}
+
+// Uploads never attached are leftovers (the browser stopped, or the delivery failed). Rows are locked with
+// SKIP LOCKED so a delivery attaching one right now keeps it, and objects go first so a failure leaves both.
+export async function sweepUnattachedUploads(
+  db: DbExecutor,
+  input: { createdBefore: Date; limit: number },
+  deleteObjects: (keys: string[]) => Promise<void>,
+): Promise<number> {
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: fileUpload.id, r2Key: fileUpload.r2Key })
+      .from(fileUpload)
+      .where(and(isNull(fileUpload.attachedAt), lt(fileUpload.createdAt, input.createdBefore)))
+      .orderBy(asc(fileUpload.createdAt))
+      .limit(input.limit)
+      .for("update", { skipLocked: true });
+    if (rows.length === 0) return 0;
+    await deleteObjects(rows.map((row) => row.r2Key));
+    await tx.delete(fileUpload).where(inArray(fileUpload.id, rows.map((row) => row.id)));
+    return rows.length;
+  });
 }

@@ -12,6 +12,9 @@ function fakeKv() {
     async put(key, value, options) {
       entries.set(key, { value, expirationTtl: options?.expirationTtl });
     },
+    async delete(key) {
+      entries.delete(key);
+    },
   };
   return { kv, entries };
 }
@@ -23,6 +26,13 @@ describe("createMemoryTokenCache", () => {
     const token: PayPalToken = { accessToken: "t", expiresAt: 123 };
     await cache.set(token);
     expect(await cache.get()).toEqual(token);
+  });
+
+  it("forgets the token on clear", async () => {
+    const cache = createMemoryTokenCache();
+    await cache.set({ accessToken: "t", expiresAt: 123 });
+    await cache.clear();
+    expect(await cache.get()).toBeNull();
   });
 });
 
@@ -46,6 +56,18 @@ describe("createKvTokenCache", () => {
     await cache.set({ accessToken: "short", expiresAt: now + 100_000 });
 
     expect(entries.size).toBe(0);
+  });
+
+  it("deletes the key on clear", async () => {
+    const { kv, entries } = fakeKv();
+    const now = 1_000_000;
+    const cache = createKvTokenCache(kv, "k", { now: () => now });
+    await cache.set({ accessToken: "token-1", expiresAt: now + 3_600_000 });
+
+    await cache.clear();
+
+    expect(entries.has("k")).toBe(false);
+    await expect(cache.get()).resolves.toBeNull();
   });
 
   it("ignores values that are not stored tokens", async () => {

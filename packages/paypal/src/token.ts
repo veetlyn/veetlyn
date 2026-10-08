@@ -2,6 +2,7 @@
 export interface JsonKv {
   get(key: string, type: "json"): Promise<unknown>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
 }
 
 export type PayPalToken = { accessToken: string; expiresAt: number };
@@ -9,6 +10,7 @@ export type PayPalToken = { accessToken: string; expiresAt: number };
 export interface PayPalTokenCache {
   get(): Promise<PayPalToken | null>;
   set(token: PayPalToken): Promise<void>;
+  clear(): Promise<void>;
 }
 
 // Default for tests and one-off scripts: Worker isolates share no memory, so the Worker passes the KV adapter.
@@ -20,6 +22,9 @@ export function createMemoryTokenCache(): PayPalTokenCache {
     },
     async set(next) {
       token = next;
+    },
+    async clear() {
+      token = null;
     },
   };
 }
@@ -46,6 +51,9 @@ export function createKvTokenCache(
       const ttlSeconds = Math.floor((token.expiresAt - EXPIRY_SKEW_MS - now()) / 1000);
       if (ttlSeconds < KV_MIN_TTL_SECONDS) return;
       await kv.put(key, JSON.stringify(token), { expirationTtl: ttlSeconds });
+    },
+    async clear() {
+      await kv.delete(key);
     },
   };
 }

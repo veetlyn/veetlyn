@@ -8,4 +8,6 @@ export type FileStore = {
   }): Promise<{ url: string; headers: Record<string, string> }>;
   presignGet(input: { key: string; fileName: string; expiresInSeconds: number }): Promise<string>;
   head(key: string): Promise<{ sizeBytes: number } | null>;
+  // Missing keys are not an error.
+  delete(keys: string[]): Promise<void>;
 };

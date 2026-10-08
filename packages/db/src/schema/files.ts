@@ -1,4 +1,5 @@
 import { FILE_PURPOSES } from "@jendal-workspace/core";
+import { sql } from "drizzle-orm";
 import { bigint, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
@@ -26,5 +27,9 @@ export const fileUpload = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     attachedAt: timestamp("attached_at"),
   },
-  (t) => [index("file_upload_projectId_idx").on(t.projectId)],
+  (t) => [
+    index("file_upload_projectId_idx").on(t.projectId),
+    // The leftover sweep reads only unattached rows, oldest first.
+    index("file_upload_unattached_idx").on(t.createdAt).where(sql`attached_at is null`),
+  ],
 );
