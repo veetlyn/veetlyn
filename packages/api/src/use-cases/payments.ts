@@ -187,8 +187,8 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
       await uow.apply({
         project: projectRow,
         set: change.set,
-        // The capture's own transfer comes first: completion takes out of client_held the money it puts in, and
-        // the ledger refuses a negative client_held.
+        // Posted in the same batch as the capture: completion takes out of client_held the money the capture puts
+        // in, and the ledger checks the batch's net balances.
         transfers: [
           paymentCapturedTransfer({
             currency: row.currency,

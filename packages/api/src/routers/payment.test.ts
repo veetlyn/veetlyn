@@ -613,11 +613,11 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       return rows.sort((a, b) => a.sequence - b.sequence).map((e) => e.type);
     }
 
-    async function expectCompleted(projectId: string, freelancerId: string) {
+    // The $100 management fee plus the 15% team cut of the $1,000 final price, less the fees posted so far.
+    async function expectCompleted(projectId: string, freelancerId: string, feesMinor = 0) {
       expect((await findProjectById(db, projectId))?.status).toBe("completed");
       expect(await balanceOf(ledgerAccounts.clientHeld(projectId))).toBe(0);
-      // The $100 management fee plus the 15% team cut of the $1,000 final price.
-      expect(await balanceOf(ledgerAccounts.teamRevenue)).toBe(10_000 + 15_000);
+      expect(await balanceOf(ledgerAccounts.teamRevenue)).toBe(10_000 + 15_000 - feesMinor);
       expect(await balanceOf(`owed:${freelancerId}:available`)).toBe(85_000);
       expect((await outboxTypes(projectId)).slice(-2)).toEqual(["payment.captured", "project.completed"]);
       const [completed] = await db.select().from(outbox).where(eq(outbox.type, "project.completed"));
@@ -627,7 +627,19 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     it("starts the balance payment and completes the project with its capture", async () => {
       const { projectId, freelancerId, balancePaymentId, token } = await awaitingBalance();
       const { requests, fetch } = fakePayPalApi({
-        capture: () => jsonResponse(201, capturedOrder("COMPLETED", "500.00")),
+        capture: () =>
+          jsonResponse(
+            201,
+            capturedOrder("COMPLETED", "500.00", {
+              create_time: "2026-11-01T00:00:00Z",
+              seller_receivable_breakdown: {
+                gross_amount: { currency_code: "USD", value: "500.00" },
+                paypal_fee: { currency_code: "USD", value: "19.94" },
+                platform_fees: [{ amount: { currency_code: "USD", value: "5.00" } }],
+                net_amount: { currency_code: "USD", value: "475.06" },
+              },
+            }),
+          ),
       });
       const caller = callerFor(null, makePayPal(fetch));
 
@@ -639,10 +651,20 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       });
 
       expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
-      expect(await paymentRow(balancePaymentId)).toMatchObject({ status: "captured", paypalCaptureId: "CAPTURE1" });
+      expect(await paymentRow(balancePaymentId)).toMatchObject({
+        status: "captured",
+        paypalCaptureId: "CAPTURE1",
+        paypalFeeMinor: 1_994,
+        platformFeeMinor: 500,
+      });
       // The webhook for the same capture arrives afterwards.
       expect(await applyCaptureFact(db, balanceFact(balancePaymentId))).toBe("already_applied");
-      await expectCompleted(projectId, freelancerId);
+
+      const fees = await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.reference, `payment_fees:${balancePaymentId}`));
+      expect(fees).toEqual([expect.objectContaining({ kind: "payment_fees", projectId })]);
+      expect(await balanceOf(ledgerAccounts.paypalFees)).toBe(1_994);
+      expect(await balanceOf(ledgerAccounts.payleorFees)).toBe(500);
+      await expectCompleted(projectId, freelancerId, 1_994 + 500);
     });
 
     it("completes the project from a webhook capture, and posts the completion once", async () => {
