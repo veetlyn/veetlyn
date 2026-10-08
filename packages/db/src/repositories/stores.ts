@@ -1,7 +1,8 @@
 import type { StoreDirectory, StoreRecord } from "@jendal-workspace/core";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 
 import type { Database } from "../index";
+import { products } from "../schema/catalog";
 import { member, organization, team, teamMember } from "../schema/organization";
 import { storeDomains } from "../schema/stores";
 
@@ -15,7 +16,7 @@ const storeColumns = {
   paypalMerchantId: team.paypalMerchantId,
 };
 
-// Services teams share the team table and the slug namespace, but never resolve as stores.
+// The storefront host serves stores and services teams' seller pages; the admin's store lists and store access stay store-only.
 const isStore = () => eq(team.product, "store");
 
 export function createStoreDirectory(db: Database): StoreDirectory {
@@ -24,7 +25,7 @@ export function createStoreDirectory(db: Database): StoreDirectory {
       const [row] = await db
         .select(storeColumns)
         .from(team)
-        .where(and(eq(team.id, id), isStore()))
+        .where(eq(team.id, id))
         .limit(1);
       return row ?? null;
     },
@@ -32,7 +33,7 @@ export function createStoreDirectory(db: Database): StoreDirectory {
       const [row] = await db
         .select(storeColumns)
         .from(team)
-        .where(and(eq(team.slug, slug), isStore()))
+        .where(eq(team.slug, slug))
         .limit(1);
       return row ?? null;
     },
@@ -41,7 +42,7 @@ export function createStoreDirectory(db: Database): StoreDirectory {
         .select(storeColumns)
         .from(storeDomains)
         .innerJoin(team, eq(storeDomains.storeId, team.id))
-        .where(and(eq(storeDomains.hostname, hostname), eq(storeDomains.status, "active"), isStore()))
+        .where(and(eq(storeDomains.hostname, hostname), eq(storeDomains.status, "active")))
         .limit(1);
       return row ?? null;
     },
@@ -117,4 +118,25 @@ export async function findStorePolicyInfo(db: Database, storeId: string): Promis
     .where(eq(team.id, storeId))
     .limit(1);
   return row ?? null;
+}
+
+// team.status is input: false in Better Auth, so publishing writes it here. A suspended team stays suspended.
+export async function setTeamStatus(
+  db: Database,
+  input: { teamId: string; status: "draft" | "active" },
+): Promise<{ slug: string } | null> {
+  const [row] = await db
+    .update(team)
+    .set({ status: input.status })
+    .where(and(eq(team.id, input.teamId), ne(team.status, "suspended")))
+    .returning({ slug: team.slug });
+  return row ?? null;
+}
+
+export async function countPublishedProducts(db: Database, storeId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(products)
+    .where(and(eq(products.storeId, storeId), eq(products.status, "published")));
+  return row?.count ?? 0;
 }

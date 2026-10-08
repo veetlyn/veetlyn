@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { products } from "../schema/catalog";
 import { member, team } from "../schema/organization";
 import { storeDomains } from "../schema/stores";
 import {
@@ -14,11 +15,13 @@ import {
   truncateAll,
 } from "../testing/db";
 import {
+  countPublishedProducts,
   createStoreDirectory,
   findStoreAccess,
   findStorePolicyInfo,
   isStoreSlugTaken,
   listOrganizationsWithStores,
+  setTeamStatus,
 } from "./stores";
 
 describe.skipIf(!hasTestDatabase)("store repository", () => {
@@ -141,13 +144,15 @@ describe.skipIf(!hasTestDatabase)("store repository", () => {
     await expect(findStorePolicyInfo(db, "missing")).resolves.toBeNull();
   });
 
-  it("leaves services teams out of store lookups and lists, but counts their slugs as taken", async () => {
+  it("resolves services teams on the storefront host, but leaves them out of store access and lists", async () => {
     const { userId, organizationId } = await seedOrganization(db, { name: "Acme Inc" });
     const acme = await seedStore(db, { organizationId, slug: "acme", name: "Acme" });
     const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const studioRecord = { ...studio, product: "services" };
 
-    await expect(directory.findById(studio.id)).resolves.toBeNull();
-    await expect(directory.findBySlug("acme-studio")).resolves.toBeNull();
+    await expect(directory.findById(studio.id)).resolves.toEqual(studioRecord);
+    await expect(directory.findBySlug("acme-studio")).resolves.toEqual(studioRecord);
+    await expect(directory.findBySlug("acme")).resolves.toEqual(acme);
     await expect(findStoreAccess(db, { slug: "acme-studio", userId })).resolves.toBeNull();
     await expect(listOrganizationsWithStores(db, userId)).resolves.toEqual([
       {
@@ -166,6 +171,43 @@ describe.skipIf(!hasTestDatabase)("store repository", () => {
     await expect(listOrganizationsWithStores(db, userId)).resolves.toEqual([
       { organization: { id: organizationId, name: "Acme Inc" }, role: "owner", stores: [] },
     ]);
+  });
+
+  it("publishes and unpublishes a team, returning its slug", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const readStatus = async () =>
+      (await db.select({ status: team.status }).from(team).where(eq(team.id, studio.id)))[0]?.status;
+
+    await expect(setTeamStatus(db, { teamId: studio.id, status: "active" })).resolves.toEqual({ slug: "acme-studio" });
+    await expect(readStatus()).resolves.toBe("active");
+    await expect(setTeamStatus(db, { teamId: studio.id, status: "draft" })).resolves.toEqual({ slug: "acme-studio" });
+    await expect(readStatus()).resolves.toBe("draft");
+  });
+
+  it("leaves a suspended team suspended, and ignores unknown teams", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme", status: "suspended" });
+
+    await expect(setTeamStatus(db, { teamId: store.id, status: "active" })).resolves.toBeNull();
+    const [row] = await db.select({ status: team.status }).from(team).where(eq(team.id, store.id));
+    expect(row?.status).toBe("suspended");
+    await expect(setTeamStatus(db, { teamId: "missing", status: "active" })).resolves.toBeNull();
+  });
+
+  it("counts only the store's published products", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme" });
+    const other = await seedStore(db, { organizationId, slug: "other" });
+    await db.insert(products).values([
+      { storeId: store.id, title: "A", status: "published" },
+      { storeId: store.id, title: "B", status: "published" },
+      { storeId: store.id, title: "C", status: "draft" },
+      { storeId: other.id, title: "D", status: "published" },
+    ]);
+
+    await expect(countPublishedProducts(db, store.id)).resolves.toBe(2);
+    await expect(countPublishedProducts(db, "missing")).resolves.toBe(0);
   });
 
   it("gives new stores the store product", async () => {

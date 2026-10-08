@@ -53,6 +53,13 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
     await expect(findServicesTeamBySlug(db, "missing")).resolves.toBeNull();
   });
 
+  it("returns the team's status", async () => {
+    const { organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "acme-studio", status: "active" });
+
+    await expect(findServicesTeamBySlug(db, "acme-studio")).resolves.toMatchObject({ status: "active" });
+  });
+
   it("reads the default settings, and creating them twice changes nothing", async () => {
     const { organizationId } = await seedOrganization(db);
     const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
