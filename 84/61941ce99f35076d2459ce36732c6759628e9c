@@ -1,0 +1,27 @@
+packages/api/src/routers/project.ts
+  s_e4f6d113e82d57::t_02aca47879b220 152
+packages/api/src/use-cases/projects.ts
+  s_e4f6d113e82d57::t_e12667f0f575d4 48
+  s_e4f6d113e82d57::t_6aed0670ff83f6 113-120
+  s_e4f6d113e82d57::t_941d01f9e8391a 135-139,151-152
+packages/api/src/routers/project.test.ts
+  s_e4f6d113e82d57::t_5d69907e342fa2 9
+  s_e4f6d113e82d57::t_180434ad321ded 23
+  s_e4f6d113e82d57::t_63b0117d0c25be 128-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8461941ce99f35076d2459ce36732c6759628e9c",
+  "prompts": {},
+  "sessions": {
+    "s_e4f6d113e82d57": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "86f4c19e-ee24-4370-8b1f-47d6df0be7d6",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
