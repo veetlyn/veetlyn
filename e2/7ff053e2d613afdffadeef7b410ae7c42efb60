@@ -1,0 +1,31 @@
+apps/web/src/app/admin/[storeSlug]/page.tsx
+  s_1455205b0e511a::t_5a75b2ea17d575 11,13
+apps/web/src/app/admin/[storeSlug]/preview/page.tsx
+  s_1455205b0e511a::t_ca3a8326f715df 1-9
+apps/web/src/app/admin/[storeSlug]/preview/seller-preview.tsx
+  s_1455205b0e511a::t_36b2492d7b3d4c 1-43
+apps/web/src/app/admin/[storeSlug]/services-team-dashboard.tsx
+  s_1455205b0e511a::t_f0575cbdb71f8f 9,14,17,43-44,69-70,95-100
+apps/web/src/app/admin/[storeSlug]/settings/services-team-settings.tsx
+  s_1455205b0e511a::t_de5dc745425e6f 146
+apps/web/src/app/admin/[storeSlug]/store-dashboard.tsx
+  s_1455205b0e511a::t_2a798d0ac5ad6d 9,15-16,41,64
+apps/web/src/components/seller-page/publish-card.tsx
+  s_1455205b0e511a::t_b27ac89ee78026 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e27ff053e2d613afdffadeef7b410ae7c42efb60",
+  "prompts": {},
+  "sessions": {
+    "s_1455205b0e511a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "0f112aa9-b9a4-4f3a-a26a-0fe780aa9466",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
