@@ -1,0 +1,30 @@
+packages/paypal/src/client.test.ts
+  s_7bd0d91430160b::t_b129a06968f066 196-289
+packages/paypal/src/client.ts
+  s_7bd0d91430160b::t_6e7281c4b7da9b 162
+  s_7bd0d91430160b::t_cd23f8729564ce 159-161
+  s_7bd0d91430160b::t_08f7723826fae8 163-165
+  s_7bd0d91430160b::t_dc9eb84930b6d3 131-134,144-145,153-158,166
+packages/paypal/src/token.test.ts
+  s_7bd0d91430160b::t_2c2f3235cc7963 61-72
+  s_7bd0d91430160b::t_acc8c0a9cab3e6 15-17
+  s_7bd0d91430160b::t_e895023f6d9ef3 30-36
+packages/paypal/src/token.ts
+  s_7bd0d91430160b::t_6d6f311b6d452b 5,13,26-28,55-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "11002a35123649778ef979587ebcc0f29947084f",
+  "prompts": {},
+  "sessions": {
+    "s_7bd0d91430160b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "b06fdd4c-ecdd-45f2-998c-786f2766b49d",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
