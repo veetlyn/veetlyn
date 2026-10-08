@@ -9,20 +9,8 @@ import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
 import TeamNotFound from "@/components/services-team/team-not-found";
-import { formatMinor } from "@/lib/money";
+import { daysLabel, priceLabel } from "@/lib/offering-labels";
 import { trpc } from "@/utils/trpc";
-
-function priceLabel(offering: { priceMinMinor: number; priceMaxMinor: number }, currency: string): string {
-  return offering.priceMinMinor === offering.priceMaxMinor
-    ? formatMinor(offering.priceMinMinor, currency)
-    : `${formatMinor(offering.priceMinMinor, currency)} – ${formatMinor(offering.priceMaxMinor, currency)}`;
-}
-
-function daysLabel(offering: { daysMin: number; daysMax: number }): string {
-  return offering.daysMin === offering.daysMax
-    ? `${offering.daysMin} days`
-    : `${offering.daysMin}–${offering.daysMax} days`;
-}
 
 // One input per row: its own local state so invalidating the list does not clobber what the admin is typing.
 function DepartmentRow({

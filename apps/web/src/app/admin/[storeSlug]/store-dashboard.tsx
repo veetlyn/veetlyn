@@ -6,10 +6,13 @@ import Link from "next/link";
 
 import Loader from "@/components/loader";
 import PayPalConnectCard from "@/components/paypal-connect-card";
+import PublishCard from "@/components/seller-page/publish-card";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import SetupChecklist from "@/components/setup-checklist";
 import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
+
+const STATUS_LABELS = { draft: "Draft", active: "Live", suspended: "Suspended" } as const;
 
 export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: string; urlParts: StoreUrlParts }) {
   const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
@@ -31,10 +34,11 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
       <SetupChecklist
         steps={setupSteps(
           store.data,
-          { storefrontUrl: url, productsUrl: `/${storeSlug}/products`, connectPaypal: "#paypal" },
+          { productsUrl: `/${storeSlug}/products`, connectPaypal: "#paypal", publish: "#publish" },
           { productCount: products.data?.length ?? 0 },
         )}
       />
+      <PublishCard teamSlug={storeSlug} publicUrl={url} />
       <PayPalConnectCard teamId={store.data.id} />
       <section className="grid gap-2 border p-4">
         <div className="flex items-baseline justify-between gap-4">
@@ -57,7 +61,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
           </a>
         </dd>
         <dt className="text-muted-foreground">Status</dt>
-        <dd>{store.data.status === "draft" ? "Draft · Connect PayPal to start selling." : store.data.status}</dd>
+        <dd>{STATUS_LABELS[store.data.status]}</dd>
         <dt className="text-muted-foreground">Your role</dt>
         <dd>{store.data.role}</dd>
         <dt className="text-muted-foreground">PayPal</dt>

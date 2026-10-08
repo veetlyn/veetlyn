@@ -9,6 +9,7 @@ const acme: StoreRecord = {
   slug: "acme",
   name: "Acme",
   status: "active",
+  product: "store",
   paypalMerchantId: null,
 };
 
@@ -53,6 +54,24 @@ describe("createKvStoreCache", () => {
     values.set("store:slug:acme", JSON.stringify({ id: "store-1" }));
 
     await expect(createKvStoreCache(kv).get("slug:acme")).resolves.toBeNull();
+  });
+
+  it("treats an entry cached before teams had a product as a miss", async () => {
+    const { kv, values } = fakeKv();
+    const { product: _product, ...legacy } = acme;
+    values.set("store:slug:acme", JSON.stringify(legacy));
+
+    await expect(createKvStoreCache(kv).get("slug:acme")).resolves.toBeNull();
+  });
+
+  it("round-trips a services team's product", async () => {
+    const { kv } = fakeKv();
+    const cache = createKvStoreCache(kv);
+    const studio: StoreRecord = { ...acme, id: "team-2", slug: "studio", product: "services" };
+
+    await cache.put("slug:studio", studio);
+
+    await expect(cache.get("slug:studio")).resolves.toEqual(studio);
   });
 
   it("deletes a cached record", async () => {

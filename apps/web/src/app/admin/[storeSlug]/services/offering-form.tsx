@@ -66,6 +66,8 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
 
   // Null until the first edit, so the offering can load late (the settings page does the same).
   const [state, setState] = useState<OfferingFormState | null>(null);
+  // An empty new form already fails validation; the message waits until the admin acts.
+  const [touched, setTouched] = useState(false);
 
   const offering = offeringId ? catalog.data?.offerings.find((candidate) => candidate.id === offeringId) : undefined;
 
@@ -123,6 +125,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   const patch = (part: Partial<OfferingFormState>) => {
     save.reset();
     setActive.reset();
+    setTouched(true);
     setState({ ...values, ...part });
   };
 
@@ -140,6 +143,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setTouched(true);
     if (!canSubmit) return;
     const payload = {
       teamSlug,
@@ -318,7 +322,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
             Show this service on your seller page
           </label>
         ) : null}
-        {problem ? (
+        {touched && problem ? (
           <p role="alert" className="text-sm text-destructive">
             {problem.message}
           </p>

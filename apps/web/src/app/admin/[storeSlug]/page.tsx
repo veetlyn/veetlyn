@@ -8,10 +8,10 @@ export default async function TeamDashboardPage({ params }: { params: Promise<{ 
   await requireSession();
   const { storeSlug } = await params;
 
+  const urlParts = await getStoreUrlParts();
   if (await isServicesTeamSlug(storeSlug)) {
-    return <ServicesTeamDashboard teamSlug={storeSlug} />;
+    return <ServicesTeamDashboard teamSlug={storeSlug} urlParts={urlParts} />;
   }
 
-  const urlParts = await getStoreUrlParts();
   return <StoreDashboard storeSlug={storeSlug} urlParts={urlParts} />;
 }

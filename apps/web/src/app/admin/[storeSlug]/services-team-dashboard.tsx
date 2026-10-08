@@ -6,13 +6,15 @@ import Link from "next/link";
 
 import Loader from "@/components/loader";
 import PayPalConnectCard from "@/components/paypal-connect-card";
+import PublishCard from "@/components/seller-page/publish-card";
 import ComingSoon from "@/components/services-team/coming-soon";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import SetupChecklist from "@/components/setup-checklist";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
+import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
 
-export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }) {
+export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug: string; urlParts: StoreUrlParts }) {
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
 
   if (result.isPending) return <Loader />;
@@ -22,6 +24,7 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
   const solo = settings?.solo ?? false;
   const steps = servicesTeamSetupSteps(
     {
+      status: team.status,
       paypalMerchantId: team.paypalMerchantId,
       settingsSaved: settings?.settingsSavedAt != null,
       discordGuildId: settings?.discordGuildId ?? null,
@@ -32,9 +35,12 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
       settings: `/${team.slug}/settings`,
       services: `/${team.slug}/services`,
       connectPaypal: "#paypal",
+      publish: "#publish",
       linkDiscord: `/${team.slug}/discord`,
     },
   );
+
+  const url = storeUrl(team.slug, urlParts);
 
   return (
     <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
@@ -60,7 +66,8 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
           </Link>
         ) : null}
       </nav>
-      <SetupChecklist steps={steps} title="Set up your team" />
+      <SetupChecklist steps={steps} title={solo ? "Set up your seller page" : "Set up your team"} />
+      <PublishCard teamSlug={team.slug} publicUrl={url} />
       <PayPalConnectCard teamId={team.id} />
       <section className="grid gap-2 border p-4">
         <div className="flex items-baseline justify-between gap-4">
@@ -85,6 +92,12 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
         </p>
       </section>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">Seller page</dt>
+        <dd>
+          <a href={url} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+            {url}
+          </a>
+        </dd>
         <dt className="text-muted-foreground">Your role</dt>
         <dd>{SERVICES_TEAM_ROLE_LABELS[role] ?? role}</dd>
         <dt className="text-muted-foreground">PayPal</dt>

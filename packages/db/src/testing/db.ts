@@ -84,6 +84,7 @@ export async function seedStore(
       slug: team.slug,
       name: team.name,
       status: team.status,
+      product: team.product,
       paypalMerchantId: team.paypalMerchantId,
     });
   if (!row) throw new Error("Insert into team returned no row");
@@ -93,7 +94,14 @@ export async function seedStore(
 // Mirrors what the Better Auth create hooks do for a services team: the team row and its default settings.
 export async function seedServicesTeam(
   db: Database,
-  input: { organizationId: string; slug: string; name?: string; withSettings?: boolean; solo?: boolean },
+  input: {
+    organizationId: string;
+    slug: string;
+    name?: string;
+    status?: "draft" | "active" | "suspended";
+    withSettings?: boolean;
+    solo?: boolean;
+  },
 ) {
   const [row] = await db
     .insert(team)
@@ -102,6 +110,7 @@ export async function seedServicesTeam(
       organizationId: input.organizationId,
       slug: input.slug,
       name: input.name ?? input.slug,
+      status: input.status ?? "draft",
       product: "services",
       createdAt: new Date(),
     })
@@ -110,6 +119,8 @@ export async function seedServicesTeam(
       organizationId: team.organizationId,
       slug: team.slug,
       name: team.name,
+      status: team.status,
+      product: team.product,
       paypalMerchantId: team.paypalMerchantId,
     });
   if (!row) throw new Error("Insert into team returned no row");

@@ -3,7 +3,7 @@ import type { TenantEnvironment } from "@jendal-workspace/core";
 import type { Context as HonoContext } from "hono";
 
 import type { AppEnv } from "./app-env";
-import { createCatalogServices, createFileStore, getPayPalServices } from "./services";
+import { createCatalogServices, createFileStore, getPayPalServices, invalidateStoreLookup } from "./services";
 
 // Stateless adapters over the ENV bindings, so one instance per isolate is enough.
 const catalog = createCatalogServices();
@@ -13,5 +13,15 @@ export async function createContext(c: HonoContext<AppEnv>, environment: TenantE
   const auth = c.get("auth");
   const headers = c.req.raw.headers;
   const session = await auth.api.getSession({ headers });
-  return { db: c.get("db"), session, environment, auth, headers, paypal: getPayPalServices(), catalog, files };
+  return {
+    db: c.get("db"),
+    session,
+    environment,
+    auth,
+    headers,
+    paypal: getPayPalServices(),
+    catalog,
+    files,
+    onTeamStatusChanged: invalidateStoreLookup,
+  };
 }

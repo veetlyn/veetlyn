@@ -30,13 +30,53 @@ export async function getPlatformOrigins(): Promise<PlatformOrigins> {
   return platformOrigins(env.PLATFORM_DOMAIN, await requestHost());
 }
 
-const storeInfoSchema = z.object({ storeId: z.string(), slug: z.string(), name: z.string() });
+const productSchema = z.enum(["store", "services"]);
+
+const storeInfoSchema = z.object({
+  storeId: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  product: productSchema,
+});
 export type StoreInfo = z.infer<typeof storeInfoSchema>;
 
 export async function fetchStoreInfo(): Promise<StoreInfo | null> {
   const response = await callApi("/api/store");
   if (!response.ok) return null;
   const parsed = storeInfoSchema.safeParse(await response.json());
+  return parsed.success ? parsed.data : null;
+}
+
+const offeringSchema = z.object({
+  id: z.string(),
+  departmentId: z.string().nullable(),
+  name: z.string(),
+  description: z.string(),
+  priceMinMinor: z.number(),
+  priceMaxMinor: z.number(),
+  daysMin: z.number(),
+  daysMax: z.number(),
+  intakeQuestions: z.array(z.string()),
+  active: z.boolean(),
+  position: z.number(),
+});
+const sellerPageSchema = z.object({
+  name: z.string(),
+  slug: z.string(),
+  product: productSchema,
+  status: z.enum(["draft", "active", "suspended"]),
+  bio: z.string(),
+  supportEmail: z.string().nullable(),
+  currency: z.string(),
+  departments: z.array(z.object({ id: z.string(), name: z.string(), position: z.number() })),
+  offerings: z.array(offeringSchema),
+});
+export type SellerPageView = z.infer<typeof sellerPageSchema>;
+
+export async function fetchSellerPage(): Promise<SellerPageView | null> {
+  const response = await callApi("/api/store/page");
+  if (!response.ok) return null;
+  const parsed = sellerPageSchema.safeParse(await response.json());
   return parsed.success ? parsed.data : null;
 }
 
@@ -121,6 +161,7 @@ export async function isServicesTeamSlug(slug: string): Promise<boolean> {
 const storePolicyInfoSchema = z.object({
   slug: z.string(),
   name: z.string(),
+  product: productSchema,
   supportEmail: z.string().nullable(),
   createdAt: z.iso.datetime(),
 });

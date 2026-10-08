@@ -143,7 +143,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
       <Link href={`/${team.slug}`} className="text-sm text-muted-foreground">
         {team.name}
       </Link>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">Team settings</h1>
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{solo ? "Settings" : "Team settings"}</h1>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
       ) : null}

@@ -9,6 +9,7 @@ const acme: StoreRecord = {
   slug: "acme",
   name: "Acme",
   status: "active",
+  product: "store",
   paypalMerchantId: null,
 };
 

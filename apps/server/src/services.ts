@@ -44,15 +44,16 @@ export function getPayPalServices(): PayPalServices | undefined {
     // BETTER_AUTH_URL is the admin origin (apps/server/.env.schema).
     returnUrl: `${ENV.BETTER_AUTH_URL}/api/paypal/onboarding/return`,
     sdk: { clientId: ENV.PAYPAL_CLIENT_ID, partnerAttributionId: ENV.PAYPAL_ATTRIBUTION_ID, environment },
-    // team.paypal_merchant_id changed: drop the cached storefront lookups (cacheKeyFor in
-    // packages/core/src/tenancy/resolve.ts). host: entries cannot be enumerated; they expire
-    // within the 300-second TTL.
-    onTeamMerchantChanged: async (team) => {
-      const cache = createKvStoreCache(ENV.STORE_CACHE);
-      await cache.delete(`id:${team.id}`);
-      await cache.delete(`slug:${team.slug}`);
-    },
+    onTeamMerchantChanged: invalidateStoreLookup,
   };
+}
+
+// A change to team.paypal_merchant_id or team.status must drop the cached storefront lookups (cacheKeyFor in
+// packages/core/src/tenancy/resolve.ts). host: entries cannot be enumerated; they expire within the 300-second TTL.
+export async function invalidateStoreLookup(team: { id: string; slug: string }): Promise<void> {
+  const cache = createKvStoreCache(ENV.STORE_CACHE);
+  await cache.delete(`id:${team.id}`);
+  await cache.delete(`slug:${team.slug}`);
 }
 
 // `source` is null while CHANNEL3_API_KEY is empty, so the tRPC procedures answer "unavailable"

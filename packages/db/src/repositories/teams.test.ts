@@ -35,7 +35,7 @@ describe.skipIf(!hasTestDatabase)("team repository", () => {
     const access = await findTeamAccess(db, { teamId: studio.id, userId });
 
     expect(access).toMatchObject({ team: { id: studio.id, slug: "studio" }, product: "services", role: "owner" });
-    expect(access?.team).not.toHaveProperty("product");
+    expect(access?.team.product).toBe("services");
   });
 
   it("marks organization membership without team membership", async () => {

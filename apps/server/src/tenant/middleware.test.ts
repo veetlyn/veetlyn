@@ -13,9 +13,12 @@ const acme: StoreRecord = {
   slug: "acme",
   name: "Acme",
   status: "active",
+  product: "store",
   paypalMerchantId: null,
 };
 const closed: StoreRecord = { ...acme, id: "store-2", slug: "closed", status: "suspended" };
+const draft: StoreRecord = { ...acme, id: "store-3", slug: "draft", status: "draft" };
+const studio: StoreRecord = { ...acme, id: "team-4", slug: "studio", name: "Studio", product: "services" };
 
 const SAME: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.app" };
 const SPLIT: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.site" };
@@ -25,11 +28,11 @@ function buildApp(domains: HostDomains = SAME) {
   const directory: StoreDirectory = {
     async findById(id) {
       directoryCalls.push(`id:${id}`);
-      return [acme, closed].find((s) => s.id === id) ?? null;
+      return [acme, closed, draft, studio].find((s) => s.id === id) ?? null;
     },
     async findBySlug(slug) {
       directoryCalls.push(`slug:${slug}`);
-      return [acme, closed].find((s) => s.slug === slug) ?? null;
+      return [acme, closed, draft, studio].find((s) => s.slug === slug) ?? null;
     },
     async findByHostname(hostname) {
       directoryCalls.push(`host:${hostname}`);
@@ -65,7 +68,16 @@ describe("tenantMiddleware", () => {
     const response = await app.request("https://acme.payleor.app/api/store");
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme" });
+    expect(await response.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme", product: "store" });
+  });
+
+  it("resolves an active services team with its product", async () => {
+    const { app } = buildApp();
+
+    const response = await app.request("https://studio.payleor.app/api/store");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ storeId: "team-4", slug: "studio", name: "Studio", product: "services" });
   });
 
   it("returns 404 for the dropped path-based store URLs", async () => {
@@ -83,7 +95,7 @@ describe("tenantMiddleware", () => {
     const onStoreDomain = await app.request("https://acme.payleor.site/api/store");
     const onPlatformDomain = await app.request("https://acme.payleor.app/api/store");
 
-    expect(await onStoreDomain.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme" });
+    expect(await onStoreDomain.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme", product: "store" });
     expect(onPlatformDomain.status).toBe(404);
   });
 
@@ -104,10 +116,15 @@ describe("tenantMiddleware", () => {
     expect(directoryCalls).toEqual([]);
   });
 
-  it("returns 404 for unknown, suspended and invalid store hosts", async () => {
+  it("returns 404 for unknown, unpublished, suspended and invalid store hosts", async () => {
     const { app } = buildApp();
 
-    for (const url of ["https://ghost.payleor.app/", "https://closed.payleor.app/", "https://docs.payleor.app/"]) {
+    for (const url of [
+      "https://ghost.payleor.app/",
+      "https://draft.payleor.app/",
+      "https://closed.payleor.app/",
+      "https://docs.payleor.app/",
+    ]) {
       const response = await app.request(url);
       expect(response.status).toBe(404);
       expect(await response.json()).toEqual({ error: "store_not_found" });

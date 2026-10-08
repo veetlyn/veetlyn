@@ -37,19 +37,28 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
 
   it("finds a services team by slug, but not a store", async () => {
     const { organizationId } = await seedOrganization(db);
-    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio", name: "Acme Studio" });
+    const { product, ...studio } = await seedServicesTeam(db, { organizationId, slug: "acme-studio", name: "Acme Studio" });
     await seedStore(db, { organizationId, slug: "acme" });
 
+    expect(product).toBe("services");
     expect(studio).toEqual({
       id: expect.any(String),
       organizationId,
       slug: "acme-studio",
       name: "Acme Studio",
+      status: "draft",
       paypalMerchantId: null,
     });
     await expect(findServicesTeamBySlug(db, "acme-studio")).resolves.toEqual(studio);
     await expect(findServicesTeamBySlug(db, "acme")).resolves.toBeNull();
     await expect(findServicesTeamBySlug(db, "missing")).resolves.toBeNull();
+  });
+
+  it("returns the team's status", async () => {
+    const { organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "acme-studio", status: "active" });
+
+    await expect(findServicesTeamBySlug(db, "acme-studio")).resolves.toMatchObject({ status: "active" });
   });
 
   it("reads the default settings, and creating them twice changes nothing", async () => {
@@ -264,8 +273,16 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
   it("lists the services teams each user can open, per organization", async () => {
     const { userId: ownerId, organizationId } = await seedOrganization(db, { name: "Acme Inc" });
     await seedStore(db, { organizationId, slug: "acme" });
-    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio", name: "Acme Studio" });
-    const labs = await seedServicesTeam(db, { organizationId, slug: "acme-labs", name: "Acme Labs" });
+    const { product: _studioProduct, ...studio } = await seedServicesTeam(db, {
+      organizationId,
+      slug: "acme-studio",
+      name: "Acme Studio",
+    });
+    const { product: _labsProduct, ...labs } = await seedServicesTeam(db, {
+      organizationId,
+      slug: "acme-labs",
+      name: "Acme Labs",
+    });
     const freelancerId = await addMember(db, { organizationId, role: "member" });
     await addServicesTeamMember(db, { teamId: studio.id, userId: freelancerId, role: "freelancer" });
     const empty = await seedOrganization(db, { name: "Beta LLC" });

@@ -1,4 +1,5 @@
 import type { SetupStep } from "../onboarding/setup-steps";
+import type { StoreStatus } from "../tenancy/store";
 
 // Later plans add the missing links: S3 Connect PayPal, the payouts plan credentials.
 // A step without a link renders as plain text (the checklist shows it as not yet available).
@@ -7,6 +8,7 @@ export type ServicesTeamSetupLinks = {
   services: string;
   connectPaypal?: string;
   payoutCredentials?: string;
+  publish?: string;
   linkDiscord?: string;
 };
 
@@ -16,6 +18,7 @@ function step(id: string, label: string, done: boolean, href?: string): SetupSte
 
 export function servicesTeamSetupSteps(
   state: {
+    status: StoreStatus;
     paypalMerchantId: string | null;
     settingsSaved: boolean;
     discordGuildId: string | null;
@@ -32,6 +35,8 @@ export function servicesTeamSetupSteps(
     // A solo seller keeps the whole price, so there are no rates and no payouts to set up (run 5).
     ...(state.solo ? [] : [step("set-rates", "Set your rates", state.settingsSaved, links.settings)]),
     ...(state.solo ? [] : [step("add-payout-credentials", "Add payout credentials", false, links.payoutCredentials)]),
+    // Sellers design §3.3: the seller page stays a draft until an admin publishes it.
+    step("publish", "Publish your seller page", state.status === "active", links.publish),
     step("link-discord", "Link Discord", state.discordGuildId !== null, links.linkDiscord),
   ];
 }

@@ -1,12 +1,15 @@
+import type { TeamProduct } from "./team-product";
+
 export type StoreStatus = "draft" | "active" | "suspended";
 
-// A store is a Better Auth team; `id` is the team ID.
+// A store or a services team (one slug namespace, one storefront host); `id` is the team ID.
 export type StoreRecord = {
   id: string;
   organizationId: string;
   slug: string;
   name: string;
   status: StoreStatus;
+  product: TeamProduct;
   paypalMerchantId: string | null;
 };
 
@@ -23,6 +26,7 @@ export interface StoreLookupCache {
   delete(key: string): Promise<void>;
 }
 
-export function isStoreReachable(store: StoreRecord): boolean {
-  return store.status !== "suspended";
+// Sellers design §3.3: the public host shows only published sellers; members preview drafts in the admin.
+export function isStorePublic(store: StoreRecord): boolean {
+  return store.status === "active";
 }
