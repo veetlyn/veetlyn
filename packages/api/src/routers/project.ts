@@ -149,6 +149,7 @@ export const projectRouter = router({
         clientEmail: z.string().max(200).default(""),
         clientDiscordId: z.string().max(64).default(""),
         channelId: z.string().max(64).default(""),
+        offeringId: z.string().min(1).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
