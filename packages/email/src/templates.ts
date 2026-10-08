@@ -57,3 +57,40 @@ export function passwordResetEmail(input: { name: string; url: string }): EmailC
       "This link expires in 1 hour. If you did not ask to reset your password, you can ignore this email; your password stays the same.",
   });
 }
+
+export function quoteRequestLinkEmail(input: { clientName: string; teamName: string; url: string }): EmailContent {
+  return render({
+    subject: `Your request to ${input.teamName}`,
+    name: input.clientName,
+    intro: `${input.teamName} received your request. Follow it, and accept or discuss the quote, on your private page:`,
+    action: "Open your page",
+    url: input.url,
+    outro: "Keep this link; it is the way back to your page. If you did not send this request, you can ignore this email.",
+  });
+}
+
+export function quoteRequestNoticeEmail(input: {
+  teamName: string;
+  clientName: string;
+  clientEmail: string;
+  serviceName: string;
+  description: string;
+  answers: { question: string; answer: string }[];
+  url: string;
+}): EmailContent {
+  const answerLines = input.answers.map(({ question, answer }) => `${question}\n${answer}`);
+  const details = [
+    `${input.clientName} (${input.clientEmail}) asks about ${input.serviceName}:`,
+    "",
+    input.description,
+    ...(answerLines.length > 0 ? ["", ...answerLines] : []),
+  ].join("\n");
+  return render({
+    subject: `New request from ${input.clientName}`,
+    name: input.teamName,
+    intro: details,
+    action: "Open the project",
+    url: input.url,
+    outro: "Reply to the client from the project page; their link is in their email.",
+  });
+}
