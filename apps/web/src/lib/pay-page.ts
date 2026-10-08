@@ -23,8 +23,6 @@ export function payPageState(input: PayPageInput): PayPageState {
   if (input.processing) {
     return { view: "processing", message: "PayPal is still processing this payment. This page updates on its own." };
   }
-  // startPayment refuses balances until run 2.
-  if (input.kind === "balance") return { view: "closed", message: "The balance opens once you accept the delivery." };
   if (!input.paypalReady) {
     return { view: "closed", message: "This team cannot take PayPal payments yet. Ask them to connect PayPal." };
   }

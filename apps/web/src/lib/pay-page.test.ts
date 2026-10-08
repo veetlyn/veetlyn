@@ -19,11 +19,12 @@ describe("payPageState", () => {
     expect(payPageState({ ...base, status: "cancelled" })).toEqual({ view: "closed", message: "This payment was cancelled." });
   });
 
+  it("offers the button for every kind of payment", () => {
+    expect(payPageState({ ...base, kind: "top_up" })).toEqual({ view: "pay" });
+    expect(payPageState({ ...base, kind: "balance" })).toEqual({ view: "pay" });
+  });
+
   it("explains why a payment cannot be paid yet", () => {
-    expect(payPageState({ ...base, kind: "balance" })).toEqual({
-      view: "closed",
-      message: "The balance opens once you accept the delivery.",
-    });
     expect(payPageState({ ...base, paypalReady: false })).toEqual({
       view: "closed",
       message: "This team cannot take PayPal payments yet. Ask them to connect PayPal.",
