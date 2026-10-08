@@ -1,0 +1,21 @@
+apps/web/src/components/paypal-connect-card.tsx
+  s_0577ee387b8c87::t_e64c6cf88d5b69 45-46
+apps/web/src/components/setup-checklist.tsx
+  s_0577ee387b8c87::t_5ecebddd4c6793 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "117be78bf9c238326fe786dca7aab9305c2c15c8",
+  "prompts": {},
+  "sessions": {
+    "s_0577ee387b8c87": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "23006e37-95d6-486d-977e-81d43bec4a31",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
