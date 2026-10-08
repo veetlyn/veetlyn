@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALLOWED_FILE_EXTENSIONS,
   attachmentDisposition,
+  checkUploadFile,
   fileContentType,
   fileProblem,
   formatBytes,
@@ -50,6 +51,27 @@ describe("safeFileName", () => {
     expect(name?.endsWith(".psd")).toBe(true);
   });
 
+  it("never cuts a character in half", () => {
+    const name = safeFileName(`${"a".repeat(195)}😀😀.zip`);
+
+    expect(name?.isWellFormed()).toBe(true);
+    expect(name?.endsWith(".zip")).toBe(true);
+    expect(() => attachmentDisposition(name ?? "")).not.toThrow();
+  });
+
+  it("repairs lone surrogates", () => {
+    expect(safeFileName("\ud800.pdf")?.isWellFormed()).toBe(true);
+  });
+
+  it("removes bidi and invisible controls", () => {
+    expect(safeFileName("photo\u202Egnp.zip")).toBe("photognp.zip");
+    expect(safeFileName("\ufeffa\u200e\u2066b\u2069\u0085\u2028.pdf")).toBe("ab.pdf");
+  });
+
+  it("normalizes to NFC", () => {
+    expect(safeFileName("cafe\u0301.pdf")).toBe("caf\u00e9.pdf");
+  });
+
   it("refuses blank names", () => {
     expect(safeFileName("   ")).toBeNull();
     expect(safeFileName("folder/")).toBeNull();
@@ -65,6 +87,11 @@ describe("attachmentDisposition", () => {
 
   it("uses an ASCII fallback for non-ASCII names", () => {
     expect(attachmentDisposition("café.pdf")).toBe(`attachment; filename="caf_.pdf"; filename*=UTF-8''caf%C3%A9.pdf`);
+  });
+
+  it("does not throw on lone surrogates", () => {
+    expect(() => attachmentDisposition("\ud800.pdf")).not.toThrow();
+    expect(attachmentDisposition("\ud800.pdf")).toBe(`attachment; filename="_.pdf"; filename*=UTF-8''%EF%BF%BD.pdf`);
   });
 
   it("encodes the characters encodeURIComponent leaves alone", () => {
@@ -88,6 +115,35 @@ describe("fileProblem", () => {
 
   it("caps files at 100 MB", () => {
     expect(MAX_FILE_BYTES).toBe(100 * 1024 * 1024);
+  });
+});
+
+describe("checkUploadFile", () => {
+  it("returns the cleaned name and the type decided from it", () => {
+    expect(checkUploadFile({ name: "brand.zip ", sizeBytes: 10 })).toEqual({
+      ok: true,
+      fileName: "brand.zip",
+      contentType: "application/zip",
+    });
+    expect(checkUploadFile({ name: "../../uploads/Logo.PNG", sizeBytes: 10 })).toEqual({
+      ok: true,
+      fileName: "Logo.PNG",
+      contentType: "image/png",
+    });
+  });
+
+  it("refuses nameless, disallowed, empty and oversized files", () => {
+    expect(checkUploadFile({ name: "   ", sizeBytes: 10 })).toEqual({ ok: false, problem: "Give the file a name." });
+    expect(checkUploadFile({ name: "folder/", sizeBytes: 10 })).toEqual({ ok: false, problem: "Give the file a name." });
+    expect(checkUploadFile({ name: "run.exe", sizeBytes: 10 })).toEqual({
+      ok: false,
+      problem: "This file type is not allowed.",
+    });
+    expect(checkUploadFile({ name: "brand.zip", sizeBytes: 0 })).toEqual({ ok: false, problem: "The file is empty." });
+    expect(checkUploadFile({ name: "brand.zip", sizeBytes: MAX_FILE_BYTES + 1 })).toEqual({
+      ok: false,
+      problem: "Files can be up to 100 MB.",
+    });
   });
 });
 

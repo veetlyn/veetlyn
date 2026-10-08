@@ -91,17 +91,21 @@ export function fileContentType(name: string): string | null {
   return CONTENT_TYPES[extension] ?? null;
 }
 
-const CONTROL_OR_QUOTE = /[\u0000-\u001f\u007f"]/g;
+// Control characters, quotes, and the bidi and invisible marks that can disguise an extension
+// ("photo\u202Egnp.zip" renders as "photopiz.png").
+const UNSAFE_CHARS = /[\u0000-\u001f\u007f-\u009f"\u200e\u200f\u202a-\u202e\u2066-\u2069\u2028\u2029\ufeff]/g;
 
 export function safeFileName(name: string): string | null {
-  const lastSegment = name.split(/[\\/]/).pop() ?? "";
-  const cleaned = lastSegment.replace(CONTROL_OR_QUOTE, "").trim();
+  const lastSegment = name.toWellFormed().split(/[\\/]/).pop() ?? "";
+  const cleaned = lastSegment.normalize("NFC").replace(UNSAFE_CHARS, "").trim();
   if (!cleaned) return null;
-  if (cleaned.length <= MAX_FILE_NAME_LENGTH) return cleaned;
 
+  // Cut by code points so an emoji is never split into a lone surrogate.
+  const characters = Array.from(cleaned);
+  if (characters.length <= MAX_FILE_NAME_LENGTH) return cleaned;
   const extension = extensionOf(cleaned);
   const suffix = extension && extension.length < 20 ? `.${extension}` : "";
-  return cleaned.slice(0, MAX_FILE_NAME_LENGTH - suffix.length) + suffix;
+  return characters.slice(0, MAX_FILE_NAME_LENGTH - Array.from(suffix).length).join("") + suffix;
 }
 
 // RFC 5987: encodeURIComponent leaves ' ( ) * alone, but they are not allowed in an ext-value.
@@ -113,8 +117,10 @@ function encodeRfc5987(value: string): string {
 }
 
 export function attachmentDisposition(fileName: string): string {
-  const asciiFallback = fileName.replace(/[^\u0020-\u007e]|["\\]/g, "_");
-  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeRfc5987(fileName)}`;
+  // encodeURIComponent throws on lone surrogates.
+  const name = fileName.toWellFormed();
+  const asciiFallback = name.replace(/[^\u0020-\u007e]|["\\]/g, "_");
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeRfc5987(name)}`;
 }
 
 export function fileProblem(file: { name: string; sizeBytes: number }): string | null {
@@ -122,6 +128,19 @@ export function fileProblem(file: { name: string; sizeBytes: number }): string |
   if (file.sizeBytes < 1) return "The file is empty.";
   if (file.sizeBytes > MAX_FILE_BYTES) return `Files can be up to ${formatBytes(MAX_FILE_BYTES)}.`;
   return null;
+}
+
+export type UploadFileCheck = { ok: true; fileName: string; contentType: string } | { ok: false; problem: string };
+
+// The one check for an upload: everything is decided on the cleaned name, which is the name that gets stored.
+export function checkUploadFile(file: { name: string; sizeBytes: number }): UploadFileCheck {
+  const fileName = safeFileName(file.name);
+  if (!fileName) return { ok: false, problem: "Give the file a name." };
+  const problem = fileProblem({ name: fileName, sizeBytes: file.sizeBytes });
+  if (problem) return { ok: false, problem };
+  const contentType = fileContentType(fileName);
+  if (!contentType) return { ok: false, problem: "This file type is not allowed." };
+  return { ok: true, fileName, contentType };
 }
 
 const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"];
