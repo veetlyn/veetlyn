@@ -1,0 +1,27 @@
+packages/core/src/ledger/accounts.test.ts
+  s_7aef4ab5bea50a::t_8ae4e7c494c901 16,32-33
+packages/core/src/ledger/accounts.ts
+  s_7aef4ab5bea50a::t_e19edbfda46ca7 9-11,20-22,38-39,43-51
+packages/core/src/ledger/postings.test.ts
+  s_7aef4ab5bea50a::t_75246e18947d56 9,167-193
+packages/core/src/ledger/postings.ts
+  s_7aef4ab5bea50a::t_0840d76c7e4fb0 10-28
+packages/core/src/ledger/transfers.ts
+  s_7aef4ab5bea50a::t_301612deb9383a 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6fbb795d3d6d4064160f01d9cda15170e45f68a0",
+  "prompts": {},
+  "sessions": {
+    "s_7aef4ab5bea50a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "d4e2aa46-df60-4c8d-af74-c4dcc5ad1a12",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
