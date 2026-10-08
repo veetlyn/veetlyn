@@ -5,7 +5,7 @@ export type SetupStep = { id: string; label: string; done: boolean; href?: strin
 
 export function setupSteps(
   store: Pick<StoreRecord, "status" | "paypalMerchantId">,
-  links: { storefrontUrl: string; productsUrl: string; connectPaypal?: string },
+  links: { productsUrl: string; connectPaypal?: string; publish?: string },
   progress: { productCount: number },
 ): SetupStep[] {
   const paypalDone = store.paypalMerchantId !== null;
@@ -15,8 +15,7 @@ export function setupSteps(
     links.connectPaypal
       ? { id: "connect-paypal", label: "Connect PayPal", done: paypalDone, href: links.connectPaypal }
       : { id: "connect-paypal", label: "Connect PayPal", done: paypalDone },
-    // A visit cannot be detected, so the step counts as done once the storefront is live.
-    { id: "visit-storefront", label: "Visit your storefront", done: store.status === "active", href: links.storefrontUrl },
+    { id: "publish", label: "Publish your store", done: store.status === "active", ...(links.publish ? { href: links.publish } : {}) },
   ];
 }
 

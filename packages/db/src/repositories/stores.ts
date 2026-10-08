@@ -11,6 +11,7 @@ const storeColumns = {
   slug: team.slug,
   name: team.name,
   status: team.status,
+  product: team.product,
   paypalMerchantId: team.paypalMerchantId,
 };
 

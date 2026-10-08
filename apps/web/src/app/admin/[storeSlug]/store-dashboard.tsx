@@ -31,7 +31,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
       <SetupChecklist
         steps={setupSteps(
           store.data,
-          { storefrontUrl: url, productsUrl: `/${storeSlug}/products`, connectPaypal: "#paypal" },
+          { productsUrl: `/${storeSlug}/products`, connectPaypal: "#paypal", publish: "#publish" },
           { productCount: products.data?.length ?? 0 },
         )}
       />

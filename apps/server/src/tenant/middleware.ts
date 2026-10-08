@@ -1,6 +1,6 @@
 import {
   createTenantContext,
-  isStoreReachable,
+  isStorePublic,
   lookupForTarget,
   parseRequestTarget,
   resolveStore,
@@ -45,7 +45,7 @@ export function tenantMiddleware(
     const lookup = lookupForTarget(target, hostMetadataStoreId(c.req.raw));
     const store = lookup ? await resolveStore(lookup, getStoreLookup(c)) : null;
 
-    if (!store || !isStoreReachable(store)) {
+    if (!store || !isStorePublic(store)) {
       c.get("log").set({ tenant: { resolved: false, target: target.kind } });
       return c.json({ error: "store_not_found" }, 404);
     }

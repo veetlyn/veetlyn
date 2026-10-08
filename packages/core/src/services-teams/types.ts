@@ -1,3 +1,5 @@
+import type { StoreStatus } from "../tenancy/store";
+
 export const SERVICES_TEAM_ROLES = ["admin", "manager", "freelancer"] as const;
 export type ServicesTeamRole = (typeof SERVICES_TEAM_ROLES)[number];
 
@@ -16,6 +18,7 @@ export type ServicesTeamRecord = {
   organizationId: string;
   slug: string;
   name: string;
+  status: StoreStatus;
   paypalMerchantId: string | null;
 };
 

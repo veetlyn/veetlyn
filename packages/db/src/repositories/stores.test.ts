@@ -38,6 +38,7 @@ describe.skipIf(!hasTestDatabase)("store repository", () => {
       slug: "acme",
       name: "Acme",
       status: "draft",
+      product: "store",
       paypalMerchantId: null,
     });
     await expect(directory.findById(store.id)).resolves.toEqual(store);

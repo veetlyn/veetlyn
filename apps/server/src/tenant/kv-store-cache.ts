@@ -1,4 +1,4 @@
-import type { StoreLookupCache } from "@jendal-workspace/core";
+import { TEAM_PRODUCTS, type StoreLookupCache } from "@jendal-workspace/core";
 import { z } from "zod";
 
 // The subset of KVNamespace this adapter uses; a real KVNamespace satisfies it.
@@ -14,6 +14,7 @@ const cachedStoreSchema = z.object({
   slug: z.string(),
   name: z.string(),
   status: z.enum(["draft", "active", "suspended"]),
+  product: z.enum(TEAM_PRODUCTS),
   paypalMerchantId: z.string().nullable(),
 });
 

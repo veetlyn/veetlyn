@@ -45,6 +45,7 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
       organizationId,
       slug: "acme-studio",
       name: "Acme Studio",
+      status: "draft",
       paypalMerchantId: null,
     });
     await expect(findServicesTeamBySlug(db, "acme-studio")).resolves.toEqual(studio);

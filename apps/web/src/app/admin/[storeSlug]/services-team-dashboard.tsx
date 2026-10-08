@@ -22,6 +22,7 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
   const solo = settings?.solo ?? false;
   const steps = servicesTeamSetupSteps(
     {
+      status: team.status,
       paypalMerchantId: team.paypalMerchantId,
       settingsSaved: settings?.settingsSavedAt != null,
       discordGuildId: settings?.discordGuildId ?? null,
@@ -32,6 +33,7 @@ export default function ServicesTeamDashboard({ teamSlug }: { teamSlug: string }
       settings: `/${team.slug}/settings`,
       services: `/${team.slug}/services`,
       connectPaypal: "#paypal",
+      publish: "#publish",
       linkDiscord: `/${team.slug}/discord`,
     },
   );

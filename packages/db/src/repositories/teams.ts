@@ -10,6 +10,7 @@ const teamColumns = {
   slug: team.slug,
   name: team.name,
   status: team.status,
+  product: team.product,
   paypalMerchantId: team.paypalMerchantId,
 };
 
@@ -22,15 +23,15 @@ export async function findTeamAccess(
   input: { teamId: string; userId: string },
 ): Promise<TeamAccessRow | null> {
   const [row] = await db
-    .select({ ...teamColumns, product: team.product, role: member.role, teamMemberId: teamMember.id })
+    .select({ ...teamColumns, role: member.role, teamMemberId: teamMember.id })
     .from(team)
     .innerJoin(member, and(eq(member.organizationId, team.organizationId), eq(member.userId, input.userId)))
     .leftJoin(teamMember, and(eq(teamMember.teamId, team.id), eq(teamMember.userId, input.userId)))
     .where(eq(team.id, input.teamId))
     .limit(1);
   if (!row) return null;
-  const { role, teamMemberId, product, ...teamRecord } = row;
-  return { team: teamRecord, product, role, isTeamMember: teamMemberId !== null };
+  const { role, teamMemberId, ...teamRecord } = row;
+  return { team: teamRecord, product: teamRecord.product, role, isTeamMember: teamMemberId !== null };
 }
 
 export async function findTeamById(db: Database, teamId: string): Promise<StoreRecord | null> {

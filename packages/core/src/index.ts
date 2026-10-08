@@ -9,6 +9,7 @@ export * from "./billing/plans";
 export * from "./billing/seller-plans";
 export * from "./onboarding/setup-steps";
 export * from "./policies/store-policies";
+export * from "./sellers/publish";
 export * from "./services-teams/types";
 export * from "./services-teams/rates";
 export * from "./services-teams/permissions";

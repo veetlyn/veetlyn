@@ -21,6 +21,7 @@ const servicesTeamColumns = {
   organizationId: team.organizationId,
   slug: team.slug,
   name: team.name,
+  status: team.status,
   paypalMerchantId: team.paypalMerchantId,
 };
 
