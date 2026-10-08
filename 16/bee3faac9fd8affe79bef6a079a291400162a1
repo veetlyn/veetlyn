@@ -1,0 +1,46 @@
+apps/server/.env.schema
+  s_dc30c4fb79ad16::t_1f427ce36d2bd9 59-63
+apps/server/src/routes/paypal-webhooks.test.ts
+  s_dc30c4fb79ad16::t_5ce141696f1db4 1-191
+apps/server/src/routes/paypal-webhooks.ts
+  s_dc30c4fb79ad16::t_3dd6204458fa29 1-85
+apps/server/src/paypal-webhook-queue.test.ts
+  s_dc30c4fb79ad16::t_e5ae1b9206821e 142-157
+  s_dc30c4fb79ad16::t_eb9fc08235b7a2 1-141,158-175
+packages/infra/alchemy.run.ts
+  s_dc30c4fb79ad16::t_cf872bc56216f1 139-146
+  s_dc30c4fb79ad16::t_4b27bbb2ea9a4f 54-55
+  s_dc30c4fb79ad16::t_2dd41e44f78742 82-83
+apps/server/src/paypal-webhook-queue.ts
+  s_dc30c4fb79ad16::t_56fe1a72274dc2 1-38,43-46,58-59,61,63,66,75,82,86,89-94,96-98
+  s_dc30c4fb79ad16::t_d4849d7f0dc32a 60
+  s_dc30c4fb79ad16::t_9e4f5151b3edcf 39-42,47-57
+  s_dc30c4fb79ad16::t_3b6da75a26bac0 62
+  s_dc30c4fb79ad16::t_fcf57e454efe50 64-65
+  s_dc30c4fb79ad16::t_e09bc1e48270a1 67-69,72-74
+  s_dc30c4fb79ad16::t_ec94b4b2bc93eb 76-81
+  s_dc30c4fb79ad16::t_759a8504701309 83-85
+  s_dc30c4fb79ad16::t_44dbc9a4d5abbd 87-88
+  s_dc30c4fb79ad16::t_8642a27de5ec1f 95
+  s_dc30c4fb79ad16::t_e7e651c062daab 70-71
+apps/server/src/index.ts
+  s_dc30c4fb79ad16::t_5068cf64387b0c 3,5-9,20,23,83-98,107-126
+packages/infra/.env.schema
+  s_dc30c4fb79ad16::t_5cc6c510365c3e 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "16bee3faac9fd8affe79bef6a079a291400162a1",
+  "prompts": {},
+  "sessions": {
+    "s_dc30c4fb79ad16": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "fda36125-3713-4348-b28c-d0d42f4266d0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
