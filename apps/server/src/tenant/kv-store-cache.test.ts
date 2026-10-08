@@ -56,6 +56,24 @@ describe("createKvStoreCache", () => {
     await expect(createKvStoreCache(kv).get("slug:acme")).resolves.toBeNull();
   });
 
+  it("treats an entry cached before teams had a product as a miss", async () => {
+    const { kv, values } = fakeKv();
+    const { product: _product, ...legacy } = acme;
+    values.set("store:slug:acme", JSON.stringify(legacy));
+
+    await expect(createKvStoreCache(kv).get("slug:acme")).resolves.toBeNull();
+  });
+
+  it("round-trips a services team's product", async () => {
+    const { kv } = fakeKv();
+    const cache = createKvStoreCache(kv);
+    const studio: StoreRecord = { ...acme, id: "team-2", slug: "studio", product: "services" };
+
+    await cache.put("slug:studio", studio);
+
+    await expect(cache.get("slug:studio")).resolves.toEqual(studio);
+  });
+
   it("deletes a cached record", async () => {
     const { kv, values } = fakeKv();
     const cache = createKvStoreCache(kv);

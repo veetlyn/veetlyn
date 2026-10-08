@@ -213,7 +213,11 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
 
   it("returns a team and its defaults to an admin, as not found to outsiders and to store slugs", async () => {
     const { userId, organizationId } = await seedOrganization(db);
-    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio", name: "Acme Studio" });
+    const { product: _product, ...studio } = await seedServicesTeam(db, {
+      organizationId,
+      slug: "acme-studio",
+      name: "Acme Studio",
+    });
     await seedStore(db, { organizationId, slug: "acme" });
     const outsider = await seedOrganization(db);
 

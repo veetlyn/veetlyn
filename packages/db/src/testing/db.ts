@@ -120,6 +120,7 @@ export async function seedServicesTeam(
       slug: team.slug,
       name: team.name,
       status: team.status,
+      product: team.product,
       paypalMerchantId: team.paypalMerchantId,
     });
   if (!row) throw new Error("Insert into team returned no row");

@@ -148,10 +148,9 @@ describe.skipIf(!hasTestDatabase)("store repository", () => {
     const { userId, organizationId } = await seedOrganization(db, { name: "Acme Inc" });
     const acme = await seedStore(db, { organizationId, slug: "acme", name: "Acme" });
     const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
-    const studioRecord = { ...studio, product: "services" };
 
-    await expect(directory.findById(studio.id)).resolves.toEqual(studioRecord);
-    await expect(directory.findBySlug("acme-studio")).resolves.toEqual(studioRecord);
+    await expect(directory.findById(studio.id)).resolves.toEqual(studio);
+    await expect(directory.findBySlug("acme-studio")).resolves.toEqual(studio);
     await expect(directory.findBySlug("acme")).resolves.toEqual(acme);
     await expect(findStoreAccess(db, { slug: "acme-studio", userId })).resolves.toBeNull();
     await expect(listOrganizationsWithStores(db, userId)).resolves.toEqual([

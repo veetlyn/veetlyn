@@ -28,4 +28,6 @@ export type Context = {
   catalog: CatalogServices;
   // Private files (delivery files); a fake in tests, the R2 adapter from the server app.
   files: FileStore;
+  // Called after team.status changes (publishing); the api Worker drops the KV storefront lookups. Absent in tests.
+  onTeamStatusChanged?: (team: { id: string; slug: string }) => void | Promise<void>;
 };
