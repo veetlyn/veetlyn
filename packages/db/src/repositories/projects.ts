@@ -1,5 +1,5 @@
-import type { ProjectPaid } from "@jendal-workspace/core";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { OPEN_PROJECT_STATUSES, type ProjectPaid } from "@jendal-workspace/core";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { amendment, delivery, payment, project, quote, quoteItem } from "../schema/projects";
@@ -20,6 +20,25 @@ export async function findProjectById(tx: DbExecutor, id: string): Promise<Proje
 export async function listTeamProjects(tx: DbExecutor, teamId: string): Promise<ProjectRow[]> {
   // id breaks created_at ties so the list is stable.
   return tx.select().from(project).where(eq(project.teamId, teamId)).orderBy(desc(project.createdAt), asc(project.id));
+}
+
+// The "3 open web requests per email per team" limit (sellers design §4.2).
+export async function countOpenWebRequests(
+  tx: DbExecutor,
+  input: { teamId: string; clientEmail: string },
+): Promise<number> {
+  const [row] = await tx
+    .select({ count: count() })
+    .from(project)
+    .where(
+      and(
+        eq(project.teamId, input.teamId),
+        eq(project.clientEmail, input.clientEmail),
+        eq(project.source, "web"),
+        inArray(project.status, OPEN_PROJECT_STATUSES),
+      ),
+    );
+  return row?.count ?? 0;
 }
 
 async function withItems(tx: DbExecutor, quotes: QuoteRow[]): Promise<QuoteWithItems[]> {

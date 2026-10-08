@@ -5,6 +5,7 @@ import {
   PAYMENT_STATUSES,
   type PaymentLine,
   PROJECT_SOURCES,
+  type QuoteRequestAnswer,
   PROJECT_STATUSES,
   QUOTE_STATUSES,
   type QuoteItemDraft,
@@ -38,6 +39,10 @@ export const project = pgTable(
     // Compare-and-set token: every change bumps it (services spec §6.1).
     version: integer("version").notNull().default(0),
     clientEmail: text("client_email"),
+    // Who asked, from the seller-page request form (sellers design §4.2); null for admin-started projects.
+    clientName: text("client_name"),
+    // The intake answers as {question, answer} pairs, in the order the questions were shown.
+    requestAnswers: jsonb("request_answers").$type<QuoteRequestAnswer[]>().notNull().default(sql`'[]'::jsonb`),
     clientDiscordId: text("client_discord_id"),
     channelId: text("channel_id"),
     // The catalog service this project is for; null when it matched none (sellers design §4.2).
