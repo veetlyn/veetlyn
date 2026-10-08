@@ -1,0 +1,44 @@
+packages/db/src/repositories/files.test.ts
+  s_fc530912b4891a::t_2db977b44267cc 6
+  s_fc530912b4891a::t_c6b91d42021ef3 135-136
+  s_fc530912b4891a::t_3d59f1cf33e119 5
+  s_fc530912b4891a::t_007bee17a249a0 132-134
+  s_fc530912b4891a::t_a97ebeafe06972 137-139
+  s_fc530912b4891a::t_fb1f2101491ed6 1-3,15,24-31,42-43,115-131,140-204
+apps/server/src/files/file-store.test.ts
+  s_fc530912b4891a::t_07fec7ca448fe2 14-15,17,22-24,104-124
+apps/server/src/files/file-store.ts
+  s_fc530912b4891a::t_947fdf38d0ed18 8,11-13,84-88
+packages/core/src/files/store.ts
+  s_fc530912b4891a::t_ce21b2584ef8dc 11-12
+packages/core/src/files/testing.test.ts
+  s_fc530912b4891a::t_14e1802ac1d359 39-49
+packages/core/src/files/testing.ts
+  s_fc530912b4891a::t_97c2f360e9b863 10,16,21,37-40
+packages/db/src/repositories/files.ts
+  s_fc530912b4891a::t_217b27c4998447 2,65-86
+packages/db/src/repositories/paypal-webhooks.test.ts
+  s_fc530912b4891a::t_f4bdbee0d84b3e 3,5-12,65-105
+packages/db/src/repositories/paypal-webhooks.ts
+  s_fc530912b4891a::t_a10ad313231c82 1,63-85
+packages/db/src/repositories/request-limits.test.ts
+  s_fc530912b4891a::t_3ab91af9b58d7d 6,8,10,37-48
+packages/db/src/repositories/request-limits.ts
+  s_fc530912b4891a::t_afc4f90a2c1076 1,28-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd41b0fb66d9e0eea25fe5a0e3a516c4facf978d",
+  "prompts": {},
+  "sessions": {
+    "s_fc530912b4891a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f57a6bea-b7ed-4de0-8bb9-781b60c1f763",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
