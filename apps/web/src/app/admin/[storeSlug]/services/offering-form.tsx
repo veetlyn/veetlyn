@@ -73,13 +73,21 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   };
 
   const create = useMutation(trpc.servicesCatalog.createOffering.mutationOptions({ onSuccess: saved }));
-  const update = useMutation(trpc.servicesCatalog.updateOffering.mutationOptions({ onSuccess: saved }));
+  // The api's update does not take "active", so the save chains setOfferingActive when the checkbox changed.
+  const update = useMutation(trpc.servicesCatalog.updateOffering.mutationOptions());
+  const setActive = useMutation(trpc.servicesCatalog.setOfferingActive.mutationOptions());
   const save = offeringId ? update : create;
 
   if (team.isPending || catalog.isPending) return <Loader />;
   if (team.isError) return <TeamNotFound />;
+  if (catalog.isError) {
+    return (
+      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
+        <p role="alert">The services couldn't be loaded.</p>
+      </main>
+    );
+  }
   if (offeringId && !offering) {
-    // A missing row and a failed load look the same to the caller, so slugs do not leak.
     return (
       <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
         <h1 className="text-2xl font-semibold">Service not found</h1>
@@ -87,13 +95,6 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         <Link href={`/${teamSlug}/services`} className="underline">
           Back to services
         </Link>
-      </main>
-    );
-  }
-  if (catalog.isError) {
-    return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <p role="alert">The services couldn't be loaded.</p>
       </main>
     );
   }
@@ -118,6 +119,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   const values = state ?? initial;
   const patch = (part: Partial<OfferingFormState>) => {
     save.reset();
+    setActive.reset();
     setState({ ...values, ...part });
   };
 
@@ -131,9 +133,9 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
     intakeQuestions: values.questions,
   };
   const problem = validateOfferingDraft(draft).at(0);
-  const canSubmit = role === "admin" && problem === undefined && !save.isPending;
+  const canSubmit = role === "admin" && problem === undefined && !save.isPending && !setActive.isPending;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
     const payload = {
@@ -141,8 +143,19 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
       departmentId: values.departmentId === "" ? null : values.departmentId,
       ...normalizeOfferingDraft(draft),
     };
-    if (offeringId) update.mutate({ ...payload, offeringId });
-    else create.mutate(payload);
+    if (!offeringId) {
+      create.mutate(payload);
+      return;
+    }
+    try {
+      await update.mutateAsync({ ...payload, offeringId });
+      if (offering && values.active !== offering.active) {
+        await setActive.mutateAsync({ teamSlug, offeringId, active: values.active });
+      }
+      saved();
+    } catch {
+      // The failing mutation's error state shows the message under the submit button.
+    }
   }
 
   return (
@@ -310,6 +323,11 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         {save.error ? (
           <p role="alert" className="text-sm text-destructive">
             {save.error.message}
+          </p>
+        ) : null}
+        {setActive.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {setActive.error.message}
           </p>
         ) : null}
         <Button type="submit" disabled={!canSubmit} className="justify-self-start">

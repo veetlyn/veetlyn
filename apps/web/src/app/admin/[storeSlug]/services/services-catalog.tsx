@@ -115,7 +115,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   );
   const deleteOffering = useMutation(trpc.servicesCatalog.deleteOffering.mutationOptions({ onSuccess: invalidate }));
 
-  if (team.isPending) return <Loader />;
+  if (team.isPending || catalog.isPending) return <Loader />;
   if (team.isError) return <TeamNotFound />;
 
   const isAdmin = team.data.role === "admin";
