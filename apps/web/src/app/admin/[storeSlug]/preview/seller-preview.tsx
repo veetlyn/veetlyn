@@ -30,6 +30,8 @@ export default function SellerPreview({ teamSlug, urlParts }: { teamSlug: string
             </a>
             .
           </p>
+        ) : page.status === "suspended" ? (
+          <p>Preview. This seller is suspended; the page is hidden from visitors.</p>
         ) : (
           <p>Preview. This page is a draft; only your team can see it.</p>
         )}
