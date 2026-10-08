@@ -1,0 +1,24 @@
+apps/web/src/app/admin/[storeSlug]/services/services-catalog.tsx
+  s_fc2caae05d85c9::t_c25296105fef7b 118
+apps/web/src/app/admin/[storeSlug]/services/offering-form.tsx
+  s_fc2caae05d85c9::t_034991538e5032 76-78,83-89
+  s_fc2caae05d85c9::t_690f43e29ee0e5 136,138,146-158
+  s_fc2caae05d85c9::t_98249b8e72ad16 122
+  s_fc2caae05d85c9::t_d2a714e8d38f95 328-332
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "63b71e4738c992d94d68d17d7f657faf5f4767d0",
+  "prompts": {},
+  "sessions": {
+    "s_fc2caae05d85c9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "da5d1fb9-8d0e-48d2-a993-6119ef7c7862",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
