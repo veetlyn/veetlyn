@@ -1,0 +1,25 @@
+packages/api/src/routers/project.test.ts
+  s_8f2ec4b97606c2::t_dd6f9edfbbec97 251-271
+packages/api/src/use-cases/projects.ts
+  s_8f2ec4b97606c2::t_979ae5780d8fb3 181-183
+apps/web/src/app/admin/[storeSlug]/services/offering-form.tsx
+  s_8f2ec4b97606c2::t_8a15221f8faed8 69-70,128,146,325
+packages/core/src/services-teams/catalog.ts
+  s_8f2ec4b97606c2::t_f53a7fa5805aaf 44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "80153b8e7942fa478185afaf4af127a6d2474bbf",
+  "prompts": {},
+  "sessions": {
+    "s_8f2ec4b97606c2": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "2e809247-2663-429c-9045-78c5b6e8f5c6",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
