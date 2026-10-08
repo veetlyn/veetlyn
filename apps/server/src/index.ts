@@ -1,6 +1,12 @@
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
+import { processPayPalWebhookEvent } from "@jendal-workspace/api/use-cases/paypal-webhooks";
 import type { TenantEnvironment } from "@jendal-workspace/core";
+import {
+  findWebhookEvent,
+  finishWebhookEvent,
+  noteWebhookAttempt,
+} from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { createStoreDirectory } from "@jendal-workspace/db/repositories/stores";
 import { initLogger } from "evlog";
 import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
@@ -11,8 +17,10 @@ import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
 import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
+import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
+import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
 import { storeInfoRoute } from "./routes/store-info";
 import { createAuth, getDb, getPayPalServices } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
@@ -72,6 +80,22 @@ app.use("/trpc/*", (c, next) =>
 
 app.route("/api/paypal/onboarding/return", createPayPalOnboardingRoute(getPayPalServices()));
 
+// The URL registered on the partner app (R1c plan, fact 1); api.payleor.com reaches this Worker directly.
+app.route(
+  "/webhooks/paypal",
+  createPayPalWebhookRoute({
+    paypal: getPayPalServices(),
+    webhookId: ENV.PAYPAL_WEBHOOK_ID,
+    // The pay page captures right after approval; the delay lets it win, so the webhook usually finds the
+    // payment already captured instead of racing it.
+    enqueue: ({ id, eventType }) =>
+      ENV.PAYPAL_WEBHOOKS.send(
+        { eventId: id },
+        eventType === "CHECKOUT.ORDER.APPROVED" ? { delaySeconds: 60 } : undefined,
+      ),
+  }),
+);
+
 app.route("/", discordRoute);
 app.route("/", storeInfoRoute);
 app.route("/", createCatalogImagesRoute(ENV.PRODUCT_IMAGES));
@@ -80,4 +104,23 @@ app.get("/", (c) => {
   return c.text("OK");
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async queue(batch, _env, ctx) {
+    const db = getDb();
+    const paypal = getPayPalServices();
+    try {
+      await handlePayPalWebhookBatch(batch.messages, {
+        find: (eventId) => findWebhookEvent(db, eventId),
+        process: (event) => {
+          if (!paypal) throw new Error("PayPal is not configured on this server");
+          return processPayPalWebhookEvent({ db, paypal }, event);
+        },
+        finish: (eventId, outcome) => finishWebhookEvent(db, eventId, outcome),
+        noteAttempt: (eventId, error) => noteWebhookAttempt(db, eventId, error),
+      });
+    } finally {
+      ctx.waitUntil(db.$client.end());
+    }
+  },
+} satisfies ExportedHandler<Env>;
