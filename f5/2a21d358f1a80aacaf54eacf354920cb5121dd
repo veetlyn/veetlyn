@@ -1,0 +1,34 @@
+packages/db/src/testing/db.ts
+  s_68bf10629cb73e::t_9d0de9924e4a9f 1
+  s_68bf10629cb73e::t_fa4cd361c785e1 203,211-213
+packages/db/src/repositories/projects.test.ts
+  s_68bf10629cb73e::t_fd8601ba9fc918 7-28
+  s_68bf10629cb73e::t_853ab2c3ba3b04 5
+  s_68bf10629cb73e::t_e297082e073a81 6
+packages/db/src/schema/projects.ts
+  s_68bf10629cb73e::t_e7388a9db9ae04 42-45
+  s_68bf10629cb73e::t_9bc436732b244a 8
+packages/db/src/repositories/projects.ts
+  s_68bf10629cb73e::t_b5c3add1490d17 25-43
+  s_68bf10629cb73e::t_0b0b76ae817a74 1-2
+packages/db/src/migrations/20261008234621_r3c_quote_request/migration.sql
+  s_68bf10629cb73e::t_a508d95978d1f5 1-2
+packages/db/src/migrations/20261008234621_r3c_quote_request/snapshot.json
+  s_68bf10629cb73e::t_4e6030df0cc5c6 1-6666
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f52a21d358f1a80aacaf54eacf354920cb5121dd",
+  "prompts": {},
+  "sessions": {
+    "s_68bf10629cb73e": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "5dc5a9da-9d9b-444d-871c-a6481550a965",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
