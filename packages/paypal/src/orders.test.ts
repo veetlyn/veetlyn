@@ -197,4 +197,43 @@ describe("captureFromOrder", () => {
     };
     expect(captureFromOrder(odd as unknown as PayPalOrder)).toEqual({ id: "C", status: "PENDING", amount: undefined, custom_id: undefined });
   });
+
+  it("reads the capture time and the fee breakdown", () => {
+    // As PayPal returns it, with fields PayPalCapture does not keep (gross, net, the fee's payee).
+    const capture = {
+      id: "CAPTURE1",
+      status: "COMPLETED",
+      amount: { currency_code: "USD", value: "120.00" },
+      create_time: "2026-10-08T00:28:21Z",
+      seller_receivable_breakdown: {
+        gross_amount: { currency_code: "USD", value: "120.00" },
+        paypal_fee: { currency_code: "USD", value: "4.98" },
+        platform_fees: [{ amount: { currency_code: "USD", value: "1.20" }, payee: { merchant_id: "PAYLEOR" } }],
+        net_amount: { currency_code: "USD", value: "113.82" },
+      },
+    };
+    const order: PayPalOrder = { id: "ORDER1", status: "COMPLETED", purchase_units: [{ payments: { captures: [capture] } }] };
+    expect(captureFromOrder(order)).toMatchObject({
+      id: "CAPTURE1",
+      create_time: "2026-10-08T00:28:21Z",
+      seller_receivable_breakdown: {
+        paypal_fee: { currency_code: "USD", value: "4.98" },
+        platform_fees: [{ amount: { currency_code: "USD", value: "1.20" } }],
+      },
+    });
+  });
+
+  it("drops a malformed breakdown instead of trusting it", () => {
+    const malformed = {
+      id: "ORDER1",
+      status: "COMPLETED",
+      purchase_units: [
+        { payments: { captures: [{ id: "C", status: "COMPLETED", seller_receivable_breakdown: { paypal_fee: { value: 4.98 } } }] } },
+      ],
+    };
+    expect(captureFromOrder(malformed as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual({
+      paypal_fee: undefined,
+      platform_fees: [],
+    });
+  });
 });

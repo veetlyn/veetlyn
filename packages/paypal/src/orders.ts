@@ -1,7 +1,16 @@
 import type { PayPalRequest } from "./client";
 
 export type PayPalMoney = { currency_code: string; value: string };
-export type PayPalCapture = { id: string; status: string; amount?: PayPalMoney; custom_id?: string };
+export type PayPalCaptureBreakdown = { paypal_fee?: PayPalMoney; platform_fees: { amount: PayPalMoney }[] };
+export type PayPalCapture = {
+  id: string;
+  status: string;
+  amount?: PayPalMoney;
+  custom_id?: string;
+  create_time?: string;
+  // Missing while a capture is pending (R1 facts §2).
+  seller_receivable_breakdown?: PayPalCaptureBreakdown;
+};
 export type PayPalOrder = {
   id: string;
   status: string;
@@ -105,19 +114,38 @@ export function createOrders(request: PayPalRequest) {
   };
 }
 
+function parseMoney(value: unknown): PayPalMoney | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const money = value as Record<string, unknown>;
+  return typeof money.currency_code === "string" && typeof money.value === "string"
+    ? { currency_code: money.currency_code, value: money.value }
+    : undefined;
+}
+
+function parseBreakdown(value: unknown): PayPalCaptureBreakdown | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const record = value as Record<string, unknown>;
+  const fees = Array.isArray(record.platform_fees) ? record.platform_fees : [];
+  return {
+    paypal_fee: parseMoney(record.paypal_fee),
+    platform_fees: fees.flatMap((fee) => {
+      const amount = typeof fee === "object" && fee !== null ? parseMoney((fee as Record<string, unknown>).amount) : undefined;
+      return amount ? [{ amount }] : [];
+    }),
+  };
+}
+
 function parseCapture(value: unknown): PayPalCapture | null {
   if (typeof value !== "object" || value === null) return null;
   const record = value as Record<string, unknown>;
   if (typeof record.id !== "string" || typeof record.status !== "string") return null;
-  const amount = typeof record.amount === "object" && record.amount !== null ? (record.amount as Record<string, unknown>) : null;
   return {
     id: record.id,
     status: record.status,
-    amount:
-      amount && typeof amount.currency_code === "string" && typeof amount.value === "string"
-        ? { currency_code: amount.currency_code, value: amount.value }
-        : undefined,
+    amount: parseMoney(record.amount),
     custom_id: typeof record.custom_id === "string" ? record.custom_id : undefined,
+    create_time: typeof record.create_time === "string" ? record.create_time : undefined,
+    seller_receivable_breakdown: parseBreakdown(record.seller_receivable_breakdown),
   };
 }
 
