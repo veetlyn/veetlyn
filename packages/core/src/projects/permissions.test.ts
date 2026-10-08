@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { effectiveServicesTeamRole } from "../services-teams/permissions";
 import {
   canAssignFreelancer,
   canProposeAmendment,
@@ -89,6 +90,10 @@ describe("project permissions", () => {
       expect(canSubmitDelivery({ role: "freelancer", actorId: "u2", ...project })).toBe(false);
       expect(canSubmitDelivery({ role: "manager", actorId: "u2", ...project })).toBe(true);
       expect(canSubmitDelivery({ role: "admin", actorId: "u3", ...project })).toBe(true);
+      // Workspace owners act as services-team admins.
+      const ownerRole = effectiveServicesTeamRole("owner", null);
+      expect(ownerRole && canSubmitDelivery({ role: ownerRole, actorId: "u4", ...project })).toBe(true);
+      expect(canSubmitDelivery({ role: "freelancer", actorId: "u1", assignedFreelancerId: null })).toBe(false);
     });
   });
 });

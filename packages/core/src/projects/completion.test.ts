@@ -63,6 +63,31 @@ describe("completionPostings", () => {
     ]);
   });
 
+  it("refunds management fee from team_revenue when the fee kept exceeds the fee on the final quote", () => {
+    // $1,000 quote, $600 deposit paid, decreased to $300 with no fee credit yet: the fee due is $30 of the $100
+    // kept, so the $270 refund is $200 of quote and $70 of fee.
+    const balance = balanceDue({
+      quoteMinor: 30_000,
+      managementFeeBps: 1_000,
+      finalPriceMinor: 30_000,
+      paidQuoteMinor: 50_000,
+      paidManagementFeeMinor: 10_000,
+      managementFeeCreditedMinor: 0,
+    });
+    expect(balance).toMatchObject({ refundMinor: 27_000, refundQuoteMinor: 20_000, refundManagementFeeMinor: 7_000 });
+    const { transfers, refundMinor } = completionPostings({ ...base, finalPriceMinor: 30_000, balance });
+    expect(refundMinor).toBe(27_000);
+    expect(transfers[1]?.reference).toBe("refund_requested:completion-p1");
+    expect(transfers[1]?.entries).toEqual(
+      expect.arrayContaining([
+        { account: "client_held:p1", currency: "USD", amountMinor: -20_000 },
+        { account: "team_revenue", currency: "USD", amountMinor: -7_000 },
+        { account: "client_refunds", currency: "USD", amountMinor: 27_000 },
+      ]),
+    );
+    expect(transfers[1]?.entries).toHaveLength(3);
+  });
+
   it("posts nothing to complete a project whose final price is zero", () => {
     const balance = balanceDue({
       quoteMinor: 0,

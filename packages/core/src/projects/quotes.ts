@@ -13,6 +13,9 @@ export type PaymentKind = (typeof PAYMENT_KINDS)[number];
 export const PAYMENT_STATUSES = ["pending", "captured", "failed", "cancelled"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
+export const DELIVERY_STATUSES = ["submitted", "accepted", "changes_requested"] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+
 export type QuoteItemDraft = { description: string; amountMinor: number; extraDays: number };
 export type QuoteItem = QuoteItemDraft & { id: string };
 

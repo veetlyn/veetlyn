@@ -1,5 +1,6 @@
 import {
   AMENDMENT_STATUSES,
+  DELIVERY_STATUSES,
   PAYMENT_KINDS,
   PAYMENT_STATUSES,
   type PaymentLine,
@@ -194,8 +195,6 @@ export const payment = pgTable(
     ),
   ],
 );
-
-export const DELIVERY_STATUSES = ["submitted", "accepted", "changes_requested"] as const;
 
 // Services spec §5.2 step 5: what the freelancer handed over, and the client's answer.
 export const delivery = pgTable(
