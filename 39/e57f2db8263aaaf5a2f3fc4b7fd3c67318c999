@@ -1,0 +1,25 @@
+apps/web/src/app/admin/new/services-team/page.tsx
+  s_a1768ec2fdb15d::t_44bb1210237aca 11,13
+apps/web/src/app/admin/new/services-team/create-services-team-form.tsx
+  s_a1768ec2fdb15d::t_c870f8e3347a2e 106
+  s_a1768ec2fdb15d::t_3eb805c7730f9a 24
+  s_a1768ec2fdb15d::t_cb77c6c255baa8 48
+  s_a1768ec2fdb15d::t_c77796012066de 131
+  s_a1768ec2fdb15d::t_103dfcba1b37fc 53-89,91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39e57f2db8263aaaf5a2f3fc4b7fd3c67318c999",
+  "prompts": {},
+  "sessions": {
+    "s_a1768ec2fdb15d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "9bf27390-d57a-4be8-abd1-3ccf43c0f0dc",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
