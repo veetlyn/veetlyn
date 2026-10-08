@@ -7,6 +7,7 @@ export * from "./paypal";
 export * from "./paypal-webhooks";
 export * from "./catalog";
 export * from "./projects";
+export * from "./files";
 export * from "./ledger";
 export * from "./outbox";
 export * from "./payouts";
