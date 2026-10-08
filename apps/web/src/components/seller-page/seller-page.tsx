@@ -1,4 +1,4 @@
-import { buttonVariants } from "@jendal-workspace/ui/components/button";
+import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 
 import { daysLabel, priceLabel } from "@/lib/offering-labels";
 
@@ -15,7 +15,7 @@ type SellerPageOffering = {
 
 // Structural on purpose: the store host passes the api's /api/store/page payload and the admin preview
 // passes the tRPC seller.preview output, so this lists only what the page reads and stays free of server imports.
-export type SellerPageView = {
+export type SellerPageContent = {
   name: string;
   bio: string;
   supportEmail: string | null;
@@ -29,7 +29,7 @@ function OfferingCard({
   offering,
   Heading,
 }: {
-  page: SellerPageView;
+  page: SellerPageContent;
   offering: SellerPageOffering;
   Heading: "h3" | "h4";
 }) {
@@ -45,6 +45,7 @@ function OfferingCard({
       {page.supportEmail ? (
         <a
           href={`mailto:${page.supportEmail}?subject=${encodeURIComponent(`Quote request: ${offering.name}`)}`}
+          aria-label={`Request a quote for ${offering.name}`}
           className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
         >
           Request a quote
@@ -54,7 +55,7 @@ function OfferingCard({
   );
 }
 
-export default function SellerPage({ page }: { page: SellerPageView }) {
+export default function SellerPage({ page }: { page: SellerPageContent }) {
   const departmentIds = new Set(page.departments.map((department) => department.id));
   const groups = page.departments
     .map((department) => ({
