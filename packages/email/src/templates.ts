@@ -17,7 +17,7 @@ function renderHtml(input: { greeting: string; intro: string; action: string; ur
 <div style="max-width:480px;margin:0 auto;background:#fff;padding:32px;border-radius:8px">
 <p style="margin:0 0 16px;font-size:18px;font-weight:600">Payleor</p>
 <p style="margin:0 0 16px">${escapeHtml(input.greeting)}</p>
-<p style="margin:0 0 24px">${escapeHtml(input.intro)}</p>
+<p style="margin:0 0 24px">${escapeHtml(input.intro).replace(/\n/g, "<br>")}</p>
 <p style="margin:0 0 24px"><a href="${url}" style="display:inline-block;background:#111;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none">${escapeHtml(input.action)}</a></p>
 <p style="margin:0 0 16px;font-size:14px;color:#555">Or paste this link into your browser:<br><a href="${url}" style="color:#555;word-break:break-all">${url}</a></p>
 <p style="margin:0;font-size:14px;color:#555">${escapeHtml(input.outro)}</p>
@@ -29,7 +29,8 @@ function renderHtml(input: { greeting: string; intro: string; action: string; ur
 function render(input: { subject: string; name: string; intro: string; action: string; url: string; outro: string }): EmailContent {
   const greeting = `Hi ${input.name},`;
   return {
-    subject: input.subject,
+    // A caller-supplied name can land in the subject; CR/LF must not survive into the header.
+    subject: input.subject.replace(/[\r\n]+/g, " "),
     text: [greeting, "", input.intro, input.url, "", input.outro].join("\n"),
     html: renderHtml({ greeting, intro: input.intro, action: input.action, url: input.url, outro: input.outro }),
   };
