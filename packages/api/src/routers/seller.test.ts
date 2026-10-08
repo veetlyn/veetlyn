@@ -93,6 +93,12 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
       }
     });
 
+    it("reports a services team as not found to a plain workspace member with no team role", async () => {
+      const { organizationId } = await servicesSeller();
+      const memberId = await addMember(db, { organizationId, role: "member" });
+      await expect(callerFor(memberId).seller.status({ teamSlug: "acme-studio" })).rejects.toMatchObject(notFound);
+    });
+
     it("lets a freelancer read status and preview but not publish", async () => {
       const { freelancerId } = await servicesSeller();
       const caller = callerFor(freelancerId);
@@ -178,16 +184,23 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
       await connectPaypal(teamId);
       await seedServicesOffering(db, { teamId });
       const { teamMemberId } = await storeSeller();
+      const onTeamStatusChanged = vi.fn();
 
       const forbidden = { code: "FORBIDDEN", message: "Only an admin can publish or unpublish." };
-      await expect(callerFor(managerId).seller.publish({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
-      await expect(callerFor(teamMemberId).seller.publish({ teamSlug: "acme-shop" })).rejects.toMatchObject(forbidden);
+      await expect(
+        callerFor(managerId, onTeamStatusChanged).seller.publish({ teamSlug: "acme-studio" }),
+      ).rejects.toMatchObject(forbidden);
+      await expect(
+        callerFor(teamMemberId, onTeamStatusChanged).seller.publish({ teamSlug: "acme-shop" }),
+      ).rejects.toMatchObject(forbidden);
       expect(await statusOf(teamId)).toBe("draft");
+      expect(onTeamStatusChanged).not.toHaveBeenCalled();
     });
 
     it("refuses a services team without PayPal or without an active service", async () => {
       const { adminId, teamId } = await servicesSeller();
-      const caller = callerFor(adminId);
+      const onTeamStatusChanged = vi.fn();
+      const caller = callerFor(adminId, onTeamStatusChanged);
       await seedServicesOffering(db, { teamId });
 
       await expect(caller.seller.publish({ teamSlug: "acme-studio" })).rejects.toMatchObject({
@@ -202,23 +215,30 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
       })();
       await connectPaypal(otherTeamId);
       await seedServicesOffering(db, { teamId: otherTeamId, active: false });
-      await expect(callerFor(otherAdminId).seller.publish({ teamSlug: "solo-studio" })).rejects.toMatchObject({
+      await expect(
+        callerFor(otherAdminId, onTeamStatusChanged).seller.publish({ teamSlug: "solo-studio" }),
+      ).rejects.toMatchObject({
         code: "BAD_REQUEST",
         message: "Add at least one active service before you publish.",
       });
       expect(await statusOf(teamId)).toBe("draft");
       expect(await statusOf(otherTeamId)).toBe("draft");
+      expect(onTeamStatusChanged).not.toHaveBeenCalled();
     });
 
     it("refuses a store with no published product", async () => {
       const { ownerId, storeId } = await storeSeller();
       await connectPaypal(storeId);
       await addProduct(storeId, "draft");
-      await expect(callerFor(ownerId).seller.publish({ teamSlug: "acme-shop" })).rejects.toMatchObject({
+      const onTeamStatusChanged = vi.fn();
+      await expect(
+        callerFor(ownerId, onTeamStatusChanged).seller.publish({ teamSlug: "acme-shop" }),
+      ).rejects.toMatchObject({
         code: "BAD_REQUEST",
         message: "Publish at least one product before you publish your store.",
       });
       expect(await statusOf(storeId)).toBe("draft");
+      expect(onTeamStatusChanged).not.toHaveBeenCalled();
     });
 
     it("publishes a ready services team and drops its lookups; publishing again is fine", async () => {
@@ -253,12 +273,16 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
   describe("unpublish", () => {
     it("is admin-only", async () => {
       const { managerId, freelancerId, teamId } = await servicesSeller("active");
+      const onTeamStatusChanged = vi.fn();
       const forbidden = { code: "FORBIDDEN", message: "Only an admin can publish or unpublish." };
-      await expect(callerFor(managerId).seller.unpublish({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
-      await expect(callerFor(freelancerId).seller.unpublish({ teamSlug: "acme-studio" })).rejects.toMatchObject(
-        forbidden,
-      );
+      await expect(
+        callerFor(managerId, onTeamStatusChanged).seller.unpublish({ teamSlug: "acme-studio" }),
+      ).rejects.toMatchObject(forbidden);
+      await expect(
+        callerFor(freelancerId, onTeamStatusChanged).seller.unpublish({ teamSlug: "acme-studio" }),
+      ).rejects.toMatchObject(forbidden);
       expect(await statusOf(teamId)).toBe("active");
+      expect(onTeamStatusChanged).not.toHaveBeenCalled();
     });
 
     it("sets the seller back to draft and drops its lookups", async () => {

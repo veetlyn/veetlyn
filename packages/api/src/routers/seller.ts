@@ -1,4 +1,4 @@
-import { publishProblem, type StoreRecord } from "@jendal-workspace/core";
+import { publishProblem, SUSPENDED_SELLER_MESSAGE, type StoreRecord } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { findSellerPage } from "@jendal-workspace/db/repositories/seller-page";
 import { countServicesOfferings } from "@jendal-workspace/db/repositories/services-catalog";
@@ -7,9 +7,6 @@ import { TRPCError } from "@trpc/server";
 
 import { router } from "../index";
 import { sellerProcedure } from "../seller-procedure";
-
-// Same text as publishProblem's suspended rule; unpublish and the publish race need it without the other rules.
-const SUSPENDED_MESSAGE = "This seller is suspended. Contact support@payleor.com.";
 
 function listedCount(db: Database, seller: StoreRecord): Promise<number> {
   return seller.product === "services"
@@ -35,7 +32,7 @@ function forbidUnlessManager(canManage: boolean) {
 }
 
 function suspended() {
-  return new TRPCError({ code: "BAD_REQUEST", message: SUSPENDED_MESSAGE });
+  return new TRPCError({ code: "BAD_REQUEST", message: SUSPENDED_SELLER_MESSAGE });
 }
 
 export const sellerRouter = router({

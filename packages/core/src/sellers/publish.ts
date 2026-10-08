@@ -9,9 +9,11 @@ export type PublishState = {
   listedCount: number;
 };
 
+export const SUSPENDED_SELLER_MESSAGE = "This seller is suspended. Contact support@payleor.com.";
+
 // Sellers design §3.2: a seller publishes once it can take payments and has something to sell.
 export function publishProblem(state: PublishState): string | null {
-  if (state.status === "suspended") return "This seller is suspended. Contact support@payleor.com.";
+  if (state.status === "suspended") return SUSPENDED_SELLER_MESSAGE;
   if (state.paypalMerchantId === null) return "Connect PayPal before you publish.";
   if (state.listedCount === 0) {
     return state.product === "services"
