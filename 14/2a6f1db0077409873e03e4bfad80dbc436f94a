@@ -1,0 +1,31 @@
+packages/db/src/repositories/services-catalog.test.ts
+  s_133f2d319eab14::t_87a2a9685b4c72 188-189
+  s_133f2d319eab14::t_fbea9d6001ea78 31-36,63-65,67,79-81,100-104,119,150-152,169-175,202,206-208,215-216,229-230,248
+  s_133f2d319eab14::t_ec09482e19d95d 1-4,6-30,37-62,66,68-78,82-91,93-99,105-118,120-149,153-168,176-187,190-201,203,205,209-214,217-228,231-240,242-246,249-250,252-255,257-258
+  s_133f2d319eab14::t_40311be1227ba9 92
+  s_133f2d319eab14::t_a5d992d9f882cd 241
+  s_133f2d319eab14::t_ba83ac9b02c0bb 251,256
+  s_133f2d319eab14::t_5064d7dfb60947 247
+  s_133f2d319eab14::t_d6071eeeeffedc 5
+  s_133f2d319eab14::t_b5dcde693f2595 204
+packages/db/src/repositories/services-catalog.ts
+  s_133f2d319eab14::t_8eb622e880624f 1-263
+packages/core/src/index.ts
+  s_133f2d319eab14::t_ad291d926a6d43 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "142a6f1db0077409873e03e4bfad80dbc436f94a",
+  "prompts": {},
+  "sessions": {
+    "s_133f2d319eab14": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "88a3e383-33a0-421e-b754-dfc91c0b92d6",
+        "model": "glm-5.3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
