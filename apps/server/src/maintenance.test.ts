@@ -1,0 +1,162 @@
+import { findFileUpload, insertFileUpload } from "@jendal-workspace/db/repositories/files";
+import { findWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
+import { requestLimit } from "@jendal-workspace/db/schema/limits";
+import { paypalWebhookEvent } from "@jendal-workspace/db/schema/paypal-webhooks";
+import {
+  createTestDb,
+  hasTestDatabase,
+  seedProject,
+  seedServicesTeamWithAdmin,
+  truncateAll,
+} from "@jendal-workspace/db/testing/db";
+import { log } from "evlog";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { type MaintenanceDeps, runMaintenance } from "./maintenance";
+
+const NOW = new Date("2026-03-01T12:00:00Z");
+const minutesAgo = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000);
+const DAY_MINUTES = 24 * 60;
+
+describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
+  const db = createTestDb();
+  beforeEach(() => truncateAll(db));
+  afterEach(() => vi.restoreAllMocks());
+  afterAll(() => db.$client.end());
+
+  function deps(overrides: Partial<MaintenanceDeps> = {}) {
+    return {
+      db,
+      enqueueWebhookEvents: vi.fn<MaintenanceDeps["enqueueWebhookEvents"]>(async () => {}),
+      files: { delete: vi.fn<MaintenanceDeps["files"]["delete"]>(async () => {}) },
+      now: () => NOW,
+      ...overrides,
+    };
+  }
+
+  async function seedEvent(id: string, receivedAt: Date) {
+    await db.insert(paypalWebhookEvent).values({
+      id,
+      eventType: "PAYMENT.CAPTURE.COMPLETED",
+      resourceType: "capture",
+      resourceId: "CAPTURE1",
+      customId: "pay-1",
+      orderId: "ORDER1",
+      merchantId: "SELLER1",
+      receivedAt,
+    });
+  }
+
+  async function seedUploads() {
+    const { teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const upload = (createdAt: Date, attachedAt?: Date) =>
+      insertFileUpload(db, {
+        teamId,
+        projectId,
+        purpose: "delivery",
+        r2Key: `teams/${teamId}/files/${crypto.randomUUID()}`,
+        fileName: "brand.zip",
+        contentType: "application/zip",
+        sizeBytes: 42,
+        createdAt,
+        attachedAt,
+      });
+    return {
+      leftover: await upload(minutesAgo(2 * DAY_MINUTES)),
+      attached: await upload(minutesAgo(2 * DAY_MINUTES), minutesAgo(2 * DAY_MINUTES - 1)),
+      recent: await upload(minutesAgo(60)),
+    };
+  }
+
+  async function seedEverything() {
+    await seedEvent("WH-stale", minutesAgo(20));
+    await seedEvent("WH-fresh", minutesAgo(5));
+    await seedEvent("WH-stuck", minutesAgo(4 * DAY_MINUTES));
+    await db.insert(requestLimit).values([
+      { key: "expired", windowStart: minutesAgo(DAY_MINUTES + 1).getTime(), count: 3 },
+      { key: "current", windowStart: minutesAgo(10).getTime(), count: 1 },
+    ]);
+    return seedUploads();
+  }
+
+  async function requestLimitKeys() {
+    const rows = await db.select({ key: requestLimit.key }).from(requestLimit);
+    return rows.map((row) => row.key);
+  }
+
+  it("re-sends stale events, fails stuck ones, and deletes expired limits and leftover uploads", async () => {
+    const { leftover, attached, recent } = await seedEverything();
+    const info = vi.spyOn(log, "info");
+    const d = deps();
+
+    const report = await runMaintenance(d);
+
+    expect(report).toEqual({
+      webhookEventsRequeued: 1,
+      webhookEventsFailed: 1,
+      requestLimitsDeleted: 1,
+      uploadsDeleted: 1,
+      errors: [],
+    });
+    expect(d.enqueueWebhookEvents).toHaveBeenCalledExactlyOnceWith(["WH-stale"]);
+    expect(await findWebhookEvent(db, "WH-stuck")).toMatchObject({
+      status: "failed",
+      note: "Stuck in received for 3 days.",
+    });
+    expect(await findWebhookEvent(db, "WH-fresh")).toMatchObject({ status: "received" });
+    expect(await findWebhookEvent(db, "WH-stale")).toMatchObject({ status: "received" });
+    expect(await requestLimitKeys()).toEqual(["current"]);
+    expect(d.files.delete).toHaveBeenCalledExactlyOnceWith([leftover.r2Key]);
+    expect(await findFileUpload(db, leftover.id)).toBeNull();
+    expect(await findFileUpload(db, attached.id)).not.toBeNull();
+    expect(await findFileUpload(db, recent.id)).not.toBeNull();
+    expect(info).toHaveBeenCalledWith({ action: "maintenance.webhooks", maintenance: { requeued: 1, failed: 1 } });
+    expect(info).toHaveBeenCalledWith({ action: "maintenance.requestLimits", maintenance: { deleted: 1 } });
+    expect(info).toHaveBeenCalledWith({ action: "maintenance.uploads", maintenance: { deleted: 1 } });
+  });
+
+  it("does not enqueue when no event is stale", async () => {
+    await seedEvent("WH-fresh", minutesAgo(5));
+    const d = deps();
+
+    expect(await runMaintenance(d)).toMatchObject({ webhookEventsRequeued: 0, errors: [] });
+    expect(d.enqueueWebhookEvents).not.toHaveBeenCalled();
+    expect(d.files.delete).not.toHaveBeenCalled();
+  });
+
+  it("keeps sweeping when re-sending the events fails", async () => {
+    const { leftover } = await seedEverything();
+    const error = vi.spyOn(log, "error");
+    const d = deps({
+      enqueueWebhookEvents: vi.fn(async () => {
+        throw new TypeError("Queue send failed");
+      }),
+    });
+
+    const report = await runMaintenance(d);
+
+    expect(report).toMatchObject({ requestLimitsDeleted: 1, uploadsDeleted: 1, errors: ["webhooks"] });
+    expect(await requestLimitKeys()).toEqual(["current"]);
+    expect(await findFileUpload(db, leftover.id)).toBeNull();
+    expect(error).toHaveBeenCalledWith({ action: "maintenance.webhooks", error: { name: "TypeError" } });
+  });
+
+  it("keeps the uploads when deleting their objects fails", async () => {
+    const { leftover } = await seedEverything();
+    const error = vi.spyOn(log, "error");
+    const d = deps({
+      files: {
+        delete: vi.fn(async () => {
+          throw new Error("R2 unavailable");
+        }),
+      },
+    });
+
+    const report = await runMaintenance(d);
+
+    expect(report).toMatchObject({ webhookEventsRequeued: 1, requestLimitsDeleted: 1, uploadsDeleted: 0, errors: ["uploads"] });
+    expect(await findFileUpload(db, leftover.id)).not.toBeNull();
+    expect(error).toHaveBeenCalledWith({ action: "maintenance.uploads", error: { name: "Error" } });
+  });
+});

@@ -85,6 +85,8 @@ export const server = Cloudflare.Worker("server", {
     flags: ["nodejs_compat"],
   },
   observability,
+  // Runs the maintenance sweeps in apps/server/src/maintenance.ts.
+  crons: ["*/10 * * * *"],
   env: {
     HYPERDRIVE: Database,
     STORE_CACHE: StoreCache,
