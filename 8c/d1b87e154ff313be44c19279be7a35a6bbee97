@@ -1,0 +1,39 @@
+apps/server/src/context.ts
+  s_57aa059a47c6f9::t_a8a246e72a1370 6,16-26
+apps/server/src/routes/store-info.test.ts
+  s_57aa059a47c6f9::t_faba5663922b9f 1-136
+apps/server/src/routes/store-info.ts
+  s_57aa059a47c6f9::t_2da65e80dd97f2 1,11,21,25-31
+apps/server/src/services.ts
+  s_57aa059a47c6f9::t_44ecc9ea64fe4d 47,51-58
+apps/server/src/tenant/kv-store-cache.test.ts
+  s_57aa059a47c6f9::t_2ffdb20ddca368 59-76
+apps/server/src/tenant/middleware.test.ts
+  s_57aa059a47c6f9::t_76a1a28e072696 21,31,35,71-80,98
+packages/api/src/context.ts
+  s_57aa059a47c6f9::t_05d6ba7b746555 31-32
+packages/api/src/routers/services-team.test.ts
+  s_57aa059a47c6f9::t_e420e47979ea4a 216-220
+packages/db/src/repositories/services-teams.test.ts
+  s_57aa059a47c6f9::t_13118506d6a56d 40,43,276-285
+packages/db/src/repositories/stores.test.ts
+  s_57aa059a47c6f9::t_b7855f92f7f12d 152-153
+packages/db/src/testing/db.ts
+  s_57aa059a47c6f9::t_ecdbd226ed14fe 123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8cd1b87e154ff313be44c19279be7a35a6bbee97",
+  "prompts": {},
+  "sessions": {
+    "s_57aa059a47c6f9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "ed2fdfc2-7c0c-4289-9121-3fc018b7bf6b",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
