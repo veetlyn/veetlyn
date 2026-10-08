@@ -1,0 +1,19 @@
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_46d74fc6ba6645::t_8ca481a88a8412 46-51,482,496
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "75addf2826a711a7a0a739657a0baabae31e1b38",
+  "prompts": {},
+  "sessions": {
+    "s_46d74fc6ba6645": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "21791393-3460-4997-8d2e-f606aa88ef0f",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
