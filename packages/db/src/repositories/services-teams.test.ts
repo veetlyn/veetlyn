@@ -119,7 +119,7 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
     await expect(getServicesTeamSettings(db, studio.id)).resolves.toEqual(defaultServicesTeamSettings(studio.id));
   });
 
-  it("keeps the rates a solo seller changed when it becomes a team", async () => {
+  it("keeps the rates a solo seller changed when it becomes a team, but asks the team to confirm them", async () => {
     const { organizationId } = await seedOrganization(db);
     const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio", solo: true });
     await saveServicesTeamSettings(db, studio.id, {
@@ -129,6 +129,7 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
       quotingMode: "assigned",
       payoutMode: "manual",
     });
+    expect((await getServicesTeamSettings(db, studio.id))?.settingsSavedAt).toBeInstanceOf(Date);
 
     await switchToTeam(db, studio.id);
 
@@ -136,6 +137,7 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
       solo: false,
       teamCutBps: 2000,
       managementFeeBps: 500,
+      settingsSavedAt: null,
     });
   });
 

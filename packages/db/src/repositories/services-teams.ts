@@ -89,6 +89,8 @@ export async function switchToTeam(db: Database, teamId: string): Promise<void> 
       solo: false,
       teamCutBps: sql`case when ${servicesTeamSettings.teamCutBps} = ${SOLO_TEAM_CUT_BPS} then 1500 else ${servicesTeamSettings.teamCutBps} end`,
       managementFeeBps: sql`case when ${servicesTeamSettings.managementFeeBps} = ${SOLO_MANAGEMENT_FEE_BPS} then 1000 else ${servicesTeamSettings.managementFeeBps} end`,
+      // Rates a solo seller saved were never a team's choice, so the checklist asks the team to confirm them.
+      settingsSavedAt: null,
     })
     .where(eq(servicesTeamSettings.teamId, teamId));
 }

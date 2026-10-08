@@ -34,6 +34,23 @@ const offeringColumns = {
   position: servicesOffering.position,
 };
 
+// The name pre-checks give the common answer; two writes racing past them meet the unique name index instead.
+async function nullOnDuplicateName<T>(write: PromiseLike<T>): Promise<T | null> {
+  try {
+    return await write;
+  } catch (error) {
+    if (isUniqueViolation(error)) return null;
+    throw error;
+  }
+}
+
+// Drizzle wraps the postgres error; the SQLSTATE lives on the cause.
+function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const { cause } = error;
+  return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "23505";
+}
+
 export async function listServicesDepartments(db: Database, teamId: string): Promise<ServicesDepartmentRow[]> {
   return db
     .select(departmentColumns)
@@ -64,11 +81,13 @@ export async function createServicesDepartment(
     .select({ next: sql<number>`coalesce(max(${servicesDepartment.position}), -1) + 1` })
     .from(servicesDepartment)
     .where(eq(servicesDepartment.teamId, input.teamId));
-  const [row] = await db
-    .insert(servicesDepartment)
-    .values({ id: crypto.randomUUID(), teamId: input.teamId, name, position: positionRow?.next ?? 0 })
-    .returning(departmentColumns);
-  return row ?? null;
+  const rows = await nullOnDuplicateName(
+    db
+      .insert(servicesDepartment)
+      .values({ id: crypto.randomUUID(), teamId: input.teamId, name, position: positionRow?.next ?? 0 })
+      .returning(departmentColumns),
+  );
+  return rows?.[0] ?? null;
 }
 
 // False when the department is not the team's; null when the new name is already taken in that team.
@@ -97,11 +116,14 @@ export async function renameServicesDepartment(
     .limit(1);
   if (taken) return null;
 
-  const rows = await db
-    .update(servicesDepartment)
-    .set({ name })
-    .where(and(eq(servicesDepartment.id, input.id), eq(servicesDepartment.teamId, input.teamId)))
-    .returning({ id: servicesDepartment.id });
+  const rows = await nullOnDuplicateName(
+    db
+      .update(servicesDepartment)
+      .set({ name })
+      .where(and(eq(servicesDepartment.id, input.id), eq(servicesDepartment.teamId, input.teamId)))
+      .returning({ id: servicesDepartment.id }),
+  );
+  if (rows === null) return null;
   return rows.length > 0;
 }
 
@@ -159,26 +181,28 @@ export async function createServicesOffering(
     .select({ next: sql<number>`coalesce(max(${servicesOffering.position}), -1) + 1` })
     .from(servicesOffering)
     .where(eq(servicesOffering.teamId, input.teamId));
-  const [row] = await db
-    .insert(servicesOffering)
-    .values({
-      id: crypto.randomUUID(),
-      teamId: input.teamId,
-      departmentId: input.departmentId ?? null,
-      name,
-      description: input.description,
-      priceMinMinor: input.priceMinMinor,
-      priceMaxMinor: input.priceMaxMinor,
-      daysMin: input.daysMin,
-      daysMax: input.daysMax,
-      intakeQuestions: input.intakeQuestions,
-      active: true,
-      position: positionRow?.next ?? 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .returning(offeringColumns);
-  return row ?? null;
+  const rows = await nullOnDuplicateName(
+    db
+      .insert(servicesOffering)
+      .values({
+        id: crypto.randomUUID(),
+        teamId: input.teamId,
+        departmentId: input.departmentId ?? null,
+        name,
+        description: input.description,
+        priceMinMinor: input.priceMinMinor,
+        priceMaxMinor: input.priceMaxMinor,
+        daysMin: input.daysMin,
+        daysMax: input.daysMax,
+        intakeQuestions: input.intakeQuestions,
+        active: true,
+        position: positionRow?.next ?? 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning(offeringColumns),
+  );
+  return rows?.[0] ?? null;
 }
 
 // Null when the offering is not the team's, or the name is taken by another offering in the team.
@@ -219,12 +243,14 @@ export async function updateServicesOffering(
   };
   if ("departmentId" in input) values.departmentId = input.departmentId ?? null;
 
-  const [row] = await db
-    .update(servicesOffering)
-    .set(values)
-    .where(and(eq(servicesOffering.id, input.id), eq(servicesOffering.teamId, input.teamId)))
-    .returning(offeringColumns);
-  return row ?? null;
+  const rows = await nullOnDuplicateName(
+    db
+      .update(servicesOffering)
+      .set(values)
+      .where(and(eq(servicesOffering.id, input.id), eq(servicesOffering.teamId, input.teamId)))
+      .returning(offeringColumns),
+  );
+  return rows?.[0] ?? null;
 }
 
 export async function setServicesOfferingActive(

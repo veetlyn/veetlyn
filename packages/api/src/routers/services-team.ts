@@ -70,7 +70,8 @@ export const servicesTeamRouter = router({
 
       try {
         const organizationId = await organizationForNewTeam(ctx, input.name);
-        // createTeam runs the slug and product hooks and creates the default settings (Task 6).
+        // createTeam runs the slug and product hooks and creates the default team settings.
+        // A solo seller's settings get the solo defaults right after.
         await ctx.auth.api.createTeam({
           body: { name: input.name, organizationId, slug: slug.slug, product: "services" },
           headers: ctx.headers,

@@ -49,9 +49,12 @@ const EMPTY_FORM: OfferingFormState = {
   questions: [],
 };
 
-// NaN becomes -1, so the "whole days" rule fires instead of passing NaN to the api.
+// Empty and NaN become -1, so the "whole days" rule fires instead of passing NaN to the api.
+// Number (not parseInt) keeps "2.5" as 2.5, so that rule also refuses decimals.
 function daysFromInput(text: string): number {
-  const days = Number.parseInt(text, 10);
+  const trimmed = text.trim();
+  if (trimmed === "") return -1;
+  const days = Number(trimmed);
   return Number.isNaN(days) ? -1 : days;
 }
 

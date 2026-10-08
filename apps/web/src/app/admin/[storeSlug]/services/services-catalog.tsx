@@ -186,9 +186,11 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight">Services</h1>
         </div>
-        <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>
-          Add service
-        </Link>
+        {isAdmin ? (
+          <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>
+            Add service
+          </Link>
+        ) : null}
       </div>
 
       {catalog.isError && <p role="alert">The services couldn't be loaded.</p>}
@@ -197,9 +199,13 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
         <section className="grid gap-2 border border-dashed p-8 text-center">
           <p className="font-medium">No services yet</p>
           <p className="text-sm text-muted-foreground">
-            <Link href={`/${teamSlug}/services/new`} className="underline underline-offset-4">
-              Add your first service — what you make, what it usually costs and how long it takes.
-            </Link>
+            {isAdmin ? (
+              <Link href={`/${teamSlug}/services/new`} className="underline underline-offset-4">
+                Add your first service — what you make, what it usually costs and how long it takes.
+              </Link>
+            ) : (
+              "An admin adds the services: what the team makes, what it usually costs and how long it takes."
+            )}
           </p>
         </section>
       )}
