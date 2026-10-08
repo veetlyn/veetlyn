@@ -1,5 +1,5 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
-import { paymentCapturedTransfer, createFakeFileStore } from "@jendal-workspace/core";
+import { paymentCapturedTransfer, createFakeFileStore, type FileStore } from "@jendal-workspace/core";
 import {
   createTestDb,
   hasTestDatabase,
@@ -9,6 +9,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
+import { findFileUpload, insertFileUpload } from "@jendal-workspace/db/repositories/files";
 import {
   findProjectById,
   getProjectFacts,
@@ -67,7 +68,7 @@ async function clientToken(projectId: string): Promise<string> {
 describe.skipIf(!hasTestDatabase)("project router", () => {
   const db = createTestDb();
   const { auth } = createTestAuth(db);
-  const callerFor = (userId: string | null) =>
+  const callerFor = (userId: string | null, files: FileStore = createFakeFileStore()) =>
     appRouter.createCaller({
       db,
       session: userId ? makeSession(userId) : null,
@@ -75,7 +76,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
-      files: createFakeFileStore(),
+      files,
     });
 
   beforeEach(() => truncateAll(db));
@@ -523,6 +524,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           clientNote: "",
           createdAt: expect.any(Date),
           decidedAt: null,
+          file: null,
         },
       ]);
       expect(await outboxTypes(projectId)).toContain("delivery.submitted");
@@ -540,7 +542,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
       await expect(
         callerFor(freelancer).project.deliver({ teamSlug: "team", projectId, note: "  ", link: "" }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Add a note or a link." });
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Add a note, a link or a file." });
       await expect(
         callerFor(freelancer).project.deliver({ teamSlug: "team", projectId, note: "a".repeat(5_001), link: "" }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "The note is too long." });
@@ -762,6 +764,237 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const page = await callerFor(null).project.clientGet({ token });
       expect(page.deliveries[0]).not.toHaveProperty("submittedById");
       expect(page.deliveries[0]).not.toHaveProperty("teamId");
+    });
+
+    describe("files", () => {
+      const PDF = { fileName: "Logo final.pdf", sizeBytes: 2_000_000 };
+
+      async function startUpload(userId: string, projectId: string, files: FileStore, file = PDF) {
+        return callerFor(userId, files).project.deliveryUploadStart({ teamSlug: "team", projectId, ...file });
+      }
+
+      // An upload the browser finished: the object is in the fake store with the announced size.
+      async function uploadedFile(userId: string, projectId: string, files: ReturnType<typeof createFakeFileStore>) {
+        const { uploadId } = await startUpload(userId, projectId, files);
+        const row = await findFileUpload(db, uploadId);
+        if (!row) throw new Error("missing upload");
+        files.put(row.r2Key, row.sizeBytes);
+        return row;
+      }
+
+      it("starts an upload for the assigned freelancer with a presigned PUT", async () => {
+        const { freelancer, projectId, teamId } = await workingProject();
+        const files = createFakeFileStore();
+
+        const result = await startUpload(freelancer, projectId, files);
+
+        expect(result).toEqual({
+          uploadId: expect.any(String),
+          url: expect.any(String),
+          headers: { "content-type": "application/pdf" },
+        });
+        const key = `deliveries/${teamId}/${projectId}/${result.uploadId}`;
+        expect(await findFileUpload(db, result.uploadId)).toMatchObject({
+          teamId,
+          projectId,
+          purpose: "delivery",
+          r2Key: key,
+          fileName: "Logo final.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 2_000_000,
+          createdById: freelancer,
+          attachedAt: null,
+        });
+        expect(files.puts).toEqual([
+          { key, contentType: "application/pdf", sizeBytes: 2_000_000, expiresInSeconds: 900 },
+        ]);
+      });
+
+      it("refuses uploads with a bad file, from other freelancers, or outside work", async () => {
+        const { organizationId, teamId, freelancer, projectId } = await workingProject();
+        const files = createFakeFileStore();
+
+        for (const [file, message] of [
+          [{ fileName: "run.exe", sizeBytes: 10 }, "This file type is not allowed."],
+          [{ fileName: "brand.zip", sizeBytes: 0 }, "The file is empty."],
+          [{ fileName: "brand.zip", sizeBytes: 100 * 1024 * 1024 + 1 }, "Files can be up to 100 MB."],
+        ] as const) {
+          await expect(startUpload(freelancer, projectId, files, file)).rejects.toMatchObject({ code: "BAD_REQUEST", message });
+        }
+        const other = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+        await expect(startUpload(other, projectId, files)).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+        await deliver(freelancer, projectId);
+        await expect(startUpload(freelancer, projectId, files)).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+          message: "Files can be added while the project is in progress.",
+        });
+        expect(files.puts).toEqual([]);
+      });
+
+      it("limits each person to 20 upload starts in 10 minutes", async () => {
+        const { freelancer, projectId } = await workingProject();
+        const files = createFakeFileStore();
+        for (let i = 0; i < 20; i += 1) await startUpload(freelancer, projectId, files);
+
+        await expect(startUpload(freelancer, projectId, files)).rejects.toMatchObject({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many uploads. Wait a few minutes and try again.",
+        });
+        expect(files.puts).toHaveLength(20);
+      });
+
+      it("delivers with an uploaded file and shows it to staff and the client", async () => {
+        const { userId, freelancer, projectId, token } = await workingProject();
+        const files = createFakeFileStore();
+        const { deliveryId: plainId } = await deliver(freelancer, projectId);
+        await callerFor(null).project.clientRequestChanges({ token, deliveryId: plainId, note: "Add the logo file" });
+        const upload = await uploadedFile(freelancer, projectId, files);
+
+        const { deliveryId } = await callerFor(freelancer, files).project.deliver({
+          teamSlug: "team",
+          projectId,
+          note: "",
+          link: "",
+          fileUploadId: upload.id,
+        });
+
+        expect(await listProjectDeliveries(db, projectId)).toEqual(
+          expect.arrayContaining([expect.objectContaining({ id: deliveryId, fileUploadId: upload.id })]),
+        );
+        expect((await findFileUpload(db, upload.id))?.attachedAt).toEqual(expect.any(Date));
+
+        const file = { name: "Logo final.pdf", sizeBytes: 2_000_000 };
+        const page = await callerFor(null).project.clientGet({ token });
+        const clientDelivery = page.deliveries.find((d) => d.id === deliveryId);
+        expect(clientDelivery?.file).toEqual(file);
+        expect(page.deliveries.find((d) => d.id === plainId)?.file).toBeNull();
+        expect(Object.keys(clientDelivery ?? {}).sort()).toEqual(
+          ["id", "status", "note", "link", "clientNote", "createdAt", "decidedAt", "file"].sort(),
+        );
+
+        const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+        expect(detail.deliveries.find((d) => d.id === deliveryId)?.file).toEqual(file);
+        expect(detail.deliveries.find((d) => d.id === plainId)?.file).toBeNull();
+        expect(JSON.stringify(detail)).not.toContain(upload.r2Key);
+        expect(JSON.stringify(page)).not.toContain(upload.r2Key);
+      });
+
+      it("refuses a file that did not finish uploading or does not belong to the delivery", async () => {
+        const { userId, freelancer, projectId, token } = await workingProject();
+        const files = createFakeFileStore();
+        const deliverFile = (fileUploadId: string) =>
+          callerFor(freelancer, files).project.deliver({ teamSlug: "team", projectId, note: "", link: "", fileUploadId });
+        const notFinished = { code: "BAD_REQUEST", message: "The file did not finish uploading." };
+        const cannotUse = { code: "BAD_REQUEST", message: "This file cannot be used for this delivery." };
+
+        const { uploadId: missing } = await startUpload(freelancer, projectId, files);
+        await expect(deliverFile(missing)).rejects.toMatchObject(notFinished);
+        const wrongSize = await uploadedFile(freelancer, projectId, files);
+        files.put(wrongSize.r2Key, 1_999_999);
+        await expect(deliverFile(wrongSize.id)).rejects.toMatchObject(notFinished);
+
+        // An upload of another project in the same team.
+        const { projectId: otherProjectId } = await createProject(userId);
+        const otherProject = await insertFileUpload(db, {
+          teamId: wrongSize.teamId,
+          projectId: otherProjectId,
+          purpose: "delivery",
+          r2Key: `deliveries/${wrongSize.teamId}/${otherProjectId}/x`,
+          fileName: "a.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 10,
+        });
+        files.put(otherProject.r2Key, 10);
+        await expect(deliverFile(otherProject.id)).rejects.toMatchObject(cannotUse);
+
+        // An upload of another team.
+        const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+        const otherTeam = await insertFileUpload(db, {
+          teamId: outsider.teamId,
+          projectId: null,
+          purpose: "delivery",
+          r2Key: `deliveries/${outsider.teamId}/none/y`,
+          fileName: "b.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 10,
+        });
+        files.put(otherTeam.r2Key, 10);
+        await expect(deliverFile(otherTeam.id)).rejects.toMatchObject(cannotUse);
+        await expect(deliverFile(crypto.randomUUID())).rejects.toMatchObject(cannotUse);
+
+        // An upload already attached to an earlier delivery.
+        const used = await uploadedFile(freelancer, projectId, files);
+        const { deliveryId } = await deliverFile(used.id);
+        await callerFor(null).project.clientRequestChanges({ token, deliveryId, note: "Again" });
+        await expect(deliverFile(used.id)).rejects.toMatchObject(cannotUse);
+
+        expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
+      });
+
+      it("gives the client and staff a short download link for a delivery file", async () => {
+        const first = await workingProject();
+        const files = createFakeFileStore();
+        const upload = await uploadedFile(first.freelancer, first.projectId, files);
+        const { deliveryId } = await callerFor(first.freelancer, files).project.deliver({
+          teamSlug: "team",
+          projectId: first.projectId,
+          note: "",
+          link: "",
+          fileUploadId: upload.id,
+        });
+
+        const { url } = await callerFor(null, files).project.clientDeliveryFileUrl({ token: first.token, deliveryId });
+        expect(url).toBe(`https://files.test/${upload.r2Key}?op=get`);
+        expect(files.gets).toEqual([{ key: upload.r2Key, fileName: "Logo final.pdf", expiresInSeconds: 300 }]);
+
+        const staff = await callerFor(first.freelancer, files).project.deliveryFileUrl({
+          teamSlug: "team",
+          projectId: first.projectId,
+          deliveryId,
+        });
+        expect(staff).toEqual({ url: `https://files.test/${upload.r2Key}?op=get` });
+        const manager = await seedServicesTeamMember(db, {
+          organizationId: first.organizationId,
+          teamId: first.teamId,
+          role: "manager",
+        });
+        await expect(
+          callerFor(manager, files).project.deliveryFileUrl({ teamSlug: "team", projectId: first.projectId, deliveryId }),
+        ).resolves.toEqual({ url: expect.any(String) });
+
+        const noFile = { code: "BAD_REQUEST", message: "This delivery has no file." };
+        const { projectId: otherId } = await createProject(first.userId);
+        const otherToken = await clientToken(otherId);
+        await expect(
+          callerFor(null, files).project.clientDeliveryFileUrl({ token: otherToken, deliveryId }),
+        ).rejects.toMatchObject(noFile);
+        await expect(
+          callerFor(first.userId, files).project.deliveryFileUrl({ teamSlug: "team", projectId: otherId, deliveryId }),
+        ).rejects.toMatchObject(noFile);
+        await callerFor(null).project.clientRequestChanges({ token: first.token, deliveryId, note: "Again" });
+        const { deliveryId: plainId } = await deliver(first.freelancer, first.projectId);
+        await expect(
+          callerFor(null, files).project.clientDeliveryFileUrl({ token: first.token, deliveryId: plainId }),
+        ).rejects.toMatchObject(noFile);
+        await expect(
+          callerFor(null, files).project.clientDeliveryFileUrl({ token: "nope", deliveryId }),
+        ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+        const other = await seedServicesTeamMember(db, {
+          organizationId: first.organizationId,
+          teamId: first.teamId,
+          role: "freelancer",
+        });
+        await expect(
+          callerFor(other, files).project.deliveryFileUrl({ teamSlug: "team", projectId: first.projectId, deliveryId }),
+        ).rejects.toMatchObject({ code: "NOT_FOUND" });
+        const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+        await expect(
+          callerFor(outsider.userId, files).project.deliveryFileUrl({ teamSlug: "team", projectId: first.projectId, deliveryId }),
+        ).rejects.toMatchObject({ code: "NOT_FOUND" });
+        expect(files.gets).toHaveLength(3);
+      });
     });
   });
 });
