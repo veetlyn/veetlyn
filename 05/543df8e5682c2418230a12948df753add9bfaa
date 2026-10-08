@@ -1,0 +1,31 @@
+apps/server/src/maintenance.test.ts
+  s_fc530912b4891a::t_cf3ae45f5b0feb 91,116-123,151-154,172-175
+apps/server/src/maintenance.ts
+  s_fc530912b4891a::t_15cee9e4851763 9-10,54,60,64-75
+packages/db/src/migrations/20261008162826_b1_upload_sweep_index/migration.sql
+  s_fc530912b4891a::t_7070f0a8f75d61 1
+packages/db/src/migrations/20261008162826_b1_upload_sweep_index/snapshot.json
+  s_fc530912b4891a::t_f02872deeb4c77 1-6089
+packages/db/src/repositories/paypal-webhooks.test.ts
+  s_fc530912b4891a::t_f7f40d3526f4a3 96-100,107
+packages/db/src/repositories/paypal-webhooks.ts
+  s_fc530912b4891a::t_f4daf000170091 78-82,86
+packages/db/src/schema/files.ts
+  s_fc530912b4891a::t_51b7fd3367c412 2,30-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "05543df8e5682c2418230a12948df753add9bfaa",
+  "prompts": {},
+  "sessions": {
+    "s_fc530912b4891a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f57a6bea-b7ed-4de0-8bb9-781b60c1f763",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
