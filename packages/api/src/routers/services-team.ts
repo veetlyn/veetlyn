@@ -170,6 +170,10 @@ export const servicesTeamRouter = router({
     .input(z.object({ email: z.string().trim().max(320).pipe(z.email()), role: roleInput }))
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_members", "Only an admin can manage members.");
+      const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+      if (settings?.solo) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "A solo seller has no members. Switch to a team first." });
+      }
       const found = await findUserByEmail(ctx.db, input.email);
       if (!found) {
         throw new TRPCError({

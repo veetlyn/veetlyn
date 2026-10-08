@@ -275,6 +275,20 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("refuses to add a member to a solo seller", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "acme-solo", solo: true });
+    await signUpVerified(auth, db, "bea@example.com", "Bea");
+
+    await expect(
+      callerFor(ownerId).servicesTeam.addMember({ teamSlug: "acme-solo", email: "bea@example.com", role: "freelancer" }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "A solo seller has no members. Switch to a team first.",
+    });
+    await expect(callerFor(ownerId).servicesTeam.listMembers({ teamSlug: "acme-solo" })).resolves.toHaveLength(1);
+  });
+
   it("lists members, adds an existing user by email, and keeps workspace admins marked", async () => {
     const { userId: ownerId, organizationId } = await seedOrganization(db);
     await seedServicesTeam(db, { organizationId, slug: "acme-studio" });

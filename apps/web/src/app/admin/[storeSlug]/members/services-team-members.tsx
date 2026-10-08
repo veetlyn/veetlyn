@@ -120,7 +120,8 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                 <div className="min-w-0">
                   <p className="truncate font-medium">{member.name}</p>
                   <p className="truncate text-sm text-muted-foreground">{member.email}</p>
-                  {isAdmin ? (
+                  {/* Workspace admins have no team member row, so there is no title to save. */}
+                  {isAdmin && !member.workspaceAdmin ? (
                     <MemberTitle teamSlug={teamSlug} member={member} />
                   ) : member.title ? (
                     <p className="truncate text-sm text-muted-foreground">{member.title}</p>

@@ -199,6 +199,23 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     ]);
   });
 
+  it("tells the project page whether the seller is solo", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    await seedServicesTeam(db, { organizationId, slug: "studio" });
+    const caller = callerFor(userId);
+
+    const solo = await caller.project.create({ teamSlug: "solo", title: "Solo site", clientEmail: "c@example.com" });
+    const studio = await caller.project.create({ teamSlug: "studio", title: "Team site", clientEmail: "c@example.com" });
+
+    await expect(caller.project.get({ teamSlug: "solo", projectId: solo.projectId })).resolves.toMatchObject({
+      solo: true,
+    });
+    await expect(caller.project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
+      solo: false,
+    });
+  });
+
   it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {
     const { userId, organizationId } = await seedOrganization(db);
     await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });

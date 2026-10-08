@@ -203,7 +203,8 @@ export default function ProjectDetail({
     );
   }
 
-  const { project, quotes, amendments, payments, deliveries, clientPath, role, quotingMode, viewerId } = detail.data;
+  const { project, quotes, amendments, payments, deliveries, clientPath, role, quotingMode, solo, viewerId } =
+    detail.data;
   const currency = project.currency as MoneyCurrency;
   const currentQuote = quotes.find((q) => q.status === "accepted");
   const proposedQuotes = quotes.filter((q) => q.status === "proposed");
@@ -214,12 +215,14 @@ export default function ProjectDetail({
     role,
     actorId: viewerId,
     quotingMode,
+    solo,
     assignedFreelancerId: project.assignedFreelancerId,
     freelancerId: quoteFreelancerId || null,
   });
   const canQuote = project.status === "quoting" && author.ok;
   // Staff name the freelancer in team mode and in open mode; only assigned mode implies them.
-  const needsFreelancerName = role !== "freelancer" && quotingMode !== "assigned";
+  // A solo seller always quotes as themselves.
+  const needsFreelancerName = !solo && role !== "freelancer" && quotingMode !== "assigned";
   const canDeliver =
     project.status === "in_progress" &&
     canSubmitDelivery({ role, actorId: viewerId, assignedFreelancerId: project.assignedFreelancerId });
@@ -284,7 +287,7 @@ export default function ProjectDetail({
         </p>
       </div>
 
-      {canAssignFreelancer(role) && project.status === "quoting" ? (
+      {!solo && canAssignFreelancer(role) && project.status === "quoting" ? (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Assignment</h2>
           <form onSubmit={handleAssign} className="flex items-end gap-2">

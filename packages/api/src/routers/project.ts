@@ -132,6 +132,7 @@ export const projectRouter = router({
       clientPath: `/c/${clientToken}`,
       role: ctx.servicesTeamRole,
       quotingMode: settings?.quotingMode ?? "assigned",
+      solo: settings?.solo ?? false,
       viewerId: ctx.session.user.id,
     };
   }),
