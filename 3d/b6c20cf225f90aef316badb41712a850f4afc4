@@ -1,0 +1,33 @@
+packages/db/src/migrations/20261008005658_r1c_paypal_webhooks/migration.sql
+  s_7aef4ab5bea50a::t_69c37fad88fce9 1-18
+packages/db/src/migrations/20261008005658_r1c_paypal_webhooks/snapshot.json
+  s_7aef4ab5bea50a::t_87fc9f6b551e3e 1-5523
+packages/db/src/repositories/paypal-webhooks.test.ts
+  s_7aef4ab5bea50a::t_b29545861ea552 1-40
+packages/db/src/repositories/paypal-webhooks.ts
+  s_7aef4ab5bea50a::t_eb8991aa7353d9 1-56
+packages/db/src/schema/index.ts
+  s_7aef4ab5bea50a::t_02b9482d963a3f 7
+packages/db/src/schema/paypal-webhooks.ts
+  s_7aef4ab5bea50a::t_9eaf2a4523cfdc 1-25
+packages/db/src/schema/projects.ts
+  s_7aef4ab5bea50a::t_bdcc4a5fe3339b 167,169-170,189-192
+packages/db/src/testing/db.ts
+  s_7aef4ab5bea50a::t_2969f443647252 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3db6c20cf225f90aef316badb41712a850f4afc4",
+  "prompts": {},
+  "sessions": {
+    "s_7aef4ab5bea50a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "d4e2aa46-df60-4c8d-af74-c4dcc5ad1a12",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
