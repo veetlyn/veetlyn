@@ -1,0 +1,21 @@
+apps/web/src/app/(site)/pay/[token]/pay-page.tsx
+  s_6aef7c4dffa70a::t_44f6f58d2e88e7 45
+  s_6aef7c4dffa70a::t_33dd32852f2d44 55
+  s_6aef7c4dffa70a::t_cc0177f052d9e0 46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01e3da2e1b0f6f329cd2bfd4d18fb02b76aceeb3",
+  "prompts": {},
+  "sessions": {
+    "s_6aef7c4dffa70a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "20524647-f1c3-4ba0-9dff-2bae30f8d35f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}
