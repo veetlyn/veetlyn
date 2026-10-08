@@ -1,5 +1,5 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
-import { paymentCapturedTransfer } from "@jendal-workspace/core";
+import { paymentCapturedTransfer, createFakeFileStore } from "@jendal-workspace/core";
 import {
   createTestDb,
   hasTestDatabase,
@@ -75,6 +75,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
   beforeEach(() => truncateAll(db));

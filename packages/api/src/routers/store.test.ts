@@ -1,4 +1,5 @@
 import { createTestAuth, signUpVerified } from "@jendal-workspace/auth/testing";
+import { createFakeFileStore } from "@jendal-workspace/core";
 import {
   addMember,
   addTeamMember,
@@ -27,6 +28,7 @@ describe.skipIf(!hasTestDatabase)("store router", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
   beforeEach(() => truncateAll(db));
@@ -113,6 +115,7 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
       auth,
       headers,
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
   }
 
@@ -191,6 +194,7 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
     await expect(caller.store.create({ name: "Acme", slug: "acme" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });

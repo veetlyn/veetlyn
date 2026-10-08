@@ -1,4 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
+import { createFakeFileStore } from "@jendal-workspace/core";
 import { findPayPalOnboarding, markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { team } from "@jendal-workspace/db/schema/organization";
 import {
@@ -113,6 +114,7 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
       headers: new Headers(),
       paypal,
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
   beforeEach(() => truncateAll(db));

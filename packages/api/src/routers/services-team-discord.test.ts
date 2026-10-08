@@ -1,4 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
+import { createFakeFileStore } from "@jendal-workspace/core";
 import { consumeDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
 import { addServicesTeamMember } from "@jendal-workspace/db/repositories/services-teams";
 import {
@@ -31,6 +32,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam.createDiscordLinkCode", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
   it("creates a one-time code tied to the team, valid for 15 minutes", async () => {

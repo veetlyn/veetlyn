@@ -1,4 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
+import { createFakeFileStore } from "@jendal-workspace/core";
 import {
   addMember,
   createTestDb,
@@ -63,6 +64,7 @@ describe.skipIf(!hasTestDatabase)("catalog router", () => {
       auth,
       headers: new Headers(),
       catalog,
+      files: createFakeFileStore(),
     });
 
   beforeEach(() => truncateAll(db));

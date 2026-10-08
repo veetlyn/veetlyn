@@ -1,4 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
+import { createFakeFileStore } from "@jendal-workspace/core";
 import { createTestDb, hasTestDatabase } from "@jendal-workspace/db/testing/db";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -18,6 +19,7 @@ describe.skipIf(!hasTestDatabase)("healthCheck", () => {
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
     });
 
     await expect(caller.healthCheck()).resolves.toBe("OK");

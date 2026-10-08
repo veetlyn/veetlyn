@@ -19,6 +19,7 @@
     "@jendal-workspace/email": "workspace:*",
     "@jendal-workspace/paypal": "workspace:*",
     "@trpc/server": "catalog:",
+    "aws4fetch": "^1.0.20",
     "better-auth": "catalog:",
     "evlog": "catalog:",
     "hono": "^4.13.12",
