@@ -30,6 +30,8 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       discordGuildId: settings?.discordGuildId ?? null,
       solo,
       offeringCount,
+      // Task 4 wires the real count.
+      productCount: 0,
     },
     {
       settings: `/${team.slug}/settings`,

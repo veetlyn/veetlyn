@@ -16,7 +16,9 @@ describe("publishProblem", () => {
   });
 
   it("needs an active service, or a published product for a store", () => {
-    expect(publishProblem({ ...ready, listedCount: 0 })).toBe("Add at least one active service before you publish.");
+    expect(publishProblem({ ...ready, listedCount: 0 })).toBe(
+      "Add at least one active service or product before you publish.",
+    );
     expect(publishProblem({ ...ready, product: "store", listedCount: 0 })).toBe(
       "Publish at least one product before you publish your store.",
     );
