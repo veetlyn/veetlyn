@@ -1,0 +1,21 @@
+apps/web/src/app/store/request/request-form.tsx
+  s_05dda2a4112a1e::t_b32336f9350959 1-179
+apps/web/src/app/store/request/page.tsx
+  s_05dda2a4112a1e::t_189fcfa7de2514 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2288abc51a5f001b8095850b08c094d3efb0d1bb",
+  "prompts": {},
+  "sessions": {
+    "s_05dda2a4112a1e": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "e7622306-403d-464d-ac55-43db0118aeef",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
