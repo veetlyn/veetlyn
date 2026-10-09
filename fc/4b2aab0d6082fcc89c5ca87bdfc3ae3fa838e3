@@ -1,0 +1,19 @@
+apps/server/src/services.ts
+  s_d8d0f67a017e70::t_3023b9c2eb9f02 31-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc4b2aab0d6082fcc89c5ca87bdfc3ae3fa838e3",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
