@@ -10,7 +10,7 @@ export default async function StorefrontHome() {
   if (store.product === "services") {
     const page = await fetchSellerPage();
     if (!page) notFound();
-    return <SellerPage page={page} />;
+    return <SellerPage page={{ ...page, requestBase: "" }} />;
   }
   return <StoreHome name={store.name} />;
 }
