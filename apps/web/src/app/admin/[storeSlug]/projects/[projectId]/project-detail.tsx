@@ -277,6 +277,25 @@ export default function ProjectDetail({
           {projectStatusLabel(project.status)} · {project.clientEmail ?? project.clientDiscordId ?? "No client contact"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
+        {project.source === "web" ? (
+          <section className="space-y-3 pt-3">
+            <h2 className="text-lg font-semibold">Request</h2>
+            <p className="text-sm">
+              Requested by{" "}
+              {project.clientName ? `${project.clientName} <${project.clientEmail}>` : (project.clientEmail ?? "unknown")}
+            </p>
+            {project.requestAnswers.length > 0 ? (
+              <dl className="space-y-2">
+                {project.requestAnswers.map((qa, index) => (
+                  <div key={index}>
+                    <dt className="text-sm font-medium">{qa.question}</dt>
+                    <dd className="text-sm whitespace-pre-wrap">{qa.answer}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+          </section>
+        ) : null}
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
         <p className="text-sm">
           Client link:{" "}

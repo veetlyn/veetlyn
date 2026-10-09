@@ -48,7 +48,14 @@ type TransitionRule = {
   guard?: (facts: ProjectFacts) => TransitionRefusal | null;
 };
 
-const OPEN: readonly ProjectStatus[] = ["quoting", "awaiting_deposit", "in_progress", "delivered", "awaiting_balance"];
+// The statuses where a project is still open: it can take a quote, a delivery, or a cancellation.
+export const OPEN_PROJECT_STATUSES: readonly ProjectStatus[] = [
+  "quoting",
+  "awaiting_deposit",
+  "in_progress",
+  "delivered",
+  "awaiting_balance",
+];
 const WORKING: readonly ProjectStatus[] = ["in_progress", "delivered"];
 
 // The extra work of an increase starts when its top-up is captured (services spec §5.5), so nothing
@@ -81,7 +88,7 @@ export const PROJECT_TRANSITIONS: Readonly<Record<ProjectEvent, TransitionRule>>
     guard: noOpenAmendmentMoney,
   },
   balance_captured: { from: ["awaiting_balance"], to: "completed" },
-  cancel: { from: OPEN, to: "cancelled" },
+  cancel: { from: OPEN_PROJECT_STATUSES, to: "cancelled" },
 };
 
 const NO_FACTS: ProjectFacts = { pendingAmendment: false, unpaidTopUp: false, balanceDueMinor: 0 };

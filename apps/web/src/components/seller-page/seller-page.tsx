@@ -20,6 +20,8 @@ export type SellerPageContent = {
   bio: string;
   supportEmail: string | null;
   currency: string;
+  // Base for quote-request links: "" on the store host (relative), the absolute public origin in the admin preview.
+  requestBase: string;
   departments: { id: string; name: string }[];
   offerings: SellerPageOffering[];
 };
@@ -42,15 +44,13 @@ function OfferingCard({
       <p className="text-sm text-muted-foreground">
         Usually {priceLabel(offering, page.currency)} · {daysLabel(offering)}
       </p>
-      {page.supportEmail ? (
-        <a
-          href={`mailto:${page.supportEmail}?subject=${encodeURIComponent(`Quote request: ${offering.name}`)}`}
-          aria-label={`Request a quote for ${offering.name}`}
-          className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
-        >
-          Request a quote
-        </a>
-      ) : null}
+      <a
+        href={`${page.requestBase}/request?offering=${offering.id}`}
+        aria-label={`Request a quote for ${offering.name}`}
+        className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
+      >
+        Request a quote
+      </a>
     </article>
   );
 }
@@ -97,6 +97,12 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
                 ))}
               </div>
             ) : null}
+            <p className="text-sm text-muted-foreground">
+              Looking for something else?{" "}
+              <a href={`${page.requestBase}/request`} className="underline underline-offset-4">
+                Request a quote
+              </a>
+            </p>
           </>
         )}
       </section>

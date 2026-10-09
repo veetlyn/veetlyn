@@ -71,7 +71,7 @@ app.use("/trpc/*", (c, next) =>
   trpcServer({
     endpoint: "/trpc",
     router: appRouter,
-    createContext: () => createContext(c, environment),
+    createContext: () => createContext(c, environment, c.executionCtx),
     onError: ({ error, path }) => {
       const context = trpcErrorContext(error, path);
       if (context) c.get("log").error(context.error, context.fields);

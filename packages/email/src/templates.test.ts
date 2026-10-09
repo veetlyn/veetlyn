@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { passwordResetEmail, verificationEmail } from "./templates";
+import { passwordResetEmail, quoteRequestLinkEmail, quoteRequestNoticeEmail, verificationEmail } from "./templates";
 
 const url = "https://admin.payleor.app/api/auth/verify-email?token=abc&callbackURL=%2Fnew";
 
@@ -31,5 +31,38 @@ describe("passwordResetEmail", () => {
     expect(email.text).toContain(resetUrl);
     expect(email.text).toContain("your password stays the same");
     expect(email.html).toContain(`href="${resetUrl}"`);
+  });
+});
+
+describe("quoteRequestLinkEmail", () => {
+  it("points the client to their private page", () => {
+    const email = quoteRequestLinkEmail({ clientName: "Jo", teamName: "Walk Crew", url: "https://payleor.com/c/t" });
+
+    expect(email.subject).toBe("Your request to Walk Crew");
+    expect(email.text).toContain("https://payleor.com/c/t");
+    expect(email.html).toContain("https://payleor.com/c/t");
+    expect(email.html).toContain("Hi Jo,");
+  });
+});
+
+describe("quoteRequestNoticeEmail", () => {
+  it("lists the request details and escapes the client name in HTML", () => {
+    const email = quoteRequestNoticeEmail({
+      teamName: "Walk Crew",
+      clientName: "Jo <b>",
+      clientEmail: "jo@x.com",
+      serviceName: "Logo refresh",
+      description: "A new logo",
+      answers: [{ question: "Colors?", answer: "Blue" }],
+      url: "https://admin.payleor.com/walk-crew/projects/p1",
+    });
+
+    expect(email.subject).toBe("New request from Jo <b>");
+    expect(email.html).toContain("Jo &lt;b&gt;");
+    expect(email.html).not.toContain("<b>");
+    expect(email.text).toContain("Logo refresh");
+    expect(email.text).toContain("A new logo");
+    expect(email.text).toContain("Colors?");
+    expect(email.text).toContain("Blue");
   });
 });

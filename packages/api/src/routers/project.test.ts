@@ -4,10 +4,12 @@ import {
   createTestDb,
   hasTestDatabase,
   seedOrganization,
+  seedProject,
   seedServicesTeam,
   seedServicesTeamWithAdmin,
   seedServicesOffering,
   seedServicesTeamMember,
+  seedStore,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
@@ -19,15 +21,18 @@ import {
   listProjectDeliveries,
   listProjectQuotes,
 } from "@jendal-workspace/db/repositories/projects";
+import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
+import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { payment, project } from "@jendal-workspace/db/schema/projects";
 import { ledgerBalance } from "@jendal-workspace/db/schema/ledger";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
+import { createFakeMailer } from "@jendal-workspace/email/fake";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { signClientLink } from "../client-links";
-import type { Context } from "../context";
+import { signClientLink, verifyClientLink } from "../client-links";
+import type { Context, EmailServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact } from "../use-cases/payments";
 import { appRouter } from "./index";
@@ -325,6 +330,31 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(detail.project.id).toBe(projectId);
     expect(detail.clientPath).toBe(`/c/${await clientToken(projectId)}`);
     expect(detail.quotes).toEqual([]);
+  });
+
+  it("shows a web request's client name and answers in the project detail", async () => {
+    const { userId, teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, {
+      teamId,
+      clientEmail: "web@example.com",
+      clientName: "Web Client",
+      source: "web",
+      requestAnswers: [
+        { question: "Budget?", answer: "Around $1k" },
+        { question: "Deadline?", answer: "Next month,\nif possible" },
+      ],
+    });
+
+    const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    expect(detail.project).toMatchObject({
+      source: "web",
+      clientName: "Web Client",
+      clientEmail: "web@example.com",
+      requestAnswers: [
+        { question: "Budget?", answer: "Around $1k" },
+        { question: "Deadline?", answer: "Next month,\nif possible" },
+      ],
+    });
   });
 
   it("accepts a quote through the client link and creates the $600 deposit payment (§5.3)", async () => {
@@ -1112,6 +1142,245 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         ).rejects.toMatchObject({ code: "NOT_FOUND" });
         expect(files.gets).toHaveLength(3);
       });
+    });
+  });
+
+  // Sellers design §4.2: the public quote request form.
+  describe("requestQuote", () => {
+    type RequestInput = {
+      slug: string;
+      offeringId: string | null;
+      name: string;
+      email: string;
+      description: string;
+      answers: { question: string; answer: string }[];
+      website: string;
+    };
+
+    function validRequest(overrides: Partial<RequestInput> = {}): RequestInput {
+      return {
+        slug: "seller",
+        offeringId: null,
+        name: "Jo",
+        email: "jo@x.com",
+        description: "I need a landing page for my shop.",
+        answers: [{ question: "Colors?", answer: "Blue" }],
+        website: "",
+        ...overrides,
+      };
+    }
+
+    // A caller with the email port wired to a fake mailer, unless `email: false`.
+    function requestCaller(options: { headers?: Headers; email?: boolean } = {}) {
+      const mailer = createFakeMailer();
+      const caller = appRouter.createCaller({
+        db,
+        session: null,
+        environment: "sandbox",
+        auth,
+        headers: options.headers ?? new Headers(),
+        catalog: createTestCatalogServices(),
+        files: createFakeFileStore(),
+        ...(options.email === false
+          ? {}
+          : { email: { mailer, siteOrigin: "https://payleor.test", adminOrigin: "https://admin.payleor.test" } }),
+      });
+      return { caller, mailer };
+    }
+
+    // An active services team with a support email and one active offering.
+    async function setupSeller() {
+      const { organizationId } = await seedOrganization(db);
+      const team = await seedServicesTeam(db, { organizationId, slug: "seller", name: "Walk Crew", status: "active" });
+      await db.update(teamTable).set({ supportEmail: "support@walkcrew.test" }).where(eq(teamTable.id, team.id));
+      const offeringId = await seedServicesOffering(db, { teamId: team.id, name: "Landing page" });
+      return { organizationId, team, offeringId };
+    }
+
+    it("creates a quoting project from a public request and emails the client and the team", async () => {
+      const { team, offeringId } = await setupSeller();
+      const { caller, mailer } = requestCaller();
+
+      const result = await caller.project.requestQuote(validRequest({ offeringId }));
+      expect(result).toEqual({ ok: true });
+
+      const rows = await db.select().from(project);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        teamId: team.id,
+        status: "quoting",
+        source: "web",
+        title: "Landing page",
+        brief: "I need a landing page for my shop.",
+        clientEmail: "jo@x.com",
+        clientName: "Jo",
+        requestAnswers: [{ question: "Colors?", answer: "Blue" }],
+        currency: "USD",
+        managementFeeBps: 1_000,
+        teamCutBps: 1_500,
+        createdById: null,
+      });
+      expect(await db.select().from(outbox)).toEqual([
+        expect.objectContaining({ type: "project.created", projectId: rows[0]!.id }),
+      ]);
+
+      expect(mailer.sent).toHaveLength(2);
+      const [toClient, toTeam] = mailer.sent;
+      expect(toClient).toMatchObject({
+        to: "jo@x.com",
+        subject: "Your request to Walk Crew",
+        replyTo: "support@walkcrew.test",
+      });
+      expect(toClient!.html).toContain("https://payleor.test/c/");
+      expect(toTeam).toMatchObject({ to: "support@walkcrew.test", subject: "New request from Jo" });
+
+      const match = /https:\/\/payleor\.test\/c\/(\S+)/.exec(toClient!.text);
+      expect(match).toBeTruthy();
+      expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toBe(rows[0]!.id);
+    });
+
+    it("pretends success for a filled honeypot without writing anything", async () => {
+      const { offeringId } = await setupSeller();
+      const { caller, mailer } = requestCaller();
+
+      const result = await caller.project.requestQuote(validRequest({ offeringId, website: "https://spam.example" }));
+      expect(result).toEqual({ ok: true });
+      expect(await db.select().from(project)).toEqual([]);
+      expect(mailer.sent).toEqual([]);
+    });
+
+    it("reports draft teams and stores as not found", async () => {
+      const { organizationId } = await seedOrganization(db);
+      await seedServicesTeam(db, { organizationId, slug: "draft-team", status: "draft" });
+      await seedStore(db, { organizationId, slug: "a-store", status: "active" });
+      const { caller } = requestCaller();
+
+      for (const slug of ["draft-team", "a-store"]) {
+        await expect(caller.project.requestQuote(validRequest({ slug }))).rejects.toMatchObject({
+          code: "NOT_FOUND",
+          message: "Seller not found.",
+        });
+      }
+    });
+
+    it("rejects an offering that is not an active service of the team", async () => {
+      const { team, offeringId } = await setupSeller();
+      const { organizationId: otherOrgId } = await seedOrganization(db);
+      const otherTeam = await seedServicesTeam(db, { organizationId: otherOrgId, slug: "other", status: "active" });
+      const otherOffering = await seedServicesOffering(db, { teamId: otherTeam.id });
+      const inactive = await seedServicesOffering(db, { teamId: team.id, name: "Old service", active: false });
+      const { caller } = requestCaller();
+
+      for (const id of [otherOffering, inactive]) {
+        await expect(caller.project.requestQuote(validRequest({ offeringId: id }))).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+          message: "That service is not on this seller's list.",
+        });
+      }
+      // The team's own active offering still works.
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+    });
+
+    it("refuses a fourth open request from the same email on the team", async () => {
+      const { team, offeringId } = await setupSeller();
+      for (let i = 0; i < 3; i += 1) {
+        await seedProject(db, { teamId: team.id, clientEmail: "jo@x.com", status: "quoting", source: "web" });
+      }
+      const { caller } = requestCaller();
+
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "You already have 3 open requests with this team. Wait for an answer before sending another.",
+      });
+    });
+
+    it("rate limits requests per email and team", async () => {
+      const { offeringId } = await setupSeller();
+      for (let i = 0; i < 5; i += 1) {
+        await hitRequestLimit(db, { key: "quote-request:email:seller:jo@x.com", windowMs: 3_600_000, max: 5 });
+      }
+      const { caller, mailer } = requestCaller();
+
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
+        code: "TOO_MANY_REQUESTS",
+        message: "Too many requests. Wait a little and try again.",
+      });
+      expect(await db.select().from(project)).toEqual([]);
+      expect(mailer.sent).toEqual([]);
+    });
+
+    it("rate limits requests per IP and skips the IP limit when there is no IP", async () => {
+      const { offeringId } = await setupSeller();
+      for (let i = 0; i < 20; i += 1) {
+        await hitRequestLimit(db, { key: "quote-request:ip:203.0.113.9", windowMs: 3_600_000, max: 20 });
+      }
+      const blocked = requestCaller({ headers: new Headers({ "cf-connecting-ip": "203.0.113.9" }) });
+
+      await expect(blocked.caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
+        code: "TOO_MANY_REQUESTS",
+        message: "Too many requests. Wait a little and try again.",
+      });
+
+      const { caller } = requestCaller();
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+    });
+
+    it("validates the name and description", async () => {
+      const { offeringId } = await setupSeller();
+      const { caller } = requestCaller();
+
+      await expect(caller.project.requestQuote(validRequest({ offeringId, name: "  " }))).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Tell us your name.",
+      });
+      await expect(
+        caller.project.requestQuote(validRequest({ offeringId, description: "short" })),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Describe what you need in at least a sentence.",
+      });
+    });
+
+    it("fails with PRECONDITION_FAILED when the email port is absent", async () => {
+      const { offeringId } = await setupSeller();
+      const { caller } = requestCaller({ email: false });
+
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "Requests are not available right now.",
+      });
+      expect(await db.select().from(project)).toEqual([]);
+    });
+
+    it("answers a generic error when the client email cannot be sent", async () => {
+      const { offeringId } = await setupSeller();
+      const send = vi.fn().mockRejectedValue(new Error("resend: 422 invalid address"));
+      const email: EmailServices = {
+        mailer: { send },
+        siteOrigin: "https://payleor.test",
+        adminOrigin: "https://admin.payleor.test",
+      };
+      const caller = appRouter.createCaller({
+        db,
+        session: null,
+        environment: "sandbox",
+        auth,
+        headers: new Headers(),
+        catalog: createTestCatalogServices(),
+        files: createFakeFileStore(),
+        email,
+      });
+
+      // The provider's error text must not leak to the caller.
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "We could not send the email. Try again in a moment.",
+      });
+
+      // The use case committed before the send.
+      expect(await db.select().from(project)).toHaveLength(1);
+      // The team notice is skipped after the client's mail failed.
+      expect(send).toHaveBeenCalledTimes(1);
     });
   });
 });
