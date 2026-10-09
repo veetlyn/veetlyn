@@ -279,7 +279,7 @@ export const projectRouter = router({
         ...linkContent,
       });
     } catch (error) {
-      emailServices.onError?.(error, { kind: "quote-request", to: input.email.trim().toLowerCase() });
+      await emailServices.onError?.(error, { kind: "quote-request", to: input.email.trim().toLowerCase() });
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not send the email. Try again in a moment." });
     }
     if (supportEmail) {
