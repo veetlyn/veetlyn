@@ -267,15 +267,21 @@ export const projectRouter = router({
     const token = await signClientLink(linkSecret(ctx.auth), projectId);
     const clientUrl = `${emailServices.siteOrigin}/c/${token}`;
     const linkContent = quoteRequestLinkEmail({ clientName: input.name.trim(), teamName, url: clientUrl });
-    // The client's mail proves the address, so its failure is the request's failure.
-    await emailServices.mailer.send({
-      sender: "invoices",
-      onBehalfOf: teamName,
-      replyTo: supportEmail ?? undefined,
-      tag: "quote-request",
-      to: input.email.trim().toLowerCase(),
-      ...linkContent,
-    });
+    // The client's mail proves the address, so its failure is the request's failure. The caller gets a
+    // generic message; the provider's error text stays server-side.
+    try {
+      await emailServices.mailer.send({
+        sender: "invoices",
+        onBehalfOf: teamName,
+        replyTo: supportEmail ?? undefined,
+        tag: "quote-request",
+        to: input.email.trim().toLowerCase(),
+        ...linkContent,
+      });
+    } catch (error) {
+      emailServices.onError?.(error, { kind: "quote-request", to: input.email.trim().toLowerCase() });
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not send the email. Try again in a moment." });
+    }
     if (supportEmail) {
       const notice = quoteRequestNoticeEmail({
         teamName,
@@ -283,7 +289,8 @@ export const projectRouter = router({
         clientEmail: input.email.trim().toLowerCase(),
         serviceName,
         description: input.description.trim(),
-        answers: input.answers,
+        // Trimmed, as stored on the project.
+        answers: input.answers.map(({ question, answer }) => ({ question: question.trim(), answer: answer.trim() })),
         url: `${emailServices.adminOrigin}/${input.slug}/projects/${projectId}`,
       });
       const send = emailServices.mailer
