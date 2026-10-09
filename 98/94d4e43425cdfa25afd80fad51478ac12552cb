@@ -1,0 +1,25 @@
+packages/db/src/repositories/files.ts
+  s_d8d0f67a017e70::t_806cea6776cd16 85
+packages/db/src/repositories/catalog.test.ts
+  s_d8d0f67a017e70::t_f6e82ac9e3a6ad 151
+packages/db/src/repositories/files.test.ts
+  s_d8d0f67a017e70::t_5145787dbe23ec 148-157
+packages/db/src/migrations/20261009025118_r4a_digital_products/migration.sql
+  s_d8d0f67a017e70::t_449245de54bf11 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9894d4e43425cdfa25afd80fad51478ac12552cb",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
