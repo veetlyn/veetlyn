@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type { Database } from "../index";
 import { team } from "../schema/organization";
 import { servicesTeamSettings } from "../schema/services-teams";
+import { listPublishedDigitalProducts, type SellerProductRow } from "./catalog";
 import {
   listServicesDepartments,
   listServicesOfferings,
@@ -22,6 +23,7 @@ export type SellerPageData = {
   currency: string;
   departments: ServicesDepartmentRow[];
   offerings: ServicesOfferingRow[];
+  products: SellerProductRow[];
 };
 
 export async function findSellerPage(db: Database, teamId: string): Promise<SellerPageData | null> {
@@ -41,13 +43,11 @@ export async function findSellerPage(db: Database, teamId: string): Promise<Sell
     .limit(1);
   if (!row) return null;
 
-  const [departments, offerings] =
-    row.product === "services"
-      ? await Promise.all([
-          listServicesDepartments(db, teamId),
-          listServicesOfferings(db, teamId, { activeOnly: true }),
-        ])
-      : [[], []];
+  const [departments, offerings, products] = await Promise.all([
+    row.product === "services" ? listServicesDepartments(db, teamId) : [],
+    row.product === "services" ? listServicesOfferings(db, teamId, { activeOnly: true }) : [],
+    listPublishedDigitalProducts(db, teamId),
+  ]);
 
   return {
     name: row.name,
@@ -59,5 +59,6 @@ export async function findSellerPage(db: Database, teamId: string): Promise<Sell
     currency: row.currency ?? "USD",
     departments,
     offerings,
+    products,
   };
 }

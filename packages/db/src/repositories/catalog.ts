@@ -1,6 +1,7 @@
-import type { TenantContext, VariantOption } from "@jendal-workspace/core";
-import { and, eq, sql } from "drizzle-orm";
+import type { ProductKind, TenantContext, VariantOption } from "@jendal-workspace/core";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 
+import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
 import { productImages, products, productVariants } from "../schema/catalog";
 
@@ -9,6 +10,7 @@ export type VariantRow = typeof productVariants.$inferSelect;
 export type ProductImageRow = typeof productImages.$inferSelect;
 
 export type ProductFields = {
+  kind: ProductKind;
   title: string;
   description: string;
   brand: string;
@@ -159,4 +161,43 @@ export async function deleteImages(db: Database, tenant: TenantContext, productI
   await db
     .delete(productImages)
     .where(and(eq(productImages.productId, productId), eq(productImages.storeId, tenant.storeId)));
+}
+
+// Run 4a: digital products are sold from the seller page; a digital product has exactly one variant.
+// These run outside a TenantContext (the seller page and its router only have a store id), so they take
+// the store id directly.
+export type SellerProductRow = { id: string; title: string; description: string; priceMinor: number };
+
+export async function listPublishedDigitalProducts(db: DbExecutor, storeId: string): Promise<SellerProductRow[]> {
+  const rows = await db
+    .select({
+      id: products.id,
+      title: products.title,
+      description: products.description,
+      priceMinor: productVariants.priceMinor,
+    })
+    .from(products)
+    .innerJoin(productVariants, eq(productVariants.productId, products.id))
+    .where(and(eq(products.storeId, storeId), eq(products.kind, "digital"), eq(products.status, "published")))
+    .orderBy(asc(products.createdAt), asc(productVariants.createdAt));
+  // One row per variant; digital products have one, but a hand-edited row set still yields one card.
+  const byId = new Map<string, SellerProductRow>();
+  for (const row of rows) if (!byId.has(row.id)) byId.set(row.id, row);
+  return [...byId.values()];
+}
+
+export async function countPublishedDigitalProducts(db: DbExecutor, storeId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: count() })
+    .from(products)
+    .where(and(eq(products.storeId, storeId), eq(products.kind, "digital"), eq(products.status, "published")));
+  return row?.count ?? 0;
+}
+
+export async function countDigitalProducts(db: DbExecutor, storeId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: count() })
+    .from(products)
+    .where(and(eq(products.storeId, storeId), eq(products.kind, "digital")));
+  return row?.count ?? 0;
 }

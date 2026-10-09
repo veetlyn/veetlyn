@@ -24,6 +24,8 @@ export const products = pgTable(
       .notNull()
       .references(() => team.id, { onDelete: "cascade" }),
     status: text("status").notNull().default("draft"),
+    // physical (Commerce stores) or digital (sellers, run 4a); derived from the team at creation.
+    kind: text("kind").notNull().default("physical"),
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
     brand: text("brand").notNull().default(""),
@@ -39,6 +41,7 @@ export const products = pgTable(
   (table) => [
     index("idx_products_store_status").on(table.storeId, table.status),
     check("products_status_check", sql`${table.status} IN ('draft', 'published')`),
+    check("products_kind_check", sql`${table.kind} IN ('physical', 'digital')`),
   ],
 );
 

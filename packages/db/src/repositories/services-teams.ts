@@ -81,6 +81,15 @@ export async function saveServicesTeamBio(db: Database, teamId: string, bio: str
     .onConflictDoUpdate({ target: servicesTeamSettings.teamId, set: values });
 }
 
+// Sellers design §3.2: the store section of the seller page (run 4a) turns on and off on its own.
+export async function setServicesTeamStoreEnabled(db: Database, teamId: string, enabled: boolean): Promise<void> {
+  const values = { storeEnabled: enabled };
+  await db
+    .insert(servicesTeamSettings)
+    .values({ teamId, ...values })
+    .onConflictDoUpdate({ target: servicesTeamSettings.teamId, set: values });
+}
+
 // Sellers design §3.1: a solo seller can become a team; the cut and the fee go back to the team defaults
 // (1500/1000, the column defaults) unless the seller already set other rates.
 export async function switchToTeam(db: Database, teamId: string): Promise<void> {

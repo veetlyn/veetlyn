@@ -1,5 +1,9 @@
 import { MAX_PRICE_MINOR } from "./product";
 
+// physical (Commerce stores) or digital (sellers, run 4a); derived from the team at creation.
+export const PRODUCT_KINDS = ["physical", "digital"] as const;
+export type ProductKind = (typeof PRODUCT_KINDS)[number];
+
 // Sellers design §5.1: a digital product is a title, a description, one price and one file.
 export type DigitalProductDraft = { title: string; description: string; priceMinor: number };
 export type DigitalProductProblem = { field: string; message: string };

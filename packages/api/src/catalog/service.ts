@@ -138,6 +138,8 @@ export async function createProduct(
   const images = await resolveImages(tenant, services, input.images);
   return withSkuMapping(async () => {
     const product = await insertProduct(db, tenant, {
+      // Run 4a: the digital path passes "digital"; this Commerce path stays physical.
+      kind: "physical",
       title: input.title.trim(),
       description: input.description,
       brand: input.brand,

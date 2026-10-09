@@ -1,5 +1,5 @@
 import type { FilePurpose } from "@jendal-workspace/core";
-import { and, asc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { fileUpload } from "../schema/files";
@@ -47,6 +47,48 @@ export async function markFileUploadAttached(tx: DbExecutor, id: string): Promis
     .update(fileUpload)
     .set({ attachedAt: sql`now()` })
     .where(eq(fileUpload.id, id));
+}
+
+// Product files: same attach-once discipline as deliveries, owned by the product.
+export async function lockProductFileUploadForAttach(
+  tx: DbExecutor,
+  input: { id: string; teamId: string; productId: string; purpose: FilePurpose },
+): Promise<FileUploadRow | null> {
+  const [row] = await tx
+    .select()
+    .from(fileUpload)
+    .where(
+      and(
+        eq(fileUpload.id, input.id),
+        eq(fileUpload.teamId, input.teamId),
+        eq(fileUpload.productId, input.productId),
+        eq(fileUpload.purpose, input.purpose),
+        isNull(fileUpload.attachedAt),
+      ),
+    )
+    .limit(1)
+    .for("update");
+  return row ?? null;
+}
+
+export async function findAttachedProductFile(tx: DbExecutor, productId: string): Promise<FileUploadRow | null> {
+  const [row] = await tx
+    .select()
+    .from(fileUpload)
+    .where(
+      and(
+        eq(fileUpload.productId, productId),
+        eq(fileUpload.purpose, "product"),
+        isNotNull(fileUpload.attachedAt),
+      ),
+    )
+    .orderBy(desc(fileUpload.attachedAt))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function deleteFileUpload(tx: DbExecutor, id: string): Promise<void> {
+  await tx.delete(fileUpload).where(eq(fileUpload.id, id));
 }
 
 export async function listDeliveryFiles(tx: DbExecutor, deliveryIds: string[]): Promise<DeliveryFile[]> {

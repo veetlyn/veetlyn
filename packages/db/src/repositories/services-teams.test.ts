@@ -25,6 +25,7 @@ import {
   servicesTeamRoleFor,
   setServicesTeamMemberRole,
   setServicesTeamMemberTitle,
+  setServicesTeamStoreEnabled,
   switchToTeam,
   workspaceRoleFor,
 } from "./services-teams";
@@ -117,6 +118,16 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
       ...defaultServicesTeamSettings(studio.id),
       bio: "We design logos.",
     });
+  });
+
+  it("flips the seller-page store on and off", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+
+    await setServicesTeamStoreEnabled(db, studio.id, true);
+    expect((await getServicesTeamSettings(db, studio.id))?.storeEnabled).toBe(true);
+    await setServicesTeamStoreEnabled(db, studio.id, false);
+    expect((await getServicesTeamSettings(db, studio.id))?.storeEnabled).toBe(false);
   });
 
   it("switches a solo seller to a team, restoring the team rates it never changed", async () => {

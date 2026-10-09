@@ -5,12 +5,15 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { relations } from "../relations";
 import { fileUpload } from "../schema/files";
 import { delivery } from "../schema/projects";
-import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, truncateAll } from "../testing/db";
+import { createTestDb, hasTestDatabase, seedOrganization, seedProduct, seedProject, seedServicesTeamWithAdmin, seedStore, truncateAll } from "../testing/db";
 import {
+  deleteFileUpload,
+  findAttachedProductFile,
   findFileUpload,
   insertFileUpload,
   listDeliveryFiles,
   lockFileUploadForAttach,
+  lockProductFileUploadForAttach,
   markFileUploadAttached,
   sweepUnattachedUploads,
 } from "./files";
@@ -111,6 +114,49 @@ describe.skipIf(!hasTestDatabase)("file uploads", () => {
       .values({ projectId, teamId, fileUploadId: upload.id })
       .catch((error: unknown) => error);
     expect(failure).toMatchObject({ cause: { code: "23505", constraint_name: "delivery_fileUploadId_idx" } });
+  });
+
+  it("locks an unattached product upload, finds the attached file, deletes by id", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "digital-shop" });
+    const product = await seedProduct(db, { storeId: store.id, kind: "digital" });
+    const row = await insertFileUpload(db, {
+      teamId: store.id,
+      productId: product.id,
+      purpose: "product",
+      r2Key: `teams/${store.id}/files/${crypto.randomUUID()}`,
+      fileName: "icons.zip",
+      contentType: "application/zip",
+      sizeBytes: 1_200_000,
+    });
+
+    await db.transaction(async (tx) => {
+      expect(
+        await lockProductFileUploadForAttach(tx, {
+          id: row.id,
+          teamId: store.id,
+          productId: product.id,
+          purpose: "product",
+        }),
+      ).toEqual(row);
+    });
+    // Nothing is attached yet, so there is no product file to sell.
+    expect(await findAttachedProductFile(db, product.id)).toBeNull();
+
+    await markFileUploadAttached(db, row.id);
+
+    expect(
+      await lockProductFileUploadForAttach(db, {
+        id: row.id,
+        teamId: store.id,
+        productId: product.id,
+        purpose: "product",
+      }),
+    ).toBeNull();
+    expect((await findAttachedProductFile(db, product.id))?.id).toBe(row.id);
+
+    await deleteFileUpload(db, row.id);
+    expect(await findFileUpload(db, row.id)).toBeNull();
   });
 
   describe("sweepUnattachedUploads", () => {

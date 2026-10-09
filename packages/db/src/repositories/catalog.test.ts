@@ -3,6 +3,8 @@ import { createTestDb, hasTestDatabase, seedOrganization, seedStore, truncateAll
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  countDigitalProducts,
+  countPublishedDigitalProducts,
   deleteImages,
   deleteVariants,
   getProduct,
@@ -11,6 +13,7 @@ import {
   insertVariants,
   listImages,
   listProducts,
+  listPublishedDigitalProducts,
   listVariants,
   setProductStatus,
   updateProduct,
@@ -129,6 +132,46 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
         { options: [], sku: "lamp-1", priceMinor: 1, stock: 0 },
       ]);
       expect(otherVariant?.sku).toBe("lamp-1");
+    });
+  });
+
+  describe("digital products", () => {
+    it("insertProduct stores the kind and listPublishedDigitalProducts returns title, description and price", async () => {
+      const tenant = await makeStore(db);
+      const product = await insertProduct(db, tenant, {
+        kind: "digital",
+        title: "Icon pack",
+        description: "120 icons.",
+        brand: "",
+        category: "",
+        chargeTax: true,
+        requiresShipping: false,
+        channel3ProductId: null,
+      });
+      await insertVariants(db, tenant, product.id, [
+        { options: [], sku: "", priceMinor: 1900, stock: 0 },
+      ]);
+      await setProductStatus(db, tenant, product.id, "published");
+
+      const listed = await listPublishedDigitalProducts(db, tenant.storeId);
+      expect(listed).toEqual([
+        { id: product.id, title: "Icon pack", description: "120 icons.", priceMinor: 1900 },
+      ]);
+      expect(await countPublishedDigitalProducts(db, tenant.storeId)).toBe(1);
+      expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
+    });
+
+    it("ignores drafts and physical products", async () => {
+      const tenant = await makeStore(db);
+      const draft = await insertProduct(db, tenant, { kind: "digital", title: "Draft pack" });
+      await insertVariants(db, tenant, draft.id, [{ options: [], sku: "", priceMinor: 900, stock: 0 }]);
+      const physical = await insertProduct(db, tenant, { title: "Lamp" });
+      await insertVariants(db, tenant, physical.id, [{ options: [], sku: "", priceMinor: 4200, stock: 3 }]);
+      await setProductStatus(db, tenant, physical.id, "published");
+
+      expect(await listPublishedDigitalProducts(db, tenant.storeId)).toEqual([]);
+      expect(await countPublishedDigitalProducts(db, tenant.storeId)).toBe(0);
+      expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
     });
   });
 
