@@ -1,0 +1,41 @@
+packages/core/src/sellers/publish.ts
+  s_c2db8d6c6ec2db::t_1f98e47cabe276 20
+  s_c2db8d6c6ec2db::t_2eab963b7dad14 8
+packages/core/src/index.ts
+  s_c2db8d6c6ec2db::t_9bda83b51edb6d 19
+packages/core/src/catalog/digital-product.test.ts
+  s_c2db8d6c6ec2db::t_0737b655aef268 1-58
+packages/core/src/services-teams/setup-steps.test.ts
+  s_c2db8d6c6ec2db::t_a236f6f9fd0ab5 85
+  s_c2db8d6c6ec2db::t_1eafe0f1383c95 73
+  s_c2db8d6c6ec2db::t_e6093412e980cd 16
+  s_c2db8d6c6ec2db::t_5753c95d02c83b 23
+  s_c2db8d6c6ec2db::t_f5ec91d52d2a58 42
+packages/core/src/services-teams/setup-steps.ts
+  s_c2db8d6c6ec2db::t_19747f154103e4 34
+  s_c2db8d6c6ec2db::t_4dc51d807b1857 27
+apps/web/src/app/admin/[storeSlug]/services-team-dashboard.tsx
+  s_c2db8d6c6ec2db::t_3b9326131b6ee2 33-34
+packages/core/src/catalog/digital-product.ts
+  s_c2db8d6c6ec2db::t_444e14c39383ec 1-28
+packages/core/src/sellers/publish.test.ts
+  s_c2db8d6c6ec2db::t_5d38d9a7432154 19-21
+packages/core/src/files/rules.ts
+  s_c2db8d6c6ec2db::t_64bac3b77461c7 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51033df0f9979a1edf5287998083b55b53b697b0",
+  "prompts": {},
+  "sessions": {
+    "s_c2db8d6c6ec2db": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "370d66c9-eadf-49a4-a9fd-9789eb058777",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
