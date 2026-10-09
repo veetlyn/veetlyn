@@ -1,5 +1,5 @@
 import type { CatalogServices } from "@jendal-workspace/api/catalog/service";
-import type { PayPalServices } from "@jendal-workspace/api/context";
+import type { EmailServices, PayPalServices } from "@jendal-workspace/api/context";
 import { createAuth as createConfiguredAuth } from "@jendal-workspace/auth";
 import { createChannel3Client } from "@jendal-workspace/channel3";
 import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
@@ -26,6 +26,19 @@ export function createAuth(database: Database, executionCtx: ExecutionContext) {
     waitUntil: (promise) => executionCtx.waitUntil(promise),
     onEmailError: logEmailError,
   });
+}
+
+// One mailer for auth and the api; links in emails point at the site and admin origins derived from
+// BETTER_AUTH_URL (http://admin.localhost:3001 in dev, https://admin.payleor.com in production).
+export function getEmailServices(executionCtx: ExecutionContext): EmailServices {
+  const adminOrigin = ENV.BETTER_AUTH_URL;
+  return {
+    mailer: createMailer(ENV),
+    siteOrigin: adminOrigin.replace("://admin.", "://"),
+    adminOrigin,
+    waitUntil: (promise) => executionCtx.waitUntil(promise),
+    onError: logEmailError,
+  };
 }
 
 export function getPayPalServices(): PayPalServices | undefined {

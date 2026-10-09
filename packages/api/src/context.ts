@@ -1,6 +1,7 @@
 import type { Auth, Session } from "@jendal-workspace/auth";
 import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import type { Mailer } from "@jendal-workspace/email";
 import type { PayPalClient } from "@jendal-workspace/paypal";
 
 import type { CatalogServices } from "./catalog/service";
@@ -13,6 +14,17 @@ export type PayPalServices = {
   sdk: { clientId: string; partnerAttributionId: string; environment: "sandbox" | "live" };
   // Called after team.paypal_merchant_id changes; the api Worker invalidates the KV store cache (Fact 10).
   onTeamMerchantChanged?: (team: { id: string; slug: string }) => void | Promise<void>;
+};
+
+// Transactional email outside auth (quote requests). Absent in tests that do not send email.
+export type EmailServices = {
+  mailer: Mailer;
+  // Absolute origins for links in emails, e.g. https://payleor.com and https://admin.payleor.com.
+  siteOrigin: string;
+  adminOrigin: string;
+  // Sends that may outlive the response; awaited when absent.
+  waitUntil?: (promise: Promise<unknown>) => void;
+  onError?: (error: unknown, email: { kind: string; to: string }) => void | Promise<void>;
 };
 
 export type Context = {
@@ -30,4 +42,6 @@ export type Context = {
   files: FileStore;
   // Called after team.status changes (publishing); the api Worker drops the KV storefront lookups. Absent in tests.
   onTeamStatusChanged?: (team: { id: string; slug: string }) => void | Promise<void>;
+  // Absent in tests that do not send email; the request procedure then fails with PRECONDITION_FAILED.
+  email?: EmailServices;
 };
