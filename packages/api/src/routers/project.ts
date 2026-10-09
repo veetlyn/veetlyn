@@ -1,4 +1,4 @@
-import { MAX_QUOTE_ITEMS } from "@jendal-workspace/core";
+import { MAX_QUOTE_ITEMS, QUOTE_REQUEST_LIMITS } from "@jendal-workspace/core";
 import {
   findProjectById,
   listProjectAmendments,
@@ -10,7 +10,9 @@ import {
 import { canSeeProject, type QuotingMode, type ServicesTeamRole } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { listDeliveryFiles } from "@jendal-workspace/db/repositories/files";
+import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { getServicesTeamSettings, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
+import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspace/email";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -31,6 +33,7 @@ import {
   startProject,
   submitDelivery,
 } from "../use-cases/projects";
+import { requestQuote } from "../use-cases/requests";
 
 const quoteItemInput = z.object({
   description: z.string().trim().min(1).max(200),
@@ -39,6 +42,24 @@ const quoteItemInput = z.object({
 });
 
 const projectIdInput = z.object({ projectId: z.string().uuid() });
+
+const HOUR_MS = 3_600_000;
+
+// Abuse caps only: the use-case validates and gives the friendly messages.
+const requestQuoteInput = z.object({
+  slug: z.string().min(1).max(63),
+  offeringId: z.string().max(64).nullable(),
+  name: z.string().max(QUOTE_REQUEST_LIMITS.maxName + 20),
+  email: z.string().max(QUOTE_REQUEST_LIMITS.maxEmail),
+  description: z.string().max(QUOTE_REQUEST_LIMITS.maxDescription + 100),
+  answers: z
+    .array(
+      z.object({ question: z.string().max(200), answer: z.string().max(QUOTE_REQUEST_LIMITS.maxAnswer + 100) }),
+    )
+    .max(10),
+  // Honeypot: bots fill the hidden "website" field; a filled field pretends success.
+  website: z.string().max(200),
+});
 
 async function projectIdFromToken(auth: { options: Record<string, unknown> }, token: string): Promise<string> {
   const projectId = await verifyClientLink(linkSecret(auth), token);
@@ -219,6 +240,60 @@ export const projectRouter = router({
       const { row } = await requireVisibleProject(ctx, input.projectId);
       return deliveryFileUrl(ctx.db, ctx.files, { projectId: row.id, deliveryId: input.deliveryId });
     }),
+
+  // The public quote request form (sellers design §4.2): no account, a honeypot, and per-IP and
+  // per-email limits before a project row and the two emails. The honeypot check runs first so bots
+  // never touch the limit budget.
+  requestQuote: publicProcedure.input(requestQuoteInput).mutation(async ({ ctx, input }) => {
+    if (input.website.trim() !== "") return { ok: true as const };
+    const ip = ctx.headers.get("cf-connecting-ip")?.trim();
+    if (ip) {
+      const allowed = await hitRequestLimit(ctx.db, { key: `quote-request:ip:${ip}`, windowMs: HOUR_MS, max: 20 });
+      if (!allowed) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Wait a little and try again." });
+      }
+    }
+    const emailKey = `quote-request:email:${input.slug}:${input.email.trim().toLowerCase()}`;
+    const emailAllowed = await hitRequestLimit(ctx.db, { key: emailKey, windowMs: HOUR_MS, max: 5 });
+    if (!emailAllowed) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Wait a little and try again." });
+    }
+    const emailServices = ctx.email;
+    if (!emailServices) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Requests are not available right now." });
+    }
+
+    const { projectId, teamName, serviceName, supportEmail } = await requestQuote(ctx.db, input);
+    const token = await signClientLink(linkSecret(ctx.auth), projectId);
+    const clientUrl = `${emailServices.siteOrigin}/c/${token}`;
+    const linkContent = quoteRequestLinkEmail({ clientName: input.name.trim(), teamName, url: clientUrl });
+    // The client's mail proves the address, so its failure is the request's failure.
+    await emailServices.mailer.send({
+      sender: "invoices",
+      onBehalfOf: teamName,
+      replyTo: supportEmail ?? undefined,
+      tag: "quote-request",
+      to: input.email.trim().toLowerCase(),
+      ...linkContent,
+    });
+    if (supportEmail) {
+      const notice = quoteRequestNoticeEmail({
+        teamName,
+        clientName: input.name.trim(),
+        clientEmail: input.email.trim().toLowerCase(),
+        serviceName,
+        description: input.description.trim(),
+        answers: input.answers,
+        url: `${emailServices.adminOrigin}/${input.slug}/projects/${projectId}`,
+      });
+      const send = emailServices.mailer
+        .send({ sender: "invoices", onBehalfOf: teamName, tag: "quote-request-notice", to: supportEmail, ...notice })
+        .catch((error: unknown) => emailServices.onError?.(error, { kind: "quote-request-notice", to: supportEmail }));
+      if (emailServices.waitUntil) emailServices.waitUntil(send);
+      else await send;
+    }
+    return { ok: true as const };
+  }),
 
   // The client project page (services spec §5.2): signed link, no account. Internal user ids
   // (freelancerId, authorId, proposedById) and the PayPal ids stay server-side; the link holder

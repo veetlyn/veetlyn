@@ -60,12 +60,13 @@ import { TRPCError } from "@trpc/server";
 
 export type ProjectActor = { teamId: string; role: ServicesTeamRole; actorId: string };
 
-function fail(code: "NOT_FOUND" | "FORBIDDEN" | "BAD_REQUEST" | "TOO_MANY_REQUESTS", message: string): never {
+// Exported for the sibling use-case modules (requests.ts) so every procedure fails the same way.
+export function fail(code: "NOT_FOUND" | "FORBIDDEN" | "BAD_REQUEST" | "TOO_MANY_REQUESTS", message: string): never {
   throw new TRPCError({ code, message });
 }
 
 // A lost compare-and-set race is a client-visible conflict, not a server error.
-async function runProjectTransaction<T>(
+export async function runProjectTransaction<T>(
   db: Database,
   run: (tx: Transaction, uow: UnitOfWork) => Promise<T>,
 ): Promise<T> {
