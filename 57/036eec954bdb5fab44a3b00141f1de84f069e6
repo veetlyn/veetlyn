@@ -1,0 +1,63 @@
+packages/db/src/repositories/files.ts
+  s_6c2c5cdd343886::t_e702bf4ae3e732 2
+  s_6c2c5cdd343886::t_9a11b5c0fd7628 52-93
+packages/db/src/repositories/services-teams.ts
+  s_6c2c5cdd343886::t_afb2ad0e4a67bc 84-92
+packages/core/src/catalog/digital-product.ts
+  s_6c2c5cdd343886::t_e9cff567b09d61 3-6
+packages/db/src/repositories/seller-page.ts
+  s_6c2c5cdd343886::t_939cb4e91d9157 46-50,62
+  s_6c2c5cdd343886::t_6b8318463fd755 7,26
+packages/db/src/repositories/files.test.ts
+  s_6c2c5cdd343886::t_f7ff9608b3749b 8,10-11,16
+  s_6c2c5cdd343886::t_9d1bf85d729a98 119-161
+packages/db/src/testing/db.test.ts
+  s_6c2c5cdd343886::t_207fe8777a809b 19-51
+  s_6c2c5cdd343886::t_b305ca2f85a2b4 3,5
+packages/db/src/repositories/catalog.test.ts
+  s_6c2c5cdd343886::t_152fc93c845349 138-177
+  s_6c2c5cdd343886::t_e94ad5a060af22 6-7,16
+packages/db/src/schema/catalog.ts
+  s_6c2c5cdd343886::t_b4dae9c75663b8 27-28
+  s_6c2c5cdd343886::t_2592d5af1db3c5 44
+packages/db/src/testing/db.ts
+  s_6c2c5cdd343886::t_c75e937a054751 232-253
+  s_6c2c5cdd343886::t_788923914c28fa 6
+packages/api/src/catalog/service.ts
+  s_6c2c5cdd343886::t_2b31fe28e80fdf 141-142
+packages/db/src/schema/files.ts
+  s_6c2c5cdd343886::t_7d71031c68cb7a 34
+  s_6c2c5cdd343886::t_e50bc7e5d8d104 3,6,11
+  s_6c2c5cdd343886::t_5f480658095898 22
+packages/db/src/repositories/services-teams.test.ts
+  s_6c2c5cdd343886::t_e581ca50c936b5 28
+  s_6c2c5cdd343886::t_69ee97c1215dee 123-132
+packages/db/src/repositories/seller-page.test.ts
+  s_6c2c5cdd343886::t_84931254489e30 6
+  s_6c2c5cdd343886::t_a7075ee5720b06 70
+  s_6c2c5cdd343886::t_fc946e58b013cc 88,92-107
+  s_6c2c5cdd343886::t_fcf0d44b6692ab 108-109
+packages/db/src/repositories/catalog.ts
+  s_6c2c5cdd343886::t_767aaf4952bdbe 1-2,4,13
+  s_6c2c5cdd343886::t_0b3231581315d8 165-203
+packages/db/src/migrations/20261009025118_r4a_digital_products/migration.sql
+  s_6c2c5cdd343886::t_62db9ce1d70f55 1-5
+packages/db/src/migrations/20261009025118_r4a_digital_products/snapshot.json
+  s_6c2c5cdd343886::t_c7616eadaf8979 1-6737
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "57036eec954bdb5fab44a3b00141f1de84f069e6",
+  "prompts": {},
+  "sessions": {
+    "s_6c2c5cdd343886": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "a0c57b54-0fdb-4bbc-8e7e-1a4bccb3a7be",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
