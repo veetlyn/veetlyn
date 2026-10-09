@@ -1,0 +1,29 @@
+packages/api/src/use-cases/requests.ts
+  s_d54fa92840177f::t_afc7b5c8642972 1-96
+packages/api/src/use-cases/projects.ts
+  s_d54fa92840177f::t_f695d1e90eb1d4 63-64,69
+packages/api/src/routers/project.ts
+  s_d54fa92840177f::t_12bde3d3df0b07 46-63
+  s_d54fa92840177f::t_4fbae65d8ffba0 244-297
+  s_d54fa92840177f::t_2b15cc77aa7a5f 1,13,15,36
+packages/api/src/routers/project.test.ts
+  s_d54fa92840177f::t_a2b0e211a89606 7,12,24,26,30,34
+  s_d54fa92840177f::t_98f5db1d286f45 1122-1239,1329
+  s_d54fa92840177f::t_4ed43e9f434c89 1240-1328
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe1a96faf91783cdc45f4320b9f7dacf485e88fe",
+  "prompts": {},
+  "sessions": {
+    "s_d54fa92840177f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "57b9b7df-2413-4941-9eba-3ad824b9df59",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
