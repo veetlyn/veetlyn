@@ -1,0 +1,21 @@
+packages/api/src/routers/project.test.ts
+  s_d54fa92840177f::t_770e76248e7034 32
+  s_d54fa92840177f::t_d377a28e0454c4 35
+  s_d54fa92840177f::t_7b317c4b2f430a 1354-1384
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "79df4de2837a86aba17ceb5245133805f11c0366",
+  "prompts": {},
+  "sessions": {
+    "s_d54fa92840177f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "57b9b7df-2413-4941-9eba-3ad824b9df59",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
