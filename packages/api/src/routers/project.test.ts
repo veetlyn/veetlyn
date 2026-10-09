@@ -29,10 +29,10 @@ import { ledgerBalance } from "@jendal-workspace/db/schema/ledger";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import { createFakeMailer } from "@jendal-workspace/email/fake";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { signClientLink, verifyClientLink } from "../client-links";
-import type { Context } from "../context";
+import type { Context, EmailServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact } from "../use-cases/payments";
 import { appRouter } from "./index";
@@ -1350,6 +1350,37 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         message: "Requests are not available right now.",
       });
       expect(await db.select().from(project)).toEqual([]);
+    });
+
+    it("answers a generic error when the client email cannot be sent", async () => {
+      const { offeringId } = await setupSeller();
+      const send = vi.fn().mockRejectedValue(new Error("resend: 422 invalid address"));
+      const email: EmailServices = {
+        mailer: { send },
+        siteOrigin: "https://payleor.test",
+        adminOrigin: "https://admin.payleor.test",
+      };
+      const caller = appRouter.createCaller({
+        db,
+        session: null,
+        environment: "sandbox",
+        auth,
+        headers: new Headers(),
+        catalog: createTestCatalogServices(),
+        files: createFakeFileStore(),
+        email,
+      });
+
+      // The provider's error text must not leak to the caller.
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "We could not send the email. Try again in a moment.",
+      });
+
+      // The use case committed before the send.
+      expect(await db.select().from(project)).toHaveLength(1);
+      // The team notice is skipped after the client's mail failed.
+      expect(send).toHaveBeenCalledTimes(1);
     });
   });
 });
