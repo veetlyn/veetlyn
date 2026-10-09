@@ -28,8 +28,9 @@ export function createAuth(database: Database, executionCtx: ExecutionContext) {
   });
 }
 
-// One mailer for auth and the api; links in emails point at the site and admin origins derived from
-// BETTER_AUTH_URL (http://admin.localhost:3001 in dev, https://admin.payleor.com in production).
+// A mailer per request, as in createAuth; links in emails point at the site and admin origins derived from
+// BETTER_AUTH_URL (http://admin.localhost:3001 in dev, https://admin.payleor.com in production; the
+// derivation assumes the admin origin carries the admin. subdomain).
 export function getEmailServices(executionCtx: ExecutionContext): EmailServices {
   const adminOrigin = ENV.BETTER_AUTH_URL;
   return {
