@@ -332,6 +332,31 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(detail.quotes).toEqual([]);
   });
 
+  it("shows a web request's client name and answers in the project detail", async () => {
+    const { userId, teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, {
+      teamId,
+      clientEmail: "web@example.com",
+      clientName: "Web Client",
+      source: "web",
+      requestAnswers: [
+        { question: "Budget?", answer: "Around $1k" },
+        { question: "Deadline?", answer: "Next month,\nif possible" },
+      ],
+    });
+
+    const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    expect(detail.project).toMatchObject({
+      source: "web",
+      clientName: "Web Client",
+      clientEmail: "web@example.com",
+      requestAnswers: [
+        { question: "Budget?", answer: "Around $1k" },
+        { question: "Deadline?", answer: "Next month,\nif possible" },
+      ],
+    });
+  });
+
   it("accepts a quote through the client link and creates the $600 deposit payment (§5.3)", async () => {
     const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
     const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });

@@ -1,4 +1,4 @@
-import type { ProjectSource, ProjectStatus } from "@jendal-workspace/core";
+import type { ProjectSource, ProjectStatus, QuoteRequestAnswer } from "@jendal-workspace/core";
 import { sql } from "drizzle-orm";
 
 import { createDb, type Database } from "../index";
@@ -200,7 +200,15 @@ export async function seedServicesTeamMember(
 
 export async function seedProject(
   db: Database,
-  input: { teamId: string; title?: string; clientEmail?: string; clientName?: string; status?: ProjectStatus; source?: ProjectSource },
+  input: {
+    teamId: string;
+    title?: string;
+    clientEmail?: string;
+    clientName?: string;
+    status?: ProjectStatus;
+    source?: ProjectSource;
+    requestAnswers?: QuoteRequestAnswer[];
+  },
 ): Promise<string> {
   const [row] = await db
     .insert(project)
@@ -211,6 +219,7 @@ export async function seedProject(
       clientName: input.clientName,
       status: input.status,
       source: input.source,
+      requestAnswers: input.requestAnswers,
       currency: "USD",
       managementFeeBps: 1_000,
       teamCutBps: 1_500,
