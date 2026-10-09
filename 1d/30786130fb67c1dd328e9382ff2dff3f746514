@@ -1,0 +1,25 @@
+apps/web/src/app/admin/[storeSlug]/preview/seller-preview.tsx
+  s_6af79325f2b3c3::t_beddb59980e295 42
+apps/web/src/components/seller-page/seller-page.tsx
+  s_6af79325f2b3c3::t_0663a7da87bb83 23-24
+  s_6af79325f2b3c3::t_c150ca78419982 100-105
+  s_6af79325f2b3c3::t_29dae638072a52 47-53
+apps/web/src/app/store/page.tsx
+  s_6af79325f2b3c3::t_df6dff990f60f6 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1d30786130fb67c1dd328e9382ff2dff3f746514",
+  "prompts": {},
+  "sessions": {
+    "s_6af79325f2b3c3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "23b6ec64-b4ee-42c2-96ad-628a290bd079",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
