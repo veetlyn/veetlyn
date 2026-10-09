@@ -145,14 +145,16 @@ describe.skipIf(!hasTestDatabase)("file uploads", () => {
 
     await markFileUploadAttached(db, row.id);
 
-    expect(
-      await lockProductFileUploadForAttach(db, {
-        id: row.id,
-        teamId: store.id,
-        productId: product.id,
-        purpose: "product",
-      }),
-    ).toBeNull();
+    await db.transaction(async (tx) => {
+      expect(
+        await lockProductFileUploadForAttach(tx, {
+          id: row.id,
+          teamId: store.id,
+          productId: product.id,
+          purpose: "product",
+        }),
+      ).toBeNull();
+    });
     expect((await findAttachedProductFile(db, product.id))?.id).toBe(row.id);
 
     await deleteFileUpload(db, row.id);

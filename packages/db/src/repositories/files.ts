@@ -82,7 +82,7 @@ export async function findAttachedProductFile(tx: DbExecutor, productId: string)
         isNotNull(fileUpload.attachedAt),
       ),
     )
-    .orderBy(desc(fileUpload.attachedAt))
+    .orderBy(desc(fileUpload.attachedAt), desc(fileUpload.createdAt))
     .limit(1);
   return row ?? null;
 }

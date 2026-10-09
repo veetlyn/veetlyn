@@ -148,6 +148,7 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
         requiresShipping: false,
         channel3ProductId: null,
       });
+      expect(product.kind).toBe("digital");
       await insertVariants(db, tenant, product.id, [
         { options: [], sku: "", priceMinor: 1900, stock: 0 },
       ]);
