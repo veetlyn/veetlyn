@@ -1,0 +1,35 @@
+packages/api/src/context.ts
+  s_7bd588c4f2c5ce::t_abb83706cd3a6a 27
+  s_7bd588c4f2c5ce::t_90657dc4e0ccea 4
+  s_7bd588c4f2c5ce::t_12712b6f8e136b 45-46
+  s_7bd588c4f2c5ce::t_d0ac8f5cc1271a 19-26,28-29
+packages/api/package.json
+  s_7bd588c4f2c5ce::t_f662133d511182 15
+apps/server/src/index.ts
+  s_7bd588c4f2c5ce::t_22761f75af51a7 74
+apps/server/src/email-log.ts
+  s_7bd588c4f2c5ce::t_bf76242426ef04 10
+apps/server/src/services.ts
+  s_7bd588c4f2c5ce::t_7cabf6732cf9bb 31-43
+  s_7bd588c4f2c5ce::t_1486bd8b61cba4 2
+apps/server/src/context.ts
+  s_7bd588c4f2c5ce::t_33fa0c5c511634 3,6-12,18-22,36
+pnpm-lock.yaml
+  s_7bd588c4f2c5ce::t_5942d4f15af1e1 226,290-292,429,5887,7928
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3e5afcb3096cc3b7e916f7e4d2cafca749ca3f07",
+  "prompts": {},
+  "sessions": {
+    "s_7bd588c4f2c5ce": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "98ad11de-a45a-4879-b3b5-060a6e027999",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
