@@ -1183,7 +1183,14 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         files: createFakeFileStore(),
         ...(options.email === false
           ? {}
-          : { email: { mailer, siteOrigin: "https://payleor.test", adminOrigin: "https://admin.payleor.test" } }),
+          : {
+              email: {
+                mailer,
+                siteOrigin: "https://payleor.test",
+                adminOrigin: "https://admin.payleor.test",
+                storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+              },
+            }),
       });
       return { caller, mailer };
     }
@@ -1359,6 +1366,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         mailer: { send },
         siteOrigin: "https://payleor.test",
         adminOrigin: "https://admin.payleor.test",
+        storeOrigin: (slug) => `https://${slug}.payleor.test`,
       };
       const caller = appRouter.createCaller({
         db,

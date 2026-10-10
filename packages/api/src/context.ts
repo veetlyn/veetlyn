@@ -22,6 +22,8 @@ export type EmailServices = {
   // Absolute origins for links in emails, e.g. https://payleor.com and https://admin.payleor.com.
   siteOrigin: string;
   adminOrigin: string;
+  // Absolute origin of a team's store host, e.g. https://walk-crew.payleor.app.
+  storeOrigin: (slug: string) => string;
   // Sends that may outlive the response; awaited when absent.
   waitUntil?: (promise: Promise<unknown>) => void;
   onError?: (error: unknown, email: { kind: string; to: string }) => void | Promise<void>;
