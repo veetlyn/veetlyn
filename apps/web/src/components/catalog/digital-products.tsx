@@ -23,7 +23,7 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
   );
 
   if (team.isPending) return <Loader />;
-  if (team.isError || !team.data) return <p role="alert">The products couldn&apos;t be loaded.</p>;
+  if (team.isError) return <p role="alert">The products couldn&apos;t be loaded.</p>;
 
   const { settings, role } = team.data;
   const currency = settings?.currency ?? "USD";

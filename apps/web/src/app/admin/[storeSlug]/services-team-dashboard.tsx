@@ -114,7 +114,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
           ) : null}
         </div>
         <p className="text-sm text-muted-foreground">
-          Sell digital downloads from your seller page: presets, templates, icons, any file up to 100 MB.
+          Sell digital downloads, such as presets, templates and icons, from your seller page. Files can be up to 100 MB.
         </p>
         {!settings?.storeEnabled ? (
           <div className="grid justify-items-start gap-2">

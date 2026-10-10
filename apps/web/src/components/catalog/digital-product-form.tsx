@@ -36,7 +36,7 @@ function useInvalidateDigital(teamSlug: string, productId?: string) {
         ? queryClient.invalidateQueries({ queryKey: trpc.catalog.digitalGet.queryKey({ storeSlug: teamSlug, id: productId }) })
         : null,
       queryClient.invalidateQueries({ queryKey: trpc.catalog.digitalList.queryKey({ storeSlug: teamSlug }) }),
-      // The services dashboard checklist counts published products.
+      // The services dashboard checklist counts the team's digital products.
       queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
     ]);
 }
@@ -128,8 +128,9 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
     }
     const draft = { title: fields.title.trim(), description: fields.description, priceMinor };
     const problems = validateDigitalProductDraft(draft);
-    if (problems.length > 0) {
-      setMessage(problems[0]!.message);
+    const [first] = problems;
+    if (first) {
+      setMessage(first.message);
       return;
     }
     const onError = (error: { message: string }) => setMessage(error.message);
@@ -148,9 +149,9 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
       create.mutate(
         { storeSlug: teamSlug, ...draft },
         {
-          onSuccess: async (created) => {
-            await invalidate();
+          onSuccess: (created) => {
             router.push(`/${teamSlug}/products/${created.id}`);
+            void invalidate();
           },
           onError,
         },
@@ -207,7 +208,7 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
         </p>
       )}
       <div>
-        <Button type="submit" disabled={saving || priceMinor === null}>
+        <Button type="submit" disabled={saving || create.isSuccess || priceMinor === null}>
           {saving ? "Saving…" : productId ? "Save changes" : "Save product"}
         </Button>
       </div>
@@ -267,7 +268,7 @@ function FileSection({ teamSlug, productId, fileName }: { teamSlug: string; prod
           upload.reset();
         }}
       />
-      <p className="text-sm text-muted-foreground">Up to 100 MB.</p>
+      <p className="text-sm text-muted-foreground">Files can be up to 100 MB.</p>
       {problem && (
         <p role="alert" className="text-sm text-destructive">
           {problem}
