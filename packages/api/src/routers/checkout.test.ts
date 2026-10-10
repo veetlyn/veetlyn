@@ -41,6 +41,8 @@ const DECLINED = {
   details: [{ issue: "INSTRUMENT_DECLINED", description: "The instrument presented was declined." }],
 };
 
+const ALREADY_CAPTURED = { ...DECLINED, details: [{ issue: "ORDER_ALREADY_CAPTURED", description: "Already captured." }] };
+
 function capturedOrder(status: string, value = "19.00", extra: Record<string, unknown> = {}) {
   return {
     id: "ORDER1",
@@ -366,6 +368,85 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
       expect(mailer.sent).toHaveLength(1);
       expect(await transfersOf(teamId)).toHaveLength(2);
       expect(calls(requests, "/capture")).toHaveLength(1);
+    });
+
+    it("reads the capture from the PayPal order when the capture call reports it already captured", async () => {
+      const { teamId, caller, mailer, secret } = await started({
+        capture: () => jsonResponse(422, ALREADY_CAPTURED),
+        lookup: () => jsonResponse(200, capturedOrder("COMPLETED", "19.00", FEE_BREAKDOWN)),
+      });
+
+      await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).resolves.toEqual({
+        outcome: "captured",
+        orderPath: expect.stringMatching(/^\/orders\//),
+      });
+      const order = await onlyOrder();
+      expect(order).toMatchObject({ status: "paid", paypalCaptureId: "CAPTURE1", paypalFeeMinor: 121 });
+      expect((await transfersOf(teamId)).map((transfer) => transfer.reference).sort()).toEqual([
+        `order_fees:${order.id}`,
+        `order_paid:${order.id}`,
+      ]);
+      expect(mailer.sent).toHaveLength(1);
+    });
+
+    it("says the order was refunded when PayPal reports the capture refunded", async () => {
+      const { teamId, caller, mailer, secret } = await started({
+        capture: () => jsonResponse(422, ALREADY_CAPTURED),
+        lookup: () => jsonResponse(200, capturedOrder("REFUNDED")),
+      });
+
+      await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "This order was refunded.",
+      });
+      const order = await onlyOrder();
+      expect(order.status).toBe("pending");
+      expect(await grantsOf(order.id)).toHaveLength(0);
+      expect(await transfersOf(teamId)).toHaveLength(0);
+      expect(mailer.sent).toHaveLength(0);
+    });
+
+    it("answers a capture call for a refunded order without a new grant", async () => {
+      const { caller, secret } = await started();
+      await caller.checkout.capture({ orderId: "ORDER1", secret });
+      const order = await onlyOrder();
+      await db.update(orders).set({ status: "refunded", refundedAt: new Date() }).where(eq(orders.id, order.id));
+
+      await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "This order was refunded.",
+      });
+      expect(await grantsOf(order.id)).toHaveLength(2);
+    });
+
+    it("still captures when the buyer email fails, and reports the failure", async () => {
+      const seeded = await seller();
+      const { fetch } = fakePayPalApi();
+      const reported: { kind: string; to: string }[] = [];
+      const caller = appRouter.createCaller({
+        db,
+        session: null,
+        environment: "sandbox",
+        auth,
+        headers: new Headers({ "cf-connecting-ip": "203.0.113.9" }),
+        catalog: createTestCatalogServices(),
+        files: createFakeFileStore(),
+        paypal: makePayPal(fetch),
+        email: {
+          mailer: { send: () => Promise.reject(new Error("provider down")) },
+          siteOrigin: "https://payleor.test",
+          adminOrigin: "https://admin.payleor.test",
+          storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+          onError: (_error, email) => {
+            reported.push(email);
+          },
+        },
+      });
+      const { secret } = await caller.checkout.start({ slug: "pixels", productId: seeded.productId, email: "jo@example.com" });
+
+      await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).resolves.toMatchObject({ outcome: "captured" });
+      expect((await onlyOrder()).status).toBe("paid");
+      expect(reported).toEqual([{ kind: "order-download", to: "jo@example.com" }]);
     });
 
     it("refuses a wrong secret and an unknown PayPal order", async () => {

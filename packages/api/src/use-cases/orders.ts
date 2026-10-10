@@ -17,7 +17,6 @@ import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import { findAttachedProductFile } from "@jendal-workspace/db/repositories/files";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import {
-  findOrderById,
   findOrderByPayPalOrderId,
   insertGrant,
   insertOrder,
@@ -229,7 +228,20 @@ async function recordCaptureId(db: Database, fact: OrderCaptureFact): Promise<bo
   return updated.length > 0;
 }
 
-type AppliedCompletion = { result: "applied"; order: OrderRow; emailToken: string } | { result: "already_applied" };
+export type OrderEmailTeam = { name: string; slug: string; supportEmail: string | null };
+
+export async function findOrderEmailTeam(db: DbExecutor, teamId: string): Promise<OrderEmailTeam | null> {
+  const [row] = await db
+    .select({ name: teamTable.name, slug: teamTable.slug, supportEmail: teamTable.supportEmail })
+    .from(teamTable)
+    .where(eq(teamTable.id, teamId))
+    .limit(1);
+  return row ?? null;
+}
+
+type AppliedCompletion =
+  | { result: "applied"; order: OrderRow; team: OrderEmailTeam; emailToken: string }
+  | { result: "already_applied" };
 
 async function lockOrderOrThrow(tx: Transaction, orderId: string): Promise<OrderRow> {
   const row = await lockOrder(tx, orderId);
@@ -260,9 +272,17 @@ function applyCompletion(db: Database, fact: OrderCaptureFact): Promise<AppliedC
     await createPostgresLedger(row.teamId, tx).post([
       orderPaidTransfer({ currency: row.currency, orderId: row.id, amountMinor: row.amountMinor }),
     ]);
-    // One grant for the buyer email; the browser's capture call issues its own.
+    // One grant for the buyer email; the browser's capture call issues its own. The email's team is read here
+    // too, so nothing between the commit and the send can fail and lose the email.
     const emailToken = await issueGrant(tx, row.id);
-    return { result: "applied" as const, order: { ...row, status: "paid" as const, paypalCaptureId: fact.captureId, paidAt }, emailToken };
+    const team = await findOrderEmailTeam(tx, row.teamId);
+    if (!team) throw new Error(`Order ${row.id} has no team`);
+    return {
+      result: "applied" as const,
+      order: { ...row, status: "paid" as const, paypalCaptureId: fact.captureId, paidAt },
+      team,
+      emailToken,
+    };
   });
 }
 
@@ -286,7 +306,9 @@ export async function applyOrderCaptureFact(
     // The capture is committed; the webhook re-fetch records the fees again and fails visibly there.
     log.error({ action: "order.fees", order: { id: fact.orderId }, error: databaseErrorFields(error) });
   }
-  if (applied.result === "applied") await sendDownloadEmail(deps, { order: applied.order, token: applied.emailToken });
+  if (applied.result === "applied") {
+    await sendDownloadEmail(deps, { order: applied.order, team: applied.team, token: applied.emailToken });
+  }
   return applied.result;
 }
 
@@ -309,40 +331,45 @@ export async function recordOrderFees(db: Database, fact: OrderCaptureFact): Pro
   });
 }
 
-// Sellers design §5.2: the buyer's link to the order page. A failed send never fails the capture: the buyer
-// has the page already and can ask it for a new link.
+// Sellers design §5.2: the buyer's link to the order page. Never throws: a failure goes to email.onError and
+// the log, and the result says whether the email went out, so each caller decides whether that fails it.
 export async function sendDownloadEmail(
-  deps: { db: Database; email?: EmailServices },
-  input: { order: Pick<OrderRow, "id" | "teamId" | "buyerEmail" | "productTitle">; token: string },
-): Promise<void> {
+  deps: { email?: EmailServices },
+  input: { order: Pick<OrderRow, "id" | "buyerEmail" | "productTitle">; team: OrderEmailTeam; token: string },
+): Promise<boolean> {
   const { email } = deps;
+  const to = input.order.buyerEmail;
   if (!email) {
     log.warn({ action: "order.email", order: { id: input.order.id }, email: { configured: false } });
-    return;
+    return false;
   }
-  const [team] = await deps.db
-    .select({ name: teamTable.name, slug: teamTable.slug, supportEmail: teamTable.supportEmail })
-    .from(teamTable)
-    .where(eq(teamTable.id, input.order.teamId))
-    .limit(1);
-  if (!team) throw new Error(`Order ${input.order.id} has no team`);
-  const to = input.order.buyerEmail;
-  const message = {
-    sender: "stores" as const,
-    onBehalfOf: team.name,
-    replyTo: team.supportEmail ?? undefined,
-    tag: "order-download",
-    to,
-    ...orderDownloadEmail({
-      teamName: team.name,
-      productTitle: input.order.productTitle,
-      url: `${email.storeOrigin(team.slug)}/orders/${input.token}`,
-    }),
-  };
   try {
-    await email.mailer.send(message);
+    await email.mailer.send({
+      sender: "stores",
+      onBehalfOf: input.team.name,
+      replyTo: input.team.supportEmail ?? undefined,
+      tag: "order-download",
+      to,
+      ...orderDownloadEmail({
+        teamName: input.team.name,
+        productTitle: input.order.productTitle,
+        url: `${email.storeOrigin(input.team.slug)}/orders/${input.token}`,
+      }),
+    });
+    return true;
   } catch (error) {
-    await email.onError?.(error, { kind: "order-download", to });
+    // The provider's error text can carry the address, so only the name is logged.
+    log.error({
+      action: "order.email",
+      order: { id: input.order.id },
+      error: { name: error instanceof Error ? error.name : typeof error },
+    });
+    try {
+      await email.onError?.(error, { kind: "order-download", to });
+    } catch {
+      // A failing error reporter must not turn a lost email into a failed capture.
+    }
+    return false;
   }
 }
 
@@ -389,9 +416,20 @@ async function captureAtPayPal(deps: OrderDeps, paypalOrderId: string, merchantI
   }
 }
 
-async function capturedOutcome(db: Database, orderId: string): Promise<CheckoutOutcome> {
-  const token = await issueGrant(db, orderId);
+// The order lock orders this after any refund: a refund that commits first is seen here, and one that commits
+// later revokes this grant with the others.
+async function issueBrowserGrant(db: Database, orderId: string): Promise<CheckoutOutcome> {
+  const token = await db.transaction(async (tx) => {
+    const row = await lockOrderOrThrow(tx, orderId);
+    if (row.status === "refunded") throw refunded();
+    if (row.status !== "paid") throw new Error(`Order ${row.id} is ${row.status}, not paid, after its capture`);
+    return issueGrant(tx, row.id);
+  });
   return { outcome: "captured", orderPath: `/orders/${token}` };
+}
+
+function isRefundStatus(status: string): boolean {
+  return status === "REFUNDED" || status === "PARTIALLY_REFUNDED";
 }
 
 // The browser's capture call. A paid order (by this call earlier, or by the webhook) gets a fresh grant.
@@ -402,20 +440,15 @@ export async function captureCheckout(
   const row = await findOrderByPayPalOrderId(deps.db, input.paypalOrderId);
   if (!row || (await hashToken(input.secret)) !== row.checkoutSecretHash) throw invalidCheckout();
   if (row.status === "refunded") throw refunded();
-  if (row.status === "paid") return capturedOutcome(deps.db, row.id);
+  if (row.status === "paid") return issueBrowserGrant(deps.db, row.id);
   const merchantId = await sellerMerchantId(deps.db, row.teamId);
   const paypalOrder = await captureAtPayPal(deps, input.paypalOrderId, merchantId);
   const capture = captureFromOrder(paypalOrder);
   if (!capture) throw new Error(`PayPal order ${input.paypalOrderId} has no capture`);
-  const result = await applyOrderCaptureFact(deps, orderCaptureFact(row.id, input.paypalOrderId, capture));
-  if (capture.status === "COMPLETED") {
-    if (result === "already_applied") {
-      // Another input applied the capture first; a refund may have followed it.
-      const current = await findOrderById(deps.db, row.id);
-      if (current?.status === "refunded") throw refunded();
-    }
-    return capturedOutcome(deps.db, row.id);
-  }
+  // The capture went through and was refunded before this call saw it; the refund news settles the order.
+  if (isRefundStatus(capture.status)) throw refunded();
+  await applyOrderCaptureFact(deps, orderCaptureFact(row.id, input.paypalOrderId, capture));
+  if (capture.status === "COMPLETED") return issueBrowserGrant(deps.db, row.id);
   if (capture.status === "PENDING") return { outcome: "pending" };
   return { outcome: "declined" };
 }
