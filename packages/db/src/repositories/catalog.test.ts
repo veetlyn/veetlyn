@@ -1,10 +1,19 @@
 import type { TenantContext } from "@jendal-workspace/core";
-import { createTestDb, hasTestDatabase, seedOrganization, seedStore, truncateAll } from "@jendal-workspace/db/testing/db";
+import {
+  createTestDb,
+  hasTestDatabase,
+  seedOrganization,
+  seedProduct,
+  seedServicesTeam,
+  seedStore,
+  truncateAll,
+} from "@jendal-workspace/db/testing/db";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
   countDigitalProducts,
   countPublishedDigitalProducts,
+  countSellableDigitalProducts,
   deleteImages,
   deleteVariants,
   getProduct,
@@ -21,6 +30,7 @@ import {
   updateVariantPrice,
   updateVariantStock,
 } from "./catalog";
+import { setServicesTeamStoreEnabled } from "./services-teams";
 
 async function makeStore(db: ReturnType<typeof createTestDb>): Promise<TenantContext> {
   const { organizationId } = await seedOrganization(db);
@@ -202,6 +212,18 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
       expect(await listPublishedDigitalProducts(db, tenant.storeId)).toEqual([]);
       expect(await countPublishedDigitalProducts(db, tenant.storeId)).toBe(0);
       expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
+    });
+
+    it("counts published digital products as sellable only while the store is on", async () => {
+      const { organizationId } = await seedOrganization(db);
+      const seller = await seedServicesTeam(db, { organizationId, slug: "maker" });
+      await seedProduct(db, { storeId: seller.id, kind: "digital", status: "published", priceMinor: 1900 });
+      await seedProduct(db, { storeId: seller.id, kind: "digital", status: "published", priceMinor: 900 });
+      await seedProduct(db, { storeId: seller.id, kind: "digital" });
+
+      expect(await countSellableDigitalProducts(db, seller.id)).toBe(0);
+      await setServicesTeamStoreEnabled(db, seller.id, true);
+      expect(await countSellableDigitalProducts(db, seller.id)).toBe(2);
     });
   });
 

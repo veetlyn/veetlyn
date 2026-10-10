@@ -106,6 +106,7 @@ describe("POST /webhooks/paypal", () => {
       resourceId: "CAPTURE-1",
       customId: "payment-1",
       orderId: "ORDER-1",
+      captureId: null,
       merchantId: "SELLER1",
     });
     expect(enqueue).toHaveBeenCalledWith("WH-1", {});

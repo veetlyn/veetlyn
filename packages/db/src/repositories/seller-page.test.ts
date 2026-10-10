@@ -6,6 +6,7 @@ import { servicesTeamSettings } from "../schema/services-teams";
 import { createTestDb, hasTestDatabase, seedOrganization, seedProduct, seedServicesTeam, seedStore, truncateAll } from "../testing/db";
 import { createServicesDepartment, createServicesOffering, setServicesOfferingActive } from "./services-catalog";
 import { findSellerPage } from "./seller-page";
+import { setServicesTeamStoreEnabled } from "./services-teams";
 
 describe.skipIf(!hasTestDatabase)("seller page repository", () => {
   const db = createTestDb();
@@ -89,9 +90,10 @@ describe.skipIf(!hasTestDatabase)("seller page repository", () => {
     });
   });
 
-  it("returns published digital products, but not drafts", async () => {
+  it("returns published digital products, but not drafts, while the store is on", async () => {
     const { organizationId } = await seedOrganization(db);
     const seller = await seedServicesTeam(db, { organizationId, slug: "maker", status: "active" });
+    await setServicesTeamStoreEnabled(db, seller.id, true);
     const published = await seedProduct(db, {
       storeId: seller.id,
       title: "Icon pack",
@@ -105,6 +107,14 @@ describe.skipIf(!hasTestDatabase)("seller page repository", () => {
     expect(page?.products).toEqual([
       { id: published.id, title: "Icon pack", description: "", priceMinor: 1900 },
     ]);
+  });
+
+  it("lists no products while the store is off", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const seller = await seedServicesTeam(db, { organizationId, slug: "maker", status: "active" });
+    await seedProduct(db, { storeId: seller.id, kind: "digital", status: "published", priceMinor: 1900 });
+
+    expect((await findSellerPage(db, seller.id))?.products).toEqual([]);
   });
 
   it("returns null for an unknown team", async () => {

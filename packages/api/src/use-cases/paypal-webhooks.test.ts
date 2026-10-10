@@ -98,6 +98,7 @@ function storedEvent(overrides: Partial<PayPalWebhookEventRow> = {}): PayPalWebh
     resourceId: "CAPTURE1",
     customId: null,
     orderId: "ORDER1",
+    captureId: null,
     merchantId: "SELLER1",
     status: "received",
     attempts: 0,

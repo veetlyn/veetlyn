@@ -1,7 +1,7 @@
 import type { PayPalServices } from "@jendal-workspace/api/context";
 import type { Database } from "@jendal-workspace/db";
-import { recordWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
-import { type ParsedWebhookEvent, parseWebhookEvent, PayPalError } from "@jendal-workspace/paypal";
+import { type PayPalWebhookEventInput, recordWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
+import { parseWebhookEvent, PayPalError } from "@jendal-workspace/paypal";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 
@@ -11,7 +11,7 @@ export type PayPalWebhookRouteDeps = {
   paypal: PayPalServices | undefined;
   webhookId: string;
   enqueue: (eventId: string, options: { delaySeconds?: number }) => Promise<unknown>;
-  record?: (db: Database, event: ParsedWebhookEvent) => ReturnType<typeof recordWebhookEvent>;
+  record?: (db: Database, event: PayPalWebhookEventInput) => ReturnType<typeof recordWebhookEvent>;
 };
 
 const HEADER_NAMES = {
@@ -95,7 +95,7 @@ export function createPayPalWebhookRoute(deps: PayPalWebhookRouteDeps): Hono<App
       return c.json({ error: "invalid_signature" }, 400);
     }
 
-    const status = await record(c.get("db"), event);
+    const status = await record(c.get("db"), { ...event, captureId: null });
     // A redelivery of an event still "received" is enqueued again: the first enqueue may have failed.
     if (status === "received") {
       await deps.enqueue(
