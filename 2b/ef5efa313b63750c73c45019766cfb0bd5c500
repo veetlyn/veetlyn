@@ -1,0 +1,45 @@
+packages/core/src/ledger/transfers.ts
+  s_0ed600bccfe111::t_e7c059de2725ac 16-18
+packages/core/src/orders/rules.ts
+  s_0ed600bccfe111::t_8a16cf19a36f57 1-45
+packages/core/src/web-globals.d.ts
+  s_0fc9a0b907e62a::t_728dc0397346fb 3-7
+packages/core/src/sellers/quote-request.ts
+  s_0ed600bccfe111::t_511e398b8fbdcd 21
+packages/core/src/orders/tokens.test.ts
+  s_0ed600bccfe111::t_f150c94c2687e5 1-18
+packages/core/src/orders/rules.test.ts
+  s_0ed600bccfe111::t_0d970e324fe5ac 1-55
+packages/core/src/orders/tokens.ts
+  s_0ed600bccfe111::t_54cc2d2d3c20d5 1-10
+packages/core/src/index.ts
+  s_0ed600bccfe111::t_6b698e97d49443 26-27
+packages/core/src/ledger/postings.ts
+  s_0ed600bccfe111::t_79f1b1bfb1316d 29-71
+packages/core/src/ledger/postings.test.ts
+  s_0ed600bccfe111::t_abf3cdfc5c9b7d 8-10,197-231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2bef5efa313b63750c73c45019766cfb0bd5c500",
+  "prompts": {},
+  "sessions": {
+    "s_0ed600bccfe111": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "370162c7-7629-4903-8560-0a90f8ee0904",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_0fc9a0b907e62a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3af5d262-b85b-4940-9622-0f53a9b6440d",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
