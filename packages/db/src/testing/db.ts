@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 
 import { createDb, type Database } from "../index";
 import { user } from "../schema/auth";
+import { products, productVariants } from "../schema/catalog";
 import { member, organization, team, teamMember } from "../schema/organization";
 import { project } from "../schema/projects";
 import { servicesOffering } from "../schema/services-catalog";
@@ -174,11 +175,11 @@ export async function seedServicesTeamWithAdmin(
   return { userId, organizationId, teamId: teamRow.id };
 }
 
-// Adds a freelancer or manager: the workspace member row (role "member") that S1's
+// Adds a team member (admin, manager or freelancer): the workspace member row (role "member") that S1's
 // servicesTeamRoleFor inner-joins, plus the services_team_member row that carries the role.
 export async function seedServicesTeamMember(
   db: Database,
-  input: { organizationId: string; teamId: string; role: "manager" | "freelancer"; name?: string },
+  input: { organizationId: string; teamId: string; role: "admin" | "manager" | "freelancer"; name?: string },
 ): Promise<string> {
   const userId = await seedUser(db, input.name ?? input.role);
   await db.insert(member).values({
@@ -227,4 +228,26 @@ export async function seedProject(
     .returning({ id: project.id });
   if (!row) throw new Error("Insert into project returned no row");
   return row.id;
+}
+
+// A catalog product with one variant (run 4a: digital products always have exactly one).
+export async function seedProduct(
+  db: Database,
+  input: { storeId: string; title?: string; kind?: "physical" | "digital"; status?: "draft" | "published"; priceMinor?: number },
+): Promise<{ id: string }> {
+  const id = crypto.randomUUID();
+  await db.insert(products).values({
+    id,
+    storeId: input.storeId,
+    kind: input.kind ?? "physical",
+    status: input.status ?? "draft",
+    title: input.title ?? "Test product",
+  });
+  await db.insert(productVariants).values({
+    id: crypto.randomUUID(),
+    storeId: input.storeId,
+    productId: id,
+    priceMinor: input.priceMinor ?? 0,
+  });
+  return { id };
 }

@@ -1,7 +1,7 @@
 export const MAX_FILE_BYTES = 100 * 1024 * 1024;
 export const MAX_FILE_NAME_LENGTH = 200;
 
-export const FILE_PURPOSES = ["delivery"] as const;
+export const FILE_PURPOSES = ["delivery", "product"] as const;
 export type FilePurpose = (typeof FILE_PURPOSES)[number];
 
 const OCTET_STREAM = "application/octet-stream";

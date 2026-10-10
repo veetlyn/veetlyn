@@ -6,6 +6,7 @@ import {
   createTestDb,
   hasTestDatabase,
   seedOrganization,
+  seedProduct,
   seedServicesOffering,
   seedServicesTeam,
   seedServicesTeamMember,
@@ -219,10 +220,39 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
         callerFor(otherAdminId, onTeamStatusChanged).seller.publish({ teamSlug: "solo-studio" }),
       ).rejects.toMatchObject({
         code: "BAD_REQUEST",
-        message: "Add at least one active service before you publish.",
+        message: "Add at least one active service or product before you publish.",
       });
       expect(await statusOf(teamId)).toBe("draft");
       expect(await statusOf(otherTeamId)).toBe("draft");
+      expect(onTeamStatusChanged).not.toHaveBeenCalled();
+    });
+
+    it("publishes a services team with a published digital product instead of a service", async () => {
+      const { adminId, teamId } = await servicesSeller();
+      await connectPaypal(teamId);
+      await seedProduct(db, { storeId: teamId, kind: "digital", status: "published", priceMinor: 900 });
+      const onTeamStatusChanged = vi.fn();
+
+      await expect(
+        callerFor(adminId, onTeamStatusChanged).seller.publish({ teamSlug: "acme-studio" }),
+      ).resolves.toEqual({ status: "active" });
+      expect(await statusOf(teamId)).toBe("active");
+      expect(onTeamStatusChanged).toHaveBeenCalledWith({ id: teamId, slug: "acme-studio" });
+    });
+
+    it("refuses a services team whose only digital product is a draft", async () => {
+      const { adminId, teamId } = await servicesSeller();
+      await connectPaypal(teamId);
+      await seedProduct(db, { storeId: teamId, kind: "digital", status: "draft", priceMinor: 900 });
+      const onTeamStatusChanged = vi.fn();
+
+      await expect(
+        callerFor(adminId, onTeamStatusChanged).seller.publish({ teamSlug: "acme-studio" }),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Add at least one active service or product before you publish.",
+      });
+      expect(await statusOf(teamId)).toBe("draft");
       expect(onTeamStatusChanged).not.toHaveBeenCalled();
     });
 

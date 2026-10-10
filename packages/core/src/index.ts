@@ -16,6 +16,7 @@ export * from "./services-teams/rates";
 export * from "./services-teams/permissions";
 export * from "./services-teams/setup-steps";
 export * from "./services-teams/catalog";
+export * from "./catalog/digital-product";
 export * from "./catalog/images";
 export * from "./catalog/market-price";
 export * from "./catalog/prefill";

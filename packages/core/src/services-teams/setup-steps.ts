@@ -24,13 +24,14 @@ export function servicesTeamSetupSteps(
     discordGuildId: string | null;
     solo: boolean;
     offeringCount: number;
+    productCount: number;
   },
   links: ServicesTeamSetupLinks,
 ): SetupStep[] {
   return [
     step("create-team", state.solo ? "Create your seller page" : "Create your team", true),
     // Sellers design §3.2: the seller page needs at least one service or one product.
-    step("add-service", "Add your first service", state.offeringCount > 0, links.services),
+    step("add-service", "Add a service or a product", state.offeringCount + state.productCount > 0, links.services),
     step("connect-paypal", "Connect PayPal", state.paypalMerchantId !== null, links.connectPaypal),
     // A solo seller keeps the whole price, so there are no rates and no payouts to set up (run 5).
     ...(state.solo ? [] : [step("set-rates", "Set your rates", state.settingsSaved, links.settings)]),

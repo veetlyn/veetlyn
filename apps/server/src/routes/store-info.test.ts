@@ -109,6 +109,7 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
       currency: "USD",
       supportEmail: null,
       departments: [],
+      products: [],
     });
     expect(page.offerings.map((o) => o.name)).toEqual(["Logo design"]);
   });

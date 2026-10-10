@@ -35,7 +35,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
         steps={setupSteps(
           store.data,
           { productsUrl: `/${storeSlug}/products`, connectPaypal: "#paypal", publish: "#publish" },
-          { productCount: products.data?.length ?? 0 },
+          { productCount: products.data?.filter((product) => product.status === "published").length ?? 0 },
         )}
       />
       <PublishCard teamSlug={storeSlug} publicUrl={url} />

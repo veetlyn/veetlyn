@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { team } from "../schema/organization";
 import { servicesTeamSettings } from "../schema/services-teams";
-import { createTestDb, hasTestDatabase, seedOrganization, seedServicesTeam, seedStore, truncateAll } from "../testing/db";
+import { createTestDb, hasTestDatabase, seedOrganization, seedProduct, seedServicesTeam, seedStore, truncateAll } from "../testing/db";
 import { createServicesDepartment, createServicesOffering, setServicesOfferingActive } from "./services-catalog";
 import { findSellerPage } from "./seller-page";
 
@@ -67,6 +67,7 @@ describe.skipIf(!hasTestDatabase)("seller page repository", () => {
       currency: "EUR",
       departments: [design, web],
       offerings: [logo, site],
+      products: [],
     });
   });
 
@@ -84,7 +85,26 @@ describe.skipIf(!hasTestDatabase)("seller page repository", () => {
       currency: "USD",
       departments: [],
       offerings: [],
+      products: [],
     });
+  });
+
+  it("returns published digital products, but not drafts", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const seller = await seedServicesTeam(db, { organizationId, slug: "maker", status: "active" });
+    const published = await seedProduct(db, {
+      storeId: seller.id,
+      title: "Icon pack",
+      kind: "digital",
+      status: "published",
+      priceMinor: 1900,
+    });
+    await seedProduct(db, { storeId: seller.id, title: "Draft pack", kind: "digital" });
+
+    const page = await findSellerPage(db, seller.id);
+    expect(page?.products).toEqual([
+      { id: published.id, title: "Icon pack", description: "", priceMinor: 1900 },
+    ]);
   });
 
   it("returns null for an unknown team", async () => {

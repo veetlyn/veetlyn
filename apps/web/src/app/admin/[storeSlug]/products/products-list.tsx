@@ -4,12 +4,23 @@ import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import DigitalProducts from "@/components/catalog/digital-products";
 import Loader from "@/components/loader";
+import TeamNotFound from "@/components/services-team/team-not-found";
 import { productImageUrl } from "@/lib/image-url";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
 export default function ProductsList({ storeSlug }: { storeSlug: string }) {
+  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
+
+  if (store.isPending) return <Loader />;
+  if (store.isError) return <TeamNotFound />;
+  if (store.data.product === "services") return <DigitalProducts teamSlug={storeSlug} />;
+  return <CommerceProductsList storeSlug={storeSlug} />;
+}
+
+function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
   const products = useQuery({ ...trpc.catalog.list.queryOptions({ storeSlug }), retry: false });
 
   if (products.isPending) return <Loader />;

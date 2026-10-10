@@ -5,12 +5,16 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { relations } from "../relations";
 import { fileUpload } from "../schema/files";
 import { delivery } from "../schema/projects";
-import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, truncateAll } from "../testing/db";
+import { createTestDb, hasTestDatabase, seedOrganization, seedProduct, seedProject, seedServicesTeamWithAdmin, seedStore, truncateAll } from "../testing/db";
 import {
+  deleteFileUpload,
+  deleteOtherAttachedProductFiles,
+  findAttachedProductFile,
   findFileUpload,
   insertFileUpload,
   listDeliveryFiles,
   lockFileUploadForAttach,
+  lockProductFileUploadForAttach,
   markFileUploadAttached,
   sweepUnattachedUploads,
 } from "./files";
@@ -111,6 +115,82 @@ describe.skipIf(!hasTestDatabase)("file uploads", () => {
       .values({ projectId, teamId, fileUploadId: upload.id })
       .catch((error: unknown) => error);
     expect(failure).toMatchObject({ cause: { code: "23505", constraint_name: "delivery_fileUploadId_idx" } });
+  });
+
+  it("locks an unattached product upload, finds the attached file, deletes by id", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "digital-shop" });
+    const product = await seedProduct(db, { storeId: store.id, kind: "digital" });
+    const row = await insertFileUpload(db, {
+      teamId: store.id,
+      productId: product.id,
+      purpose: "product",
+      r2Key: `teams/${store.id}/files/${crypto.randomUUID()}`,
+      fileName: "icons.zip",
+      contentType: "application/zip",
+      sizeBytes: 1_200_000,
+    });
+
+    await db.transaction(async (tx) => {
+      expect(
+        await lockProductFileUploadForAttach(tx, {
+          id: row.id,
+          teamId: store.id,
+          productId: product.id,
+          purpose: "product",
+        }),
+      ).toEqual(row);
+    });
+    // Nothing is attached yet, so there is no product file to sell.
+    expect(await findAttachedProductFile(db, product.id)).toBeNull();
+
+    await markFileUploadAttached(db, row.id);
+
+    await db.transaction(async (tx) => {
+      expect(
+        await lockProductFileUploadForAttach(tx, {
+          id: row.id,
+          teamId: store.id,
+          productId: product.id,
+          purpose: "product",
+        }),
+      ).toBeNull();
+    });
+    expect((await findAttachedProductFile(db, product.id))?.id).toBe(row.id);
+
+    await deleteFileUpload(db, row.id);
+    expect(await findFileUpload(db, row.id)).toBeNull();
+  });
+
+  it("deletes the other attached files of a product and returns their keys", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "digital-shop" });
+    const product = await seedProduct(db, { storeId: store.id, kind: "digital" });
+    const otherProduct = await seedProduct(db, { storeId: store.id, kind: "digital", title: "Other pack" });
+    const productFile = (productId: string, attached: boolean) =>
+      insertFileUpload(db, {
+        teamId: store.id,
+        productId,
+        purpose: "product",
+        r2Key: `products/${store.id}/${productId}/${crypto.randomUUID()}`,
+        fileName: "icons.zip",
+        contentType: "application/zip",
+        sizeBytes: 1_200_000,
+        attachedAt: attached ? new Date() : undefined,
+      });
+    const keep = await productFile(product.id, true);
+    const oldA = await productFile(product.id, true);
+    const oldB = await productFile(product.id, true);
+    const pending = await productFile(product.id, false);
+    const otherFile = await productFile(otherProduct.id, true);
+
+    const keys = await db.transaction((tx) =>
+      deleteOtherAttachedProductFiles(tx, { productId: product.id, keepId: keep.id }),
+    );
+
+    expect(keys.toSorted()).toEqual([oldA.r2Key, oldB.r2Key].toSorted());
+    const remaining = await db.select({ id: fileUpload.id }).from(fileUpload);
+    expect(remaining.map((row) => row.id).toSorted()).toEqual([keep.id, pending.id, otherFile.id].toSorted());
   });
 
   describe("sweepUnattachedUploads", () => {

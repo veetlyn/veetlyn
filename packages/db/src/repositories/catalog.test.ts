@@ -3,6 +3,8 @@ import { createTestDb, hasTestDatabase, seedOrganization, seedStore, truncateAll
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  countDigitalProducts,
+  countPublishedDigitalProducts,
   deleteImages,
   deleteVariants,
   getProduct,
@@ -11,9 +13,12 @@ import {
   insertVariants,
   listImages,
   listProducts,
+  listPublishedDigitalProducts,
   listVariants,
+  lockProduct,
   setProductStatus,
   updateProduct,
+  updateVariantPrice,
   updateVariantStock,
 } from "./catalog";
 
@@ -52,6 +57,18 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
         requiresShipping: true,
       });
       expect(await getProduct(db, otherTenant(tenant), product.id)).toBeNull();
+    });
+
+    it("locks a product only for its own store", async () => {
+      const tenant = await makeStore(db);
+      const other = await makeStore(db);
+      const product = await insertProduct(db, tenant, { title: "Lamp" });
+
+      await db.transaction(async (tx) => {
+        expect(await lockProduct(tx, tenant, product.id)).toBe(product.id);
+      });
+      expect(await lockProduct(db, other, product.id)).toBeNull();
+      expect(await lockProduct(db, tenant, crypto.randomUUID())).toBeNull();
     });
 
     it("lists only the store's own products", async () => {
@@ -112,6 +129,21 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
       expect(updated?.stock).toBe(0);
     });
 
+    it("updates a variant's price, scoped to the store", async () => {
+      const tenant = await makeStore(db);
+      const product = await insertProduct(db, tenant, { title: "Lamp" });
+      const [variant] = await insertVariants(db, tenant, product.id, [
+        { options: [], sku: "", priceMinor: 100, stock: 0 },
+      ]);
+
+      await updateVariantPrice(db, tenant, variant!.id, 4500);
+      expect((await listVariants(db, tenant, product.id))[0]).toMatchObject({ priceMinor: 4500 });
+
+      // Another store's tenant cannot touch this variant.
+      await updateVariantPrice(db, otherTenant(tenant), variant!.id, 1);
+      expect((await listVariants(db, tenant, product.id))[0]).toMatchObject({ priceMinor: 4500 });
+    });
+
     it("enforces one SKU per store, case-insensitively, but allows it in another store", async () => {
       const tenant = await makeStore(db);
       const other = await makeStore(db);
@@ -129,6 +161,47 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
         { options: [], sku: "lamp-1", priceMinor: 1, stock: 0 },
       ]);
       expect(otherVariant?.sku).toBe("lamp-1");
+    });
+  });
+
+  describe("digital products", () => {
+    it("insertProduct stores the kind and listPublishedDigitalProducts returns title, description and price", async () => {
+      const tenant = await makeStore(db);
+      const product = await insertProduct(db, tenant, {
+        kind: "digital",
+        title: "Icon pack",
+        description: "120 icons.",
+        brand: "",
+        category: "",
+        chargeTax: true,
+        requiresShipping: false,
+        channel3ProductId: null,
+      });
+      expect(product.kind).toBe("digital");
+      await insertVariants(db, tenant, product.id, [
+        { options: [], sku: "", priceMinor: 1900, stock: 0 },
+      ]);
+      await setProductStatus(db, tenant, product.id, "published");
+
+      const listed = await listPublishedDigitalProducts(db, tenant.storeId);
+      expect(listed).toEqual([
+        { id: product.id, title: "Icon pack", description: "120 icons.", priceMinor: 1900 },
+      ]);
+      expect(await countPublishedDigitalProducts(db, tenant.storeId)).toBe(1);
+      expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
+    });
+
+    it("ignores drafts and physical products", async () => {
+      const tenant = await makeStore(db);
+      const draft = await insertProduct(db, tenant, { kind: "digital", title: "Draft pack" });
+      await insertVariants(db, tenant, draft.id, [{ options: [], sku: "", priceMinor: 900, stock: 0 }]);
+      const physical = await insertProduct(db, tenant, { title: "Lamp" });
+      await insertVariants(db, tenant, physical.id, [{ options: [], sku: "", priceMinor: 4200, stock: 3 }]);
+      await setProductStatus(db, tenant, physical.id, "published");
+
+      expect(await listPublishedDigitalProducts(db, tenant.storeId)).toEqual([]);
+      expect(await countPublishedDigitalProducts(db, tenant.storeId)).toBe(0);
+      expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
     });
   });
 
