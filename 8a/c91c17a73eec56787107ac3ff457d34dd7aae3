@@ -1,0 +1,23 @@
+apps/web/src/app/admin/[storeSlug]/services-team-dashboard.tsx
+  s_2e60a33b36a8b6::t_16eb7b68bae7b9 117
+apps/web/src/components/catalog/digital-product-form.tsx
+  s_2e60a33b36a8b6::t_402552f12c3173 39,131-133,152,154,211,271
+apps/web/src/components/catalog/digital-products.tsx
+  s_2e60a33b36a8b6::t_0084da8951d1ad 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ac91c17a73eec56787107ac3ff457d34dd7aae3",
+  "prompts": {},
+  "sessions": {
+    "s_2e60a33b36a8b6": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "153e9fb0-5742-4ce5-91fe-1b3408211746",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
