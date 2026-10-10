@@ -160,6 +160,8 @@ describe.skipIf(!hasTestDatabase)("orders repository", () => {
       expiresAt: new Date(now.getTime() - 1000),
       downloadsLeft: 5,
     });
+    expect(await useDownload(db, expired.id, now)).toBe(false);
+
     const revoked = await insertGrant(db, {
       orderId: order.id,
       tokenHash: "revoked",
@@ -167,8 +169,6 @@ describe.skipIf(!hasTestDatabase)("orders repository", () => {
       downloadsLeft: 5,
     });
     await revokeOrderGrants(db, order.id, now);
-
-    expect(await useDownload(db, expired.id, now)).toBe(false);
     expect(await useDownload(db, revoked.id, now)).toBe(false);
   });
 
