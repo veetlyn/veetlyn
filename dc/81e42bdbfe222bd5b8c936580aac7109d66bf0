@@ -1,0 +1,22 @@
+packages/api/src/routers/checkout.test.ts
+  s_817446e955ef30::t_b7bebfc499a24c 44-45
+  s_817446e955ef30::t_7683eb38a2ddf1 373-451
+packages/api/src/use-cases/orders.ts
+  s_817446e955ef30::t_6b56db12138ed7 231-244,275-276,278-285,309-311,334-335,337-339,341,344,347-359,361-372,419-427,431-434,443,448-451
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dc81e42bdbfe222bd5b8c936580aac7109d66bf0",
+  "prompts": {},
+  "sessions": {
+    "s_817446e955ef30": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "efb6a404-96da-48b7-8622-52593af6c470",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
