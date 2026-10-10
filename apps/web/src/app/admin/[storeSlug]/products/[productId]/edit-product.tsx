@@ -4,14 +4,31 @@ import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import DigitalProductForm from "@/components/catalog/digital-product-form";
 import Loader from "@/components/loader";
 import MarketPricePanel from "@/components/catalog/market-price-panel";
 import ProductForm from "@/components/catalog/product-form";
+import TeamNotFound from "@/components/services-team/team-not-found";
 import { productImageUrl } from "@/lib/image-url";
 import type { ProductFormState } from "@/lib/product-form-state";
 import { queryClient, trpc } from "@/utils/trpc";
 
 export default function EditProduct({ storeSlug, productId }: { storeSlug: string; productId: string }) {
+  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
+
+  if (store.isPending) return <Loader />;
+  if (store.isError) return <TeamNotFound />;
+  if (store.data.product === "services") {
+    return (
+      <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+        <DigitalProductForm teamSlug={storeSlug} productId={productId} />
+      </main>
+    );
+  }
+  return <EditCommerceProduct storeSlug={storeSlug} productId={productId} />;
+}
+
+function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; productId: string }) {
   const detail = useQuery({ ...trpc.catalog.get.queryOptions({ storeSlug, id: productId }), retry: false });
   const publish = useMutation(trpc.catalog.publish.mutationOptions());
   const unpublish = useMutation(trpc.catalog.unpublish.mutationOptions());

@@ -1,7 +1,8 @@
 "use client";
 
 import { servicesTeamSetupSteps } from "@jendal-workspace/core";
-import { useQuery } from "@tanstack/react-query";
+import { Button } from "@jendal-workspace/ui/components/button";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
@@ -15,12 +16,18 @@ import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
 
 export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug: string; urlParts: StoreUrlParts }) {
+  const queryClient = useQueryClient();
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
+  const enable = useMutation(
+    trpc.servicesTeam.setStoreEnabled.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
+    }),
+  );
 
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings, offeringCount } = result.data;
+  const { team, role, settings, offeringCount, productCount } = result.data;
   const solo = settings?.solo ?? false;
   const steps = servicesTeamSetupSteps(
     {
@@ -30,8 +37,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       discordGuildId: settings?.discordGuildId ?? null,
       solo,
       offeringCount,
-      // Task 4 wires the real count.
-      productCount: 0,
+      productCount,
     },
     {
       settings: `/${team.slug}/settings`,
@@ -59,6 +65,11 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
         <Link href={`/${team.slug}/services`} className="underline underline-offset-4">
           Services
         </Link>
+        {settings?.storeEnabled ? (
+          <Link href={`/${team.slug}/products`} className="underline underline-offset-4">
+            Products
+          </Link>
+        ) : null}
         <Link href={`/${team.slug}/settings`} className="underline underline-offset-4">
           Settings
         </Link>
@@ -92,6 +103,36 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
         <p className="text-sm text-muted-foreground">
           What you sell, with a usual price range and time. Clients pick one when they ask for a quote.
         </p>
+      </section>
+      <section className="grid gap-2 border p-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="font-medium">Store</h2>
+          {settings?.storeEnabled ? (
+            <Link href={`/${team.slug}/products`} className="text-sm underline underline-offset-4">
+              Open products
+            </Link>
+          ) : null}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Sell digital downloads from your seller page: presets, templates, icons, any file up to 100 MB.
+        </p>
+        {!settings?.storeEnabled ? (
+          <div className="grid justify-items-start gap-2">
+            <Button
+              type="button"
+              onClick={() => enable.mutate({ teamSlug: team.slug, enabled: true })}
+              disabled={role !== "admin" || enable.isPending}
+            >
+              {enable.isPending ? "Turning on…" : "Turn on the store"}
+            </Button>
+            {role !== "admin" ? <p className="text-sm text-muted-foreground">Only an admin can turn on the store.</p> : null}
+            {enable.error ? (
+              <p role="alert" className="text-sm text-destructive">
+                {enable.error.message}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </section>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-muted-foreground">Seller page</dt>
