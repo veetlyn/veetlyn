@@ -128,6 +128,19 @@ export async function updateVariantStock(
   return row ?? null;
 }
 
+// A digital product's one hidden variant holds the price; it is updated in place.
+export async function updateVariantPrice(
+  db: DbExecutor,
+  tenant: TenantContext,
+  variantId: string,
+  priceMinor: number,
+): Promise<void> {
+  await db
+    .update(productVariants)
+    .set({ priceMinor, updatedAt: new Date() })
+    .where(and(eq(productVariants.id, variantId), eq(productVariants.storeId, tenant.storeId)));
+}
+
 export async function listImages(db: Database, tenant: TenantContext, productId: string): Promise<ProductImageRow[]> {
   return db
     .select()

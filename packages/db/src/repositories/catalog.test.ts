@@ -17,6 +17,7 @@ import {
   listVariants,
   setProductStatus,
   updateProduct,
+  updateVariantPrice,
   updateVariantStock,
 } from "./catalog";
 
@@ -113,6 +114,21 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
 
       const updated = await updateVariantStock(db, tenant, variant!.id, -10);
       expect(updated?.stock).toBe(0);
+    });
+
+    it("updates a variant's price, scoped to the store", async () => {
+      const tenant = await makeStore(db);
+      const product = await insertProduct(db, tenant, { title: "Lamp" });
+      const [variant] = await insertVariants(db, tenant, product.id, [
+        { options: [], sku: "", priceMinor: 100, stock: 0 },
+      ]);
+
+      await updateVariantPrice(db, tenant, variant!.id, 4500);
+      expect((await listVariants(db, tenant, product.id))[0]).toMatchObject({ priceMinor: 4500 });
+
+      // Another store's tenant cannot touch this variant.
+      await updateVariantPrice(db, otherTenant(tenant), variant!.id, 1);
+      expect((await listVariants(db, tenant, product.id))[0]).toMatchObject({ priceMinor: 4500 });
     });
 
     it("enforces one SKU per store, case-insensitively, but allows it in another store", async () => {

@@ -1,5 +1,6 @@
 import { publishProblem, SUSPENDED_SELLER_MESSAGE, type StoreRecord } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { countPublishedDigitalProducts } from "@jendal-workspace/db/repositories/catalog";
 import { findSellerPage } from "@jendal-workspace/db/repositories/seller-page";
 import { countServicesOfferings } from "@jendal-workspace/db/repositories/services-catalog";
 import { countPublishedProducts, setTeamStatus } from "@jendal-workspace/db/repositories/stores";
@@ -8,10 +9,16 @@ import { TRPCError } from "@trpc/server";
 import { router } from "../index";
 import { sellerProcedure } from "../seller-procedure";
 
-function listedCount(db: Database, seller: StoreRecord): Promise<number> {
-  return seller.product === "services"
-    ? countServicesOfferings(db, seller.id, { activeOnly: true })
-    : countPublishedProducts(db, seller.id);
+async function listedCount(db: Database, seller: StoreRecord): Promise<number> {
+  if (seller.product === "services") {
+    // An active service or a published digital product both count as "listed".
+    const [offerings, products] = await Promise.all([
+      countServicesOfferings(db, seller.id, { activeOnly: true }),
+      countPublishedDigitalProducts(db, seller.id),
+    ]);
+    return offerings + products;
+  }
+  return countPublishedProducts(db, seller.id);
 }
 
 async function problemFor(db: Database, seller: StoreRecord) {

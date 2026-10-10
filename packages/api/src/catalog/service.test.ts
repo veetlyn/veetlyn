@@ -13,8 +13,8 @@ import { createTestDb, hasTestDatabase, seedOrganization, seedStore, truncateAll
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestCatalogServices } from "../testing/catalog";
+import { CatalogValidationError } from "./errors";
 import {
-  CatalogValidationError,
   createProduct,
   getMarketPrice,
   getProductDetail,

@@ -6,6 +6,7 @@ import {
   createTestDb,
   hasTestDatabase,
   seedOrganization,
+  seedProduct,
   seedServicesTeam,
   seedStore,
   truncateAll,
@@ -112,6 +113,39 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
 
     const got = await ownerCaller.servicesTeam.get({ teamSlug: "acme-studio" });
     expect(got.settings?.bio).toBe("We design logos.");
+  });
+
+  it("lets only an admin turn the store on and off", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const managerId = await addMember(db, { organizationId, role: "member" });
+    await addServicesTeamMember(db, { teamId: studio.id, userId: managerId, role: "manager" });
+
+    await expect(
+      callerFor(managerId).servicesTeam.setStoreEnabled({ teamSlug: "acme-studio", enabled: true }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN", message: "Only an admin can change the team settings." });
+
+    const owner = callerFor(ownerId);
+    await expect(
+      owner.servicesTeam.setStoreEnabled({ teamSlug: "acme-studio", enabled: true }),
+    ).resolves.toEqual({ storeEnabled: true });
+    expect((await owner.servicesTeam.get({ teamSlug: "acme-studio" })).settings?.storeEnabled).toBe(true);
+
+    await expect(
+      owner.servicesTeam.setStoreEnabled({ teamSlug: "acme-studio", enabled: false }),
+    ).resolves.toEqual({ storeEnabled: false });
+    expect((await owner.servicesTeam.get({ teamSlug: "acme-studio" })).settings?.storeEnabled).toBe(false);
+  });
+
+  it("reports the digital product count in get", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    await seedProduct(db, { storeId: studio.id, kind: "digital", title: "Icons" });
+    await seedProduct(db, { storeId: studio.id, kind: "digital", title: "Fonts" });
+    await seedProduct(db, { storeId: studio.id, kind: "physical", title: "Mug" });
+
+    const got = await callerFor(ownerId).servicesTeam.get({ teamSlug: "acme-studio" });
+    expect(got.productCount).toBe(2);
   });
 
   it("lets only an admin switch a solo seller to a team, restoring the team rates", async () => {
@@ -226,6 +260,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       role: "admin",
       settings: { ...defaultServicesTeamSettings(studio.id), settingsSavedAt: null },
       offeringCount: 0,
+      productCount: 0,
     });
     await expect(callerFor(outsider.userId).servicesTeam.get({ teamSlug: "acme-studio" })).rejects.toMatchObject({
       code: "NOT_FOUND",

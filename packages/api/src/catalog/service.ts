@@ -23,7 +23,6 @@ import {
   type ProductDraft,
   type ProductImageStore,
   type ProductPrefill,
-  type ProductProblem,
   type ProductSource,
   type SourceMatch,
   type TenantContext,
@@ -47,6 +46,9 @@ import {
   type ProductRow,
   type VariantRow,
 } from "@jendal-workspace/db/repositories/catalog";
+
+import { digitalPublishProblemsFor } from "./digital";
+import { CatalogValidationError } from "./errors";
 
 // Everything the catalog use-cases need from the outside world. `source` is null when
 // CHANNEL3_API_KEY is not configured. `currency` is hard-coded to "USD" until the store
@@ -74,13 +76,6 @@ export type ProductSummary = {
   imageKey: string | null;
   updatedAt: Date;
 };
-
-export class CatalogValidationError extends Error {
-  constructor(readonly problems: ProductProblem[]) {
-    super(problems[0]?.message ?? "Check the product details.");
-    this.name = "CatalogValidationError";
-  }
-}
 
 // Drizzle wraps driver errors; postgres.js puts the SQLSTATE and constraint name on the cause.
 function isSkuConflict(error: unknown): boolean {
@@ -238,6 +233,13 @@ export async function publishProduct(
 ): Promise<ProductDetail | null> {
   const detail = await getProductDetail(db, tenant, productId);
   if (!detail) return null;
+  // A digital product has its own publish rules (one price, the file buyers download).
+  const digitalProblems = await digitalPublishProblemsFor(db, tenant, productId);
+  if (digitalProblems) {
+    if (digitalProblems.length > 0) throw new CatalogValidationError(digitalProblems);
+    await setProductStatus(db, tenant, productId, "published");
+    return getProductDetail(db, tenant, productId);
+  }
   const problems = publishProblems({
     title: detail.product.title,
     description: detail.product.description,

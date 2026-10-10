@@ -10,6 +10,7 @@ import {
   teamSlugProblem,
   validateStoreSlug,
 } from "@jendal-workspace/core";
+import { countDigitalProducts } from "@jendal-workspace/db/repositories/catalog";
 import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
 import {
   addServicesTeamMember,
@@ -21,6 +22,7 @@ import {
   listServicesTeamMembers,
   saveServicesTeamBio,
   saveServicesTeamSettings,
+  setServicesTeamStoreEnabled,
   setServicesTeamMemberRole,
   setServicesTeamMemberTitle,
   switchToTeam as switchTeamToTeamMode,
@@ -89,18 +91,30 @@ export const servicesTeamRouter = router({
     }),
 
   get: servicesTeamProcedure.query(async ({ ctx }) => {
-    const [settings, offeringCount] = await Promise.all([
+    const [settings, offeringCount, productCount] = await Promise.all([
       getServicesTeamSettings(ctx.db, ctx.servicesTeam.id),
       // All offerings count: a draft service still counts as "added" to the checklist.
       countServicesOfferings(ctx.db, ctx.servicesTeam.id),
+      // All digital products count, drafts included (same rule as offerings).
+      countDigitalProducts(ctx.db, ctx.servicesTeam.id),
     ]);
     return {
       team: ctx.servicesTeam,
       role: ctx.servicesTeamRole,
       settings: settings ? { ...settings, settingsSavedAt: isoOrNull(settings.settingsSavedAt) } : null,
       offeringCount,
+      productCount,
     };
   }),
+
+  // Sellers design §3.2: store_enabled turns the store (digital products) on for a services team.
+  setStoreEnabled: servicesTeamProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "manage_settings", "Only an admin can change the team settings.");
+      await setServicesTeamStoreEnabled(ctx.db, ctx.servicesTeam.id, input.enabled);
+      return { storeEnabled: input.enabled };
+    }),
 
   updateSettings: servicesTeamProcedure
     .input(
