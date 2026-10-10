@@ -70,13 +70,15 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
         </div>
-        <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>
-          Add product
-        </Link>
+        {role === "admin" ? (
+          <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>
+            Add product
+          </Link>
+        ) : null}
       </div>
 
       {products.isPending && <Loader />}
-      {products.isError && <p role="alert">The products couldn&apos;t be loaded.</p>}
+      {products.isError && <p role="alert">{products.error.message}</p>}
 
       {products.data?.length === 0 && (
         <section className="grid gap-2 border border-dashed p-8 text-center">

@@ -90,6 +90,15 @@ export async function updateDigitalProduct(
   const problems = validateDigitalProductDraft(input);
   if (problems.length > 0) throw new CatalogValidationError(problems);
   const product = await requireDigitalProduct(db, tenant, productId);
+  // A published product must stay buyable, so an edit may not take it below the publish bar.
+  if (product.status === "published") {
+    const hasFile = (await findAttachedProductFile(db, productId)) !== null;
+    const publishProblems = digitalPublishProblems(
+      { title: input.title, description: input.description, priceMinor: input.priceMinor },
+      hasFile,
+    );
+    if (publishProblems.length > 0) throw new CatalogValidationError(publishProblems);
+  }
   await updateProductRecord(db, tenant, productId, {
     title: input.title.trim(),
     description: input.description,

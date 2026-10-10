@@ -175,11 +175,11 @@ export async function seedServicesTeamWithAdmin(
   return { userId, organizationId, teamId: teamRow.id };
 }
 
-// Adds a freelancer or manager: the workspace member row (role "member") that S1's
+// Adds a team member (admin, manager or freelancer): the workspace member row (role "member") that S1's
 // servicesTeamRoleFor inner-joins, plus the services_team_member row that carries the role.
 export async function seedServicesTeamMember(
   db: Database,
-  input: { organizationId: string; teamId: string; role: "manager" | "freelancer"; name?: string },
+  input: { organizationId: string; teamId: string; role: "admin" | "manager" | "freelancer"; name?: string },
 ): Promise<string> {
   const userId = await seedUser(db, input.name ?? input.role);
   await db.insert(member).values({

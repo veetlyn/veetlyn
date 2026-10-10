@@ -19,7 +19,6 @@ import {
   createStoreDirectory,
   findStoreAccess,
   findStorePolicyInfo,
-  findTeamAccess,
   isStoreSlugTaken,
   listOrganizationsWithStores,
   setTeamStatus,
@@ -100,26 +99,6 @@ describe.skipIf(!hasTestDatabase)("store repository", () => {
 
     await expect(findStoreAccess(db, { slug: "acme", userId: outsider.userId })).resolves.toBeNull();
     await expect(findStoreAccess(db, { slug: "ghost", userId })).resolves.toBeNull();
-  });
-
-  it("resolves team access for services teams and stores alike, and none for outsiders", async () => {
-    const { userId, organizationId } = await seedOrganization(db);
-    const acme = await seedStore(db, { organizationId, slug: "acme" });
-    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
-    const outsider = await seedOrganization(db);
-
-    await expect(findTeamAccess(db, { slug: "acme-studio", userId })).resolves.toEqual({
-      store: studio,
-      role: "owner",
-      isTeamMember: false,
-    });
-    await expect(findTeamAccess(db, { slug: "acme", userId })).resolves.toEqual({
-      store: acme,
-      role: "owner",
-      isTeamMember: false,
-    });
-    await expect(findTeamAccess(db, { slug: "acme-studio", userId: outsider.userId })).resolves.toBeNull();
-    await expect(findTeamAccess(db, { slug: "ghost", userId })).resolves.toBeNull();
   });
 
   it("lists every organization of the user by name, with its stores by name and team membership", async () => {

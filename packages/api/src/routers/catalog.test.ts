@@ -6,6 +6,7 @@ import {
   hasTestDatabase,
   seedOrganization,
   seedProduct,
+  seedServicesTeamMember,
   seedServicesTeamWithAdmin,
   seedStore,
   seedUser,
@@ -196,8 +197,8 @@ describe.skipIf(!hasTestDatabase)("catalog router", () => {
     const draft = { title: "Icon pack", description: "120 icons.", priceMinor: 1900 };
 
     async function servicesSeller(slug = "team") {
-      const { userId, teamId } = await seedServicesTeamWithAdmin(db, { slug });
-      return { userId, teamId, slug };
+      const { userId, teamId, organizationId } = await seedServicesTeamWithAdmin(db, { slug });
+      return { userId, teamId, organizationId, slug };
     }
 
     async function uploadAndAttach(
@@ -249,6 +250,64 @@ describe.skipIf(!hasTestDatabase)("catalog router", () => {
 
       const published = await caller.catalog.publish({ storeSlug: slug, id: created.id });
       expect(published.product.status).toBe("published");
+    });
+
+    it("lets a services-team admin whose workspace role is member manage products", async () => {
+      const { organizationId, teamId, slug } = await servicesSeller();
+      const adminId = await seedServicesTeamMember(db, { organizationId, teamId, role: "admin" });
+      const created = await callerFor(adminId).catalog.digitalCreate({ storeSlug: slug, ...draft });
+      expect(created).toMatchObject({ title: "Icon pack", status: "draft" });
+    });
+
+    it("refuses product management to services-team members without manage_settings", async () => {
+      const { userId, organizationId, teamId, slug } = await servicesSeller();
+      const files = createFakeFileStore();
+      const owner = callerFor(userId, createTestCatalogServices(), files);
+      const created = await owner.catalog.digitalCreate({ storeSlug: slug, ...draft });
+      await uploadAndAttach(owner, files, slug, created.id, "icons.zip", 1234);
+
+      for (const role of ["manager", "freelancer"] as const) {
+        const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role, name: role });
+        const caller = callerFor(memberId);
+        const forbidden = { code: "FORBIDDEN", message: "Only an admin can manage products." };
+        await expect(caller.catalog.digitalCreate({ storeSlug: slug, ...draft })).rejects.toMatchObject(forbidden);
+        await expect(caller.catalog.digitalList({ storeSlug: slug })).rejects.toMatchObject(forbidden);
+        await expect(caller.catalog.publish({ storeSlug: slug, id: created.id })).rejects.toMatchObject(forbidden);
+      }
+
+      await owner.catalog.publish({ storeSlug: slug, id: created.id });
+      const freelancerId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+      await expect(callerFor(freelancerId).catalog.unpublish({ storeSlug: slug, id: created.id })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+    });
+
+    it("reports a services team as missing to outsiders", async () => {
+      const { organizationId, slug } = await servicesSeller();
+      const outsider = await seedOrganization(db);
+      // In the workspace, but with no role in the services team.
+      const sameWorkspaceStranger = await addMember(db, { organizationId, role: "member" });
+      for (const userId of [outsider.userId, sameWorkspaceStranger]) {
+        await expect(callerFor(userId).catalog.digitalCreate({ storeSlug: slug, ...draft })).rejects.toMatchObject({
+          code: "NOT_FOUND",
+          message: "Store not found.",
+        });
+      }
+    });
+
+    it("keeps a published product publishable when it is edited", async () => {
+      const { userId, slug } = await servicesSeller();
+      const files = createFakeFileStore();
+      const caller = callerFor(userId, createTestCatalogServices(), files);
+      const created = await caller.catalog.digitalCreate({ storeSlug: slug, ...draft });
+      await uploadAndAttach(caller, files, slug, created.id, "icons.zip", 1234);
+      await caller.catalog.publish({ storeSlug: slug, id: created.id });
+
+      await expect(
+        caller.catalog.digitalUpdate({ storeSlug: slug, id: created.id, ...draft, priceMinor: 0 }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Set a price above zero before publishing." });
+      const detail = await caller.catalog.digitalGet({ storeSlug: slug, id: created.id });
+      expect(detail).toMatchObject({ status: "published", priceMinor: 1900, title: "Icon pack" });
     });
 
     it("refuses a digital create on a store team", async () => {

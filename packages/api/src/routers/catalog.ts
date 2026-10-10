@@ -1,4 +1,4 @@
-import { SkuTakenError } from "@jendal-workspace/core";
+import { canServicesTeam, type ServicesTeamRole, SkuTakenError } from "@jendal-workspace/core";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -65,9 +65,19 @@ const digitalInputSchema = z.object({
 });
 
 // Sellers design §5.1: digital products are managed from a seller (services) team, not a store.
-function requireServicesTeam(ctx: { store: { product: string } }) {
+type CatalogCtx = { store: { product: string }; servicesTeamRole: ServicesTeamRole | null };
+
+function requireServicesTeam(ctx: CatalogCtx) {
   if (ctx.store.product !== "services") {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Digital products are managed from a seller team." });
+  }
+  requireManageServicesProducts(ctx);
+}
+
+// Every other services-team mutation is admin-only (manage_settings); products follow suit.
+function requireManageServicesProducts(ctx: CatalogCtx) {
+  if (ctx.store.product === "services" && !canServicesTeam(ctx.servicesTeamRole, "manage_settings")) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin can manage products." });
   }
 }
 
@@ -127,6 +137,7 @@ export const catalogRouter = router({
   }),
 
   publish: storeProcedure.input(idInput).mutation(async ({ ctx, input }) => {
+    requireManageServicesProducts(ctx);
     try {
       const detail = await publishProduct(ctx.db, ctx.tenant, input.id, ctx.catalog);
       if (!detail) notFound();
@@ -137,6 +148,7 @@ export const catalogRouter = router({
   }),
 
   unpublish: storeProcedure.input(idInput).mutation(async ({ ctx, input }) => {
+    requireManageServicesProducts(ctx);
     const detail = await unpublishProduct(ctx.db, ctx.tenant, input.id);
     if (!detail) notFound();
     return detail;

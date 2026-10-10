@@ -51,7 +51,11 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
   if (detail.isError) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Product not found</h1>
+        {detail.error.data?.code === "FORBIDDEN" ? (
+          <p role="alert">{detail.error.message}</p>
+        ) : (
+          <h1 className="text-2xl font-semibold">Product not found</h1>
+        )}
         <Link href={`/${teamSlug}/products`} className="underline">
           Back to products
         </Link>

@@ -73,24 +73,6 @@ export async function findStoreAccess(
   return { store, role, isTeamMember: teamMemberId !== null };
 }
 
-// Unlike findStoreAccess, this resolves any team: the catalog router also serves services teams
-// (their digital products), and each procedure then checks the team's product.
-export async function findTeamAccess(
-  db: Database,
-  input: { slug: string; userId: string },
-): Promise<StoreAccessRow | null> {
-  const [row] = await db
-    .select({ ...storeColumns, role: member.role, teamMemberId: teamMember.id })
-    .from(team)
-    .innerJoin(member, and(eq(member.organizationId, team.organizationId), eq(member.userId, input.userId)))
-    .leftJoin(teamMember, and(eq(teamMember.teamId, team.id), eq(teamMember.userId, input.userId)))
-    .where(eq(team.slug, input.slug))
-    .limit(1);
-  if (!row) return null;
-  const { role, teamMemberId, ...store } = row;
-  return { store, role, isTeamMember: teamMemberId !== null };
-}
-
 export type OrganizationStores = {
   organization: { id: string; name: string };
   role: string;
