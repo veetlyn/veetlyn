@@ -1,0 +1,75 @@
+packages/api/src/catalog/errors.ts
+  s_c9271a7c7502a7::t_cf5fccee82341b 1-8
+packages/api/src/routers/catalog.test.ts
+  s_c9271a7c7502a7::t_401769fc7a416e 8-9
+  s_c9271a7c7502a7::t_1fa0ab0704019e 193-258,281-317
+  s_6d0842d62c53ba::t_3f4bb447cd9446 259-280
+  s_c9271a7c7502a7::t_b4d1f090cb4fdc 61-65,73
+packages/api/src/routers/seller.test.ts
+  s_c9271a7c7502a7::t_0f2dc4edd95150 9
+  s_c9271a7c7502a7::t_170aec101849c7 230-258
+  s_c9271a7c7502a7::t_59f96f4bc7ba1c 223
+packages/api/src/routers/seller.ts
+  s_c9271a7c7502a7::t_63f0da91fbd469 3
+  s_c9271a7c7502a7::t_f5c36793bec851 12-21
+packages/api/src/routers/services-team.ts
+  s_c9271a7c7502a7::t_933c581d34fef5 94,98-99,106,110-117
+  s_c9271a7c7502a7::t_521081b5ec6546 13
+  s_c9271a7c7502a7::t_28147d517832e6 25
+  s_c9271a7c7502a7::t_fff0d2ab98afcc 118
+packages/db/src/repositories/catalog.ts
+  s_c9271a7c7502a7::t_67b2d1ef6e8e8f 131-143
+packages/db/src/repositories/catalog.test.ts
+  s_c9271a7c7502a7::t_b1dd0f6f04a16d 119-133
+  s_c9271a7c7502a7::t_0d76dfd60e4e41 20
+packages/api/src/catalog/service.test.ts
+  s_c9271a7c7502a7::t_af37ee0e4ca23e 16
+packages/db/src/repositories/stores.test.ts
+  s_6d0842d62c53ba::t_901bd102c00ebd 22
+  s_6d0842d62c53ba::t_52a960559cd707 105-124
+packages/api/src/catalog/service.ts
+  s_c9271a7c7502a7::t_6ea71bee52ff7f 50
+  s_c9271a7c7502a7::t_d6fbd0b385f956 236-242
+  s_c9271a7c7502a7::t_b9903f650f0ff3 51-52
+packages/api/src/catalog/digital.ts
+  s_c9271a7c7502a7::t_982c3e081d252b 196,198-199
+  s_c9271a7c7502a7::t_82a967f2385432 1-195,197,200-232
+packages/db/src/repositories/stores.ts
+  s_c9271a7c7502a7::t_04fdf89fc225f9 76-93
+packages/api/src/store-procedure.ts
+  s_c9271a7c7502a7::t_a7479a27c3c933 2,9-11,15
+packages/api/src/routers/catalog.ts
+  s_c9271a7c7502a7::t_2c21ffb5a55f59 15
+  s_c9271a7c7502a7::t_07778636f6ca1b 6-14
+  s_c9271a7c7502a7::t_0923c24d378654 60-73,77
+  s_c9271a7c7502a7::t_8b8145af55539c 95,101,108,118,145-201
+  s_6d0842d62c53ba::t_4396db2168bac0 16,74-76,78-79,96-98,202-207,211-214,218-221,225-228,233
+packages/api/src/routers/services-team.test.ts
+  s_c9271a7c7502a7::t_8e87b16045c4db 118-150
+  s_c9271a7c7502a7::t_4b1c2cae419ac6 263
+  s_c9271a7c7502a7::t_2cb1b1d20f7e7f 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "29ea201f6a870260c8f72518347069c7ba53dd6c",
+  "prompts": {},
+  "sessions": {
+    "s_6d0842d62c53ba": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a753a4d-aad3-4087-a37f-3ece241b039b",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_c9271a7c7502a7": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "29e90abb-bd12-4da7-bd68-df04dfcda396",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
