@@ -12,7 +12,7 @@ export default async function StorefrontHome() {
     if (!page) notFound();
     return <SellerPage page={{ ...page, pageBase: "" }} />;
   }
-  // A Commerce team keeps its plain home when the seller page is unavailable or has no digital products.
+  // Fall back to the plain home rather than 404 when the seller page is unavailable.
   if (page && page.products.length > 0) return <SellerPage page={{ ...page, pageBase: "" }} />;
   return <StoreHome name={store.name} />;
 }

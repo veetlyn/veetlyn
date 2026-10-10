@@ -14,10 +14,10 @@ type SellerPageOffering = {
   daysMax: number;
 };
 
-// Structural on purpose: the store host passes the api's /api/store/page payload and the admin preview
-// passes the tRPC seller.preview output, so this lists only what the page reads and stays free of server imports.
 export type SellerPageProduct = { id: string; title: string; description: string; priceMinor: number };
 
+// Structural on purpose: the store host passes the api's /api/store/page payload and the admin preview
+// passes the tRPC seller.preview output, so this lists only what the page reads and stays free of server imports.
 export type SellerPageContent = {
   name: string;
   product: "services" | "store";
