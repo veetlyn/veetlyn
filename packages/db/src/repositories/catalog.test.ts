@@ -15,6 +15,7 @@ import {
   listProducts,
   listPublishedDigitalProducts,
   listVariants,
+  lockProduct,
   setProductStatus,
   updateProduct,
   updateVariantPrice,
@@ -56,6 +57,18 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
         requiresShipping: true,
       });
       expect(await getProduct(db, otherTenant(tenant), product.id)).toBeNull();
+    });
+
+    it("locks a product only for its own store", async () => {
+      const tenant = await makeStore(db);
+      const other = await makeStore(db);
+      const product = await insertProduct(db, tenant, { title: "Lamp" });
+
+      await db.transaction(async (tx) => {
+        expect(await lockProduct(tx, tenant, product.id)).toBe(product.id);
+      });
+      expect(await lockProduct(db, other, product.id)).toBeNull();
+      expect(await lockProduct(db, tenant, crypto.randomUUID())).toBeNull();
     });
 
     it("lists only the store's own products", async () => {

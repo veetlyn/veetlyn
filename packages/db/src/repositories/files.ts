@@ -1,5 +1,5 @@
 import type { FilePurpose } from "@jendal-workspace/core";
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { fileUpload } from "../schema/files";
@@ -89,6 +89,24 @@ export async function findAttachedProductFile(tx: DbExecutor, productId: string)
 
 export async function deleteFileUpload(tx: DbExecutor, id: string): Promise<void> {
   await tx.delete(fileUpload).where(eq(fileUpload.id, id));
+}
+
+export async function deleteOtherAttachedProductFiles(
+  tx: DbExecutor,
+  input: { productId: string; keepId: string },
+): Promise<string[]> {
+  const rows = await tx
+    .delete(fileUpload)
+    .where(
+      and(
+        eq(fileUpload.productId, input.productId),
+        eq(fileUpload.purpose, "product"),
+        isNotNull(fileUpload.attachedAt),
+        ne(fileUpload.id, input.keepId),
+      ),
+    )
+    .returning({ r2Key: fileUpload.r2Key });
+  return rows.map((row) => row.r2Key);
 }
 
 export async function listDeliveryFiles(tx: DbExecutor, deliveryIds: string[]): Promise<DeliveryFile[]> {

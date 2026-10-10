@@ -45,6 +45,17 @@ export async function getProduct(db: Database, tenant: TenantContext, id: string
   return row ?? null;
 }
 
+// Holds the product row until the transaction ends so changes to its files happen one at a time.
+export async function lockProduct(tx: DbExecutor, tenant: TenantContext, id: string): Promise<string | null> {
+  const [row] = await tx
+    .select({ id: products.id })
+    .from(products)
+    .where(and(eq(products.id, id), eq(products.storeId, tenant.storeId)))
+    .limit(1)
+    .for("update");
+  return row?.id ?? null;
+}
+
 export async function listProducts(db: Database, tenant: TenantContext): Promise<ProductRow[]> {
   return db.select().from(products).where(eq(products.storeId, tenant.storeId)).orderBy(products.createdAt);
 }

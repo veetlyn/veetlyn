@@ -13,11 +13,12 @@ import {
   insertVariants,
   listProducts,
   listVariants,
+  lockProduct,
   updateProduct as updateProductRecord,
   updateVariantPrice,
 } from "@jendal-workspace/db/repositories/catalog";
 import {
-  deleteFileUpload,
+  deleteOtherAttachedProductFiles,
   findAttachedProductFile,
   findFileUpload,
   insertFileUpload,
@@ -42,14 +43,14 @@ export class DigitalProductMissing extends Error {
     super("Product not found.");
     this.name = "DigitalProductMissing";
   }
-} // mapped to NOT_FOUND in the router
+}
 
 export class UploadLimitedError extends Error {
   constructor() {
     super("Too many uploads. Wait a few minutes and try again.");
     this.name = "UploadLimitedError";
   }
-} // mapped to TOO_MANY_REQUESTS in the router
+}
 
 async function requireDigitalProduct(db: Database, tenant: TenantContext, productId: string) {
   const product = await getProduct(db, tenant, productId);
@@ -99,7 +100,6 @@ export async function updateDigitalProduct(
     channel3ProductId: product.channel3ProductId,
   });
   const [variant] = await listVariants(db, tenant, productId);
-  // One hidden variant holds the price; update it in place.
   if (variant) {
     await updateVariantPrice(db, tenant, variant.id, input.priceMinor);
   } else {
@@ -185,7 +185,9 @@ export async function attachProductFile(
   if (!stored || stored.sizeBytes !== upload.sizeBytes) {
     throw new CatalogValidationError([{ field: "file", message: "The file did not finish uploading." }]);
   }
-  const replacedKey = await db.transaction(async (tx) => {
+  const replacedKeys = await db.transaction(async (tx) => {
+    // The product lock serializes concurrent attaches, so exactly one attached file survives.
+    if (!(await lockProduct(tx, tenant, input.productId))) throw new DigitalProductMissing();
     const locked = await lockProductFileUploadForAttach(tx, {
       id: input.uploadId,
       teamId: tenant.storeId,
@@ -193,18 +195,12 @@ export async function attachProductFile(
       purpose: "product",
     });
     if (!locked) throw new CatalogValidationError([{ field: "file", message: "This file cannot be used for this product." }]);
-    // Read the current file before attaching: afterwards the new upload is the newest attached row.
-    const previous = await findAttachedProductFile(tx, input.productId);
     await markFileUploadAttached(tx, locked.id);
-    if (previous) {
-      await deleteFileUpload(tx, previous.id);
-      return previous.r2Key;
-    }
-    return null;
+    return deleteOtherAttachedProductFiles(tx, { productId: input.productId, keepId: locked.id });
   });
-  if (replacedKey) {
+  if (replacedKeys.length > 0) {
     try {
-      await files.delete([replacedKey]);
+      await files.delete(replacedKeys);
     } catch {
       // The sweep or a later cleanup gets it; the product already points at the new file.
     }

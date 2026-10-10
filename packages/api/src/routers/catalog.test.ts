@@ -11,6 +11,8 @@ import {
   seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
+import { fileUpload } from "@jendal-workspace/db/schema/files";
+import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestCatalogServices, type CatalogServices } from "../testing/catalog";
@@ -298,6 +300,11 @@ describe.skipIf(!hasTestDatabase)("catalog router", () => {
       expect(files.deletes).toContainEqual([keyA]);
       const detail = await caller.catalog.digitalGet({ storeSlug: slug, id: created.id });
       expect(detail.fileName).toBe("icons-b.zip");
+      const remaining = await db
+        .select({ fileName: fileUpload.fileName })
+        .from(fileUpload)
+        .where(and(eq(fileUpload.productId, created.id), eq(fileUpload.purpose, "product")));
+      expect(remaining).toEqual([{ fileName: "icons-b.zip" }]);
     });
 
     it("validates: empty title and a bad price are refused before anything is written", async () => {
