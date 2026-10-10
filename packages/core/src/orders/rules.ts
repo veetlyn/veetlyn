@@ -20,6 +20,13 @@ export function grantState(
   return "usable";
 }
 
+// The order page shows only a hint of where a new link goes; the address itself stays private.
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf("@");
+  if (at < 1) return "•";
+  return `${email[0]}•${email.slice(at)}`;
+}
+
 export function grantExpiry(now: Date): Date {
   return new Date(now.getTime() + DOWNLOAD_GRANT_DAYS * 86_400_000);
 }

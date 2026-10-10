@@ -1,8 +1,12 @@
 import {
   buyerEmailProblem,
+  type FileStore,
   DOWNLOADS_PER_GRANT,
   grantExpiry,
+  grantState,
+  type GrantState,
   hashToken,
+  maskEmail,
   newToken,
   orderCustomId,
   orderFeesTransfer,
@@ -17,15 +21,20 @@ import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import { findAttachedProductFile } from "@jendal-workspace/db/repositories/files";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import {
+  type DownloadGrantRow,
+  findGrantByTokenHash,
   findOrderByPayPalOrderId,
   insertGrant,
   insertOrder,
+  listTeamOrders,
   lockOrder,
   markOrderPaid,
   type OrderRow,
   setOrderFees,
   setOrderPayPalOrder,
+  useDownload,
 } from "@jendal-workspace/db/repositories/orders";
+import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { productVariants, products } from "@jendal-workspace/db/schema/catalog";
@@ -451,4 +460,122 @@ export async function captureCheckout(
   if (capture.status === "COMPLETED") return issueBrowserGrant(deps.db, row.id);
   if (capture.status === "PENDING") return { outcome: "pending" };
   return { outcome: "declined" };
+}
+
+// The R2b download length: long enough to start the download, too short to share.
+const DOWNLOAD_URL_SECONDS = 300;
+const HOUR_MS = 3_600_000;
+
+function invalidLink(): TRPCError {
+  return new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
+}
+
+type OrderByGrant = { grant: DownloadGrantRow; order: OrderRow };
+
+// Grants are only issued for paid orders, so a pending one behind a token is treated as no order at all.
+async function findOrderByToken(db: DbExecutor, token: string): Promise<OrderByGrant> {
+  const found = await findGrantByTokenHash(db, await hashToken(token));
+  if (!found || found.order.status === "pending") throw invalidLink();
+  return found;
+}
+
+// A refunded order's grants are revoked with it; the order status also covers a grant the revocation missed.
+function pageGrantState({ grant, order }: OrderByGrant, now: Date): GrantState {
+  return order.status === "refunded" ? "revoked" : grantState(grant, now);
+}
+
+export async function getOrderPage(db: Database, token: string, now: Date = new Date()) {
+  const found = await findOrderByToken(db, token);
+  const { order, grant } = found;
+  const team = await findOrderEmailTeam(db, order.teamId);
+  if (!team) throw invalidLink();
+  return {
+    order: {
+      productTitle: order.productTitle,
+      amountMinor: order.amountMinor,
+      currency: order.currency,
+      status: order.status,
+      paidAt: order.paidAt?.toISOString() ?? null,
+    },
+    team: { name: team.name },
+    grant: { state: pageGrantState(found, now), downloadsLeft: grant.downloadsLeft, expiresAt: grant.expiresAt.toISOString() },
+    maskedEmail: maskEmail(order.buyerEmail),
+  };
+}
+
+function refusedDownload(state: GrantState): TRPCError {
+  if (state === "expired") return new TRPCError({ code: "BAD_REQUEST", message: "This link has expired. Ask for a new one." });
+  // Grants are revoked only by a refund.
+  if (state === "revoked") return refunded();
+  return new TRPCError({ code: "BAD_REQUEST", message: "This link has no downloads left. Ask for a new one." });
+}
+
+// Sellers design §5.2: the file is the product's current one, so a replaced file reaches past buyers.
+export async function downloadOrderFile(
+  deps: { db: Database; files: FileStore },
+  token: string,
+  now: Date = new Date(),
+): Promise<{ url: string }> {
+  const found = await findOrderByToken(deps.db, token);
+  if (found.order.status !== "paid") throw refunded();
+  const state = grantState(found.grant, now);
+  if (state !== "usable") throw refusedDownload(state);
+  // Checked before spending a download, so a missing file does not cost the buyer one.
+  const file = await findAttachedProductFile(deps.db, found.order.productId);
+  if (!file) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This file is not available. Contact the seller." });
+  }
+  if (!(await useDownload(deps.db, found.grant.id, now))) {
+    // Another download or a refund got there first; the fresh row says which.
+    const current = await findOrderByToken(deps.db, token);
+    const currentState = pageGrantState(current, now);
+    throw refusedDownload(currentState === "usable" ? "used_up" : currentState);
+  }
+  const url = await deps.files.presignGet({ key: file.r2Key, fileName: file.fileName, expiresInSeconds: DOWNLOAD_URL_SECONDS });
+  return { url };
+}
+
+// The new link goes only to the buyer email on the order, never to the page, so a leaked old link
+// cannot be turned into a working one.
+export async function sendNewOrderLink(
+  deps: { db: Database; email?: EmailServices },
+  token: string,
+  now: Date = new Date(),
+): Promise<{ sentTo: string }> {
+  if (!deps.email) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email is not configured on this server." });
+  }
+  const { order } = await findOrderByToken(deps.db, token);
+  if (order.status === "refunded") throw refunded();
+  const allowed = await hitRequestLimit(deps.db, { key: `order-link:${order.id}`, windowMs: HOUR_MS, max: 3 });
+  if (!allowed) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many new links for this order. Try again in an hour." });
+  }
+  const team = await findOrderEmailTeam(deps.db, order.teamId);
+  if (!team) throw invalidLink();
+  // The order lock orders this against a refund, as for the browser's grant at capture.
+  const newGrantToken = await deps.db.transaction(async (tx) => {
+    const row = await lockOrderOrThrow(tx, order.id);
+    if (row.status === "refunded") throw refunded();
+    return issueGrant(tx, row.id, now);
+  });
+  const sent = await sendDownloadEmail(deps, { order, team, token: newGrantToken });
+  if (!sent) {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not send the email. Try again in a few minutes." });
+  }
+  return { sentTo: maskEmail(order.buyerEmail) };
+}
+
+export async function listOrders(db: Database, teamId: string) {
+  const rows = await listTeamOrders(db, teamId);
+  return rows.map((row) => ({
+    id: row.id,
+    productTitle: row.productTitle,
+    buyerEmail: row.buyerEmail,
+    amountMinor: row.amountMinor,
+    currency: row.currency,
+    status: row.status,
+    paidAt: row.paidAt?.toISOString() ?? null,
+    refundedAt: row.refundedAt?.toISOString() ?? null,
+  }));
 }

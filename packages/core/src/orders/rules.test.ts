@@ -5,6 +5,7 @@ import {
   DOWNLOADS_PER_GRANT,
   buyerEmailProblem,
   grantState,
+  maskEmail,
   orderCustomId,
   orderIdFromCustomId,
 } from "./rules";
@@ -51,5 +52,15 @@ describe("custom ids", () => {
     expect(orderIdFromCustomId("6f1c2f3e-1b2a-4c5d-8e9f-0a1b2c3d4e5f")).toBeNull();
     expect(orderIdFromCustomId("order:nope")).toBeNull();
     expect(orderIdFromCustomId(null)).toBeNull();
+  });
+});
+
+describe("masked email", () => {
+  it("keeps the first character and the domain", () => {
+    expect(maskEmail("jo@example.com")).toBe("j•@example.com");
+    expect(maskEmail("j@example.com")).toBe("j•@example.com");
+  });
+  it("hides an address without a domain entirely", () => {
+    expect(maskEmail("nodomain")).toBe("•");
   });
 });
