@@ -39,7 +39,11 @@ export default function SellerPreview({ teamSlug, urlParts }: { teamSlug: string
           Back to the dashboard
         </Link>
       </div>
-      {page.product === "services" ? <SellerPage page={{ ...page, requestBase: url }} /> : <StoreHome name={page.name} />}
+      {page.product === "services" || page.products.length > 0 ? (
+        <SellerPage page={{ ...page, pageBase: url }} />
+      ) : (
+        <StoreHome name={page.name} />
+      )}
     </>
   );
 }
