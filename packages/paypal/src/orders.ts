@@ -11,10 +11,11 @@ export type PayPalCapture = {
   // Missing while a capture is pending (R1 facts §2).
   seller_receivable_breakdown?: PayPalCaptureBreakdown;
 };
+export type PayPalRefund = { id: string; status: string; amount?: PayPalMoney };
 export type PayPalOrder = {
   id: string;
   status: string;
-  purchase_units?: { payments?: { captures?: PayPalCapture[] } }[];
+  purchase_units?: { payments?: { captures?: PayPalCapture[]; refunds?: PayPalRefund[] } }[];
 };
 
 export type CreateSellerOrderInput = {
@@ -165,4 +166,15 @@ export function captureFromOrder(order: PayPalOrder): PayPalCapture | null {
     captures[0] ??
     null
   );
+}
+
+export function refundsFromOrder(order: PayPalOrder): PayPalRefund[] {
+  const raw: unknown = order.purchase_units?.[0]?.payments?.refunds;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((value) => {
+    if (typeof value !== "object" || value === null) return [];
+    const refund = value as Record<string, unknown>;
+    if (typeof refund.id !== "string" || typeof refund.status !== "string") return [];
+    return [{ id: refund.id, status: refund.status, amount: parseMoney(refund.amount) }];
+  });
 }

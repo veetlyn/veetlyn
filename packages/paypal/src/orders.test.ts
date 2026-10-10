@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAuthAssertion, captureFromOrder, createPayPalClient, type PayPalOrder } from "./index";
+import { buildAuthAssertion, captureFromOrder, createPayPalClient, type PayPalOrder, refundsFromOrder } from "./index";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, recordedAt } from "./testing";
 
 function clientWith(respond: (url: string) => Response) {
@@ -282,5 +282,34 @@ describe("captureFromOrder", () => {
     const expected = { paypal_fee: { currency_code: "USD", value: "4.98" }, platform_fees: [] };
     expect(captureFromOrder(breakdown() as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual(expected);
     expect(captureFromOrder(breakdown([]) as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual(expected);
+  });
+});
+
+describe("refundsFromOrder", () => {
+  it("lists an order's refunds and drops malformed entries", () => {
+    const order = {
+      id: "O",
+      status: "COMPLETED",
+      purchase_units: [
+        {
+          payments: {
+            refunds: [
+              { id: "R1", status: "COMPLETED", amount: { currency_code: "USD", value: "5.00" } },
+              { id: "R2", status: "PENDING", amount: { currency_code: "USD", value: "1.00" } },
+              { bad: true },
+            ],
+          },
+        },
+      ],
+    };
+    expect(refundsFromOrder(order as unknown as PayPalOrder)).toEqual([
+      { id: "R1", status: "COMPLETED", amount: { currency_code: "USD", value: "5.00" } },
+      { id: "R2", status: "PENDING", amount: { currency_code: "USD", value: "1.00" } },
+    ]);
+  });
+
+  it("returns no refunds when the order has none", () => {
+    expect(refundsFromOrder({ id: "O", status: "COMPLETED", purchase_units: [{ payments: {} }] })).toEqual([]);
+    expect(refundsFromOrder({ id: "O", status: "COMPLETED" })).toEqual([]);
   });
 });

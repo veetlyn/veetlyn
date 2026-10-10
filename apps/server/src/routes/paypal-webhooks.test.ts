@@ -106,7 +106,7 @@ describe("POST /webhooks/paypal", () => {
       resourceId: "CAPTURE-1",
       customId: "payment-1",
       orderId: "ORDER-1",
-      captureId: null,
+      captureId: "CAPTURE-1",
       merchantId: "SELLER1",
     });
     expect(enqueue).toHaveBeenCalledWith("WH-1", {});
@@ -118,6 +118,32 @@ describe("POST /webhooks/paypal", () => {
       transmission_id: "TRANSMISSION-1",
       transmission_sig: "SIGNATURE",
       webhook_id: "WEBHOOK-1",
+    });
+  });
+
+  it("stores a refund with the capture id from its up link", async () => {
+    const { app, record, db } = buildApp();
+    const refund = JSON.stringify({
+      id: "WH-3",
+      event_type: "PAYMENT.CAPTURE.REFUNDED",
+      resource_type: "refund",
+      resource: {
+        id: "REFUND-1",
+        payer: { merchant_id: "SELLER1" },
+        links: [{ rel: "up", href: "https://api.sandbox.paypal.com/v2/payments/captures/CAPTURE-1" }],
+      },
+    });
+
+    expect((await post(app, refund)).status).toBe(200);
+    expect(record).toHaveBeenCalledWith(db, {
+      id: "WH-3",
+      eventType: "PAYMENT.CAPTURE.REFUNDED",
+      resourceType: "refund",
+      resourceId: "REFUND-1",
+      customId: null,
+      orderId: null,
+      captureId: "CAPTURE-1",
+      merchantId: "SELLER1",
     });
   });
 

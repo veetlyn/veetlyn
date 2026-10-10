@@ -95,7 +95,7 @@ export function createPayPalWebhookRoute(deps: PayPalWebhookRouteDeps): Hono<App
       return c.json({ error: "invalid_signature" }, 400);
     }
 
-    const status = await record(c.get("db"), { ...event, captureId: null });
+    const status = await record(c.get("db"), event);
     // A redelivery of an event still "received" is enqueued again: the first enqueue may have failed.
     if (status === "received") {
       await deps.enqueue(

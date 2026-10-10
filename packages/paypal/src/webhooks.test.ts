@@ -73,8 +73,20 @@ describe("parseWebhookEvent", () => {
       resourceId: "CAPTURE1",
       customId: "pay-1",
       orderId: "ORDER1",
+      captureId: "CAPTURE1",
       merchantId: "SELLER1",
     });
+  });
+
+  it("reads a reversed capture's id", () => {
+    expect(
+      parseWebhookEvent({
+        id: "WH-6",
+        event_type: "PAYMENT.CAPTURE.REVERSED",
+        resource_type: "capture",
+        resource: { id: "CAPTURE1", custom_id: "pay-1", payee: { merchant_id: "SELLER1" } },
+      }),
+    ).toMatchObject({ resourceId: "CAPTURE1", captureId: "CAPTURE1" });
   });
 
   it("reads the ids of an order event", () => {
@@ -92,6 +104,7 @@ describe("parseWebhookEvent", () => {
       resourceId: "ORDER1",
       customId: "pay-1",
       orderId: "ORDER1",
+      captureId: null,
       merchantId: "SELLER1",
     });
   });
@@ -104,31 +117,52 @@ describe("parseWebhookEvent", () => {
         resource_type: "checkout-order",
         resource: { id: "ORDER1", purchase_units: [{ custom_id: "pay-1", payee: { merchant_id: "SELLER1" } }] },
       }),
-    ).toMatchObject({ resourceId: "ORDER1", customId: "pay-1", orderId: "ORDER1", merchantId: "SELLER1" });
+    ).toMatchObject({ resourceId: "ORDER1", customId: "pay-1", orderId: "ORDER1", captureId: null, merchantId: "SELLER1" });
   });
 
-  it("reads a refund's seller from its payer and not its custom_id", () => {
+  it("reads a refund's seller from its payer and its capture from its up link", () => {
     expect(
       parseWebhookEvent({
         id: "WH-5",
         event_type: "PAYMENT.CAPTURE.REFUNDED",
         resource_type: "refund",
         resource: {
-          id: "REFUND1",
+          id: "R1",
+          status: "COMPLETED",
           custom_id: "refund-own-value",
+          amount: { currency_code: "USD", value: "19.00" },
           payer: { merchant_id: "SELLER1" },
-          links: [{ rel: "up", href: "https://api.sandbox.paypal.com/v2/payments/captures/CAPTURE1" }],
+          links: [
+            { rel: "self", href: "https://api.sandbox.paypal.com/v2/payments/refunds/R1" },
+            { rel: "up", href: "https://api.sandbox.paypal.com/v2/payments/captures/CAP1" },
+          ],
         },
       }),
     ).toEqual({
       id: "WH-5",
       eventType: "PAYMENT.CAPTURE.REFUNDED",
       resourceType: "refund",
-      resourceId: "REFUND1",
+      resourceId: "R1",
       customId: null,
       orderId: null,
+      captureId: "CAP1",
       merchantId: "SELLER1",
     });
+  });
+
+  it("leaves a refund's capture unknown without an up link", () => {
+    expect(
+      parseWebhookEvent({
+        id: "WH-7",
+        event_type: "PAYMENT.CAPTURE.REFUNDED",
+        resource_type: "refund",
+        resource: {
+          id: "R1",
+          payer: { merchant_id: "SELLER1" },
+          links: [{ rel: "self", href: "https://api.sandbox.paypal.com/v2/payments/refunds/R1" }],
+        },
+      }),
+    ).toMatchObject({ resourceId: "R1", captureId: null });
   });
 
   it("keeps unknown events with what it can read, and rejects bodies without an id or type", () => {
@@ -139,6 +173,7 @@ describe("parseWebhookEvent", () => {
       resourceId: null,
       customId: null,
       orderId: null,
+      captureId: null,
       merchantId: null,
     });
     expect(parseWebhookEvent({ event_type: "X" })).toBeNull();
