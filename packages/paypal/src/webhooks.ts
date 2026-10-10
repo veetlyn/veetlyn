@@ -37,7 +37,7 @@ function refundedCaptureId(resource: Record<string, unknown> | null): string | n
     const href = text(entry?.href);
     if (entry?.rel === "up" && href) {
       const match = /\/v2\/payments\/captures\/([^/?#]+)/.exec(href);
-      if (match?.[1]) return decodeURIComponent(match[1]);
+      if (match?.[1]) return match[1];
     }
   }
   return null;
