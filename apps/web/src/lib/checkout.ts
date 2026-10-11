@@ -1,9 +1,3 @@
-// Null when the address looks right; the server checks again.
-export function checkoutEmailProblem(email: string): string | null {
-  const trimmed = email.trim();
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed) ? null : "That email address does not look right.";
-}
-
 export type GrantState = "usable" | "used_up" | "expired" | "revoked";
 
 export function grantMessage(state: GrantState, status: "paid" | "refunded" | "pending"): string | null {

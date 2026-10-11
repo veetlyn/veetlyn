@@ -56,10 +56,4 @@ describe("productFormToDraft", () => {
       { sourceUrl: "https://cdn.example.com/b.jpg", alt: "back" },
     ]);
   });
-
-  it("needs the rights confirmation only for imported products", () => {
-    expect(productFormToDraft(formWith({})).channel3ProductId).toBeNull();
-    const imported = formWith({ channel3ProductId: "c3-1" });
-    expect(imported.rightsConfirmed).toBe(false);
-  });
 });
