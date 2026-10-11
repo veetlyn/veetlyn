@@ -64,18 +64,27 @@ export const captureSchema = z.object({
 export const refundSchema = z.object({ id: z.string(), status: z.string(), amount: readableMoney });
 
 // Captures and refunds stay unread here: captureFromOrder and refundsFromOrder skip the items they cannot read.
+// A purchase unit, payments or list of the wrong type reads as absent, that is as no captures or refunds.
 export const orderSchema = z.looseObject({
   id: z.string(),
   status: z.string(),
   purchase_units: z
     .array(
-      z.looseObject({
-        payments: z
-          .looseObject({ captures: z.array(z.unknown()).optional(), refunds: z.array(z.unknown()).optional() })
-          .optional(),
-      }),
+      z
+        .looseObject({
+          payments: z
+            .looseObject({
+              captures: z.array(z.unknown()).optional().catch(undefined),
+              refunds: z.array(z.unknown()).optional().catch(undefined),
+            })
+            .optional()
+            .catch(undefined),
+        })
+        .optional()
+        .catch(undefined),
     )
-    .optional(),
+    .optional()
+    .catch(undefined),
 });
 
 // The 201 response is only a links array (Fact 1).
@@ -109,7 +118,10 @@ export const merchantIntegrationSchema = z.looseObject({
   ),
 });
 
-export const merchantIntegrationRefSchema = z.looseObject({ merchant_id: optionalText, tracking_id: optionalText });
+// A body that is not an object reads as "no integration yet", like one without a merchant_id.
+export const merchantIntegrationRefSchema = z
+  .looseObject({ merchant_id: optionalText, tracking_id: optionalText })
+  .catch({ merchant_id: undefined, tracking_id: undefined });
 
 export const webhookVerificationSchema = z.looseObject({ verification_status: optionalText });
 

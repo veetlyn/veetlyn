@@ -23,13 +23,15 @@ const SIGNATURE_HEADERS = {
 const RAW_BODY =
   '{"id":"WH-1",  "event_type":"PAYMENT.CAPTURE.COMPLETED","resource_type":"capture","resource":{"id":"CAPTURE-1","custom_id":"payment-1","payee":{"merchant_id":"SELLER1"},"supplementary_data":{"related_ids":{"order_id":"ORDER-1"}}}}';
 
-type VerifyAnswer = "SUCCESS" | "FAILURE" | number;
+// "BAD_BODY" is a 200 whose body is not a verification response.
+type VerifyAnswer = "SUCCESS" | "FAILURE" | "BAD_BODY" | number;
 
 function makePayPal(answer: VerifyAnswer) {
   const { fetch, requests } = fakeFetch((request) => {
     if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
     if (request.url.endsWith(VERIFY_PATH)) {
       if (typeof answer === "number") return jsonResponse(answer, { name: "PAYPAL_REFUSED", debug_id: `d${answer}` });
+      if (answer === "BAD_BODY") return jsonResponse(200, []);
       return jsonResponse(200, { verification_status: answer });
     }
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
@@ -191,9 +193,9 @@ describe("POST /webhooks/paypal", () => {
     }
   });
 
-  it("answers 502 when PayPal's own state may change on retry: 401, 429 and 5xx", async () => {
-    for (const status of [401, 429, 500, 503]) {
-      const { app, record } = buildApp({ answer: status });
+  it("answers 502 when PayPal's own state may change on retry: 401, 429, 5xx and an unreadable answer", async () => {
+    for (const answer of [401, 429, 500, 503, "BAD_BODY"] as const) {
+      const { app, record } = buildApp({ answer });
 
       expect((await post(app)).status).toBe(502);
       expect(record).not.toHaveBeenCalled();

@@ -84,7 +84,7 @@ export function createPayPalWebhookRoute(deps: PayPalWebhookRouteDeps): Hono<App
       });
     } catch (error) {
       if (!(error instanceof PayPalError)) throw error;
-      if (error.status < 500 && !RETRIED_PAYPAL_STATUSES.has(error.status)) {
+      if (error.status >= 400 && error.status < 500 && !RETRIED_PAYPAL_STATUSES.has(error.status)) {
         log.set({ paypalWebhook: { refused: "verification_rejected" }, paypal: { status: error.status, debugId: error.debugId } });
         return c.json({ error: "verification_rejected" }, 400);
       }
