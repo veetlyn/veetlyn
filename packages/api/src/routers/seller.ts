@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 
 import { router } from "../index";
 import { sellerProcedure } from "../seller-procedure";
+import { dropCachedLookups } from "../team-cache";
 
 async function listedCount(db: Database, seller: StoreRecord): Promise<number> {
   if (seller.product === "services") {
@@ -67,7 +68,7 @@ export const sellerRouter = router({
     // Null when the seller was suspended between the read above and this write.
     const updated = await setTeamStatus(ctx.db, { teamId: ctx.seller.id, status: "active" });
     if (!updated) throw suspended();
-    await ctx.onTeamStatusChanged?.({ id: ctx.seller.id, slug: updated.slug });
+    await dropCachedLookups(ctx.onTeamStatusChanged, { id: ctx.seller.id, slug: updated.slug });
     return { status: "active" as const };
   }),
 
@@ -76,7 +77,7 @@ export const sellerRouter = router({
     if (ctx.seller.status === "suspended") throw suspended();
     const updated = await setTeamStatus(ctx.db, { teamId: ctx.seller.id, status: "draft" });
     if (!updated) throw suspended();
-    await ctx.onTeamStatusChanged?.({ id: ctx.seller.id, slug: updated.slug });
+    await dropCachedLookups(ctx.onTeamStatusChanged, { id: ctx.seller.id, slug: updated.slug });
     return { status: "draft" as const };
   }),
 });

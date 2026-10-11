@@ -8,7 +8,7 @@ import {
   type ServicesTeamSettings,
   type ServicesTeamSettingsInput,
 } from "@jendal-workspace/core";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
@@ -70,6 +70,23 @@ export async function applySoloTeamDefaults(db: Database, teamId: string): Promi
     .insert(servicesTeamSettings)
     .values({ teamId, ...values })
     .onConflictDoUpdate({ target: servicesTeamSettings.teamId, set: values });
+}
+
+// Undoes a services team whose creation failed halfway. Only a team with no orders, projects or files
+// can go: those references restrict the delete, and everything else cascades.
+export async function deleteNewServicesTeam(db: Database, teamId: string): Promise<void> {
+  await db.delete(team).where(and(eq(team.id, teamId), eq(team.product, "services")));
+}
+
+// A solo seller's workspace holds that seller alone (sellers design §3.1), so other teams go elsewhere.
+export async function organizationsWithSoloSellers(db: Database, organizationIds: string[]): Promise<Set<string>> {
+  if (organizationIds.length === 0) return new Set();
+  const rows = await db
+    .selectDistinct({ organizationId: team.organizationId })
+    .from(team)
+    .innerJoin(servicesTeamSettings, eq(servicesTeamSettings.teamId, team.id))
+    .where(and(inArray(team.organizationId, organizationIds), eq(servicesTeamSettings.solo, true)));
+  return new Set(rows.map((row) => row.organizationId));
 }
 
 // The bio is not part of the rates, so saving it does not count as "Set your rates" for the checklist.

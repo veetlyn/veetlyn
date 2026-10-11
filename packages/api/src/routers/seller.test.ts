@@ -337,6 +337,21 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
     });
   });
 
+  it("keeps a committed publish and unpublish when dropping the cached lookups fails", async () => {
+    const { adminId, teamId } = await servicesSeller();
+    await connectPaypal(teamId);
+    await seedServicesOffering(db, { teamId });
+    const onTeamStatusChanged = vi.fn().mockRejectedValue(new Error("KV unavailable"));
+    const caller = callerFor(adminId, onTeamStatusChanged);
+
+    await expect(caller.seller.publish({ teamSlug: "acme-studio" })).resolves.toEqual({ status: "active" });
+    expect(await statusOf(teamId)).toBe("active");
+
+    await expect(caller.seller.unpublish({ teamSlug: "acme-studio" })).resolves.toEqual({ status: "draft" });
+    expect(await statusOf(teamId)).toBe("draft");
+    expect(onTeamStatusChanged).toHaveBeenCalledTimes(2);
+  });
+
   it("refuses to publish or unpublish a suspended seller", async () => {
     const { adminId, teamId } = await servicesSeller("suspended");
     await connectPaypal(teamId);

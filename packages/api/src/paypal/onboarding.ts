@@ -10,6 +10,8 @@ import {
 import { actionUrlFromLinks, PARTNER_REFERRAL_FEATURES, type PayPalClient } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 
+import { dropCachedLookups } from "../team-cache";
+
 // Assembled by the router (tRPC) and by the return route (Hono) from Context["paypal"] plus the db.
 export type PayPalOnboardingDeps = {
   db: Database;
@@ -130,7 +132,7 @@ export async function refreshPayPalOnboarding(
   });
   if (connected && team.paypalMerchantId !== lookup.merchantId) {
     const updated = await markTeamPayPalMerchant(deps.db, { teamId: team.id, merchantId: lookup.merchantId });
-    if (updated) await deps.onTeamMerchantChanged?.({ id: team.id, slug: updated.slug });
+    if (updated) await dropCachedLookups(deps.onTeamMerchantChanged, { id: team.id, slug: updated.slug });
     return viewFor({ ...team, paypalMerchantId: lookup.merchantId }, row);
   }
   return viewFor(team, row);

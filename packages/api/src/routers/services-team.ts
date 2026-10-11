@@ -15,7 +15,7 @@ import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord
 import {
   addServicesTeamMember,
   applySoloTeamDefaults,
-  findServicesTeamBySlug,
+  deleteNewServicesTeam,
   findUserByEmail,
   getServicesTeamSettings,
   listOrganizationsWithServicesTeams,
@@ -71,18 +71,23 @@ export const servicesTeamRouter = router({
       if (!slug.ok) throw new TRPCError({ code: "BAD_REQUEST", message: teamSlugProblem(slug.reason, "services") });
 
       try {
-        const organizationId = await organizationForNewTeam(ctx, input.name);
+        const organizationId = await organizationForNewTeam(ctx, input.name, { solo: input.solo });
         // createTeam runs the slug and product hooks and creates the default team settings.
         // A solo seller's settings get the solo defaults right after.
-        await ctx.auth.api.createTeam({
+        const created = await ctx.auth.api.createTeam({
           body: { name: input.name, organizationId, slug: slug.slug, product: "services" },
           headers: ctx.headers,
         });
         if (input.solo) {
-          // The hooks made the row with the team defaults; a solo seller keeps the whole price instead.
-          const created = await findServicesTeamBySlug(ctx.db, slug.slug);
-          if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The team was not created." });
-          await applySoloTeamDefaults(ctx.db, created.id);
+          try {
+            await applySoloTeamDefaults(ctx.db, created.id);
+          } catch (error) {
+            // A half-made solo seller would be a team with team rates; the retry needs its slug back.
+            // Better Auth's removeTeam refuses an organization's last team, so the row goes directly.
+            // The new organization stays: empty, it is hidden from the workspace home.
+            await deleteNewServicesTeam(ctx.db, created.id);
+            throw error;
+          }
         }
         return { slug: slug.slug };
       } catch (error) {

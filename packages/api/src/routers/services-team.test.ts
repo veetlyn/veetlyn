@@ -11,8 +11,8 @@ import {
   seedStore,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
-import { team } from "@jendal-workspace/db/schema/organization";
-import { eq } from "drizzle-orm";
+import { member, team } from "@jendal-workspace/db/schema/organization";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { makeSession } from "../testing";
@@ -76,8 +76,9 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
     expect(got.settings).toMatchObject(defaultServicesTeamSettings(row?.id ?? ""));
   });
 
-  it("creates a solo seller with the solo rates, and the creator's support email", async () => {
+  it("creates a solo seller in a workspace of its own, with the solo rates and the creator's support email", async () => {
     const caller = await signedInCaller("owner@example.com");
+    await caller.servicesTeam.create({ name: "Acme Studio", slug: "acme-studio" });
 
     await expect(caller.servicesTeam.create({ name: "Acme Solo", slug: "acme-solo", solo: true })).resolves.toEqual({
       slug: "acme-solo",
@@ -85,9 +86,19 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
 
     const [row] = await db.select().from(team).where(eq(team.slug, "acme-solo"));
     expect(row).toMatchObject({ product: "services", supportEmail: "owner@example.com" });
+    const [studio] = await db.select().from(team).where(eq(team.slug, "acme-studio"));
+    expect(row?.organizationId).not.toBe(studio?.organizationId);
+    const soloMembers = await db.select().from(member).where(eq(member.organizationId, row?.organizationId ?? ""));
+    expect(soloMembers).toHaveLength(1);
 
     const got = await caller.servicesTeam.get({ teamSlug: "acme-solo" });
     expect(got.settings).toMatchObject({ solo: true, teamCutBps: 10_000, managementFeeBps: 0, settingsSavedAt: null });
+
+    // Later teams and stores stay out of the solo seller's workspace.
+    await caller.servicesTeam.create({ name: "Zed Studio", slug: "zed-studio" });
+    await caller.store.create({ name: "Acme Shop", slug: "acme-shop" });
+    const later = await db.select().from(team).where(inArray(team.slug, ["zed-studio", "acme-shop"]));
+    expect(later.map((t) => t.organizationId)).toEqual([studio?.organizationId, studio?.organizationId]);
   });
 
   it("lets only admins save the bio, trims it, and refuses 281 characters", async () => {
