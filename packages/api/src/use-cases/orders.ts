@@ -333,7 +333,8 @@ export async function recordOrderFees(db: Database, fact: OrderCaptureFact): Pro
   if (fact.status !== "COMPLETED" || paypalFeeMinor === null) return;
   await db.transaction(async (tx) => {
     const row = await lockOrderOrThrow(tx, fact.orderId);
-    if (row.status !== "paid" || row.paypalCaptureId !== fact.captureId || row.paypalFeeMinor !== null) return;
+    // A refund can land before the fees are recorded; PayPal still charged them.
+    if (row.status === "pending" || row.paypalCaptureId !== fact.captureId || row.paypalFeeMinor !== null) return;
     const platformFee = fact.platformFeeMinor ?? 0;
     await setOrderFees(tx, { orderId: row.id, paypalFeeMinor, platformFeeMinor: platformFee });
     const transfer = orderFeesTransfer({

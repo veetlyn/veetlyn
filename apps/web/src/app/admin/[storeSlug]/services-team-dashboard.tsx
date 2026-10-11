@@ -76,7 +76,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
             Products
           </Link>
         ) : null}
-        {settings?.storeEnabled ? (
+        {settings?.storeEnabled && role === "admin" ? (
           <Link href={`/${team.slug}/orders`} className="underline underline-offset-4">
             Orders
           </Link>
@@ -123,9 +123,11 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
               <Link href={`/${team.slug}/products`} className="text-sm underline underline-offset-4">
                 Open products
               </Link>
-              <Link href={`/${team.slug}/orders`} className="text-sm underline underline-offset-4">
-                Open orders
-              </Link>
+              {role === "admin" ? (
+                <Link href={`/${team.slug}/orders`} className="text-sm underline underline-offset-4">
+                  Open orders
+                </Link>
+              ) : null}
             </div>
           ) : null}
         </div>
