@@ -1,4 +1,8 @@
+import { errorName } from "@jendal-workspace/core";
 import { log } from "evlog";
+import { z } from "zod";
+
+const errorCodeSchema = z.object({ code: z.union([z.string(), z.number()]) });
 
 // Logs never hold email addresses (parent spec §12.1); a short hash still links repeated failures.
 export async function hashRecipient(email: string): Promise<string> {
@@ -7,11 +11,12 @@ export async function hashRecipient(email: string): Promise<string> {
 }
 
 // Email provider error messages can quote the recipient, so only the error's name and code are logged.
-export async function logEmailError(error: unknown, email: { kind: string; to: string }): Promise<void> {
-  const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : undefined;
+export async function logEmailError(cause: unknown, email: { kind: string; to: string }): Promise<void> {
+  const parsed = errorCodeSchema.safeParse(cause);
+  const code = parsed.success ? String(parsed.data.code) : undefined;
   log.error({
     action: "email.send",
     email: { kind: email.kind, recipientHash: await hashRecipient(email.to) },
-    error: { name: error instanceof Error ? error.name : typeof error, code },
+    error: { name: errorName(cause), code },
   });
 }

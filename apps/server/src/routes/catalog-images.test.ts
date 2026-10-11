@@ -1,8 +1,10 @@
 import type { Auth } from "@jendal-workspace/auth";
 import { MAX_IMAGE_BYTES } from "@jendal-workspace/core";
 import { createTestDb, hasTestDatabase, seedOrganization, seedStore, addMember, truncateAll } from "@jendal-workspace/db/testing/db";
+import { fromAny, fromPartial } from "@total-typescript/shoehorn";
 import { Hono } from "hono";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { AppEnv } from "../app-env";
 import { createCatalogImagesRoute } from "./catalog-images";
@@ -22,15 +24,16 @@ function fakeBucket() {
       };
     },
   };
-  return { bucket: bucket as unknown as R2Bucket, objects };
+  return { bucket: fromPartial<R2Bucket>(bucket), objects };
 }
 
 function fakeAuth(userId: string | null): Auth {
-  return {
+  return fromPartial<Auth>({
     api: {
-      getSession: async () => (userId ? { user: { id: userId } } : null),
+      // getSession is generic over its options; the routes only await the session it resolves to.
+      getSession: fromAny(async () => (userId ? { user: { id: userId } } : null)),
     },
-  } as unknown as Auth;
+  });
 }
 
 function uploadRequest(storeSlug: string, file?: File) {
@@ -73,7 +76,7 @@ describe.skipIf(!hasTestDatabase)("catalog image routes", () => {
 
     const response = await app.request(uploadRequest("lamp-shop", pngFile()));
     expect(response.status).toBe(200);
-    const { key } = (await response.json()) as { key: string };
+    const { key } = z.object({ key: z.string() }).parse(await response.json());
     expect(key).toMatch(new RegExp(`^stores/${store.id}/images/[0-9a-f-]{36}\\.png$`));
 
     const served = await app.request(`http://localhost/api/catalog/images/${key}`);

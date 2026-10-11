@@ -10,6 +10,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { Hono } from "hono";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { AppEnv } from "../app-env";
 import { storeInfoRoute } from "./store-info";
@@ -91,14 +92,7 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
     );
 
     expect(response.status).toBe(200);
-    const page = (await response.json()) as {
-      name: string;
-      product: string;
-      bio: string;
-      currency: string;
-      departments: unknown[];
-      offerings: { name: string }[];
-    };
+    const page = z.looseObject({ offerings: z.array(z.object({ name: z.string() })) }).parse(await response.json());
     expect(page).toMatchObject({
       name: "Acme Studio",
       slug: "acme-studio",

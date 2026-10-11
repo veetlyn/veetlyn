@@ -1,9 +1,9 @@
-import { TEAM_PRODUCTS, type StoreLookupCache } from "@jendal-workspace/core";
+import { type JsonValue, TEAM_PRODUCTS, type StoreLookupCache } from "@jendal-workspace/core";
 import { z } from "zod";
 
 // The subset of KVNamespace this adapter uses; a real KVNamespace satisfies it.
 export interface JsonKv {
-  get(key: string, type: "json"): Promise<unknown>;
+  get(key: string, type: "json"): Promise<JsonValue | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
 }

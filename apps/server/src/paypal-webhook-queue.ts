@@ -1,7 +1,9 @@
 import { databaseErrorFields } from "@jendal-workspace/api/use-cases/payments";
 import type { WebhookOutcome } from "@jendal-workspace/api/use-cases/paypal-webhooks";
+import { errorName } from "@jendal-workspace/core";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { log } from "evlog";
+import { z } from "zod";
 
 export const MAX_WEBHOOK_ATTEMPTS = 5;
 const RETRY_STEP_SECONDS = 30;
@@ -24,16 +26,13 @@ export type PayPalWebhookQueueDeps = {
 
 const ACTION = "paypal.webhook.process";
 
-function eventIdOf(body: unknown): string | null {
-  if (typeof body !== "object" || body === null || !("eventId" in body)) return null;
-  return typeof body.eventId === "string" ? body.eventId : null;
-}
+const webhookMessageBodySchema = z.object({ eventId: z.string() });
 
 // The note is stored. A database error's message is its query with parameters, so only its code is kept.
-export function errorNote(error: unknown): string {
-  const { name, code, constraint } = databaseErrorFields(error);
+export function errorNote(cause: unknown): string {
+  const { name, code, constraint } = databaseErrorFields(cause);
   if (code) return `${name} (${code}${constraint ? ` ${constraint}` : ""})`;
-  return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  return cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause);
 }
 
 function logFinishedElsewhere(event: PayPalWebhookEventRow): void {
@@ -52,14 +51,15 @@ export async function handlePayPalWebhookBatch(messages: readonly WebhookMessage
       await handleMessage(message, deps);
     } catch (error) {
       // The event table itself is unreachable, so nothing could be recorded; the Queue's own retries apply.
-      log.error({ action: ACTION, error: { name: error instanceof Error ? error.name : typeof error } });
+      log.error({ action: ACTION, error: { name: errorName(error) } });
       message.retry(retryDelay(message));
     }
   }
 }
 
 async function handleMessage(message: WebhookMessage, deps: PayPalWebhookQueueDeps): Promise<void> {
-  const eventId = eventIdOf(message.body);
+  const body = webhookMessageBodySchema.safeParse(message.body);
+  const eventId = body.success ? body.data.eventId : null;
   if (!eventId) {
     log.error({ action: ACTION, error: { name: "MalformedMessage", message: "queue message has no event id" } });
     message.ack();
@@ -89,7 +89,7 @@ async function handleMessage(message: WebhookMessage, deps: PayPalWebhookQueueDe
         log.error({
           action: ACTION,
           paypalWebhook: { eventId, eventType: event.eventType, status: "failed", attempts },
-          error: { name: error instanceof Error ? error.name : typeof error },
+          error: { name: errorName(error) },
         });
       } else {
         logFinishedElsewhere(event);

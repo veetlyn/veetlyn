@@ -89,14 +89,11 @@ export async function handleDiscordInteraction(
   }
 }
 
-function subcommand(interaction: DiscordInteraction): {
-  name: string;
-  option: (optionName: string) => string | undefined;
-} {
+function subcommand(interaction: DiscordInteraction) {
   const command = interaction.data?.options?.find((candidate) => candidate.type === 1);
   return {
     name: command?.name ?? "",
-    option: (optionName) => command?.options?.find((candidate) => candidate.name === optionName)?.value,
+    option: (optionName: string) => command?.options?.find((candidate) => candidate.name === optionName)?.value,
   };
 }
 
@@ -135,7 +132,7 @@ async function linkServer(
   if (!guildId || !discordId) {
     return "Run this command in the server you want to link to your Payleor team.";
   }
-  if (typeof permissions !== "string" || (BigInt(permissions) & BigInt(MANAGE_GUILD)) !== BigInt(MANAGE_GUILD)) {
+  if (permissions === undefined || (BigInt(permissions) & BigInt(MANAGE_GUILD)) !== BigInt(MANAGE_GUILD)) {
     return "You need the Manage Server permission in this server to link it to Payleor.";
   }
   // Consumed first and atomically, so the one-time code cannot be raced or replayed.

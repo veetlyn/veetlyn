@@ -1,3 +1,4 @@
+import type { JsonValue } from "@jendal-workspace/core";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { log } from "evlog";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -28,7 +29,7 @@ function eventRow(overrides: Partial<PayPalWebhookEventRow> = {}): PayPalWebhook
   };
 }
 
-function message(body: unknown, attempts = 1) {
+function message(body: JsonValue, attempts = 1) {
   return { body, attempts, ack: vi.fn(), retry: vi.fn() };
 }
 

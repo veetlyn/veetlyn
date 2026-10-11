@@ -11,7 +11,7 @@ import type { AppEnv } from "../app-env";
 export type PayPalWebhookRouteDeps = {
   paypal: PayPalServices | undefined;
   webhookId: string;
-  enqueue: (eventId: string, options: { delaySeconds?: number }) => Promise<unknown>;
+  enqueue: (eventId: string, options: { delaySeconds?: number }) => Promise<void>;
   record?: (db: Database, event: PayPalWebhookEventInput) => ReturnType<typeof recordWebhookEvent>;
 };
 

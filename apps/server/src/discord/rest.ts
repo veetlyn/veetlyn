@@ -11,15 +11,15 @@ export type DiscordChannelMessage = {
 };
 
 export type DiscordRest = {
-  postChannelMessage(channelId: string, message: DiscordChannelMessage): Promise<unknown>;
-  editChannelMessage(channelId: string, messageId: string, message: DiscordChannelMessage): Promise<unknown>;
+  postChannelMessage(channelId: string, message: DiscordChannelMessage): Promise<void>;
+  editChannelMessage(channelId: string, messageId: string, message: DiscordChannelMessage): Promise<void>;
 };
 
 export function createDiscordRest(input: { token: string; fetch?: typeof fetch }): DiscordRest {
   const fetchImpl = input.fetch ?? fetch;
   const headers = { authorization: `Bot ${input.token}`, "content-type": "application/json" };
 
-  async function call(method: string, path: string, body: DiscordChannelMessage): Promise<unknown> {
+  async function call(method: string, path: string, body: DiscordChannelMessage): Promise<void> {
     const response = await fetchImpl(`${DISCORD_API}${path}`, {
       method,
       headers,
@@ -28,7 +28,6 @@ export function createDiscordRest(input: { token: string; fetch?: typeof fetch }
     if (!response.ok) {
       throw new Error(`Discord ${method} ${path} failed: ${response.status}`);
     }
-    return response.status === 204 ? null : await response.json();
   }
 
   return {

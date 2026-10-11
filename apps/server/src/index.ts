@@ -9,7 +9,7 @@ import {
 } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { createStoreDirectory } from "@jendal-workspace/db/repositories/stores";
 import { initLogger } from "evlog";
-import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
+import { createAuthMiddleware } from "evlog/better-auth";
 import { evlog } from "evlog/hono";
 import { Hono } from "hono";
 
@@ -45,7 +45,7 @@ app.use("*", async (c, next) => {
   const auth = createAuth(db, c.executionCtx);
   c.set("db", db);
   c.set("auth", auth);
-  const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
+  const identifyUser = createAuthMiddleware(auth, {
     exclude: ["/api/auth/**"],
     maskEmail: true,
   });
@@ -87,7 +87,7 @@ app.route(
   createPayPalWebhookRoute({
     paypal: getPayPalServices(),
     webhookId: ENV.PAYPAL_WEBHOOK_ID,
-    enqueue: (eventId, options) => ENV.PAYPAL_WEBHOOKS.send({ eventId }, options),
+    enqueue: (eventId, options) => ENV.PAYPAL_WEBHOOKS.send({ eventId }, options).then(() => undefined),
   }),
 );
 
