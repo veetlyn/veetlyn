@@ -66,7 +66,6 @@ const sellerPageSchema = z.object({
   product: productSchema,
   status: z.enum(["draft", "active", "suspended"]),
   bio: z.string(),
-  supportEmail: z.string().nullable(),
   currency: z.string(),
   departments: z.array(z.object({ id: z.string(), name: z.string(), position: z.number() })),
   offerings: z.array(offeringSchema),

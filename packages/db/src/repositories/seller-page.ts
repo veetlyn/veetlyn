@@ -19,7 +19,6 @@ export type SellerPageData = {
   product: TeamProduct;
   status: StoreStatus;
   bio: string;
-  supportEmail: string | null;
   currency: string;
   departments: ServicesDepartmentRow[];
   offerings: ServicesOfferingRow[];
@@ -33,7 +32,6 @@ export async function findSellerPage(db: Database, teamId: string): Promise<Sell
       slug: team.slug,
       product: team.product,
       status: team.status,
-      supportEmail: team.supportEmail,
       bio: servicesTeamSettings.bio,
       currency: servicesTeamSettings.currency,
       storeEnabled: servicesTeamSettings.storeEnabled,
@@ -57,7 +55,6 @@ export async function findSellerPage(db: Database, teamId: string): Promise<Sell
     product: row.product,
     status: row.status,
     bio: row.bio ?? "",
-    supportEmail: row.supportEmail,
     currency: row.currency ?? "USD",
     departments,
     offerings,

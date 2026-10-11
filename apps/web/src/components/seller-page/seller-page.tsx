@@ -22,7 +22,6 @@ export type SellerPageContent = {
   name: string;
   product: "services" | "store";
   bio: string;
-  supportEmail: string | null;
   currency: string;
   // Base for on-page links: "" on the store host (relative), the absolute public origin in the admin preview.
   pageBase: string;
