@@ -13,6 +13,7 @@
     "tunnel:setup": "pnpm -F @jendal-workspace/infra tunnel:setup",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
+    "lint": "oxlint",
     "test": "vitest run",
     "db:push": "turbo run db:push -F @jendal-workspace/db --",
     "db:studio": "turbo run db:studio -F @jendal-workspace/db --",
@@ -30,7 +31,9 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@jendal-workspace/config": "workspace:*",
+    "@oxlint/plugins": "1.87.0",
     "@types/node": "catalog:",
+    "oxlint": "1.87.0",
     "turbo": "^2.10.12",
     "typescript": "catalog:",
     "varlock": "catalog:",
