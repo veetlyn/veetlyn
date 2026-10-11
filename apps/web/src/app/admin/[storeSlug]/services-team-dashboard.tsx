@@ -21,7 +21,12 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
+      onSuccess: () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
+          queryClient.invalidateQueries({ queryKey: trpc.seller.preview.queryKey() }),
+          queryClient.invalidateQueries({ queryKey: trpc.seller.status.queryKey() }),
+        ]),
     }),
   );
 

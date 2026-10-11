@@ -19,7 +19,12 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
   });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
+      onSuccess: () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
+          queryClient.invalidateQueries({ queryKey: trpc.seller.preview.queryKey() }),
+          queryClient.invalidateQueries({ queryKey: trpc.seller.status.queryKey() }),
+        ]),
     }),
   );
 
