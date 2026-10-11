@@ -42,3 +42,5 @@ export * from "./payouts/destination";
 export * from "./files/rules";
 export * from "./files/store";
 export * from "./files/testing";
+export * from "./errors";
+export * from "./json";
