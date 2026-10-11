@@ -14,6 +14,7 @@ import {
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { organization } from "better-auth/plugins/organization";
+import { z } from "zod";
 
 import { paypalAuthorizationEndpoint, paypalEmail } from "./paypal";
 
@@ -34,7 +35,7 @@ export type AuthServices = {
   // The Worker's ctx.waitUntil: emails and Better Auth background tasks finish after the response.
   waitUntil: (promise: Promise<unknown>) => void;
   // This package does not log; the api Worker logs with the recipient hashed.
-  onEmailError: (error: unknown, email: { kind: AuthEmailKind; to: string }) => void | Promise<void>;
+  onEmailError: (cause: unknown, email: { kind: AuthEmailKind; to: string }) => void | Promise<void>;
 };
 
 const ONE_HOUR_IN_SECONDS = 60 * 60;
@@ -49,12 +50,15 @@ const teamFields = {
   supportEmail: { type: "string", required: false, input: false },
 } as const;
 
+// A missing or non-string slug is validated as an empty one, so it gets the usual slug error.
+const slugInput = z.string().catch("");
+
 const userFields = {
   acceptedTermsAt: { type: "date", required: false, input: false },
 } as const;
 
-async function claimTeamSlug(database: Database, input: unknown, product: TeamProduct): Promise<string> {
-  const result = validateStoreSlug(typeof input === "string" ? input : "");
+async function claimTeamSlug(database: Database, input: string, product: TeamProduct): Promise<string> {
+  const result = validateStoreSlug(input);
   if (!result.ok) {
     throw new APIError("BAD_REQUEST", {
       code: result.reason === "reserved" ? "TEAM_SLUG_RESERVED" : "TEAM_SLUG_INVALID",
@@ -72,7 +76,7 @@ async function claimTeamSlug(database: Database, input: unknown, product: TeamPr
 function sendInBackground(services: AuthServices, kind: AuthEmailKind, content: EmailContent & { to: string }): void {
   const message: EmailMessage = { sender: "accounts", tag: kind, ...content };
   services.waitUntil(
-    services.mailer.send(message).catch((error: unknown) => services.onEmailError(error, { kind, to: message.to })),
+    services.mailer.send(message).catch((cause: unknown) => services.onEmailError(cause, { kind, to: message.to })),
   );
 }
 
@@ -162,7 +166,7 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
               });
             }
             const product: TeamProduct = team.product === "services" ? "services" : "store";
-            const slug = await claimTeamSlug(database, team.slug, product);
+            const slug = await claimTeamSlug(database, slugInput.parse(team.slug), product);
             // Every seller starts as a draft (publishing, run 3b). The support email is the seller's contact
             // address on its policies and seller page, for stores and services teams alike.
             return {

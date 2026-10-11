@@ -9,13 +9,15 @@ export function setupSteps(
   progress: { productCount: number },
 ): SetupStep[] {
   const paypalDone = store.paypalMerchantId !== null;
+  const publish: SetupStep = { id: "publish", label: "Publish your store", done: store.status === "active" };
+  if (links.publish) publish.href = links.publish;
   return [
     { id: "create-store", label: "Create your store", done: true },
     { id: "add-product", label: "Add your first product", done: progress.productCount > 0, href: links.productsUrl },
     links.connectPaypal
       ? { id: "connect-paypal", label: "Connect PayPal", done: paypalDone, href: links.connectPaypal }
       : { id: "connect-paypal", label: "Connect PayPal", done: paypalDone },
-    { id: "publish", label: "Publish your store", done: store.status === "active", ...(links.publish ? { href: links.publish } : {}) },
+    publish,
   ];
 }
 

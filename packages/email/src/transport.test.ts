@@ -39,7 +39,7 @@ function onlyRequest(fetchMock: ReturnType<typeof stubFetch>) {
     url: String(url),
     method: init?.method,
     headers: new Headers(init?.headers),
-    body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+    body: JSON.parse(String(init?.body)),
   };
 }
 
@@ -172,10 +172,11 @@ describe("mailerWithTransports", () => {
   it("rejects with every failure when all transports fail", async () => {
     const mailer = mailerWithTransports(DOMAIN, [transport("first", "fail", []), transport("second", "fail", [])]);
 
-    const error = await mailer.send(message).catch((caught: unknown) => caught);
+    const error = await mailer.send(message).catch((cause: unknown) => cause);
 
     expect(error).toBeInstanceOf(EmailDeliveryError);
-    expect((error as EmailDeliveryError).failures.map((failure) => failure.transport)).toEqual(["first", "second"]);
+    const failures = error instanceof EmailDeliveryError ? error.failures : [];
+    expect(failures.map((failure) => failure.transport)).toEqual(["first", "second"]);
   });
 });
 

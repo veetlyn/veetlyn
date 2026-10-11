@@ -13,7 +13,7 @@ import {
 } from "./state-machine";
 
 // Services spec §5.1: the full table, with no pending amendment, no unpaid top-up and a balance due.
-const EXPECTED: Record<ProjectStatus, Partial<Record<ProjectEvent, ProjectStatus>>> = {
+const EXPECTED = {
   quoting: { add_quote: "quoting", assign_freelancer: "quoting", accept_quote: "awaiting_deposit", cancel: "cancelled" },
   awaiting_deposit: { deposit_captured: "in_progress", cancel: "cancelled" },
   in_progress: { submit_delivery: "delivered", propose_amendment: "in_progress", cancel: "cancelled" },
@@ -26,21 +26,22 @@ const EXPECTED: Record<ProjectStatus, Partial<Record<ProjectEvent, ProjectStatus
   awaiting_balance: { balance_captured: "completed", cancel: "cancelled" },
   completed: {},
   cancelled: {},
-};
+} satisfies Record<ProjectStatus, Partial<Record<ProjectEvent, ProjectStatus>>>;
 
 // Allowed in the status but refused by a guard under the facts used for the table.
-const GUARDED: Partial<Record<ProjectStatus, Partial<Record<ProjectEvent, TransitionRefusal>>>> = {
-  in_progress: { accept_amendment: "no_pending_amendment", decline_amendment: "no_pending_amendment" },
-  delivered: { accept_amendment: "no_pending_amendment", decline_amendment: "no_pending_amendment" },
-};
+const GUARDED = new Map<ProjectStatus, Partial<Record<ProjectEvent, TransitionRefusal>>>([
+  ["in_progress", { accept_amendment: "no_pending_amendment", decline_amendment: "no_pending_amendment" }],
+  ["delivered", { accept_amendment: "no_pending_amendment", decline_amendment: "no_pending_amendment" }],
+]);
 
 describe("project state machine", () => {
   const facts = { pendingAmendment: false, unpaidTopUp: false, balanceDueMinor: 35_000 };
 
   for (const status of PROJECT_STATUSES) {
+    const expected: Partial<Record<ProjectEvent, ProjectStatus>> = EXPECTED[status];
     for (const event of PROJECT_EVENTS) {
-      const to = EXPECTED[status][event];
-      const reason = GUARDED[status]?.[event] ?? "not_allowed_in_status";
+      const to = expected[event];
+      const reason = GUARDED.get(status)?.[event] ?? "not_allowed_in_status";
       it(`${status} + ${event} → ${to ?? reason}`, () => {
         expect(transitionProject(status, event, facts)).toEqual(to ? { ok: true, to } : { ok: false, reason });
       });

@@ -1,4 +1,4 @@
-import { SourceError } from "@jendal-workspace/core";
+import { type JsonObject, SourceError } from "@jendal-workspace/core";
 import { describe, expect, it } from "vitest";
 
 import { CHANNEL3_BASE_URL, createChannel3Client } from "./client";
@@ -42,13 +42,14 @@ const productJson = {
 };
 
 type Call = { url: string; init: RequestInit };
+type FakeFetch = { fetchImpl: typeof fetch; calls: Call[] };
 
-function fakeFetch(status: number, body: unknown): { fetchImpl: typeof fetch; calls: Call[] } {
+function fakeFetch(status: number, body: JsonObject): FakeFetch {
   const calls: Call[] = [];
-  const fetchImpl = (async (input: unknown, init?: RequestInit) => {
+  const fetchImpl: typeof fetch = async (input, init) => {
     calls.push({ url: String(input), init: init ?? {} });
     return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
-  }) as typeof fetch;
+  };
   return { fetchImpl, calls };
 }
 
@@ -104,9 +105,9 @@ describe("createChannel3Client", () => {
   });
 
   it("maps network failures and unexpected shapes to unavailable", async () => {
-    const throwing = (async () => {
+    const throwing: typeof fetch = async () => {
       throw new Error("socket hangup");
-    }) as typeof fetch;
+    };
     await expect(createChannel3Client({ apiKey: "k", fetch: throwing }).lookupByUrl("https://example.com")).rejects.toMatchObject(
       { kind: "unavailable" },
     );

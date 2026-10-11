@@ -81,9 +81,11 @@ export async function setProductStatus(
   id: string,
   status: "draft" | "published",
 ): Promise<ProductRow | null> {
+  const values: Partial<typeof products.$inferInsert> = { status, updatedAt: new Date() };
+  if (status === "published") values.publishedAt = new Date();
   const [row] = await db
     .update(products)
-    .set({ status, ...(status === "published" ? { publishedAt: new Date() } : {}), updatedAt: new Date() })
+    .set(values)
     .where(and(eq(products.id, id), eq(products.storeId, tenant.storeId)))
     .returning();
   return row ?? null;

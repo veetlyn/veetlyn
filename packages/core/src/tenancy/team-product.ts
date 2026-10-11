@@ -3,6 +3,6 @@ export const TEAM_PRODUCTS = ["store", "services"] as const;
 
 export type TeamProduct = (typeof TEAM_PRODUCTS)[number];
 
-export function isTeamProduct(value: unknown): value is TeamProduct {
+export function isTeamProduct(value: string | null | undefined): value is TeamProduct {
   return TEAM_PRODUCTS.some((product) => product === value);
 }

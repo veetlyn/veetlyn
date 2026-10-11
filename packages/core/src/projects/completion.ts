@@ -8,6 +8,8 @@ export function completionRefundId(projectId: string): string {
   return `completion-${projectId}`;
 }
 
+export type CompletionPostings = { transfers: LedgerTransferDraft[]; refundMinor: number };
+
 // Services spec §6.3: on completion the final price leaves client_held as the team cut and the freelancer's
 // earnings; money the client paid above the final price (amendment decreases) is owed back to them.
 export function completionPostings(input: {
@@ -17,7 +19,7 @@ export function completionPostings(input: {
   finalPriceMinor: number;
   teamCutBps: number;
   balance: Balance;
-}): { transfers: LedgerTransferDraft[]; refundMinor: number } {
+}): CompletionPostings {
   const { currency, projectId, balance } = input;
   const transfers: LedgerTransferDraft[] = [];
   if (input.finalPriceMinor > 0) {

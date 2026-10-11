@@ -1,6 +1,7 @@
 import { and, eq, ne, sql } from "drizzle-orm";
 
 import type { Database } from "../index";
+import { postgresError } from "../postgres-errors";
 import { servicesDepartment, servicesOffering } from "../schema/services-catalog";
 import type { OfferingDraft } from "@jendal-workspace/core";
 
@@ -44,11 +45,8 @@ async function nullOnDuplicateName<T>(write: PromiseLike<T>): Promise<T | null> 
   }
 }
 
-// Drizzle wraps the postgres error; the SQLSTATE lives on the cause.
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const { cause } = error;
-  return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "23505";
+function isUniqueViolation(cause: unknown): boolean {
+  return postgresError(cause)?.code === "23505";
 }
 
 export async function listServicesDepartments(db: Database, teamId: string): Promise<ServicesDepartmentRow[]> {
@@ -231,7 +229,7 @@ export async function updateServicesOffering(
     .limit(1);
   if (taken) return null;
 
-  const values: Record<string, unknown> = {
+  const values: Partial<typeof servicesOffering.$inferInsert> = {
     name,
     description: input.description,
     priceMinMinor: input.priceMinMinor,

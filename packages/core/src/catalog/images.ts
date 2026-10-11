@@ -1,16 +1,18 @@
 export const MAX_IMAGE_BYTES = 5_000_000;
 
-const IMAGE_CONTENT_TYPES: Record<string, string> = {
+const IMAGE_CONTENT_TYPES = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
   "image/avif": "avif",
-};
+} satisfies Record<string, string>;
+
+const EXTENSION_BY_IMAGE_CONTENT_TYPE = new Map(Object.entries(IMAGE_CONTENT_TYPES));
 
 // SVG is excluded on purpose: it can carry scripts, and we serve these files back to browsers.
 export function imageExtensionFor(contentType: string | null): string | null {
-  return contentType ? (IMAGE_CONTENT_TYPES[contentType.toLowerCase()] ?? null) : null;
+  return contentType ? (EXTENSION_BY_IMAGE_CONTENT_TYPE.get(contentType.toLowerCase()) ?? null) : null;
 }
 
 export function newProductImageKey(storeId: string, extension: string): string {

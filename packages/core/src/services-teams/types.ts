@@ -85,22 +85,22 @@ export function bioProblem(bio: string): string | null {
   return bio.trim().length > MAX_BIO_CHARS ? `Keep your bio under ${MAX_BIO_CHARS} characters.` : null;
 }
 
-function oneOf<T extends string>(values: readonly T[], value: unknown): value is T {
+function oneOf<T extends string>(values: readonly T[], value: string | null | undefined): value is T {
   return values.some((v) => v === value);
 }
 
-export function isServicesTeamRole(value: unknown): value is ServicesTeamRole {
+export function isServicesTeamRole(value: string): value is ServicesTeamRole {
   return oneOf(SERVICES_TEAM_ROLES, value);
 }
 
-export function isCurrency(value: unknown): value is Currency {
+export function isCurrency(value: string): value is Currency {
   return oneOf(CURRENCIES, value);
 }
 
-export function isQuotingMode(value: unknown): value is QuotingMode {
+export function isQuotingMode(value: string): value is QuotingMode {
   return oneOf(QUOTING_MODES, value);
 }
 
-export function isPayoutMode(value: unknown): value is PayoutMode {
+export function isPayoutMode(value: string | null | undefined): value is PayoutMode {
   return oneOf(PAYOUT_MODES, value);
 }

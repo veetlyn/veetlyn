@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseEnv } from "node:util";
+import { z } from "zod";
 
 import { localPorts, type TunnelSettings, tunnelIngress, tunnelSettings } from "../dev-hosts.ts";
 
@@ -39,15 +40,20 @@ function cloudflared(args: string[]): string {
   }
 }
 
+const tunnelListSchema = z.array(z.unknown());
+const tunnelSchema = z.object({ name: z.string(), id: z.string().optional().catch(undefined) });
+
+// Entries that are not tunnels are skipped; the first one with our name decides.
 function findTunnelId(): string | undefined {
-  const tunnels: unknown = JSON.parse(cloudflared(["tunnel", "list", "--output", "json", "--name", TUNNEL_NAME]));
-  if (!Array.isArray(tunnels)) return undefined;
-  const match: unknown = tunnels.find(
-    (t: unknown) => typeof t === "object" && t !== null && "name" in t && t.name === TUNNEL_NAME,
+  const tunnels = tunnelListSchema.safeParse(
+    JSON.parse(cloudflared(["tunnel", "list", "--output", "json", "--name", TUNNEL_NAME])),
   );
-  return typeof match === "object" && match !== null && "id" in match && typeof match.id === "string"
-    ? match.id
-    : undefined;
+  if (!tunnels.success) return undefined;
+  for (const entry of tunnels.data) {
+    const tunnel = tunnelSchema.safeParse(entry);
+    if (tunnel.success && tunnel.data.name === TUNNEL_NAME) return tunnel.data.id;
+  }
+  return undefined;
 }
 
 function setup(overwriteDns: boolean): void {

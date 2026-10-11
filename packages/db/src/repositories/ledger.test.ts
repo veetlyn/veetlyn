@@ -90,14 +90,14 @@ describe.skipIf(!hasTestDatabase)("postgres ledger", () => {
     // drizzle wraps Postgres errors; the trigger message is on the cause.
     const updated = await db.execute(sql`update ledger_entry set amount_minor = 1`).then(
       () => null,
-      (error: unknown) => error,
+      (cause: unknown) => cause,
     );
     const deleted = await db.execute(sql`delete from ledger_transfer`).then(
       () => null,
-      (error: unknown) => error,
+      (cause: unknown) => cause,
     );
     for (const error of [updated, deleted]) {
-      expect(String((error as { cause?: unknown })?.cause ?? error)).toMatch(/immutable/);
+      expect(String((error instanceof Error ? error.cause : undefined) ?? error)).toMatch(/immutable/);
     }
     // The failed statements rolled back; the rows are unchanged.
     expect(await db.select().from(ledgerEntry)).toHaveLength(2);

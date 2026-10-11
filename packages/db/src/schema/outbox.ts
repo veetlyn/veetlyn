@@ -1,3 +1,4 @@
+import type { JsonObject } from "@jendal-workspace/core";
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { team } from "./organization";
@@ -18,7 +19,7 @@ export const outbox = pgTable(
     // Per project, from 1, with no gaps; subscribers order by it.
     sequence: integer("sequence").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
-    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+    data: jsonb("data").$type<JsonObject>().notNull(),
   },
   (t) => [
     uniqueIndex("outbox_project_sequence_idx").on(t.projectId, t.sequence),

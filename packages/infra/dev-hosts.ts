@@ -9,10 +9,10 @@ export type LocalStage = "dev" | "preprod";
 
 type LocalPorts = { web: number; api: number };
 
-const PORTS: Record<LocalStage, LocalPorts> = {
+const PORTS = {
   dev: { web: 3001, api: 3000 },
   preprod: { web: 3101, api: 3100 },
-};
+} satisfies Record<LocalStage, LocalPorts>;
 
 export type StageUrls = { platformDomain: string; storeDomain: string; platform: string; admin: string };
 export type IngressRule = { hostname: string; port: number };
