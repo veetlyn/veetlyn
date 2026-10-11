@@ -1,0 +1,62 @@
+.oxlintrc.json
+  s_d8d0f67a017e70::t_9476ec9da9dca5 1-41
+package.json
+  s_d8d0f67a017e70::t_f9c9185132acd4 16
+  s_d8d0f67a017e70::t_ef7bd37f94ce39 34,36
+pnpm-lock.yaml
+  s_d8d0f67a017e70::t_933a31c91736aa 81-83,87-89,232,435,1991-2116,4993-5005,6032,7208-7266,8132,9736-9757
+tools/oxlint/anti-slop/index.ts
+  s_d8d0f67a017e70::t_bbf045560175c8 1-41
+tools/oxlint/anti-slop/rules/no-chained-type-assertions.ts
+  s_d8d0f67a017e70::t_c89cf867f14efd 1-77
+tools/oxlint/anti-slop/rules/no-conditional-empty-object-spread.ts
+  s_d8d0f67a017e70::t_453b54715d3ecd 1-49
+tools/oxlint/anti-slop/rules/no-known-value-widening.ts
+  s_d8d0f67a017e70::t_4631346f16f9d7 1-247
+tools/oxlint/anti-slop/rules/no-module-mocking.ts
+  s_d8d0f67a017e70::t_96a84698ad4e85 1-91
+tools/oxlint/anti-slop/rules/no-object-parameters.ts
+  s_d8d0f67a017e70::t_3a6b1ba809b781 1-126
+tools/oxlint/anti-slop/rules/no-reflect-apply.ts
+  s_d8d0f67a017e70::t_64fce6dfb7cf47 1-28
+tools/oxlint/anti-slop/rules/no-reflect-get.ts
+  s_d8d0f67a017e70::t_648d7d691b5134 1-28
+tools/oxlint/anti-slop/rules/no-runtime-typeof.ts
+  s_d8d0f67a017e70::t_524ed9beb135bc 1-67
+tools/oxlint/anti-slop/rules/no-shape-in-symbol-names.ts
+  s_d8d0f67a017e70::t_a018eb2a68b405 1-39
+tools/oxlint/anti-slop/rules/no-unknown-parameters.ts
+  s_d8d0f67a017e70::t_42b0935977eff5 1-83
+tools/oxlint/anti-slop/rules/no-unknown-returns.ts
+  s_d8d0f67a017e70::t_2702d72dbe993c 1-115
+tools/oxlint/anti-slop/rules/no-unknown-type-aliases.ts
+  s_d8d0f67a017e70::t_d8d713e6300eb8 1-70
+tools/oxlint/anti-slop/rules/no-unsafe-dictionary-type.ts
+  s_d8d0f67a017e70::t_4c45bc88437f60 1-134
+tools/oxlint/anti-slop/rules/no-widen-then-assert.ts
+  s_d8d0f67a017e70::t_be84244b67574e 1-366
+tools/oxlint/anti-slop/rules/require-safety-comment-for-type-assertion.ts
+  s_d8d0f67a017e70::t_ec1345f44cb20f 1-62
+tools/oxlint/anti-slop/shared/dictionary-types.ts
+  s_d8d0f67a017e70::t_272e6d50b26772 1-502
+tools/oxlint/anti-slop/shared/lexical-type-parameters.ts
+  s_d8d0f67a017e70::t_b8dd4c96542835 1-61
+tools/oxlint/anti-slop/shared/reflect-method.ts
+  s_d8d0f67a017e70::t_bd655bd85ec1e7 1-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "04d927fbe0b0179b135d3c95cc6b220c95204a63",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
