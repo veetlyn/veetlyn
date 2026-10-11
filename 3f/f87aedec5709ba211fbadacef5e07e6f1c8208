@@ -1,0 +1,57 @@
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_5a36a24b82df1e::t_73f327a715dcb3 3,58
+apps/web/src/app/(site)/pay/[token]/pay-page.tsx
+  s_5a36a24b82df1e::t_0833b1e989a4e1 3,57
+apps/web/src/app/(site)/pay/[token]/paypal-checkout.tsx
+  s_5a36a24b82df1e::t_78486d145970a6 16-21,36,94,96-97,103-104
+apps/web/src/app/admin/(auth)/reset-password/page.tsx
+  s_5a36a24b82df1e::t_1fc0a02ba99ee3 1-2,7-12,16,18,22
+apps/web/src/app/admin/(auth)/verify-email/page.tsx
+  s_5a36a24b82df1e::t_d49c4fd77e5d08 2,7-15,28
+apps/web/src/app/admin/[storeSlug]/members/services-team-members.tsx
+  s_5a36a24b82df1e::t_281297c58e72bc 3,68,93,144-147,190-192
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_5a36a24b82df1e::t_6f7c7eaae99fd9 29,40,209,246-248
+apps/web/src/app/admin/[storeSlug]/settings/services-team-settings.tsx
+  s_5a36a24b82df1e::t_ac635b281c4e12 6-9,12,14,69,72-73,128,139,142-143,194-196,225-227,242-244
+apps/web/src/app/admin/page.tsx
+  s_5a36a24b82df1e::t_9fc232060af03c 1,10-14,57,70-72
+apps/web/src/app/store/buy/[productId]/checkout-form.tsx
+  s_5a36a24b82df1e::t_28aaef5afd5615 20-25,133,210,212-213,222-223
+apps/web/src/app/store/layout.tsx
+  s_5a36a24b82df1e::t_5d02a3d7906958 1,13-14,29
+apps/web/src/app/store/policies/[policy]/page.tsx
+  s_5a36a24b82df1e::t_3d6d8b4d7eb949 17
+apps/web/src/components/catalog/product-form.tsx
+  s_5a36a24b82df1e::t_f72908d75fb942 45
+apps/web/src/content/seller-policies/index.ts
+  s_5a36a24b82df1e::t_376bec582cdf45 3,7-11
+apps/web/src/content/store-policies/index.ts
+  s_5a36a24b82df1e::t_c0015a0f5dc42c 5,9,14
+apps/web/src/content/store-policies/shared.tsx
+  s_5a36a24b82df1e::t_31f264bb678e24 5-6
+apps/web/src/lib/delivery.ts
+  s_5a36a24b82df1e::t_bdb929753fad26 39,43,45,49
+apps/web/src/lib/services-team-labels.ts
+  s_5a36a24b82df1e::t_7d6edf51d58c23 3,6,8,12,14,18,20,24,26,30
+apps/web/src/lib/upload.test.ts
+  s_5a36a24b82df1e::t_5677f1ffbc1c85 16
+apps/web/src/lib/use-cooldown.ts
+  s_5a36a24b82df1e::t_849fa9b6d5bea2 5-6,8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ff87aedec5709ba211fbadacef5e07e6f1c8208",
+  "prompts": {},
+  "sessions": {
+    "s_5a36a24b82df1e": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "ec8cb8f5-a844-42c9-9a1a-825fe4b43077",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
