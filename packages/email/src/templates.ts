@@ -95,3 +95,15 @@ export function quoteRequestNoticeEmail(input: {
     outro: "Reply to the client from the project page; their link is in their email.",
   });
 }
+
+export function orderDownloadEmail(input: { teamName: string; productTitle: string; url: string }): EmailContent {
+  return render({
+    subject: `Your download: ${input.productTitle}`,
+    name: "there",
+    intro: `Thanks for your purchase from ${input.teamName}. Download ${input.productTitle} from your order page:`,
+    action: "Download",
+    url: input.url,
+    outro:
+      "The link works for 7 days and 5 downloads. After that, open it and ask for a new link; it comes to this address.",
+  });
+}

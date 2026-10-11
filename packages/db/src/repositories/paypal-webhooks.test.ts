@@ -18,6 +18,7 @@ const EVENT = {
   resourceId: "CAPTURE1",
   customId: "pay-1",
   orderId: "ORDER1",
+  captureId: "CAPTURE1",
   merchantId: "SELLER1",
 };
 

@@ -36,6 +36,7 @@ export async function findSellerPage(db: Database, teamId: string): Promise<Sell
       supportEmail: team.supportEmail,
       bio: servicesTeamSettings.bio,
       currency: servicesTeamSettings.currency,
+      storeEnabled: servicesTeamSettings.storeEnabled,
     })
     .from(team)
     .leftJoin(servicesTeamSettings, eq(servicesTeamSettings.teamId, team.id))
@@ -46,7 +47,8 @@ export async function findSellerPage(db: Database, teamId: string): Promise<Sell
   const [departments, offerings, products] = await Promise.all([
     row.product === "services" ? listServicesDepartments(db, teamId) : [],
     row.product === "services" ? listServicesOfferings(db, teamId, { activeOnly: true }) : [],
-    listPublishedDigitalProducts(db, teamId),
+    // The store switch gates selling: with the store off the page lists no products.
+    row.product === "services" && row.storeEnabled === true ? listPublishedDigitalProducts(db, teamId) : [],
   ]);
 
   return {

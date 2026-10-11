@@ -10,6 +10,7 @@ export type PayPalWebhookEventInput = {
   resourceId: string | null;
   customId: string | null;
   orderId: string | null;
+  captureId: string | null;
   merchantId: string | null;
 };
 

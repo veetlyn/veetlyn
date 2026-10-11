@@ -5,6 +5,9 @@ import {
   chargebackTransfer,
   completionTransfer,
   managementFeeCreditTransfer,
+  orderFeesTransfer,
+  orderPaidTransfer,
+  orderRefundedTransfer,
   paymentCapturedTransfer,
   paymentFeesTransfer,
   payoutReleasedTransfer,
@@ -189,5 +192,40 @@ describe("paymentFeesTransfer", () => {
       { account: "paypal_fees", currency: "USD", amountMinor: 498 },
     ]);
     expect(paymentFeesTransfer({ currency: "USD", projectId: "p1", paymentId: "pay1", paypalFeeMinor: 0, platformFeeMinor: 0 })).toBeNull();
+  });
+});
+
+describe("order postings", () => {
+  it("books a paid order as team revenue", () => {
+    const t = orderPaidTransfer({ currency: "USD", orderId: "o1", amountMinor: 1900 });
+    expect(t).toMatchObject({ kind: "order_paid", reference: "order_paid:o1", projectId: null });
+    expect(t.entries).toEqual(
+      expect.arrayContaining([
+        { account: "paypal_clearing", currency: "USD", amountMinor: -1900 },
+        { account: "team_revenue", currency: "USD", amountMinor: 1900 },
+      ]),
+    );
+  });
+  it("books the fees out of team revenue, or nothing when both are zero", () => {
+    const t = orderFeesTransfer({ currency: "USD", orderId: "o1", paypalFeeMinor: 115, platformFeeMinor: 19 });
+    expect(t?.reference).toBe("order_fees:o1");
+    expect(t?.entries).toEqual(
+      expect.arrayContaining([
+        { account: "team_revenue", currency: "USD", amountMinor: -134 },
+        { account: "paypal_fees", currency: "USD", amountMinor: 115 },
+        { account: "payleor_fees", currency: "USD", amountMinor: 19 },
+      ]),
+    );
+    expect(orderFeesTransfer({ currency: "USD", orderId: "o1", paypalFeeMinor: 0, platformFeeMinor: 0 })).toBeNull();
+  });
+  it("books a refund back to PayPal, keyed by the refund", () => {
+    const t = orderRefundedTransfer({ currency: "USD", orderId: "o1", refundKey: "refund:R1", amountMinor: 500 });
+    expect(t).toMatchObject({ kind: "order_refunded", reference: "order_refunded:refund:R1", projectId: null });
+    expect(t.entries).toEqual(
+      expect.arrayContaining([
+        { account: "team_revenue", currency: "USD", amountMinor: -500 },
+        { account: "paypal_clearing", currency: "USD", amountMinor: 500 },
+      ]),
+    );
   });
 });

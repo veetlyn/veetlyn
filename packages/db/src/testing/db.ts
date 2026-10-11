@@ -1,9 +1,11 @@
-import type { ProjectSource, ProjectStatus, QuoteRequestAnswer } from "@jendal-workspace/core";
+import type { OrderStatus, ProjectSource, ProjectStatus, QuoteRequestAnswer } from "@jendal-workspace/core";
 import { sql } from "drizzle-orm";
 
 import { createDb, type Database } from "../index";
 import { user } from "../schema/auth";
 import { products, productVariants } from "../schema/catalog";
+import { fileUpload } from "../schema/files";
+import { orders } from "../schema/orders";
 import { member, organization, team, teamMember } from "../schema/organization";
 import { project } from "../schema/projects";
 import { servicesOffering } from "../schema/services-catalog";
@@ -18,7 +20,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "outbox", "paypal_webhook_event", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "outbox", "paypal_webhook_event", "download_grant", "orders", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }
@@ -250,4 +252,61 @@ export async function seedProduct(
     priceMinor: input.priceMinor ?? 0,
   });
   return { id };
+}
+
+// An attached product file, as the digital product upload leaves it.
+export async function seedProductFile(
+  db: Database,
+  input: { teamId: string; productId: string; fileName?: string; sizeBytes?: number; createdById?: string },
+): Promise<typeof fileUpload.$inferSelect> {
+  const [row] = await db
+    .insert(fileUpload)
+    .values({
+      teamId: input.teamId,
+      productId: input.productId,
+      purpose: "product",
+      r2Key: `products/${input.teamId}/${input.productId}/${crypto.randomUUID()}`,
+      fileName: input.fileName ?? "pack.zip",
+      contentType: "application/zip",
+      sizeBytes: input.sizeBytes ?? 1024,
+      createdById: input.createdById ?? null,
+      attachedAt: new Date(),
+    })
+    .returning();
+  if (!row) throw new Error("Insert into file_upload returned no row");
+  return row;
+}
+
+export async function seedOrder(
+  db: Database,
+  input: {
+    teamId: string;
+    productId: string;
+    status?: OrderStatus;
+    amountMinor?: number;
+    buyerEmail?: string;
+    paypalOrderId?: string;
+    paypalCaptureId?: string;
+  },
+): Promise<typeof orders.$inferSelect> {
+  const status = input.status ?? "pending";
+  const [row] = await db
+    .insert(orders)
+    .values({
+      teamId: input.teamId,
+      productId: input.productId,
+      productTitle: "Test product",
+      buyerEmail: input.buyerEmail ?? "buyer@example.com",
+      currency: "USD",
+      amountMinor: input.amountMinor ?? 1900,
+      status,
+      paypalOrderId: input.paypalOrderId ?? null,
+      paypalCaptureId: input.paypalCaptureId ?? null,
+      checkoutSecretHash: "x".repeat(64),
+      paidAt: status === "pending" ? null : new Date(),
+      refundedAt: status === "refunded" ? new Date() : null,
+    })
+    .returning();
+  if (!row) throw new Error("Insert into orders returned no row");
+  return row;
 }

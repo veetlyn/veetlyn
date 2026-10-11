@@ -1,21 +1,26 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
-import { ledgerAccounts, createFakeFileStore } from "@jendal-workspace/core";
+import { ledgerAccounts, createFakeFileStore, hashToken, orderFeesTransfer } from "@jendal-workspace/core";
+import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
-import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
+import { ledgerBalance, ledgerEntry, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
+import { downloadGrant, orders } from "@jendal-workspace/db/schema/orders";
 import { team } from "@jendal-workspace/db/schema/organization";
 import { payment } from "@jendal-workspace/db/schema/projects";
 import {
   createTestDb,
   hasTestDatabase,
+  seedOrder,
+  seedProduct,
   seedServicesTeamMember,
   seedServicesTeamWithAdmin,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
+import { createFakeMailer } from "@jendal-workspace/email/fake";
 import { createPayPalClient, PayPalError } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { signClientLink, signPayLink } from "../client-links";
@@ -23,6 +28,7 @@ import type { PayPalServices } from "../context";
 import { appRouter } from "../routers/index";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
+import { captureCheckout, issueGrant } from "./orders";
 import { processPayPalWebhookEvent } from "./paypal-webhooks";
 
 const SECRET = TEST_AUTH_CONFIG.BETTER_AUTH_SECRET;
@@ -98,6 +104,7 @@ function storedEvent(overrides: Partial<PayPalWebhookEventRow> = {}): PayPalWebh
     resourceId: "CAPTURE1",
     customId: null,
     orderId: "ORDER1",
+    captureId: null,
     merchantId: "SELLER1",
     status: "received",
     attempts: 0,
@@ -328,15 +335,24 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     expect((await paymentRow(paymentId))?.status).toBe("pending");
   });
 
-  it("parks refunds and reversals", async () => {
+  it("parks refunds and reversals, found by their capture id", async () => {
     const { paymentId, deps } = await startedDeposit({ lookup: completedLookup });
+    await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }));
 
     for (const eventType of ["PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"]) {
-      expect(await processPayPalWebhookEvent(deps, storedEvent({ eventType, customId: paymentId, orderId: null }))).toEqual({
-        status: "parked",
-        note: "refunds and reversals need a person (run 4)",
-      });
+      expect(
+        await processPayPalWebhookEvent(
+          deps,
+          storedEvent({ eventType, resourceId: "REFUND1", customId: null, orderId: null, captureId: "CAPTURE1" }),
+        ),
+      ).toEqual({ status: "parked", note: "refunds and reversals need a person" });
     }
+    expect(
+      await processPayPalWebhookEvent(
+        deps,
+        storedEvent({ eventType: "PAYMENT.CAPTURE.REFUNDED", customId: null, orderId: null, captureId: "OTHER" }),
+      ),
+    ).toEqual({ status: "ignored", note: "not a Payleor payment" });
   });
 
   it("parks a capture that does not match the payment", async () => {
@@ -389,5 +405,398 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     const outcome = await processPayPalWebhookEvent(gone.deps, storedEvent({ customId: gone.paymentId }));
     expect(outcome).toMatchObject({ status: "parked" });
     expect(outcome.note).toContain("404");
+  });
+
+  describe("store orders", () => {
+    // A store order on ORDER1 for $600, from a team connected to PayPal as SELLER1.
+    async function storeOrder(
+      options: {
+        status?: "pending" | "paid";
+        lookup?: () => Response;
+        capture?: () => Response;
+      } = {},
+    ) {
+      const { teamId } = await seedServicesTeamWithAdmin(db);
+      await markTeamPayPalMerchant(db, { teamId, merchantId: "SELLER1" });
+      const product = await seedProduct(db, { storeId: teamId, kind: "digital", status: "published", priceMinor: 60_000 });
+      const paid = options.status === "paid";
+      const order = await seedOrder(db, {
+        teamId,
+        productId: product.id,
+        amountMinor: 60_000,
+        status: options.status,
+        paypalOrderId: "ORDER1",
+        paypalCaptureId: paid ? "CAPTURE1" : undefined,
+      });
+      const api = fakePayPalApi({ capture: options.capture, lookup: options.lookup });
+      const mailer = createFakeMailer();
+      const deps = {
+        db,
+        paypal: makePayPal(api.fetch),
+        email: {
+          mailer,
+          siteOrigin: "https://payleor.test",
+          adminOrigin: "https://admin.payleor.test",
+          storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+        },
+      };
+      return { teamId, order, mailer, deps, requests: api.requests, customId: `order:${order.id}` };
+    }
+
+    async function orderRow(orderId: string) {
+      const [row] = await db.select().from(orders).where(eq(orders.id, orderId));
+      return row;
+    }
+
+    async function grantsOf(orderId: string) {
+      return db.select().from(downloadGrant).where(eq(downloadGrant.orderId, orderId));
+    }
+
+    async function orderPostings() {
+      const rows = await db
+        .select({ kind: ledgerTransfer.kind, reference: ledgerTransfer.reference, amountMinor: ledgerEntry.amountMinor })
+        .from(ledgerTransfer)
+        .innerJoin(ledgerEntry, eq(ledgerEntry.transferId, ledgerTransfer.id))
+        .where(and(eq(ledgerTransfer.kind, "order_refunded"), eq(ledgerEntry.account, ledgerAccounts.paypalClearing)));
+      return rows.map((row) => ({ ...row, amountMinor: Math.abs(row.amountMinor) }));
+    }
+
+    function refundedLookup(captureStatus: string, refunds: { id: string; status: string; value: string }[]) {
+      return () =>
+        jsonResponse(200, {
+          id: "ORDER1",
+          status: "COMPLETED",
+          purchase_units: [
+            {
+              payments: {
+                captures: [{ id: "CAPTURE1", status: captureStatus, amount: { currency_code: "USD", value: "600.00" } }],
+                refunds: refunds.map((refund) => ({
+                  id: refund.id,
+                  status: refund.status,
+                  amount: { currency_code: "USD", value: refund.value },
+                })),
+              },
+            },
+          ],
+        });
+    }
+
+    function refundEvent(overrides: Partial<PayPalWebhookEventRow> = {}) {
+      return storedEvent({
+        eventType: "PAYMENT.CAPTURE.REFUNDED",
+        resourceType: "refund",
+        resourceId: "R1",
+        customId: null,
+        orderId: null,
+        captureId: "CAPTURE1",
+        ...overrides,
+      });
+    }
+
+    it("captures an approved order the browser did not capture, and emails the buyer once", async () => {
+      const { order, mailer, deps, requests, customId } = await storeOrder();
+      const event = storedEvent({
+        eventType: "CHECKOUT.ORDER.APPROVED",
+        resourceType: "checkout-order",
+        resourceId: "ORDER1",
+        customId,
+      });
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "applied" });
+      expect(captures(requests)).toHaveLength(1);
+      expect(await orderRow(order.id)).toMatchObject({ status: "paid", paypalCaptureId: "CAPTURE1", paypalFeeMinor: 2_370 });
+      expect(mailer.sent).toHaveLength(1);
+      expect(mailer.sent[0]?.to).toBe("buyer@example.com");
+      expect(await grantsOf(order.id)).toHaveLength(1);
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "nothing to do" });
+      expect(captures(requests)).toHaveLength(1);
+      expect(mailer.sent).toHaveLength(1);
+    });
+
+    it("counts an approval PayPal declines as processed, with the decline", async () => {
+      const declined = {
+        name: "UNPROCESSABLE_ENTITY",
+        debug_id: "d422",
+        details: [{ issue: "INSTRUMENT_DECLINED", description: "The instrument presented was declined." }],
+      };
+      const { order, deps, customId } = await storeOrder({ capture: () => jsonResponse(422, declined) });
+      const event = storedEvent({ eventType: "CHECKOUT.ORDER.APPROVED", resourceType: "checkout-order", customId });
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({
+        status: "processed",
+        note: "PayPal declined this payment method. Choose another way to pay.",
+      });
+      expect((await orderRow(order.id))?.status).toBe("pending");
+    });
+
+    it("applies a completed capture event with its fees, once", async () => {
+      const { order, mailer, deps, requests, customId } = await storeOrder({ lookup: completedLookup });
+      const event = storedEvent({ customId });
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "applied" });
+      expect(lookups(requests)).toHaveLength(1);
+      expect(await orderRow(order.id)).toMatchObject({ status: "paid", paypalFeeMinor: 2_370, platformFeeMinor: 600 });
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "already_applied" });
+      expect(mailer.sent).toHaveLength(1);
+      expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "order_paid"))).toHaveLength(1);
+      expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "order_fees"))).toHaveLength(1);
+    });
+
+    it("emails the buyer once when the browser's capture applies before the capture event", async () => {
+      const { order, mailer, deps, customId } = await storeOrder({ lookup: completedLookup });
+      const secret = "browser-secret";
+      await db.update(orders).set({ checkoutSecretHash: await hashToken(secret) }).where(eq(orders.id, order.id));
+
+      expect(await captureCheckout(deps, { paypalOrderId: "ORDER1", secret })).toMatchObject({ outcome: "captured" });
+      expect(mailer.sent).toHaveLength(1);
+
+      expect(await processPayPalWebhookEvent(deps, storedEvent({ customId }))).toEqual({
+        status: "processed",
+        note: "already_applied",
+      });
+      expect(mailer.sent).toHaveLength(1);
+      expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "order_paid"))).toHaveLength(1);
+    });
+
+    it("retries the fee step visibly when it keeps failing", async () => {
+      const { teamId, order, deps, customId } = await storeOrder({ lookup: completedLookup });
+      // A fee posting already under the order's reference makes every fee step fail.
+      const blocking = orderFeesTransfer({ currency: "USD", orderId: order.id, paypalFeeMinor: 1, platformFeeMinor: 0 });
+      if (!blocking) throw new Error("No fee transfer");
+      await db.transaction((tx) => createPostgresLedger(teamId, tx).post([blocking]));
+
+      await expect(processPayPalWebhookEvent(deps, storedEvent({ customId }))).rejects.toMatchObject({
+        code: "duplicate_reference",
+      });
+      expect(await orderRow(order.id)).toMatchObject({ status: "paid", paypalFeeMinor: null });
+    });
+
+    it("refunds the order on a refund found by its capture id, revoking every grant and posting each refund once", async () => {
+      const first = refundedLookup("PARTIALLY_REFUNDED", [{ id: "R1", status: "COMPLETED", value: "5.00" }]);
+      const both = refundedLookup("PARTIALLY_REFUNDED", [
+        { id: "R1", status: "COMPLETED", value: "5.00" },
+        { id: "R2", status: "COMPLETED", value: "7.50" },
+      ]);
+      let lookup = first;
+      const { order, deps } = await storeOrder({ status: "paid", lookup: () => lookup() });
+      await issueGrant(db, order.id);
+      await issueGrant(db, order.id);
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent())).toEqual({ status: "processed", note: "refunded" });
+      expect(await orderRow(order.id)).toMatchObject({ status: "refunded", refundedAt: expect.any(Date) });
+      const grants = await grantsOf(order.id);
+      expect(grants).toHaveLength(2);
+      expect(grants.every((grant) => grant.revokedAt !== null)).toBe(true);
+      expect(await orderPostings()).toEqual([
+        { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 500 },
+      ]);
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent())).toEqual({
+        status: "processed",
+        note: "already refunded",
+      });
+      expect(await orderPostings()).toHaveLength(1);
+
+      lookup = both;
+      expect(await processPayPalWebhookEvent(deps, refundEvent({ id: "WH-2", resourceId: "R2" }))).toEqual({
+        status: "processed",
+        note: "already refunded",
+      });
+      expect(await orderPostings()).toEqual(
+        expect.arrayContaining([
+          { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 500 },
+          { kind: "order_refunded", reference: "order_refunded:refund:R2", amountMinor: 750 },
+        ]),
+      );
+      expect(await orderPostings()).toHaveLength(2);
+    });
+
+    it("retries a later refund until PayPal's order lists it, then posts it once", async () => {
+      const first = refundedLookup("PARTIALLY_REFUNDED", [{ id: "R1", status: "COMPLETED", value: "5.00" }]);
+      const both = refundedLookup("PARTIALLY_REFUNDED", [
+        { id: "R1", status: "COMPLETED", value: "5.00" },
+        { id: "R2", status: "COMPLETED", value: "7.50" },
+      ]);
+      let lookup = first;
+      const { order, deps } = await storeOrder({ status: "paid", lookup: () => lookup() });
+      expect(await processPayPalWebhookEvent(deps, refundEvent())).toEqual({ status: "processed", note: "refunded" });
+
+      const second = refundEvent({ id: "WH-2", resourceId: "R2" });
+      await expect(processPayPalWebhookEvent(deps, second)).rejects.toThrow(/R2/);
+      expect((await orderRow(order.id))?.status).toBe("refunded");
+      expect(await orderPostings()).toHaveLength(1);
+
+      lookup = both;
+      expect(await processPayPalWebhookEvent(deps, second)).toEqual({ status: "processed", note: "already refunded" });
+      expect(await processPayPalWebhookEvent(deps, second)).toEqual({ status: "processed", note: "already refunded" });
+      expect(await orderPostings()).toEqual(
+        expect.arrayContaining([
+          { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 500 },
+          { kind: "order_refunded", reference: "order_refunded:refund:R2", amountMinor: 750 },
+        ]),
+      );
+      expect(await orderPostings()).toHaveLength(2);
+    });
+
+    it("posts only what the refunds left on a reversal after a partial refund", async () => {
+      const { order, deps } = await storeOrder({
+        status: "paid",
+        lookup: refundedLookup("REVERSED", [{ id: "R1", status: "COMPLETED", value: "5.00" }]),
+      });
+      const event = storedEvent({
+        eventType: "PAYMENT.CAPTURE.REVERSED",
+        resourceType: "capture",
+        resourceId: "CAPTURE1",
+        customId: null,
+        orderId: null,
+        captureId: "CAPTURE1",
+      });
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "refunded" });
+      expect((await orderRow(order.id))?.status).toBe("refunded");
+      expect(await orderPostings()).toEqual(
+        expect.arrayContaining([
+          { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 500 },
+          { kind: "order_refunded", reference: "order_refunded:reversal:CAPTURE1", amountMinor: 59_500 },
+        ]),
+      );
+      expect(await orderPostings()).toHaveLength(2);
+    });
+
+    it("posts no reversal when the refunds already took back the full amount", async () => {
+      const { deps } = await storeOrder({
+        status: "paid",
+        lookup: refundedLookup("REVERSED", [{ id: "R1", status: "COMPLETED", value: "600.00" }]),
+      });
+      const event = storedEvent({
+        eventType: "PAYMENT.CAPTURE.REVERSED",
+        resourceType: "capture",
+        resourceId: "CAPTURE1",
+        customId: null,
+        orderId: null,
+        captureId: "CAPTURE1",
+      });
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "refunded" });
+      expect(await orderPostings()).toEqual([
+        { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 60_000 },
+      ]);
+    });
+
+    it("does not post a refund in another currency, but still refunds the order", async () => {
+      const lookup = () =>
+        jsonResponse(200, {
+          id: "ORDER1",
+          status: "COMPLETED",
+          purchase_units: [
+            {
+              payments: {
+                captures: [{ id: "CAPTURE1", status: "PARTIALLY_REFUNDED", amount: { currency_code: "USD", value: "600.00" } }],
+                refunds: [{ id: "R1", status: "COMPLETED", amount: { currency_code: "EUR", value: "5.00" } }],
+              },
+            },
+          ],
+        });
+      const { order, deps } = await storeOrder({ status: "paid", lookup });
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent())).toEqual({ status: "processed", note: "refunded" });
+      expect((await orderRow(order.id))?.status).toBe("refunded");
+      expect(await orderPostings()).toEqual([]);
+    });
+
+    it("refunds the order on a reversal and posts the full amount once", async () => {
+      const { order, deps } = await storeOrder({ status: "paid", lookup: refundedLookup("REVERSED", []) });
+      await issueGrant(db, order.id);
+      const event = storedEvent({
+        eventType: "PAYMENT.CAPTURE.REVERSED",
+        resourceType: "capture",
+        resourceId: "CAPTURE1",
+        customId: null,
+        orderId: null,
+        captureId: "CAPTURE1",
+      });
+
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "refunded" });
+      expect((await orderRow(order.id))?.status).toBe("refunded");
+      expect((await grantsOf(order.id)).every((grant) => grant.revokedAt !== null)).toBe(true);
+      expect(await orderPostings()).toEqual([
+        { kind: "order_refunded", reference: "order_refunded:reversal:CAPTURE1", amountMinor: 60_000 },
+      ]);
+
+      expect(await processPayPalWebhookEvent(deps, { ...event, customId: `order:${order.id}`, orderId: "ORDER1" })).toEqual({
+        status: "processed",
+        note: "already refunded",
+      });
+      expect(await orderPostings()).toHaveLength(1);
+    });
+
+    it("refunds the order when a capture event finds the capture refunded", async () => {
+      const { order, deps, customId } = await storeOrder({
+        status: "paid",
+        lookup: refundedLookup("REFUNDED", [{ id: "R1", status: "COMPLETED", value: "600.00" }]),
+      });
+
+      expect(await processPayPalWebhookEvent(deps, storedEvent({ customId }))).toEqual({
+        status: "processed",
+        note: "refunded",
+      });
+      expect((await orderRow(order.id))?.status).toBe("refunded");
+      expect(await orderPostings()).toEqual([
+        { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 60_000 },
+      ]);
+    });
+
+    it("leaves a refund to the queue's retries while PayPal's order shows none", async () => {
+      const { order, deps } = await storeOrder({ status: "paid", lookup: completedLookup });
+
+      await expect(processPayPalWebhookEvent(deps, refundEvent())).rejects.toThrow(/no refund yet/);
+      expect((await orderRow(order.id))?.status).toBe("paid");
+    });
+
+    it("revokes at once when the capture shows refunded, and posts the refund on the retry once PayPal lists it", async () => {
+      let lookup = refundedLookup("REFUNDED", []);
+      const { order, deps } = await storeOrder({ status: "paid", lookup: () => lookup() });
+      await issueGrant(db, order.id);
+
+      await expect(processPayPalWebhookEvent(deps, refundEvent())).rejects.toThrow(/no completed refund yet/);
+      expect((await orderRow(order.id))?.status).toBe("refunded");
+      expect((await grantsOf(order.id)).every((grant) => grant.revokedAt !== null)).toBe(true);
+      expect(await orderPostings()).toEqual([]);
+
+      lookup = refundedLookup("REFUNDED", [{ id: "R1", status: "COMPLETED", value: "600.00" }]);
+      expect(await processPayPalWebhookEvent(deps, refundEvent())).toEqual({ status: "processed", note: "already refunded" });
+      expect(await processPayPalWebhookEvent(deps, refundEvent())).toEqual({ status: "processed", note: "already refunded" });
+      expect(await orderPostings()).toEqual([
+        { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 60_000 },
+      ]);
+    });
+
+    it("parks order events for another merchant without calling PayPal", async () => {
+      const { order, deps, requests, customId } = await storeOrder({
+        status: "paid",
+        lookup: refundedLookup("REFUNDED", [{ id: "R1", status: "COMPLETED", value: "600.00" }]),
+      });
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent({ merchantId: "SOMEONE_ELSE" }))).toEqual({
+        status: "parked",
+        note: "merchant does not match the team",
+      });
+      expect(await processPayPalWebhookEvent(deps, storedEvent({ customId, merchantId: "SOMEONE_ELSE" }))).toEqual({
+        status: "parked",
+        note: "merchant does not match the team",
+      });
+      expect(lookups(requests)).toHaveLength(0);
+      expect((await orderRow(order.id))?.status).toBe("paid");
+    });
+
+    it("ignores an event for an order Payleor does not have", async () => {
+      const { deps } = await storeOrder({ lookup: completedLookup });
+
+      expect(
+        await processPayPalWebhookEvent(deps, storedEvent({ customId: `order:${crypto.randomUUID()}`, orderId: null })),
+      ).toEqual({ status: "ignored", note: "not a Payleor payment" });
+    });
   });
 });

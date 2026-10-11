@@ -17,6 +17,7 @@ export type ParsedWebhookEvent = {
   resourceId: string | null;
   customId: string | null;
   orderId: string | null;
+  captureId: string | null;
   merchantId: string | null;
 };
 
@@ -26,6 +27,20 @@ function record(value: unknown): Record<string, unknown> | null {
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+// R1 facts §4: a refund names its capture only through the "up" link, …/v2/payments/captures/{id}.
+function refundedCaptureId(resource: Record<string, unknown> | null): string | null {
+  const links = Array.isArray(resource?.links) ? resource.links : [];
+  for (const link of links) {
+    const entry = record(link);
+    const href = text(entry?.href);
+    if (entry?.rel === "up" && href) {
+      const match = /\/v2\/payments\/captures\/([^/?#]+)/.exec(href);
+      if (match?.[1]) return match[1];
+    }
+  }
+  return null;
 }
 
 // R1 facts §4: capture resources carry custom_id, payee and the order id in supplementary_data; order
@@ -39,10 +54,16 @@ export function parseWebhookEvent(body: unknown): ParsedWebhookEvent | null {
   const resource = record(event.resource);
   const resourceType = text(event.resource_type);
   const base = { id, eventType, resourceType, resourceId: text(resource?.id) };
-  // A refund's custom_id is the refund's own value, not our payment id, and its seller is the payer. The
-  // refunded capture's id is the last segment of its "up" link; refunds (run 4) will read it from there.
+  // A refund's custom_id is the refund's own value, not our payment id, and its seller is the payer. It is
+  // matched to a payment through the refunded capture instead.
   if (resourceType === "refund") {
-    return { ...base, customId: null, orderId: null, merchantId: text(record(resource?.payer)?.merchant_id) };
+    return {
+      ...base,
+      customId: null,
+      orderId: null,
+      captureId: refundedCaptureId(resource),
+      merchantId: text(record(resource?.payer)?.merchant_id),
+    };
   }
   const units = Array.isArray(resource?.purchase_units) ? resource.purchase_units : null;
   const isOrder = units !== null;
@@ -52,6 +73,7 @@ export function parseWebhookEvent(body: unknown): ParsedWebhookEvent | null {
     ...base,
     customId: text(unit?.custom_id),
     orderId: isOrder ? text(resource?.id) : text(relatedIds?.order_id),
+    captureId: isOrder ? null : text(resource?.id),
     merchantId: text(record(unit?.payee)?.merchant_id),
   };
 }

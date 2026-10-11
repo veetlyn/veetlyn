@@ -13,6 +13,9 @@ export const LEDGER_TRANSFER_KINDS = [
   "payout_released",
   "penalty_after_completion",
   "chargeback",
+  "order_paid",
+  "order_fees",
+  "order_refunded",
 ] as const;
 
 export type LedgerTransferKind = (typeof LEDGER_TRANSFER_KINDS)[number];

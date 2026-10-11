@@ -23,7 +23,7 @@ import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
 import { storeInfoRoute } from "./routes/store-info";
-import { createAuth, createFileStore, getDb, getPayPalServices } from "./services";
+import { createAuth, createFileStore, getDb, getEmailServices, getPayPalServices } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 import { tenantMiddleware } from "./tenant/middleware";
 import { trpcErrorContext } from "./trpc-error-log";
@@ -109,7 +109,7 @@ export default {
         find: (eventId) => findWebhookEvent(db, eventId),
         process: (event) => {
           if (!paypal) throw new Error("PayPal is not configured on this server");
-          return processPayPalWebhookEvent({ db, paypal }, event);
+          return processPayPalWebhookEvent({ db, paypal, email: getEmailServices(ctx) }, event);
         },
         finish: (eventId, outcome) => finishWebhookEvent(db, eventId, outcome),
         noteAttempt: (eventId, error) => noteWebhookAttempt(db, eventId, error),

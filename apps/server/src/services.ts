@@ -14,6 +14,7 @@ import { createKvTextCache } from "./catalog/text-cache";
 import { logEmailError } from "./email-log";
 import { ENV } from "./env.server";
 import { createR2FileStore } from "./files/file-store";
+import { storeOriginFor } from "./store-origin";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 
 export function getDb(): Database {
@@ -31,12 +32,13 @@ export function createAuth(database: Database, executionCtx: ExecutionContext) {
 // A mailer per request, as in createAuth; links in emails point at the site and admin origins derived from
 // BETTER_AUTH_URL (http://admin.localhost:3001 in dev, https://admin.payleor.com in production; the
 // derivation assumes the admin origin carries the admin. subdomain).
-export function getEmailServices(executionCtx: ExecutionContext): EmailServices {
+export function getEmailServices(executionCtx: { waitUntil(promise: Promise<unknown>): void }): EmailServices {
   const adminOrigin = ENV.BETTER_AUTH_URL;
   return {
     mailer: createMailer(ENV),
     siteOrigin: adminOrigin.replace("://admin.", "://"),
     adminOrigin,
+    storeOrigin: storeOriginFor({ storeDomain: ENV.STORE_DOMAIN || ENV.PLATFORM_DOMAIN, adminOrigin }),
     waitUntil: (promise) => executionCtx.waitUntil(promise),
     onError: logEmailError,
   };

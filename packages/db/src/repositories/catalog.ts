@@ -4,6 +4,7 @@ import { and, asc, count, eq, sql } from "drizzle-orm";
 import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
 import { productImages, products, productVariants } from "../schema/catalog";
+import { servicesTeamSettings } from "../schema/services-teams";
 
 export type ProductRow = typeof products.$inferSelect;
 export type VariantRow = typeof productVariants.$inferSelect;
@@ -215,6 +216,23 @@ export async function countPublishedDigitalProducts(db: DbExecutor, storeId: str
     .select({ count: count() })
     .from(products)
     .where(and(eq(products.storeId, storeId), eq(products.kind, "digital"), eq(products.status, "published")));
+  return row?.count ?? 0;
+}
+
+// The store switch gates selling: with the store off, published products are not on sale.
+export async function countSellableDigitalProducts(db: DbExecutor, storeId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: count() })
+    .from(products)
+    .innerJoin(servicesTeamSettings, eq(servicesTeamSettings.teamId, products.storeId))
+    .where(
+      and(
+        eq(products.storeId, storeId),
+        eq(products.kind, "digital"),
+        eq(products.status, "published"),
+        eq(servicesTeamSettings.storeEnabled, true),
+      ),
+    );
   return row?.count ?? 0;
 }
 

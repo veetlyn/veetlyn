@@ -26,6 +26,49 @@ export function paymentFeesTransfer(
   });
 }
 
+type OrderPosting = { currency: MoneyCurrency; orderId: string };
+
+// Sellers design §5.3: a store order is the team's revenue at capture; there is no client money to hold.
+export function orderPaidTransfer(input: OrderPosting & { amountMinor: number }): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "order_paid",
+    reference: `order_paid:${input.orderId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [{ from: a.paypalClearing, to: a.teamRevenue, amountMinor: input.amountMinor }],
+  });
+}
+
+export function orderFeesTransfer(
+  input: OrderPosting & { paypalFeeMinor: number; platformFeeMinor: number },
+): LedgerTransferDraft | null {
+  const moves = [
+    { from: a.teamRevenue, to: a.paypalFees, amountMinor: input.paypalFeeMinor },
+    { from: a.teamRevenue, to: a.payleorFees, amountMinor: input.platformFeeMinor },
+  ].filter((move) => move.amountMinor > 0);
+  if (moves.length === 0) return null;
+  return transferFromMoves({
+    kind: "order_fees",
+    reference: `order_fees:${input.orderId}`,
+    projectId: null,
+    currency: input.currency,
+    moves,
+  });
+}
+
+// refundKey names the PayPal fact: "refund:{refundId}" or "reversal:{captureId}", so each is posted once.
+export function orderRefundedTransfer(
+  input: OrderPosting & { refundKey: string; amountMinor: number },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "order_refunded",
+    reference: `order_refunded:${input.refundKey}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [{ from: a.teamRevenue, to: a.paypalClearing, amountMinor: input.amountMinor }],
+  });
+}
+
 // Deposit, amendment top-up or balance captured.
 export function paymentCapturedTransfer(
   input: ProjectPosting & { paymentId: string; quotePartMinor: number; managementFeeMinor: number },

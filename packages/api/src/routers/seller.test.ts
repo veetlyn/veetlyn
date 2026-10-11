@@ -14,6 +14,7 @@ import {
   seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
+import { setServicesTeamStoreEnabled } from "@jendal-workspace/db/repositories/services-teams";
 import { products } from "@jendal-workspace/db/schema/catalog";
 import { team } from "@jendal-workspace/db/schema/organization";
 import { eq } from "drizzle-orm";
@@ -227,12 +228,21 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
       expect(onTeamStatusChanged).not.toHaveBeenCalled();
     });
 
-    it("publishes a services team with a published digital product instead of a service", async () => {
+    it("publishes a services team with a published digital product instead of a service, while its store is on", async () => {
       const { adminId, teamId } = await servicesSeller();
       await connectPaypal(teamId);
       await seedProduct(db, { storeId: teamId, kind: "digital", status: "published", priceMinor: 900 });
       const onTeamStatusChanged = vi.fn();
 
+      await expect(
+        callerFor(adminId, onTeamStatusChanged).seller.publish({ teamSlug: "acme-studio" }),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Add at least one active service or product before you publish.",
+      });
+      expect(await statusOf(teamId)).toBe("draft");
+
+      await setServicesTeamStoreEnabled(db, teamId, true);
       await expect(
         callerFor(adminId, onTeamStatusChanged).seller.publish({ teamSlug: "acme-studio" }),
       ).resolves.toEqual({ status: "active" });

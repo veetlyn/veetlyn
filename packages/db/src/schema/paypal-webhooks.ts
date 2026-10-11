@@ -14,6 +14,8 @@ export const paypalWebhookEvent = pgTable(
     resourceId: text("resource_id"),
     customId: text("custom_id"),
     orderId: text("order_id"),
+    // Refund events carry neither a custom id nor a PayPal order id; the refunded capture is how they are matched.
+    captureId: text("capture_id"),
     merchantId: text("merchant_id"),
     status: text("status", { enum: PAYPAL_WEBHOOK_EVENT_STATUSES }).notNull().default("received"),
     attempts: integer("attempts").notNull().default(0),

@@ -18,7 +18,7 @@ export const QUOTE_REQUEST_LIMITS = {
   openPerEmailPerTeam: 3,
 } as const;
 
-const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+export const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 export function validateQuoteRequest(draft: QuoteRequestDraft): string[] {
   const problems: string[] = [];
