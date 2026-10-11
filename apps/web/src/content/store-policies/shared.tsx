@@ -2,6 +2,8 @@ import { A } from "@/components/legal/prose";
 
 export type PolicyStore = { name: string; url: string; supportEmail: string | null };
 
+export type PolicyPage = { title: string; Body: (props: { store: PolicyStore }) => React.ReactNode };
+
 export function StoreContact({ store }: { store: PolicyStore }) {
   if (!store.supportEmail) return <>the contact details on this website</>;
   return <A href={`mailto:${store.supportEmail}`}>{store.supportEmail}</A>;

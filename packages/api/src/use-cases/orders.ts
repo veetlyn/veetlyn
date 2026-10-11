@@ -1,5 +1,6 @@
 import {
   buyerEmailProblem,
+  errorName,
   type FileStore,
   DOWNLOADS_PER_GRANT,
   grantExpiry,
@@ -54,6 +55,7 @@ import {
   type PayPalOrder,
   refundsFromOrder,
 } from "@jendal-workspace/paypal";
+import { captureSchema, parsedItems } from "@jendal-workspace/paypal/schemas";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { log } from "evlog";
@@ -378,7 +380,7 @@ export async function sendDownloadEmail(
     log.error({
       action: "order.email",
       order: { id: input.order.id },
-      error: { name: error instanceof Error ? error.name : typeof error },
+      error: { name: errorName(error) },
     });
     try {
       await email.onError?.(error, { kind: "order-download", to });
@@ -507,16 +509,10 @@ export async function captureOrderFromWebhook(
 
 export type OrderRefundResult = "refunded" | "already refunded" | "not paid";
 
-// request() does not validate bodies, so the capture's fields are checked here.
+// Captures that cannot be read are skipped, as captureFromOrder does.
 function captureStatusIn(paypalOrder: PayPalOrder, captureId: string): string | null {
-  const captures: unknown = paypalOrder.purchase_units?.[0]?.payments?.captures;
-  if (!Array.isArray(captures)) return null;
-  for (const value of captures) {
-    if (typeof value !== "object" || value === null) continue;
-    const capture = value as Record<string, unknown>;
-    if (capture.id === captureId && typeof capture.status === "string") return capture.status;
-  }
-  return null;
+  const captures = parsedItems(captureSchema, paypalOrder.purchase_units?.[0]?.payments?.captures ?? []);
+  return captures.find((capture) => capture.id === captureId)?.status ?? null;
 }
 
 async function postOnce(db: Database, teamId: string, transfer: LedgerTransferDraft): Promise<void> {

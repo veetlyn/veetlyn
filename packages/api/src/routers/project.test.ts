@@ -1149,7 +1149,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     // A caller with the email port wired to a fake mailer, unless `email: false`.
     function requestCaller(options: { headers?: Headers; email?: boolean } = {}) {
       const mailer = createFakeMailer();
-      const caller = appRouter.createCaller({
+      const context: Context = {
         db,
         session: null,
         environment: "sandbox",
@@ -1157,17 +1157,16 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         headers: options.headers ?? new Headers(),
         catalog: createTestCatalogServices(),
         files: createFakeFileStore(),
-        ...(options.email === false
-          ? {}
-          : {
-              email: {
-                mailer,
-                siteOrigin: "https://payleor.test",
-                adminOrigin: "https://admin.payleor.test",
-                storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
-              },
-            }),
-      });
+      };
+      if (options.email !== false) {
+        context.email = {
+          mailer,
+          siteOrigin: "https://payleor.test",
+          adminOrigin: "https://admin.payleor.test",
+          storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+        };
+      }
+      const caller = appRouter.createCaller(context);
       return { caller, mailer };
     }
 

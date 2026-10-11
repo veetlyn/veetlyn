@@ -1,4 +1,4 @@
-import { defaultServicesTeamSettings } from "@jendal-workspace/core";
+import { defaultServicesTeamSettings, type JsonObject } from "@jendal-workspace/core";
 import { user } from "@jendal-workspace/db/schema/auth";
 import { team } from "@jendal-workspace/db/schema/organization";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
@@ -51,7 +51,7 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
 
   it("ignores client attempts to set the status, PayPal merchant or support email", async () => {
     const { headers, organizationId, email } = await ownerWithOrganization();
-    const extra: Record<string, unknown> = { status: "active", paypalMerchantId: "FAKE", supportEmail: "x@evil.test" };
+    const extra = { status: "active", paypalMerchantId: "FAKE", supportEmail: "x@evil.test" };
 
     const store = await auth.api.createTeam({
       body: { name: "Acme", organizationId, slug: "acme", ...extra },
@@ -132,7 +132,7 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
     const { headers, organizationId } = await ownerWithOrganization();
 
     await expect(
-      auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "acme", product: "shop" as never }, headers }),
+      auth.api.createTeam({ body: { name: "Acme", organizationId, slug: "acme", product: "shop" }, headers }),
     ).rejects.toMatchObject({ status: "BAD_REQUEST", body: { code: "TEAM_PRODUCT_INVALID" } });
   });
 
@@ -303,7 +303,7 @@ describe.skipIf(!hasTestDatabase)("rate limits", () => {
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
 
-  function post(path: string, ip: string, body: unknown): Request {
+  function post(path: string, ip: string, body: JsonObject): Request {
     return new Request(`${BASE}/api/auth${path}`, {
       method: "POST",
       headers: { "content-type": "application/json", origin: BASE, "cf-connecting-ip": ip },

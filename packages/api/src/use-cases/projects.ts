@@ -477,10 +477,7 @@ export async function declineAmendment(db: Database, input: { projectId: string;
 const MAX_DELIVERY_NOTE = 5_000;
 const MAX_DELIVERY_LINK = 2_000;
 
-function deliveryInput(input: { note: string; link: string; fileUploadId?: string }): {
-  note: string;
-  link: string | null;
-} {
+function deliveryInput(input: { note: string; link: string; fileUploadId?: string }) {
   const note = input.note.trim();
   const link = input.link.trim();
   if (!note && !link && !input.fileUploadId) fail("BAD_REQUEST", "Add a note, a link or a file.");

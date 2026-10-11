@@ -7,7 +7,7 @@ import {
   listProjectQuotes,
   listTeamProjects,
 } from "@jendal-workspace/db/repositories/projects";
-import { canSeeProject, type QuotingMode, type ServicesTeamRole } from "@jendal-workspace/core";
+import { canSeeProject, type ServicesTeamRole } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { listDeliveryFiles } from "@jendal-workspace/db/repositories/files";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
@@ -16,7 +16,7 @@ import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspac
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { linkSecret, signClientLink, signPayLink, verifyClientLink } from "../client-links";
+import { type LinkSecretSource, linkSecret, signClientLink, signPayLink, verifyClientLink } from "../client-links";
 import { publicProcedure, router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
 import {
@@ -61,7 +61,7 @@ const requestQuoteInput = z.object({
   website: z.string().max(200),
 });
 
-async function projectIdFromToken(auth: { options: Record<string, unknown> }, token: string): Promise<string> {
+async function projectIdFromToken(auth: LinkSecretSource, token: string): Promise<string> {
   const projectId = await verifyClientLink(linkSecret(auth), token);
   if (!projectId) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
   return projectId;
@@ -88,7 +88,7 @@ async function requireVisibleProject(ctx: TeamViewer, projectId: string) {
       actorId: ctx.session.user.id,
       assignedFreelancerId: row.assignedFreelancerId,
       status: row.status,
-      quotingMode: (settings?.quotingMode ?? "assigned") as QuotingMode,
+      quotingMode: settings?.quotingMode ?? "assigned",
     })
   ) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
@@ -121,7 +121,7 @@ export const projectRouter = router({
           actorId: ctx.session.user.id,
           assignedFreelancerId: row.assignedFreelancerId,
           status: row.status,
-          quotingMode: (settings?.quotingMode ?? "assigned") as QuotingMode,
+          quotingMode: settings?.quotingMode ?? "assigned",
         }),
       )
       .map((row) => ({
@@ -290,7 +290,7 @@ export const projectRouter = router({
       });
       const send = emailServices.mailer
         .send({ sender: "invoices", onBehalfOf: teamName, tag: "quote-request-notice", to: supportEmail, ...notice })
-        .catch((error: unknown) => emailServices.onError?.(error, { kind: "quote-request-notice", to: supportEmail }));
+        .catch((cause: unknown) => emailServices.onError?.(cause, { kind: "quote-request-notice", to: supportEmail }));
       if (emailServices.waitUntil) emailServices.waitUntil(send);
       else await send;
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney, money, projectStatusLabel, type MoneyCurrency } from "@jendal-workspace/core";
+import { formatMoney, money, projectStatusLabel } from "@jendal-workspace/core";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
@@ -55,7 +55,7 @@ export default function ClientProject({ token }: { token: string }) {
   }
 
   const { project, quotes, amendments, payments, deliveries } = view.data;
-  const currency = project.currency as MoneyCurrency;
+  const currency = project.currency;
   const pendingPayments = payments.filter((p) => p.payPath !== null);
   const awaitingDelivery = project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
   const deliveryBusy = acceptDelivery.isPending || requestChanges.isPending;

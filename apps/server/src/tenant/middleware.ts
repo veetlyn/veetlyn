@@ -11,19 +11,19 @@ import {
 } from "@jendal-workspace/core";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
+import { z } from "zod";
 
 import type { AppEnv } from "../app-env";
 
 export type TenantSettings = { domains: HostDomains; environment: TenantEnvironment };
 export type StoreLookupDeps = { directory: StoreDirectory; cache: StoreLookupCache };
 
-// Cloudflare for SaaS attaches custom hostname metadata to request.cf.
+// Cloudflare for SaaS attaches custom hostname metadata to request.cf; the Workers types leave it untyped.
+const hostMetadataCfSchema = z.object({ hostMetadata: z.object({ storeId: z.string() }) });
+
 function hostMetadataStoreId(request: Request): string | undefined {
-  const cf: unknown = Reflect.get(request, "cf");
-  if (typeof cf !== "object" || cf === null || !("hostMetadata" in cf)) return undefined;
-  const metadata = cf.hostMetadata;
-  if (typeof metadata !== "object" || metadata === null || !("storeId" in metadata)) return undefined;
-  return typeof metadata.storeId === "string" ? metadata.storeId : undefined;
+  const parsed = hostMetadataCfSchema.safeParse(request.cf);
+  return parsed.success ? parsed.data.hostMetadata.storeId : undefined;
 }
 
 export function tenantMiddleware(

@@ -3,7 +3,7 @@ export type SenderKey = "accounts" | "stores" | "invoices" | "payouts" | "disput
 export type SenderAddress = { email: string; name: string };
 
 // Each purpose has its own address so recipients can filter and the domain's reputation is tracked per stream.
-const SENDERS: Record<SenderKey, { localPart: string; name: string }> = {
+const SENDERS = {
   // Sign-in, verification, password reset, invites and security notices.
   accounts: { localPart: "accounts", name: "Payleor" },
   // Mail to store buyers, usually as "{Store} via Payleor".
@@ -16,7 +16,7 @@ const SENDERS: Record<SenderKey, { localPart: string; name: string }> = {
   disputes: { localPart: "disputes", name: "Payleor Disputes" },
   // Payleor's own subscription billing.
   billing: { localPart: "billing", name: "Payleor Billing" },
-};
+} satisfies Record<SenderKey, { localPart: string; name: string }>;
 
 const MAX_PARTY_NAME_LENGTH = 64;
 

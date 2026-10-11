@@ -8,6 +8,9 @@
   "scripts": {
     "check-types": "tsc --noEmit"
   },
+  "dependencies": {
+    "zod": "catalog:"
+  },
   "devDependencies": {
     "@jendal-workspace/config": "workspace:*",
     "typescript": "catalog:"

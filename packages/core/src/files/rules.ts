@@ -8,7 +8,7 @@ const OCTET_STREAM = "application/octet-stream";
 
 // The server decides the content type from the extension; what the browser claims is never trusted.
 // Anything that browsers could render as a page (html, xml, js) is left out on purpose.
-const CONTENT_TYPES: Record<string, string> = {
+const CONTENT_TYPES = {
   // Archives
   zip: "application/zip",
   "7z": OCTET_STREAM,
@@ -75,7 +75,9 @@ const CONTENT_TYPES: Record<string, string> = {
   stl: OCTET_STREAM,
   blend: OCTET_STREAM,
   unitypackage: OCTET_STREAM,
-};
+} satisfies Record<string, string>;
+
+const CONTENT_TYPE_BY_EXTENSION = new Map(Object.entries(CONTENT_TYPES));
 
 export const ALLOWED_FILE_EXTENSIONS: readonly string[] = Object.keys(CONTENT_TYPES);
 
@@ -87,13 +89,14 @@ function extensionOf(name: string): string | null {
 
 export function fileContentType(name: string): string | null {
   const extension = extensionOf(name);
-  if (!extension || !Object.hasOwn(CONTENT_TYPES, extension)) return null;
-  return CONTENT_TYPES[extension] ?? null;
+  if (!extension) return null;
+  return CONTENT_TYPE_BY_EXTENSION.get(extension) ?? null;
 }
 
 // Control characters, quotes, and the bidi and invisible marks that can disguise an extension
 // ("photo\u202Egnp.zip" renders as "photopiz.png").
-const UNSAFE_CHARS = /[\u0000-\u001f\u007f-\u009f"\u200e\u200f\u202a-\u202e\u2066-\u2069\u2028\u2029\ufeff]/g;
+// \p{Cc} is exactly U+0000-U+001F and U+007F-U+009F.
+const UNSAFE_CHARS = /[\p{Cc}"\u200e\u200f\u202a-\u202e\u2066-\u2069\u2028\u2029\ufeff]/gu;
 
 export function safeFileName(name: string): string | null {
   const lastSegment = name.toWellFormed().split(/[\\/]/).pop() ?? "";

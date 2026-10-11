@@ -37,7 +37,17 @@ describe.skipIf(!hasTestDatabase)("servicesCatalog router", () => {
       files: createFakeFileStore(),
     });
 
-  const offering = (overrides: Record<string, unknown> = {}) => ({
+  type OfferingFields = {
+    name: string;
+    description: string;
+    priceMinMinor: number;
+    priceMaxMinor: number;
+    daysMin: number;
+    daysMax: number;
+    intakeQuestions: string[];
+  };
+
+  const offering = (overrides: Partial<OfferingFields> = {}): OfferingFields => ({
     name: "Logo design",
     description: "",
     priceMinMinor: 10_000,

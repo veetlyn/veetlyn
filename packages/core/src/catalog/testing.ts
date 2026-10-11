@@ -76,7 +76,7 @@ export function createFakeImageDownloader(
     async download(url) {
       calls.push(url);
       if (url in results) return results[url] ?? null;
-      return { bytes: new Uint8Array([1, 2, 3]).buffer as ArrayBuffer, contentType: "image/png" };
+      return { bytes: new Uint8Array([1, 2, 3]).buffer, contentType: "image/png" };
     },
   };
 }

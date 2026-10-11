@@ -1,5 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
-import { createFakeFileStore } from "@jendal-workspace/core";
+import { createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { findPayPalOnboarding, markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { team } from "@jendal-workspace/db/schema/organization";
 import {
@@ -16,6 +16,7 @@ import { createPayPalClient, type FetchLike, PARTNER_REFERRAL_FEATURES } from "@
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { Context, PayPalServices } from "../context";
 import { refreshPayPalOnboarding } from "../paypal/onboarding";
@@ -73,7 +74,7 @@ function makePayPal(
 
 // A fake PayPal API: token endpoint, partner referral, tracking lookup and status GET.
 // `integration: null` makes the tracking lookup answer 404 (seller has not finished).
-function fakePayPalApi(options: { integration: Record<string, unknown> | null }) {
+function fakePayPalApi(options: { integration: JsonObject | null }) {
   return fakeFetch((request) => {
     if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
     if (request.url.endsWith("/v2/customer/partner-referrals")) {
@@ -84,8 +85,8 @@ function fakePayPalApi(options: { integration: Record<string, unknown> | null })
         return jsonResponse(404, { name: "INVALID_RESOURCE_ID", message: "Resource not found.", debug_id: "d404" });
       }
       return jsonResponse(200, {
-        merchant_id: options.integration.merchant_id,
-        tracking_id: options.integration.tracking_id,
+        merchant_id: options.integration.merchant_id ?? null,
+        tracking_id: options.integration.tracking_id ?? null,
       });
     }
     if (request.url.includes("/merchant-integrations/")) {
@@ -96,10 +97,20 @@ function fakePayPalApi(options: { integration: Record<string, unknown> | null })
 }
 
 // The features list from a recorded partner referral request body.
-function referralFeatures(requests: RecordedRequest[]): unknown {
+const referralBodySchema = z.object({
+  operations: z.array(
+    z.object({
+      api_integration_preference: z.object({
+        rest_api_integration: z.object({ third_party_details: z.object({ features: z.array(z.string()) }) }),
+      }),
+    }),
+  ),
+});
+
+function referralFeatures(requests: RecordedRequest[]): string[] | undefined {
   const call = requests.find((r) => r.url.endsWith("/v2/customer/partner-referrals"));
-  const body = JSON.parse(call?.body ?? "{}");
-  return body.operations?.[0]?.api_integration_preference?.rest_api_integration?.third_party_details?.features;
+  const body = referralBodySchema.parse(JSON.parse(call?.body ?? "{}"));
+  return body.operations[0]?.api_integration_preference.rest_api_integration.third_party_details.features;
 }
 
 describe.skipIf(!hasTestDatabase)("paypal router", () => {

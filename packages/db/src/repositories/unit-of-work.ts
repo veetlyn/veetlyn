@@ -1,4 +1,4 @@
-import type { LedgerTransferDraft, OutboxEventType, ProjectStatus } from "@jendal-workspace/core";
+import type { JsonObject, LedgerTransferDraft, OutboxEventType, ProjectStatus } from "@jendal-workspace/core";
 import { and, eq, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
@@ -21,7 +21,7 @@ export class ProjectStateError extends Error {
   }
 }
 
-export type OutboxEventInput = { type: OutboxEventType; data: Record<string, unknown> };
+export type OutboxEventInput = { type: OutboxEventType; data: JsonObject };
 
 export type ProjectRef = { id: string; teamId: string; version: number; status: ProjectStatus };
 

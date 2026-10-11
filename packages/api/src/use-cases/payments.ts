@@ -1,5 +1,6 @@
 import {
   completionTransfer,
+  errorName,
   type LedgerTransferDraft,
   parseMajorAmount,
   paymentCapturedTransfer,
@@ -12,6 +13,7 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
+import { postgresError } from "@jendal-workspace/db/postgres-errors";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { findProjectById, getCurrentQuote, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
@@ -226,13 +228,11 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
 
 // A Drizzle error's message is the whole query with its parameters, so only the name and the Postgres code and
 // constraint from its cause are logged.
-export function databaseErrorFields(error: unknown): { name: string; code?: string; constraint?: string } {
-  const name = error instanceof Error ? error.name : typeof error;
-  const cause = error instanceof Error && typeof error.cause === "object" && error.cause !== null ? error.cause : null;
-  const code = cause && "code" in cause && typeof cause.code === "string" ? cause.code : undefined;
-  const constraint =
-    cause && "constraint_name" in cause && typeof cause.constraint_name === "string" ? cause.constraint_name : undefined;
-  return { name, code, constraint };
+export type DatabaseErrorFields = { name: string; code?: string; constraint?: string };
+
+export function databaseErrorFields(cause: unknown): DatabaseErrorFields {
+  const fields = postgresError(cause);
+  return { name: errorName(cause), code: fields?.code, constraint: fields?.constraint_name };
 }
 
 // Services spec §6.4: applies each capture outcome at most once, whichever input reports it first. The

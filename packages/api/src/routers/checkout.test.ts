@@ -1,5 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
-import { createFakeFileStore, hashToken } from "@jendal-workspace/core";
+import { createFakeFileStore, hashToken, type JsonObject } from "@jendal-workspace/core";
 import { setServicesTeamStoreEnabled } from "@jendal-workspace/db/repositories/services-teams";
 import { products } from "@jendal-workspace/db/schema/catalog";
 import { ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
@@ -43,7 +43,7 @@ const DECLINED = {
 
 const ALREADY_CAPTURED = { ...DECLINED, details: [{ issue: "ORDER_ALREADY_CAPTURED", description: "Already captured." }] };
 
-function capturedOrder(status: string, value = "19.00", extra: Record<string, unknown> = {}) {
+function capturedOrder(status: string, value = "19.00", extra: JsonObject = {}) {
   return {
     id: "ORDER1",
     status: status === "COMPLETED" ? "COMPLETED" : "PENDING",

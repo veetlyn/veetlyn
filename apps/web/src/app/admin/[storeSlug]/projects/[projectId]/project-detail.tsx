@@ -26,7 +26,7 @@ import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
-import type { inferRouterOutputs } from "@trpc/server";
+import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
@@ -37,6 +37,7 @@ import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
+type QuoteInput = inferRouterInputs<AppRouter>["project"]["addQuote"];
 
 type ItemRow = { description: string; amount: string; extraDays: string };
 
@@ -205,9 +206,8 @@ export default function ProjectDetail({
 
   const { project, quotes, amendments, payments, deliveries, clientPath, role, quotingMode, solo, viewerId } =
     detail.data;
-  const currency = project.currency as MoneyCurrency;
+  const currency = project.currency;
   const currentQuote = quotes.find((q) => q.status === "accepted");
-  const proposedQuotes = quotes.filter((q) => q.status === "proposed");
   const pendingAmendment = amendments.find((a) => a.status === "pending");
   const days = Number(deliveryDays);
   const quoteItems = parseRows(quoteRows);
@@ -243,13 +243,9 @@ export default function ProjectDetail({
   function handleQuote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!quoteItems || !Number.isInteger(days) || days < 1 || !canQuote) return;
-    addQuote.mutate({
-      teamSlug,
-      projectId,
-      items: quoteItems,
-      deliveryDays: days,
-      ...(quoteFreelancerId ? { freelancerId: quoteFreelancerId } : {}),
-    });
+    const quote: QuoteInput = { teamSlug, projectId, items: quoteItems, deliveryDays: days };
+    if (quoteFreelancerId) quote.freelancerId = quoteFreelancerId;
+    addQuote.mutate(quote);
   }
 
   function handleAmend(event: FormEvent<HTMLFormElement>) {

@@ -112,7 +112,7 @@ describe.skipIf(!hasTestDatabase)("file uploads", () => {
     const failure = await db
       .insert(delivery)
       .values({ projectId, teamId, fileUploadId: upload.id })
-      .catch((error: unknown) => error);
+      .catch((cause: unknown) => cause);
     expect(failure).toMatchObject({ cause: { code: "23505", constraint_name: "delivery_fileUploadId_idx" } });
   });
 

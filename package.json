@@ -32,6 +32,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@jendal-workspace/config": "workspace:*",
     "@oxlint/plugins": "1.87.0",
+    "@total-typescript/shoehorn": "^0.1.2",
     "@types/node": "catalog:",
     "oxlint": "1.87.0",
     "turbo": "^2.10.12",

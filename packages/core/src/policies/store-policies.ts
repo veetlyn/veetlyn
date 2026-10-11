@@ -16,12 +16,12 @@ export function policiesFor(product: TeamProduct): readonly StorePolicy[] {
 }
 
 // The ACP and UCP adapters reuse these for their policy links.
-export function storePolicyUrls(storeBaseUrl: string): Record<StorePolicy, string> {
+export function storePolicyUrls(storeBaseUrl: string) {
   const base = storeBaseUrl.replace(/\/+$/, "");
   return {
     returns: `${base}/policies/returns`,
     shipping: `${base}/policies/shipping`,
     terms: `${base}/policies/terms`,
     privacy: `${base}/policies/privacy`,
-  };
+  } satisfies Record<StorePolicy, string>;
 }

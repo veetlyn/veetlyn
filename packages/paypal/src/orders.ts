@@ -1,22 +1,20 @@
-import type { PayPalRequest } from "./client";
+import type { z } from "zod";
 
-export type PayPalMoney = { currency_code: string; value: string };
-export type PayPalCaptureBreakdown = { paypal_fee?: PayPalMoney; platform_fees: { amount: PayPalMoney }[] };
-export type PayPalCapture = {
-  id: string;
-  status: string;
-  amount?: PayPalMoney;
-  custom_id?: string;
-  create_time?: string;
-  // Missing while a capture is pending (R1 facts §2).
-  seller_receivable_breakdown?: PayPalCaptureBreakdown;
-};
-export type PayPalRefund = { id: string; status: string; amount?: PayPalMoney };
-export type PayPalOrder = {
-  id: string;
-  status: string;
-  purchase_units?: { payments?: { captures?: PayPalCapture[]; refunds?: PayPalRefund[] } }[];
-};
+import type { PayPalRequest } from "./client";
+import {
+  captureBreakdownSchema,
+  captureSchema,
+  moneySchema,
+  orderSchema,
+  parsedItems,
+  refundSchema,
+} from "./schemas";
+
+export type PayPalMoney = z.output<typeof moneySchema>;
+export type PayPalCaptureBreakdown = z.output<typeof captureBreakdownSchema>;
+export type PayPalCapture = z.output<typeof captureSchema>;
+export type PayPalRefund = z.output<typeof refundSchema>;
+export type PayPalOrder = z.output<typeof orderSchema>;
 
 export type CreateSellerOrderInput = {
   requestId: string;
@@ -37,38 +35,40 @@ export type CreateSellerOrderInput = {
 // PayPal caps description and brand_name at 127 characters (R1 facts §1).
 const MAX_TEXT = 127;
 
+type OrderItem = { name: string; quantity: string; unit_amount: PayPalMoney };
+type OrderPurchaseUnit = {
+  custom_id: string;
+  description: string;
+  amount: PayPalMoney & { breakdown?: { item_total: PayPalMoney } };
+  items?: OrderItem[];
+  payee: { merchant_id: string };
+  payment_instruction?: { disbursement_mode: "INSTANT"; platform_fees: { amount: PayPalMoney }[] };
+};
+
 function sellerOrderBody(input: Omit<CreateSellerOrderInput, "requestId">) {
+  const unit: OrderPurchaseUnit = {
+    custom_id: input.customId,
+    description: input.description.slice(0, MAX_TEXT),
+    amount: { currency_code: input.currency, value: input.value },
+    payee: { merchant_id: input.merchantId },
+  };
+  if (input.items?.length) {
+    unit.amount.breakdown = { item_total: { currency_code: input.currency, value: input.value } };
+    unit.items = input.items.map((item) => ({
+      name: item.name.slice(0, MAX_TEXT),
+      quantity: "1",
+      unit_amount: { currency_code: input.currency, value: item.value },
+    }));
+  }
+  if (input.platformFeeValue !== null) {
+    unit.payment_instruction = {
+      disbursement_mode: "INSTANT",
+      platform_fees: [{ amount: { currency_code: input.currency, value: input.platformFeeValue } }],
+    };
+  }
   return {
     intent: "CAPTURE",
-    purchase_units: [
-      {
-        custom_id: input.customId,
-        description: input.description.slice(0, MAX_TEXT),
-        amount: {
-          currency_code: input.currency,
-          value: input.value,
-          ...(input.items?.length ? { breakdown: { item_total: { currency_code: input.currency, value: input.value } } } : {}),
-        },
-        ...(input.items?.length
-          ? {
-              items: input.items.map((item) => ({
-                name: item.name.slice(0, MAX_TEXT),
-                quantity: "1",
-                unit_amount: { currency_code: input.currency, value: item.value },
-              })),
-            }
-          : {}),
-        payee: { merchant_id: input.merchantId },
-        ...(input.platformFeeValue === null
-          ? {}
-          : {
-              payment_instruction: {
-                disbursement_mode: "INSTANT",
-                platform_fees: [{ amount: { currency_code: input.currency, value: input.platformFeeValue } }],
-              },
-            }),
-      },
-    ],
+    purchase_units: [unit],
     payment_source: {
       paypal: {
         experience_context: {
@@ -85,81 +85,51 @@ export function createOrders(request: PayPalRequest) {
   return {
     create(input: CreateSellerOrderInput): Promise<PayPalOrder> {
       const { requestId, ...order } = input;
-      return request<PayPalOrder>({
-        method: "POST",
-        path: "/v2/checkout/orders",
-        requestId,
-        merchantId: input.merchantId,
-        body: sellerOrderBody(order),
-      });
+      return request(
+        {
+          method: "POST",
+          path: "/v2/checkout/orders",
+          requestId,
+          merchantId: input.merchantId,
+          body: sellerOrderBody(order),
+        },
+        orderSchema,
+      );
     },
 
     capture(input: { orderId: string; requestId: string; merchantId: string }): Promise<PayPalOrder> {
-      return request<PayPalOrder>({
-        method: "POST",
-        path: `/v2/checkout/orders/${encodeURIComponent(input.orderId)}/capture`,
-        requestId: input.requestId,
-        merchantId: input.merchantId,
-        prefer: "return=representation",
-        body: {},
-      });
+      return request(
+        {
+          method: "POST",
+          path: `/v2/checkout/orders/${encodeURIComponent(input.orderId)}/capture`,
+          requestId: input.requestId,
+          merchantId: input.merchantId,
+          prefer: "return=representation",
+          body: {},
+        },
+        orderSchema,
+      );
     },
 
     get(input: { orderId: string; merchantId: string }): Promise<PayPalOrder> {
-      return request<PayPalOrder>({
-        method: "GET",
-        path: `/v2/checkout/orders/${encodeURIComponent(input.orderId)}`,
-        merchantId: input.merchantId,
-      });
+      return request(
+        {
+          method: "GET",
+          path: `/v2/checkout/orders/${encodeURIComponent(input.orderId)}`,
+          merchantId: input.merchantId,
+        },
+        orderSchema,
+      );
     },
-  };
-}
-
-function parseMoney(value: unknown): PayPalMoney | undefined {
-  if (typeof value !== "object" || value === null) return undefined;
-  const money = value as Record<string, unknown>;
-  return typeof money.currency_code === "string" && typeof money.value === "string"
-    ? { currency_code: money.currency_code, value: money.value }
-    : undefined;
-}
-
-// A fee that is present but unreadable makes the whole breakdown unknown: dropping it would later record
-// the fee as zero.
-function parseBreakdown(value: unknown): PayPalCaptureBreakdown | undefined {
-  if (typeof value !== "object" || value === null) return undefined;
-  const record = value as Record<string, unknown>;
-  const paypalFee = parseMoney(record.paypal_fee);
-  if (record.paypal_fee !== undefined && !paypalFee) return undefined;
-  if (record.platform_fees !== undefined && !Array.isArray(record.platform_fees)) return undefined;
-  const platformFees: { amount: PayPalMoney }[] = [];
-  for (const fee of record.platform_fees ?? []) {
-    const amount = typeof fee === "object" && fee !== null ? parseMoney((fee as Record<string, unknown>).amount) : undefined;
-    if (!amount) return undefined;
-    platformFees.push({ amount });
-  }
-  return { paypal_fee: paypalFee, platform_fees: platformFees };
-}
-
-function parseCapture(value: unknown): PayPalCapture | null {
-  if (typeof value !== "object" || value === null) return null;
-  const record = value as Record<string, unknown>;
-  if (typeof record.id !== "string" || typeof record.status !== "string") return null;
-  return {
-    id: record.id,
-    status: record.status,
-    amount: parseMoney(record.amount),
-    custom_id: typeof record.custom_id === "string" ? record.custom_id : undefined,
-    create_time: typeof record.create_time === "string" ? record.create_time : undefined,
-    seller_receivable_breakdown: parseBreakdown(record.seller_receivable_breakdown),
   };
 }
 
 // An order with intent CAPTURE holds one capture, but a declined attempt may sit next to a later one, so a
-// completed capture wins, then a pending one. request() casts bodies without validating them, so each field is checked.
+// completed capture wins, then a pending one. A capture that cannot be read is skipped.
 export function captureFromOrder(order: PayPalOrder): PayPalCapture | null {
-  const raw: unknown = order.purchase_units?.[0]?.payments?.captures;
-  if (!Array.isArray(raw)) return null;
-  const captures = raw.map(parseCapture).filter((capture): capture is PayPalCapture => capture !== null);
+  const raw = order.purchase_units?.[0]?.payments?.captures;
+  if (!raw) return null;
+  const captures = parsedItems(captureSchema, raw);
   return (
     captures.find((capture) => capture.status === "COMPLETED") ??
     captures.find((capture) => capture.status === "PENDING") ??
@@ -168,13 +138,7 @@ export function captureFromOrder(order: PayPalOrder): PayPalCapture | null {
   );
 }
 
+// Refunds without an id or a status are dropped.
 export function refundsFromOrder(order: PayPalOrder): PayPalRefund[] {
-  const raw: unknown = order.purchase_units?.[0]?.payments?.refunds;
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((value) => {
-    if (typeof value !== "object" || value === null) return [];
-    const refund = value as Record<string, unknown>;
-    if (typeof refund.id !== "string" || typeof refund.status !== "string") return [];
-    return [{ id: refund.id, status: refund.status, amount: parseMoney(refund.amount) }];
-  });
+  return parsedItems(refundSchema, order.purchase_units?.[0]?.payments?.refunds ?? []);
 }

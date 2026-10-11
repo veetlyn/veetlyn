@@ -44,7 +44,7 @@ export type TransitionResult = { ok: true; to: ProjectStatus } | { ok: false; re
 
 type TransitionRule = {
   from: readonly ProjectStatus[];
-  to: ProjectStatus | "unchanged" | ((facts: ProjectFacts) => ProjectStatus);
+  to: (facts: ProjectFacts) => ProjectStatus | "unchanged";
   guard?: (facts: ProjectFacts) => TransitionRefusal | null;
 };
 
@@ -71,25 +71,25 @@ function hasPendingAmendment(facts: ProjectFacts): TransitionRefusal | null {
 }
 
 // Services spec §5.1 and §5.2. Any move not listed here is rejected.
-export const PROJECT_TRANSITIONS: Readonly<Record<ProjectEvent, TransitionRule>> = {
-  add_quote: { from: ["quoting"], to: "unchanged" },
-  assign_freelancer: { from: ["quoting"], to: "unchanged" },
-  accept_quote: { from: ["quoting"], to: "awaiting_deposit" },
-  deposit_captured: { from: ["awaiting_deposit"], to: "in_progress" },
-  submit_delivery: { from: ["in_progress"], to: "delivered" },
-  request_changes: { from: ["delivered"], to: "in_progress" },
-  propose_amendment: { from: WORKING, to: "unchanged", guard: noOpenAmendmentMoney },
-  accept_amendment: { from: WORKING, to: "unchanged", guard: hasPendingAmendment },
-  decline_amendment: { from: WORKING, to: "unchanged", guard: hasPendingAmendment },
+export const PROJECT_TRANSITIONS = {
+  add_quote: { from: ["quoting"], to: () => "unchanged" },
+  assign_freelancer: { from: ["quoting"], to: () => "unchanged" },
+  accept_quote: { from: ["quoting"], to: () => "awaiting_deposit" },
+  deposit_captured: { from: ["awaiting_deposit"], to: () => "in_progress" },
+  submit_delivery: { from: ["in_progress"], to: () => "delivered" },
+  request_changes: { from: ["delivered"], to: () => "in_progress" },
+  propose_amendment: { from: WORKING, to: () => "unchanged", guard: noOpenAmendmentMoney },
+  accept_amendment: { from: WORKING, to: () => "unchanged", guard: hasPendingAmendment },
+  decline_amendment: { from: WORKING, to: () => "unchanged", guard: hasPendingAmendment },
   // With nothing left to pay (penalties or decreases), the project completes without a balance payment (§5.3).
   accept_delivery: {
     from: ["delivered"],
     to: (facts) => (facts.balanceDueMinor > 0 ? "awaiting_balance" : "completed"),
     guard: noOpenAmendmentMoney,
   },
-  balance_captured: { from: ["awaiting_balance"], to: "completed" },
-  cancel: { from: OPEN_PROJECT_STATUSES, to: "cancelled" },
-};
+  balance_captured: { from: ["awaiting_balance"], to: () => "completed" },
+  cancel: { from: OPEN_PROJECT_STATUSES, to: () => "cancelled" },
+} satisfies Readonly<Record<ProjectEvent, TransitionRule>>;
 
 const NO_FACTS: ProjectFacts = { pendingAmendment: false, unpaidTopUp: false, balanceDueMinor: 0 };
 
@@ -98,13 +98,13 @@ export function transitionProject(
   event: ProjectEvent,
   facts: Partial<ProjectFacts> = {},
 ): TransitionResult {
-  const rule = PROJECT_TRANSITIONS[event];
+  const rule: TransitionRule = PROJECT_TRANSITIONS[event];
   if (!rule.from.includes(from)) return { ok: false, reason: "not_allowed_in_status" };
   const all = { ...NO_FACTS, ...facts };
   const refusal = rule.guard?.(all) ?? null;
   if (refusal) return { ok: false, reason: refusal };
-  if (rule.to === "unchanged") return { ok: true, to: from };
-  return { ok: true, to: typeof rule.to === "function" ? rule.to(all) : rule.to };
+  const to = rule.to(all);
+  return { ok: true, to: to === "unchanged" ? from : to };
 }
 
 export function allowedProjectEvents(from: ProjectStatus, facts: Partial<ProjectFacts> = {}): ProjectEvent[] {
@@ -124,7 +124,7 @@ export function transitionRefusalMessage(reason: TransitionRefusal): string {
   }
 }
 
-export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+export const PROJECT_STATUS_LABELS = {
   quoting: "Quoting",
   awaiting_deposit: "Awaiting deposit",
   in_progress: "In progress",
@@ -132,7 +132,7 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   awaiting_balance: "Awaiting balance",
   completed: "Completed",
   cancelled: "Cancelled",
-};
+} satisfies Record<ProjectStatus, string>;
 
 export function projectStatusLabel(status: ProjectStatus): string {
   return PROJECT_STATUS_LABELS[status];

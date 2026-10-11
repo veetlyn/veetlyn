@@ -87,14 +87,14 @@ function requireCommerceStore(ctx: { store: { product: string } }) {
   }
 }
 
-function rethrowAsTrpcError(error: unknown): never {
-  if (error instanceof CatalogValidationError) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+function rethrowAsTrpcError(cause: unknown): never {
+  if (cause instanceof CatalogValidationError) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: cause.message });
   }
-  if (error instanceof SkuTakenError) {
-    throw new TRPCError({ code: "CONFLICT", message: error.message });
+  if (cause instanceof SkuTakenError) {
+    throw new TRPCError({ code: "CONFLICT", message: cause.message });
   }
-  throw error;
+  throw cause;
 }
 
 function notFound(): never {

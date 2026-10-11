@@ -14,7 +14,7 @@ export default async function StorePolicyPage({ params }: { params: Promise<{ po
   if (!info) notFound();
   if (!policiesFor(info.product).includes(policy)) notFound();
 
-  const page = info.product === "services" ? SELLER_POLICY_PAGES[policy] : STORE_POLICY_PAGES[policy];
+  const page = info.product === "services" ? SELLER_POLICY_PAGES.get(policy) : STORE_POLICY_PAGES[policy];
   if (!page) notFound();
 
   const { title, Body } = page;

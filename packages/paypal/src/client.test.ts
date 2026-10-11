@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
-import { createPayPalClient, PayPalError } from "./index";
+import { createPayPalClient, type PayPalClientConfig, PayPalError, type PayPalRequestOptions } from "./index";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, recordedAt } from "./testing";
 
 const CONFIG = {
@@ -10,7 +11,9 @@ const CONFIG = {
   sleep: () => Promise.resolve(),
 };
 
-function clientWith(fetch: ReturnType<typeof fakeFetch>["fetch"], extra: Record<string, unknown> = {}) {
+const OBJECT_BODY = z.looseObject({});
+
+function clientWith(fetch: ReturnType<typeof fakeFetch>["fetch"], extra: Partial<PayPalClientConfig> = {}) {
   return createPayPalClient({ ...CONFIG, fetch, ...extra });
 }
 
@@ -22,12 +25,12 @@ describe("OAuth token", () => {
     );
     const client = clientWith(fetch, { now: () => now });
 
-    await client.request({ method: "GET", path: "/v1/example" });
-    await client.request({ method: "GET", path: "/v1/example" });
+    await client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
+    await client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
     expect(requests.filter((r) => r.url.endsWith("/v1/oauth2/token"))).toHaveLength(1);
 
     now += 32400 * 1000; // past expiry minus the 60-second skew
-    await client.request({ method: "GET", path: "/v1/example" });
+    await client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
     expect(requests.filter((r) => r.url.endsWith("/v1/oauth2/token"))).toHaveLength(2);
   });
 
@@ -36,7 +39,7 @@ describe("OAuth token", () => {
       request.url.endsWith("/v1/oauth2/token") ? jsonResponse(200, FAKE_TOKEN_RESPONSE) : jsonResponse(200, {}),
     );
 
-    await clientWith(fetch).request({ method: "GET", path: "/v1/example" });
+    await clientWith(fetch).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
 
     const tokenCall = recordedAt(requests, 0);
     expect(tokenCall.url).toBe("https://api-m.sandbox.paypal.com/v1/oauth2/token");
@@ -52,7 +55,7 @@ describe("OAuth token", () => {
     );
     const client = createPayPalClient({ ...CONFIG, environment: "live", fetch });
 
-    await client.request({ method: "GET", path: "/v1/example" });
+    await client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
 
     expect(recordedAt(requests, 0).url).toBe("https://api-m.paypal.com/v1/oauth2/token");
     expect(recordedAt(requests, 1).url).toBe("https://api-m.paypal.com/v1/example");
@@ -63,7 +66,7 @@ describe("OAuth token", () => {
       jsonResponse(401, { name: "AUTHENTICATION_FAILURE", message: "Authentication failed.", debug_id: "d1" }),
     );
 
-    const error = await clientWith(fetch).request({ method: "GET", path: "/v1/example" }).catch((e: unknown) => e);
+    const error = await clientWith(fetch).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY).catch((cause: unknown) => cause);
 
     expect(error).toBeInstanceOf(PayPalError);
     expect(error).toMatchObject({ status: 401, name: "AUTHENTICATION_FAILURE", debugId: "d1" });
@@ -72,11 +75,11 @@ describe("OAuth token", () => {
 });
 
 describe("request headers", () => {
-  async function postWithHeaders(extra: Record<string, unknown> = {}, options: Record<string, unknown> = {}) {
+  async function postWithHeaders(extra: Partial<PayPalClientConfig> = {}, options: Partial<PayPalRequestOptions> = {}) {
     const { requests, fetch } = fakeFetch((request) =>
       request.url.endsWith("/v1/oauth2/token") ? jsonResponse(200, FAKE_TOKEN_RESPONSE) : jsonResponse(200, {}),
     );
-    await clientWith(fetch, extra).request({ method: "POST", path: "/v2/example", body: { a: 1 }, requestId: "req-1", ...options });
+    await clientWith(fetch, extra).request({ method: "POST", path: "/v2/example", body: { a: 1 }, requestId: "req-1", ...options }, OBJECT_BODY);
     return recordedAt(requests, 1);
   }
 
@@ -92,7 +95,7 @@ describe("request headers", () => {
     const { requests, fetch } = fakeFetch(() => jsonResponse(200, FAKE_TOKEN_RESPONSE));
     const client = clientWith(fetch);
 
-    await expect(client.request({ method: "POST", path: "/v2/example", body: {} })).rejects.toThrow(/requestId/);
+    await expect(client.request({ method: "POST", path: "/v2/example", body: {} }, OBJECT_BODY)).rejects.toThrow(/requestId/);
     expect(requests).toHaveLength(0);
   });
 
@@ -100,7 +103,7 @@ describe("request headers", () => {
     const { requests, fetch } = fakeFetch((request) =>
       request.url.endsWith("/v1/oauth2/token") ? jsonResponse(200, FAKE_TOKEN_RESPONSE) : jsonResponse(200, {}),
     );
-    await clientWith(fetch).request({ method: "GET", path: "/v1/example" });
+    await clientWith(fetch).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
 
     const call = recordedAt(requests, 1);
     expect(call.headers.get("paypal-request-id")).toBeNull();
@@ -135,7 +138,7 @@ describe("retries", () => {
     });
     const client = clientWith(fetch, { random: () => 0, sleep: (ms: number) => (delays.push(ms), Promise.resolve()) });
 
-    await client.request({ method: "POST", path: "/v2/example", body: {}, requestId: "same-id" });
+    await client.request({ method: "POST", path: "/v2/example", body: {}, requestId: "same-id" }, OBJECT_BODY);
 
     expect(delays).toEqual([250, 500]);
     expect(requests).toHaveLength(4); // one token call, three API calls
@@ -160,7 +163,7 @@ describe("retries", () => {
     });
     const client = clientWith(fetch, { sleep: (ms: number) => (delays.push(ms), Promise.resolve()) });
 
-    await client.request({ method: "GET", path: "/v1/example" });
+    await client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
 
     expect(delays).toEqual([2000]);
   });
@@ -174,7 +177,7 @@ describe("retries", () => {
     });
     const client = clientWith(fetch);
 
-    await expect(client.request({ method: "GET", path: "/v1/example" })).rejects.toMatchObject({ status: 400 });
+    await expect(client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY)).rejects.toMatchObject({ status: 400 });
     expect(apiCalls).toHaveLength(2);
   });
 
@@ -186,7 +189,7 @@ describe("retries", () => {
       return jsonResponse(429, { name: "RATE_LIMIT_REACHED", debug_id: "d429" });
     });
 
-    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/example" })).rejects.toMatchObject({
+    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY)).rejects.toMatchObject({
       status: 429,
       debugId: "d429",
     });
@@ -219,13 +222,13 @@ describe("revoked token", () => {
     const { requests, fetch } = fakeWithApiStatuses([401, 200]);
     const client = clientWith(fetch);
 
-    await expect(client.request({ method: "GET", path: "/v1/example" })).resolves.toEqual({ ok: true });
+    await expect(client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY)).resolves.toEqual({ ok: true });
 
     expect(tokenCalls(requests)).toHaveLength(2);
     expect(recordedAt(requests, 1).headers.get("authorization")).toBe("Bearer token-1");
     expect(recordedAt(requests, 3).headers.get("authorization")).toBe("Bearer token-2");
 
-    await client.request({ method: "GET", path: "/v1/example" });
+    await client.request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
     expect(tokenCalls(requests)).toHaveLength(2);
     expect(recordedAt(requests, 4).headers.get("authorization")).toBe("Bearer token-2");
   });
@@ -249,7 +252,7 @@ describe("revoked token", () => {
     };
     const { fetch } = fakeWithApiStatuses([401, 200]);
 
-    await clientWith(fetch, { tokenCache }).request({ method: "GET", path: "/v1/example" });
+    await clientWith(fetch, { tokenCache }).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY);
 
     expect(events).toEqual(["get", "set:token-1", "clear", "set:token-2"]);
   });
@@ -257,7 +260,7 @@ describe("revoked token", () => {
   it("throws the usual PayPalError when the repeat also gets a 401, without a third token", async () => {
     const { requests, fetch } = fakeWithApiStatuses([401, 401, 200]);
 
-    const error = await clientWith(fetch).request({ method: "GET", path: "/v1/example" }).catch((e: unknown) => e);
+    const error = await clientWith(fetch).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY).catch((cause: unknown) => cause);
 
     expect(error).toBeInstanceOf(PayPalError);
     expect(error).toMatchObject({ status: 401, name: "AUTHENTICATION_FAILURE", debugId: "d401" });
@@ -270,14 +273,14 @@ describe("revoked token", () => {
       jsonResponse(401, { name: "AUTHENTICATION_FAILURE", message: "Authentication failed.", debug_id: "d1" }),
     );
 
-    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/example" })).rejects.toMatchObject({ status: 401 });
+    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY)).rejects.toMatchObject({ status: 401 });
     expect(requests).toHaveLength(1);
   });
 
   it("keeps the PayPal-Request-Id and body when a POST is repeated", async () => {
     const { requests, fetch } = fakeWithApiStatuses([401, 200]);
 
-    await clientWith(fetch).request({ method: "POST", path: "/v2/example", body: { a: 1 }, requestId: "req-401" });
+    await clientWith(fetch).request({ method: "POST", path: "/v2/example", body: { a: 1 }, requestId: "req-401" }, OBJECT_BODY);
 
     const first = recordedAt(requests, 1);
     const repeat = recordedAt(requests, 3);
@@ -302,8 +305,8 @@ describe("error mapping", () => {
     );
 
     const error = await clientWith(fetch)
-      .request({ method: "POST", path: "/v2/example", body: {}, requestId: "r" })
-      .catch((e: unknown) => e);
+      .request({ method: "POST", path: "/v2/example", body: {}, requestId: "r" }, OBJECT_BODY)
+      .catch((cause: unknown) => cause);
 
     expect(error).toBeInstanceOf(PayPalError);
     expect(error).toMatchObject({
@@ -322,7 +325,7 @@ describe("error mapping", () => {
         : new Response("oops", { status: 400, headers: { "content-type": "text/plain" } }),
     );
 
-    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/example" })).rejects.toMatchObject({
+    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/example" }, OBJECT_BODY)).rejects.toMatchObject({
       status: 400,
       message: "PayPal answered 400",
       debugId: undefined,
@@ -330,11 +333,24 @@ describe("error mapping", () => {
     });
   });
 
+  it("turns a 200 body that fails its schema into an UNEXPECTED_RESPONSE PayPalError", async () => {
+    const { fetch } = fakeFetch((request) =>
+      request.url.endsWith("/v1/oauth2/token") ? jsonResponse(200, FAKE_TOKEN_RESPONSE) : jsonResponse(200, { id: 7 }),
+    );
+
+    const error = await clientWith(fetch)
+      .request({ method: "GET", path: "/v1/example" }, z.looseObject({ id: z.string() }))
+      .catch((cause: unknown) => cause);
+
+    expect(error).toBeInstanceOf(PayPalError);
+    expect(error).toMatchObject({ status: 200, name: "UNEXPECTED_RESPONSE" });
+  });
+
   it("resolves undefined for a 204", async () => {
     const { fetch } = fakeFetch((request) =>
       request.url.endsWith("/v1/oauth2/token") ? jsonResponse(200, FAKE_TOKEN_RESPONSE) : new Response(null, { status: 204 }),
     );
 
-    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/none" })).resolves.toBeUndefined();
+    await expect(clientWith(fetch).request({ method: "GET", path: "/v1/none" }, z.undefined())).resolves.toBeUndefined();
   });
 });

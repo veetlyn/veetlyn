@@ -3,6 +3,7 @@ import type { Auth } from "@jendal-workspace/auth";
 import type { Database } from "@jendal-workspace/db";
 import { createPayPalClient } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse } from "@jendal-workspace/paypal/testing";
+import { fromAny, fromPartial } from "@total-typescript/shoehorn";
 import { evlog } from "evlog/hono";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
@@ -69,11 +70,12 @@ function makePayPal(onTeamMerchantChanged?: PayPalServices["onTeamMerchantChange
 }
 
 function buildApp(options: { session?: unknown; rows?: unknown[]; paypal?: PayPalServices | null } = {}) {
-  const auth = { api: { getSession: async () => options.session ?? null } } as unknown as Auth;
+  // getSession is generic over its options; the route only awaits the session it resolves to.
+  const auth = fromPartial<Auth>({ api: { getSession: fromAny(async () => options.session ?? null) } });
   const app = new Hono<AppEnv>();
   app.use(evlog());
   app.use("*", async (c, next) => {
-    c.set("db", fakeDb(options.rows ?? [ownerAccess]) as unknown as Database);
+    c.set("db", fromPartial<Database>(fakeDb(options.rows ?? [ownerAccess])));
     c.set("auth", auth);
     await next();
   });

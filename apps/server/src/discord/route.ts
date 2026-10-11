@@ -1,3 +1,4 @@
+import { errorName } from "@jendal-workspace/core";
 import { log } from "evlog";
 import { Hono } from "hono";
 
@@ -32,6 +33,7 @@ export const discordRoute = new Hono<AppEnv>().post("/discord/interactions", asy
   // and closed with it.
   const db = getDb();
   try {
+    // SAFETY: the body passed Discord's signature check above, so it is an interaction Discord sent.
     const interaction = JSON.parse(body) as DiscordInteraction;
     const result = await handleDiscordInteraction(config, { db }, interaction);
     if (result.kind === "reply") {
@@ -41,10 +43,10 @@ export const discordRoute = new Hono<AppEnv>().post("/discord/interactions", asy
     c.executionCtx.waitUntil(
       (async () => {
         try {
-          const content = await result.followUp.catch((error: unknown) => {
+          const content = await result.followUp.catch((cause: unknown) => {
             log.error({
               action: "discord.followup",
-              error: { name: error instanceof Error ? error.name : typeof error },
+              error: { name: errorName(cause) },
             });
             return "Something went wrong. Please run the command again.";
           });
@@ -52,7 +54,7 @@ export const discordRoute = new Hono<AppEnv>().post("/discord/interactions", asy
         } catch (error) {
           log.error({
             action: "discord.followup",
-            error: { name: error instanceof Error ? error.name : typeof error },
+            error: { name: errorName(error) },
           });
         } finally {
           await db.$client.end().catch(() => undefined);

@@ -13,8 +13,12 @@ export type PayPalSetup = {
   merchantId: string;
 };
 
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "Something went wrong. Try again.";
+function messageOf(cause: unknown): string {
+  return cause instanceof Error && cause.message ? cause.message : "Something went wrong. Try again.";
+}
+
+function asError(cause: unknown): Error {
+  return cause instanceof Error ? cause : new Error(messageOf(cause));
 }
 
 // Services spec §5.4 and R1 facts §5: the v6 SDK with the partner's client ID and the seller's merchant ID.
@@ -29,7 +33,7 @@ export default function PayPalCheckout({ token, currency, paypal }: { token: str
     let stopped = false;
     let session: OneTimePaymentSession | null = null;
     // The SDK reports a refused order through start() and onError with its own wording; the server's message is the useful one.
-    let startError: unknown = null;
+    let startError: Error | null = null;
     // Covers the popup being open and the capture after it, so repeat clicks and key presses cannot start a second payment.
     let starting = false;
     let capturing = false;
@@ -87,17 +91,17 @@ export default function PayPalCheckout({ token, currency, paypal }: { token: str
         setProblem(null);
         const order = trpcClient.payment.payStart.mutate({ token });
         // A side branch: the SDK still receives the same promise and sees its rejection.
-        order.catch((error: unknown) => {
+        order.catch((cause: unknown) => {
           starting = false;
-          startError = error;
-          setProblem(messageOf(error));
+          startError = asError(cause);
+          setProblem(messageOf(cause));
           void refresh();
         });
         // start() must run inside the click so the popup is allowed, and takes the order promise itself.
         created
           .start({ presentationMode: "auto" }, order)
-          .catch((error: unknown) => {
-            if (!startError) setProblem(messageOf(error));
+          .catch((cause: unknown) => {
+            if (!startError) setProblem(messageOf(cause));
           })
           .finally(() => {
             if (!capturing) starting = false;

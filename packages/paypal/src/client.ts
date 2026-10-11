@@ -1,18 +1,21 @@
+import type { z } from "zod";
+
 import { buildAuthAssertion } from "./auth-assertion";
-import { payPalErrorFromResponse } from "./errors";
+import { PayPalError, payPalErrorFromResponse } from "./errors";
 import { createMerchantIntegrations } from "./merchant-integrations";
 import { createOrders } from "./orders";
 import { createPartnerReferrals } from "./partner-referrals";
+import { tokenResponseSchema } from "./schemas";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
 import { createWebhooks } from "./webhooks";
 
 export type PayPalEnvironment = "sandbox" | "live";
 
 // Fact 4.
-export const PAYPAL_BASE_URLS: Record<PayPalEnvironment, string> = {
+export const PAYPAL_BASE_URLS = {
   sandbox: "https://api-m.sandbox.paypal.com",
   live: "https://api-m.paypal.com",
-};
+} satisfies Record<PayPalEnvironment, string>;
 
 export type FetchLike = (request: Request) => Promise<Response>;
 
@@ -45,7 +48,8 @@ export type PayPalRequestOptions = {
   rawBody?: string;
 };
 
-export type PayPalRequest = <T>(options: PayPalRequestOptions) => Promise<T>;
+// The body is decoded with `schema`; a 204 has no body, so its schema must accept undefined.
+export type PayPalRequest = <S extends z.ZodType>(options: PayPalRequestOptions, schema: S) => Promise<z.output<S>>;
 
 export interface PayPalClient {
   request: PayPalRequest;
@@ -116,13 +120,10 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
         }),
     );
     if (!response.ok) throw await payPalErrorFromResponse(response);
-    const body: unknown = await response.json();
-    const record = typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {};
-    if (typeof record.access_token !== "string") {
-      throw new Error("PayPal's token response has no access_token.");
-    }
-    const expiresIn = typeof record.expires_in === "number" ? record.expires_in : 3600;
-    return { accessToken: record.access_token, expiresAt: resolved.now() + expiresIn * 1000 };
+    const parsed = tokenResponseSchema.safeParse(await response.json());
+    if (!parsed.success) throw new Error("PayPal's token response has no access_token.");
+    const expiresIn = parsed.data.expires_in ?? 3600;
+    return { accessToken: parsed.data.access_token, expiresAt: resolved.now() + expiresIn * 1000 };
   }
 
   async function accessToken(): Promise<string> {
@@ -137,7 +138,7 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     return token.accessToken;
   }
 
-  async function request<T>(options: PayPalRequestOptions): Promise<T> {
+  async function request<S extends z.ZodType>(options: PayPalRequestOptions, schema: S): Promise<z.output<S>> {
     if (options.method === "POST" && !options.requestId) {
       throw new Error("PayPal POST calls require options.requestId, sent as PayPal-Request-Id.");
     }
@@ -165,8 +166,16 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
       response = await send(resolved, build);
     }
     if (!response.ok) throw await payPalErrorFromResponse(response);
-    if (response.status === 204) return undefined as T;
-    return (await response.json()) as T;
+    const body: unknown = response.status === 204 ? undefined : await response.json();
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) {
+      throw new PayPalError({
+        status: response.status,
+        name: "UNEXPECTED_RESPONSE",
+        message: `PayPal's ${response.status} answer to ${options.method} ${options.path} does not match the expected response.`,
+      });
+    }
+    return parsed.data;
   }
 
   return {

@@ -42,6 +42,7 @@ async function uploadImage(storeSlug: string, file: File): Promise<string> {
     body: form,
   });
   if (!response.ok) throw new Error("The image upload failed. Try again.");
+  // SAFETY: a successful POST /api/catalog/images (apps/server/src/routes/catalog-images.ts) answers { key }.
   return ((await response.json()) as { key: string }).key;
 }
 

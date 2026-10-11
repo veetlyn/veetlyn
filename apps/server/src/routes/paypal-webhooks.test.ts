@@ -2,6 +2,8 @@ import type { PayPalServices } from "@jendal-workspace/api/context";
 import type { Database } from "@jendal-workspace/db";
 import { createPayPalClient } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
+import { fromPartial } from "@total-typescript/shoehorn";
+import type { WideEvent } from "evlog";
 import { evlog } from "evlog/hono";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
@@ -23,14 +25,16 @@ const SIGNATURE_HEADERS = {
 const RAW_BODY =
   '{"id":"WH-1",  "event_type":"PAYMENT.CAPTURE.COMPLETED","resource_type":"capture","resource":{"id":"CAPTURE-1","custom_id":"payment-1","payee":{"merchant_id":"SELLER1"},"supplementary_data":{"related_ids":{"order_id":"ORDER-1"}}}}';
 
-type VerifyAnswer = "SUCCESS" | "FAILURE" | number;
+// "BAD_BODY" is a 200 whose body is not a verification response.
+type VerifyAnswer = "SUCCESS" | "FAILURE" | "BAD_BODY" | number;
 
 function makePayPal(answer: VerifyAnswer) {
   const { fetch, requests } = fakeFetch((request) => {
     if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
     if (request.url.endsWith(VERIFY_PATH)) {
-      if (typeof answer === "number") return jsonResponse(answer, { name: "PAYPAL_REFUSED", debug_id: `d${answer}` });
-      return jsonResponse(200, { verification_status: answer });
+      if (answer === "BAD_BODY") return jsonResponse(200, []);
+      if (answer === "SUCCESS" || answer === "FAILURE") return jsonResponse(200, { verification_status: answer });
+      return jsonResponse(answer, { name: "PAYPAL_REFUSED", debug_id: `d${answer}` });
     }
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
   });
@@ -56,13 +60,13 @@ function buildApp(
     webhookId?: string;
     stored?: "received" | "processed";
     enqueue?: PayPalWebhookRouteDeps["enqueue"];
-    events?: Record<string, unknown>[];
+    events?: WideEvent[];
   } = {},
 ) {
   const { paypal, requests } = makePayPal(options.answer ?? "SUCCESS");
   const record = vi.fn(async () => options.stored ?? "received");
   const enqueue = vi.fn(options.enqueue ?? (async () => undefined));
-  const db = {} as Database;
+  const db = fromPartial<Database>({});
   const app = new Hono<AppEnv>();
   const events = options.events;
   app.use(evlog(events ? { drain: ({ event }) => void events.push(event) } : undefined));
@@ -174,7 +178,7 @@ describe("POST /webhooks/paypal", () => {
 
   it("answers 400 when PayPal's verification rejects the delivery itself, and logs no error", async () => {
     for (const status of [400, 403, 404, 422]) {
-      const events: Record<string, unknown>[] = [];
+      const events: WideEvent[] = [];
       const { app, record } = buildApp({ answer: status, events });
 
       const res = await post(app);
@@ -191,9 +195,9 @@ describe("POST /webhooks/paypal", () => {
     }
   });
 
-  it("answers 502 when PayPal's own state may change on retry: 401, 429 and 5xx", async () => {
-    for (const status of [401, 429, 500, 503]) {
-      const { app, record } = buildApp({ answer: status });
+  it("answers 502 when PayPal's own state may change on retry: 401, 429, 5xx and an unreadable answer", async () => {
+    for (const answer of [401, 429, 500, 503, "BAD_BODY"] as const) {
+      const { app, record } = buildApp({ answer });
 
       expect((await post(app)).status).toBe(502);
       expect(record).not.toHaveBeenCalled();

@@ -95,11 +95,11 @@ export function amendmentProblemMessage(problem: "no_change" | "unknown_item" | 
 export type PaymentLineKind = PaymentKind | "management_fee";
 export type PaymentLine = { kind: PaymentLineKind; label: string; amountMinor: number };
 
-const QUOTE_PART_LABELS: Record<PaymentKind, string> = {
+const QUOTE_PART_LABELS = {
   deposit: "Deposit (50% of the quote)",
   top_up: "Top-up (50% of the increase)",
   balance: "Balance",
-};
+} satisfies Record<PaymentKind, string>;
 
 // The lines shown on the client page and the pay page; zero lines are left out.
 export function paymentLines(kind: PaymentKind, split: PaymentSplit, managementFeeBps: number): PaymentLine[] {

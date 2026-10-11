@@ -63,7 +63,7 @@ describe.skipIf(!hasTestDatabase)("project deliveries", () => {
     const failure = await db
       .insert(delivery)
       .values({ projectId, teamId })
-      .catch((error: unknown) => error);
+      .catch((cause: unknown) => cause);
     expect(failure).toMatchObject({ cause: { code: "23505", constraint_name: "delivery_open_idx" } });
     expect(await listProjectDeliveries(db, projectId)).toHaveLength(2);
   });

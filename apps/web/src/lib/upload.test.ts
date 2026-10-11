@@ -13,7 +13,7 @@ class FakeXhr implements UploadRequest {
   body: unknown = undefined;
   status = 0;
   aborted = false;
-  upload: { onprogress: ((event: ProgressEvent) => void) | null } = { onprogress: null };
+  upload: UploadRequest["upload"] = { onprogress: null };
   onload: (() => void) | null = null;
   onerror: (() => void) | null = null;
   onabort: (() => void) | null = null;

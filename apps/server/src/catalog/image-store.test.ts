@@ -1,3 +1,4 @@
+import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
 
 import { createR2ImageStore } from "./image-store";
@@ -20,14 +21,14 @@ function fakeBucket() {
       return objects.has(key) ? { key } : null;
     },
   };
-  return { bucket: bucket as unknown as R2Bucket, objects };
+  return { bucket: fromPartial<R2Bucket>(bucket), objects };
 }
 
 describe("createR2ImageStore", () => {
   it("stores bytes with their content type and reads them back", async () => {
     const { bucket } = fakeBucket();
     const store = createR2ImageStore(bucket);
-    const bytes = new Uint8Array([1, 2, 3]).buffer as ArrayBuffer;
+    const bytes = new Uint8Array([1, 2, 3]).buffer;
 
     await store.put("stores/s1/images/a.png", bytes, "image/png");
 

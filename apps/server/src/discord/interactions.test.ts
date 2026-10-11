@@ -211,10 +211,10 @@ describe("DEFERRED_EPHEMERAL_RESPONSE", () => {
 describe("editOriginalInteractionResponse", () => {
   it("edits the original response through the interaction webhook", async () => {
     const calls: Array<{ url: string; method: string; body: string }> = [];
-    const fetchStub = (async (url: URL | RequestInfo, init?: RequestInit) => {
+    const fetchStub: typeof fetch = async (url, init) => {
       calls.push({ url: String(url), method: init?.method ?? "GET", body: String(init?.body ?? "") });
       return new Response(null, { status: 204 });
-    }) as typeof fetch;
+    };
 
     await editOriginalInteractionResponse(config, "token-1", { content: "Done" }, fetchStub);
 

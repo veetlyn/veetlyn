@@ -51,7 +51,8 @@ describe("ledger transfers", () => {
       ],
       [
         { account: "paypal_clearing", currency: "USD", amountMinor: -1 },
-        { account: "cash" as "team_revenue", currency: "USD", amountMinor: 1 },
+        // @ts-expect-error an account outside the ledger's account names must not balance
+        { account: "cash", currency: "USD", amountMinor: 1 },
       ],
     ];
     for (const entries of cases) {

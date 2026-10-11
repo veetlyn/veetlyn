@@ -152,7 +152,7 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
       // Drizzle wraps the postgres error; the 23505 code and constraint name live on the cause.
       const failure = await insertVariants(db, tenant, product.id, [
         { options: [], sku: "lamp-1", priceMinor: 1, stock: 0 },
-      ]).catch((error: unknown) => error);
+      ]).catch((cause: unknown) => cause);
       expect(failure).toMatchObject({ cause: { code: "23505", constraint_name: "uq_variants_store_sku" } });
 
       const [otherVariant] = await insertVariants(db, other, otherProduct.id, [
@@ -167,18 +167,18 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
 
       const badPrice = await insertVariants(db, tenant, product.id, [
         { options: [], sku: "", priceMinor: 100_000_000, stock: 0 },
-      ]).catch((error: unknown) => error);
+      ]).catch((cause: unknown) => cause);
       expect(badPrice).toMatchObject({ cause: { code: "23514", constraint_name: "variants_price_check" } });
 
       const badStock = await insertVariants(db, tenant, product.id, [
         { options: [], sku: "", priceMinor: 100, stock: -1 },
-      ]).catch((error: unknown) => error);
+      ]).catch((cause: unknown) => cause);
       expect(badStock).toMatchObject({ cause: { code: "23514", constraint_name: "variants_stock_check" } });
 
       const badStatus = await db
         .insert(products)
         .values({ storeId: tenant.storeId, title: "Lamp", status: "archived" })
-        .catch((error: unknown) => error);
+        .catch((cause: unknown) => cause);
       expect(badStatus).toMatchObject({ cause: { code: "23514", constraint_name: "products_status_check" } });
     });
   });

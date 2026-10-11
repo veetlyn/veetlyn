@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMoney, money, type MoneyCurrency } from "@jendal-workspace/core";
+import { formatMoney, money } from "@jendal-workspace/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
@@ -54,7 +54,7 @@ export default function PayPage({ token }: { token: string }) {
   }
 
   const { payment, project, team, paypal, clientPath } = data;
-  const currency = payment.currency as MoneyCurrency;
+  const currency = payment.currency;
 
   return (
     <main className="container mx-auto max-w-lg space-y-6 px-4 py-10">

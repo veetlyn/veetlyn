@@ -42,6 +42,7 @@ describe("seller plans", () => {
   });
 
   it("rejects an unknown plan id", () => {
-    expect(() => getSellerPlan("gold" as never)).toThrow(/Unknown seller plan/);
+    // @ts-expect-error an id outside SellerPlanId reaches the runtime check
+    expect(() => getSellerPlan("gold")).toThrow(/Unknown seller plan/);
   });
 });

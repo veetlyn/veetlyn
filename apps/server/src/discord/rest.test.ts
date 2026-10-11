@@ -4,10 +4,10 @@ import { createDiscordRest } from "./rest";
 
 function stubFetch(status = 200) {
   const calls: Array<{ url: string; init: RequestInit }> = [];
-  const fetchStub = (async (url: URL | RequestInfo, init?: RequestInit) => {
+  const fetchStub: typeof fetch = async (url, init) => {
     calls.push({ url: String(url), init: init ?? {} });
     return new Response("{}", { status, headers: { "content-type": "application/json" } });
-  }) as typeof fetch;
+  };
   return { calls, fetchStub };
 }
 

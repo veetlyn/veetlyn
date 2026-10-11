@@ -1,5 +1,7 @@
 // Run with `pnpm -F server discord:register`, which wraps bun in `varlock run`: apps/server/bunfig.toml
 // turns off bun's own .env loading (Fact 21). Never log the token or the request headers.
+import { z } from "zod";
+
 import { DISCORD_COMMANDS } from "./commands";
 
 const applicationId = process.env.DISCORD_APP_ID;
@@ -23,5 +25,5 @@ if (!response.ok) {
   process.exit(1);
 }
 
-const commands = (await response.json()) as Array<{ name: string }>;
+const commands = z.array(z.object({ name: z.string() })).parse(await response.json());
 console.log(`Registered ${commands.length} global commands: ${commands.map((command) => command.name).join(", ")}`);

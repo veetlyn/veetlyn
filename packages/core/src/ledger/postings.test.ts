@@ -114,9 +114,9 @@ describe("every posting builder balances (property-style, 500 random cases each)
   const amount = () => randomInt(random, 1, 100_000_000);
   const maybeZero = () => (random() < 0.2 ? 0 : amount());
   const bps = () => randomInt(random, 0, 10_000);
-  const currency = () => (random() < 0.5 ? "USD" : "EUR") as "USD" | "EUR";
+  const currency = (): "USD" | "EUR" => (random() < 0.5 ? "USD" : "EUR");
 
-  const builders: Record<string, () => LedgerTransferDraft> = {
+  const builders = {
     paymentCaptured: () =>
       paymentCapturedTransfer({ currency: currency(), projectId: "p1", paymentId: "x", quotePartMinor: amount(), managementFeeMinor: maybeZero() }),
     managementFeeCredit: () =>
@@ -147,7 +147,7 @@ describe("every posting builder balances (property-style, 500 random cases each)
         managementFeeMinor: maybeZero(),
         projectCompleted: random() < 0.5,
       }),
-  };
+  } satisfies Record<string, () => LedgerTransferDraft>;
 
   for (const [name, build] of Object.entries(builders)) {
     it(name, () => {

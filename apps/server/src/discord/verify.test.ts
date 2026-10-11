@@ -12,11 +12,15 @@ function toHex(buffer: ArrayBuffer): string {
 // @cloudflare/workers-types widens these results to CryptoKey | CryptoKeyPair and ArrayBuffer | JsonWebKey;
 // an Ed25519 generateKey always yields a pair and a "raw" export always yields bytes.
 async function generateKeyPair(): Promise<CryptoKeyPair> {
-  return (await subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"])) as CryptoKeyPair;
+  const generated = await subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+  if (!("privateKey" in generated)) throw new Error("expected an Ed25519 key pair");
+  return generated;
 }
 
 async function publicKeyHex(key: CryptoKey): Promise<string> {
-  return toHex((await subtle.exportKey("raw", key)) as ArrayBuffer);
+  const exported = await subtle.exportKey("raw", key);
+  if (!(exported instanceof ArrayBuffer)) throw new Error("expected raw key bytes");
+  return toHex(exported);
 }
 
 describe("verifyDiscordSignature", () => {

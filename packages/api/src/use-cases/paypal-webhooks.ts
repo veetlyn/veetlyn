@@ -53,34 +53,36 @@ async function findPayment(deps: PaymentDeps, event: PayPalWebhookEventRow) {
 }
 
 // PayPal refusals that will not change on retry, and capture facts that contradict Payleor's records.
-function settledFailure(error: unknown): WebhookOutcome | null {
-  if (error instanceof CaptureFactConflict) return { status: "parked", note: error.message };
+function settledFailure(cause: unknown): WebhookOutcome | null {
+  if (cause instanceof CaptureFactConflict) return { status: "parked", note: cause.message };
   // Other 4xx from PayPal will not change on retry (gone, forbidden); 5xx are retried by the queue.
   if (
-    error instanceof PayPalError &&
-    error.status >= 400 &&
-    error.status < 500 &&
-    !RETRIED_PAYPAL_STATUSES.has(error.status)
+    cause instanceof PayPalError &&
+    cause.status >= 400 &&
+    cause.status < 500 &&
+    !RETRIED_PAYPAL_STATUSES.has(cause.status)
   ) {
-    return { status: "parked", note: `PayPal ${error.status} ${error.name} (debug_id ${error.debugId ?? "none"})` };
+    return { status: "parked", note: `PayPal ${cause.status} ${cause.name} (debug_id ${cause.debugId ?? "none"})` };
   }
   return null;
 }
 
-function clientRefusal(error: unknown): WebhookOutcome | null {
-  if (!(error instanceof TRPCError)) return null;
-  return { status: CLIENT_REFUSALS.has(error.code) ? "processed" : "parked", note: error.message };
+function clientRefusal(cause: unknown): WebhookOutcome | null {
+  if (!(cause instanceof TRPCError)) return null;
+  return { status: CLIENT_REFUSALS.has(cause.code) ? "processed" : "parked", note: cause.message };
 }
 
 // The event's merchant, when PayPal names one, must be the team's: anything else is not for this team to act on.
-async function teamMerchant(deps: PaymentDeps, teamId: string, event: PayPalWebhookEventRow): Promise<string | WebhookOutcome> {
+type TeamMerchant = { found: true; merchantId: string } | { found: false; outcome: WebhookOutcome };
+
+async function teamMerchant(deps: PaymentDeps, teamId: string, event: PayPalWebhookEventRow): Promise<TeamMerchant> {
   const team = await findTeamById(deps.db, teamId);
   const merchantId = team?.paypalMerchantId;
-  if (!merchantId) return { status: "parked", note: "team has no PayPal merchant" };
+  if (!merchantId) return { found: false, outcome: { status: "parked", note: "team has no PayPal merchant" } };
   if (event.merchantId && event.merchantId !== merchantId) {
-    return { status: "parked", note: "merchant does not match the team" };
+    return { found: false, outcome: { status: "parked", note: "merchant does not match the team" } };
   }
-  return merchantId;
+  return { found: true, merchantId };
 }
 
 // Services spec §6.4: PayPal does not guarantee order, so the event only says which payment or store order to
@@ -110,8 +112,9 @@ export async function processPayPalWebhookEvent(deps: WebhookDeps, event: PayPal
 }
 
 async function processOrderEvent(deps: WebhookDeps, order: OrderRow, event: PayPalWebhookEventRow): Promise<WebhookOutcome> {
-  const merchantId = await teamMerchant(deps, order.teamId, event);
-  if (typeof merchantId !== "string") return merchantId;
+  const merchant = await teamMerchant(deps, order.teamId, event);
+  if (!merchant.found) return merchant.outcome;
+  const { merchantId } = merchant;
   const paypalOrderId = event.orderId ?? order.paypalOrderId;
   if (!paypalOrderId) return { status: "parked", note: "no order id" };
 
@@ -162,8 +165,9 @@ async function processPaymentEvent(deps: PaymentDeps, event: PayPalWebhookEventR
   if (!row) return NOT_OURS;
   if (PARKED_EVENTS.has(event.eventType)) return { status: "parked", note: REFUND_NOTE };
 
-  const merchantId = await teamMerchant(deps, row.teamId, event);
-  if (typeof merchantId !== "string") return merchantId;
+  const merchant = await teamMerchant(deps, row.teamId, event);
+  if (!merchant.found) return merchant.outcome;
+  const { merchantId } = merchant;
   const orderId = event.orderId ?? row.paypalOrderId;
   if (!orderId) return { status: "parked", note: "no order id" };
 

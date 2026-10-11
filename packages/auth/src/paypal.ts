@@ -16,8 +16,10 @@ type PayPalEmailFields = {
   emails?: PayPalEmailEntry[];
 };
 
+type PayPalProfileEmail = { email?: string; emailVerified?: boolean };
+
 // Better Auth reads `email`, but its userinfo call (schema=paypalv1.1) returns an `emails` list instead.
-export function paypalEmail(profile: PayPalEmailFields): { email?: string; emailVerified?: boolean } {
+export function paypalEmail(profile: PayPalEmailFields): PayPalProfileEmail {
   if (profile.email) return { email: profile.email, emailVerified: profile.email_verified === true };
   const entry = profile.emails?.find((e) => e.primary) ?? profile.emails?.[0];
   return entry ? { email: entry.value, emailVerified: entry.confirmed === true } : {};

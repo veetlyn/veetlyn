@@ -1,3 +1,5 @@
+import { errorBodySchema } from "./schemas";
+
 export type PayPalErrorDetail = {
   field?: string;
   value?: string;
@@ -20,10 +22,6 @@ export class PayPalError extends Error {
   }
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
 // Error bodies carry name, message, details and debug_id (Fact 3).
 export async function payPalErrorFromResponse(response: Response): Promise<PayPalError> {
   const text = await response.text();
@@ -33,25 +31,13 @@ export async function payPalErrorFromResponse(response: Response): Promise<PayPa
   } catch {
     body = undefined;
   }
-  const record = asRecord(body);
-  const details: PayPalErrorDetail[] = [];
-  if (record && Array.isArray(record.details)) {
-    for (const item of record.details) {
-      const detail = asRecord(item);
-      if (!detail) continue;
-      details.push({
-        field: typeof detail.field === "string" ? detail.field : undefined,
-        value: typeof detail.value === "string" ? detail.value : undefined,
-        issue: typeof detail.issue === "string" ? detail.issue : undefined,
-        description: typeof detail.description === "string" ? detail.description : undefined,
-      });
-    }
-  }
+  const parsed = errorBodySchema.safeParse(body);
+  const record = parsed.success ? parsed.data : null;
   return new PayPalError({
     status: response.status,
-    message: typeof record?.message === "string" ? record.message : `PayPal answered ${response.status}`,
-    debugId: typeof record?.debug_id === "string" ? record.debug_id : undefined,
-    name: typeof record?.name === "string" ? record.name : undefined,
-    details,
+    message: record?.message ?? `PayPal answered ${response.status}`,
+    debugId: record?.debug_id,
+    name: record?.name,
+    details: record?.details ?? [],
   });
 }

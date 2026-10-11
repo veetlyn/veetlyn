@@ -48,6 +48,5 @@ describe("payoutDestinationFromUserInfo", () => {
     expect(payoutDestinationFromUserInfo(USER_ID, { user_id: USER_ID, payer_id: USER_ID })).toBeNull();
     expect(payoutDestinationFromUserInfo(USER_ID, { user_id: USER_ID, payer_id: "g83jxtj5ehcq2" })).toBeNull();
     expect(payoutDestinationFromUserInfo(USER_ID, null)).toBeNull();
-    expect(payoutDestinationFromUserInfo(USER_ID, "G83JXTJ5EHCQ2")).toBeNull();
   });
 });

@@ -27,11 +27,11 @@ describe("product image keys", () => {
 
 describe("encodeBase64", () => {
   it("encodes bytes without a data-URI prefix", () => {
-    expect(encodeBase64(new TextEncoder().encode("hi").buffer as ArrayBuffer)).toBe("aGk=");
+    expect(encodeBase64(new Uint8Array(new TextEncoder().encode("hi")).buffer)).toBe("aGk=");
   });
 
   it("encodes buffers larger than one chunk", () => {
     const bytes = new Uint8Array(100_000).fill(97);
-    expect(atob(encodeBase64(bytes.buffer as ArrayBuffer))).toHaveLength(100_000);
+    expect(atob(encodeBase64(bytes.buffer))).toHaveLength(100_000);
   });
 });
