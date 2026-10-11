@@ -1,0 +1,23 @@
+apps/server/src/routes/paypal-webhooks.test.ts
+  s_8777b2ef919b90::t_6c36f872321c66 26-27,34,196-198
+apps/server/src/routes/paypal-webhooks.ts
+  s_8777b2ef919b90::t_e8c55eceb182dd 87
+packages/paypal/src/schemas.ts
+  s_8777b2ef919b90::t_7bb7d09a5d7ea6 67,73-84,86-87,121-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b364f6030047ebe4bb11ff985c6a859ae6831cd4",
+  "prompts": {},
+  "sessions": {
+    "s_8777b2ef919b90": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f39daef9-4f4e-45a2-b761-688d33b38bf4",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
