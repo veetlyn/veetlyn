@@ -246,10 +246,20 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
     await seedStore(db, { organizationId, slug: "acme" });
     const caller = await signedInCaller("second@example.com");
 
+    const membersBefore = await db.select().from(member);
+
     await expect(caller.servicesTeam.create({ name: "Acme", slug: "acme" })).rejects.toMatchObject({
       code: "CONFLICT",
       message: "This team address is already taken.",
     });
+    // A solo retry on a taken address must not leave a new empty workspace behind each time.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await expect(caller.servicesTeam.create({ name: "Acme", slug: "acme", solo: true })).rejects.toMatchObject({
+        code: "CONFLICT",
+        message: "This team address is already taken.",
+      });
+    }
+    expect(await db.select().from(member)).toHaveLength(membersBefore.length);
     await expect(caller.servicesTeam.create({ name: "Acme", slug: "login" })).rejects.toMatchObject({
       code: "BAD_REQUEST",
       message: "This team address is reserved.",

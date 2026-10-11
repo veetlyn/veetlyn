@@ -29,7 +29,9 @@ import {
   workspaceRoleFor,
 } from "@jendal-workspace/db/repositories/services-teams";
 import { countServicesOfferings } from "@jendal-workspace/db/repositories/services-catalog";
+import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import { TRPCError } from "@trpc/server";
+import { log } from "evlog";
 import { z } from "zod";
 
 import { protectedProcedure, router } from "../index";
@@ -69,6 +71,10 @@ export const servicesTeamRouter = router({
     .mutation(async ({ ctx, input }) => {
       const slug = validateStoreSlug(input.slug);
       if (!slug.ok) throw new TRPCError({ code: "BAD_REQUEST", message: teamSlugProblem(slug.reason, "services") });
+      // Checked before a workspace may be created; the createTeam hook still settles a race.
+      if (await isStoreSlugTaken(ctx.db, slug.slug)) {
+        throw new TRPCError({ code: "CONFLICT", message: teamSlugProblem("taken", "services") });
+      }
 
       try {
         const organizationId = await organizationForNewTeam(ctx, input.name, { solo: input.solo });
@@ -85,7 +91,15 @@ export const servicesTeamRouter = router({
             // A half-made solo seller would be a team with team rates; the retry needs its slug back.
             // Better Auth's removeTeam refuses an organization's last team, so the row goes directly.
             // The new organization stays: empty, it is hidden from the workspace home.
-            await deleteNewServicesTeam(ctx.db, created.id);
+            try {
+              await deleteNewServicesTeam(ctx.db, created.id);
+            } catch (cleanupError) {
+              log.error({
+                action: "services_team.create_cleanup",
+                team: { id: created.id },
+                error: { name: cleanupError instanceof Error ? cleanupError.name : "unknown" },
+              });
+            }
             throw error;
           }
         }
