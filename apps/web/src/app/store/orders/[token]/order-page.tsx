@@ -17,10 +17,10 @@ function InvalidLink() {
   );
 }
 
-export default function OrderPage({ token }: { token: string }) {
+export default function OrderPage({ token, slug }: { token: string; slug: string }) {
   const tokenLooksValid = orderTokenLooksValid(token);
-  const order = useQuery({ ...trpc.order.get.queryOptions({ token }), retry: false, enabled: tokenLooksValid });
-  const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.order.get.queryKey({ token }) });
+  const order = useQuery({ ...trpc.order.get.queryOptions({ token, slug }), retry: false, enabled: tokenLooksValid });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.order.get.queryKey({ token, slug }) });
   const download = useMutation(
     trpc.order.download.mutationOptions({
       onSuccess: ({ url }) => window.location.assign(url),
@@ -66,7 +66,7 @@ export default function OrderPage({ token }: { token: string }) {
       </div>
       {canDownload ? (
         <div className="space-y-2">
-          <Button type="button" disabled={download.isPending} onClick={() => download.mutate({ token })}>
+          <Button type="button" disabled={download.isPending} onClick={() => download.mutate({ token, slug })}>
             {download.isPending ? "Preparing download…" : "Download"}
           </Button>
           <p className="text-sm text-muted-foreground">
@@ -85,7 +85,7 @@ export default function OrderPage({ token }: { token: string }) {
                 type="button"
                 variant="outline"
                 disabled={sendNewLink.isPending || sendNewLink.isSuccess}
-                onClick={() => sendNewLink.mutate({ token })}
+                onClick={() => sendNewLink.mutate({ token, slug })}
               >
                 {sendNewLink.isPending ? "Sending…" : "Email me a new link"}
               </Button>

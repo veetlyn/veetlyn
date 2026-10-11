@@ -440,6 +440,16 @@ function hasIssue(error: PayPalError, issue: string): boolean {
   return error.details.some((detail) => detail.issue === issue);
 }
 
+// Only the buyer's own capture call shows this: a PayPal error that survives the order lookup leaves the capture's
+// outcome unknown, and retrying blindly could pay twice. The webhook keeps PayPal's error to decide on a retry.
+export function unconfirmedCapture(error: PayPalError): TRPCError {
+  return new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "We could not confirm your payment. It may have gone through; check your email before trying again.",
+    cause: error,
+  });
+}
+
 export async function capturePayment(
   deps: PaymentDeps,
   input: { paymentId: string; orderId: string },

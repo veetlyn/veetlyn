@@ -2,6 +2,7 @@ import { databaseErrorFields } from "@jendal-workspace/api/use-cases/payments";
 import type { FileStore } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { sweepUnattachedUploads } from "@jendal-workspace/db/repositories/files";
+import { deleteAbandonedOrders } from "@jendal-workspace/db/repositories/orders";
 import { failStuckWebhookEvents, listStaleWebhookEvents } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { deleteExpiredRequestLimits } from "@jendal-workspace/db/repositories/request-limits";
 import { log } from "evlog";
@@ -14,6 +15,7 @@ export const WEBHOOK_BATCH = 100;
 export const REQUEST_LIMIT_MAX_AGE_MS = 24 * 3_600_000;
 export const UPLOAD_MAX_AGE_MS = 24 * 3_600_000;
 export const UPLOAD_BATCH = 500;
+export const ORDER_MAX_AGE_MS = 24 * 3_600_000;
 
 const STUCK_WEBHOOK_NOTE = "Stuck in received for 3 days.";
 
@@ -24,13 +26,14 @@ export type MaintenanceDeps = {
   now?: () => Date;
 };
 
-export type MaintenanceSweep = "webhooks" | "requestLimits" | "uploads";
+export type MaintenanceSweep = "webhooks" | "requestLimits" | "uploads" | "orders";
 
 export type MaintenanceReport = {
   webhookEventsRequeued: number;
   webhookEventsFailed: number;
   requestLimitsDeleted: number;
   uploadsDeleted: number;
+  ordersDeleted: number;
   errors: MaintenanceSweep[];
 };
 
@@ -42,6 +45,7 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     webhookEventsFailed: 0,
     requestLimitsDeleted: 0,
     uploadsDeleted: 0,
+    ordersDeleted: 0,
     errors: [],
   };
 
@@ -96,6 +100,11 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
       (keys) => deps.files.delete(keys),
     );
     return { deleted: report.uploadsDeleted };
+  });
+
+  await sweep("orders", async () => {
+    report.ordersDeleted = await deleteAbandonedOrders(deps.db, { createdBefore: new Date(now - ORDER_MAX_AGE_MS) });
+    return { deleted: report.ordersDeleted };
   });
 
   return report;

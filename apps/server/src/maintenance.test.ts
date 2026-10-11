@@ -1,10 +1,13 @@
 import { findFileUpload, insertFileUpload } from "@jendal-workspace/db/repositories/files";
+import { findOrderById } from "@jendal-workspace/db/repositories/orders";
 import { findWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { requestLimit } from "@jendal-workspace/db/schema/limits";
 import { paypalWebhookEvent } from "@jendal-workspace/db/schema/paypal-webhooks";
 import {
   createTestDb,
   hasTestDatabase,
+  seedOrder,
+  seedProduct,
   seedProject,
   seedServicesTeamWithAdmin,
   truncateAll,
@@ -47,7 +50,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     });
   }
 
-  async function seedUploads() {
+  async function seedUploadsAndOrders() {
     const { teamId } = await seedServicesTeamWithAdmin(db);
     const projectId = await seedProject(db, { teamId });
     const upload = (createdAt: Date, attachedAt?: Date) =>
@@ -62,7 +65,11 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
         createdAt,
         attachedAt,
       });
+    const product = await seedProduct(db, { storeId: teamId, kind: "digital", status: "published", priceMinor: 1900 });
+    const order = (createdAt: Date) => seedOrder(db, { teamId, productId: product.id, createdAt });
     return {
+      abandonedOrder: await order(minutesAgo(DAY_MINUTES + 1)),
+      recentOrder: await order(minutesAgo(60)),
       leftover: await upload(minutesAgo(2 * DAY_MINUTES)),
       attached: await upload(minutesAgo(2 * DAY_MINUTES), minutesAgo(2 * DAY_MINUTES - 1)),
       recent: await upload(minutesAgo(60)),
@@ -77,7 +84,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       { key: "expired", windowStart: minutesAgo(DAY_MINUTES + 1).getTime(), count: 3 },
       { key: "current", windowStart: minutesAgo(10).getTime(), count: 1 },
     ]);
-    return seedUploads();
+    return seedUploadsAndOrders();
   }
 
   async function requestLimitKeys() {
@@ -85,8 +92,8 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     return rows.map((row) => row.key);
   }
 
-  it("re-sends stale events, fails stuck ones, and deletes expired limits and leftover uploads", async () => {
-    const { leftover, attached, recent } = await seedEverything();
+  it("re-sends stale events, fails stuck ones, and deletes expired limits, leftover uploads and abandoned orders", async () => {
+    const { leftover, attached, recent, abandonedOrder, recentOrder } = await seedEverything();
     const info = vi.spyOn(log, "info");
     const error = vi.spyOn(log, "error");
     const d = deps();
@@ -98,6 +105,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       webhookEventsFailed: 1,
       requestLimitsDeleted: 1,
       uploadsDeleted: 1,
+      ordersDeleted: 1,
       errors: [],
     });
     expect(d.enqueueWebhookEvents).toHaveBeenCalledExactlyOnceWith(["WH-stale"]);
@@ -112,6 +120,8 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(await findFileUpload(db, leftover.id)).toBeNull();
     expect(await findFileUpload(db, attached.id)).not.toBeNull();
     expect(await findFileUpload(db, recent.id)).not.toBeNull();
+    expect(await findOrderById(db, abandonedOrder.id)).toBeNull();
+    expect(await findOrderById(db, recentOrder.id)).not.toBeNull();
     expect(info).toHaveBeenCalledWith({ action: "maintenance.webhooks", maintenance: { requeued: 1, failed: 1 } });
     expect(error).toHaveBeenCalledExactlyOnceWith({
       action: "maintenance.webhooks.failed",
@@ -123,6 +133,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.requestLimits", maintenance: { deleted: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.uploads", maintenance: { deleted: 1 } });
+    expect(info).toHaveBeenCalledWith({ action: "maintenance.orders", maintenance: { deleted: 1 } });
   });
 
   it("does not enqueue when no event is stale", async () => {
@@ -135,7 +146,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
   });
 
   it("keeps sweeping when re-sending the events fails", async () => {
-    const { leftover } = await seedEverything();
+    const { leftover, abandonedOrder } = await seedEverything();
     const error = vi.spyOn(log, "error");
     const d = deps({
       enqueueWebhookEvents: vi.fn(async () => {
@@ -145,9 +156,10 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
 
     const report = await runMaintenance(d);
 
-    expect(report).toMatchObject({ requestLimitsDeleted: 1, uploadsDeleted: 1, errors: ["webhooks"] });
+    expect(report).toMatchObject({ requestLimitsDeleted: 1, uploadsDeleted: 1, ordersDeleted: 1, errors: ["webhooks"] });
     expect(await requestLimitKeys()).toEqual(["current"]);
     expect(await findFileUpload(db, leftover.id)).toBeNull();
+    expect(await findOrderById(db, abandonedOrder.id)).toBeNull();
     expect(error).toHaveBeenCalledWith({
       action: "maintenance.webhooks",
       error: { name: "TypeError", note: "TypeError: Queue send failed" },
@@ -167,7 +179,13 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
 
     const report = await runMaintenance(d);
 
-    expect(report).toMatchObject({ webhookEventsRequeued: 1, requestLimitsDeleted: 1, uploadsDeleted: 0, errors: ["uploads"] });
+    expect(report).toMatchObject({
+      webhookEventsRequeued: 1,
+      requestLimitsDeleted: 1,
+      uploadsDeleted: 0,
+      ordersDeleted: 1,
+      errors: ["uploads"],
+    });
     expect(await findFileUpload(db, leftover.id)).not.toBeNull();
     expect(error).toHaveBeenCalledWith({
       action: "maintenance.uploads",

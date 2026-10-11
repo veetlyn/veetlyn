@@ -287,6 +287,7 @@ export async function seedOrder(
     buyerEmail?: string;
     paypalOrderId?: string;
     paypalCaptureId?: string;
+    createdAt?: Date;
   },
 ): Promise<typeof orders.$inferSelect> {
   const status = input.status ?? "pending";
@@ -305,6 +306,7 @@ export async function seedOrder(
       checkoutSecretHash: "x".repeat(64),
       paidAt: status === "pending" ? null : new Date(),
       refundedAt: status === "refunded" ? new Date() : null,
+      createdAt: input.createdAt,
     })
     .returning();
   if (!row) throw new Error("Insert into orders returned no row");
