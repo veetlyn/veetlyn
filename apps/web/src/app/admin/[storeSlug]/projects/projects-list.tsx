@@ -9,7 +9,7 @@ import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { trpc } from "@/utils/trpc";
 
 export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
-  const projects = useQuery({ ...trpc.project.list.queryOptions({ teamSlug }), retry: false });
+  const projects = useQuery({ ...trpc.project.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   if (projects.isPending) return <Loader />;
   if (projects.isError) {

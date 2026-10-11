@@ -10,11 +10,12 @@ import MarketPricePanel from "@/components/catalog/market-price-panel";
 import ProductForm from "@/components/catalog/product-form";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { productImageUrl } from "@/lib/image-url";
+import { minorToPriceInput } from "@/lib/money";
 import type { ProductFormState } from "@/lib/product-form-state";
 import { queryClient, trpc } from "@/utils/trpc";
 
 export default function EditProduct({ storeSlug, productId }: { storeSlug: string; productId: string }) {
-  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
+  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false, meta: { silent: true } });
 
   if (store.isPending) return <Loader />;
   if (store.isError) return <TeamNotFound />;
@@ -29,7 +30,7 @@ export default function EditProduct({ storeSlug, productId }: { storeSlug: strin
 }
 
 function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; productId: string }) {
-  const detail = useQuery({ ...trpc.catalog.get.queryOptions({ storeSlug, id: productId }), retry: false });
+  const detail = useQuery({ ...trpc.catalog.get.queryOptions({ storeSlug, id: productId }), retry: false, meta: { silent: true } });
   const publish = useMutation(trpc.catalog.publish.mutationOptions());
   const unpublish = useMutation(trpc.catalog.unpublish.mutationOptions());
 
@@ -57,7 +58,7 @@ function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; prod
     variants: variants.map((variant) => ({
       options: variant.options,
       sku: variant.sku ?? "",
-      price: (variant.priceMinor / 100).toFixed(2),
+      price: minorToPriceInput(variant.priceMinor),
       stock: String(variant.stock),
     })),
     images: images.map((image) => ({

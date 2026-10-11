@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMinor, parsePriceInput } from "./money";
+import { formatMinor, minorToPriceInput, parsePriceInput } from "./money";
 
 describe("formatMinor", () => {
   it("formats minor units in the given currency", () => {
@@ -24,5 +24,15 @@ describe("parsePriceInput", () => {
     expect(parsePriceInput("-1")).toBeNull();
     expect(parsePriceInput("1.999")).toBeNull();
     expect(parsePriceInput("1,5")).toBeNull();
+  });
+});
+
+describe("minorToPriceInput", () => {
+  it("writes minor units as a two-decimal input that parses back unchanged", () => {
+    expect(minorToPriceInput(5)).toBe("0.05");
+    expect(minorToPriceInput(1900)).toBe("19.00");
+    for (const minor of [0, 5, 1900, 123456]) {
+      expect(parsePriceInput(minorToPriceInput(minor))).toBe(minor);
+    }
   });
 });

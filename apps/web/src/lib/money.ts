@@ -10,3 +10,8 @@ export function parsePriceInput(text: string): number | null {
   const minor = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
   return Number.isSafeInteger(minor) ? minor : null;
 }
+
+// Inverse of parsePriceInput; every supported currency (USD, EUR) has two decimals.
+export function minorToPriceInput(minor: number): string {
+  return (minor / 100).toFixed(2);
+}

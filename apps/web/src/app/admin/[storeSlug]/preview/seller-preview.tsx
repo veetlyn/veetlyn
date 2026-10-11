@@ -11,7 +11,7 @@ import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import { trpc } from "@/utils/trpc";
 
 export default function SellerPreview({ teamSlug, urlParts }: { teamSlug: string; urlParts: StoreUrlParts }) {
-  const result = useQuery({ ...trpc.seller.preview.queryOptions({ teamSlug }), retry: false });
+  const result = useQuery({ ...trpc.seller.preview.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;

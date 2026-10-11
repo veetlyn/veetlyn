@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -5,6 +6,8 @@ import { formatMinor } from "@/lib/money";
 import { fetchSellerPage } from "@/lib/server-api";
 
 import CheckoutForm from "./checkout-form";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function BuyPage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = await params;

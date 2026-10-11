@@ -19,7 +19,7 @@ function InvalidLink() {
 
 export default function OrderPage({ token, slug }: { token: string; slug: string }) {
   const tokenLooksValid = orderTokenLooksValid(token);
-  const order = useQuery({ ...trpc.order.get.queryOptions({ token, slug }), retry: false, enabled: tokenLooksValid });
+  const order = useQuery({ ...trpc.order.get.queryOptions({ token, slug }), retry: false, meta: { silent: true }, enabled: tokenLooksValid });
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.order.get.queryKey({ token, slug }) });
   const download = useMutation(
     trpc.order.download.mutationOptions({

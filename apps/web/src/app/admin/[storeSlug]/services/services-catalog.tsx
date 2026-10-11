@@ -81,8 +81,8 @@ function DepartmentRow({
 
 export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
-  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
-  const catalog = useQuery({ ...trpc.servicesCatalog.list.queryOptions({ teamSlug }), retry: false });
+  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const catalog = useQuery({ ...trpc.servicesCatalog.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   const [departmentName, setDepartmentName] = useState("");
 

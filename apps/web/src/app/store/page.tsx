@@ -7,12 +7,9 @@ import { fetchSellerPage, fetchStoreInfo } from "@/lib/server-api";
 export default async function StorefrontHome() {
   const store = await fetchStoreInfo();
   if (!store) notFound();
+  // Commerce teams never list products on the home page, so only services fetch the seller page.
+  if (store.product !== "services") return <StoreHome name={store.name} />;
   const page = await fetchSellerPage();
-  if (store.product === "services") {
-    if (!page) notFound();
-    return <SellerPage page={{ ...page, pageBase: "" }} />;
-  }
-  // Fall back to the plain home rather than 404 when the seller page is unavailable.
-  if (page && page.products.length > 0) return <SellerPage page={{ ...page, pageBase: "" }} />;
-  return <StoreHome name={store.name} />;
+  if (!page) notFound();
+  return <SellerPage page={{ ...page, pageBase: "" }} />;
 }

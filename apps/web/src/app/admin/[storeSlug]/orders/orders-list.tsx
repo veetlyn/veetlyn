@@ -12,7 +12,7 @@ function formatDate(value: string | null): string {
 }
 
 export default function OrdersList({ teamSlug }: { teamSlug: string }) {
-  const orders = useQuery({ ...trpc.order.list.queryOptions({ teamSlug }), retry: false });
+  const orders = useQuery({ ...trpc.order.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   return (
     <main className="container mx-auto max-w-4xl space-y-6 px-4 py-6">

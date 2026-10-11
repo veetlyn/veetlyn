@@ -61,8 +61,8 @@ function MemberTitle({ teamSlug, member }: { teamSlug: string; member: Member })
 
 export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
-  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
-  const members = useQuery({ ...trpc.servicesTeam.listMembers.queryOptions({ teamSlug }), retry: false });
+  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const members = useQuery({ ...trpc.servicesTeam.listMembers.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   const [email, setEmail] = useState("");
   const [newRole, setNewRole] = useState<string>("freelancer");

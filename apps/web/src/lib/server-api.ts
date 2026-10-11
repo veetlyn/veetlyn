@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { z } from "zod";
 
 import { type PlatformOrigins, platformOrigins } from "./platform-url";
@@ -40,12 +41,13 @@ const storeInfoSchema = z.object({
 });
 export type StoreInfo = z.infer<typeof storeInfoSchema>;
 
-export async function fetchStoreInfo(): Promise<StoreInfo | null> {
+// The store layout and its pages each ask; cache() makes that one api call per request.
+export const fetchStoreInfo = cache(async (): Promise<StoreInfo | null> => {
   const response = await callApi("/api/store");
   if (!response.ok) return null;
   const parsed = storeInfoSchema.safeParse(await response.json());
   return parsed.success ? parsed.data : null;
-}
+});
 
 const offeringSchema = z.object({
   id: z.string(),
@@ -75,12 +77,12 @@ const sellerPageSchema = z.object({
 });
 export type SellerPageView = z.infer<typeof sellerPageSchema>;
 
-export async function fetchSellerPage(): Promise<SellerPageView | null> {
+export const fetchSellerPage = cache(async (): Promise<SellerPageView | null> => {
   const response = await callApi("/api/store/page");
   if (!response.ok) return null;
   const parsed = sellerPageSchema.safeParse(await response.json());
   return parsed.success ? parsed.data : null;
-}
+});
 
 const sessionSchema = z.object({
   user: z.object({ id: z.string(), name: z.string(), email: z.string() }),
