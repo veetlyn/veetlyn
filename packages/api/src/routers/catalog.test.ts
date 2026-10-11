@@ -162,10 +162,11 @@ describe.skipIf(!hasTestDatabase)("catalog router", () => {
     });
   });
 
-  it("updates a product and reports unknown products as NOT_FOUND", async () => {
+  it("updates a published product, keeps it publishable, and reports unknown products as NOT_FOUND", async () => {
     const { userId } = await ownerWithStore();
     const caller = callerFor(userId);
     const created = await caller.catalog.create({ storeSlug: "lamp-shop", ...productInput });
+    await caller.catalog.publish({ storeSlug: "lamp-shop", id: created.product.id });
 
     const updated = await caller.catalog.update({
       storeSlug: "lamp-shop",
@@ -174,7 +175,20 @@ describe.skipIf(!hasTestDatabase)("catalog router", () => {
       title: "Floor lamp",
       variants: [{ options: [], sku: "FLOOR-1", priceMinor: 9900, stock: 2 }],
     });
-    expect(updated.product.title).toBe("Floor lamp");
+    expect(updated.product).toMatchObject({ title: "Floor lamp", status: "published" });
+
+    await expect(
+      caller.catalog.update({
+        storeSlug: "lamp-shop",
+        id: created.product.id,
+        ...productInput,
+        variants: [{ options: [], sku: "FLOOR-1", priceMinor: 0, stock: 2 }],
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Set a price above zero before publishing." });
+    const stored = await caller.catalog.get({ storeSlug: "lamp-shop", id: created.product.id });
+    expect(stored.product.title).toBe("Floor lamp");
+    expect(stored.variants).toHaveLength(1);
+    expect(stored.variants[0]).toMatchObject({ sku: "FLOOR-1", priceMinor: 9900 });
 
     await expect(
       caller.catalog.get({ storeSlug: "lamp-shop", id: crypto.randomUUID() }),
