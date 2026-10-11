@@ -28,6 +28,8 @@ export function createDiscordRest(input: { token: string; fetch?: typeof fetch }
     if (!response.ok) {
       throw new Error(`Discord ${method} ${path} failed: ${response.status}`);
     }
+    // An unread body holds the connection open on Workers.
+    await response.body?.cancel();
   }
 
   return {

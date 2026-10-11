@@ -132,7 +132,7 @@ async function linkServer(
   if (!guildId || !discordId) {
     return "Run this command in the server you want to link to your Payleor team.";
   }
-  if (permissions === undefined || (BigInt(permissions) & BigInt(MANAGE_GUILD)) !== BigInt(MANAGE_GUILD)) {
+  if (!permissions || (BigInt(permissions) & BigInt(MANAGE_GUILD)) !== BigInt(MANAGE_GUILD)) {
     return "You need the Manage Server permission in this server to link it to Payleor.";
   }
   // Consumed first and atomically, so the one-time code cannot be raced or replayed.
