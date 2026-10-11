@@ -36,17 +36,17 @@ export function safeHttpsLink(link: string | null): string | null {
   return link !== null && isHttpsUrl(link) ? link : null;
 }
 
-const CLIENT_LABELS: Record<DeliveryStatus, string> = {
+const CLIENT_LABELS = {
   submitted: "Waiting for your answer",
   accepted: "Accepted",
   changes_requested: "Changes requested",
-};
+} satisfies Record<DeliveryStatus, string>;
 
-const STAFF_LABELS: Record<DeliveryStatus, string> = {
+const STAFF_LABELS = {
   submitted: "Waiting for the client",
   accepted: "Accepted",
   changes_requested: "Changes requested",
-};
+} satisfies Record<DeliveryStatus, string>;
 
 export function deliveryStatusLabel(status: DeliveryStatus): string {
   return CLIENT_LABELS[status];

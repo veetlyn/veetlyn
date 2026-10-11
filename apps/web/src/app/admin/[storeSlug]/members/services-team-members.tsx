@@ -1,6 +1,6 @@
 "use client";
 
-import { SERVICES_TEAM_ROLES } from "@jendal-workspace/core";
+import { isServicesTeamRole, SERVICES_TEAM_ROLES, type ServicesTeamRole } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -65,7 +65,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   const members = useQuery({ ...trpc.servicesTeam.listMembers.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   const [email, setEmail] = useState("");
-  const [newRole, setNewRole] = useState<string>("freelancer");
+  const [newRole, setNewRole] = useState<ServicesTeamRole>("freelancer");
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.listMembers.queryKey({ teamSlug }) });
@@ -90,7 +90,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
 
   function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (email.trim()) add.mutate({ teamSlug, email: email.trim(), role: newRole as "admin" | "manager" | "freelancer" });
+    if (email.trim()) add.mutate({ teamSlug, email: email.trim(), role: newRole });
   }
 
   return (
@@ -141,13 +141,10 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                     className={SELECT_CLASS}
                     value={member.role}
                     disabled={setRole.isPending}
-                    onChange={(e) =>
-                      setRole.mutate({
-                        teamSlug,
-                        userId: member.userId,
-                        role: e.target.value as "admin" | "manager" | "freelancer",
-                      })
-                    }
+                    onChange={(e) => {
+                      const role = e.target.value;
+                      if (isServicesTeamRole(role)) setRole.mutate({ teamSlug, userId: member.userId, role });
+                    }}
                   >
                     {SERVICES_TEAM_ROLES.map((role) => (
                       <option key={role} value={role}>
@@ -190,7 +187,9 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                     id="member-role"
                     className={SELECT_CLASS}
                     value={newRole}
-                    onChange={(e) => setNewRole(e.target.value)}
+                    onChange={(e) => {
+                      if (isServicesTeamRole(e.target.value)) setNewRole(e.target.value);
+                    }}
                   >
                     {SERVICES_TEAM_ROLES.map((role) => (
                       <option key={role} value={role}>

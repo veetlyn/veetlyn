@@ -17,8 +17,12 @@ type PayPalSetup = {
   merchantId: string;
 };
 
-function messageOf(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : "Something went wrong. Try again.";
+function messageOf(cause: unknown): string {
+  return cause instanceof Error && cause.message ? cause.message : "Something went wrong. Try again.";
+}
+
+function asError(cause: unknown): Error {
+  return cause instanceof Error ? cause : new Error(messageOf(cause));
 }
 
 export default function CheckoutForm({ slug, productId, currency }: { slug: string; productId: string; currency: string }) {
@@ -126,7 +130,7 @@ function PayPalButton({
     let stopped = false;
     let session: OneTimePaymentSession | null = null;
     // The SDK reports a refused order through start() and onError with its own wording; the server's message is the useful one.
-    let startError: unknown = null;
+    let startError: Error | null = null;
     // Covers the popup being open and the capture after it, so repeat clicks and key presses cannot start a second payment.
     let starting = false;
     let capturing = false;
@@ -203,10 +207,10 @@ function PayPalButton({
           (result) => {
             secret = result.secret;
           },
-          (error: unknown) => {
+          (cause: unknown) => {
             starting = false;
-            startError = error;
-            setProblem(messageOf(error));
+            startError = asError(cause);
+            setProblem(messageOf(cause));
           },
         );
         // start() must run inside the click so the popup is allowed, and takes the order promise itself.
@@ -215,8 +219,8 @@ function PayPalButton({
             { presentationMode: "auto" },
             started.then((result) => ({ orderId: result.orderId })),
           )
-          .catch((error: unknown) => {
-            if (!startError) setProblem(messageOf(error));
+          .catch((cause: unknown) => {
+            if (!startError) setProblem(messageOf(cause));
           })
           .finally(() => {
             if (!capturing) starting = false;

@@ -1,4 +1,4 @@
-import { policiesFor } from "@jendal-workspace/core";
+import { policiesFor, type StorePolicy } from "@jendal-workspace/core";
 import Link from "next/link";
 
 import { SELLER_POLICY_PAGES } from "@/content/seller-policies";
@@ -10,7 +10,8 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   if (!info) return children;
 
   const { site } = await getPlatformOrigins();
-  const pages = info.product === "services" ? SELLER_POLICY_PAGES : STORE_POLICY_PAGES;
+  const pageFor = (policy: StorePolicy) =>
+    info.product === "services" ? SELLER_POLICY_PAGES.get(policy) : STORE_POLICY_PAGES[policy];
   const payleorLinks = [
     { href: `${site}/legal/terms`, label: "Payleor terms" },
     { href: `${site}/legal/privacy`, label: "Payleor privacy" },
@@ -25,7 +26,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           <nav aria-label="Store policies" className="flex flex-wrap gap-x-5 gap-y-2">
             {policiesFor(info.product).map((policy) => (
               <Link key={policy} href={`/policies/${policy}`} className="hover:text-foreground">
-                {pages[policy]?.title}
+                {pageFor(policy)?.title}
               </Link>
             ))}
           </nav>

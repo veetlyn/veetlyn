@@ -1,3 +1,4 @@
+import { isServicesTeamRole } from "@jendal-workspace/core";
 import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -6,7 +7,11 @@ import { getStoreUrlParts, listMyWorkspaces, requireSession } from "@/lib/server
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { storeUrl } from "@/lib/store-url";
 
-const STATUS_LABEL: Record<string, string> = { draft: "Draft", active: "Live", suspended: "Suspended" };
+const STATUS_LABEL = new Map([
+  ["draft", "Draft"],
+  ["active", "Live"],
+  ["suspended", "Suspended"],
+]);
 
 export default async function AdminHome() {
   await requireSession();
@@ -49,7 +54,7 @@ export default async function AdminHome() {
                   </p>
                 </div>
                 <span className="shrink-0 text-sm text-muted-foreground">
-                  {STATUS_LABEL[store.status] ?? store.status}
+                  {STATUS_LABEL.get(store.status) ?? store.status}
                 </span>
               </li>
             ))}
@@ -62,8 +67,9 @@ export default async function AdminHome() {
                   <p className="truncate text-sm text-muted-foreground">Services team</p>
                 </div>
                 <span className="shrink-0 text-sm text-muted-foreground">
-                  {SERVICES_TEAM_ROLE_LABELS[servicesTeam.role as keyof typeof SERVICES_TEAM_ROLE_LABELS] ??
-                    servicesTeam.role}
+                  {isServicesTeamRole(servicesTeam.role)
+                    ? SERVICES_TEAM_ROLE_LABELS[servicesTeam.role]
+                    : servicesTeam.role}
                 </span>
               </li>
             ))}

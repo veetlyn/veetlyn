@@ -3,9 +3,15 @@
 import {
   bpsToPercent,
   CURRENCIES,
+  type Currency,
+  isCurrency,
+  isPayoutMode,
+  isQuotingMode,
   MAX_BIO_CHARS,
   PAYOUT_MODES,
+  type PayoutMode,
   QUOTING_MODES,
+  type QuotingMode,
   SOLO_MANAGEMENT_FEE_BPS,
   SOLO_TEAM_CUT_BPS,
 } from "@jendal-workspace/core";
@@ -60,11 +66,11 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   const queryClient = useQueryClient();
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
-  const [currency, setCurrency] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<Currency | null>(null);
   const [teamCut, setTeamCut] = useState<string | null>(null);
   const [managementFee, setManagementFee] = useState<string | null>(null);
-  const [quotingMode, setQuotingMode] = useState<string | null>(null);
-  const [payoutMode, setPayoutMode] = useState<string | null>(null);
+  const [quotingMode, setQuotingMode] = useState<QuotingMode | null>(null);
+  const [payoutMode, setPayoutMode] = useState<PayoutMode | null>(null);
   const [bio, setBio] = useState<string | null>(null);
 
   const save = useMutation(
@@ -119,7 +125,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
     if (solo) {
       save.mutate({
         teamSlug,
-        currency: values.currency as "USD" | "EUR",
+        currency: values.currency,
         teamCutBps: current?.teamCutBps ?? SOLO_TEAM_CUT_BPS,
         managementFeeBps: current?.managementFeeBps ?? SOLO_MANAGEMENT_FEE_BPS,
         quotingMode: current?.quotingMode ?? "assigned",
@@ -130,11 +136,11 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
     if (teamCutField.bps === null || managementFeeField.bps === null) return;
     save.mutate({
       teamSlug,
-      currency: values.currency as "USD" | "EUR",
+      currency: values.currency,
       teamCutBps: teamCutField.bps,
       managementFeeBps: managementFeeField.bps,
-      quotingMode: values.quotingMode as "open" | "assigned" | "team",
-      payoutMode: values.payoutMode as "manual" | "rules" | "automatic",
+      quotingMode: values.quotingMode,
+      payoutMode: values.payoutMode,
     });
   }
 
@@ -185,7 +191,9 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
             id="currency"
             className={SELECT_CLASS}
             value={values.currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={(e) => {
+              if (isCurrency(e.target.value)) setCurrency(e.target.value);
+            }}
           >
             {CURRENCIES.map((c) => (
               <option key={c} value={c}>
@@ -214,7 +222,9 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
                 id="quoting-mode"
                 className={SELECT_CLASS}
                 value={values.quotingMode}
-                onChange={(e) => setQuotingMode(e.target.value)}
+                onChange={(e) => {
+                  if (isQuotingMode(e.target.value)) setQuotingMode(e.target.value);
+                }}
               >
                 {QUOTING_MODES.map((mode) => (
                   <option key={mode} value={mode}>
@@ -229,7 +239,9 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
                 id="payout-mode"
                 className={SELECT_CLASS}
                 value={values.payoutMode}
-                onChange={(e) => setPayoutMode(e.target.value)}
+                onChange={(e) => {
+                  if (isPayoutMode(e.target.value)) setPayoutMode(e.target.value);
+                }}
               >
                 {PAYOUT_MODES.map((mode) => (
                   <option key={mode} value={mode}>

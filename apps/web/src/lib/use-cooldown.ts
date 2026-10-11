@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+export type Cooldown = { remaining: number; restart: () => void };
+
 // Starts counting down on mount, because the page opens right after an email was sent.
-export function useCooldown(seconds: number): { remaining: number; restart: () => void } {
+export function useCooldown(seconds: number): Cooldown {
   const [remaining, setRemaining] = useState(seconds);
   useEffect(() => {
     if (remaining <= 0) return;
