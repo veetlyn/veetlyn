@@ -460,7 +460,10 @@ async function captureAndApply(
   const capture = captureFromOrder(paypalOrder);
   if (!capture) throw new Error(`PayPal order ${paypalOrderId} has no capture`);
   // The capture went through and was refunded before this call saw it; the refund news settles the order.
-  if (isRefundedCaptureStatus(capture.status)) throw refunded();
+  if (isRefundedCaptureStatus(capture.status)) {
+    log.warn({ action: "order.capture", order: { id: orderId }, capture: { id: capture.id, status: capture.status } });
+    throw refunded();
+  }
   const result = await applyOrderCaptureFact(deps, orderCaptureFact(orderId, paypalOrderId, capture));
   return { status: capture.status, result };
 }
@@ -517,12 +520,14 @@ async function postOnce(db: Database, teamId: string, transfer: LedgerTransferDr
 
 // Sellers decision: any refund or reversal, full or partial, refunds the order and revokes every grant. Each
 // PayPal refund is posted once by its id, and a reversal once by its capture, whichever event reports it.
+// expectedRefundId is the refund the event reported: until PayPal's order lists it, the queue retries.
 export async function applyOrderRefund(
   deps: { db: Database },
   order: OrderRow,
   paypalOrder: PayPalOrder,
-  now: Date = new Date(),
+  options: { expectedRefundId?: string | null; now?: Date } = {},
 ): Promise<OrderRefundResult> {
+  const now = options.now ?? new Date();
   const captureId = order.paypalCaptureId;
   if (!captureId) return "not paid";
   const captureStatus = captureStatusIn(paypalOrder, captureId);
@@ -546,12 +551,14 @@ export async function applyOrderRefund(
   });
   if (marked === "not paid") return marked;
 
+  let refundedMinor = 0;
   for (const refund of refunds) {
     const amountMinor = refund.amount?.currency_code === order.currency ? parseMajorAmount(refund.amount.value) : null;
     if (amountMinor === null) {
       log.warn({ action: "order.refund", order: { id: order.id }, refund: { id: refund.id, posted: false } });
       continue;
     }
+    refundedMinor += amountMinor;
     await postOnce(
       deps.db,
       order.teamId,
@@ -559,19 +566,28 @@ export async function applyOrderRefund(
     );
   }
   if (reversed) {
-    await postOnce(
-      deps.db,
-      order.teamId,
-      orderRefundedTransfer({
-        currency: order.currency,
-        orderId: order.id,
-        refundKey: `reversal:${captureId}`,
-        amountMinor: order.amountMinor,
-      }),
-    );
+    // A reversal takes back what the refunds left with the seller, not the full amount again.
+    const reversedMinor = Math.max(0, order.amountMinor - refundedMinor);
+    if (reversedMinor > 0) {
+      await postOnce(
+        deps.db,
+        order.teamId,
+        orderRefundedTransfer({
+          currency: order.currency,
+          orderId: order.id,
+          refundKey: `reversal:${captureId}`,
+          amountMinor: reversedMinor,
+        }),
+      );
+    }
   } else if (refunds.length === 0) {
     // Revoked already; the retry posts the refund once PayPal lists it.
     throw new Error(`PayPal order ${paypalOrder.id} lists no completed refund yet for capture ${captureId}`);
+  }
+  const { expectedRefundId } = options;
+  if (expectedRefundId && !refunds.some((refund) => refund.id === expectedRefundId)) {
+    // A later partial refund on an order already refunded: posted on the retry once PayPal lists it.
+    throw new Error(`PayPal order ${paypalOrder.id} does not list refund ${expectedRefundId} as completed yet`);
   }
   return marked;
 }

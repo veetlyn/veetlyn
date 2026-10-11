@@ -129,11 +129,11 @@ async function processOrderEvent(deps: WebhookDeps, order: OrderRow, event: PayP
       }
     }
     const paypalOrder = await deps.paypal.client.orders.get({ orderId: paypalOrderId, merchantId });
-    if (PARKED_EVENTS.has(event.eventType)) return await refundOutcome(deps, order, paypalOrder);
+    if (PARKED_EVENTS.has(event.eventType)) return await refundOutcome(deps, order, paypalOrder, event);
     const capture = captureFromOrder(paypalOrder);
     // PayPal sent a capture event, so its order lookup is lagging; the queue retries.
     if (!capture) throw new Error(`Order ${paypalOrderId} has no capture yet`);
-    if (isRefundedCaptureStatus(capture.status)) return await refundOutcome(deps, order, paypalOrder);
+    if (isRefundedCaptureStatus(capture.status)) return await refundOutcome(deps, order, paypalOrder, event);
     const fact = orderCaptureFact(order.id, paypalOrderId, capture);
     const result = await applyOrderCaptureFact(deps, fact);
     // applyOrderCaptureFact only logs a fee failure; here it throws, so the queue retries it and then marks it failed.
@@ -146,8 +146,15 @@ async function processOrderEvent(deps: WebhookDeps, order: OrderRow, event: PayP
   }
 }
 
-async function refundOutcome(deps: WebhookDeps, order: OrderRow, paypalOrder: PayPalOrder): Promise<WebhookOutcome> {
-  return { status: "processed", note: await applyOrderRefund(deps, order, paypalOrder) };
+async function refundOutcome(
+  deps: WebhookDeps,
+  order: OrderRow,
+  paypalOrder: PayPalOrder,
+  event: PayPalWebhookEventRow,
+): Promise<WebhookOutcome> {
+  const expectedRefundId =
+    event.eventType === "PAYMENT.CAPTURE.REFUNDED" && event.resourceType === "refund" ? event.resourceId : null;
+  return { status: "processed", note: await applyOrderRefund(deps, order, paypalOrder, { expectedRefundId }) };
 }
 
 async function processPaymentEvent(deps: PaymentDeps, event: PayPalWebhookEventRow): Promise<WebhookOutcome> {
