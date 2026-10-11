@@ -26,7 +26,7 @@ export type EmailServices = {
   storeOrigin: (slug: string) => string;
   // Sends that may outlive the response; awaited when absent.
   waitUntil?: (promise: Promise<unknown>) => void;
-  onError?: (error: unknown, email: { kind: string; to: string }) => void | Promise<void>;
+  onError?: (cause: unknown, email: { kind: string; to: string }) => void | Promise<void>;
 };
 
 export type Context = {

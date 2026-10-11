@@ -22,7 +22,7 @@ function base64url(bytes: ArrayBuffer): string {
     .replace(/=+$/, "");
 }
 
-function unbase64url(text: string): Uint8Array {
+function unbase64url(text: string): Uint8Array<ArrayBuffer> {
   const binary = atob(text.replaceAll("-", "+").replaceAll("_", "/"));
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }
@@ -38,14 +38,14 @@ async function verifyLink(secret: string, label: string, token: string): Promise
   const dot = token.lastIndexOf(".");
   if (dot <= 0) return null;
   const id = token.slice(0, dot);
-  let signature: Uint8Array;
+  let signature: Uint8Array<ArrayBuffer>;
   try {
     signature = unbase64url(token.slice(dot + 1));
   } catch {
     return null;
   }
   const key = await linkKey(secret, label);
-  const ok = await crypto.subtle.verify("HMAC", key, signature as BufferSource, encoder.encode(id));
+  const ok = await crypto.subtle.verify("HMAC", key, signature, encoder.encode(id));
   return ok ? id : null;
 }
 
@@ -66,9 +66,11 @@ export function verifyPayLink(secret: string, token: string): Promise<string | n
 }
 
 // The links are signed with the Better Auth secret.
-export function linkSecret(auth: { options: Record<string, unknown> }): string {
+export type LinkSecretSource = { options: { secret?: string } };
+
+export function linkSecret(auth: LinkSecretSource): string {
   const secret = auth.options.secret;
-  if (typeof secret !== "string" || secret.length === 0) {
+  if (!secret) {
     throw new Error("The link secret (BETTER_AUTH_SECRET) is not configured.");
   }
   return secret;

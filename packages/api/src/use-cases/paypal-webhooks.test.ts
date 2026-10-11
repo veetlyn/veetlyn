@@ -1,5 +1,5 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
-import { ledgerAccounts, createFakeFileStore, hashToken, orderFeesTransfer } from "@jendal-workspace/core";
+import { ledgerAccounts, createFakeFileStore, hashToken, orderFeesTransfer, type JsonObject } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
@@ -47,7 +47,7 @@ const FEE_BREAKDOWN = {
   },
 };
 
-function capturedOrder(status: string, value = "600.00", extra: Record<string, unknown> = {}) {
+function capturedOrder(status: string, value = "600.00", extra: JsonObject = {}) {
   return {
     id: "ORDER1",
     status: status === "COMPLETED" ? "COMPLETED" : "PENDING",
@@ -252,7 +252,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
 
     const error = await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId })).then(
       () => null,
-      (thrown: unknown) => thrown,
+      (cause: unknown) => cause,
     );
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(PayPalError);

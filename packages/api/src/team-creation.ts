@@ -30,8 +30,8 @@ export async function organizationForNewTeam(
   return created.id;
 }
 
-export function toTRPCError(error: unknown): unknown {
-  if (!(error instanceof APIError)) return error;
-  const code = error.status === "CONFLICT" ? "CONFLICT" : error.status === "FORBIDDEN" ? "FORBIDDEN" : "BAD_REQUEST";
-  return new TRPCError({ code, message: error.body?.message ?? error.message, cause: error });
+export function toTRPCError(cause: unknown): Error {
+  if (!(cause instanceof APIError)) return cause instanceof Error ? cause : new Error(String(cause), { cause });
+  const code = cause.status === "CONFLICT" ? "CONFLICT" : cause.status === "FORBIDDEN" ? "FORBIDDEN" : "BAD_REQUEST";
+  return new TRPCError({ code, message: cause.body?.message ?? cause.message, cause });
 }

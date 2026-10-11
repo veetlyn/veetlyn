@@ -29,6 +29,7 @@ import {
   type TextCache,
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { postgresError } from "@jendal-workspace/db/postgres-errors";
 import {
   deleteImages,
   deleteVariants,
@@ -78,11 +79,9 @@ export type ProductSummary = {
 };
 
 // Drizzle wraps driver errors; postgres.js puts the SQLSTATE and constraint name on the cause.
-function isSkuConflict(error: unknown): boolean {
-  const cause = (error as { cause?: unknown } | null)?.cause;
-  if (typeof cause !== "object" || cause === null) return false;
-  const { code, constraint_name } = cause as { code?: string; constraint_name?: string };
-  return code === "23505" && constraint_name === "uq_variants_store_sku";
+function isSkuConflict(cause: unknown): boolean {
+  const fields = postgresError(cause);
+  return fields?.code === "23505" && fields.constraint_name === "uq_variants_store_sku";
 }
 
 async function withSkuMapping<T>(run: () => Promise<T>): Promise<T> {
@@ -216,6 +215,7 @@ export async function listProductSummaries(db: Database, tenant: TenantContext):
     summaries.push({
       id: product.id,
       title: product.title,
+      // SAFETY: products_status_check limits products.status to draft and published.
       status: product.status as ProductSummary["status"],
       variantCount: variants.length,
       priceLow: prices.length > 0 ? Math.min(...prices) : null,
@@ -291,8 +291,8 @@ export type SinglePrefillResult =
   | { status: "no_match" }
   | { status: "unavailable" };
 
-function sourceFailure(error: unknown): "no_match" | "unavailable" | null {
-  if (error instanceof SourceError) return error.kind === "unavailable" ? "unavailable" : "no_match";
+function sourceFailure(cause: unknown): "no_match" | "unavailable" | null {
+  if (cause instanceof SourceError) return cause.kind === "unavailable" ? "unavailable" : "no_match";
   return null;
 }
 
@@ -382,7 +382,10 @@ export async function getMarketPrice(
   const refreshKey = marketPriceRefreshKey(tenant.storeId, productId);
   const cached = await services.textCache.get(cacheKey);
   const canRefresh = (await services.textCache.get(refreshKey)) === null;
-  if (cached && !(refresh && canRefresh)) return JSON.parse(cached) as MarketPriceReport;
+  if (cached && !(refresh && canRefresh)) {
+    // SAFETY: this key is written only below, with JSON.stringify of a MarketPriceReport.
+    return JSON.parse(cached) as MarketPriceReport;
+  }
   if (refresh && canRefresh) await services.textCache.put(refreshKey, "1", MARKET_PRICE_REFRESH_TTL_SECONDS);
 
   let report: MarketPriceReport;

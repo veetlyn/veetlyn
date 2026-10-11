@@ -1,5 +1,5 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
-import { ledgerAccounts, createFakeFileStore } from "@jendal-workspace/core";
+import { ledgerAccounts, createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
@@ -32,7 +32,7 @@ const ITEMS = [
   { description: "Build", amountMinor: 60_000, extraDays: 0 },
 ];
 
-function capturedOrder(status: string, value = "600.00", extra: Record<string, unknown> = {}) {
+function capturedOrder(status: string, value = "600.00", extra: JsonObject = {}) {
   return {
     id: "ORDER1",
     status: status === "COMPLETED" ? "COMPLETED" : "PENDING",
@@ -191,7 +191,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     it("refuses a capture whose amount or currency differs from the payment", async () => {
       const { paymentId } = await depositWithOrder();
 
-      const mismatch = await applyCaptureFact(db, fact(paymentId, { amountMinor: 59_999 })).catch((error: unknown) => error);
+      const mismatch = await applyCaptureFact(db, fact(paymentId, { amountMinor: 59_999 })).catch((cause: unknown) => cause);
       expect(mismatch).toBeInstanceOf(CaptureFactConflict);
       expect(mismatch).toMatchObject({ message: expect.stringMatching(/does not match/) });
       await expect(applyCaptureFact(db, fact(paymentId, { currency: "EUR" }))).rejects.toThrow(/does not match/);
@@ -260,7 +260,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       const { paymentId } = await depositWithOrder();
       await applyCaptureFact(db, fact(paymentId));
 
-      const second = await applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" })).catch((error: unknown) => error);
+      const second = await applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" })).catch((cause: unknown) => cause);
       expect(second).toBeInstanceOf(CaptureFactConflict);
       expect(second).toMatchObject({ message: expect.stringMatching(/already has capture/) });
     });
@@ -440,12 +440,12 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       const caller = callerFor(null, makePayPal(fetch));
       await caller.payment.payStart({ token });
 
-      const rejection = await caller.payment.payCapture({ token, orderId: "ORDER1" }).catch((error: unknown) => error);
+      const rejection = await caller.payment.payCapture({ token, orderId: "ORDER1" }).catch((cause: unknown) => cause);
       expect(rejection).toMatchObject({
         code: "UNPROCESSABLE_CONTENT",
         message: "PayPal declined this payment method. Choose another way to pay.",
       });
-      const cause = (rejection as { cause?: unknown }).cause;
+      const cause = rejection instanceof Error ? rejection.cause : undefined;
       expect(cause).toBeInstanceOf(PayPalError);
       expect(cause).toMatchObject({ debugId: "d422" });
       expect((await paymentRow(paymentId))?.status).toBe("pending");
@@ -582,12 +582,12 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       const caller = callerFor(null, makePayPal(fetch));
       await caller.payment.payStart({ token });
 
-      const rejection = await caller.payment.payCapture({ token, orderId: "ORDER1" }).catch((error: unknown) => error);
+      const rejection = await caller.payment.payCapture({ token, orderId: "ORDER1" }).catch((cause: unknown) => cause);
       expect(rejection).toMatchObject({
         code: "INTERNAL_SERVER_ERROR",
         message: "We could not confirm your payment. It may have gone through; check your email before trying again.",
       });
-      const cause = (rejection as { cause?: unknown }).cause;
+      const cause = rejection instanceof Error ? rejection.cause : undefined;
       expect(cause).toBeInstanceOf(PayPalError);
       expect(cause).toMatchObject({ debugId: "d500" });
     });

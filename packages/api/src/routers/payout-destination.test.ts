@@ -1,5 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
-import { createFakeFileStore } from "@jendal-workspace/core";
+import { createFakeFileStore, type JsonValue } from "@jendal-workspace/core";
 import { account } from "@jendal-workspace/db/schema/auth";
 import { createTestDb, hasTestDatabase, seedUser, truncateAll } from "@jendal-workspace/db/testing/db";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,7 +12,7 @@ import { appRouter } from "./index";
 const PAYPAL_USER_ID = "https://www.paypal.com/webapps/auth/identity/user/abc123";
 const PAYER_ID = "G83JXTJ5EHCQ2";
 
-function stubUserInfo(body: unknown, status = 200) {
+function stubUserInfo(body: JsonValue, status = 200) {
   const calls: Array<{ url: string; authorization: string | null }> = [];
   vi.stubGlobal("fetch", async (url: URL | RequestInfo, init?: RequestInit) => {
     calls.push({ url: String(url), authorization: new Headers(init?.headers).get("authorization") });
@@ -103,7 +103,7 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
     expect(calls).toEqual([]);
   });
 
-  it("saves nothing when PayPal's answer is for another account, has no payer ID, or is an error", async () => {
+  it("saves nothing when PayPal's answer is for another account, has no payer ID, is not an object, or is an error", async () => {
     const userId = await seedUser(db, "Dee");
     await linkPayPal(userId);
     const unconfirmed = { code: "PRECONDITION_FAILED", message: "PayPal did not confirm your payer ID. Connect PayPal again." };
@@ -111,6 +111,8 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
     stubUserInfo({ user_id: "https://www.paypal.com/webapps/auth/identity/user/other", payer_id: PAYER_ID });
     await expect(caller(userId).payoutDestination.connect()).rejects.toMatchObject(unconfirmed);
     stubUserInfo({ user_id: PAYPAL_USER_ID });
+    await expect(caller(userId).payoutDestination.connect()).rejects.toMatchObject(unconfirmed);
+    stubUserInfo(PAYER_ID);
     await expect(caller(userId).payoutDestination.connect()).rejects.toMatchObject(unconfirmed);
     stubUserInfo({ name: "invalid_token" }, 401);
     await expect(caller(userId).payoutDestination.connect()).rejects.toMatchObject(unconfirmed);

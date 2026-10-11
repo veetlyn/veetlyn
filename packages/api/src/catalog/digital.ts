@@ -131,6 +131,7 @@ export async function getDigitalProduct(
     id: product.id,
     title: product.title,
     description: product.description,
+    // SAFETY: products_status_check limits products.status to draft and published.
     status: product.status as "draft" | "published",
     priceMinor: variants[0]?.priceMinor ?? 0,
     fileName: file?.fileName ?? null,

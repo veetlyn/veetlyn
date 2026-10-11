@@ -10,7 +10,7 @@ import { protectedProcedure, router } from "../index";
 import { fetchPayPalUserInfo } from "../paypal-userinfo";
 
 // tRPC has no transformer here, so dates are returned as ISO strings (as servicesTeam.get does).
-function shaped(record: { paypalPayerId: string; paypalEmail: string | null; verifiedAt: Date }) {
+function toDestinationView(record: { paypalPayerId: string; paypalEmail: string | null; verifiedAt: Date }) {
   return {
     paypalPayerId: record.paypalPayerId,
     paypalEmail: record.paypalEmail,
@@ -28,7 +28,7 @@ function unconfirmed(): TRPCError {
 export const payoutDestinationRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
     const destination = await getPayoutDestination(ctx.db, ctx.session.user.id);
-    return destination ? shaped(destination) : null;
+    return destination ? toDestinationView(destination) : null;
   }),
 
   // Runs after "Log in with PayPal" returns the user to /me/payouts. Takes no input: the payer ID and
@@ -51,6 +51,6 @@ export const payoutDestinationRouter = router({
     const userInfo = await fetchPayPalUserInfo(ctx.environment, tokens.accessToken);
     const draft = payoutDestinationFromUserInfo(linked.accountId, userInfo);
     if (!draft) throw unconfirmed();
-    return shaped(await savePayoutDestination(ctx.db, userId, draft));
+    return toDestinationView(await savePayoutDestination(ctx.db, userId, draft));
   }),
 });
