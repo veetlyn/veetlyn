@@ -5,6 +5,7 @@ import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
+import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import Loader from "@/components/loader";
 import PayPalConnectCard from "@/components/paypal-connect-card";
 import PublishCard from "@/components/seller-page/publish-card";
@@ -70,6 +71,11 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
             Products
           </Link>
         ) : null}
+        {settings?.storeEnabled ? (
+          <Link href={`/${team.slug}/orders`} className="underline underline-offset-4">
+            Orders
+          </Link>
+        ) : null}
         <Link href={`/${team.slug}/settings`} className="underline underline-offset-4">
           Settings
         </Link>
@@ -108,9 +114,14 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="font-medium">Store</h2>
           {settings?.storeEnabled ? (
-            <Link href={`/${team.slug}/products`} className="text-sm underline underline-offset-4">
-              Open products
-            </Link>
+            <div className="flex gap-4">
+              <Link href={`/${team.slug}/products`} className="text-sm underline underline-offset-4">
+                Open products
+              </Link>
+              <Link href={`/${team.slug}/orders`} className="text-sm underline underline-offset-4">
+                Open orders
+              </Link>
+            </div>
           ) : null}
         </div>
         <p className="text-sm text-muted-foreground">
@@ -132,6 +143,8 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
               </p>
             ) : null}
           </div>
+        ) : role === "admin" ? (
+          <TurnOffStoreButton teamSlug={team.slug} />
         ) : null}
       </section>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">

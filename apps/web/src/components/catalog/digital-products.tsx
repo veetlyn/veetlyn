@@ -4,6 +4,7 @@ import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
+import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
@@ -104,6 +105,8 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
           ))}
         </ul>
       )}
+
+      {role === "admin" ? <TurnOffStoreButton teamSlug={teamSlug} /> : null}
     </main>
   );
 }
