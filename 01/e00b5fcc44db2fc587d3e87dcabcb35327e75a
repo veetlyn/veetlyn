@@ -1,0 +1,23 @@
+packages/api/src/routers/store.ts
+  s_aedb25c35a1039::t_9c4bd800d0cfcd 40-43
+packages/api/src/routers/services-team.test.ts
+  s_aedb25c35a1039::t_e16c5f627a40de 249-250,255-262
+packages/api/src/routers/services-team.ts
+  s_aedb25c35a1039::t_72bbb1bb7e0e6b 32,34,74-77,94-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01e00b5fcc44db2fc587d3e87dcabcb35327e75a",
+  "prompts": {},
+  "sessions": {
+    "s_aedb25c35a1039": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "dab22c9b-be84-4ff7-9e63-e0e45c830dbb",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
