@@ -11,11 +11,12 @@ import { trpc } from "@/utils/trpc";
 
 export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
-  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
+  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const products = useQuery({
     ...trpc.catalog.digitalList.queryOptions({ storeSlug: teamSlug }),
     enabled: team.data?.settings?.storeEnabled === true,
     retry: false,
+    meta: { silent: true },
   });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({

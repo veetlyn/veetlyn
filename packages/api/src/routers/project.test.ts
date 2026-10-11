@@ -1264,32 +1264,45 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
     });
 
-    it("refuses a fourth open request from the same email on the team", async () => {
+    it("refuses a fourth open request from the same email on the team, even when two arrive at once", async () => {
       const { team, offeringId } = await setupSeller();
-      for (let i = 0; i < 3; i += 1) {
+      for (let i = 0; i < 2; i += 1) {
         await seedProject(db, { teamId: team.id, clientEmail: "jo@x.com", status: "quoting", source: "web" });
       }
       const { caller } = requestCaller();
 
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
+      const results = await Promise.allSettled([
+        caller.project.requestQuote(validRequest({ offeringId })),
+        caller.project.requestQuote(validRequest({ offeringId })),
+      ]);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const rejected = results.find((result) => result.status === "rejected");
+      expect(rejected?.reason).toMatchObject({
         code: "BAD_REQUEST",
         message: "You already have 3 open requests with this team. Wait for an answer before sending another.",
       });
+      expect(await db.select().from(project).where(eq(project.teamId, team.id))).toHaveLength(3);
     });
 
-    it("rate limits requests per email and team", async () => {
+    it("rate limits valid requests per email and team; invalid ones do not use the budget", async () => {
       const { offeringId } = await setupSeller();
+      const { caller, mailer } = requestCaller();
       for (let i = 0; i < 5; i += 1) {
+        await expect(
+          caller.project.requestQuote(validRequest({ offeringId, description: "short" })),
+        ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      }
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+
+      for (let i = 0; i < 4; i += 1) {
         await hitRequestLimit(db, { key: "quote-request:email:seller:jo@x.com", windowMs: 3_600_000, max: 5 });
       }
-      const { caller, mailer } = requestCaller();
-
       await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
         code: "TOO_MANY_REQUESTS",
         message: "Too many requests. Wait a little and try again.",
       });
-      expect(await db.select().from(project)).toEqual([]);
-      expect(mailer.sent).toEqual([]);
+      expect(await db.select().from(project)).toHaveLength(1);
+      expect(mailer.sent).toHaveLength(2);
     });
 
     it("rate limits requests per IP and skips the IP limit when there is no IP", async () => {

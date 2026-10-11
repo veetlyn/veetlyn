@@ -6,13 +6,15 @@ import { toast } from "sonner";
 
 declare module "@tanstack/react-query" {
   interface Register {
-    queryMeta: { quietRefetchErrors?: boolean };
+    // silent: the component renders its own error state, so the global toast would repeat it.
+    queryMeta: { quietRefetchErrors?: boolean; silent?: boolean };
   }
 }
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
+      if (query.meta?.silent === true) return;
       // A polled page keeps its last data on a failed poll; a toast per missed poll would pile up.
       if (query.meta?.quietRefetchErrors === true && query.state.data !== undefined) return;
       toast.error(error.message, {

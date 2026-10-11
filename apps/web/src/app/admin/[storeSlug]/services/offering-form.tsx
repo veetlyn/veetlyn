@@ -20,7 +20,7 @@ import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
 import TeamNotFound from "@/components/services-team/team-not-found";
-import { parsePriceInput } from "@/lib/money";
+import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
 const SELECT_CLASS = "h-9 w-full rounded-md border bg-transparent px-3 text-sm";
@@ -61,8 +61,8 @@ function daysFromInput(text: string): number {
 export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: string; offeringId?: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
-  const catalog = useQuery({ ...trpc.servicesCatalog.list.queryOptions({ teamSlug }), retry: false });
+  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const catalog = useQuery({ ...trpc.servicesCatalog.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   // Null until the first edit, so the offering can load late (the settings page does the same).
   const [state, setState] = useState<OfferingFormState | null>(null);
@@ -113,8 +113,8 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         name: offering.name,
         description: offering.description,
         departmentId: offering.departmentId ?? "",
-        priceMin: (offering.priceMinMinor / 100).toFixed(2),
-        priceMax: (offering.priceMaxMinor / 100).toFixed(2),
+        priceMin: minorToPriceInput(offering.priceMinMinor),
+        priceMax: minorToPriceInput(offering.priceMaxMinor),
         daysMin: String(offering.daysMin),
         daysMax: String(offering.daysMax),
         active: offering.active,

@@ -15,7 +15,7 @@ import { trpc } from "@/utils/trpc";
 const STATUS_LABELS = { draft: "Draft", active: "Live", suspended: "Suspended" } as const;
 
 export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: string; urlParts: StoreUrlParts }) {
-  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
+  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false, meta: { silent: true } });
   const products = useQuery({ ...trpc.catalog.list.queryOptions({ storeSlug }), retry: false });
 
   if (store.isPending) return <Loader />;

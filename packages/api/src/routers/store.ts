@@ -37,6 +37,10 @@ export const storeRouter = router({
     .mutation(async ({ ctx, input }) => {
       const slug = validateStoreSlug(input.slug);
       if (!slug.ok) throw new TRPCError({ code: "BAD_REQUEST", message: storeSlugProblem(slug.reason) });
+      // Checked before a workspace may be created; the createTeam hook still settles a race.
+      if (await isStoreSlugTaken(ctx.db, slug.slug)) {
+        throw new TRPCError({ code: "CONFLICT", message: storeSlugProblem("taken") });
+      }
 
       try {
         const organizationId = await organizationForNewTeam(ctx, input.name);

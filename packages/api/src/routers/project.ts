@@ -243,7 +243,7 @@ export const projectRouter = router({
 
   // The public quote request form (sellers design §4.2): no account, a honeypot, and per-IP and
   // per-email limits before a project row and the two emails. The honeypot check runs first so bots
-  // never touch the limit budget.
+  // never touch the limit budget; the per-email limit lives in the use-case, after validation.
   requestQuote: publicProcedure.input(requestQuoteInput).mutation(async ({ ctx, input }) => {
     if (input.website.trim() !== "") return { ok: true as const };
     const ip = ctx.headers.get("cf-connecting-ip")?.trim();
@@ -252,11 +252,6 @@ export const projectRouter = router({
       if (!allowed) {
         throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Wait a little and try again." });
       }
-    }
-    const emailKey = `quote-request:email:${input.slug}:${input.email.trim().toLowerCase()}`;
-    const emailAllowed = await hitRequestLimit(ctx.db, { key: emailKey, windowMs: HOUR_MS, max: 5 });
-    if (!emailAllowed) {
-      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Wait a little and try again." });
     }
     const emailServices = ctx.email;
     if (!emailServices) {

@@ -333,6 +333,31 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
     ]);
   });
 
+  it("keeps the connection when dropping the team's cached lookups fails", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    const store = await seedStore(db, { organizationId, slug: "acme" });
+    const integration = {
+      merchant_id: "SELLER1",
+      tracking_id: store.id,
+      payments_receivable: true,
+      primary_email_confirmed: true,
+      oauth_integrations: [],
+    };
+    const { fetch } = fakePayPalApi({ integration });
+    const caller = callerFor(
+      userId,
+      makePayPal(fetch, () => Promise.reject(new Error("KV unavailable"))),
+    );
+    await caller.paypal.startOnboarding({ teamId: store.id });
+
+    await expect(caller.paypal.onboardingStatus({ teamId: store.id, refresh: true })).resolves.toMatchObject({
+      state: "connected",
+      merchantId: "SELLER1",
+    });
+    const [teamRow] = await db.select({ paypalMerchantId: team.paypalMerchantId }).from(team).where(eq(team.id, store.id));
+    expect(teamRow?.paypalMerchantId).toBe("SELLER1");
+  });
+
   it("rejects a second start once the team is connected", async () => {
     const { userId, organizationId } = await seedOrganization(db);
     const store = await seedStore(db, { organizationId, slug: "acme" });

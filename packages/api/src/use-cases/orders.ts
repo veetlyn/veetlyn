@@ -59,7 +59,7 @@ import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { EmailServices, PayPalServices } from "../context";
-import { CaptureFactConflict, databaseErrorFields } from "./payments";
+import { CaptureFactConflict, databaseErrorFields, unconfirmedCapture } from "./payments";
 
 export type OrderDeps = { db: Database; paypal: PayPalServices; email?: EmailServices };
 
@@ -469,17 +469,26 @@ async function captureAndApply(
   return { status: capture.status, result };
 }
 
-// The browser's capture call. A paid order (by this call earlier, or by the webhook) gets a fresh grant.
-export async function captureCheckout(
-  deps: OrderDeps,
-  input: { paypalOrderId: string; secret: string },
-): Promise<CheckoutOutcome> {
-  const row = await findOrderByPayPalOrderId(deps.db, input.paypalOrderId);
+export async function verifyCheckout(db: Database, input: { paypalOrderId: string; secret: string }): Promise<OrderRow> {
+  const row = await findOrderByPayPalOrderId(db, input.paypalOrderId);
   if (!row || (await hashToken(input.secret)) !== row.checkoutSecretHash) throw invalidCheckout();
+  return row;
+}
+
+// The browser's capture call, for an order checked by verifyCheckout. A paid order (by this call earlier, or by
+// the webhook) gets a fresh grant.
+export async function captureCheckout(deps: OrderDeps, row: OrderRow): Promise<CheckoutOutcome> {
   if (row.status === "refunded") throw refunded();
   if (row.status === "paid") return issueBrowserGrant(deps.db, row.id);
+  if (!row.paypalOrderId) throw invalidCheckout();
   const merchantId = await sellerMerchantId(deps.db, row.teamId);
-  const { status } = await captureAndApply(deps, row.id, input.paypalOrderId, merchantId);
+  let status: string;
+  try {
+    ({ status } = await captureAndApply(deps, row.id, row.paypalOrderId, merchantId));
+  } catch (error) {
+    if (error instanceof PayPalError) throw unconfirmedCapture(error);
+    throw error;
+  }
   if (status === "COMPLETED") return issueBrowserGrant(deps.db, row.id);
   if (status === "PENDING") return { outcome: "pending" };
   return { outcome: "declined" };
@@ -597,17 +606,22 @@ export async function applyOrderRefund(
 const DOWNLOAD_URL_SECONDS = 300;
 const HOUR_MS = 3_600_000;
 
+export type OrderLink = { token: string; slug: string };
+
 function invalidLink(): TRPCError {
   return new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
 }
 
-type OrderByGrant = { grant: DownloadGrantRow; order: OrderRow };
+type OrderByGrant = { grant: DownloadGrantRow; order: OrderRow; team: OrderEmailTeam };
 
 // Grants are only issued for paid orders, so a pending one behind a token is treated as no order at all.
-async function findOrderByToken(db: DbExecutor, token: string): Promise<OrderByGrant> {
+// A link only works on its own store's host.
+async function findOrderByToken(db: DbExecutor, token: string, slug: string): Promise<OrderByGrant> {
   const found = await findGrantByTokenHash(db, await hashToken(token));
   if (!found || found.order.status === "pending") throw invalidLink();
-  return found;
+  const team = await findOrderEmailTeam(db, found.order.teamId);
+  if (team?.slug !== slug) throw invalidLink();
+  return { ...found, team };
 }
 
 // A refunded order's grants are revoked with it; the order status also covers a grant the revocation missed.
@@ -615,11 +629,9 @@ function pageGrantState({ grant, order }: OrderByGrant, now: Date): GrantState {
   return order.status === "refunded" ? "revoked" : grantState(grant, now);
 }
 
-export async function getOrderPage(db: Database, token: string, now: Date = new Date()) {
-  const found = await findOrderByToken(db, token);
-  const { order, grant } = found;
-  const team = await findOrderEmailTeam(db, order.teamId);
-  if (!team) throw invalidLink();
+export async function getOrderPage(db: Database, input: OrderLink, now: Date = new Date()) {
+  const found = await findOrderByToken(db, input.token, input.slug);
+  const { order, grant, team } = found;
   return {
     order: {
       productTitle: order.productTitle,
@@ -644,10 +656,10 @@ function refusedDownload(state: GrantState): TRPCError {
 // Sellers design §5.2: the file is the product's current one, so a replaced file reaches past buyers.
 export async function downloadOrderFile(
   deps: { db: Database; files: FileStore },
-  token: string,
+  link: OrderLink,
   now: Date = new Date(),
 ): Promise<{ url: string }> {
-  const found = await findOrderByToken(deps.db, token);
+  const found = await findOrderByToken(deps.db, link.token, link.slug);
   if (found.order.status !== "paid") throw refunded();
   const state = grantState(found.grant, now);
   if (state !== "usable") throw refusedDownload(state);
@@ -658,7 +670,7 @@ export async function downloadOrderFile(
   }
   if (!(await useDownload(deps.db, found.grant.id, now))) {
     // Another download or a refund got there first; the fresh row says which.
-    const current = await findOrderByToken(deps.db, token);
+    const current = await findOrderByToken(deps.db, link.token, link.slug);
     const currentState = pageGrantState(current, now);
     throw refusedDownload(currentState === "usable" ? "used_up" : currentState);
   }
@@ -670,20 +682,18 @@ export async function downloadOrderFile(
 // cannot be turned into a working one.
 export async function sendNewOrderLink(
   deps: { db: Database; email?: EmailServices },
-  token: string,
+  link: OrderLink,
   now: Date = new Date(),
 ): Promise<{ sentTo: string }> {
   if (!deps.email) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email is not configured on this server." });
   }
-  const { order } = await findOrderByToken(deps.db, token);
+  const { order, team } = await findOrderByToken(deps.db, link.token, link.slug);
   if (order.status === "refunded") throw refunded();
   const allowed = await hitRequestLimit(deps.db, { key: `order-link:${order.id}`, windowMs: HOUR_MS, max: 3 });
   if (!allowed) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many new links for this order. Try again in an hour." });
   }
-  const team = await findOrderEmailTeam(deps.db, order.teamId);
-  if (!team) throw invalidLink();
   // The order lock orders this against a refund, as for the browser's grant at capture.
   const newGrantToken = await deps.db.transaction(async (tx) => {
     const row = await lockOrderOrThrow(tx, order.id);

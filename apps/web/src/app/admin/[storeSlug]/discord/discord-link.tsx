@@ -12,7 +12,7 @@ import { trpc } from "@/utils/trpc";
 type LinkCode = { code: string; expiresAt: string };
 
 export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
-  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
+  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const [createdCode, setCreatedCode] = useState<LinkCode | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 

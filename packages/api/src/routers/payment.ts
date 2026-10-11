@@ -1,11 +1,12 @@
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
+import { PayPalError } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { linkSecret, signClientLink, verifyPayLink } from "../client-links";
 import type { Context, PayPalServices } from "../context";
 import { publicProcedure, router } from "../index";
-import { capturePayment, getPayPage, startPayment } from "../use-cases/payments";
+import { capturePayment, getPayPage, startPayment, unconfirmedCapture } from "../use-cases/payments";
 
 const tokenInput = z.object({ token: z.string().min(1).max(200) });
 
@@ -52,6 +53,11 @@ export const paymentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const paymentId = await paymentIdFromToken(ctx.auth, input.token);
       await limitPayment(ctx, "capture", paymentId);
-      return capturePayment({ db: ctx.db, paypal: requirePayPal(ctx.paypal) }, { paymentId, orderId: input.orderId });
+      try {
+        return await capturePayment({ db: ctx.db, paypal: requirePayPal(ctx.paypal) }, { paymentId, orderId: input.orderId });
+      } catch (error) {
+        if (error instanceof PayPalError) throw unconfirmedCapture(error);
+        throw error;
+      }
     }),
 });

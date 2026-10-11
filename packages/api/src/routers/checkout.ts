@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import type { Context, PayPalServices } from "../context";
 import { publicProcedure, router } from "../index";
-import { captureCheckout, getCheckout, type OrderDeps, startCheckout } from "../use-cases/orders";
+import { captureCheckout, getCheckout, type OrderDeps, startCheckout, verifyCheckout } from "../use-cases/orders";
 
 const slugInput = z.string().min(1).max(63);
 // A uuid check keeps a malformed id a "not for sale" answer instead of a database error.
@@ -41,7 +41,10 @@ export const checkoutRouter = router({
   capture: publicProcedure
     .input(z.object({ orderId: z.string().min(1).max(64), secret: z.string().min(1).max(100) }))
     .mutation(async ({ ctx, input }) => {
-      await limit(ctx, `checkout-capture:${input.orderId}`, 20);
-      return captureCheckout(orderDeps(ctx), { paypalOrderId: input.orderId, secret: input.secret });
+      await limit(ctx, `checkout-capture:ip:${ctx.headers.get("cf-connecting-ip") ?? "unknown"}`, 20);
+      // Checked first and keyed by the order, so guesses at another buyer's order cannot spend that buyer's attempts.
+      const order = await verifyCheckout(ctx.db, { paypalOrderId: input.orderId, secret: input.secret });
+      await limit(ctx, `checkout-capture:${order.id}`, 20);
+      return captureCheckout(orderDeps(ctx), order);
     }),
 });

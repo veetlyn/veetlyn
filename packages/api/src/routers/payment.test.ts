@@ -573,7 +573,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
     });
 
-    it("keeps the capture's own error when the order lookup fails too", async () => {
+    it("says the payment may have gone through when the order lookup fails too, keeping the capture's error", async () => {
       const { token } = await connectedDeposit();
       const { fetch } = fakePayPalApi({
         capture: () => jsonResponse(500, { name: "INTERNAL_SERVER_ERROR", message: "x", debug_id: "d500" }),
@@ -583,7 +583,10 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       await caller.payment.payStart({ token });
 
       const rejection = await caller.payment.payCapture({ token, orderId: "ORDER1" }).catch((error: unknown) => error);
-      expect(rejection).toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+      expect(rejection).toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "We could not confirm your payment. It may have gone through; check your email before trying again.",
+      });
       const cause = (rejection as { cause?: unknown }).cause;
       expect(cause).toBeInstanceOf(PayPalError);
       expect(cause).toMatchObject({ debugId: "d500" });

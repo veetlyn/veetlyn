@@ -6,11 +6,12 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { countOpenWebRequests } from "@jendal-workspace/db/repositories/projects";
+import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { project } from "@jendal-workspace/db/schema/projects";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { fail, runProjectTransaction } from "./projects";
 
@@ -23,7 +24,10 @@ export type QuoteRequestInput = {
   answers: QuoteRequestAnswer[];
 };
 
-// Sellers design §4.2: a public request becomes a project in quoting, source "web".
+const HOUR_MS = 3_600_000;
+
+// Sellers design §4.2: a public request becomes a project in quoting, source "web". The per-email
+// limit is spent only by valid requests, so typos never lock a client out.
 export async function requestQuote(
   db: Database,
   input: QuoteRequestInput,
@@ -44,13 +48,12 @@ export async function requestQuote(
     if (!offering?.active) fail("BAD_REQUEST", "That service is not on this seller's list.");
     serviceName = offering.name;
   }
-  const open = await countOpenWebRequests(db, { teamId: team.id, clientEmail: email });
-  if (open >= QUOTE_REQUEST_LIMITS.openPerEmailPerTeam) {
-    fail(
-      "BAD_REQUEST",
-      `You already have ${QUOTE_REQUEST_LIMITS.openPerEmailPerTeam} open requests with this team. Wait for an answer before sending another.`,
-    );
-  }
+  const emailAllowed = await hitRequestLimit(db, {
+    key: `quote-request:email:${input.slug}:${email}`,
+    windowMs: HOUR_MS,
+    max: 5,
+  });
+  if (!emailAllowed) fail("TOO_MANY_REQUESTS", "Too many requests. Wait a little and try again.");
   const settings = await getServicesTeamSettings(db, team.id);
   if (!settings) fail("NOT_FOUND", "Services team settings not found.");
   const [contact] = await db
@@ -60,6 +63,15 @@ export async function requestQuote(
     .limit(1);
 
   const result = await runProjectTransaction(db, async (tx, uow) => {
+    // Serialises requests per (team, email) so two at once cannot both pass the open-request count.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${team.id} || ':' || ${email}))`);
+    const open = await countOpenWebRequests(tx, { teamId: team.id, clientEmail: email });
+    if (open >= QUOTE_REQUEST_LIMITS.openPerEmailPerTeam) {
+      fail(
+        "BAD_REQUEST",
+        `You already have ${QUOTE_REQUEST_LIMITS.openPerEmailPerTeam} open requests with this team. Wait for an answer before sending another.`,
+      );
+    }
     const [row] = await tx
       .insert(project)
       .values({

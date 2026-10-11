@@ -161,6 +161,11 @@ export async function updateProduct(
   assertValid(input);
   const existing = await getProduct(db, tenant, productId);
   if (!existing) return null;
+  // A published product must stay buyable, so an edit may not take it below the publish bar.
+  if (existing.status === "published") {
+    const problems = publishProblems(input);
+    if (problems.length > 0) throw new CatalogValidationError(problems);
+  }
   const images = await resolveImages(tenant, services, input.images);
   return withSkuMapping(async () => {
     await updateProductRow(db, tenant, productId, input);

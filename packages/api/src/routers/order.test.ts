@@ -24,6 +24,7 @@ import { appRouter } from "./index";
 
 const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
 const wasRefunded = { code: "BAD_REQUEST", message: "This order was refunded." };
+const slug = "pixels";
 
 describe.skipIf(!hasTestDatabase)("order router", () => {
   const db = createTestDb();
@@ -78,10 +79,23 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
     return db.select().from(downloadGrant).where(eq(downloadGrant.orderId, orderId));
   }
 
+  it("refuses a link on another store than its own", async () => {
+    const { token, order } = await paidOrder();
+    await seedServicesTeamWithAdmin(db, { slug: "other" });
+    const caller = callerFor();
+    const procedures = [
+      () => caller.order.get({ token, slug: "other" }),
+      () => caller.order.download({ token, slug: "other" }),
+      () => caller.order.sendNewLink({ token, slug: "other" }),
+    ];
+    for (const call of procedures) await expect(call()).rejects.toMatchObject(notValid);
+    expect((await grantsOf(order.id)).map((grant) => grant.downloadsLeft)).toEqual([5]);
+  });
+
   describe("get", () => {
     it("shows the order, the team, the grant and the masked buyer email", async () => {
       const { order, token } = await paidOrder();
-      const page = await callerFor().order.get({ token });
+      const page = await callerFor().order.get({ token, slug });
       expect(page).toEqual({
         order: {
           productTitle: "Test product",
@@ -98,12 +112,12 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
     });
 
     it("refuses an unknown token", async () => {
-      await expect(callerFor().order.get({ token: "x".repeat(43) })).rejects.toMatchObject(notValid);
+      await expect(callerFor().order.get({ token: "x".repeat(43), slug })).rejects.toMatchObject(notValid);
     });
 
     it("reports a refunded order's grant as revoked", async () => {
       const { token } = await paidOrder({ status: "refunded" });
-      const page = await callerFor().order.get({ token });
+      const page = await callerFor().order.get({ token, slug });
       expect(page.order.status).toBe("refunded");
       expect(page.grant.state).toBe("revoked");
     });
@@ -113,26 +127,26 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
     it("presigns the product file for 300 seconds and spends a download", async () => {
       const { token, file } = await paidOrder();
       const files = createFakeFileStore();
-      const result = await callerFor({ files }).order.download({ token });
+      const result = await callerFor({ files }).order.download({ token, slug });
       expect(result).toEqual({ url: `https://files.test/${file?.r2Key}?op=get` });
       expect(files.gets).toEqual([{ key: file?.r2Key, fileName: "icons.zip", expiresInSeconds: 300 }]);
-      expect((await callerFor().order.get({ token })).grant.downloadsLeft).toBe(4);
+      expect((await callerFor().order.get({ token, slug })).grant.downloadsLeft).toBe(4);
     });
 
     it("refuses a sixth download and shows the grant used up", async () => {
       const { token } = await paidOrder();
       const caller = callerFor();
-      for (let i = 0; i < 5; i++) await caller.order.download({ token });
-      await expect(caller.order.download({ token })).rejects.toMatchObject({
+      for (let i = 0; i < 5; i++) await caller.order.download({ token, slug });
+      await expect(caller.order.download({ token, slug })).rejects.toMatchObject({
         code: "BAD_REQUEST",
         message: "This link has no downloads left. Ask for a new one.",
       });
-      expect((await caller.order.get({ token })).grant.state).toBe("used_up");
+      expect((await caller.order.get({ token, slug })).grant.state).toBe("used_up");
     });
 
     it("refuses an expired grant", async () => {
       const { token } = await paidOrder({ grantAt: new Date(Date.now() - 8 * 86_400_000) });
-      await expect(callerFor().order.download({ token })).rejects.toMatchObject({
+      await expect(callerFor().order.download({ token, slug })).rejects.toMatchObject({
         code: "BAD_REQUEST",
         message: "This link has expired. Ask for a new one.",
       });
@@ -141,14 +155,14 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
     it("refuses a refunded order even when its grant was not revoked", async () => {
       const { token, order } = await paidOrder({ status: "refunded" });
       const files = createFakeFileStore();
-      await expect(callerFor({ files }).order.download({ token })).rejects.toMatchObject(wasRefunded);
+      await expect(callerFor({ files }).order.download({ token, slug })).rejects.toMatchObject(wasRefunded);
       expect(files.gets).toEqual([]);
       expect((await grantsOf(order.id))[0]?.downloadsLeft).toBe(5);
     });
 
     it("refuses when the product has no file, without spending a download", async () => {
       const { token, order } = await paidOrder({ file: false });
-      await expect(callerFor().order.download({ token })).rejects.toMatchObject({
+      await expect(callerFor().order.download({ token, slug })).rejects.toMatchObject({
         code: "PRECONDITION_FAILED",
         message: "This file is not available. Contact the seller.",
       });
@@ -161,7 +175,7 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
       const { token, order } = await paidOrder();
       await db.update(downloadGrant).set({ downloadsLeft: 0 }).where(eq(downloadGrant.orderId, order.id));
       const mailer = createFakeMailer();
-      const result = await callerFor({ mailer }).order.sendNewLink({ token });
+      const result = await callerFor({ mailer }).order.sendNewLink({ token, slug });
       expect(result).toEqual({ sentTo: "j•@example.com" });
 
       const grants = await grantsOf(order.id);
@@ -180,24 +194,24 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
     it("allows three new links an hour per order", async () => {
       const { token } = await paidOrder();
       const caller = callerFor();
-      for (let i = 0; i < 3; i++) await caller.order.sendNewLink({ token });
-      await expect(caller.order.sendNewLink({ token })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+      for (let i = 0; i < 3; i++) await caller.order.sendNewLink({ token, slug });
+      await expect(caller.order.sendNewLink({ token, slug })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     });
 
     it("refuses a refunded order", async () => {
       const { token, order } = await paidOrder({ status: "refunded" });
-      await expect(callerFor().order.sendNewLink({ token })).rejects.toMatchObject(wasRefunded);
+      await expect(callerFor().order.sendNewLink({ token, slug })).rejects.toMatchObject(wasRefunded);
       expect(await grantsOf(order.id)).toHaveLength(1);
     });
 
     it("treats a pending order's link as not valid", async () => {
       const { token } = await paidOrder({ status: "pending" });
-      await expect(callerFor().order.sendNewLink({ token })).rejects.toMatchObject(notValid);
+      await expect(callerFor().order.sendNewLink({ token, slug })).rejects.toMatchObject(notValid);
     });
 
     it("needs email on the server", async () => {
       const { token, order } = await paidOrder();
-      await expect(callerFor({ mailer: null }).order.sendNewLink({ token })).rejects.toMatchObject({
+      await expect(callerFor({ mailer: null }).order.sendNewLink({ token, slug })).rejects.toMatchObject({
         code: "PRECONDITION_FAILED",
         message: "Email is not configured on this server.",
       });
@@ -207,7 +221,7 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
     it("fails when the email cannot be sent", async () => {
       const { token } = await paidOrder();
       const failing: FakeMailer = { sent: [], send: () => Promise.reject(new Error("provider down")) };
-      await expect(callerFor({ mailer: failing }).order.sendNewLink({ token })).rejects.toMatchObject({
+      await expect(callerFor({ mailer: failing }).order.sendNewLink({ token, slug })).rejects.toMatchObject({
         code: "INTERNAL_SERVER_ERROR",
         message: "We could not send the email. Try again in a few minutes.",
       });

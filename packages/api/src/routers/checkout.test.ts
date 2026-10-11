@@ -95,6 +95,8 @@ function orderPathOf(result: { outcome: string; orderPath?: string }): string {
 
 const notForSale = { code: "NOT_FOUND", message: "This product is not for sale." };
 const notValid = { code: "NOT_FOUND", message: "This checkout is not valid." };
+const mayHaveGoneThrough =
+  "We could not confirm your payment. It may have gone through; check your email before trying again.";
 
 describe.skipIf(!hasTestDatabase)("checkout router", () => {
   const db = createTestDb();
@@ -167,7 +169,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
     const mailer = createFakeMailer();
     const caller = callerFor({ paypal: makePayPal(api.fetch), mailer });
     const { secret } = await caller.checkout.start({ slug: "pixels", productId: seeded.productId, email: "jo@example.com" });
-    return { ...seeded, caller, mailer, secret, requests: api.requests };
+    return { ...seeded, caller, mailer, secret, requests: api.requests, fetch: api.fetch };
   }
 
   describe("get", () => {
@@ -456,6 +458,29 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
       await expect(caller.checkout.capture({ orderId: "ORDER2", secret })).rejects.toMatchObject(notValid);
       expect(calls(requests, "/capture")).toHaveLength(0);
       expect((await onlyOrder()).status).toBe("pending");
+    });
+
+    it("does not let wrong secrets spend the buyer's capture attempts", async () => {
+      const { caller, secret, fetch } = await started();
+      for (let i = 0; i < 25; i++) {
+        const guesser = callerFor({ paypal: makePayPal(fetch), ip: `198.51.100.${i + 1}` });
+        await expect(guesser.checkout.capture({ orderId: "ORDER1", secret: `${secret}x` })).rejects.toMatchObject(notValid);
+      }
+      await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).resolves.toMatchObject({ outcome: "captured" });
+    });
+
+    it("says the payment may have gone through when the capture fails and the order shows no capture", async () => {
+      const { caller, secret, mailer } = await started({
+        capture: () => jsonResponse(500, { name: "INTERNAL_SERVER_ERROR", message: "x", debug_id: "d500" }),
+      });
+
+      await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        message: mayHaveGoneThrough,
+        cause: { debugId: "d500" },
+      });
+      expect((await onlyOrder()).status).toBe("pending");
+      expect(mailer.sent).toHaveLength(0);
     });
 
     it("asks for another way to pay after INSTRUMENT_DECLINED and leaves the order pending", async () => {

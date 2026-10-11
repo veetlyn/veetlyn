@@ -28,7 +28,7 @@ import type { PayPalServices } from "../context";
 import { appRouter } from "../routers/index";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
-import { captureCheckout, issueGrant } from "./orders";
+import { captureCheckout, issueGrant, verifyCheckout } from "./orders";
 import { processPayPalWebhookEvent } from "./paypal-webhooks";
 
 const SECRET = TEST_AUTH_CONFIG.BETTER_AUTH_SECRET;
@@ -549,7 +549,8 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       const secret = "browser-secret";
       await db.update(orders).set({ checkoutSecretHash: await hashToken(secret) }).where(eq(orders.id, order.id));
 
-      expect(await captureCheckout(deps, { paypalOrderId: "ORDER1", secret })).toMatchObject({ outcome: "captured" });
+      const verified = await verifyCheckout(db, { paypalOrderId: "ORDER1", secret });
+      expect(await captureCheckout(deps, verified)).toMatchObject({ outcome: "captured" });
       expect(mailer.sent).toHaveLength(1);
 
       expect(await processPayPalWebhookEvent(deps, storedEvent({ customId }))).toEqual({

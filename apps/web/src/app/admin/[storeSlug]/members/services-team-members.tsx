@@ -61,8 +61,8 @@ function MemberTitle({ teamSlug, member }: { teamSlug: string; member: Member })
 
 export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
-  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
-  const members = useQuery({ ...trpc.servicesTeam.listMembers.queryOptions({ teamSlug }), retry: false });
+  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const members = useQuery({ ...trpc.servicesTeam.listMembers.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   const [email, setEmail] = useState("");
   const [newRole, setNewRole] = useState<string>("freelancer");
@@ -86,7 +86,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   const isAdmin = team.data.role === "admin";
   const solo = team.data.settings?.solo ?? false;
   // Managers see the list; only admins change it. Freelancers get a FORBIDDEN from listMembers.
-  const listForbidden = members.isError;
+  const listForbidden = members.error?.data?.code === "FORBIDDEN";
 
   function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,6 +112,10 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
         </div>
       ) : listForbidden ? (
         <p className="mt-6 text-sm text-muted-foreground">Only managers and admins can see the member list.</p>
+      ) : members.isError ? (
+        <p role="alert" className="mt-6 text-sm text-destructive">
+          {members.error.message}
+        </p>
       ) : (
         <>
           <ul className="mt-6 divide-y border">

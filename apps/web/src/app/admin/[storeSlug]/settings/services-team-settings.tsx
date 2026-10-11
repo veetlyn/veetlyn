@@ -58,7 +58,7 @@ function RateInput({
 
 export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
-  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
+  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   const [currency, setCurrency] = useState<string | null>(null);
   const [teamCut, setTeamCut] = useState<string | null>(null);

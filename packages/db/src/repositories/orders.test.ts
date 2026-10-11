@@ -12,6 +12,7 @@ import {
   truncateAll,
 } from "../testing/db";
 import {
+  deleteAbandonedOrders,
   findGrantByTokenHash,
   findOrderByCaptureId,
   findOrderById,
@@ -196,5 +197,23 @@ describe.skipIf(!hasTestDatabase)("orders repository", () => {
       paidAt: newer.paidAt,
       refundedAt: null,
     });
+  });
+
+  it("deletes pending orders without a capture that are older than the cutoff, oldest first, a batch at a time", async () => {
+    const { teamId, productId } = await seedSeller();
+    const cutoff = new Date("2026-10-10T12:00:00Z");
+    const before = new Date(cutoff.getTime() - 1000);
+    const abandoned = await seedOrder(db, { teamId, productId, createdAt: before });
+    const older = await seedOrder(db, { teamId, productId, createdAt: new Date(before.getTime() - 1000) });
+    const capturePending = await seedOrder(db, { teamId, productId, paypalCaptureId: "CAP-1", createdAt: before });
+    const paid = await seedOrder(db, { teamId, productId, status: "paid", paypalCaptureId: "CAP-2", createdAt: before });
+    const recent = await seedOrder(db, { teamId, productId, createdAt: new Date(cutoff.getTime() + 1000) });
+
+    expect(await deleteAbandonedOrders(db, { createdBefore: cutoff, limit: 1 })).toBe(1);
+    expect(await findOrderById(db, older.id)).toBeNull();
+    expect(await findOrderById(db, abandoned.id)).not.toBeNull();
+    expect(await deleteAbandonedOrders(db, { createdBefore: cutoff, limit: 10 })).toBe(1);
+    expect(await findOrderById(db, abandoned.id)).toBeNull();
+    for (const kept of [capturePending, paid, recent]) expect(await findOrderById(db, kept.id)).not.toBeNull();
   });
 });

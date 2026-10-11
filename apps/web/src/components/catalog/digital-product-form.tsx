@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
-import { parsePriceInput } from "@/lib/money";
+import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
 
@@ -42,7 +42,7 @@ function useInvalidateDigital(teamSlug: string, productId?: string) {
 }
 
 function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; productId: string }) {
-  const detail = useQuery({ ...trpc.catalog.digitalGet.queryOptions({ storeSlug: teamSlug, id: productId }), retry: false });
+  const detail = useQuery({ ...trpc.catalog.digitalGet.queryOptions({ storeSlug: teamSlug, id: productId }), retry: false, meta: { silent: true } });
   const invalidate = useInvalidateDigital(teamSlug, productId);
   const publish = useMutation(trpc.catalog.publish.mutationOptions({ onSuccess: invalidate }));
   const unpublish = useMutation(trpc.catalog.unpublish.mutationOptions({ onSuccess: invalidate }));
@@ -96,7 +96,7 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
       <DetailsForm
         teamSlug={teamSlug}
         productId={productId}
-        initial={{ title: product.title, description: product.description, price: (product.priceMinor / 100).toFixed(2) }}
+        initial={{ title: product.title, description: product.description, price: minorToPriceInput(product.priceMinor) }}
       />
       <FileSection teamSlug={teamSlug} productId={productId} fileName={product.fileName} />
     </div>

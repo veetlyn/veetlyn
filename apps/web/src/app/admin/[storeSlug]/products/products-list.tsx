@@ -12,7 +12,7 @@ import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
 export default function ProductsList({ storeSlug }: { storeSlug: string }) {
-  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false });
+  const store = useQuery({ ...trpc.store.get.queryOptions({ storeSlug }), retry: false, meta: { silent: true } });
 
   if (store.isPending) return <Loader />;
   if (store.isError) return <TeamNotFound />;
@@ -21,7 +21,7 @@ export default function ProductsList({ storeSlug }: { storeSlug: string }) {
 }
 
 function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
-  const products = useQuery({ ...trpc.catalog.list.queryOptions({ storeSlug }), retry: false });
+  const products = useQuery({ ...trpc.catalog.list.queryOptions({ storeSlug }), retry: false, meta: { silent: true } });
 
   if (products.isPending) return <Loader />;
 

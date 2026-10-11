@@ -18,7 +18,7 @@ import { trpc } from "@/utils/trpc";
 
 export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug: string; urlParts: StoreUrlParts }) {
   const queryClient = useQueryClient();
-  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false });
+  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
       onSuccess: () =>

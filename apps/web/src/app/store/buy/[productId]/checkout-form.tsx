@@ -22,7 +22,7 @@ function messageOf(error: unknown): string {
 }
 
 export default function CheckoutForm({ slug, productId, currency }: { slug: string; productId: string; currency: string }) {
-  const checkout = useQuery({ ...trpc.checkout.get.queryOptions({ slug, productId }), retry: false });
+  const checkout = useQuery({ ...trpc.checkout.get.queryOptions({ slug, productId }), retry: false, meta: { silent: true } });
   const [email, setEmail] = useState("");
   const [emailProblem, setEmailProblem] = useState<string | null>(null);
   const emailRef = useRef("");

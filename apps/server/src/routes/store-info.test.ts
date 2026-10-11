@@ -96,7 +96,6 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
       product: string;
       bio: string;
       currency: string;
-      supportEmail: string | null;
       departments: unknown[];
       offerings: { name: string }[];
     };
@@ -107,7 +106,6 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
       status: "active",
       bio: "",
       currency: "USD",
-      supportEmail: null,
       departments: [],
       products: [],
     });
