@@ -41,6 +41,7 @@ export const checkoutRouter = router({
   capture: publicProcedure
     .input(z.object({ orderId: z.string().min(1).max(64), secret: z.string().min(1).max(100) }))
     .mutation(async ({ ctx, input }) => {
+      await limit(ctx, `checkout-capture:ip:${ctx.headers.get("cf-connecting-ip") ?? "unknown"}`, 20);
       // Checked first and keyed by the order, so guesses at another buyer's order cannot spend that buyer's attempts.
       const order = await verifyCheckout(ctx.db, { paypalOrderId: input.orderId, secret: input.secret });
       await limit(ctx, `checkout-capture:${order.id}`, 20);

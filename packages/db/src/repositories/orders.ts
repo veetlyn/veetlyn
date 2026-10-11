@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { downloadGrant, orders } from "../schema/orders";
@@ -135,11 +135,17 @@ export async function useDownload(db: DbExecutor, grantId: string, now: Date): P
 }
 
 // A pending order with a capture id may still complete, so only orders PayPal never captured are removed.
-export async function deleteAbandonedOrders(db: DbExecutor, input: { createdBefore: Date }): Promise<number> {
-  const rows = await db
-    .delete(orders)
+export async function deleteAbandonedOrders(
+  db: DbExecutor,
+  input: { createdBefore: Date; limit: number },
+): Promise<number> {
+  const batch = db
+    .select({ id: orders.id })
+    .from(orders)
     .where(and(eq(orders.status, "pending"), isNull(orders.paypalCaptureId), lt(orders.createdAt, input.createdBefore)))
-    .returning({ id: orders.id });
+    .orderBy(asc(orders.createdAt))
+    .limit(input.limit);
+  const rows = await db.delete(orders).where(inArray(orders.id, batch)).returning({ id: orders.id });
   return rows.length;
 }
 

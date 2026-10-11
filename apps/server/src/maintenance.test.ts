@@ -68,8 +68,8 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     const product = await seedProduct(db, { storeId: teamId, kind: "digital", status: "published", priceMinor: 1900 });
     const order = (createdAt: Date) => seedOrder(db, { teamId, productId: product.id, createdAt });
     return {
-      abandonedOrder: await order(minutesAgo(DAY_MINUTES + 1)),
-      recentOrder: await order(minutesAgo(60)),
+      abandonedOrder: await order(minutesAgo(4 * DAY_MINUTES + 1)),
+      recentOrder: await order(minutesAgo(3 * DAY_MINUTES)),
       leftover: await upload(minutesAgo(2 * DAY_MINUTES)),
       attached: await upload(minutesAgo(2 * DAY_MINUTES), minutesAgo(2 * DAY_MINUTES - 1)),
       recent: await upload(minutesAgo(60)),

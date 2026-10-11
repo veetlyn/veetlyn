@@ -15,7 +15,9 @@ export const WEBHOOK_BATCH = 100;
 export const REQUEST_LIMIT_MAX_AGE_MS = 24 * 3_600_000;
 export const UPLOAD_MAX_AGE_MS = 24 * 3_600_000;
 export const UPLOAD_BATCH = 500;
-export const ORDER_MAX_AGE_MS = 24 * 3_600_000;
+// A capture whose reply was lost is settled only by its webhook, which can arrive until the stuck-event cutoff.
+export const ORDER_MAX_AGE_MS = STUCK_WEBHOOK_MS + 24 * 3_600_000;
+export const ORDER_BATCH = 500;
 
 const STUCK_WEBHOOK_NOTE = "Stuck in received for 3 days.";
 
@@ -103,7 +105,10 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
   });
 
   await sweep("orders", async () => {
-    report.ordersDeleted = await deleteAbandonedOrders(deps.db, { createdBefore: new Date(now - ORDER_MAX_AGE_MS) });
+    report.ordersDeleted = await deleteAbandonedOrders(deps.db, {
+      createdBefore: new Date(now - ORDER_MAX_AGE_MS),
+      limit: ORDER_BATCH,
+    });
     return { deleted: report.ordersDeleted };
   });
 

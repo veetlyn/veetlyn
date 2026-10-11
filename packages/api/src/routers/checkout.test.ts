@@ -169,7 +169,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
     const mailer = createFakeMailer();
     const caller = callerFor({ paypal: makePayPal(api.fetch), mailer });
     const { secret } = await caller.checkout.start({ slug: "pixels", productId: seeded.productId, email: "jo@example.com" });
-    return { ...seeded, caller, mailer, secret, requests: api.requests };
+    return { ...seeded, caller, mailer, secret, requests: api.requests, fetch: api.fetch };
   }
 
   describe("get", () => {
@@ -461,9 +461,10 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
     });
 
     it("does not let wrong secrets spend the buyer's capture attempts", async () => {
-      const { caller, secret } = await started();
+      const { caller, secret, fetch } = await started();
       for (let i = 0; i < 25; i++) {
-        await expect(caller.checkout.capture({ orderId: "ORDER1", secret: `${secret}x` })).rejects.toMatchObject(notValid);
+        const guesser = callerFor({ paypal: makePayPal(fetch), ip: `198.51.100.${i + 1}` });
+        await expect(guesser.checkout.capture({ orderId: "ORDER1", secret: `${secret}x` })).rejects.toMatchObject(notValid);
       }
       await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).resolves.toMatchObject({ outcome: "captured" });
     });
