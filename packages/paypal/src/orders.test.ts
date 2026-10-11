@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAuthAssertion, captureFromOrder, createPayPalClient, type PayPalOrder, refundsFromOrder } from "./index";
+import {
+  buildAuthAssertion,
+  captureFromOrder,
+  createPayPalClient,
+  type PayPalCaptureBreakdown,
+  type PayPalOrder,
+  refundsFromOrder,
+} from "./index";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, recordedAt } from "./testing";
 
 function clientWith(respond: (url: string) => Response) {
@@ -20,7 +27,7 @@ function clientWith(respond: (url: string) => Response) {
 
 const ASSERTION = buildAuthAssertion({ clientId: "partner-client-id", payerId: "SELLER1" });
 
-const CAPTURED: PayPalOrder = {
+const CAPTURED = {
   id: "ORDER1",
   status: "COMPLETED",
   purchase_units: [
@@ -30,7 +37,7 @@ const CAPTURED: PayPalOrder = {
       },
     },
   ],
-};
+} satisfies PayPalOrder;
 
 describe("orders.create", () => {
   it("creates an order for the seller with Payleor's fee", async () => {
@@ -185,17 +192,17 @@ describe("captureFromOrder", () => {
   it("returns null when the order has no usable capture", () => {
     expect(captureFromOrder({ id: "ORDER1", status: "CREATED" })).toBeNull();
     expect(captureFromOrder({ id: "ORDER1", status: "COMPLETED", purchase_units: [{ payments: { captures: [] } }] })).toBeNull();
-    const broken = { id: "ORDER1", status: "COMPLETED", purchase_units: [{ payments: { captures: [{ id: 7 }] } }] };
-    expect(captureFromOrder(broken as unknown as PayPalOrder)).toBeNull();
+    const broken: PayPalOrder = { id: "ORDER1", status: "COMPLETED", purchase_units: [{ payments: { captures: [{ id: 7 }] } }] };
+    expect(captureFromOrder(broken)).toBeNull();
   });
 
   it("drops an amount whose fields are not strings", () => {
-    const odd = {
+    const odd: PayPalOrder = {
       id: "ORDER1",
       status: "COMPLETED",
       purchase_units: [{ payments: { captures: [{ id: "C", status: "PENDING", amount: { value: 6 } }] } }],
     };
-    expect(captureFromOrder(odd as unknown as PayPalOrder)).toEqual({ id: "C", status: "PENDING", amount: undefined, custom_id: undefined });
+    expect(captureFromOrder(odd)).toEqual({ id: "C", status: "PENDING", amount: undefined, custom_id: undefined });
   });
 
   it("reads the capture time and the fee breakdown", () => {
@@ -224,18 +231,18 @@ describe("captureFromOrder", () => {
   });
 
   it("drops a malformed breakdown instead of trusting it", () => {
-    const malformed = {
+    const malformed: PayPalOrder = {
       id: "ORDER1",
       status: "COMPLETED",
       purchase_units: [
         { payments: { captures: [{ id: "C", status: "COMPLETED", seller_receivable_breakdown: { paypal_fee: { value: 4.98 } } }] } },
       ],
     };
-    expect(captureFromOrder(malformed as unknown as PayPalOrder)?.seller_receivable_breakdown).toBeUndefined();
+    expect(captureFromOrder(malformed)?.seller_receivable_breakdown).toBeUndefined();
   });
 
   it("drops the whole breakdown when one platform fee is malformed", () => {
-    const malformed = {
+    const malformed: PayPalOrder = {
       id: "ORDER1",
       status: "COMPLETED",
       purchase_units: [
@@ -255,39 +262,30 @@ describe("captureFromOrder", () => {
         },
       ],
     };
-    expect(captureFromOrder(malformed as unknown as PayPalOrder)?.seller_receivable_breakdown).toBeUndefined();
+    expect(captureFromOrder(malformed)?.seller_receivable_breakdown).toBeUndefined();
   });
 
   it("reads a breakdown without platform fees as no platform fee", () => {
-    const breakdown = (platformFees?: unknown[]) => ({
-      id: "ORDER1",
-      status: "COMPLETED",
-      purchase_units: [
-        {
-          payments: {
-            captures: [
-              {
-                id: "C",
-                status: "COMPLETED",
-                seller_receivable_breakdown: {
-                  paypal_fee: { currency_code: "USD", value: "4.98" },
-                  ...(platformFees ? { platform_fees: platformFees } : {}),
-                },
-              },
-            ],
-          },
-        },
-      ],
-    });
+    const breakdown = (platformFees?: PayPalCaptureBreakdown["platform_fees"]): PayPalOrder => {
+      const sellerReceivable: Partial<PayPalCaptureBreakdown> = { paypal_fee: { currency_code: "USD", value: "4.98" } };
+      if (platformFees) sellerReceivable.platform_fees = platformFees;
+      return {
+        id: "ORDER1",
+        status: "COMPLETED",
+        purchase_units: [
+          { payments: { captures: [{ id: "C", status: "COMPLETED", seller_receivable_breakdown: sellerReceivable }] } },
+        ],
+      };
+    };
     const expected = { paypal_fee: { currency_code: "USD", value: "4.98" }, platform_fees: [] };
-    expect(captureFromOrder(breakdown() as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual(expected);
-    expect(captureFromOrder(breakdown([]) as unknown as PayPalOrder)?.seller_receivable_breakdown).toEqual(expected);
+    expect(captureFromOrder(breakdown())?.seller_receivable_breakdown).toEqual(expected);
+    expect(captureFromOrder(breakdown([]))?.seller_receivable_breakdown).toEqual(expected);
   });
 });
 
 describe("refundsFromOrder", () => {
   it("lists an order's refunds and drops malformed entries", () => {
-    const order = {
+    const order: PayPalOrder = {
       id: "O",
       status: "COMPLETED",
       purchase_units: [
@@ -302,7 +300,7 @@ describe("refundsFromOrder", () => {
         },
       ],
     };
-    expect(refundsFromOrder(order as unknown as PayPalOrder)).toEqual([
+    expect(refundsFromOrder(order)).toEqual([
       { id: "R1", status: "COMPLETED", amount: { currency_code: "USD", value: "5.00" } },
       { id: "R2", status: "PENDING", amount: { currency_code: "USD", value: "1.00" } },
     ]);

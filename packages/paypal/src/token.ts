@@ -1,6 +1,8 @@
+import { type JsonBody, storedTokenSchema } from "./schemas";
+
 // The subset of Workers KV this adapter uses; a real KVNamespace satisfies it.
 export interface JsonKv {
-  get(key: string, type: "json"): Promise<unknown>;
+  get(key: string, type: "json"): Promise<JsonBody | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
 }
@@ -42,10 +44,8 @@ export function createKvTokenCache(
   const now = options.now ?? (() => Date.now());
   return {
     async get() {
-      const value = await kv.get(key, "json");
-      const record = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
-      if (!record || typeof record.accessToken !== "string" || typeof record.expiresAt !== "number") return null;
-      return { accessToken: record.accessToken, expiresAt: record.expiresAt };
+      const parsed = storedTokenSchema.safeParse(await kv.get(key, "json"));
+      return parsed.success ? parsed.data : null;
     },
     async set(token) {
       const ttlSeconds = Math.floor((token.expiresAt - EXPIRY_SKEW_MS - now()) / 1000);

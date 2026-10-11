@@ -1,4 +1,7 @@
+import type { z } from "zod";
+
 import type { PayPalRequest } from "./client";
+import { partnerReferralSchema } from "./schemas";
 
 // Platform spec §5 step 1: the permissions Payleor asks every seller for (Fact 2).
 export const PARTNER_REFERRAL_FEATURES = [
@@ -11,10 +14,8 @@ export const PARTNER_REFERRAL_FEATURES = [
   "ACCESS_MERCHANT_INFORMATION",
 ] as const;
 
-export type PartnerReferralLink = { href: string; rel: string; method?: string };
-
-// The 201 response is only a links array (Fact 1).
-export type PartnerReferral = { links: PartnerReferralLink[] };
+export type PartnerReferral = z.output<typeof partnerReferralSchema>;
+export type PartnerReferralLink = PartnerReferral["links"][number];
 
 export type CreatePartnerReferralInput = {
   trackingId: string;
@@ -26,29 +27,32 @@ export type CreatePartnerReferralInput = {
 export function createPartnerReferrals(request: PayPalRequest) {
   return {
     async create(input: CreatePartnerReferralInput): Promise<PartnerReferral> {
-      return request<PartnerReferral>({
-        method: "POST",
-        path: "/v2/customer/partner-referrals",
-        requestId: input.requestId,
-        body: {
-          tracking_id: input.trackingId,
-          partner_config_override: { return_url: input.returnUrl },
-          operations: [
-            {
-              operation: "API_INTEGRATION",
-              api_integration_preference: {
-                rest_api_integration: {
-                  integration_method: "PAYPAL",
-                  integration_type: "THIRD_PARTY",
-                  third_party_details: { features: [...(input.features ?? PARTNER_REFERRAL_FEATURES)] },
+      return request(
+        {
+          method: "POST",
+          path: "/v2/customer/partner-referrals",
+          requestId: input.requestId,
+          body: {
+            tracking_id: input.trackingId,
+            partner_config_override: { return_url: input.returnUrl },
+            operations: [
+              {
+                operation: "API_INTEGRATION",
+                api_integration_preference: {
+                  rest_api_integration: {
+                    integration_method: "PAYPAL",
+                    integration_type: "THIRD_PARTY",
+                    third_party_details: { features: [...(input.features ?? PARTNER_REFERRAL_FEATURES)] },
+                  },
                 },
               },
-            },
-          ],
-          products: ["EXPRESS_CHECKOUT"],
-          legal_consents: [{ type: "SHARE_DATA_CONSENT", granted: true }],
+            ],
+            products: ["EXPRESS_CHECKOUT"],
+            legal_consents: [{ type: "SHARE_DATA_CONSENT", granted: true }],
+          },
         },
-      });
+        partnerReferralSchema,
+      );
     },
   };
 }

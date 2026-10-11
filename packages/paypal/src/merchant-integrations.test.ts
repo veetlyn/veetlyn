@@ -134,7 +134,7 @@ describe("merchantIntegrations.findByTrackingId", () => {
     );
     const error = await createPayPalClient({ ...CONFIG, fetch: failingFetch })
       .merchantIntegrations.findByTrackingId("PARTNER42", "team-1")
-      .catch((e: unknown) => e);
+      .catch((cause: unknown) => cause);
     expect(error).toBeInstanceOf(PayPalError);
     expect(error).toMatchObject({ status: 500, debugId: "d500" });
   });

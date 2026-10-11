@@ -1,4 +1,5 @@
 import type { PayPalServices } from "@jendal-workspace/api/context";
+import type { JsonValue } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { type PayPalWebhookEventInput, recordWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { parseWebhookEvent, PayPalError } from "@jendal-workspace/paypal";
@@ -60,7 +61,7 @@ export function createPayPalWebhookRoute(deps: PayPalWebhookRouteDeps): Hono<App
       return c.json({ error: "missing_signature_headers" }, 400);
     }
     const rawBody = await c.req.text();
-    let body: unknown;
+    let body: JsonValue;
     try {
       body = JSON.parse(rawBody);
     } catch {

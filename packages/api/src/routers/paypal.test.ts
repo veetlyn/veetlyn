@@ -1,5 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
-import { createFakeFileStore } from "@jendal-workspace/core";
+import { createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { findPayPalOnboarding, markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { team } from "@jendal-workspace/db/schema/organization";
 import {
@@ -73,7 +73,7 @@ function makePayPal(
 
 // A fake PayPal API: token endpoint, partner referral, tracking lookup and status GET.
 // `integration: null` makes the tracking lookup answer 404 (seller has not finished).
-function fakePayPalApi(options: { integration: Record<string, unknown> | null }) {
+function fakePayPalApi(options: { integration: JsonObject | null }) {
   return fakeFetch((request) => {
     if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
     if (request.url.endsWith("/v2/customer/partner-referrals")) {
@@ -84,8 +84,8 @@ function fakePayPalApi(options: { integration: Record<string, unknown> | null })
         return jsonResponse(404, { name: "INVALID_RESOURCE_ID", message: "Resource not found.", debug_id: "d404" });
       }
       return jsonResponse(200, {
-        merchant_id: options.integration.merchant_id,
-        tracking_id: options.integration.tracking_id,
+        merchant_id: options.integration.merchant_id ?? null,
+        tracking_id: options.integration.tracking_id ?? null,
       });
     }
     if (request.url.includes("/merchant-integrations/")) {

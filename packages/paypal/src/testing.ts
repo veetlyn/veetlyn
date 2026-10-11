@@ -1,4 +1,5 @@
 import type { FetchLike } from "./client";
+import type { JsonBody } from "./schemas";
 
 export type RecordedRequest = { url: string; method: string; headers: Headers; body: string | null };
 
@@ -19,7 +20,7 @@ export function fakeFetch(handler: (request: RecordedRequest, callCount: number)
   return { requests, fetch: fetchImpl };
 }
 
-export function jsonResponse(status: number, body: unknown): Response {
+export function jsonResponse(status: number, body: JsonBody): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
