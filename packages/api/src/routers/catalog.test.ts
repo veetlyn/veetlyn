@@ -96,7 +96,7 @@ describe.skipIf(!hasTestDatabase)("catalog router", () => {
     expect(created.product).toMatchObject({ title: "Desk lamp", status: "draft" });
 
     const fetched = await caller.catalog.get({ storeSlug: "lamp-shop", id: created.product.id });
-    expect(fetched.variants[0]).toMatchObject({ sku: "LAMP-1", priceMinor: 4200 });
+    expect(fetched.variants[0]).toMatchObject({ sku: "LAMP-1", priceMinor: 4200, stock: 5 });
 
     const list = await caller.catalog.list({ storeSlug: "Lamp-Shop" });
     expect(list).toHaveLength(1);

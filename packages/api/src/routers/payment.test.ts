@@ -191,7 +191,9 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     it("refuses a capture whose amount or currency differs from the payment", async () => {
       const { paymentId } = await depositWithOrder();
 
-      await expect(applyCaptureFact(db, fact(paymentId, { amountMinor: 59_999 }))).rejects.toThrow(/does not match/);
+      const mismatch = await applyCaptureFact(db, fact(paymentId, { amountMinor: 59_999 })).catch((error: unknown) => error);
+      expect(mismatch).toBeInstanceOf(CaptureFactConflict);
+      expect(mismatch).toMatchObject({ message: expect.stringMatching(/does not match/) });
       await expect(applyCaptureFact(db, fact(paymentId, { currency: "EUR" }))).rejects.toThrow(/does not match/);
       expect((await paymentRow(paymentId))?.status).toBe("pending");
     });
@@ -258,7 +260,9 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       const { paymentId } = await depositWithOrder();
       await applyCaptureFact(db, fact(paymentId));
 
-      await expect(applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" }))).rejects.toThrow(/already has capture/);
+      const second = await applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" })).catch((error: unknown) => error);
+      expect(second).toBeInstanceOf(CaptureFactConflict);
+      expect(second).toMatchObject({ message: expect.stringMatching(/already has capture/) });
     });
 
     it("records the fees once, with the capture or from a later fact", async () => {
@@ -292,13 +296,6 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
       expect(await paymentRow(paymentId)).toMatchObject({ status: "captured", paypalFeeMinor: null });
       expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "payment_fees"))).toHaveLength(0);
-    });
-
-    it("reports money PayPal moved without Payleor asking as a conflict", async () => {
-      const { paymentId } = await depositWithOrder();
-      await expect(applyCaptureFact(db, fact(paymentId, { amountMinor: 1 }))).rejects.toBeInstanceOf(CaptureFactConflict);
-      await applyCaptureFact(db, fact(paymentId));
-      await expect(applyCaptureFact(db, fact(paymentId, { captureId: "CAPTURE2" }))).rejects.toBeInstanceOf(CaptureFactConflict);
     });
   });
 
@@ -726,6 +723,11 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     const processing = await callerFor(null).project.clientGet({ token: clientToken });
     expect(processing.payments[0]?.processing).toBe(true);
     await db.update(payment).set({ paypalCaptureId: null }).where(eq(payment.id, paymentId));
+
+    await db.update(payment).set({ status: "failed" }).where(eq(payment.id, paymentId));
+    const failed = await callerFor(null).project.clientGet({ token: clientToken });
+    expect(failed.payments[0]?.payPath).toBe(`/pay/${token}`);
+    await db.update(payment).set({ status: "pending" }).where(eq(payment.id, paymentId));
 
     await db.update(payment).set({ paypalOrderId: "ORDER1" }).where(eq(payment.id, paymentId));
     await applyCaptureFact(db, fact(paymentId));

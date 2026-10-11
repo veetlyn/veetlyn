@@ -10,9 +10,9 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { products } from "../schema/catalog";
 import {
   countDigitalProducts,
-  countPublishedDigitalProducts,
   countSellableDigitalProducts,
   deleteImages,
   deleteVariants,
@@ -28,7 +28,6 @@ import {
   setProductStatus,
   updateProduct,
   updateVariantPrice,
-  updateVariantStock,
 } from "./catalog";
 import { setServicesTeamStoreEnabled } from "./services-teams";
 
@@ -128,17 +127,6 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
       expect(variants[0]).toMatchObject({ sku: "LAMP-1", priceMinor: 4500, stock: 5 });
     });
 
-    it("clamps stock at zero instead of going negative", async () => {
-      const tenant = await makeStore(db);
-      const product = await insertProduct(db, tenant, { title: "Lamp" });
-      const [variant] = await insertVariants(db, tenant, product.id, [
-        { options: [], sku: "", priceMinor: 100, stock: 3 },
-      ]);
-
-      const updated = await updateVariantStock(db, tenant, variant!.id, -10);
-      expect(updated?.stock).toBe(0);
-    });
-
     it("updates a variant's price, scoped to the store", async () => {
       const tenant = await makeStore(db);
       const product = await insertProduct(db, tenant, { title: "Lamp" });
@@ -172,6 +160,27 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
       ]);
       expect(otherVariant?.sku).toBe("lamp-1");
     });
+
+    it("refuses out-of-range prices and stock, and an unknown product status", async () => {
+      const tenant = await makeStore(db);
+      const product = await insertProduct(db, tenant, { title: "Lamp" });
+
+      const badPrice = await insertVariants(db, tenant, product.id, [
+        { options: [], sku: "", priceMinor: 100_000_000, stock: 0 },
+      ]).catch((error: unknown) => error);
+      expect(badPrice).toMatchObject({ cause: { code: "23514", constraint_name: "variants_price_check" } });
+
+      const badStock = await insertVariants(db, tenant, product.id, [
+        { options: [], sku: "", priceMinor: 100, stock: -1 },
+      ]).catch((error: unknown) => error);
+      expect(badStock).toMatchObject({ cause: { code: "23514", constraint_name: "variants_stock_check" } });
+
+      const badStatus = await db
+        .insert(products)
+        .values({ storeId: tenant.storeId, title: "Lamp", status: "archived" })
+        .catch((error: unknown) => error);
+      expect(badStatus).toMatchObject({ cause: { code: "23514", constraint_name: "products_status_check" } });
+    });
   });
 
   describe("digital products", () => {
@@ -197,7 +206,6 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
       expect(listed).toEqual([
         { id: product.id, title: "Icon pack", description: "120 icons.", priceMinor: 1900 },
       ]);
-      expect(await countPublishedDigitalProducts(db, tenant.storeId)).toBe(1);
       expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
     });
 
@@ -210,7 +218,6 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
       await setProductStatus(db, tenant, physical.id, "published");
 
       expect(await listPublishedDigitalProducts(db, tenant.storeId)).toEqual([]);
-      expect(await countPublishedDigitalProducts(db, tenant.storeId)).toBe(0);
       expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
     });
 

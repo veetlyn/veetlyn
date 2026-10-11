@@ -87,10 +87,6 @@ export async function findAttachedProductFile(tx: DbExecutor, productId: string)
   return row ?? null;
 }
 
-export async function deleteFileUpload(tx: DbExecutor, id: string): Promise<void> {
-  await tx.delete(fileUpload).where(eq(fileUpload.id, id));
-}
-
 export async function deleteOtherAttachedProductFiles(
   tx: DbExecutor,
   input: { productId: string; keepId: string },

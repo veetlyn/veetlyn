@@ -91,25 +91,3 @@ describe("orderDownloadEmail", () => {
     );
   });
 });
-
-describe("orderDownloadEmail", () => {
-  it("links the order page and names the product and the seller", () => {
-    const email = orderDownloadEmail({
-      teamName: "Walk Crew",
-      productTitle: "Icon pack",
-      url: "https://walk-crew.payleor.app/orders/tok",
-    });
-    expect(email.subject).toBe("Your download: Icon pack");
-    expect(email.text).toContain("Hi there,");
-    expect(email.text).toContain("Walk Crew");
-    expect(email.text).toContain("https://walk-crew.payleor.app/orders/tok");
-    expect(email.html).toContain("https://walk-crew.payleor.app/orders/tok");
-    expect(email.text).toContain("7 days");
-  });
-
-  it("keeps CR/LF out of the subject", () => {
-    expect(orderDownloadEmail({ teamName: "T", productTitle: "A\r\nBcc: x", url: "https://x" }).subject).not.toMatch(
-      /[\r\n]/,
-    );
-  });
-});

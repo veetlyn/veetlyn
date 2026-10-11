@@ -142,13 +142,13 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
     expect(organizations[0]?.stores.map((s) => s.slug).sort()).toEqual(["acme", "beta"]);
   });
 
-  it("sets the store's support email to the merchant's email", async () => {
+  it("creates the store as a store product with the merchant's email for support", async () => {
     const caller = await signedInCaller("owner@acme.test");
 
     await caller.store.create({ name: "Acme", slug: "acme" });
 
     const [row] = await db.select().from(team).where(eq(team.slug, "acme"));
-    expect(row?.supportEmail).toBe("owner@acme.test");
+    expect(row).toMatchObject({ product: "store", supportEmail: "owner@acme.test" });
   });
 
   it("reports a taken address and reuses the organization on retry", async () => {
@@ -175,15 +175,6 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
       message: "This store address is reserved.",
     });
     await expect(caller.store.listMine()).resolves.toEqual([]);
-  });
-
-  it("creates stores with the store product", async () => {
-    const caller = await signedInCaller();
-
-    await caller.store.create({ name: "Acme", slug: "acme" });
-
-    const [row] = await db.select().from(team).where(eq(team.slug, "acme"));
-    expect(row?.product).toBe("store");
   });
 
   it("rejects anonymous callers", async () => {

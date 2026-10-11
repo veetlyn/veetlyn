@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { isStorePolicy, policiesFor, STORE_POLICIES, storePolicyUrls } from "./store-policies";
+import { isStorePolicy, policiesFor, storePolicyUrls } from "./store-policies";
 
 describe("store policies", () => {
   it("gives a store all four policies and a services team only terms and privacy", () => {
-    expect(policiesFor("store")).toEqual(STORE_POLICIES);
+    expect(policiesFor("store")).toEqual(["returns", "shipping", "terms", "privacy"]);
     expect(policiesFor("services")).toEqual(["terms", "privacy"]);
-  });
-
-  it("lists the four default policies", () => {
-    expect(STORE_POLICIES).toEqual(["returns", "shipping", "terms", "privacy"]);
   });
 
   it("recognises policy names only", () => {

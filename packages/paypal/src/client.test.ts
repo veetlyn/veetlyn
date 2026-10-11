@@ -119,6 +119,7 @@ describe("request headers", () => {
     const call = await postWithHeaders({}, { merchantId: "SELLER42" });
 
     const parts = (call.headers.get("paypal-auth-assertion") ?? "").split(".");
+    expect(parts).toHaveLength(3);
     expect(JSON.parse(atob(String(parts[0])))).toEqual({ alg: "none" });
     expect(JSON.parse(atob(String(parts[1])))).toEqual({ iss: "partner-client-id", payer_id: "SELLER42" });
     expect(parts[2]).toBe("");

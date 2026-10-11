@@ -7,7 +7,6 @@ import { fileUpload } from "../schema/files";
 import { delivery } from "../schema/projects";
 import { createTestDb, hasTestDatabase, seedOrganization, seedProduct, seedProject, seedServicesTeamWithAdmin, seedStore, truncateAll } from "../testing/db";
 import {
-  deleteFileUpload,
   deleteOtherAttachedProductFiles,
   findAttachedProductFile,
   findFileUpload,
@@ -117,7 +116,7 @@ describe.skipIf(!hasTestDatabase)("file uploads", () => {
     expect(failure).toMatchObject({ cause: { code: "23505", constraint_name: "delivery_fileUploadId_idx" } });
   });
 
-  it("locks an unattached product upload, finds the attached file, deletes by id", async () => {
+  it("locks an unattached product upload and finds the attached file", async () => {
     const { organizationId } = await seedOrganization(db);
     const store = await seedStore(db, { organizationId, slug: "digital-shop" });
     const product = await seedProduct(db, { storeId: store.id, kind: "digital" });
@@ -157,9 +156,6 @@ describe.skipIf(!hasTestDatabase)("file uploads", () => {
       ).toBeNull();
     });
     expect((await findAttachedProductFile(db, product.id))?.id).toBe(row.id);
-
-    await deleteFileUpload(db, row.id);
-    expect(await findFileUpload(db, row.id)).toBeNull();
   });
 
   it("deletes the other attached files of a product and returns their keys", async () => {

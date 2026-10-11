@@ -1,5 +1,5 @@
 import type { ProductKind, TenantContext, VariantOption } from "@jendal-workspace/core";
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
@@ -125,21 +125,6 @@ export async function deleteVariants(db: Database, tenant: TenantContext, produc
     .where(and(eq(productVariants.productId, productId), eq(productVariants.storeId, tenant.storeId)));
 }
 
-// Stock never goes below zero; an oversell clamps to 0 (platform spec §6.1).
-export async function updateVariantStock(
-  db: Database,
-  tenant: TenantContext,
-  variantId: string,
-  delta: number,
-): Promise<VariantRow | null> {
-  const [row] = await db
-    .update(productVariants)
-    .set({ stock: sql`greatest(0, ${productVariants.stock} + ${delta})`, updatedAt: new Date() })
-    .where(and(eq(productVariants.id, variantId), eq(productVariants.storeId, tenant.storeId)))
-    .returning();
-  return row ?? null;
-}
-
 // A digital product's one hidden variant holds the price; it is updated in place.
 export async function updateVariantPrice(
   db: DbExecutor,
@@ -209,14 +194,6 @@ export async function listPublishedDigitalProducts(db: DbExecutor, storeId: stri
   const byId = new Map<string, SellerProductRow>();
   for (const row of rows) if (!byId.has(row.id)) byId.set(row.id, row);
   return [...byId.values()];
-}
-
-export async function countPublishedDigitalProducts(db: DbExecutor, storeId: string): Promise<number> {
-  const [row] = await db
-    .select({ count: count() })
-    .from(products)
-    .where(and(eq(products.storeId, storeId), eq(products.kind, "digital"), eq(products.status, "published")));
-  return row?.count ?? 0;
 }
 
 // The store switch gates selling: with the store off, published products are not on sale.

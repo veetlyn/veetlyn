@@ -38,8 +38,3 @@ export async function findTeamById(db: Database, teamId: string): Promise<StoreR
   const [row] = await db.select(teamColumns).from(team).where(eq(team.id, teamId)).limit(1);
   return row ?? null;
 }
-
-export async function findTeamSlug(db: Database, teamId: string): Promise<string | null> {
-  const [row] = await db.select({ slug: team.slug }).from(team).where(eq(team.id, teamId)).limit(1);
-  return row?.slug ?? null;
-}
