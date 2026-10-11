@@ -1,0 +1,59 @@
+packages/api/src/paypal-userinfo.ts
+  s_bda1c78955853b::t_6fb9c23444801c 1-2,4,7-25,29-32,37-39
+packages/core/src/payouts/destination.ts
+  s_bda1c78955853b::t_98cbf0b2b4a251 3,5-12,19-22,30,32-35
+packages/api/src/catalog/digital.ts
+  s_bda1c78955853b::t_da7d626d024a05 134
+packages/api/src/catalog/service.ts
+  s_bda1c78955853b::t_d99a2e41242d38 32,82-84,218,294-295,385-388
+packages/api/src/client-links.ts
+  s_bda1c78955853b::t_c34de854fb5d65 25,41,48,69-71,73
+packages/api/src/context.ts
+  s_bda1c78955853b::t_4b22dc93354d32 29
+packages/api/src/routers/catalog.ts
+  s_bda1c78955853b::t_493c7cd32150ca 90-92,94-95,97
+packages/api/src/routers/checkout.test.ts
+  s_bda1c78955853b::t_2ede2f8e41a4e5 2,46
+packages/api/src/routers/payment.test.ts
+  s_bda1c78955853b::t_0f74375eb8a850 2,35,194,263,443,448,585,590
+packages/api/src/routers/payout-destination.test.ts
+  s_bda1c78955853b::t_57820a025e7004 2,15,106,115-116
+packages/api/src/routers/payout-destination.ts
+  s_bda1c78955853b::t_025a9d0e085e9c 13,31,54
+packages/api/src/routers/paypal.test.ts
+  s_bda1c78955853b::t_1bf2be81c4a056 19,100-110,112-113
+packages/api/src/routers/project.test.ts
+  s_bda1c78955853b::t_273ea1370e51bf 1152,1160-1169
+packages/api/src/routers/project.ts
+  s_bda1c78955853b::t_7b56716c87b191 10,19,64,91,124,293
+packages/api/src/routers/services-catalog.test.ts
+  s_bda1c78955853b::t_2114d6573c175f 40-50
+packages/api/src/team-creation.ts
+  s_bda1c78955853b::t_64cb8c3113c58f 33-36
+packages/api/src/use-cases/orders.ts
+  s_bda1c78955853b::t_7a2eed1d4f9326 3,58,383,512,514-515
+packages/api/src/use-cases/payments.ts
+  s_bda1c78955853b::t_bb599ee90dc8c3 3,16,231-235
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_bda1c78955853b::t_bb10c63afdd765 2,50,255
+packages/api/src/use-cases/paypal-webhooks.ts
+  s_bda1c78955853b::t_d1c0a56cb499dd 56-57,60-63,65,70-72,76-78,81,83,85,115-117,168-170
+packages/api/src/use-cases/projects.ts
+  s_bda1c78955853b::t_48a96d320fde22 480
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7292dccd1eda163fac4e1c82ad3b50f61a553bc3",
+  "prompts": {},
+  "sessions": {
+    "s_bda1c78955853b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "db1c772b-959d-4442-98cc-2cdc8e3530be",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
