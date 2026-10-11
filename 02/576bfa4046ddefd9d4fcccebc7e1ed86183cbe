@@ -1,0 +1,60 @@
+apps/server/src/env.server.ts
+  s_fe0a0673f713b2::t_e71633110235f3 3
+apps/server/src/tenant/middleware.ts
+  s_fe0a0673f713b2::t_b08b19fcbc83cd 21-23,25-26
+  s_fe0a0673f713b2::t_8310bbef9cec2f 14
+apps/server/src/discord/verify.test.ts
+  s_fe0a0673f713b2::t_0c9cec1378de8f 15-17,21-23
+apps/server/src/catalog/image-downloader.test.ts
+  s_fe0a0673f713b2::t_f41c6761bd3ea6 7,12,22,25,35,37
+apps/server/src/catalog/image-store.test.ts
+  s_fe0a0673f713b2::t_bc11d6559df83d 1,24,31
+apps/server/src/discord/interactions.test.ts
+  s_fe0a0673f713b2::t_328f7b8a5f3376 214,217
+apps/server/src/discord/interactions.ts
+  s_fe0a0673f713b2::t_249fe95233bf10 92,96,135
+apps/server/src/discord/register.ts
+  s_fe0a0673f713b2::t_78a2e69e41298d 3-4,28
+apps/server/src/discord/rest.test.ts
+  s_fe0a0673f713b2::t_b73acb4d306cff 7,10
+apps/server/src/discord/rest.ts
+  s_fe0a0673f713b2::t_f3e5652664898e 14-15,22
+apps/server/src/discord/route.ts
+  s_fe0a0673f713b2::t_1a9f0fe4a3e3e0 1,36,46,49,57
+apps/server/src/email-log.ts
+  s_fe0a0673f713b2::t_917eb9dd4216bd 1,3-5,14-16,20
+apps/server/src/index.ts
+  s_fe0a0673f713b2::t_3d7d47a7e02c59 12,48,90
+apps/server/src/paypal-webhook-queue.test.ts
+  s_fe0a0673f713b2::t_2858d65dbe5147 1,32
+apps/server/src/paypal-webhook-queue.ts
+  s_fe0a0673f713b2::t_57ccf419105916 3,6,29,32-33,35,54,61-62,92
+apps/server/src/routes/catalog-images.test.ts
+  s_fe0a0673f713b2::t_9ad6200821f515 4,7,27,31,33-34,36,79
+apps/server/src/routes/paypal-onboarding.test.ts
+  s_fe0a0673f713b2::t_f0fe3b0fa4bd38 6,73-74,78
+apps/server/src/routes/paypal-webhooks.test.ts
+  s_fe0a0673f713b2::t_0272ae06cfa3d5 5-6,36-37,63,69,181
+apps/server/src/routes/paypal-webhooks.ts
+  s_fe0a0673f713b2::t_e6ca86ba611f54 14
+apps/server/src/routes/store-info.test.ts
+  s_fe0a0673f713b2::t_064fdb17573b1e 13,95
+apps/server/src/tenant/kv-store-cache.ts
+  s_fe0a0673f713b2::t_03feadd9ca4b5c 1,6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "02576bfa4046ddefd9d4fcccebc7e1ed86183cbe",
+  "prompts": {},
+  "sessions": {
+    "s_fe0a0673f713b2": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "86986f73-b782-4daf-b6bd-f2ad5ef0298f",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
