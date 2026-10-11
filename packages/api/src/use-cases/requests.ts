@@ -27,7 +27,7 @@ export type QuoteRequestInput = {
 const HOUR_MS = 3_600_000;
 
 // Sellers design §4.2: a public request becomes a project in quoting, source "web". The per-email
-// limit is spent only by requests that would otherwise go through, so typos never lock a client out.
+// limit is spent only by valid requests, so typos never lock a client out.
 export async function requestQuote(
   db: Database,
   input: QuoteRequestInput,
