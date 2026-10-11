@@ -1,0 +1,21 @@
+packages/api/src/routers/catalog.test.ts
+  s_1f60c7b2359393::t_e1fe7e85160ebf 165,169,178-191
+packages/api/src/catalog/service.ts
+  s_1f60c7b2359393::t_957d84b9337426 164-168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b22e78977aec1fecbc13d1b912786bf336e1e71",
+  "prompts": {},
+  "sessions": {
+    "s_1f60c7b2359393": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "bccd364b-d80e-4c4d-b6cd-7fff41ab35b9",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
