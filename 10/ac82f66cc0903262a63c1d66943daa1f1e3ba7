@@ -1,0 +1,30 @@
+packages/api/src/use-cases/paypal-webhooks.ts
+  s_6e74beb3888900::t_456a209db053c8 132,136
+  s_6e74beb3888900::t_03173b20ac9edc 149-157
+packages/api/src/use-cases/orders.ts
+  s_6e74beb3888900::t_0eb91ec8dc1133 554,561,569-582,587-590
+  s_6e74beb3888900::t_c735d881ab5145 463-466,591
+  s_6e74beb3888900::t_e8cd0b888d2c57 523,528,530
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_6e74beb3888900::t_ba0a3defa87f1a 2
+  s_6e74beb3888900::t_dbfcf65800540b 616-687
+  s_6e74beb3888900::t_ab9f78c724d582 758-775
+  s_6e74beb3888900::t_44b4f685021345 31
+  s_6e74beb3888900::t_b4c690c79b1b4d 547-562
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "10ac82f66cc0903262a63c1d66943daa1f1e3ba7",
+  "prompts": {},
+  "sessions": {
+    "s_6e74beb3888900": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "fb4257b9-3b8c-40b4-bc36-e77dfb060e00",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
