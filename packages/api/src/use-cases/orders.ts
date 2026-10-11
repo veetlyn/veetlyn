@@ -6,11 +6,14 @@ import {
   grantState,
   type GrantState,
   hashToken,
+  LedgerError,
+  type LedgerTransferDraft,
   maskEmail,
   newToken,
   orderCustomId,
   orderFeesTransfer,
   orderPaidTransfer,
+  orderRefundedTransfer,
   parseMajorAmount,
   platformFeeMinor,
   sellerPlanFor,
@@ -29,7 +32,9 @@ import {
   listTeamOrders,
   lockOrder,
   markOrderPaid,
+  markOrderRefunded,
   type OrderRow,
+  revokeOrderGrants,
   setOrderFees,
   setOrderPayPalOrder,
   useDownload,
@@ -47,6 +52,7 @@ import {
   PayPalError,
   type PayPalMoney,
   type PayPalOrder,
+  refundsFromOrder,
 } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
@@ -437,8 +443,26 @@ async function issueBrowserGrant(db: Database, orderId: string): Promise<Checkou
   return { outcome: "captured", orderPath: `/orders/${token}` };
 }
 
-function isRefundStatus(status: string): boolean {
-  return status === "REFUNDED" || status === "PARTIALLY_REFUNDED";
+const REFUNDED_CAPTURE_STATUSES = new Set(["REFUNDED", "PARTIALLY_REFUNDED", "REVERSED"]);
+
+export function isRefundedCaptureStatus(status: string): boolean {
+  return REFUNDED_CAPTURE_STATUSES.has(status);
+}
+
+// Captures the order's PayPal order and applies the result; shared by the browser's call and the webhook.
+async function captureAndApply(
+  deps: OrderDeps,
+  orderId: string,
+  paypalOrderId: string,
+  merchantId: string,
+): Promise<{ status: string; result: OrderCaptureResult }> {
+  const paypalOrder = await captureAtPayPal(deps, paypalOrderId, merchantId);
+  const capture = captureFromOrder(paypalOrder);
+  if (!capture) throw new Error(`PayPal order ${paypalOrderId} has no capture`);
+  // The capture went through and was refunded before this call saw it; the refund news settles the order.
+  if (isRefundedCaptureStatus(capture.status)) throw refunded();
+  const result = await applyOrderCaptureFact(deps, orderCaptureFact(orderId, paypalOrderId, capture));
+  return { status: capture.status, result };
 }
 
 // The browser's capture call. A paid order (by this call earlier, or by the webhook) gets a fresh grant.
@@ -451,15 +475,105 @@ export async function captureCheckout(
   if (row.status === "refunded") throw refunded();
   if (row.status === "paid") return issueBrowserGrant(deps.db, row.id);
   const merchantId = await sellerMerchantId(deps.db, row.teamId);
-  const paypalOrder = await captureAtPayPal(deps, input.paypalOrderId, merchantId);
-  const capture = captureFromOrder(paypalOrder);
-  if (!capture) throw new Error(`PayPal order ${input.paypalOrderId} has no capture`);
-  // The capture went through and was refunded before this call saw it; the refund news settles the order.
-  if (isRefundStatus(capture.status)) throw refunded();
-  await applyOrderCaptureFact(deps, orderCaptureFact(row.id, input.paypalOrderId, capture));
-  if (capture.status === "COMPLETED") return issueBrowserGrant(deps.db, row.id);
-  if (capture.status === "PENDING") return { outcome: "pending" };
+  const { status } = await captureAndApply(deps, row.id, input.paypalOrderId, merchantId);
+  if (status === "COMPLETED") return issueBrowserGrant(deps.db, row.id);
+  if (status === "PENDING") return { outcome: "pending" };
   return { outcome: "declined" };
+}
+
+// An approved order whose browser never called back. The buyer gets the order page only through the email.
+export async function captureOrderFromWebhook(
+  deps: OrderDeps,
+  order: Pick<OrderRow, "id" | "paypalOrderId">,
+  merchantId: string,
+): Promise<OrderCaptureResult> {
+  if (!order.paypalOrderId) throw new Error(`Order ${order.id} has no PayPal order to capture`);
+  const { result } = await captureAndApply(deps, order.id, order.paypalOrderId, merchantId);
+  return result;
+}
+
+export type OrderRefundResult = "refunded" | "already refunded" | "not paid";
+
+// request() does not validate bodies, so the capture's fields are checked here.
+function captureStatusIn(paypalOrder: PayPalOrder, captureId: string): string | null {
+  const captures: unknown = paypalOrder.purchase_units?.[0]?.payments?.captures;
+  if (!Array.isArray(captures)) return null;
+  for (const value of captures) {
+    if (typeof value !== "object" || value === null) continue;
+    const capture = value as Record<string, unknown>;
+    if (capture.id === captureId && typeof capture.status === "string") return capture.status;
+  }
+  return null;
+}
+
+async function postOnce(db: Database, teamId: string, transfer: LedgerTransferDraft): Promise<void> {
+  try {
+    await db.transaction((tx) => createPostgresLedger(teamId, tx).post([transfer]));
+  } catch (error) {
+    if (error instanceof LedgerError && error.code === "duplicate_reference") return;
+    throw error;
+  }
+}
+
+// Sellers decision: any refund or reversal, full or partial, refunds the order and revokes every grant. Each
+// PayPal refund is posted once by its id, and a reversal once by its capture, whichever event reports it.
+export async function applyOrderRefund(
+  deps: { db: Database },
+  order: OrderRow,
+  paypalOrder: PayPalOrder,
+  now: Date = new Date(),
+): Promise<OrderRefundResult> {
+  const captureId = order.paypalCaptureId;
+  if (!captureId) return "not paid";
+  const captureStatus = captureStatusIn(paypalOrder, captureId);
+  const reversed = captureStatus === "REVERSED";
+  const refunds = refundsFromOrder(paypalOrder).filter((refund) => refund.status === "COMPLETED");
+  if (!reversed && refunds.length === 0 && !(captureStatus && isRefundedCaptureStatus(captureStatus))) {
+    // PayPal sent refund news, so its order lookup is lagging; the queue retries.
+    throw new Error(`PayPal order ${paypalOrder.id} shows no refund yet for capture ${captureId}`);
+  }
+
+  // The lock orders this against the browser's grant and a fresh link, which both refuse a refunded order.
+  const marked = await deps.db.transaction(async (tx) => {
+    const row = await lockOrderOrThrow(tx, order.id);
+    if (row.status === "pending") return "not paid" as const;
+    if (row.status === "refunded") return "already refunded" as const;
+    if (!(await markOrderRefunded(tx, { orderId: row.id, refundedAt: now }))) {
+      throw new Error(`Order ${row.id} left paid while locked`);
+    }
+    await revokeOrderGrants(tx, row.id, now);
+    return "refunded" as const;
+  });
+  if (marked === "not paid") return marked;
+
+  for (const refund of refunds) {
+    const amountMinor = refund.amount?.currency_code === order.currency ? parseMajorAmount(refund.amount.value) : null;
+    if (amountMinor === null) {
+      log.warn({ action: "order.refund", order: { id: order.id }, refund: { id: refund.id, posted: false } });
+      continue;
+    }
+    await postOnce(
+      deps.db,
+      order.teamId,
+      orderRefundedTransfer({ currency: order.currency, orderId: order.id, refundKey: `refund:${refund.id}`, amountMinor }),
+    );
+  }
+  if (reversed) {
+    await postOnce(
+      deps.db,
+      order.teamId,
+      orderRefundedTransfer({
+        currency: order.currency,
+        orderId: order.id,
+        refundKey: `reversal:${captureId}`,
+        amountMinor: order.amountMinor,
+      }),
+    );
+  } else if (refunds.length === 0) {
+    // Revoked already; the retry posts the refund once PayPal lists it.
+    throw new Error(`PayPal order ${paypalOrder.id} lists no completed refund yet for capture ${captureId}`);
+  }
+  return marked;
 }
 
 // The R2b download length: long enough to start the download, too short to share.
