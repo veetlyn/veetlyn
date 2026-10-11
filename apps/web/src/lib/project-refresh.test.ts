@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientWaitsOnTeam, isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient, type ProjectWaitView } from "./project-refresh";
+import { clientWaitsOnTeam, isNotFoundError, teamWaitsOnClient, type ProjectWaitView } from "./project-refresh";
 
 function view(status: string, quotes: string[] = [], amendments: string[] = []): ProjectWaitView {
   return {
@@ -8,12 +8,6 @@ function view(status: string, quotes: string[] = [], amendments: string[] = []):
     amendments: amendments.map((s) => ({ status: s })),
   };
 }
-
-describe("PROJECT_REFRESH_MS", () => {
-  it("is 15 seconds", () => {
-    expect(PROJECT_REFRESH_MS).toBe(15_000);
-  });
-});
 
 describe("teamWaitsOnClient", () => {
   it("waits while the client owes a payment or a delivery decision", () => {

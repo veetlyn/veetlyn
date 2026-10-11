@@ -1,21 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { checkoutEmailProblem, downloadsLeftLabel, grantMessage, orderTokenLooksValid } from "./checkout";
-
-describe("checkoutEmailProblem", () => {
-  it("accepts a plain address, with surrounding spaces", () => {
-    expect(checkoutEmailProblem("buyer@example.com")).toBeNull();
-    expect(checkoutEmailProblem("  buyer@example.com ")).toBeNull();
-  });
-
-  it("rejects empty, missing @, missing domain dot, and inner spaces", () => {
-    const problem = "That email address does not look right.";
-    expect(checkoutEmailProblem("")).toBe(problem);
-    expect(checkoutEmailProblem("buyer.example.com")).toBe(problem);
-    expect(checkoutEmailProblem("buyer@example")).toBe(problem);
-    expect(checkoutEmailProblem("bu yer@example.com")).toBe(problem);
-  });
-});
+import { downloadsLeftLabel, grantMessage, orderTokenLooksValid } from "./checkout";
 
 describe("grantMessage", () => {
   it("says nothing for a usable grant on a paid order", () => {

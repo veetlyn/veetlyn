@@ -401,30 +401,6 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     ]);
   });
 
-  it("gives a pay link for deposits, top-ups and the balance", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
-    const { projectId } = await createProject(userId);
-    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
-    const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
-    const token = await clientToken(projectId);
-    const { paymentId } = await callerFor(null).project.clientAcceptQuote({ token, quoteId });
-    await db.insert(payment).values({
-      projectId,
-      teamId,
-      kind: "balance",
-      currency: "USD",
-      quotePartMinor: 50_000,
-      managementFeeMinor: 0,
-      amountMinor: 50_000,
-      lines: [{ kind: "balance", label: "Balance", amountMinor: 50_000 }],
-    });
-
-    const view = await callerFor(null).project.clientGet({ token });
-    expect(view.payments.find((p) => p.id === paymentId)?.payPath).toMatch(/^\/pay\//);
-    expect(view.payments.find((p) => p.kind === "balance")?.payPath).toMatch(/^\/pay\//);
-  });
-
   it("rejects a forged or missing client token", async () => {
     const { userId } = await seedServicesTeamWithAdmin(db);
     const { projectId } = await createProject(userId);

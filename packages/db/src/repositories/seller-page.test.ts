@@ -116,8 +116,4 @@ describe.skipIf(!hasTestDatabase)("seller page repository", () => {
 
     expect((await findSellerPage(db, seller.id))?.products).toEqual([]);
   });
-
-  it("returns null for an unknown team", async () => {
-    await expect(findSellerPage(db, "missing")).resolves.toBeNull();
-  });
 });

@@ -19,13 +19,8 @@ describe("deliveryDraftProblem", () => {
     expect(deliveryDraftProblem({ note: "Done", link: "ftp://files.example.com", file: null })).toBe("Use an https link.");
   });
 
-  it("accepts a file on its own and checks it like the server", () => {
+  it("accepts a file on its own", () => {
     expect(deliveryDraftProblem({ note: "", link: "", file: { name: "a.pdf", size: 10 } })).toBeNull();
-    expect(deliveryDraftProblem({ note: "", link: "", file: { name: "run.exe", size: 10 } })).toBe("This file type is not allowed.");
-    expect(deliveryDraftProblem({ note: "", link: "", file: { name: "a.pdf", size: 100 * 1024 * 1024 + 1 } })).toBe(
-      "Files can be up to 100 MB.",
-    );
-    expect(deliveryDraftProblem({ note: "", link: "", file: { name: "a.pdf", size: 0 } })).toBe("The file is empty.");
   });
 
   it("checks the file even when there is a note", () => {

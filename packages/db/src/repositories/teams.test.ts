@@ -11,7 +11,7 @@ import {
   seedUser,
   truncateAll,
 } from "../testing/db";
-import { findTeamAccess, findTeamById, findTeamSlug } from "./teams";
+import { findTeamAccess, findTeamById } from "./teams";
 
 describe.skipIf(!hasTestDatabase)("team repository", () => {
   const db = createTestDb();
@@ -60,13 +60,11 @@ describe.skipIf(!hasTestDatabase)("team repository", () => {
     expect(await findTeamAccess(db, { teamId: "missing", userId: outsiderId })).toBeNull();
   });
 
-  it("finds a team by id and a slug by team id", async () => {
+  it("finds a team by id", async () => {
     const { organizationId } = await seedOrganization(db);
     const store = await seedStore(db, { organizationId, slug: "acme" });
 
     expect(await findTeamById(db, store.id)).toEqual(store);
     expect(await findTeamById(db, "missing")).toBeNull();
-    expect(await findTeamSlug(db, store.id)).toBe("acme");
-    expect(await findTeamSlug(db, "missing")).toBeNull();
   });
 });

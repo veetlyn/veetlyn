@@ -1,12 +1,12 @@
 "use client";
 
+import { buyerEmailProblem } from "@jendal-workspace/core";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { loadCoreSdkScript, type OneTimePaymentSession } from "@paypal/paypal-js/sdk-v6";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
-import { checkoutEmailProblem } from "@/lib/checkout";
 import { sdkEnvironment } from "@/lib/pay-page";
 import { trpc, trpcClient } from "@/utils/trpc";
 
@@ -53,7 +53,7 @@ export default function CheckoutForm({ slug, productId, currency }: { slug: stri
 
   // Runs on a PayPal button click, outside React's event system, so it reads the field through refs.
   function emailIsReady(): boolean {
-    const problem = checkoutEmailProblem(emailRef.current);
+    const problem = buyerEmailProblem(emailRef.current);
     setEmailProblem(problem);
     if (problem) emailInput.current?.focus();
     return problem === null;

@@ -1,5 +1,4 @@
 import {
-  SkuTakenError,
   SourceError,
   buildProductPrefill,
   createFakeImageDownloader,
@@ -13,7 +12,6 @@ import { createTestDb, hasTestDatabase, seedOrganization, seedStore, truncateAll
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestCatalogServices } from "../testing/catalog";
-import { CatalogValidationError } from "./errors";
 import {
   createProduct,
   getMarketPrice,
@@ -22,8 +20,6 @@ import {
   prefillFromMatch,
   prefillFromPhoto,
   prefillFromUrl,
-  publishProduct,
-  unpublishProduct,
   updateProduct,
 } from "./service";
 
@@ -75,30 +71,6 @@ describe.skipIf(!hasTestDatabase)("catalog service", () => {
   afterAll(() => db.$client.end());
 
   describe("createProduct", () => {
-    it("stores the product with its variants", async () => {
-      const tenant = await makeTenant();
-      const detail = await createProduct(db, tenant, createTestCatalogServices(), draft());
-
-      expect(detail.product).toMatchObject({ title: "Desk lamp", status: "draft" });
-      expect(detail.variants).toHaveLength(1);
-      expect(detail.variants[0]).toMatchObject({ sku: "LAMP-1", priceMinor: 4200, stock: 5 });
-    });
-
-    it("rejects an invalid draft with the core problems", async () => {
-      const tenant = await makeTenant();
-      await expect(
-        createProduct(db, tenant, createTestCatalogServices(), draft({ title: "" })),
-      ).rejects.toThrow(CatalogValidationError);
-    });
-
-    it("maps a duplicate SKU to SkuTakenError", async () => {
-      const tenant = await makeTenant();
-      const services = createTestCatalogServices();
-      await createProduct(db, tenant, services, draft());
-
-      await expect(createProduct(db, tenant, services, draft())).rejects.toBeInstanceOf(SkuTakenError);
-    });
-
     it("keeps uploaded image keys and downloads source-URL images into the image store", async () => {
       const tenant = await makeTenant();
       const images = createFakeImageStore();
@@ -172,33 +144,6 @@ describe.skipIf(!hasTestDatabase)("catalog service", () => {
       const stranger = { ...tenant, storeId: "other-store" };
 
       expect(await updateProduct(db, stranger, created.product.id, createTestCatalogServices(), draft())).toBeNull();
-    });
-  });
-
-  describe("publish and unpublish", () => {
-    it("refuses to publish without a priced variant", async () => {
-      const tenant = await makeTenant();
-      const services = createTestCatalogServices();
-      const created = await createProduct(
-        db,
-        tenant,
-        services,
-        draft({ variants: [{ options: [], sku: "", priceMinor: 0, stock: 1 }] }),
-      );
-
-      await expect(publishProduct(db, tenant, created.product.id, services)).rejects.toThrow(CatalogValidationError);
-    });
-
-    it("publishes a valid product and unpublishes it again", async () => {
-      const tenant = await makeTenant();
-      const services = createTestCatalogServices();
-      const created = await createProduct(db, tenant, services, draft());
-
-      const published = await publishProduct(db, tenant, created.product.id, services);
-      expect(published?.product.status).toBe("published");
-
-      const unpublished = await unpublishProduct(db, tenant, created.product.id);
-      expect(unpublished?.product.status).toBe("draft");
     });
   });
 

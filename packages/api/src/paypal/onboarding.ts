@@ -64,7 +64,7 @@ const PAYPAL_URL_MAX_LENGTH = 127;
 
 // Services teams ship nothing, so they leave shipment tracking out. PayPal rejects the whole referral
 // with 422 FEATURES_UNAUTHORIZED when the partner app is not approved for any feature it asks for.
-export function partnerReferralFeaturesFor(product: TeamProduct): readonly string[] {
+function partnerReferralFeaturesFor(product: TeamProduct): readonly string[] {
   if (product === "store") return PARTNER_REFERRAL_FEATURES;
   return PARTNER_REFERRAL_FEATURES.filter((feature) => feature !== "TRACKING_SHIPMENT_READWRITE");
 }
