@@ -1,0 +1,27 @@
+apps/web/src/lib/checkout.test.ts
+  s_69d7361bad66d2::t_be33c89f96d761 3
+apps/web/src/lib/project-refresh.test.ts
+  s_69d7361bad66d2::t_db4ff6c1693573 2
+apps/web/src/app/store/buy/[productId]/checkout-form.tsx
+  s_69d7361bad66d2::t_2a37195dd4bf99 3,56
+apps/web/src/lib/delivery.test.ts
+  s_69d7361bad66d2::t_2d2ead0f2bd14f 22
+apps/web/src/lib/services-team-settings-form.test.ts
+  s_69d7361bad66d2::t_4b5139ab850e0f 6,10,12-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c61439f3d1c6c86f7ab93414a1b4be53c435ea51",
+  "prompts": {},
+  "sessions": {
+    "s_69d7361bad66d2": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "9d65c81a-6fbe-402d-b9db-da7aaf6daf06",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
