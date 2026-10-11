@@ -1,0 +1,37 @@
+packages/api/src/paypal/onboarding.ts
+  s_9294d21bfbe23f::t_6efed5658ef300 67
+packages/api/src/routers/catalog.test.ts
+  s_9294d21bfbe23f::t_331f0463aa1101 99
+packages/api/src/routers/payment.test.ts
+  s_9294d21bfbe23f::t_6349dab067268d 194-196,263-265,727-731
+packages/api/src/routers/store.test.ts
+  s_9294d21bfbe23f::t_f31460293f7abc 145,151
+packages/core/src/policies/store-policies.test.ts
+  s_9294d21bfbe23f::t_b935383a6fb028 3,7
+packages/db/src/repositories/catalog.test.ts
+  s_9294d21bfbe23f::t_cc49d4aac015c3 13,163-183
+packages/db/src/repositories/catalog.ts
+  s_9294d21bfbe23f::t_be6d3e1c4e2bbd 2
+packages/db/src/repositories/files.test.ts
+  s_9294d21bfbe23f::t_b56247fe9d5e79 119
+packages/db/src/repositories/teams.test.ts
+  s_9294d21bfbe23f::t_89f28ebbdc4af0 14,63
+packages/paypal/src/client.test.ts
+  s_9294d21bfbe23f::t_d7b509be570f12 122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "105f995666751f1aa5abe12e82d32da7d423b739",
+  "prompts": {},
+  "sessions": {
+    "s_9294d21bfbe23f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "5965e387-b5ee-427b-8777-f452fc082f4b",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
