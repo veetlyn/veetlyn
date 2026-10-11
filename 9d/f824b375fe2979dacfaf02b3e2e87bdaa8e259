@@ -1,0 +1,87 @@
+packages/auth/src/index.test.ts
+  s_c41d4176d23730::t_cc32a3ea520363 1,54,135,306
+packages/auth/src/index.ts
+  s_c41d4176d23730::t_edf19d1cf34c3a 17,38,53-55,60-61,79,169
+packages/auth/src/paypal.ts
+  s_c41d4176d23730::t_4a2d4e8960fd8d 19-20,22
+packages/channel3/src/client.test.ts
+  s_c41d4176d23730::t_b7b056e9e574f8 1,45,47,49,52,108,110
+packages/channel3/src/client.ts
+  s_c41d4176d23730::t_03df7207e38e93 1,11,17-28,31,40,42,46-48,53,57-61,65,69-73,77
+packages/core/src/billing/seller-plans.test.ts
+  s_c41d4176d23730::t_de18c7e12bb598 45-46
+packages/core/src/catalog/images.test.ts
+  s_c41d4176d23730::t_b03f89c059329a 30,35
+packages/core/src/catalog/images.ts
+  s_c41d4176d23730::t_5d9fd475095d1b 3,9-11,15
+packages/core/src/catalog/testing.ts
+  s_c41d4176d23730::t_b35321831f3831 79
+packages/core/src/files/rules.ts
+  s_c41d4176d23730::t_e1414b5e491680 11,78-80,92-93,98-99
+packages/core/src/ledger/postings.test.ts
+  s_c41d4176d23730::t_b4461b30b181d8 117,119,150
+packages/core/src/ledger/transfers.test.ts
+  s_c41d4176d23730::t_1a948bca5854a5 54-55
+packages/core/src/onboarding/setup-steps.ts
+  s_c41d4176d23730::t_05df4a17cb325d 12-13,20
+packages/core/src/policies/store-policies.ts
+  s_c41d4176d23730::t_974cda86f58218 19,26
+packages/core/src/projects/completion.ts
+  s_c41d4176d23730::t_58f1203b8ba29a 11-12,22
+packages/core/src/projects/quotes.ts
+  s_c41d4176d23730::t_9c2f9b4ae6b3e5 98,102
+packages/core/src/projects/state-machine.test.ts
+  s_c41d4176d23730::t_24e1ef709fc966 16,29,32-35,41,43-44
+packages/core/src/projects/state-machine.ts
+  s_c41d4176d23730::t_6481d0456809e1 47,74-83,90-92,101,106-107,127,135
+packages/core/src/services-teams/permissions.ts
+  s_c41d4176d23730::t_d9d5e101048479 42,46
+packages/core/src/services-teams/types.ts
+  s_c41d4176d23730::t_70db4f7e85a6c0 88,92,96,100,104
+packages/core/src/tenancy/team-product.ts
+  s_c41d4176d23730::t_af436c1bd398c4 6
+packages/db/src/repositories/catalog.test.ts
+  s_c41d4176d23730::t_1d0ebc6f703b27 155,170,175,181
+packages/db/src/repositories/catalog.ts
+  s_c41d4176d23730::t_d76eb65100a1ae 84-85,88
+packages/db/src/repositories/files.test.ts
+  s_c41d4176d23730::t_a0934452a6789c 115
+packages/db/src/repositories/ledger.test.ts
+  s_c41d4176d23730::t_199c7d455ebb18 93,97,100
+packages/db/src/repositories/projects.test.ts
+  s_c41d4176d23730::t_bd069c82b05bfb 66
+packages/db/src/repositories/services-catalog.ts
+  s_c41d4176d23730::t_d1a8cdbd80dba3 4,48-49,232
+packages/db/src/repositories/unit-of-work.ts
+  s_c41d4176d23730::t_0e9d35a954f65d 1,24
+packages/db/src/schema/outbox.ts
+  s_c41d4176d23730::t_9e444c4f3db3d8 1,22
+packages/email/src/senders.ts
+  s_c41d4176d23730::t_662250b827f889 6,19
+packages/email/src/transport.test.ts
+  s_c41d4176d23730::t_4b7c1d2d1ce347 42,175,178-179
+packages/infra/dev-hosts.ts
+  s_c41d4176d23730::t_150a33472ac046 12,15
+packages/infra/scripts/tunnel.ts
+  s_c41d4176d23730::t_61d95ca791efed 9,43-46,48-49,51-56
+packages/ui/src/components/input-group.tsx
+  s_c41d4176d23730::t_18ef60d4c70ca3 60
+packages/ui/src/components/sonner.tsx
+  s_c41d4176d23730::t_22951fb0c4dcf5 13-25,31,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9df824b375fe2979dacfaf02b3e2e87bdaa8e259",
+  "prompts": {},
+  "sessions": {
+    "s_c41d4176d23730": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "6853ebfa-6f85-4737-baff-a9df9b3e5854",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
