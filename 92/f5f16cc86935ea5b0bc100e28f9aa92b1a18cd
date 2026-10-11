@@ -1,0 +1,31 @@
+package.json
+  s_fe67e338448264::t_698156c325afb3 35
+packages/core/src/errors.ts
+  s_fe67e338448264::t_105e9da5afa758 1-3
+packages/core/src/index.ts
+  s_fe67e338448264::t_d1f7ba12fe5ab0 45-46
+packages/core/src/json.ts
+  s_fe67e338448264::t_7448368ba845c0 1-2
+packages/db/src/postgres-errors.ts
+  s_fe67e338448264::t_bc42a448059700 1-16
+packages/paypal/package.json
+  s_fe67e338448264::t_af00bebd78c416 11-13
+pnpm-lock.yaml
+  s_fe67e338448264::t_7935bcfe74d20c 84-86,468-471,2753-2755,7744-7745
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92f5f16cc86935ea5b0bc100e28f9aa92b1a18cd",
+  "prompts": {},
+  "sessions": {
+    "s_fe67e338448264": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "9b3f3e90-c545-4bcf-a26a-6295f22d33a1",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
