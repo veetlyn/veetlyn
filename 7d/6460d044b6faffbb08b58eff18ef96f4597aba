@@ -1,0 +1,29 @@
+apps/web/src/app/store/orders/[token]/order-page.tsx
+  s_eefcc33442353d::t_4b45e05b74875f 1-104
+apps/web/src/app/store/buy/[productId]/checkout-form.tsx
+  s_eefcc33442353d::t_a95bbf226e1336 1-251
+apps/web/src/app/store/buy/[productId]/page.tsx
+  s_eefcc33442353d::t_c7d5a6875f2dc5 1-28
+apps/web/src/lib/checkout.test.ts
+  s_eefcc33442353d::t_1df5f6cde0810b 1-61
+apps/web/src/lib/checkout.ts
+  s_eefcc33442353d::t_3b0b5c8302a147 1-24
+apps/web/src/app/store/orders/[token]/page.tsx
+  s_eefcc33442353d::t_20e9f46c8fff34 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7d6460d044b6faffbb08b58eff18ef96f4597aba",
+  "prompts": {},
+  "sessions": {
+    "s_eefcc33442353d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "cbece780-a528-4d35-893d-aac103744c7c",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
