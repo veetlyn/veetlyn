@@ -1,0 +1,50 @@
+packages/paypal/src/webhooks.ts
+  s_8777b2ef919b90::t_9f2b20fd8657e4 53-58
+  s_8777b2ef919b90::t_df818c4ca4290f 50-52
+  s_8777b2ef919b90::t_d6807641787212 1-2,4,27,30-33,40-44,48-49,61,67,70,72,75-78,96-104
+packages/paypal/src/schemas.ts
+  s_8777b2ef919b90::t_8a0bb02279247a 1-140
+packages/paypal/src/token.ts
+  s_8777b2ef919b90::t_41a8af24a8cbdb 47-48
+  s_8777b2ef919b90::t_fe5931efcf61a2 1-2,5
+packages/paypal/src/client.test.ts
+  s_8777b2ef919b90::t_e12c3e525249da 309,336-348
+  s_8777b2ef919b90::t_2a19950bd2d987 308
+  s_8777b2ef919b90::t_b0248bfc023183 2,4,14-16,28-29,33,42,58,69,78,82,98,106,141,166,180,192,225,231,255,263,276,283,328,354
+apps/server/src/routes/paypal-webhooks.ts
+  s_8777b2ef919b90::t_80343f691dd018 2,64
+packages/api/src/routers/paypal.test.ts
+  s_8777b2ef919b90::t_aa5d35709309f2 2,76,87-88
+packages/paypal/src/client.ts
+  s_8777b2ef919b90::t_5e30fe2446fcf9 1-2,4,8,15,18,51-52,123-126,141,169-178
+packages/paypal/src/errors.ts
+  s_8777b2ef919b90::t_a2cfc50ceef6dd 1-2,34-35,38-41
+packages/paypal/src/merchant-integrations.test.ts
+  s_8777b2ef919b90::t_9361004a1023c6 137
+packages/paypal/src/merchant-integrations.ts
+  s_8777b2ef919b90::t_e1f38e476156c5 1-2,5,34-35,37-46,48-56,66-73,80-88
+packages/paypal/src/orders.test.ts
+  s_8777b2ef919b90::t_3d69264db12ed0 3-10,30,40,195-196,200,205,234,241,245,265,269-279,281-282,288,303
+packages/paypal/src/orders.ts
+  s_8777b2ef919b90::t_78747b56b2d382 1-2,4-11,13-17,38-47,49-68,71,88-97,101-111,115-122,128,130-132,141,143
+packages/paypal/src/partner-referrals.ts
+  s_8777b2ef919b90::t_0cf500f3a9c3b2 1-2,4,17-18,30-46,49-52,54-55
+packages/paypal/src/testing.ts
+  s_8777b2ef919b90::t_623370eb28930d 2,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d80a1ccd87a5248e4809b91b4272a15bee3ac94e",
+  "prompts": {},
+  "sessions": {
+    "s_8777b2ef919b90": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f39daef9-4f4e-45a2-b761-688d33b38bf4",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
