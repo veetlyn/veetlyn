@@ -128,6 +128,14 @@ export async function markRefundPartCompleted(tx: DbExecutor, partId: string): P
   return rows.length > 0;
 }
 
+// A retry sends every part that is not completed again, so the failed ones are back in flight.
+export async function resendFailedRefundParts(tx: DbExecutor, projectRefundId: string): Promise<void> {
+  await tx
+    .update(projectRefundPart)
+    .set({ status: "pending", failureMessage: null })
+    .where(and(eq(projectRefundPart.projectRefundId, projectRefundId), eq(projectRefundPart.status, "failed")));
+}
+
 export async function markRefundPartFailed(tx: DbExecutor, partId: string, failureMessage: string): Promise<void> {
   await tx
     .update(projectRefundPart)

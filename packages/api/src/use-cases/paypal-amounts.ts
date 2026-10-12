@@ -2,16 +2,31 @@ import { LedgerError, type LedgerTransferDraft, parseMajorAmount } from "@jendal
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
-import type {
-  PayPalCapture,
-  PayPalCaptureBreakdown,
-  PayPalMoney,
-  PayPalOrder,
-  PayPalRefundBreakdown,
+import {
+  type PayPalCapture,
+  type PayPalCaptureBreakdown,
+  PayPalError,
+  type PayPalMoney,
+  type PayPalOrder,
+  type PayPalRefundBreakdown,
 } from "@jendal-workspace/paypal";
 import { captureSchema, parsedItems } from "@jendal-workspace/paypal/schemas";
 
 // Money facts PayPal reports for store orders and services payments alike, read the same way for both.
+
+// PayPal answers that can change on retry: an expired token, a timeout, rate limiting.
+const RETRIED_PAYPAL_STATUSES = new Set([401, 408, 429]);
+
+// A 4xx PayPal refusal that will not change on retry (gone, forbidden, invalid): PayPal did not act on the
+// request. 5xx, the retried statuses and unreadable answers leave PayPal's outcome unknown.
+export function isSettledPayPalRefusal(cause: unknown): cause is PayPalError {
+  return (
+    cause instanceof PayPalError &&
+    cause.status >= 400 &&
+    cause.status < 500 &&
+    !RETRIED_PAYPAL_STATUSES.has(cause.status)
+  );
+}
 
 export type CaptureFees = { paypalFeeMinor: number | null; platformFeeMinor: number | null };
 export type ReturnedFees = { paypalFeeMinor: number; platformFeeMinor: number };

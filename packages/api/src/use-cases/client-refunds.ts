@@ -16,6 +16,7 @@ import {
   type ProjectRefundPartRow,
   type ProjectRefundRow,
   setProjectRefundStatus,
+  resendFailedRefundParts,
   setRefundPartPayPalRefund,
   upsertRefundPart,
 } from "@jendal-workspace/db/repositories/project-refunds";
@@ -25,12 +26,13 @@ import {
   listRefundablePayments,
 } from "@jendal-workspace/db/repositories/projects";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
-import { type PayPalRefund, PayPalError } from "@jendal-workspace/paypal";
+import type { PayPalRefund } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayPalServices } from "../context";
 import { applyCompletedPaymentRefund } from "./payment-refunds";
+import { isSettledPayPalRefusal } from "./paypal-amounts";
 import { fail, type ProjectActor } from "./projects";
 
 export type ProjectRefundView = {
@@ -113,22 +115,17 @@ async function prepareParts(tx: Transaction, projectRefundId: string): Promise<P
       await upsertRefundPart(tx, { projectRefundId: refund.id, paymentId: part.paymentId, captureId, amountMinor: part.amountMinor });
     }
   }
+  await resendFailedRefundParts(tx, refund.id);
   await setProjectRefundStatus(tx, refund.id, "issuing");
   return partsInSplitOrder(tx, refund);
 }
 
-class UnexpectedRefundStatus extends Error {
-  override name = "UnexpectedRefundStatus";
-}
+const REFUSED_MESSAGE = "PayPal refused this refund. Refund the client in PayPal, then contact support.";
+const UNCERTAIN_MESSAGE = "We could not confirm the refund with PayPal. Try again; the client will not be refunded twice.";
 
-// Shown to the admin who retries: PayPal's error name and message, never request details or credentials.
-function failureMessage(cause: unknown): string {
-  const message =
-    cause instanceof PayPalError || cause instanceof UnexpectedRefundStatus
-      ? `${cause.name}: ${cause.message}`
-      : "PayPal may have sent this refund, but Payleor could not record it. Try again.";
-  return message.slice(0, MAX_FAILURE_MESSAGE);
-}
+// Statuses of a refund PayPal created but will not send. The same request id answers it again, so a retry
+// cannot help; a person refunds in PayPal.
+const REFUSED_REFUND_STATUSES = new Set(["FAILED", "CANCELLED"]);
 
 // Every lock here follows the webhook's order (project refund, then payment, then part) so the two cannot deadlock.
 async function recordAnswer(tx: Transaction, part: ProjectRefundPartRow, refund: PayPalRefund): Promise<void> {
@@ -137,9 +134,8 @@ async function recordAnswer(tx: Transaction, part: ProjectRefundPartRow, refund:
   if (refund.status === "COMPLETED") await applyCompletedPaymentRefund(tx, { paymentId: part.paymentId, refund });
 }
 
-// A refund id PayPal did answer is kept on the failed part: its webhook then confirms the part instead of
-// posting it as a refund the team never asked for.
-async function recordFailure(
+// PayPal made no refund that will reach the client. A refund id PayPal did answer stays on the part.
+async function recordRefusal(
   db: Database,
   part: ProjectRefundPartRow,
   message: string,
@@ -153,12 +149,25 @@ async function recordFailure(
   });
 }
 
-async function issuePart(
+// PayPal may have refunded. The part stays pending and the refund issuing, so the webhook waits for the admin's
+// retry, whose request id gets the same refund back and confirms it once. A refund id PayPal did answer is kept
+// so its webhook confirms the part directly.
+async function recordUncertain(db: Database, part: ProjectRefundPartRow, answered: PayPalRefund | null): Promise<void> {
+  if (!answered) return;
+  await db.transaction(async (tx) => {
+    await lockProjectRefund(tx, part.projectRefundId);
+    await setRefundPartPayPalRefund(tx, part.id, { paypalRefundId: answered.id, status: "pending" });
+  });
+}
+
+type PartOutcome = { kind: "refused"; message: string; cause: unknown } | { kind: "uncertain"; cause: unknown };
+
+async function sendPart(
   deps: { db: Database; paypal: PayPalServices },
   input: { part: ProjectRefundPartRow; currency: string; merchantId: string },
-): Promise<void> {
+): Promise<{ answered: PayPalRefund | null; outcome: PartOutcome | null }> {
   const { part } = input;
-  let answered: PayPalRefund | null = null;
+  let answered: PayPalRefund;
   try {
     answered = await deps.paypal.client.payments.refundCapture({
       captureId: part.captureId,
@@ -166,30 +175,54 @@ async function issuePart(
       requestId: refundRequestId(part.projectRefundId, part.paymentId),
       amount: { currency_code: input.currency, value: toPayPalValue(part.amountMinor) },
     });
-    if (answered.status !== "COMPLETED" && answered.status !== "PENDING") {
-      throw new UnexpectedRefundStatus(`PayPal answered the refund with status ${answered.status}.`);
+  } catch (error) {
+    // Shown to the admin: PayPal's error name and message, never request details or credentials.
+    if (isSettledPayPalRefusal(error)) {
+      return { answered: null, outcome: { kind: "refused", message: `${error.name}: ${error.message}`, cause: error } };
     }
-    const refund = answered;
+    return { answered: null, outcome: { kind: "uncertain", cause: error } };
+  }
+  if (REFUSED_REFUND_STATUSES.has(answered.status)) {
+    return { answered, outcome: { kind: "refused", message: REFUSED_MESSAGE, cause: null } };
+  }
+  if (answered.status !== "COMPLETED" && answered.status !== "PENDING") {
+    return { answered, outcome: { kind: "uncertain", cause: null } };
+  }
+  const refund = answered;
+  try {
     await deps.db.transaction((tx) => recordAnswer(tx, part, refund));
   } catch (error) {
-    const message = failureMessage(error);
-    log.error({
-      action: "project.refund",
-      projectRefund: { id: part.projectRefundId },
-      part: { id: part.id, paymentId: part.paymentId, paypalRefundId: answered?.id ?? null },
-      error: { name: errorName(error), message },
-    });
-    try {
-      await recordFailure(deps.db, part, message, answered);
-    } catch (recordError) {
-      log.error({ action: "project.refund_failure", part: { id: part.id }, error: { name: errorName(recordError) } });
-    }
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: `PayPal did not refund the client: ${message}`,
-      cause: error,
-    });
+    return { answered, outcome: { kind: "uncertain", cause: error } };
   }
+  return { answered, outcome: null };
+}
+
+async function issuePart(
+  deps: { db: Database; paypal: PayPalServices },
+  input: { part: ProjectRefundPartRow; currency: string; merchantId: string },
+): Promise<void> {
+  const { part } = input;
+  const { answered, outcome } = await sendPart(deps, input);
+  if (!outcome) return;
+  const message = outcome.kind === "refused" ? outcome.message.slice(0, MAX_FAILURE_MESSAGE) : UNCERTAIN_MESSAGE;
+  log.error({
+    action: "project.refund",
+    projectRefund: { id: part.projectRefundId },
+    part: { id: part.id, paymentId: part.paymentId, paypalRefundId: answered?.id ?? null, status: answered?.status ?? null },
+    outcome: outcome.kind,
+    error: { name: outcome.cause === null ? "none" : errorName(outcome.cause), message },
+  });
+  try {
+    if (outcome.kind === "refused") await recordRefusal(deps.db, part, message, answered);
+    else await recordUncertain(deps.db, part, answered);
+  } catch (recordError) {
+    log.error({ action: "project.refund_record", part: { id: part.id }, error: { name: errorName(recordError) } });
+  }
+  throw new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: outcome.kind === "refused" ? `PayPal did not refund the client: ${message}` : UNCERTAIN_MESSAGE,
+    cause: outcome.cause ?? undefined,
+  });
 }
 
 // Services spec: an admin confirms every refund; the click is the confirmation. No transaction or lock is held

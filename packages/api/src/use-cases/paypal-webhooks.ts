@@ -4,7 +4,7 @@ import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/pa
 import type { PaymentRow } from "@jendal-workspace/db/repositories/projects";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { payment } from "@jendal-workspace/db/schema/projects";
-import { captureFromOrder, PayPalError, type PayPalOrder } from "@jendal-workspace/paypal";
+import { captureFromOrder, type PayPalOrder } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
@@ -19,7 +19,7 @@ import {
   type PaymentDeps,
   recordCaptureFees,
 } from "./payments";
-import { isRefundedCaptureStatus } from "./paypal-amounts";
+import { isRefundedCaptureStatus, isSettledPayPalRefusal } from "./paypal-amounts";
 
 export type WebhookOutcome = { status: "processed" | "ignored" | "parked"; note: string };
 export type WebhookDeps = PaymentDeps & { email?: EmailServices };
@@ -34,8 +34,6 @@ const REFUND_EVENTS = new Set(["PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVE
 const NOT_OURS: WebhookOutcome = { status: "ignored", note: "not a Payleor payment" };
 // Refusals the pay page shows the client; the webhook has nothing left to do after them.
 const CLIENT_REFUSALS = new Set(["CONFLICT", "BAD_REQUEST", "UNPROCESSABLE_CONTENT"]);
-// PayPal answers that can change on retry: an expired token, a timeout, rate limiting.
-const RETRIED_PAYPAL_STATUSES = new Set([401, 408, 429]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function findPayment(deps: PaymentDeps, event: PayPalWebhookEventRow) {
@@ -50,13 +48,7 @@ async function findPayment(deps: PaymentDeps, event: PayPalWebhookEventRow) {
 // PayPal refusals that will not change on retry, and capture facts that contradict Payleor's records.
 function settledFailure(cause: unknown): WebhookOutcome | null {
   if (cause instanceof CaptureFactConflict) return { status: "parked", note: cause.message };
-  // Other 4xx from PayPal will not change on retry (gone, forbidden); 5xx are retried by the queue.
-  if (
-    cause instanceof PayPalError &&
-    cause.status >= 400 &&
-    cause.status < 500 &&
-    !RETRIED_PAYPAL_STATUSES.has(cause.status)
-  ) {
+  if (isSettledPayPalRefusal(cause)) {
     return { status: "parked", note: `PayPal ${cause.status} ${cause.name} (debug_id ${cause.debugId ?? "none"})` };
   }
   return null;
