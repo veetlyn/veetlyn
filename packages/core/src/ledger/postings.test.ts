@@ -11,7 +11,6 @@ import {
   paymentCapturedTransfer,
   paymentFeesTransfer,
   paymentRefundedTransfer,
-  payoutFeesTransfer,
   payoutReleasedTransfer,
   payoutRequestedTransfer,
   payoutSucceededTransfer,
@@ -87,19 +86,6 @@ describe("services spec §6.3 postings for the §5.3 example", () => {
     ]);
   });
 
-  it("charges a payout's PayPal fee to the team, or posts nothing for a zero fee", () => {
-    expect(payoutFeesTransfer({ currency: "USD", payoutRequestId: "po1", feeMinor: 25 })).toEqual({
-      kind: "payout_fees",
-      reference: "payout_fees:po1",
-      projectId: null,
-      entries: [
-        { account: "team_revenue", currency: "USD", amountMinor: -25 },
-        { account: "paypal_fees", currency: "USD", amountMinor: 25 },
-      ],
-    });
-    expect(payoutFeesTransfer({ currency: "USD", payoutRequestId: "po1", feeMinor: 0 })).toBeNull();
-  });
-
   it("moves a penalty after completion to the team or to client refunds", () => {
     const penalty = { ...base, caseId: "c1", freelancerId: "f1", amountMinor: 5_000 };
     expect(penaltyAfterCompletionTransfer({ ...penalty, destination: "team_revenue" }).entries).toEqual([
@@ -154,11 +140,6 @@ describe("every posting builder balances (property-style, 500 random cases each)
     payoutRequested: () => payoutRequestedTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
     payoutSucceeded: () => payoutSucceededTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
     payoutReleased: () => payoutReleasedTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
-    payoutFees: () => {
-      const transfer = payoutFeesTransfer({ currency: currency(), payoutRequestId: "po1", feeMinor: amount() });
-      if (!transfer) throw new Error("A non-zero payout fee has a transfer.");
-      return transfer;
-    },
     penaltyAfterCompletion: () =>
       penaltyAfterCompletionTransfer({
         currency: currency(),

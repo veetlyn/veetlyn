@@ -14,7 +14,6 @@ describe("servicesTeamSetupSteps", () => {
         solo: false,
         offeringCount: 0,
         productCount: 0,
-        payoutCredentialsSaved: false,
       },
       { settings: "/acme-studio/settings", services: "/acme-studio/services" },
     );
@@ -24,14 +23,13 @@ describe("servicesTeamSetupSteps", () => {
       { id: "add-service", label: "Add a service or a product", done: false, href: "/acme-studio/services" },
       { id: "connect-paypal", label: "Connect PayPal", done: false },
       { id: "set-rates", label: "Set your rates", done: false, href: "/acme-studio/settings" },
-      { id: "add-payout-credentials", label: "Add payout credentials", done: false },
       { id: "publish", label: "Publish your seller page", done: false },
       { id: "link-discord", label: "Link Discord", done: false },
     ]);
     expect(countDone(steps)).toBe(1);
   });
 
-  it("marks the service, rates, PayPal, payout credentials and publish steps done once the team has them", () => {
+  it("marks the service, rates, PayPal and publish steps done once the team has them", () => {
     const steps = servicesTeamSetupSteps(
       {
         status: "active",
@@ -41,7 +39,6 @@ describe("servicesTeamSetupSteps", () => {
         solo: false,
         offeringCount: 2,
         productCount: 0,
-        payoutCredentialsSaved: true,
       },
       {
         settings: "/acme-studio/settings",
@@ -52,7 +49,7 @@ describe("servicesTeamSetupSteps", () => {
       },
     );
 
-    expect(steps.map((s) => s.done)).toEqual([true, true, true, true, true, true, false]);
+    expect(steps.map((s) => s.done)).toEqual([true, true, true, true, true, false]);
     expect(steps.find((s) => s.id === "add-service")?.href).toBe("/acme-studio/services");
     expect(steps.find((s) => s.id === "publish")).toEqual({
       id: "publish",
@@ -63,7 +60,7 @@ describe("servicesTeamSetupSteps", () => {
     expect(steps.find((s) => s.id === "link-discord")?.href).toBe("/acme-studio/discord");
   });
 
-  it("gives a solo seller no rates or payout steps, and relabels the first step", () => {
+  it("gives a solo seller no rates step, and relabels the first step", () => {
     const steps = servicesTeamSetupSteps(
       {
         status: "draft",
@@ -73,7 +70,6 @@ describe("servicesTeamSetupSteps", () => {
         solo: true,
         offeringCount: 1,
         productCount: 0,
-        payoutCredentialsSaved: false,
       },
       {
         settings: "/acme-solo/settings",
