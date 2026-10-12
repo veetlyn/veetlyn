@@ -54,6 +54,7 @@ import { orderDownloadEmail } from "@jendal-workspace/email";
 import {
   captureFromOrder,
   type PayPalCapture,
+  type PayPalCaptureBreakdown,
   PayPalError,
   type PayPalMoney,
   type PayPalOrder,
@@ -205,9 +206,30 @@ function minorIn(currency: string | null, money: PayPalMoney | undefined): numbe
   return money && money.currency_code === currency ? parseMajorAmount(money.value) : null;
 }
 
+const ZERO_AMOUNT = /^0+(?:\.0{1,2})?$/;
+
+// parseMajorAmount refuses zero, but PayPal reports a fee it did not return as "0.00".
+function feeMinorIn(currency: string, fee: PayPalMoney): number | null {
+  if (fee.currency_code !== currency) return null;
+  return ZERO_AMOUNT.test(fee.value.trim()) ? 0 : parseMajorAmount(fee.value);
+}
+
+// A fee in another currency (a converted receivable) posts no fees at all, since posting the others alone would
+// misstate the team's balance; the order is flagged for review instead.
+function captureFees(
+  currency: string | null,
+  breakdown: PayPalCaptureBreakdown,
+): Pick<OrderCaptureFact, "paypalFeeMinor" | "platformFeeMinor"> {
+  const platformFee = breakdown.platform_fees[0]?.amount;
+  const platformFeeMinor = platformFee ? (currency ? feeMinorIn(currency, platformFee) : null) : 0;
+  if (platformFeeMinor === null) return { paypalFeeMinor: null, platformFeeMinor: null };
+  return { paypalFeeMinor: minorIn(currency, breakdown.paypal_fee), platformFeeMinor };
+}
+
 export function orderCaptureFact(orderId: string, paypalOrderId: string, capture: PayPalCapture): OrderCaptureFact {
   const currency = capture.amount?.currency_code ?? null;
   const breakdown = capture.seller_receivable_breakdown;
+  const fees = breakdown ? captureFees(currency, breakdown) : null;
   const capturedAt = capture.create_time ? new Date(capture.create_time) : null;
   return {
     orderId,
@@ -217,9 +239,8 @@ export function orderCaptureFact(orderId: string, paypalOrderId: string, capture
     amountMinor: capture.amount ? parseMajorAmount(capture.amount.value) : null,
     currency,
     capturedAt: capturedAt && !Number.isNaN(capturedAt.getTime()) ? capturedAt : null,
-    // A fee in another currency (a converted receivable) is not posted; the reconciliation job will show it.
-    paypalFeeMinor: breakdown ? minorIn(currency, breakdown.paypal_fee) : null,
-    platformFeeMinor: breakdown ? (minorIn(currency, breakdown.platform_fees[0]?.amount) ?? 0) : null,
+    paypalFeeMinor: fees?.paypalFeeMinor ?? null,
+    platformFeeMinor: fees?.platformFeeMinor ?? null,
     reviewReason: breakdown && currency ? captureReviewReason(breakdown, currency) : null,
   };
 }
@@ -547,14 +568,6 @@ async function postOnce(db: Database, teamId: string, transfer: LedgerTransferDr
   }
 }
 
-const ZERO_AMOUNT = /^0+(?:\.0{1,2})?$/;
-
-// parseMajorAmount refuses zero, but PayPal reports a fee it did not return as "0.00".
-function feeMinorIn(currency: string, fee: PayPalMoney): number | null {
-  if (fee.currency_code !== currency) return null;
-  return ZERO_AMOUNT.test(fee.value.trim()) ? 0 : parseMajorAmount(fee.value);
-}
-
 // Null unless every returned fee is readable and in the order's currency: posting part of them would misstate
 // the team's balance.
 function returnedFees(
@@ -562,6 +575,7 @@ function returnedFees(
   breakdown: PayPalRefundBreakdown | undefined,
 ): { paypalFeeMinor: number; platformFeeMinor: number } | null {
   if (!breakdown) return null;
+  // An absent paypal_fee means PayPal returned none of its fee.
   const paypalFeeMinor = breakdown.paypal_fee ? feeMinorIn(currency, breakdown.paypal_fee) : 0;
   if (paypalFeeMinor === null) return null;
   let platformFeeMinor = 0;
@@ -596,6 +610,10 @@ export async function applyOrderRefund(
     if (row.status === "pending") {
       const early = captures.find((capture) => isRefundedCaptureStatus(capture.status));
       if (!early) return { result: "not paid", order: row, capture: null };
+      // Nothing to revoke yet, so nothing is committed until PayPal lists the refund; every retry path re-enters.
+      if (early.status !== "REVERSED" && refunds.length === 0) {
+        throw new Error(`PayPal order ${paypalOrder.id} lists no completed refund yet for capture ${early.id}`);
+      }
       const fact = orderCaptureFact(row.id, paypalOrder.id, early);
       checkCaptureFact(row, fact);
       row = await markLockedOrderPaid(tx, row, fact);

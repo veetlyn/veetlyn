@@ -602,7 +602,13 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       ]);
       const both = refundedLookup("PARTIALLY_REFUNDED", [
         { id: "R1", status: "COMPLETED", value: "5.00", breakdown: SANDBOX_REFUND_BREAKDOWN },
-        { id: "R2", status: "COMPLETED", value: "7.50" },
+        {
+          id: "R2",
+          status: "COMPLETED",
+          value: "7.50",
+          // Payleor's fee returned in another currency: no part of R2's fees is posted.
+          breakdown: { ...SANDBOX_REFUND_BREAKDOWN, platform_fees: [{ amount: { currency_code: "EUR", value: "0.07" } }] },
+        },
       ]);
       let lookup = first;
       const { order, deps } = await storeOrder({ status: "paid", lookup: () => lookup() });
@@ -643,6 +649,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         ]),
       );
       expect(await orderPostings()).toHaveLength(2);
+      expect(await refundFeePostings()).toEqual(returnedFees);
     });
 
     it("retries a later refund until PayPal's order lists it, then posts it once", async () => {
@@ -801,6 +808,25 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       expect(early.mailer.sent).toHaveLength(0);
     });
 
+    it("commits nothing for a capture refunded before Payleor applied it until PayPal lists the refund", async () => {
+      let lookup = refundedLookup("REFUNDED", []);
+      const { order, deps, customId } = await storeOrder({ lookup: () => lookup() });
+      const event = storedEvent({ customId });
+
+      await expect(processPayPalWebhookEvent(deps, event)).rejects.toThrow(/no completed refund yet/);
+      expect(await orderRow(order.id)).toMatchObject({ status: "pending", paypalCaptureId: null });
+      expect(await db.select().from(ledgerTransfer)).toEqual([]);
+
+      lookup = refundedLookup("REFUNDED", [{ id: "R1", status: "COMPLETED", value: "600.00" }]);
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "refunded" });
+      expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "already refunded" });
+      expect(await orderRow(order.id)).toMatchObject({ status: "refunded", paypalCaptureId: "CAPTURE1" });
+      expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "order_paid"))).toHaveLength(1);
+      expect(await orderPostings()).toEqual([
+        { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 60_000 },
+      ]);
+    });
+
     it("flags converted funds for review, and posts the fees only when they are in the capture's currency", async () => {
       const cases = [
         {
@@ -817,6 +843,15 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
           breakdown: {
             ...FEE_BREAKDOWN.seller_receivable_breakdown,
             paypal_fee: { currency_code: "EUR", value: "21.90" },
+          },
+          reviewReason: "fee_currency",
+          paypalFeeMinor: null,
+          feeTransfers: 0,
+        },
+        {
+          breakdown: {
+            ...FEE_BREAKDOWN.seller_receivable_breakdown,
+            platform_fees: [{ amount: { currency_code: "EUR", value: "5.54" } }],
           },
           reviewReason: "fee_currency",
           paypalFeeMinor: null,
