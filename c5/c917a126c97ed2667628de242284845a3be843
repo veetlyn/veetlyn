@@ -1,0 +1,39 @@
+packages/api/src/use-cases/paypal-amounts.ts
+  s_4654681855196a::t_b61f7caf2eb5a1 1-81
+packages/core/src/projects/pricing.ts
+  s_4654681855196a::t_a184921dcb57cb 57-75
+packages/api/src/routers/payment.test.ts
+  s_4654681855196a::t_1cc339448ee894 157
+packages/api/src/routers/project.test.ts
+  s_4654681855196a::t_575011e5a7efa6 616
+packages/api/src/use-cases/orders.ts
+  s_4654681855196a::t_f0709aee5b3e7b 64
+packages/api/src/use-cases/payment-refunds.ts
+  s_4654681855196a::t_464060d80971f9 1-176
+packages/api/src/use-cases/payments.ts
+  s_4654681855196a::t_b090e572e2824e 2-3,20-25,34,40,56-57,247,282-283,285-287,290-295,355,365-367
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_4654681855196a::t_7a49de6b511865 6-14,40,166,347-591,596,598-599
+packages/api/src/use-cases/paypal-webhooks.ts
+  s_4654681855196a::t_915bffe96b3f91 4,12-13,22,33,87,99-100,126,143-146,153-154,157-163,188-191
+packages/core/src/projects/pricing.test.ts
+  s_4654681855196a::t_a2594a8a3781c6 9,182-213
+packages/db/src/repositories/projects.ts
+  s_4654681855196a::t_4fd7431ead0ce8 1-7,11,144-146,154-169,190-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c5c917a126c97ed2667628de242284845a3be843",
+  "prompts": {},
+  "sessions": {
+    "s_4654681855196a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "c4dc4b31-7a95-4ce9-87d1-e879b34cbf52",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
