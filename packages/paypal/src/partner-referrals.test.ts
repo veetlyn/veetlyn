@@ -68,6 +68,47 @@ describe("partnerReferrals.create", () => {
     );
   });
 
+  it("posts a first-party referral that asks for payouts with the seller nonce", async () => {
+    const { requests, fetch } = fakeFetch((request) =>
+      request.url.endsWith("/v1/oauth2/token")
+        ? jsonResponse(200, FAKE_TOKEN_RESPONSE)
+        : jsonResponse(201, REFERRAL_RESPONSE),
+    );
+    const client = createPayPalClient({
+      clientId: "partner-client-id",
+      clientSecret: "partner-secret",
+      environment: "sandbox",
+      fetch,
+      sleep: () => Promise.resolve(),
+    });
+
+    await client.partnerReferrals.createFirstParty({
+      requestId: "payout-connect:attempt-1",
+      returnUrl: "https://admin.example.com/acme/payouts",
+      sellerNonce: "nonce-1",
+    });
+
+    const call = recordedAt(requests, 1);
+    expect(call.headers.get("paypal-request-id")).toBe("payout-connect:attempt-1");
+    expect(JSON.parse(call.body ?? "")).toEqual({
+      partner_config_override: { return_url: "https://admin.example.com/acme/payouts" },
+      operations: [
+        {
+          operation: "API_INTEGRATION",
+          api_integration_preference: {
+            rest_api_integration: {
+              integration_method: "PAYPAL",
+              integration_type: "FIRST_PARTY",
+              first_party_details: { features: ["PAYMENT", "REFUND", "PAYOUTS"], seller_nonce: "nonce-1" },
+            },
+          },
+        },
+      ],
+      products: ["EXPRESS_CHECKOUT"],
+      legal_consents: [{ type: "SHARE_DATA_CONSENT", granted: true }],
+    });
+  });
+
   it("requests exactly the platform spec's feature list", () => {
     expect([...PARTNER_REFERRAL_FEATURES]).toEqual([
       "PAYMENT",

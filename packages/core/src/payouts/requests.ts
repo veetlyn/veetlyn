@@ -32,6 +32,11 @@ export function payoutAmountProblem(input: { amountMinor: number; availableMinor
   return null;
 }
 
+// Enough of a team's PayPal merchant id for an admin to recognise the account.
+export function maskedPayPalAccountId(accountId: string): string {
+  return `••••${accountId.slice(-4)}`;
+}
+
 export type PayoutOutcome = "succeeded" | "failed" | "pending";
 
 const FAILED_ITEM_STATUSES: ReadonlySet<string> = new Set(["FAILED", "RETURNED", "BLOCKED", "REFUNDED", "REVERSED"]);

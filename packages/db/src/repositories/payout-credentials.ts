@@ -1,7 +1,38 @@
 import { eq } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
-import { teamPayoutCredentials } from "../schema/payouts";
+import { payoutConnectAttempt, teamPayoutCredentials } from "../schema/payouts";
+
+export type PayoutConnectAttemptRow = typeof payoutConnectAttempt.$inferSelect;
+
+export async function insertPayoutConnectAttempt(
+  db: DbExecutor,
+  input: Pick<typeof payoutConnectAttempt.$inferInsert, "teamId" | "sellerNonce" | "createdByUserId">,
+): Promise<PayoutConnectAttemptRow> {
+  const [row] = await db.insert(payoutConnectAttempt).values(input).returning();
+  if (!row) throw new Error(`Insert into payout_connect_attempt returned no row for team ${input.teamId}`);
+  return row;
+}
+
+export async function getPayoutConnectAttempt(db: DbExecutor, id: string): Promise<PayoutConnectAttemptRow | null> {
+  const [row] = await db.select().from(payoutConnectAttempt).where(eq(payoutConnectAttempt.id, id)).limit(1);
+  return row ?? null;
+}
+
+// Held while the credentials it produced are saved, so an attempt is used once.
+export async function lockPayoutConnectAttempt(tx: Transaction, id: string): Promise<PayoutConnectAttemptRow | null> {
+  const [row] = await tx
+    .select()
+    .from(payoutConnectAttempt)
+    .where(eq(payoutConnectAttempt.id, id))
+    .limit(1)
+    .for("update");
+  return row ?? null;
+}
+
+export async function markPayoutConnectAttemptUsed(tx: DbExecutor, id: string): Promise<void> {
+  await tx.update(payoutConnectAttempt).set({ usedAt: new Date() }).where(eq(payoutConnectAttempt.id, id));
+}
 
 export type TeamPayoutCredentialsRow = typeof teamPayoutCredentials.$inferSelect;
 export type TeamPayoutCredentialsInput = Pick<

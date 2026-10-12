@@ -13,7 +13,7 @@ import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/r
 import { deletePayoutDestination, savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
-import { payoutRequest } from "@jendal-workspace/db/schema/payouts";
+import { payoutConnectAttempt, payoutRequest } from "@jendal-workspace/db/schema/payouts";
 import {
   createTestDb,
   hasTestDatabase,
@@ -30,15 +30,20 @@ import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } fr
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { PayoutServices } from "../context";
+import type { PayoutServices, PayPalServices } from "../context";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
 import { appRouter } from "./index";
 
 const TEST_KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
 const MERCHANT_ID = "MERCHANT1";
+const PARTNER_ID = "PARTNER42";
 const CLIENT_ID = "team-app-client-id-WXYZ";
 const CLIENT_SECRET = "team-app-secret";
+const AUTH_CODE = "auth-code-1";
+const SHARED_ID = "shared-id-1";
+const ACTION_URL = "https://www.sandbox.paypal.com/bizsignup/entry?token=REF-1";
+const CREDENTIALS_PATH = `/v1/customer/partners/${PARTNER_ID}/merchant-integrations/credentials/`;
 
 // PayPal may leave out account_id; null builds that answer.
 function balancesAnswer(accountId: string | null, available = "250.00"): JsonObject {
@@ -50,19 +55,35 @@ function balancesAnswer(accountId: string | null, available = "250.00"): JsonObj
   return answer;
 }
 
+function sellerCredentialsAnswer(payerId = MERCHANT_ID, clientId = CLIENT_ID): Response {
+  return jsonResponse(200, { client_id: clientId, client_secret: CLIENT_SECRET, payer_id: payerId });
+}
+
 // Answers of the fake PayPal API; a test may swap one between calls.
 type TeamPayPalAnswers = {
-  token?: () => Response;
+  exchange?: () => Response;
+  sellerCredentials?: () => Response;
   balances?: () => Response;
   payout?: () => Response;
   batch?: () => Response;
 };
 
-// A fake PayPal API for the team's own REST app: token, balances, payouts.
+// A fake PayPal API for the partner app (first-party referral, the seller's authorization code and credentials) and
+// for the team's own REST app (token, balances, payouts).
 function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
   return fakeFetch((request) => {
     const path = new URL(request.url).pathname;
-    if (path === "/v1/oauth2/token") return answers.token?.() ?? jsonResponse(200, FAKE_TOKEN_RESPONSE);
+    if (path === "/v1/oauth2/token") {
+      const grant = new URLSearchParams(request.body ?? "").get("grant_type");
+      if (grant === "authorization_code") {
+        return answers.exchange?.() ?? jsonResponse(200, { access_token: "seller-token", expires_in: 28800 });
+      }
+      return jsonResponse(200, FAKE_TOKEN_RESPONSE);
+    }
+    if (path === "/v2/customer/partner-referrals") {
+      return jsonResponse(201, { links: [{ href: ACTION_URL, rel: "action_url", method: "GET" }] });
+    }
+    if (path === CREDENTIALS_PATH) return answers.sellerCredentials?.() ?? sellerCredentialsAnswer();
     if (path === "/v1/reporting/balances") return answers.balances?.() ?? jsonResponse(200, balancesAnswer(MERCHANT_ID));
     if (path === "/v1/payments/payouts" && answers.payout) return answers.payout();
     if (path.startsWith("/v1/payments/payouts/") && answers.batch) return answers.batch();
@@ -78,28 +99,38 @@ const payoutPosts = (requests: RecordedRequest[]) =>
   requests.filter((r) => r.method === "POST" && pathOf(r) === "/v1/payments/payouts");
 const balanceReads = (requests: RecordedRequest[]) => requests.filter((r) => pathOf(r) === "/v1/reporting/balances");
 
+// The first-party details of the recorded referral.
+function referralDetails(requests: RecordedRequest[]): JsonObject {
+  const call = requests.find((r) => pathOf(r) === "/v2/customer/partner-referrals");
+  return JSON.parse(call?.body ?? "{}").operations[0].api_integration_preference.rest_api_integration;
+}
+
+const TEAM = { teamSlug: "acme-studio" };
+
 describe.skipIf(!hasTestDatabase)("payouts", () => {
   const db = createTestDb();
   const { auth } = createTestAuth(db);
 
-  async function makePayouts(fetchImpl: ReturnType<typeof fakeFetch>["fetch"]) {
+  type Services = { payouts: PayoutServices; paypal: PayPalServices };
+
+  async function makePayouts(fetchImpl: FetchLike): Promise<Services> {
+    const client = (clientId: string, clientSecret: string) =>
+      createPayPalClient({ clientId, clientSecret, environment: "sandbox", fetch: fetchImpl, sleep: () => Promise.resolve() });
     const payouts: PayoutServices = {
       secretKey: await importSecretKey(TEST_KEY),
       keyId: "v1",
-      clientFor(input) {
-        return createPayPalClient({
-          clientId: input.clientId,
-          clientSecret: input.clientSecret,
-          environment: "sandbox",
-          fetch: fetchImpl,
-          sleep: () => Promise.resolve(),
-        });
-      },
+      clientFor: (input) => client(input.clientId, input.clientSecret),
     };
-    return { payouts };
+    const paypal: PayPalServices = {
+      client: client("partner-client-id", "partner-secret"),
+      partnerId: PARTNER_ID,
+      returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
+      sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+    };
+    return { payouts, paypal };
   }
 
-  const callerFor = (userId: string, payouts?: PayoutServices) =>
+  const callerFor = (userId: string, services?: Services) =>
     appRouter.createCaller({
       db,
       session: makeSession(userId),
@@ -108,8 +139,16 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       headers: new Headers(),
       catalog: createTestCatalogServices(),
       files: createFakeFileStore(),
-      payouts,
+      payouts: services?.payouts,
+      paypal: services?.paypal,
     });
+
+  type Caller = ReturnType<typeof callerFor>;
+
+  async function turnOnAutomaticPayouts(admin: Caller) {
+    const { attemptId } = await admin.payouts.connectStart(TEAM);
+    return admin.payouts.connectComplete({ ...TEAM, attemptId, authCode: AUTH_CODE, sharedId: SHARED_ID });
+  }
 
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
@@ -120,88 +159,133 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     return seeded;
   }
 
-  it("verifies the credentials with PayPal, stores the secret sealed for the team and never returns it", async () => {
+  it("starts PayPal's first-party onboarding with a fresh seller nonce for the team", async () => {
     const { userId, teamId } = await connectedTeam();
     const paypal = fakeTeamPayPal();
-    const { payouts } = await makePayouts(paypal.fetch);
-    const admin = callerFor(userId, payouts);
+    const admin = callerFor(userId, await makePayouts(paypal.fetch));
 
-    const saved = await admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
+    const started = await admin.payouts.connectStart(TEAM);
 
-    const view = { clientIdEnding: "WXYZ", accountId: MERCHANT_ID, verifiedAt: expect.any(String) };
+    expect(started).toEqual({ actionUrl: ACTION_URL, attemptId: expect.any(String) });
+    const [attempt] = await db.select().from(payoutConnectAttempt).where(eq(payoutConnectAttempt.id, started.attemptId));
+    expect(attempt).toMatchObject({ teamId, createdByUserId: userId, usedAt: null });
+    expect(attempt?.sellerNonce).toMatch(/^[\w-]{86}$/);
+    expect(referralDetails(paypal.requests)).toEqual({
+      integration_method: "PAYPAL",
+      integration_type: "FIRST_PARTY",
+      first_party_details: { features: ["PAYMENT", "REFUND", "PAYOUTS"], seller_nonce: attempt?.sellerNonce },
+    });
+    const referral = paypal.requests.find((r) => pathOf(r) === "/v2/customer/partner-referrals");
+    expect(JSON.parse(referral?.body ?? "").partner_config_override).toEqual({
+      return_url: "https://admin.example.com/acme-studio/payouts",
+    });
+  });
+
+  it("saves the credentials PayPal shares after consent, sealed for the team, and never returns them", async () => {
+    const { userId, teamId } = await connectedTeam();
+    const paypal = fakeTeamPayPal();
+    const services = await makePayouts(paypal.fetch);
+    const admin = callerFor(userId, services);
+    const { attemptId } = await admin.payouts.connectStart(TEAM);
+
+    const saved = await admin.payouts.connectComplete({ ...TEAM, attemptId, authCode: AUTH_CODE, sharedId: SHARED_ID });
+
+    const view = { accountId: MERCHANT_ID, verifiedAt: expect.any(String) };
     expect(saved).toEqual(view);
-    await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toEqual(view);
-    expect(paypal.requests.map((r) => [r.method, new URL(r.url).pathname + new URL(r.url).search])).toEqual([
-      ["POST", "/v1/oauth2/token"],
-      ["GET", "/v1/reporting/balances?currency_code=USD"],
-    ]);
-    expect(paypal.requests[0]?.headers.get("authorization")).toBe(`Basic ${btoa(`${CLIENT_ID}:${CLIENT_SECRET}`)}`);
+    await expect(admin.payouts.credentials(TEAM)).resolves.toEqual(view);
+    const [attempt] = await db.select().from(payoutConnectAttempt).where(eq(payoutConnectAttempt.id, attemptId));
+    const exchange = paypal.requests.find((r) => new URLSearchParams(r.body ?? "").get("grant_type") === "authorization_code");
+    expect(exchange?.headers.get("authorization")).toBe(`Basic ${btoa(`${SHARED_ID}:`)}`);
+    expect(new URLSearchParams(exchange?.body ?? "").get("code_verifier")).toBe(attempt?.sellerNonce);
+    expect(attempt?.usedAt).toEqual(expect.any(Date));
+    // The shared credentials must read the team's balance before they are kept.
+    expect(balanceReads(paypal.requests)[0]?.url).toContain("currency_code=USD");
 
     const row = await getTeamPayoutCredentials(db, teamId);
     expect(row).toMatchObject({ clientId: CLIENT_ID, keyId: "v1", paypalAccountId: MERCHANT_ID });
     expect(row?.secretCiphertext).not.toContain(CLIENT_SECRET);
     const sealed = { ciphertext: row?.secretCiphertext ?? "", iv: row?.secretIv ?? "", keyId: row?.keyId ?? "" };
-    await expect(openSecret(payouts.secretKey, sealed, teamId)).resolves.toBe(CLIENT_SECRET);
+    await expect(openSecret(services.payouts.secretKey, sealed, teamId)).resolves.toBe(CLIENT_SECRET);
 
-    await expect(admin.servicesTeam.get({ teamSlug: "acme-studio" })).resolves.toMatchObject({
-      payoutCredentialsSaved: true,
-    });
+    await expect(admin.servicesTeam.get(TEAM)).resolves.toMatchObject({ payoutCredentialsSaved: true });
+  });
+
+  const CONNECT_EXPIRED = { code: "BAD_REQUEST", message: "This PayPal connection expired. Turn on automatic payouts again." };
+
+  it.each([
+    {
+      case: "credentials of another PayPal account",
+      answers: { sellerCredentials: () => sellerCredentialsAnswer("OTHERMERCHANT") },
+      error: { code: "PRECONDITION_FAILED", message: "Connect the PayPal account this team already uses (••••ANT1)." },
+    },
+    {
+      case: "PayPal refusing the authorization code",
+      answers: { exchange: () => jsonResponse(400, { error: "invalid_grant", error_description: "Invalid code" }) },
+      error: { code: "BAD_GATEWAY", message: "PayPal did not confirm the connection. Try again." },
+    },
+    {
+      case: "credentials that cannot read the balance",
+      answers: {
+        balances: () => jsonResponse(403, { name: "NOT_AUTHORIZED", message: "Insufficient permissions.", debug_id: "d403" }),
+      },
+      error: {
+        code: "PRECONDITION_FAILED",
+        message:
+          "PayPal does not let Payleor read this team's PayPal balance, which payouts need. Ask PayPal to turn on Payouts for the account, then try again.",
+      },
+    },
+  ])("refuses $case and saves nothing", async ({ answers, error }) => {
+    const { userId } = await connectedTeam();
+    const admin = callerFor(userId, await makePayouts(fakeTeamPayPal(answers).fetch));
+
+    await expect(turnOnAutomaticPayouts(admin)).rejects.toMatchObject(error);
+    await expect(admin.payouts.credentials(TEAM)).resolves.toBeNull();
   });
 
   it.each([
     {
-      case: "a token refusal",
-      paypal: () =>
-        fakeTeamPayPal({
-          token: () => jsonResponse(401, { error: "invalid_client", error_description: "Client Authentication failed" }),
-        }),
-      message: "PayPal refused these credentials. Check the client ID and secret.",
+      case: "is more than an hour old",
+      spoil: async (attemptId: string) => {
+        await db
+          .update(payoutConnectAttempt)
+          .set({ createdAt: new Date(Date.now() - 61 * 60_000) })
+          .where(eq(payoutConnectAttempt.id, attemptId));
+      },
     },
     {
-      case: "a balance refusal",
-      paypal: () =>
-        fakeTeamPayPal({
-          balances: () => jsonResponse(403, { name: "NOT_AUTHORIZED", message: "Insufficient permissions.", debug_id: "d403" }),
-        }),
-      message:
-        "These credentials cannot read the PayPal balance. Turn on the app's balance and payouts features in the PayPal developer dashboard.",
+      case: "was already used",
+      spoil: async (attemptId: string) => {
+        await db.update(payoutConnectAttempt).set({ usedAt: new Date() }).where(eq(payoutConnectAttempt.id, attemptId));
+      },
     },
     {
-      case: "another PayPal account",
-      paypal: () => fakeTeamPayPal({ balances: () => jsonResponse(200, balancesAnswer("OTHERMERCHANT")) }),
-      message: "These credentials belong to another PayPal account than the one connected to this team.",
+      case: "belongs to another team",
+      spoil: async (attemptId: string) => {
+        const other = await seedServicesTeamWithAdmin(db, { slug: "other-studio" });
+        await db.update(payoutConnectAttempt).set({ teamId: other.teamId }).where(eq(payoutConnectAttempt.id, attemptId));
+      },
     },
-  ])("refuses $case and stores nothing", async ({ paypal, message }) => {
+  ])("refuses a connection whose attempt $case, before asking PayPal", async ({ spoil }) => {
     const { userId } = await connectedTeam();
-    const { payouts } = await makePayouts(paypal().fetch);
-    const admin = callerFor(userId, payouts);
+    const paypal = fakeTeamPayPal();
+    const admin = callerFor(userId, await makePayouts(paypal.fetch));
+    const { attemptId } = await admin.payouts.connectStart(TEAM);
+    await spoil(attemptId);
+    paypal.requests.splice(0);
 
     await expect(
-      admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: "wrong-secret" }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST", message });
-    await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toBeNull();
+      admin.payouts.connectComplete({ ...TEAM, attemptId, authCode: AUTH_CODE, sharedId: SHARED_ID }),
+    ).rejects.toMatchObject(CONNECT_EXPIRED);
+    expect(paypal.requests).toEqual([]);
+    await expect(admin.payouts.credentials(TEAM)).resolves.toBeNull();
   });
 
-  it("stores no account when PayPal does not report which account the credentials belong to", async () => {
-    const { userId, teamId } = await connectedTeam();
-    const { payouts } = await makePayouts(fakeTeamPayPal({ balances: () => jsonResponse(200, balancesAnswer(null)) }).fetch);
-    const admin = callerFor(userId, payouts);
-
-    await expect(
-      admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET }),
-    ).resolves.toMatchObject({ clientIdEnding: "WXYZ", accountId: null });
-    await expect(getTeamPayoutCredentials(db, teamId)).resolves.toMatchObject({ paypalAccountId: null });
-  });
-
-  // Saved credentials for MERCHANT1 and a payout PayPal is working on; `report` sets the account the next balance
-  // answer names.
+  // Credentials saved for MERCHANT1 and a payout PayPal is working on; the next shared credentials carry `clientId`.
   async function teamWithSentPayout() {
     const { userId, teamId } = await connectedTeam();
-    let reported: string | null = MERCHANT_ID;
-    const paypal = fakeTeamPayPal({ balances: () => jsonResponse(200, balancesAnswer(reported)) });
-    const { payouts } = await makePayouts(paypal.fetch);
-    const admin = callerFor(userId, payouts);
-    await admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
+    const answers: TeamPayPalAnswers = {};
+    const admin = callerFor(userId, await makePayouts(fakeTeamPayPal(answers).fetch));
+    await turnOnAutomaticPayouts(admin);
     const request = await insertPayoutRequest(db, {
       id: crypto.randomUUID(),
       teamId,
@@ -211,59 +295,47 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       receiverPayerId: "G83JXTJ5EHCQ2",
     });
     await updatePayoutRequest(db, request?.id ?? "", { status: "sent", paypalBatchId: "BATCH1" });
-    return {
-      admin,
-      teamId,
-      report: (accountId: string | null) => {
-        reported = accountId;
-      },
-    };
+    return { admin, teamId, answers };
   }
 
   const inProgress = { code: "CONFLICT", message: "Wait for the payouts in progress to finish." };
-  const otherApp = { teamSlug: "acme-studio", clientId: "other-app-ABCD", clientSecret: "other-secret" };
 
   it("replaces the credentials while a payout is with PayPal when they belong to the same account, but never removes them", async () => {
-    const { admin } = await teamWithSentPayout();
+    const { admin, teamId, answers } = await teamWithSentPayout();
+    answers.sellerCredentials = () => sellerCredentialsAnswer(MERCHANT_ID, "other-app");
 
-    await expect(admin.payouts.saveCredentials(otherApp)).resolves.toMatchObject({
-      clientIdEnding: "ABCD",
-      accountId: MERCHANT_ID,
-    });
-    await expect(admin.payouts.removeCredentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(inProgress);
-    await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toMatchObject({ clientIdEnding: "ABCD" });
+    await expect(turnOnAutomaticPayouts(admin)).resolves.toMatchObject({ accountId: MERCHANT_ID });
+    await expect(admin.payouts.removeCredentials(TEAM)).rejects.toMatchObject(inProgress);
+    await expect(getTeamPayoutCredentials(db, teamId)).resolves.toMatchObject({ clientId: "other-app" });
   });
 
-  it.each([
-    { case: "another account than the saved one", merchantId: "MERCHANT2", reported: "MERCHANT2" },
-    { case: "no account", merchantId: MERCHANT_ID, reported: null },
-  ])("refuses replacing the credentials while a payout is with PayPal when PayPal reports $case", async (row) => {
-    const { admin, teamId, report } = await teamWithSentPayout();
-    await markTeamPayPalMerchant(db, { teamId, merchantId: row.merchantId });
-    report(row.reported);
+  it("refuses replacing the credentials while a payout is with PayPal when the team now uses another account", async () => {
+    const { admin, teamId, answers } = await teamWithSentPayout();
+    await markTeamPayPalMerchant(db, { teamId, merchantId: "MERCHANT2" });
+    answers.sellerCredentials = () => sellerCredentialsAnswer("MERCHANT2", "other-app");
+    answers.balances = () => jsonResponse(200, balancesAnswer("MERCHANT2"));
 
-    await expect(admin.payouts.saveCredentials(otherApp)).rejects.toMatchObject(inProgress);
-    await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toMatchObject({
-      clientIdEnding: "WXYZ",
-      accountId: MERCHANT_ID,
+    await expect(turnOnAutomaticPayouts(admin)).rejects.toMatchObject(inProgress);
+    await expect(getTeamPayoutCredentials(db, teamId)).resolves.toMatchObject({
+      clientId: CLIENT_ID,
+      paypalAccountId: MERCHANT_ID,
     });
   });
 
   it("lets only admins see or change the credentials", async () => {
     const { organizationId, teamId } = await connectedTeam();
     const freelancerId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
-    const { payouts } = await makePayouts(fakeTeamPayPal().fetch);
-    const freelancer = callerFor(freelancerId, payouts);
+    const freelancer = callerFor(freelancerId, await makePayouts(fakeTeamPayPal().fetch));
 
     const forbidden = { code: "FORBIDDEN", message: "Only an admin can change the team settings." };
+    await expect(freelancer.payouts.connectStart(TEAM)).rejects.toMatchObject(forbidden);
     await expect(
-      freelancer.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET }),
+      freelancer.payouts.connectComplete({ ...TEAM, attemptId: "attempt", authCode: AUTH_CODE, sharedId: SHARED_ID }),
     ).rejects.toMatchObject(forbidden);
-    await expect(freelancer.payouts.credentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
-    await expect(freelancer.payouts.removeCredentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
+    await expect(freelancer.payouts.credentials(TEAM)).rejects.toMatchObject(forbidden);
+    await expect(freelancer.payouts.removeCredentials(TEAM)).rejects.toMatchObject(forbidden);
   });
 
-  const TEAM = { teamSlug: "acme-studio" };
   const PAYER_ID = "G83JXTJ5EHCQ2";
   const LOW_BALANCE = "The team's PayPal balance is too low. Add funds, then retry.";
   const receiverRefusal = {
@@ -318,8 +390,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
   }
 
-  // Saved credentials for MERCHANT1, $900 available in the team's PayPal balance, and Ada, a freelancer owed $850
-  // with a confirmed destination. PayPal requests made while saving the credentials are dropped. While `gate.on`
+  // Automatic payouts on for MERCHANT1, $900 available in the team's PayPal balance, and Ada, a freelancer owed $850
+  // with a confirmed destination. PayPal requests made while turning payouts on are dropped. While `gate.on`
   // is true, each payout POST waits in `gate.held` until the test answers it, so two sends can interleave.
   async function payoutTeam() {
     const { userId: adminId, organizationId, teamId } = await connectedTeam();
@@ -336,11 +408,11 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       gate.on && new URL(request.url).pathname === "/v1/payments/payouts"
         ? new Promise((resolve) => gate.held.push({ request, answer: resolve }))
         : paypal.fetch(request);
-    const { payouts } = await makePayouts(gatedFetch);
-    const admin = callerFor(adminId, payouts);
-    await admin.payouts.saveCredentials({ ...TEAM, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
+    const services = await makePayouts(gatedFetch);
+    const admin = callerFor(adminId, services);
+    await turnOnAutomaticPayouts(admin);
     paypal.requests.splice(0);
-    return { organizationId, teamId, memberId, admin, member: callerFor(memberId, payouts), answers, paypal, payouts, gate };
+    return { organizationId, teamId, memberId, admin, member: callerFor(memberId, services), answers, paypal, services, gate };
   }
 
   const batchIdsOf = (posts: RecordedRequest[]) =>
@@ -711,15 +783,15 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       unsettle: async (team: Awaited<ReturnType<typeof payoutTeam>>) => {
         await team.admin.payouts.removeCredentials(TEAM);
       },
-      message: "Add the team's payout credentials first.",
+      message: "Turn on automatic payouts to pay requests.",
     },
     {
-      case: "the saved credentials belong to another PayPal account than the team's",
+      case: "automatic payouts are on for another PayPal account than the team's",
       unsettle: async (team: Awaited<ReturnType<typeof payoutTeam>>) => {
         await markTeamPayPalMerchant(db, { teamId: team.teamId, merchantId: "MERCHANT2" });
       },
       message:
-        "These payout credentials belong to another PayPal account than the one connected to this team. Replace them.",
+        "Automatic payouts are on for another PayPal account than the one connected to this team. Turn them on again.",
     },
     {
       case: "the member removed their PayPal destination after requesting",
@@ -748,8 +820,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   });
 
   it("refuses requests the member cannot make, and approvals from anyone but an admin", async () => {
-    const { organizationId, teamId, memberId, member, paypal, payouts } = await payoutTeam();
-    const caller = (userId: string) => callerFor(userId, payouts).payouts;
+    const { organizationId, teamId, memberId, member, paypal, services } = await payoutTeam();
+    const caller = (userId: string) => callerFor(userId, services).payouts;
 
     const noDestination = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Bo" });
     await expect(caller(noDestination).request({ ...TEAM, amount: "10.00" })).rejects.toMatchObject({

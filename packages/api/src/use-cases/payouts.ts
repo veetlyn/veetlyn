@@ -80,13 +80,13 @@ export type MemberPayoutsView = { earnings: MemberEarningsRow[]; requests: Membe
 export type PayoutTeam = Pick<ServicesTeamRecord, "id" | "name" | "paypalMerchantId">;
 export type PayoutDeps = { db: Database; payouts: PayoutServices };
 
-const NO_CREDENTIALS = "Add the team's payout credentials first.";
+const NO_CREDENTIALS = "Turn on automatic payouts to pay requests.";
 const OTHER_ACCOUNT =
-  "These payout credentials belong to another PayPal account than the one connected to this team. Replace them.";
-const SEALED_SECRET_UNREADABLE = "The team's payout credentials could not be opened. Save them again.";
+  "Automatic payouts are on for another PayPal account than the one connected to this team. Turn them on again.";
+const SEALED_SECRET_UNREADABLE = "The team's automatic payouts connection could not be read. Turn on automatic payouts again.";
 const LOW_BALANCE = "The team's PayPal balance is too low. Add funds, then retry.";
 const BALANCE_UNREADABLE = "We could not read the team's PayPal balance. Try again.";
-const CREDENTIALS_REFUSED = "PayPal refused the team's payout credentials. Replace them.";
+const CREDENTIALS_REFUSED = "PayPal refused the team's automatic payouts connection. Turn on automatic payouts again.";
 const UNCERTAIN = "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.";
 const DESTINATION_UNQUALIFIED = "The member's PayPal account no longer qualifies for payouts.";
 const DESTINATION_CHANGED = "The member changed their PayPal account. Reject this request; they can request again.";

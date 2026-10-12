@@ -114,6 +114,12 @@ export const partnerReferralSchema = z.looseObject({
   links: z.array(z.looseObject({ href: z.string(), rel: z.string(), method: z.string().optional() })),
 });
 
+export const sellerCredentialsSchema = z.looseObject({
+  client_id: z.string().min(1),
+  client_secret: z.string().min(1),
+  payer_id: z.string().min(1),
+});
+
 // Field list from the live doc's sample responses (Fact 5).
 export const merchantIntegrationSchema = z.looseObject({
   merchant_id: optionalText,

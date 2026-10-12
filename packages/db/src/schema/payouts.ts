@@ -51,6 +51,25 @@ export const teamPayoutCredentials = pgTable("team_payout_credentials", {
     .$onUpdate(() => new Date()),
 });
 
+// One started "turn on automatic payouts": the seller nonce sent with PayPal's first-party referral is the code
+// verifier that turns the authorization code PayPal hands back into the team's credentials. Valid one hour, used once.
+export const payoutConnectAttempt = pgTable(
+  "payout_connect_attempt",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => team.id, { onDelete: "cascade" }),
+    sellerNonce: text("seller_nonce").notNull(),
+    createdByUserId: text("created_by_user_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    usedAt: timestamp("used_at"),
+  },
+  (t) => [index("payout_connect_attempt_team_idx").on(t.teamId)],
+);
+
 // A member's request to be paid their available earnings from one team. The id is the ledger's payout request id
 // and PayPal's sender_item_id; with send_attempt it names the batch, so a retry of an unconfirmed send names the
 // same batch.

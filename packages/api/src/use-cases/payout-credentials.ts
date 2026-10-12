@@ -1,26 +1,43 @@
-import { openSecret, sealSecret } from "@jendal-workspace/core";
+import { maskedPayPalAccountId, openSecret, sealSecret, type ServicesTeamRecord } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
   deleteTeamPayoutCredentials,
+  getPayoutConnectAttempt,
   getTeamPayoutCredentials,
+  insertPayoutConnectAttempt,
+  lockPayoutConnectAttempt,
   lockTeamPayoutCredentials,
+  markPayoutConnectAttemptUsed,
+  type PayoutConnectAttemptRow,
   saveTeamPayoutCredentials,
   type TeamPayoutCredentialsRow,
 } from "@jendal-workspace/db/repositories/payout-credentials";
 import { hasActivePayoutSend } from "@jendal-workspace/db/repositories/payout-requests";
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
-import { PayPalError, type PayPalBalances, type PayPalClient } from "@jendal-workspace/paypal";
+import {
+  actionUrlFromLinks,
+  FIRST_PARTY_REFERRAL_FEATURES,
+  PayPalError,
+  type PayPalBalances,
+  type PayPalClient,
+  type SellerCredentials,
+} from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
-import type { PayoutServices } from "../context";
+import type { PayoutServices, PayPalServices } from "../context";
 import { payPalErrorLog } from "./paypal-amounts";
 
-// accountId is null when PayPal did not report which account the credentials belong to.
-export type PayoutCredentialsView = { clientIdEnding: string; accountId: string | null; verifiedAt: string };
+// accountId is null for credentials saved before PayPal reported which account they belong to.
+export type PayoutCredentialsView = { accountId: string | null; verifiedAt: string };
 
-type PayoutTeam = { id: string; paypalMerchantId: string | null };
+type PayoutTeam = Pick<ServicesTeamRecord, "id" | "slug" | "paypalMerchantId">;
+
+const CONNECT_ATTEMPT_TTL_MS = 3_600_000;
+const SELLER_NONCE_BYTES = 64;
+const CONNECTION_UNCONFIRMED = "PayPal did not confirm the connection. Try again.";
+const CONNECT_EXPIRED = "This PayPal connection expired. Turn on automatic payouts again.";
 
 export function requirePayoutServices(payouts: PayoutServices | undefined): PayoutServices {
   if (!payouts) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Payouts are not set up on this server." });
@@ -37,7 +54,7 @@ export function credentialsMatchTeam(
 }
 
 function toView(row: TeamPayoutCredentialsRow): PayoutCredentialsView {
-  return { clientIdEnding: row.clientId.slice(-4), accountId: row.paypalAccountId, verifiedAt: row.verifiedAt.toISOString() };
+  return { accountId: row.paypalAccountId, verifiedAt: row.verifiedAt.toISOString() };
 }
 
 export async function getPayoutCredentialsView(db: DbExecutor, teamId: string): Promise<PayoutCredentialsView | null> {
@@ -66,70 +83,142 @@ async function writeUnlessSendingElsewhere<T>(
   });
 }
 
-async function readBalances(client: PayPalClient, currency: string, teamId: string): Promise<PayPalBalances> {
-  try {
-    return await client.reporting.balances(currency);
-  } catch (cause) {
-    const status = cause instanceof PayPalError ? cause.status : null;
-    log.warn({ action: "payout_credentials.verify", team: { id: teamId }, error: payPalErrorLog(cause) });
-    if (status === 401) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "PayPal refused these credentials. Check the client ID and secret.",
-      });
-    }
-    if (status === 403) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message:
-          "These credentials cannot read the PayPal balance. Turn on the app's balance and payouts features in the PayPal developer dashboard.",
-      });
-    }
-    throw new TRPCError({ code: "BAD_GATEWAY", message: "PayPal did not answer. Try again." });
-  }
-}
-
-// The credentials are checked against PayPal before they are stored: they must open a token, read the balance
-// and belong to the PayPal account connected to the team. The PayPal call happens before any lock is taken.
-export async function saveTeamPayoutCredentialsChecked(
-  deps: { db: Database; payouts: PayoutServices },
-  input: { team: PayoutTeam; clientId: string; clientSecret: string },
-): Promise<PayoutCredentialsView> {
-  const { db, payouts } = deps;
-  const { team } = input;
+async function requirePayoutTeam(db: Database, team: PayoutTeam): Promise<{ merchantId: string; currency: string }> {
   const settings = await getServicesTeamSettings(db, team.id);
   if (settings?.solo) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A solo seller has no payouts to send." });
   }
   if (!team.paypalMerchantId) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Connect PayPal first." });
+  return { merchantId: team.paypalMerchantId, currency: settings?.currency ?? "USD" };
+}
 
-  const client = payouts.clientFor({ teamId: team.id, clientId: input.clientId, clientSecret: input.clientSecret });
-  const { accountId } = await readBalances(client, settings?.currency ?? "USD", team.id);
-  if (accountId !== null && accountId !== team.paypalMerchantId) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: "These credentials belong to another PayPal account than the one connected to this team.",
+function sellerNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(SELLER_NONCE_BYTES));
+  return btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+}
+
+// Starts PayPal's first-party onboarding for a team whose PayPal account is already connected: the admin consents
+// in PayPal's mini-browser, which hands the page an authorization code for connectComplete.
+export async function startPayoutConnect(
+  deps: { db: Database; paypal: PayPalServices },
+  input: { team: PayoutTeam; userId: string },
+): Promise<{ actionUrl: string; attemptId: string }> {
+  const { db, paypal } = deps;
+  const { team } = input;
+  await requirePayoutTeam(db, team);
+  const attempt = await insertPayoutConnectAttempt(db, {
+    teamId: team.id,
+    sellerNonce: sellerNonce(),
+    createdByUserId: input.userId,
+  });
+  let actionUrl: string | null;
+  try {
+    const referral = await paypal.client.partnerReferrals.createFirstParty({
+      requestId: `payout-connect:${attempt.id}`,
+      returnUrl: new URL(`/${team.slug}/payouts`, paypal.returnUrl).toString(),
+      sellerNonce: attempt.sellerNonce,
+      features: FIRST_PARTY_REFERRAL_FEATURES,
     });
+    actionUrl = actionUrlFromLinks(referral.links);
+  } catch (cause) {
+    log.warn({ action: "payout_connect.start", team: { id: team.id }, error: payPalErrorLog(cause) });
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "PayPal did not answer. Try again.", cause });
   }
-  if (accountId === null) {
-    log.warn({ action: "payout_credentials.account", team: { id: team.id }, account: { reported: false } });
-  }
+  if (!actionUrl) throw new Error("PayPal's first-party referral response has no action_url link.");
+  return { actionUrl, attemptId: attempt.id };
+}
 
-  const sealed = await sealSecret(payouts.secretKey, payouts.keyId, input.clientSecret, team.id);
+function usableAttempt(attempt: PayoutConnectAttemptRow | null, teamId: string): attempt is PayoutConnectAttemptRow {
+  return (
+    attempt !== null &&
+    attempt.teamId === teamId &&
+    attempt.usedAt === null &&
+    attempt.createdAt.getTime() > Date.now() - CONNECT_ATTEMPT_TTL_MS
+  );
+}
+
+async function sellerCredentialsFor(
+  paypal: PayPalServices,
+  attempt: PayoutConnectAttemptRow,
+  input: { authCode: string; sharedId: string },
+): Promise<SellerCredentials> {
+  try {
+    const sellerToken = await paypal.client.sellerCredentials.exchangeSellerAuthCode({
+      sharedId: input.sharedId,
+      authCode: input.authCode,
+      codeVerifier: attempt.sellerNonce,
+    });
+    return await paypal.client.sellerCredentials.getSellerCredentials(sellerToken, paypal.partnerId);
+  } catch (cause) {
+    log.warn({ action: "payout_connect.credentials", team: { id: attempt.teamId }, error: payPalErrorLog(cause) });
+    throw new TRPCError({ code: "BAD_GATEWAY", message: CONNECTION_UNCONFIRMED, cause });
+  }
+}
+
+async function readBalances(client: PayPalClient, currency: string, teamId: string): Promise<PayPalBalances> {
+  try {
+    return await client.reporting.balances(currency);
+  } catch (cause) {
+    const status = cause instanceof PayPalError ? cause.status : null;
+    log.warn({ action: "payout_connect.verify", team: { id: teamId }, error: payPalErrorLog(cause) });
+    if (status === 401) throw new TRPCError({ code: "BAD_GATEWAY", message: CONNECTION_UNCONFIRMED, cause });
+    if (status === 403) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message:
+          "PayPal does not let Payleor read this team's PayPal balance, which payouts need. Ask PayPal to turn on Payouts for the account, then try again.",
+        cause,
+      });
+    }
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "PayPal did not answer. Try again.", cause });
+  }
+}
+
+function otherAccount(merchantId: string): TRPCError {
+  return new TRPCError({
+    code: "PRECONDITION_FAILED",
+    message: `Connect the PayPal account this team already uses (${maskedPayPalAccountId(merchantId)}).`,
+  });
+}
+
+// PayPal shares the team's own REST credentials after consent. They are kept only when they belong to the PayPal
+// account connected to the team and can read its balance; PayPal's calls happen before any lock is taken.
+export async function completePayoutConnect(
+  deps: { db: Database; payouts: PayoutServices; paypal: PayPalServices },
+  input: { team: PayoutTeam; attemptId: string; authCode: string; sharedId: string },
+): Promise<PayoutCredentialsView> {
+  const { db, payouts, paypal } = deps;
+  const { team } = input;
+  const { merchantId, currency } = await requirePayoutTeam(db, team);
+  const attempt = await getPayoutConnectAttempt(db, input.attemptId);
+  if (!usableAttempt(attempt, team.id)) throw new TRPCError({ code: "BAD_REQUEST", message: CONNECT_EXPIRED });
+
+  const credentials = await sellerCredentialsFor(paypal, attempt, input);
+  if (credentials.payerId !== merchantId) throw otherAccount(merchantId);
+  const client = payouts.clientFor({ teamId: team.id, clientId: credentials.clientId, clientSecret: credentials.clientSecret });
+  const { accountId } = await readBalances(client, currency, team.id);
+  if (accountId !== null && accountId !== merchantId) throw otherAccount(merchantId);
+
+  const sealed = await sealSecret(payouts.secretKey, payouts.keyId, credentials.clientSecret, team.id);
   const row = await writeUnlessSendingElsewhere(
     db,
     team.id,
-    (current) => accountId !== null && current?.paypalAccountId === accountId,
-    (tx) =>
-      saveTeamPayoutCredentials(tx, {
+    (current) => current?.paypalAccountId === merchantId,
+    async (tx) => {
+      const locked = await lockPayoutConnectAttempt(tx, attempt.id);
+      if (!usableAttempt(locked, team.id)) throw new TRPCError({ code: "BAD_REQUEST", message: CONNECT_EXPIRED });
+      const saved = await saveTeamPayoutCredentials(tx, {
         teamId: team.id,
-        clientId: input.clientId,
+        clientId: credentials.clientId,
         secretCiphertext: sealed.ciphertext,
         secretIv: sealed.iv,
         keyId: sealed.keyId,
-        paypalAccountId: accountId,
+        paypalAccountId: merchantId,
         verifiedAt: new Date(),
-      }),
+      });
+      await markPayoutConnectAttemptUsed(tx, attempt.id);
+      return saved;
+    },
   );
   return toView(row);
 }

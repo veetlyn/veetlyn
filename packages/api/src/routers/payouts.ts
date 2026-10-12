@@ -1,12 +1,15 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import type { PayPalServices } from "../context";
 import { protectedProcedure, router } from "../index";
 import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
 import {
+  completePayoutConnect,
   getPayoutCredentialsView,
   removeTeamPayoutCredentials,
   requirePayoutServices,
-  saveTeamPayoutCredentialsChecked,
+  startPayoutConnect,
 } from "../use-cases/payout-credentials";
 import {
   approvePayoutRequest,
@@ -23,21 +26,40 @@ const PAYOUTS_ONLY = "Only an admin can approve payouts.";
 
 const requestIdInput = z.object({ requestId: z.string().trim().min(1).max(100) });
 
+function requirePayPal(paypal: PayPalServices | undefined): PayPalServices {
+  if (!paypal) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "PayPal is not configured on this server." });
+  return paypal;
+}
+
 export const payoutsRouter = router({
-  // The secret is never returned; the admin recognises the app by the end of its client ID.
+  // The client ID and secret are never returned.
   credentials: servicesTeamProcedure.query(async ({ ctx }) => {
     requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ONLY);
     return getPayoutCredentialsView(ctx.db, ctx.servicesTeam.id);
   }),
 
-  saveCredentials: servicesTeamProcedure
-    .input(z.object({ clientId: z.string().trim().min(1).max(500), clientSecret: z.string().trim().min(1).max(500) }))
+  connectStart: servicesTeamProcedure.mutation(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ONLY);
+    requirePayoutServices(ctx.payouts);
+    return startPayoutConnect(
+      { db: ctx.db, paypal: requirePayPal(ctx.paypal) },
+      { team: ctx.servicesTeam, userId: ctx.session.user.id },
+    );
+  }),
+
+  connectComplete: servicesTeamProcedure
+    .input(
+      z.object({
+        attemptId: z.string().trim().min(1).max(100),
+        authCode: z.string().trim().min(1).max(4000),
+        sharedId: z.string().trim().min(1).max(500),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ONLY);
-      const payouts = requirePayoutServices(ctx.payouts);
-      return saveTeamPayoutCredentialsChecked(
-        { db: ctx.db, payouts },
-        { team: ctx.servicesTeam, clientId: input.clientId, clientSecret: input.clientSecret },
+      return completePayoutConnect(
+        { db: ctx.db, payouts: requirePayoutServices(ctx.payouts), paypal: requirePayPal(ctx.paypal) },
+        { team: ctx.servicesTeam, attemptId: input.attemptId, authCode: input.authCode, sharedId: input.sharedId },
       );
     }),
 

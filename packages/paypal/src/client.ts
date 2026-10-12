@@ -9,6 +9,7 @@ import { createPayments } from "./payments";
 import { createPayouts } from "./payouts";
 import { createReporting } from "./reporting";
 import { tokenResponseSchema } from "./schemas";
+import { createSellerCredentials } from "./seller-credentials";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
 import { createWebhooks } from "./webhooks";
 
@@ -64,6 +65,7 @@ export interface PayPalClient {
   payments: ReturnType<typeof createPayments>;
   payouts: ReturnType<typeof createPayouts>;
   reporting: ReturnType<typeof createReporting>;
+  sellerCredentials: ReturnType<typeof createSellerCredentials>;
   webhooks: ReturnType<typeof createWebhooks>;
 }
 
@@ -195,6 +197,11 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     payments: createPayments(request),
     payouts: createPayouts(request),
     reporting: createReporting(request),
+    sellerCredentials: createSellerCredentials({
+      baseUrl,
+      fetch: resolved.fetch,
+      partnerAttributionId: resolved.partnerAttributionId,
+    }),
     webhooks: createWebhooks(request),
   };
 }

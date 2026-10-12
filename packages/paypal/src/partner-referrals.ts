@@ -24,8 +24,51 @@ export type CreatePartnerReferralInput = {
   features?: readonly string[];
 };
 
+// What a team grants when it turns on automatic payouts. PayPal shares the team's own REST credentials for these
+// (first-party onboarding); PAYOUTS is refused for third-party integrations.
+export const FIRST_PARTY_REFERRAL_FEATURES = ["PAYMENT", "REFUND", "PAYOUTS"] as const;
+
+export type CreateFirstPartyReferralInput = {
+  requestId: string;
+  returnUrl: string;
+  // The PKCE code verifier for the authorization code PayPal hands back after consent.
+  sellerNonce: string;
+  features?: readonly string[];
+};
+
 export function createPartnerReferrals(request: PayPalRequest) {
   return {
+    async createFirstParty(input: CreateFirstPartyReferralInput): Promise<PartnerReferral> {
+      return request(
+        {
+          method: "POST",
+          path: "/v2/customer/partner-referrals",
+          requestId: input.requestId,
+          body: {
+            partner_config_override: { return_url: input.returnUrl },
+            operations: [
+              {
+                operation: "API_INTEGRATION",
+                api_integration_preference: {
+                  rest_api_integration: {
+                    integration_method: "PAYPAL",
+                    integration_type: "FIRST_PARTY",
+                    first_party_details: {
+                      features: [...(input.features ?? FIRST_PARTY_REFERRAL_FEATURES)],
+                      seller_nonce: input.sellerNonce,
+                    },
+                  },
+                },
+              },
+            ],
+            products: ["EXPRESS_CHECKOUT"],
+            legal_consents: [{ type: "SHARE_DATA_CONSENT", granted: true }],
+          },
+        },
+        partnerReferralSchema,
+      );
+    },
+
     async create(input: CreatePartnerReferralInput): Promise<PartnerReferral> {
       return request(
         {

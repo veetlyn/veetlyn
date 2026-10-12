@@ -55,7 +55,7 @@ export type Context = {
   onTeamStatusChanged?: (team: { id: string; slug: string }) => void | Promise<void>;
   // Absent in tests that do not send email; the request procedure then fails with PRECONDITION_FAILED.
   email?: EmailServices;
-  // Absent when no payout credentials key is configured; saving credentials and sending payouts then fail with
-  // PRECONDITION_FAILED.
+  // Absent when no payout credentials key is configured; turning on automatic payouts and sending payouts then fail
+  // with PRECONDITION_FAILED.
   payouts?: PayoutServices;
 };
