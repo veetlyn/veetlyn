@@ -10,8 +10,15 @@ export type AmendmentStatus = (typeof AMENDMENT_STATUSES)[number];
 export const PAYMENT_KINDS = ["deposit", "top_up", "balance"] as const;
 export type PaymentKind = (typeof PAYMENT_KINDS)[number];
 
-export const PAYMENT_STATUSES = ["pending", "captured", "failed", "cancelled"] as const;
+// A partly refunded payment stays "captured"; "refunded" means nothing of it is left with the team.
+export const PAYMENT_STATUSES = ["pending", "captured", "failed", "cancelled", "refunded"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const PROJECT_REFUND_STATUSES = ["requested", "issuing", "completed", "failed"] as const;
+export type ProjectRefundStatus = (typeof PROJECT_REFUND_STATUSES)[number];
+
+export const PROJECT_REFUND_PART_STATUSES = ["pending", "completed", "failed"] as const;
+export type ProjectRefundPartStatus = (typeof PROJECT_REFUND_PART_STATUSES)[number];
 
 export const DELIVERY_STATUSES = ["submitted", "accepted", "changes_requested"] as const;
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];

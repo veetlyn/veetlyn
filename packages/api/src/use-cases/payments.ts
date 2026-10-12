@@ -1,4 +1,6 @@
 import {
+  captureReviewReason,
+  type CaptureReviewReason,
   completionTransfer,
   errorName,
   type LedgerTransferDraft,
@@ -15,7 +17,12 @@ import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
 import { postgresError } from "@jendal-workspace/db/postgres-errors";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
-import { findProjectById, getCurrentQuote, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
+import {
+  findProjectById,
+  getCurrentQuote,
+  type ProjectRow,
+  setPaymentReviewReason,
+} from "@jendal-workspace/db/repositories/projects";
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import {
@@ -24,18 +31,13 @@ import {
   runInTransaction,
 } from "@jendal-workspace/db/repositories/unit-of-work";
 import { payment, type project } from "@jendal-workspace/db/schema/projects";
-import {
-  captureFromOrder,
-  type PayPalCapture,
-  PayPalError,
-  type PayPalMoney,
-  type PayPalOrder,
-} from "@jendal-workspace/paypal";
+import { captureFromOrder, type PayPalCapture, PayPalError, type PayPalOrder } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { PayPalServices } from "../context";
+import { captureFees, isRefundedCaptureStatus } from "./paypal-amounts";
 
 // One capture as PayPal reports it: from a capture response, an order lookup or a webhook (R1c).
 export type CaptureFact = {
@@ -51,6 +53,8 @@ export type CaptureFact = {
   // From the seller receivable breakdown, in the payment's currency; null while PayPal has not reported them.
   paypalFeeMinor: number | null;
   platformFeeMinor: number | null;
+  // Converted funds or fees in another currency: the payment is flagged for a person.
+  reviewReason: CaptureReviewReason | null;
 };
 
 // Money moved in a way Payleor did not ask for (a second capture, a capture on an abandoned order or a
@@ -169,7 +173,11 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
       }
       throw new StaleFact();
     }
-    if (row.status === "captured" || (row.status === "failed" && row.paypalCaptureId === fact.captureId)) {
+    if (
+      row.status === "captured" ||
+      row.status === "refunded" ||
+      (row.status === "failed" && row.paypalCaptureId === fact.captureId)
+    ) {
       throw new FactAlreadyApplied();
     }
     const projectRow = await findProjectById(tx, row.projectId);
@@ -240,7 +248,7 @@ export function databaseErrorFields(cause: unknown): DatabaseErrorFields {
 export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise<CaptureFactResult> {
   if (fact.status === "PENDING") return recordPendingCapture(db, fact);
   if (fact.status !== "COMPLETED" && fact.status !== "DECLINED" && fact.status !== "FAILED") {
-    // REFUNDED and PARTIALLY_REFUNDED are refund news, handled with refunds.
+    // REFUNDED, PARTIALLY_REFUNDED and REVERSED are refund news, handled by applyPaymentRefunds.
     throw new Error(`Capture ${fact.captureId} has status ${fact.status}, which is not a capture outcome`);
   }
   let result: CaptureFactResult;
@@ -275,13 +283,20 @@ export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise
 }
 
 // Records PayPal's fee and Payleor's fee for a captured payment, once: the first fact that carries the
-// breakdown wins, whether it is the capture itself or a later webhook re-fetch.
+// breakdown wins, whether it is the capture itself or a later webhook re-fetch. A refunded capture keeps its
+// breakdown, and PayPal still charged the fees. Converted funds are flagged here.
 export async function recordCaptureFees(db: Database, fact: CaptureFact): Promise<void> {
-  const { paypalFeeMinor } = fact;
-  if (fact.status !== "COMPLETED" || paypalFeeMinor === null) return;
+  const { paypalFeeMinor, reviewReason } = fact;
+  if (fact.status !== "COMPLETED" && !isRefundedCaptureStatus(fact.status)) return;
+  if (paypalFeeMinor === null && reviewReason === null) return;
   await db.transaction(async (tx) => {
     const row = await lockPayment(tx, fact.paymentId);
-    if (row.status !== "captured" || row.paypalCaptureId !== fact.captureId || row.paypalFeeMinor !== null) return;
+    if ((row.status !== "captured" && row.status !== "refunded") || row.paypalCaptureId !== fact.captureId) return;
+    if (reviewReason && row.reviewReason === null) {
+      await setPaymentReviewReason(tx, row.id, reviewReason);
+      log.warn({ action: "payment.fees", payment: { id: row.id }, review: reviewReason });
+    }
+    if (paypalFeeMinor === null || row.paypalFeeMinor !== null) return;
     const platformFeeMinor = fact.platformFeeMinor ?? 0;
     await tx
       .update(payment)
@@ -338,13 +353,10 @@ export async function getPayPage(deps: { db: Database; paypal: PayPalServices | 
   };
 }
 
-function minorIn(currency: string | null, money: PayPalMoney | undefined): number | null {
-  return money && money.currency_code === currency ? parseMajorAmount(money.value) : null;
-}
-
 export function captureFact(paymentId: string, orderId: string, capture: PayPalCapture): CaptureFact {
   const currency = capture.amount?.currency_code ?? null;
   const breakdown = capture.seller_receivable_breakdown;
+  const fees = breakdown ? captureFees(currency, breakdown) : null;
   const capturedAt = capture.create_time ? new Date(capture.create_time) : null;
   return {
     paymentId,
@@ -354,9 +366,9 @@ export function captureFact(paymentId: string, orderId: string, capture: PayPalC
     amountMinor: capture.amount ? parseMajorAmount(capture.amount.value) : null,
     currency,
     capturedAt: capturedAt && !Number.isNaN(capturedAt.getTime()) ? capturedAt : null,
-    // A fee in another currency (a converted receivable) is not posted; the reconciliation job will show it.
-    paypalFeeMinor: breakdown ? minorIn(currency, breakdown.paypal_fee) : null,
-    platformFeeMinor: breakdown ? (minorIn(currency, breakdown.platform_fees[0]?.amount) ?? 0) : null,
+    paypalFeeMinor: fees?.paypalFeeMinor ?? null,
+    platformFeeMinor: fees?.platformFeeMinor ?? null,
+    reviewReason: breakdown && currency ? captureReviewReason(breakdown, currency) : null,
   };
 }
 
@@ -385,12 +397,17 @@ async function keepsCurrentOrder(deps: PaymentDeps, row: PaymentRow, merchantId:
   return order.status === "CREATED" || order.status === "APPROVED" || order.status === "PAYER_ACTION_REQUIRED";
 }
 
+function paymentRefunded(): TRPCError {
+  return new TRPCError({ code: "BAD_REQUEST", message: "This payment was refunded." });
+}
+
 // Services spec §5.4. The client keeps the payment's order while PayPal can still capture it; a new order is
 // created only once the old one is dead (declined, expired), so two orders can never both be paid.
 export async function startPayment(deps: PaymentDeps, paymentId: string): Promise<{ orderId: string }> {
   const row = await requirePayment(deps.db, paymentId);
   if (row.status === "captured") throw new TRPCError({ code: "CONFLICT", message: "This payment is already paid." });
   if (row.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "This payment was cancelled." });
+  if (row.status === "refunded") throw paymentRefunded();
   if (row.status === "pending" && row.paypalCaptureId) {
     throw new TRPCError({ code: "CONFLICT", message: "PayPal is still processing this payment. Check back soon." });
   }
@@ -460,6 +477,7 @@ export async function capturePayment(
   }
   if (row.status === "captured") return { outcome: "captured" };
   if (row.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "This payment was cancelled." });
+  if (row.status === "refunded") throw paymentRefunded();
   if (row.status === "failed") {
     throw new TRPCError({ code: "CONFLICT", message: "This payment needs a fresh start. Reload the page and try again." });
   }

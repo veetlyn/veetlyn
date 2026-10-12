@@ -6,6 +6,7 @@ import {
   finalPriceMinor,
   freelancerEarningsMinor,
   managementFeeMinor,
+  paidAfterRefunds,
   platformFeeMinor,
   teamCutMinor,
 } from "./pricing";
@@ -176,5 +177,37 @@ describe("balanceDue", () => {
       refundQuoteMinor: 50_000,
       refundManagementFeeMinor: 3_000,
     });
+  });
+});
+
+describe("paidAfterRefunds", () => {
+  // A $600 deposit ($500 quote part, $100 fee) on an open project.
+  const deposit = { paidQuoteMinor: 50_000, paidManagementFeeMinor: 10_000, managementFeeCreditedMinor: 0 };
+
+  it.each([
+    {
+      case: "a refund taken from client_held lowers the quote part",
+      input: { ...deposit, refundedFromClientHeldMinor: 20_000, refundedFromTeamRevenueMinor: 0 },
+      paid: { paidQuoteMinor: 30_000, paidManagementFeeMinor: 10_000, managementFeeCreditedMinor: 0 },
+    },
+    {
+      case: "a refund beyond client_held lowers the fee too",
+      input: { ...deposit, refundedFromClientHeldMinor: 50_000, refundedFromTeamRevenueMinor: 10_000 },
+      paid: { paidQuoteMinor: 0, paidManagementFeeMinor: 0, managementFeeCreditedMinor: 0 },
+    },
+    {
+      // A $40 fee credit sat in client_held; the refund took $520 from it, $20 of it the credit.
+      case: "a refund that drew the credited fee moves that credit back to the fee",
+      input: {
+        paidQuoteMinor: 50_000,
+        paidManagementFeeMinor: 10_000,
+        managementFeeCreditedMinor: 4_000,
+        refundedFromClientHeldMinor: 52_000,
+        refundedFromTeamRevenueMinor: 0,
+      },
+      paid: { paidQuoteMinor: 0, paidManagementFeeMinor: 8_000, managementFeeCreditedMinor: 2_000 },
+    },
+  ])("$case", ({ input, paid }) => {
+    expect(paidAfterRefunds(input)).toEqual(paid);
   });
 });

@@ -46,9 +46,24 @@ export const moneySchema = z.object({ currency_code: z.string(), value: z.string
 const readableMoney = moneySchema.optional().catch(undefined);
 
 // A fee that is present but unreadable fails the whole breakdown: dropping it would later record the fee as zero.
+// Amounts that never become a fee stay lenient: an unreadable one reads as absent and leaves the fees intact.
 export const captureBreakdownSchema = z.object({
   paypal_fee: moneySchema.optional(),
   platform_fees: z.array(z.object({ amount: moneySchema })).default(() => []),
+  net_amount: readableMoney,
+  // Present only when the seller's account holds another currency than the capture's.
+  receivable_amount: readableMoney,
+  exchange_rate: z
+    .object({ value: z.string(), source_currency: z.string(), target_currency: z.string() })
+    .optional()
+    .catch(undefined),
+});
+
+// The fees a refund returns to the seller, read strict-or-undefined like the capture's breakdown.
+export const refundBreakdownSchema = z.object({
+  paypal_fee: moneySchema.optional(),
+  platform_fees: z.array(z.object({ amount: moneySchema })).default(() => []),
+  net_amount: readableMoney,
 });
 
 export const captureSchema = z.object({
@@ -61,7 +76,13 @@ export const captureSchema = z.object({
   seller_receivable_breakdown: captureBreakdownSchema.optional().catch(undefined),
 });
 
-export const refundSchema = z.object({ id: z.string(), status: z.string(), amount: readableMoney });
+export const refundSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  amount: readableMoney,
+  // Missing while a refund is pending.
+  seller_payable_breakdown: refundBreakdownSchema.optional().catch(undefined),
+});
 
 // Captures and refunds stay unread here: captureFromOrder and refundsFromOrder skip the items they cannot read.
 // A purchase unit, payments or list of the wrong type reads as absent, that is as no captures or refunds.

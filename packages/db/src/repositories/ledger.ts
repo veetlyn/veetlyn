@@ -119,3 +119,12 @@ export async function ledgerBalancesFromEntries(tx: Transaction, teamId: string)
     .groupBy(ledgerEntry.account, ledgerEntry.currency)
     .orderBy(asc(ledgerEntry.account));
 }
+
+export async function hasLedgerReference(tx: Transaction, teamId: string, reference: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: ledgerTransfer.id })
+    .from(ledgerTransfer)
+    .where(and(eq(ledgerTransfer.teamId, teamId), eq(ledgerTransfer.reference, reference)))
+    .limit(1);
+  return row !== undefined;
+}

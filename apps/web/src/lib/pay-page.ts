@@ -1,5 +1,5 @@
 export type PaymentKind = "deposit" | "top_up" | "balance";
-export type PaymentStatus = "pending" | "captured" | "failed" | "cancelled";
+export type PaymentStatus = "pending" | "captured" | "failed" | "cancelled" | "refunded";
 export type CaptureOutcome = "captured" | "pending" | "declined";
 
 export type PayPageInput = {
@@ -20,6 +20,7 @@ export type PayPageState =
 export function payPageState(input: PayPageInput): PayPageState {
   if (input.status === "captured") return { view: "paid", message: "Paid. Thank you." };
   if (input.status === "cancelled") return { view: "closed", message: "This payment was cancelled." };
+  if (input.status === "refunded") return { view: "closed", message: "This payment was refunded." };
   if (input.processing) {
     return { view: "processing", message: "PayPal is still processing this payment. This page updates on its own." };
   }

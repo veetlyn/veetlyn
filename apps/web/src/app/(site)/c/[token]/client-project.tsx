@@ -10,6 +10,7 @@ import { type FormEvent, useState } from "react";
 import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
+import { clientRefundLabel, paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
 import { clientWaitsOnTeam, isNotFoundError, PROJECT_REFRESH_MS } from "@/lib/project-refresh";
 import { trpc, trpcClient } from "@/utils/trpc";
@@ -54,7 +55,7 @@ export default function ClientProject({ token }: { token: string }) {
     );
   }
 
-  const { project, quotes, amendments, payments, deliveries } = view.data;
+  const { project, quotes, amendments, payments, deliveries, refund } = view.data;
   const currency = project.currency;
   const pendingPayments = payments.filter((p) => p.payPath !== null);
   const awaitingDelivery = project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
@@ -77,6 +78,7 @@ export default function ClientProject({ token }: { token: string }) {
           {projectStatusLabel(project.status)}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
+        {refund ? <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p> : null}
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
       </div>
 
@@ -252,7 +254,7 @@ export default function ClientProject({ token }: { token: string }) {
             <div key={payment.id} className="space-y-3 rounded-lg border p-4">
               <div className="flex items-center justify-between text-sm">
                 <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
-                <span className="text-muted-foreground">{payment.status}</span>
+                <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? payment.status}</span>
               </div>
               <ul className="space-y-1 text-sm">
                 {payment.lines.map((line, index) => (

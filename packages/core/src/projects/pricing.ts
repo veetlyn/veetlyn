@@ -54,6 +54,25 @@ export type ProjectPaid = {
   managementFeeCreditedMinor: number;
 };
 
+// Refunds the team did not request leave client_held first and team_revenue for the rest (payment_refunded), so
+// what the client still has paid is read from that split: paidQuoteMinor + managementFeeCreditedMinor stays equal
+// to client_held, and paidManagementFeeMinor − managementFeeCreditedMinor to the fee the team keeps. A refund
+// that drew the credited fee out of client_held moves that credit back to the fee, so no part goes negative.
+export function paidAfterRefunds(
+  captured: ProjectPaid & { refundedFromClientHeldMinor: number; refundedFromTeamRevenueMinor: number },
+): ProjectPaid {
+  for (const [label, value] of Object.entries(captured)) assertAmount(value, label);
+  const quote = captured.paidQuoteMinor - captured.refundedFromClientHeldMinor;
+  const fee = captured.paidManagementFeeMinor - captured.refundedFromTeamRevenueMinor;
+  const drawnFromCredit = Math.min(0, quote);
+  // Below zero only once the project completed and its money left client_held; nothing reads paid totals then.
+  return {
+    paidQuoteMinor: quote - drawnFromCredit,
+    paidManagementFeeMinor: Math.max(0, fee + drawnFromCredit),
+    managementFeeCreditedMinor: Math.max(0, captured.managementFeeCreditedMinor + drawnFromCredit),
+  };
+}
+
 export type BalanceInput = ProjectPaid & {
   quoteMinor: number;
   managementFeeBps: number;

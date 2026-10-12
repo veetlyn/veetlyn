@@ -69,6 +69,55 @@ export function orderRefundedTransfer(
   });
 }
 
+// The fees PayPal hands back with a refund, for store orders and services payments alike: they return to
+// the team's revenue. Null when nothing was returned.
+export function refundFeesTransfer(input: {
+  currency: MoneyCurrency;
+  projectId: string | null;
+  refundId: string;
+  paypalFeeMinor: number;
+  platformFeeMinor: number;
+}): LedgerTransferDraft | null {
+  const moves = [
+    { from: a.paypalFees, to: a.teamRevenue, amountMinor: input.paypalFeeMinor },
+    { from: a.payleorFees, to: a.teamRevenue, amountMinor: input.platformFeeMinor },
+  ].filter((move) => move.amountMinor > 0);
+  if (moves.length === 0) return null;
+  return transferFromMoves({
+    kind: "refund_fees",
+    reference: `refund_fees:${input.refundId}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves,
+  });
+}
+
+// An open project's money sits in client_held until completion releases it, so a refund the team did not
+// request comes out of it first; taking it from team_revenue alone would let completion release money the
+// client already got back.
+export type ServicesRefundSplit = { fromClientHeldMinor: number; fromTeamRevenueMinor: number };
+
+export function splitServicesRefund(input: { amountMinor: number; clientHeldMinor: number }): ServicesRefundSplit {
+  const fromClientHeldMinor = Math.min(input.amountMinor, Math.max(input.clientHeldMinor, 0));
+  return { fromClientHeldMinor, fromTeamRevenueMinor: input.amountMinor - fromClientHeldMinor };
+}
+
+// refundKey names the PayPal fact: "refund:{refundId}" or "reversal:{captureId}", so each is posted once.
+export function paymentRefundedTransfer(
+  input: ProjectPosting & ServicesRefundSplit & { refundKey: string },
+): LedgerTransferDraft {
+  return transferFromMoves({
+    kind: "payment_refunded",
+    reference: `payment_refunded:${input.refundKey}`,
+    projectId: input.projectId,
+    currency: input.currency,
+    moves: [
+      { from: a.clientHeld(input.projectId), to: a.paypalClearing, amountMinor: input.fromClientHeldMinor },
+      { from: a.teamRevenue, to: a.paypalClearing, amountMinor: input.fromTeamRevenueMinor },
+    ],
+  });
+}
+
 // Deposit, amendment top-up or balance captured.
 export function paymentCapturedTransfer(
   input: ProjectPosting & { paymentId: string; quotePartMinor: number; managementFeeMinor: number },

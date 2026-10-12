@@ -196,6 +196,7 @@ describe.skipIf(!hasTestDatabase)("orders repository", () => {
       createdAt: newer.createdAt,
       paidAt: newer.paidAt,
       refundedAt: null,
+      reviewReason: null,
     });
   });
 

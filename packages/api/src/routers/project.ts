@@ -19,6 +19,7 @@ import { z } from "zod";
 import { type LinkSecretSource, linkSecret, signClientLink, signPayLink, verifyClientLink } from "../client-links";
 import { publicProcedure, router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
+import { getClientRefundView, getStaffRefundView, refundClient } from "../use-cases/client-refunds";
 import {
   acceptAmendment,
   acceptDelivery,
@@ -137,11 +138,12 @@ export const projectRouter = router({
 
   get: servicesTeamProcedure.input(projectIdInput).query(async ({ ctx, input }) => {
     const { row, settings } = await requireVisibleProject(ctx, input.projectId);
-    const [quotes, amendments, payments, deliveries] = await Promise.all([
+    const [quotes, amendments, payments, deliveries, refund] = await Promise.all([
       listProjectQuotes(ctx.db, row.id),
       listProjectAmendments(ctx.db, row.id),
       listProjectPayments(ctx.db, row.id),
       listProjectDeliveries(ctx.db, row.id),
+      getStaffRefundView(ctx.db, row.id),
     ]);
     const clientToken = await signClientLink(linkSecret(ctx.auth), row.id);
     return {
@@ -150,6 +152,7 @@ export const projectRouter = router({
       amendments,
       payments,
       deliveries: await withDeliveryFiles(ctx.db, deliveries),
+      refund,
       clientPath: `/c/${clientToken}`,
       role: ctx.servicesTeamRole,
       quotingMode: settings?.quotingMode ?? "assigned",
@@ -234,6 +237,10 @@ export const projectRouter = router({
       return submitDelivery(ctx.db, ctx.files, teamActor(ctx), input);
     }),
 
+  refundClient: servicesTeamProcedure.input(projectIdInput).mutation(async ({ ctx, input }) => {
+    return refundClient({ db: ctx.db, paypal: ctx.paypal }, teamActor(ctx), input);
+  }),
+
   deliveryFileUrl: servicesTeamProcedure
     .input(projectIdInput.extend({ deliveryId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
@@ -304,11 +311,12 @@ export const projectRouter = router({
     const projectId = await projectIdFromToken(ctx.auth, input.token);
     const row = await findProjectById(ctx.db, projectId);
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-    const [quotes, amendments, payments, deliveries] = await Promise.all([
+    const [quotes, amendments, payments, deliveries, refund] = await Promise.all([
       listProjectQuotes(ctx.db, projectId),
       listProjectAmendments(ctx.db, projectId),
       listProjectPayments(ctx.db, projectId),
       listProjectDeliveries(ctx.db, projectId),
+      getClientRefundView(ctx.db, projectId),
     ]);
     const secret = linkSecret(ctx.auth);
     const paymentViews = await Promise.all(
@@ -317,6 +325,7 @@ export const projectRouter = router({
         kind: p.kind,
         status: p.status,
         amountMinor: p.amountMinor,
+        refundedMinor: p.refundedMinor,
         lines: p.lines,
         createdAt: p.createdAt,
         // PayPal holds a capture it has not finished; the id itself stays server-side.
@@ -373,6 +382,7 @@ export const projectRouter = router({
           decidedAt: d.decidedAt,
         })),
       ),
+      refund,
     };
   }),
 

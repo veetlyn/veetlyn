@@ -154,6 +154,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       capturedAt: null,
       paypalFeeMinor: null,
       platformFeeMinor: null,
+      reviewReason: null,
       ...overrides,
     };
   }
@@ -344,6 +345,23 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         code: "PRECONDITION_FAILED",
       });
       await expect(callerFor(null).payment.payStart({ token })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    });
+
+    it("refuses to start or capture a refunded payment, without asking PayPal", async () => {
+      const { paymentId, token } = await connectedDeposit();
+      await db
+        .update(payment)
+        .set({ status: "refunded", paypalOrderId: "ORDER1", paypalCaptureId: "CAPTURE1", refundedMinor: 60_000 })
+        .where(eq(payment.id, paymentId));
+      const { requests, fetch } = fakePayPalApi({ lookup: () => jsonResponse(200, capturedOrder("REFUNDED")) });
+      const caller = callerFor(null, makePayPal(fetch));
+
+      const refused = { code: "BAD_REQUEST", message: "This payment was refunded." };
+      await expect(caller.payment.payStart({ token })).rejects.toMatchObject(refused);
+      await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject(refused);
+      expect(calls(requests, "/v2/checkout/orders/ORDER1")).toHaveLength(0);
+      expect(calls(requests, "/v2/checkout/orders/ORDER1/capture")).toHaveLength(0);
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "refunded", paypalCaptureId: "CAPTURE1" });
     });
 
     it("limits how often one payment can be started or captured", async () => {

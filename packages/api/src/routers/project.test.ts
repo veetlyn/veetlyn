@@ -1,5 +1,5 @@
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
-import { paymentCapturedTransfer, createFakeFileStore, type FileStore } from "@jendal-workspace/core";
+import { paymentCapturedTransfer, createFakeFileStore, type FileStore, type JsonObject } from "@jendal-workspace/core";
 import {
   createTestDb,
   hasTestDatabase,
@@ -13,6 +13,8 @@ import {
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
+import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
+import { setProjectRefundStatus, upsertRefundPart } from "@jendal-workspace/db/repositories/project-refunds";
 import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { findFileUpload, insertFileUpload } from "@jendal-workspace/db/repositories/files";
 import {
@@ -25,16 +27,20 @@ import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limit
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { payment, project } from "@jendal-workspace/db/schema/projects";
-import { ledgerBalance } from "@jendal-workspace/db/schema/ledger";
+import { ledgerBalance, ledgerEntry, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
+import { projectRefundPart } from "@jendal-workspace/db/schema/project-refunds";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import { createFakeMailer } from "@jendal-workspace/email/fake";
+import { buildAuthAssertion, createPayPalClient } from "@jendal-workspace/paypal";
+import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { signClientLink, verifyClientLink } from "../client-links";
-import type { Context, EmailServices } from "../context";
+import type { Context, EmailServices, PayPalServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact } from "../use-cases/payments";
+import { processPayPalWebhookEvent } from "../use-cases/paypal-webhooks";
 import { appRouter } from "./index";
 
 type SessionValue = NonNullable<Context["session"]>;
@@ -76,7 +82,7 @@ async function clientToken(projectId: string): Promise<string> {
 describe.skipIf(!hasTestDatabase)("project router", () => {
   const db = createTestDb();
   const { auth } = createTestAuth(db);
-  const callerFor = (userId: string | null, files: FileStore = createFakeFileStore()) =>
+  const callerFor = (userId: string | null, files: FileStore = createFakeFileStore(), paypal?: PayPalServices) =>
     appRouter.createCaller({
       db,
       session: userId ? makeSession(userId) : null,
@@ -85,6 +91,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       headers: new Headers(),
       catalog: createTestCatalogServices(),
       files,
+      paypal,
     });
 
   beforeEach(() => truncateAll(db));
@@ -613,6 +620,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         capturedAt: null,
         paypalFeeMinor: null,
         platformFeeMinor: null,
+        reviewReason: null,
       });
       if (result !== "applied") throw new Error(`deposit capture was ${result}`);
       return { userId, organizationId, freelancer, projectId, token, teamId };
@@ -802,6 +810,452 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       expect((await outboxTypes(projectId)).slice(-3)).toEqual(["delivery.accepted", "project.completed", "refund.requested"]);
       const [event] = await db.select().from(outbox).where(eq(outbox.type, "refund.requested"));
       expect(event?.data).toEqual({ amountMinor: 16_000, refundId: `completion-${projectId}` });
+      const refund = { amountMinor: 16_000, currency: "USD", status: "requested", completedAt: null };
+      expect((await callerFor(null).project.clientGet({ token })).refund).toEqual(refund);
+      expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).refund).toEqual({ ...refund, parts: [] });
+    });
+
+    describe("refundClient", () => {
+      // A refund of each part answers what PayPal would: the same refund for a repeated request id.
+      // order answers PayPal's lookup of ORDER1, the deposit's order, for the webhook.
+      function fakePayPalRefunds(
+        answer: (captureId: string, call: number) => Response | "COMPLETED" | "PENDING" | "FAILED",
+        order?: () => JsonObject,
+      ) {
+        const calls = new Map<string, number>();
+        const api = fakeFetch((request) => {
+          if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
+          if (order && request.method === "GET" && request.url.endsWith("/v2/checkout/orders/ORDER1")) {
+            return jsonResponse(200, order());
+          }
+          const match = /\/v2\/payments\/captures\/([^/]+)\/refund$/.exec(request.url);
+          if (request.method !== "POST" || !match?.[1]) return jsonResponse(404, { name: "UNEXPECTED_CALL", debug_id: "d404" });
+          const captureId = match[1];
+          const call = (calls.get(captureId) ?? 0) + 1;
+          calls.set(captureId, call);
+          const answered = answer(captureId, call);
+          if (answered instanceof Response) return answered;
+          const body: { amount: { currency_code: string; value: string } } = JSON.parse(request.body ?? "{}");
+          return jsonResponse(201, {
+            id: `REFUND-${captureId}`,
+            status: answered,
+            amount: body.amount,
+            seller_payable_breakdown:
+              answered === "COMPLETED"
+                ? {
+                    paypal_fee: { currency_code: "USD", value: "1.00" },
+                    platform_fees: [{ amount: { currency_code: "USD", value: "0.50" } }],
+                    net_amount: { currency_code: "USD", value: "0.00" },
+                  }
+                : null,
+          });
+        });
+        const paypal: PayPalServices = {
+          client: createPayPalClient({
+            clientId: "partner-client-id",
+            clientSecret: "partner-secret",
+            environment: "sandbox",
+            fetch: api.fetch,
+            sleep: () => Promise.resolve(),
+          }),
+          partnerId: "PARTNER42",
+          returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
+          sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+        };
+        const refundCalls = () => api.requests.filter((r: RecordedRequest) => r.url.includes("/v2/payments/captures/"));
+        return { paypal, refundCalls };
+      }
+
+      // The $600 deposit (CAPTURE1) and a later $500 top-up (CAPTURE2) paid; removing Build ($600) leaves a $400
+      // final price and a $40 fee, so $660 goes back: $500 on the top-up, $160 on the deposit.
+      async function overpaidProject() {
+        const seeded = await workingProject();
+        const { userId, freelancer, projectId, token, teamId } = seeded;
+        const [deposit] = await db.select().from(payment).where(eq(payment.projectId, projectId));
+        if (!deposit) throw new Error("missing deposit");
+        const topUpId = await db.transaction(async (tx) => {
+          const [topUp] = await tx
+            .insert(payment)
+            .values({
+              projectId,
+              teamId,
+              kind: "top_up",
+              status: "captured",
+              currency: "USD",
+              quotePartMinor: 50_000,
+              managementFeeMinor: 0,
+              amountMinor: 50_000,
+              lines: [{ kind: "top_up", label: "Top-up", amountMinor: 50_000 }],
+              paypalCaptureId: "CAPTURE2",
+              capturedAt: new Date(Date.now() + 60_000),
+            })
+            .returning();
+          if (!topUp) throw new Error("missing top-up");
+          await createPostgresLedger(teamId, tx).post([
+            paymentCapturedTransfer({ currency: "USD", projectId, paymentId: topUp.id, quotePartMinor: 50_000, managementFeeMinor: 0 }),
+          ]);
+          return topUp.id;
+        });
+        await markTeamPayPalMerchant(db, { teamId, merchantId: "SELLER1" });
+        const [current] = await listProjectQuotes(db, projectId);
+        const build = current?.items.find((i) => i.description === "Build");
+        if (!build) throw new Error("missing item");
+        const { deliveryId } = await deliver(freelancer, projectId);
+        const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+          teamSlug: "team",
+          projectId,
+          add: [],
+          removeItemIds: [build.id],
+        });
+        await callerFor(null).project.clientAcceptAmendment({ token, amendmentId });
+        expect(await callerFor(null).project.clientAcceptDelivery({ token, deliveryId })).toMatchObject({ status: "completed" });
+        expect(await balanceOf("client_refunds")).toBe(66_000);
+        return { ...seeded, depositId: deposit.id, topUpId, refundId: `completion-${projectId}` };
+      }
+
+      async function postingsOf(kind: "refund_confirmed" | "refund_fees") {
+        const rows = await db
+          .select({ reference: ledgerTransfer.reference, account: ledgerEntry.account, amountMinor: ledgerEntry.amountMinor })
+          .from(ledgerTransfer)
+          .innerJoin(ledgerEntry, eq(ledgerEntry.transferId, ledgerTransfer.id))
+          .where(eq(ledgerTransfer.kind, kind));
+        return rows.sort((a, b) => `${a.reference}${a.account}`.localeCompare(`${b.reference}${b.account}`));
+      }
+
+      const UNCERTAIN = "We could not confirm the refund with PayPal. Try again; the client will not be refunded twice.";
+
+      // PayPal's ORDER1 (the deposit's order) listing the given refunds of CAPTURE1.
+      function depositOrder(refunds: { id: string; value: string }[]): JsonObject {
+        return {
+          id: "ORDER1",
+          status: "COMPLETED",
+          purchase_units: [
+            {
+              payments: {
+                captures: [{ id: "CAPTURE1", status: "PARTIALLY_REFUNDED", amount: { currency_code: "USD", value: "600.00" } }],
+                refunds: refunds.map((r) => ({ id: r.id, status: "COMPLETED", amount: { currency_code: "USD", value: r.value } })),
+              },
+            },
+          ],
+        };
+      }
+
+      function refundWebhook(paypal: PayPalServices, refundId: string) {
+        return processPayPalWebhookEvent(
+          { db, paypal },
+          {
+            id: `WH-${refundId}`,
+            eventType: "PAYMENT.CAPTURE.REFUNDED",
+            resourceType: "refund",
+            resourceId: refundId,
+            customId: null,
+            orderId: null,
+            captureId: "CAPTURE1",
+            merchantId: "SELLER1",
+            status: "received",
+            attempts: 0,
+            note: null,
+            receivedAt: new Date(),
+            processedAt: null,
+          },
+        );
+      }
+
+      async function refundedOf(paymentId: string) {
+        const [row] = await db.select().from(payment).where(eq(payment.id, paymentId));
+        return { status: row?.status, refundedMinor: row?.refundedMinor };
+      }
+
+      it("refunds the overpayment on the newest captures first, from the seller's account, once", async () => {
+        const { userId, projectId, token, depositId, topUpId, refundId } = await overpaidProject();
+        const { paypal, refundCalls } = fakePayPalRefunds(() => "COMPLETED");
+
+        const view = await callerFor(userId, undefined, paypal).project.refundClient({ teamSlug: "team", projectId });
+
+        expect(view).toEqual({
+          amountMinor: 66_000,
+          currency: "USD",
+          status: "completed",
+          completedAt: expect.any(Date),
+          parts: [
+            { paymentId: topUpId, amountMinor: 50_000, status: "completed", sent: true, failureMessage: null },
+            { paymentId: depositId, amountMinor: 16_000, status: "completed", sent: true, failureMessage: null },
+          ],
+        });
+        expect(
+          refundCalls().map((r) => ({
+            url: r.url,
+            requestId: r.headers.get("paypal-request-id"),
+            assertion: r.headers.get("paypal-auth-assertion"),
+            body: JSON.parse(r.body ?? ""),
+          })),
+        ).toEqual([
+          {
+            url: "https://api-m.sandbox.paypal.com/v2/payments/captures/CAPTURE2/refund",
+            requestId: `project-refund:${refundId}:${topUpId}`,
+            assertion: buildAuthAssertion({ clientId: "partner-client-id", payerId: "SELLER1" }),
+            body: { amount: { currency_code: "USD", value: "500.00" } },
+          },
+          {
+            url: "https://api-m.sandbox.paypal.com/v2/payments/captures/CAPTURE1/refund",
+            requestId: `project-refund:${refundId}:${depositId}`,
+            assertion: buildAuthAssertion({ clientId: "partner-client-id", payerId: "SELLER1" }),
+            body: { amount: { currency_code: "USD", value: "160.00" } },
+          },
+        ]);
+        expect(await postingsOf("refund_confirmed")).toEqual([
+          { reference: "refund_confirmed:REFUND-CAPTURE1", account: "client_refunds", amountMinor: -16_000 },
+          { reference: "refund_confirmed:REFUND-CAPTURE1", account: "paypal_clearing", amountMinor: 16_000 },
+          { reference: "refund_confirmed:REFUND-CAPTURE2", account: "client_refunds", amountMinor: -50_000 },
+          { reference: "refund_confirmed:REFUND-CAPTURE2", account: "paypal_clearing", amountMinor: 50_000 },
+        ]);
+        expect((await postingsOf("refund_fees")).map((p) => p.reference)).toEqual([
+          ...Array<string>(3).fill("refund_fees:REFUND-CAPTURE1"),
+          ...Array<string>(3).fill("refund_fees:REFUND-CAPTURE2"),
+        ]);
+        expect(await balanceOf("client_refunds")).toBe(0);
+        expect(await refundedOf(topUpId)).toEqual({ status: "refunded", refundedMinor: 50_000 });
+        expect(await refundedOf(depositId)).toEqual({ status: "captured", refundedMinor: 16_000 });
+        expect((await callerFor(null).project.clientGet({ token })).refund).toEqual({
+          amountMinor: 66_000,
+          currency: "USD",
+          status: "completed",
+          completedAt: expect.any(Date),
+        });
+
+        await expect(
+          callerFor(userId, undefined, paypal).project.refundClient({ teamSlug: "team", projectId }),
+        ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "This refund was already sent." });
+        expect(refundCalls()).toHaveLength(2);
+      });
+
+      it("leaves refunds PayPal holds to the webhook, and refuses to send them again meanwhile", async () => {
+        const { userId, projectId } = await overpaidProject();
+        const { paypal, refundCalls } = fakePayPalRefunds(() => "PENDING");
+        const caller = callerFor(userId, undefined, paypal);
+
+        const pending = await caller.project.refundClient({ teamSlug: "team", projectId });
+        expect(pending.status).toBe("issuing");
+        expect(pending.parts.map((p) => [p.status, p.sent])).toEqual([
+          ["pending", true],
+          ["pending", true],
+        ]);
+        expect(await postingsOf("refund_confirmed")).toEqual([]);
+
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+          message: "This refund is being sent.",
+        });
+        expect(refundCalls()).toHaveLength(2);
+      });
+
+      it("sends the parts of a refund whose request died before PayPal answered, once each", async () => {
+        const { userId, projectId, depositId, topUpId, refundId } = await overpaidProject();
+        await db.transaction(async (tx) => {
+          await upsertRefundPart(tx, { projectRefundId: refundId, paymentId: topUpId, captureId: "CAPTURE2", amountMinor: 50_000 });
+          await upsertRefundPart(tx, { projectRefundId: refundId, paymentId: depositId, captureId: "CAPTURE1", amountMinor: 16_000 });
+          await setProjectRefundStatus(tx, refundId, "issuing");
+        });
+        const { paypal, refundCalls } = fakePayPalRefunds(() => "COMPLETED");
+        const caller = callerFor(userId, undefined, paypal);
+        expect((await caller.project.get({ teamSlug: "team", projectId })).refund).toMatchObject({
+          status: "issuing",
+          parts: [
+            { paymentId: topUpId, status: "pending", sent: false, failureMessage: null },
+            { paymentId: depositId, status: "pending", sent: false, failureMessage: null },
+          ],
+        });
+
+        expect((await caller.project.refundClient({ teamSlug: "team", projectId })).status).toBe("completed");
+        expect(refundCalls().map((r) => r.url.split("/").at(-2))).toEqual(["CAPTURE2", "CAPTURE1"]);
+        expect(await balanceOf("client_refunds")).toBe(0);
+      });
+
+      it("shows PayPal's refusal of a part, fails the parts not sent after it, and sends both on the retry", async () => {
+        const { userId, projectId, token, depositId, topUpId } = await overpaidProject();
+        const refused = {
+          name: "UNPROCESSABLE_ENTITY",
+          message: "The refund was refused.",
+          debug_id: "d422",
+          details: [{ issue: "REFUND_AMOUNT_EXCEEDED", description: "The refund amount exceeds the capture." }],
+        };
+        const { paypal, refundCalls } = fakePayPalRefunds((captureId, call) =>
+          captureId === "CAPTURE2" && call === 1 ? jsonResponse(422, refused) : "COMPLETED",
+        );
+        const caller = callerFor(userId, undefined, paypal);
+        const refusal =
+          "UNPROCESSABLE_ENTITY: The refund was refused. (REFUND_AMOUNT_EXCEEDED: The refund amount exceeds the capture.)";
+
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_GATEWAY",
+          message: `PayPal did not refund the client: ${refusal}`,
+        });
+        const failed = (await caller.project.get({ teamSlug: "team", projectId })).refund;
+        expect(failed).toMatchObject({
+          status: "failed",
+          parts: [
+            { paymentId: topUpId, status: "failed", failureMessage: refusal },
+            { paymentId: depositId, status: "failed", failureMessage: "Not sent because an earlier part was refused." },
+          ],
+        });
+        const [unsent] = await db.select().from(projectRefundPart).where(eq(projectRefundPart.paymentId, depositId));
+        expect(unsent).toMatchObject({ paypalRefundId: null, uncertainAt: null });
+        expect((await callerFor(null).project.clientGet({ token })).refund?.status).toBe("failed");
+        expect(await balanceOf("client_refunds")).toBe(66_000);
+
+        const retried = await caller.project.refundClient({ teamSlug: "team", projectId });
+        expect(retried.status).toBe("completed");
+        expect(retried.parts.map((p) => p.failureMessage)).toEqual([null, null]);
+        expect(refundCalls().map((r) => r.url.split("/").at(-2))).toEqual(["CAPTURE2", "CAPTURE2", "CAPTURE1"]);
+        expect(await balanceOf("client_refunds")).toBe(0);
+      });
+
+      it("keeps a part PayPal may have refunded pending, holds its webhook, and confirms it once on the retry", async () => {
+        const { userId, projectId, depositId, topUpId } = await overpaidProject();
+        let paypalDown = true;
+        let shownRefunds: { id: string; value: string }[] = [];
+        const { paypal, refundCalls } = fakePayPalRefunds(
+          (captureId) =>
+            captureId === "CAPTURE1" && paypalDown ? jsonResponse(500, { name: "INTERNAL_SERVER_ERROR", debug_id: "d500" }) : "COMPLETED",
+          () => depositOrder(shownRefunds),
+        );
+        const caller = callerFor(userId, undefined, paypal);
+        const webhook = (refundId: string) => refundWebhook(paypal, refundId);
+
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_GATEWAY",
+          message: UNCERTAIN,
+        });
+        expect((await caller.project.get({ teamSlug: "team", projectId })).refund).toMatchObject({
+          status: "issuing",
+          parts: [
+            { paymentId: topUpId, status: "completed", failureMessage: null },
+            { paymentId: depositId, status: "pending", failureMessage: UNCERTAIN },
+          ],
+        });
+        const [held] = await db.select().from(projectRefundPart).where(eq(projectRefundPart.paymentId, depositId));
+        expect(held?.paypalRefundId).toBeNull();
+
+        // A refund the webhook cannot match may be this one: it waits for the admin's retry.
+        shownRefunds = [{ id: "REFUND-UNKNOWN", value: "160.00" }];
+        await expect(webhook("REFUND-UNKNOWN")).rejects.toThrow(/still being issued/);
+
+        paypalDown = false;
+        expect((await caller.project.refundClient({ teamSlug: "team", projectId })).status).toBe("completed");
+        const depositCalls = refundCalls().filter((r) => r.url.includes("/CAPTURE1/"));
+        expect(new Set(depositCalls.map((r) => r.headers.get("paypal-request-id"))).size).toBe(1);
+
+        shownRefunds = [{ id: "REFUND-CAPTURE1", value: "160.00" }];
+        expect(await webhook("REFUND-CAPTURE1")).toEqual({ status: "processed", note: "refunded" });
+        expect((await postingsOf("refund_confirmed")).filter((p) => p.reference === "refund_confirmed:REFUND-CAPTURE1")).toHaveLength(2);
+        expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "payment_refunded"))).toEqual([]);
+        expect(await refundedOf(depositId)).toEqual({ status: "captured", refundedMinor: 16_000 });
+        expect(await balanceOf("client_refunds")).toBe(0);
+      });
+
+      it("never trusts a refusal after an unknown outcome, and confirms the refund once when PayPal finishes it", async () => {
+        const { userId, projectId, depositId } = await overpaidProject();
+        let depositAnswer: "down" | "in_progress" | "done" = "down";
+        let shownRefunds: { id: string; value: string }[] = [];
+        const inProgress = {
+          name: "RESOURCE_CONFLICT",
+          message: "The server has detected a conflict while processing this request.",
+          debug_id: "d409",
+          details: [{ issue: "PREVIOUS_REQUEST_IN_PROGRESS", description: "A previous request is still in progress." }],
+        };
+        const { paypal } = fakePayPalRefunds(
+          (captureId) => {
+            if (captureId !== "CAPTURE1" || depositAnswer === "done") return "COMPLETED";
+            return depositAnswer === "down"
+              ? jsonResponse(500, { name: "INTERNAL_SERVER_ERROR", debug_id: "d500" })
+              : jsonResponse(409, inProgress);
+          },
+          () => depositOrder(shownRefunds),
+        );
+        const caller = callerFor(userId, undefined, paypal);
+        const pendingDeposit = { paymentId: depositId, status: "pending", failureMessage: UNCERTAIN };
+
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({ message: UNCERTAIN });
+        depositAnswer = "in_progress";
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_GATEWAY",
+          message: UNCERTAIN,
+        });
+        expect((await caller.project.get({ teamSlug: "team", projectId })).refund).toMatchObject({
+          status: "issuing",
+          parts: [{ status: "completed" }, pendingDeposit],
+        });
+
+        // PayPal finished the first request: its webhook arrives before Payleor learns the refund id.
+        shownRefunds = [{ id: "REFUND-CAPTURE1", value: "160.00" }];
+        await expect(refundWebhook(paypal, "REFUND-CAPTURE1")).rejects.toThrow(/still being issued/);
+
+        depositAnswer = "done";
+        expect((await caller.project.refundClient({ teamSlug: "team", projectId })).status).toBe("completed");
+        expect(await refundWebhook(paypal, "REFUND-CAPTURE1")).toEqual({ status: "processed", note: "refunded" });
+        const references = (await db.select({ reference: ledgerTransfer.reference }).from(ledgerTransfer)).map((t) => t.reference);
+        expect(references.filter((r) => r.includes("REFUND-CAPTURE1") && !r.startsWith("refund_fees:"))).toEqual([
+          "refund_confirmed:REFUND-CAPTURE1",
+        ]);
+        expect(await refundedOf(depositId)).toEqual({ status: "captured", refundedMinor: 16_000 });
+      });
+
+      it("refuses to retry a refund whose outcome has been unknown for over 30 days", async () => {
+        const { userId, projectId, depositId } = await overpaidProject();
+        let paypalDown = true;
+        const { paypal, refundCalls } = fakePayPalRefunds((captureId) =>
+          captureId === "CAPTURE1" && paypalDown ? jsonResponse(500, { name: "INTERNAL_SERVER_ERROR", debug_id: "d500" }) : "COMPLETED",
+        );
+        const caller = callerFor(userId, undefined, paypal);
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({ message: UNCERTAIN });
+        await db
+          .update(projectRefundPart)
+          .set({ uncertainAt: new Date(Date.now() - 31 * 86_400_000) })
+          .where(eq(projectRefundPart.paymentId, depositId));
+        paypalDown = false;
+        const callsBefore = refundCalls().length;
+
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+          message: "This refund is too old to retry safely. Contact support.",
+        });
+        expect(refundCalls()).toHaveLength(callsBefore);
+        expect((await caller.project.get({ teamSlug: "team", projectId })).refund?.status).toBe("issuing");
+      });
+
+      it("tells the admin to contact support when PayPal refuses the refund it created", async () => {
+        const { userId, projectId, depositId } = await overpaidProject();
+        const { paypal } = fakePayPalRefunds((captureId) => (captureId === "CAPTURE1" ? "FAILED" : "COMPLETED"));
+        const caller = callerFor(userId, undefined, paypal);
+        const message = "PayPal refused this refund. Contact support; do not refund the client in PayPal.";
+
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_GATEWAY",
+          message: `PayPal did not refund the client: ${message}`,
+        });
+        expect((await caller.project.get({ teamSlug: "team", projectId })).refund).toMatchObject({
+          status: "failed",
+          parts: [{ status: "completed" }, { paymentId: depositId, status: "failed", failureMessage: message }],
+        });
+        const [refused] = await db.select().from(projectRefundPart).where(eq(projectRefundPart.paymentId, depositId));
+        expect(refused?.paypalRefundId).toBe("REFUND-CAPTURE1");
+      });
+
+      it("lets only the team's admins refund, and only a project with a refund", async () => {
+        const { userId, organizationId, teamId, freelancer, projectId } = await overpaidProject();
+        const manager = await seedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
+        const { paypal, refundCalls } = fakePayPalRefunds(() => "COMPLETED");
+        for (const someone of [freelancer, manager]) {
+          await expect(
+            callerFor(someone, undefined, paypal).project.refundClient({ teamSlug: "team", projectId }),
+          ).rejects.toMatchObject({ code: "FORBIDDEN", message: "Only an admin can refund the client." });
+        }
+        const { projectId: unpaid } = await createProject(userId);
+        await expect(
+          callerFor(userId, undefined, paypal).project.refundClient({ teamSlug: "team", projectId: unpaid }),
+        ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "This project has nothing to refund." });
+        expect(refundCalls()).toEqual([]);
+      });
     });
 
     it("refuses to accept the delivery while a failed top-up is still unpaid", async () => {

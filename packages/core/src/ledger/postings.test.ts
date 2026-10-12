@@ -10,12 +10,15 @@ import {
   orderRefundedTransfer,
   paymentCapturedTransfer,
   paymentFeesTransfer,
+  paymentRefundedTransfer,
   payoutReleasedTransfer,
   payoutRequestedTransfer,
   payoutSucceededTransfer,
   penaltyAfterCompletionTransfer,
   refundConfirmedTransfer,
+  refundFeesTransfer,
   refundRequestedTransfer,
+  splitServicesRefund,
 } from "./postings";
 import { isBalanced, type LedgerTransferDraft, transferSums } from "./transfers";
 
@@ -126,6 +129,14 @@ describe("every posting builder balances (property-style, 500 random cases each)
     refundRequested: () =>
       refundRequestedTransfer({ currency: currency(), projectId: "p1", refundId: "x", quotePartMinor: amount(), managementFeeMinor: maybeZero() }),
     refundConfirmed: () => refundConfirmedTransfer({ currency: currency(), projectId: "p1", refundId: "x", amountMinor: amount() }),
+    paymentRefunded: () =>
+      paymentRefundedTransfer({
+        currency: currency(),
+        projectId: "p1",
+        refundKey: "refund:x",
+        fromClientHeldMinor: maybeZero(),
+        fromTeamRevenueMinor: amount(),
+      }),
     payoutRequested: () => payoutRequestedTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
     payoutSucceeded: () => payoutSucceededTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
     payoutReleased: () => payoutReleasedTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
@@ -227,5 +238,82 @@ describe("order postings", () => {
         { account: "paypal_clearing", currency: "USD", amountMinor: 500 },
       ]),
     );
+  });
+});
+
+describe("refund postings", () => {
+  const cases = [
+    {
+      name: "returned fees go back to team revenue (the sandbox's $5.00 refund)",
+      transfer: refundFeesTransfer({ currency: "USD", projectId: null, refundId: "R1", paypalFeeMinor: 19, platformFeeMinor: 5 }),
+      expected: {
+        kind: "refund_fees",
+        reference: "refund_fees:R1",
+        projectId: null,
+        entries: [
+          { account: "paypal_fees", currency: "USD", amountMinor: -19 },
+          { account: "team_revenue", currency: "USD", amountMinor: 24 },
+          { account: "payleor_fees", currency: "USD", amountMinor: -5 },
+        ],
+      },
+    },
+    {
+      name: "a platform fee PayPal kept is left out",
+      transfer: refundFeesTransfer({ currency: "USD", projectId: "p1", refundId: "R2", paypalFeeMinor: 19, platformFeeMinor: 0 }),
+      expected: {
+        kind: "refund_fees",
+        reference: "refund_fees:R2",
+        projectId: "p1",
+        entries: [
+          { account: "paypal_fees", currency: "USD", amountMinor: -19 },
+          { account: "team_revenue", currency: "USD", amountMinor: 19 },
+        ],
+      },
+    },
+    {
+      name: "no fee returned posts nothing",
+      transfer: refundFeesTransfer({ currency: "USD", projectId: null, refundId: "R3", paypalFeeMinor: 0, platformFeeMinor: 0 }),
+      expected: null,
+    },
+    {
+      name: "an unrequested services refund comes out of client money first, the rest from team revenue",
+      transfer: paymentRefundedTransfer({ ...base, refundKey: "refund:R4", fromClientHeldMinor: 300, fromTeamRevenueMinor: 200 }),
+      expected: {
+        kind: "payment_refunded",
+        reference: "payment_refunded:refund:R4",
+        projectId: "p1",
+        entries: [
+          { account: "client_held:p1", currency: "USD", amountMinor: -300 },
+          { account: "paypal_clearing", currency: "USD", amountMinor: 500 },
+          { account: "team_revenue", currency: "USD", amountMinor: -200 },
+        ],
+      },
+    },
+    {
+      name: "a reversal on a completed project comes out of team revenue only",
+      transfer: paymentRefundedTransfer({ ...base, refundKey: "reversal:C1", fromClientHeldMinor: 0, fromTeamRevenueMinor: 500 }),
+      expected: {
+        kind: "payment_refunded",
+        reference: "payment_refunded:reversal:C1",
+        projectId: "p1",
+        entries: [
+          { account: "paypal_clearing", currency: "USD", amountMinor: 500 },
+          { account: "team_revenue", currency: "USD", amountMinor: -500 },
+        ],
+      },
+    },
+  ];
+  it.each(cases)("$name", ({ transfer, expected }) => {
+    expect(transfer).toEqual(expected);
+  });
+});
+
+describe("splitServicesRefund", () => {
+  it.each([
+    { name: "client money covers it all", amountMinor: 500, clientHeldMinor: 800, expected: { fromClientHeldMinor: 500, fromTeamRevenueMinor: 0 } },
+    { name: "client money covers part", amountMinor: 500, clientHeldMinor: 300, expected: { fromClientHeldMinor: 300, fromTeamRevenueMinor: 200 } },
+    { name: "no client money left", amountMinor: 500, clientHeldMinor: 0, expected: { fromClientHeldMinor: 0, fromTeamRevenueMinor: 500 } },
+  ])("$name", ({ amountMinor, clientHeldMinor, expected }) => {
+    expect(splitServicesRefund({ amountMinor, clientHeldMinor })).toEqual(expected);
   });
 });

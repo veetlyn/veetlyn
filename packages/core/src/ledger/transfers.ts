@@ -16,6 +16,8 @@ export const LEDGER_TRANSFER_KINDS = [
   "order_paid",
   "order_fees",
   "order_refunded",
+  "refund_fees",
+  "payment_refunded",
 ] as const;
 
 export type LedgerTransferKind = (typeof LEDGER_TRANSFER_KINDS)[number];

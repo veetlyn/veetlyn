@@ -31,10 +31,13 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
+import { paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
+
+import { RefundSection } from "./refund-section";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
 type QuoteInput = inferRouterInputs<AppRouter>["project"]["addQuote"];
@@ -204,7 +207,7 @@ export default function ProjectDetail({
     );
   }
 
-  const { project, quotes, amendments, payments, deliveries, clientPath, role, quotingMode, solo, viewerId } =
+  const { project, quotes, amendments, payments, deliveries, refund, clientPath, role, quotingMode, solo, viewerId } =
     detail.data;
   const currency = project.currency;
   const currentQuote = quotes.find((q) => q.status === "accepted");
@@ -532,9 +535,16 @@ export default function ProjectDetail({
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
         {payments.map((payment) => (
           <div key={payment.id} className="rounded-lg border p-4 text-sm">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
-              <span className="text-muted-foreground">{payment.status}</span>
+              <div className="flex items-center gap-2">
+                {payment.reviewReason ? (
+                  <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    Needs review
+                  </span>
+                ) : null}
+                <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? payment.status}</span>
+              </div>
             </div>
             <ul className="mt-2 space-y-1">
               {payment.lines.map((line, index) => (
@@ -550,6 +560,18 @@ export default function ProjectDetail({
           </div>
         ))}
       </section>
+
+      {refund ? (
+        <RefundSection
+          teamSlug={teamSlug}
+          projectId={projectId}
+          refund={refund}
+          payments={payments}
+          role={role}
+          clientName={project.clientName ?? project.clientEmail ?? "the client"}
+          onRefunded={refresh}
+        />
+      ) : null}
     </main>
   );
 }

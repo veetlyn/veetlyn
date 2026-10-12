@@ -8,6 +8,7 @@ import {
   type PayPalOrder,
   refundsFromOrder,
 } from "./index";
+import type { JsonBody } from "./schemas";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, recordedAt } from "./testing";
 
 function clientWith(respond: (url: string) => Response) {
@@ -206,7 +207,7 @@ describe("captureFromOrder", () => {
   });
 
   it("reads the capture time and the fee breakdown", () => {
-    // As PayPal returns it, with fields PayPalCapture does not keep (gross, net, the fee's payee).
+    // As PayPal returns it, with fields PayPalCapture does not keep (gross, the fee's payee).
     const capture = {
       id: "CAPTURE1",
       status: "COMPLETED",
@@ -227,6 +228,43 @@ describe("captureFromOrder", () => {
         paypal_fee: { currency_code: "USD", value: "4.98" },
         platform_fees: [{ amount: { currency_code: "USD", value: "1.20" } }],
       },
+    });
+  });
+
+  it("reads a converted receivable, and an unreadable rate leaves the fees intact", () => {
+    const converted = (exchangeRate: JsonBody): PayPalOrder => ({
+      id: "ORDER1",
+      status: "COMPLETED",
+      purchase_units: [
+        {
+          payments: {
+            captures: [
+              {
+                id: "C",
+                status: "COMPLETED",
+                seller_receivable_breakdown: {
+                  paypal_fee: { currency_code: "USD", value: "4.98" },
+                  net_amount: { currency_code: "USD", value: "115.02" },
+                  receivable_amount: { currency_code: "EUR", value: "98.75" },
+                  exchange_rate: exchangeRate,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const fees = {
+      paypal_fee: { currency_code: "USD", value: "4.98" },
+      platform_fees: [],
+      net_amount: { currency_code: "USD", value: "115.02" },
+      receivable_amount: { currency_code: "EUR", value: "98.75" },
+    };
+    const rate = { value: "0.858", source_currency: "USD", target_currency: "EUR" };
+    expect(captureFromOrder(converted(rate))?.seller_receivable_breakdown).toEqual({ ...fees, exchange_rate: rate });
+    expect(captureFromOrder(converted({ value: 0.858 }))?.seller_receivable_breakdown).toEqual({
+      ...fees,
+      exchange_rate: undefined,
     });
   });
 
@@ -295,6 +333,26 @@ describe("refundsFromOrder", () => {
               { id: "R1", status: "COMPLETED", amount: { currency_code: "USD", value: "5.00" } },
               { id: "R2", status: "PENDING", amount: { currency_code: "USD", value: "1.00" } },
               { bad: true },
+              // The sandbox's $5.00 partial refund of a $19.00 order: PayPal returned its fee and Payleor's.
+              {
+                id: "R3",
+                status: "COMPLETED",
+                amount: { currency_code: "USD", value: "5.00" },
+                seller_payable_breakdown: {
+                  gross_amount: { currency_code: "USD", value: "5.00" },
+                  paypal_fee: { currency_code: "USD", value: "0.19" },
+                  platform_fees: [{ amount: { currency_code: "USD", value: "0.05" }, payee: { merchant_id: "PAYLEOR" } }],
+                  net_amount: { currency_code: "USD", value: "4.76" },
+                  total_refunded_amount: { currency_code: "USD", value: "5.00" },
+                },
+              },
+              // A returned fee that cannot be read must not pass for no fee returned.
+              {
+                id: "R4",
+                status: "COMPLETED",
+                amount: { currency_code: "USD", value: "2.00" },
+                seller_payable_breakdown: { paypal_fee: { value: 0.08 }, net_amount: { currency_code: "USD", value: "1.92" } },
+              },
             ],
           },
         },
@@ -303,6 +361,17 @@ describe("refundsFromOrder", () => {
     expect(refundsFromOrder(order)).toEqual([
       { id: "R1", status: "COMPLETED", amount: { currency_code: "USD", value: "5.00" } },
       { id: "R2", status: "PENDING", amount: { currency_code: "USD", value: "1.00" } },
+      {
+        id: "R3",
+        status: "COMPLETED",
+        amount: { currency_code: "USD", value: "5.00" },
+        seller_payable_breakdown: {
+          paypal_fee: { currency_code: "USD", value: "0.19" },
+          platform_fees: [{ amount: { currency_code: "USD", value: "0.05" } }],
+          net_amount: { currency_code: "USD", value: "4.76" },
+        },
+      },
+      { id: "R4", status: "COMPLETED", amount: { currency_code: "USD", value: "2.00" }, seller_payable_breakdown: undefined },
     ]);
   });
 

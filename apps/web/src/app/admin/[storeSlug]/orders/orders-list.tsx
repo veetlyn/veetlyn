@@ -40,13 +40,20 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-sm font-medium">{formatMinor(order.amountMinor, order.currency)}</p>
-                {order.status === "refunded" ? (
-                  <span className="inline-block rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    Refunded {formatDate(order.refundedAt)}
-                  </span>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Paid {formatDate(order.paidAt)}</p>
-                )}
+                <div className="flex items-center justify-end gap-2">
+                  {order.status === "refunded" ? (
+                    <span className="inline-block rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      Refunded {formatDate(order.refundedAt)}
+                    </span>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Paid {formatDate(order.paidAt)}</p>
+                  )}
+                  {order.reviewReason ? (
+                    <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                      Needs review
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </li>
           ))}

@@ -44,6 +44,7 @@ import {
   lockFileUploadForAttach,
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
+import { createProjectRefund } from "@jendal-workspace/db/repositories/project-refunds";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -726,6 +727,15 @@ export async function acceptDelivery(
         transfers: completion.transfers,
         events,
       });
+      if (completion.refundMinor > 0) {
+        await createProjectRefund(tx, {
+          id: completionRefundId(row.id),
+          teamId: row.teamId,
+          projectId: row.id,
+          currency: row.currency,
+          amountMinor: completion.refundMinor,
+        });
+      }
     } else {
       throw new Error(`accept_delivery moved project ${row.id} to ${status}`);
     }

@@ -232,6 +232,7 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
     it("lists paid and refunded orders, newest first, for an admin", async () => {
       const { userId, teamId, productId, order: paid } = await paidOrder();
       const refundedRow = await seedOrder(db, { teamId, productId, status: "refunded" });
+      await db.update(orders).set({ reviewReason: "converted_receivable" }).where(eq(orders.id, refundedRow.id));
       await seedOrder(db, { teamId, productId, status: "pending" });
       await db.update(orders).set({ createdAt: new Date(Date.now() - 60_000) }).where(eq(orders.id, paid.id));
 
@@ -246,6 +247,7 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
         status: "refunded",
         paidAt: refundedRow.paidAt?.toISOString(),
         refundedAt: refundedRow.refundedAt?.toISOString(),
+        reviewReason: "converted_receivable",
       });
     });
 

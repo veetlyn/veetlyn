@@ -1,3 +1,4 @@
+import type { CaptureReviewReason } from "@jendal-workspace/core";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
@@ -11,7 +12,16 @@ export type NewOrder = Pick<
 >;
 export type TeamOrderRow = Pick<
   OrderRow,
-  "id" | "productTitle" | "buyerEmail" | "amountMinor" | "currency" | "status" | "createdAt" | "paidAt" | "refundedAt"
+  | "id"
+  | "productTitle"
+  | "buyerEmail"
+  | "amountMinor"
+  | "currency"
+  | "status"
+  | "createdAt"
+  | "paidAt"
+  | "refundedAt"
+  | "reviewReason"
 >;
 
 export async function insertOrder(db: DbExecutor, values: NewOrder): Promise<OrderRow> {
@@ -88,6 +98,10 @@ export async function markOrderRefunded(
   return rows.length > 0;
 }
 
+export async function setOrderReviewReason(db: DbExecutor, orderId: string, reason: CaptureReviewReason): Promise<void> {
+  await db.update(orders).set({ reviewReason: reason }).where(eq(orders.id, orderId));
+}
+
 export async function revokeOrderGrants(db: DbExecutor, orderId: string, now: Date): Promise<void> {
   await db
     .update(downloadGrant)
@@ -162,6 +176,7 @@ export async function listTeamOrders(db: DbExecutor, teamId: string): Promise<Te
       createdAt: orders.createdAt,
       paidAt: orders.paidAt,
       refundedAt: orders.refundedAt,
+      reviewReason: orders.reviewReason,
     })
     .from(orders)
     .where(and(eq(orders.teamId, teamId), inArray(orders.status, ["paid", "refunded"])))
