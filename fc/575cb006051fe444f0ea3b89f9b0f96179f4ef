@@ -1,0 +1,31 @@
+packages/api/src/routers/payouts.test.ts
+  s_49cb15331938bb::t_77b4791dd67f17 266-641
+  s_49cb15331938bb::t_af40e1ff095268 2-10,13,15,19-21,28-29
+  s_49cb15331938bb::t_3983b19777762f 44,46,53-62,64-68,73-78
+packages/api/src/use-cases/paypal-amounts.ts
+  s_49cb15331938bb::t_9c1fa716776c53 31-42,52-56,58
+packages/api/src/use-cases/payouts.ts
+  s_49cb15331938bb::t_3e0c6cf75c88c1 1-439,444-534
+  s_49cb15331938bb::t_d7a462f5c88ed0 440-443
+packages/api/src/use-cases/client-refunds.ts
+  s_49cb15331938bb::t_d51e973627fbba 31,37
+  s_49cb15331938bb::t_65cad3e3cf4af5 213-214
+packages/api/src/routers/payouts.ts
+  s_49cb15331938bb::t_14352cc9396d9f 3,11-19,22-24,49-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc575cb006051fe444f0ea3b89f9b0f96179f4ef",
+  "prompts": {},
+  "sessions": {
+    "s_49cb15331938bb": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "62983363-4ae7-46da-98c5-68a0a29dea47",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
