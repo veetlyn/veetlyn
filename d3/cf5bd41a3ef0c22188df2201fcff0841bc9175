@@ -1,0 +1,33 @@
+packages/api/src/routers/payouts.test.ts
+  s_c912b6a17077a1::t_48e194687e1ebc 2,4,19,25-28,34,65-66,69,71,75,99-100,104-110,112-114,117-118,121-125,128-132,134-135,138-146,150-154,156-158,161-172,174-175,177-212,214,216-217,221-225,228-232,236-237,240-243,245-247,249-260,263-264,267-279,284,286-287,290-291,293-295,297-298,301-306,308-311,313-316,318-341
+packages/api/src/routers/payouts.ts
+  s_c912b6a17077a1::t_d10eb343527d7e 8,29,41-63
+packages/api/src/routers/services-team.ts
+  s_c912b6a17077a1::t_17dcc57a3937d2 103
+packages/api/src/use-cases/payouts.ts
+  s_c912b6a17077a1::t_7f1d5f649471c7 5,10,27,36-38,41,45,49-52,65-67,70,115-121,134,171-175,177-178,180-186,188-191,193-194,196,199,201-207
+packages/api/src/use-cases/paypal-amounts.ts
+  s_c912b6a17077a1::t_09f86fe5235680 1,52,54-55
+packages/paypal/src/client.test.ts
+  s_c912b6a17077a1::t_b9f7d4d20cede9 295
+packages/paypal/src/client.ts
+  s_c912b6a17077a1::t_2e039c3bf7ae26 83,87,162,168
+packages/paypal/src/errors.ts
+  s_c912b6a17077a1::t_2382d168755585 15,25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d3cf5bd41a3ef0c22188df2201fcff0841bc9175",
+  "prompts": {},
+  "sessions": {
+    "s_c912b6a17077a1": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "fa86f283-414f-4939-a5ef-28996e41ede2",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
