@@ -1,0 +1,35 @@
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/refund-section.tsx
+  s_47e50da0b3d4a1::t_2acfd11088f01f 71,79
+apps/web/src/lib/client-refund.ts
+  s_47e50da0b3d4a1::t_d2a0d1a92567dc 38-39,42,46
+packages/api/src/use-cases/client-refunds.ts
+  s_47e50da0b3d4a1::t_d1e34abac1f337 115-122
+  s_47e50da0b3d4a1::t_6d0406f96d5847 48-56
+  s_47e50da0b3d4a1::t_325f76678ad524 97
+apps/web/src/lib/client-refund.test.ts
+  s_47e50da0b3d4a1::t_032f3296048f0e 48-59
+packages/api/src/routers/project.test.ts
+  s_47e50da0b3d4a1::t_b243f56d41425c 17
+  s_47e50da0b3d4a1::t_324ad70b48cf43 1032-1034,1039-1042,1045-1070
+  s_47e50da0b3d4a1::t_e0609a0da417bb 981-982
+packages/api/src/use-cases/payment-refunds.ts
+  s_47e50da0b3d4a1::t_76cf9e7349c730 29-30
+packages/api/src/use-cases/paypal-amounts.ts
+  s_47e50da0b3d4a1::t_a91f9bdd17adb6 31-32,34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1827c2a85afe0a85bfc016e71913d50eade3bca9",
+  "prompts": {},
+  "sessions": {
+    "s_47e50da0b3d4a1": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "dc2ec7d9-26b7-4da0-a926-d10d70e3552f",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
