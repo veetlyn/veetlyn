@@ -1,0 +1,33 @@
+apps/web/src/app/admin/[storeSlug]/payouts/team-payouts.tsx
+  s_f90bd7afd57fe3::t_8a2c9013e005ef 44
+apps/web/src/app/admin/[storeSlug]/services-team-dashboard.tsx
+  s_f90bd7afd57fe3::t_b4ab146b7ab224 35
+apps/web/src/app/admin/me/payouts/earnings-section.tsx
+  s_f90bd7afd57fe3::t_d746f42ad5719b 73-75
+  s_f90bd7afd57fe3::t_18d78c4ff7ba61 37
+  s_f90bd7afd57fe3::t_677c875af18eb3 89
+apps/web/src/app/admin/me/payouts/payout-history.tsx
+  s_f90bd7afd57fe3::t_c86eae7b6c3d3d 29-33,36-39
+apps/web/src/app/admin/[storeSlug]/payouts/mark-paid-dialog.tsx
+  s_f90bd7afd57fe3::t_250b0659f58c44 1-153
+apps/web/src/lib/payouts.ts
+  s_f90bd7afd57fe3::t_bf144cb7c9f48a 3-5,10-11
+apps/web/src/app/admin/[storeSlug]/payouts/payout-requests-table.tsx
+  s_f90bd7afd57fe3::t_5d121be01b216a 9,12,14-22,24-29,37-38,41-47,49-50,52,54,59-88,95,102,104,106,108,120-122,138-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a807bdb1db6433437df208b3d452eb89f541bbf3",
+  "prompts": {},
+  "sessions": {
+    "s_f90bd7afd57fe3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "9be83997-2f80-409c-8319-128abf847433",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
