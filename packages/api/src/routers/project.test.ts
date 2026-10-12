@@ -1153,51 +1153,51 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect(await balanceOf("client_refunds")).toBe(0);
       });
 
-      it("never trusts a refusal after an unknown outcome, and confirms the refund once when PayPal finishes it", async () => {
-        const { userId, projectId, depositId } = await overpaidProject();
-        let depositAnswer: "down" | "in_progress" | "done" = "down";
-        let shownRefunds: { id: string; value: string }[] = [];
+      it("never trusts a refusal or a failed refund after an unknown outcome", async () => {
+        const { userId, projectId, depositId, refundId } = await overpaidProject();
         const inProgress = {
           name: "RESOURCE_CONFLICT",
           message: "The server has detected a conflict while processing this request.",
           debug_id: "d409",
           details: [{ issue: "PREVIOUS_REQUEST_IN_PROGRESS", description: "A previous request is still in progress." }],
         };
-        const { paypal } = fakePayPalRefunds(
-          (captureId) => {
-            if (captureId !== "CAPTURE1" || depositAnswer === "done") return "COMPLETED";
-            return depositAnswer === "down"
-              ? jsonResponse(500, { name: "INTERNAL_SERVER_ERROR", debug_id: "d500" })
-              : jsonResponse(409, inProgress);
-          },
-          () => depositOrder(shownRefunds),
-        );
+        const refused = {
+          name: "UNPROCESSABLE_ENTITY",
+          message: "The refund was refused.",
+          debug_id: "d422",
+          details: [{ issue: "REFUND_AMOUNT_EXCEEDED", description: "The refund amount exceeds the capture." }],
+        };
+        const { paypal, refundCalls } = fakePayPalRefunds((captureId, call) => {
+          if (captureId !== "CAPTURE1") return "COMPLETED";
+          if (call === 1) return jsonResponse(409, inProgress);
+          if (call === 2) return jsonResponse(422, refused);
+          return call === 3 ? "FAILED" : "COMPLETED";
+        });
         const caller = callerFor(userId, undefined, paypal);
-        const pendingDeposit = { paymentId: depositId, status: "pending", failureMessage: UNCERTAIN };
+        const refundClient = () => caller.project.refundClient({ teamSlug: "team", projectId });
+        // The top-up part is refunded on the first attempt; only the deposit's $160 stays owed.
+        const expectDepositUncertain = async () => {
+          await expect(refundClient()).rejects.toMatchObject({ code: "BAD_GATEWAY", message: UNCERTAIN });
+          expect((await caller.project.get({ teamSlug: "team", projectId })).refund).toMatchObject({
+            status: "issuing",
+            parts: [{ status: "completed" }, { paymentId: depositId, status: "pending", failureMessage: UNCERTAIN }],
+          });
+          expect(await balanceOf("client_refunds")).toBe(16_000);
+        };
 
-        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({ message: UNCERTAIN });
-        depositAnswer = "in_progress";
-        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
-          code: "BAD_GATEWAY",
-          message: UNCERTAIN,
-        });
-        expect((await caller.project.get({ teamSlug: "team", projectId })).refund).toMatchObject({
-          status: "issuing",
-          parts: [{ status: "completed" }, pendingDeposit],
-        });
+        // PayPal is still running an earlier request with this id, which may refund.
+        await expectDepositUncertain();
+        // A settled refusal, then a FAILED refund, may not be the answer to the request that refunded.
+        await expectDepositUncertain();
+        await expectDepositUncertain();
 
-        // PayPal finished the first request: its webhook arrives before Payleor learns the refund id.
-        shownRefunds = [{ id: "REFUND-CAPTURE1", value: "160.00" }];
-        await expect(refundWebhook(paypal, "REFUND-CAPTURE1")).rejects.toThrow(/still being issued/);
-
-        depositAnswer = "done";
-        expect((await caller.project.refundClient({ teamSlug: "team", projectId })).status).toBe("completed");
-        expect(await refundWebhook(paypal, "REFUND-CAPTURE1")).toEqual({ status: "processed", note: "refunded" });
-        const references = (await db.select({ reference: ledgerTransfer.reference }).from(ledgerTransfer)).map((t) => t.reference);
-        expect(references.filter((r) => r.includes("REFUND-CAPTURE1") && !r.startsWith("refund_fees:"))).toEqual([
-          "refund_confirmed:REFUND-CAPTURE1",
-        ]);
+        expect((await refundClient()).status).toBe("completed");
+        expect(await balanceOf("client_refunds")).toBe(0);
         expect(await refundedOf(depositId)).toEqual({ status: "captured", refundedMinor: 16_000 });
+        const depositRequestIds = refundCalls()
+          .filter((r) => r.url.includes("/CAPTURE1/"))
+          .map((r) => r.headers.get("paypal-request-id"));
+        expect(depositRequestIds).toEqual(Array<string>(4).fill(`project-refund:${refundId}:${depositId}`));
       });
 
       it("refuses to retry a refund whose outcome has been unknown for over 30 days", async () => {

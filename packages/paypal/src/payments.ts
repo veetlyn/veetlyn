@@ -9,17 +9,12 @@ export type RefundCaptureInput = {
   // A stable id makes a retried call return the first refund instead of refunding again.
   requestId: string;
   amount: PayPalMoney;
-  noteToPayer?: string;
 };
-
-type RefundRequestBody = { amount: PayPalMoney; note_to_payer?: string };
 
 export function createPayments(request: PayPalRequest) {
   return {
     // No payment_instruction: Payleor keeps whatever share of its fee PayPal does not return on its own.
     refundCapture(input: RefundCaptureInput): Promise<PayPalRefund> {
-      const body: RefundRequestBody = { amount: input.amount };
-      if (input.noteToPayer !== undefined) body.note_to_payer = input.noteToPayer;
       return request(
         {
           method: "POST",
@@ -27,7 +22,7 @@ export function createPayments(request: PayPalRequest) {
           requestId: input.requestId,
           merchantId: input.merchantId,
           prefer: "return=representation",
-          body,
+          body: { amount: input.amount },
         },
         refundSchema,
       );

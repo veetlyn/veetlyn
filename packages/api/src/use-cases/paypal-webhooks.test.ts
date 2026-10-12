@@ -461,6 +461,21 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       expect(result).toBe("applied");
     }
 
+    // Build ($600) removed: the $400 final price and $40 fee leave $160 of the $600 deposit to refund.
+    async function completeWithoutBuild(userId: string, projectId: string, freelancer: string) {
+      const [current] = await listProjectQuotes(db, projectId);
+      const build = current?.items.find((item) => item.description === "Build");
+      if (!build) throw new Error("missing item");
+      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+        teamSlug: "team",
+        projectId,
+        add: [],
+        removeItemIds: [build.id],
+      });
+      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
+      return acceptDelivery(projectId, freelancer);
+    }
+
     const REFUND_BREAKDOWN = {
       paypal_fee: { currency_code: "USD", value: "3.95" },
       platform_fees: [{ amount: { currency_code: "USD", value: "1.00" } }],
@@ -546,18 +561,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
 
     it("confirms an overpayment refund Payleor issued, completing its part and the project refund", async () => {
       const { userId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit();
-      // Build ($600) removed: the $400 final price and $40 fee leave $160 of the $600 deposit to refund.
-      const [current] = await listProjectQuotes(db, projectId);
-      const build = current?.items.find((item) => item.description === "Build");
-      if (!build) throw new Error("missing item");
-      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
-        teamSlug: "team",
-        projectId,
-        add: [],
-        removeItemIds: [build.id],
-      });
-      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
-      expect(await acceptDelivery(projectId, freelancer)).toMatchObject({ status: "completed" });
+      expect(await completeWithoutBuild(userId, projectId, freelancer)).toMatchObject({ status: "completed" });
       expect(await balanceOf(ledgerAccounts.clientRefunds)).toBe(16_000);
 
       const refundId = `completion-${projectId}`;
@@ -593,17 +597,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       const { userId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit({
         refund: () => jsonResponse(422, refused),
       });
-      const [current] = await listProjectQuotes(db, projectId);
-      const build = current?.items.find((item) => item.description === "Build");
-      if (!build) throw new Error("missing item");
-      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
-        teamSlug: "team",
-        projectId,
-        add: [],
-        removeItemIds: [build.id],
-      });
-      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
-      await acceptDelivery(projectId, freelancer);
+      await completeWithoutBuild(userId, projectId, freelancer);
       await expect(
         callerFor(userId, deps.paypal).project.refundClient({ teamSlug: "team", projectId }),
       ).rejects.toMatchObject({ code: "BAD_GATEWAY" });
@@ -625,17 +619,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
 
     it("holds a refund while a part of a failed overpayment refund was never sent, and parks a refund posted both ways", async () => {
       const { userId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit();
-      const [current] = await listProjectQuotes(db, projectId);
-      const build = current?.items.find((item) => item.description === "Build");
-      if (!build) throw new Error("missing item");
-      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
-        teamSlug: "team",
-        projectId,
-        add: [],
-        removeItemIds: [build.id],
-      });
-      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
-      await acceptDelivery(projectId, freelancer);
+      await completeWithoutBuild(userId, projectId, freelancer);
       const refundId = `completion-${projectId}`;
       showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "160.00" }]);
 
@@ -1112,32 +1096,11 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       expect(await orderPostings()).toEqual([
         { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 60_000 },
       ]);
-
-      // A capture refunded before Payleor applied it: recorded as paid, then refunded, with no grant or email.
-      await truncateAll(db);
-      const early = await storeOrder({
-        lookup: refundedLookup("REFUNDED", [{ id: "R1", status: "COMPLETED", value: "600.00" }]),
-      });
-      expect(await processPayPalWebhookEvent(early.deps, storedEvent({ customId: early.customId }))).toEqual({
-        status: "processed",
-        note: "refunded",
-      });
-      expect(await orderRow(early.order.id)).toMatchObject({
-        status: "refunded",
-        paypalCaptureId: "CAPTURE1",
-        paidAt: expect.any(Date),
-      });
-      expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "order_paid"))).toHaveLength(1);
-      expect(await orderPostings()).toEqual([
-        { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 60_000 },
-      ]);
-      expect(await grantsOf(early.order.id)).toHaveLength(0);
-      expect(early.mailer.sent).toHaveLength(0);
     });
 
     it("commits nothing for a capture refunded before Payleor applied it until PayPal lists the refund", async () => {
       let lookup = refundedLookup("REFUNDED", []);
-      const { order, deps, customId } = await storeOrder({ lookup: () => lookup() });
+      const { order, mailer, deps, customId } = await storeOrder({ lookup: () => lookup() });
       const event = storedEvent({ customId });
 
       await expect(processPayPalWebhookEvent(deps, event)).rejects.toThrow(/no completed refund yet/);
@@ -1147,11 +1110,17 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       lookup = refundedLookup("REFUNDED", [{ id: "R1", status: "COMPLETED", value: "600.00" }]);
       expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "refunded" });
       expect(await processPayPalWebhookEvent(deps, event)).toEqual({ status: "processed", note: "already refunded" });
-      expect(await orderRow(order.id)).toMatchObject({ status: "refunded", paypalCaptureId: "CAPTURE1" });
+      expect(await orderRow(order.id)).toMatchObject({
+        status: "refunded",
+        paypalCaptureId: "CAPTURE1",
+        paidAt: expect.any(Date),
+      });
       expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.kind, "order_paid"))).toHaveLength(1);
       expect(await orderPostings()).toEqual([
         { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 60_000 },
       ]);
+      expect(await grantsOf(order.id)).toHaveLength(0);
+      expect(mailer.sent).toHaveLength(0);
     });
 
     it("flags converted funds for review, and posts the fees only when they are in the capture's currency", async () => {

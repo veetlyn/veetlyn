@@ -276,7 +276,7 @@ describe("refund postings", () => {
       expected: null,
     },
     {
-      name: "an unrequested services refund comes out of client money first, the rest from team revenue",
+      name: "moves the client-money part from client_held and the rest from team revenue to PayPal clearing",
       transfer: paymentRefundedTransfer({ ...base, refundKey: "refund:R4", fromClientHeldMinor: 300, fromTeamRevenueMinor: 200 }),
       expected: {
         kind: "payment_refunded",
@@ -290,7 +290,7 @@ describe("refund postings", () => {
       },
     },
     {
-      name: "a reversal on a completed project comes out of team revenue only",
+      name: "moves a refund taken wholly from team revenue to PayPal clearing",
       transfer: paymentRefundedTransfer({ ...base, refundKey: "reversal:C1", fromClientHeldMinor: 0, fromTeamRevenueMinor: 500 }),
       expected: {
         kind: "payment_refunded",
