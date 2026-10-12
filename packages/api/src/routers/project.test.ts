@@ -1048,7 +1048,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect(await balanceOf("client_refunds")).toBe(0);
       });
 
-      it("shows PayPal's refusal of a part and refunds only that part on the retry", async () => {
+      it("shows PayPal's refusal of a part, fails the parts not sent after it, and sends both on the retry", async () => {
         const { userId, projectId, token, depositId, topUpId } = await overpaidProject();
         const refused = {
           name: "UNPROCESSABLE_ENTITY",
@@ -1057,7 +1057,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           details: [{ issue: "REFUND_AMOUNT_EXCEEDED", description: "The refund amount exceeds the capture." }],
         };
         const { paypal, refundCalls } = fakePayPalRefunds((captureId, call) =>
-          captureId === "CAPTURE1" && call === 1 ? jsonResponse(422, refused) : "COMPLETED",
+          captureId === "CAPTURE2" && call === 1 ? jsonResponse(422, refused) : "COMPLETED",
         );
         const caller = callerFor(userId, undefined, paypal);
         const refusal =
@@ -1071,17 +1071,19 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect(failed).toMatchObject({
           status: "failed",
           parts: [
-            { paymentId: topUpId, status: "completed", failureMessage: null },
-            { paymentId: depositId, status: "failed", failureMessage: refusal },
+            { paymentId: topUpId, status: "failed", failureMessage: refusal },
+            { paymentId: depositId, status: "failed", failureMessage: "Not sent because an earlier part was refused." },
           ],
         });
+        const [unsent] = await db.select().from(projectRefundPart).where(eq(projectRefundPart.paymentId, depositId));
+        expect(unsent).toMatchObject({ paypalRefundId: null, uncertainAt: null });
         expect((await callerFor(null).project.clientGet({ token })).refund?.status).toBe("failed");
-        expect(await balanceOf("client_refunds")).toBe(16_000);
+        expect(await balanceOf("client_refunds")).toBe(66_000);
 
         const retried = await caller.project.refundClient({ teamSlug: "team", projectId });
         expect(retried.status).toBe("completed");
         expect(retried.parts.map((p) => p.failureMessage)).toEqual([null, null]);
-        expect(refundCalls().map((r) => r.url.split("/").at(-2))).toEqual(["CAPTURE2", "CAPTURE1", "CAPTURE1"]);
+        expect(refundCalls().map((r) => r.url.split("/").at(-2))).toEqual(["CAPTURE2", "CAPTURE2", "CAPTURE1"]);
         expect(await balanceOf("client_refunds")).toBe(0);
       });
 

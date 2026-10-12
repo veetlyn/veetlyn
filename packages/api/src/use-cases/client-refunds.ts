@@ -9,6 +9,7 @@ import {
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
+  failUnsentRefundParts,
   findProjectRefundForProject,
   listRefundParts,
   lockProjectRefund,
@@ -130,6 +131,7 @@ async function prepareParts(tx: Transaction, projectRefundId: string): Promise<P
 
 // A refund made in PayPal by hand cannot be matched to its part, so the messages never send the admin there.
 const REFUSED_MESSAGE = "PayPal refused this refund. Contact support; do not refund the client in PayPal.";
+const UNSENT_MESSAGE = "Not sent because an earlier part was refused.";
 const UNCERTAIN_MESSAGE = "We could not confirm the refund with PayPal. Try again; the client will not be refunded twice.";
 
 // Statuses of a refund PayPal created but will not send. The same request id answers it again, so a retry
@@ -143,7 +145,8 @@ async function recordAnswer(tx: Transaction, part: ProjectRefundPartRow, refund:
   if (refund.status === "COMPLETED") await applyCompletedPaymentRefund(tx, { paymentId: part.paymentId, refund });
 }
 
-// PayPal made no refund that will reach the client. A refund id PayPal did answer stays on the part.
+// PayPal made no refund that will reach the client. A refund id PayPal did answer stays on the part. Sending
+// stops here, so the parts after it are failed as unsent.
 async function recordRefusal(
   db: Database,
   part: ProjectRefundPartRow,
@@ -154,6 +157,7 @@ async function recordRefusal(
     const refund = await lockProjectRefund(tx, part.projectRefundId);
     if (answered) await setRefundPartPayPalRefund(tx, part.id, { paypalRefundId: answered.id, status: "pending" });
     await markRefundPartFailed(tx, part.id, message);
+    await failUnsentRefundParts(tx, part.projectRefundId, UNSENT_MESSAGE);
     if (refund && refund.status !== "completed") await setProjectRefundStatus(tx, refund.id, "failed");
   });
 }

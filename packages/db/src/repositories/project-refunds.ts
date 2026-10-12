@@ -162,6 +162,22 @@ export async function markRefundPartUncertain(
     .where(and(eq(projectRefundPart.id, partId), ne(projectRefundPart.status, "completed")));
 }
 
+// Parts never sent (no PayPal refund id, no uncertain attempt) cannot be refunds PayPal holds, so they need not
+// hold the webhook back once sending stopped; a retry resends them.
+export async function failUnsentRefundParts(tx: DbExecutor, projectRefundId: string, failureMessage: string): Promise<void> {
+  await tx
+    .update(projectRefundPart)
+    .set({ status: "failed", failureMessage })
+    .where(
+      and(
+        eq(projectRefundPart.projectRefundId, projectRefundId),
+        eq(projectRefundPart.status, "pending"),
+        isNull(projectRefundPart.paypalRefundId),
+        isNull(projectRefundPart.uncertainAt),
+      ),
+    );
+}
+
 export async function markRefundPartFailed(tx: DbExecutor, partId: string, failureMessage: string): Promise<void> {
   await tx
     .update(projectRefundPart)
