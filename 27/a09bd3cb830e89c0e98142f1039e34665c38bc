@@ -1,0 +1,41 @@
+apps/server/.env.schema
+  s_0cfc56a903e3bd::t_240242780b0ec6 64-69
+apps/server/src/payouts.ts
+  s_0cfc56a903e3bd::t_b6f9963c47a0ae 1-89
+apps/server/src/services.ts
+  s_0cfc56a903e3bd::t_d6d0dbacc1aa75 18
+  s_0cfc56a903e3bd::t_ecd06962bee1b1 2,5
+  s_0cfc56a903e3bd::t_4b67a7d1f3025f 69-90
+  s_0cfc56a903e3bd::t_d80aa79694d6e9 9
+apps/server/src/payouts.test.ts
+  s_0cfc56a903e3bd::t_63760c37115485 1-143,145-147,151-187
+  s_0cfc56a903e3bd::t_f72e54992c12fb 144,148-150
+packages/infra/alchemy.run.ts
+  s_0cfc56a903e3bd::t_e73bd0551dd8e2 116
+apps/server/src/context.ts
+  s_0cfc56a903e3bd::t_add4b142a11a31 10,38
+apps/server/src/index.ts
+  s_0cfc56a903e3bd::t_2d7ca122d90361 22,27-34,131,138
+apps/server/src/maintenance.test.ts
+  s_0cfc56a903e3bd::t_56d6608e03eb7a 99,109-110,139,172-198
+apps/server/src/maintenance.ts
+  s_0cfc56a903e3bd::t_542be95fe849c3 28-29,33,41-42,55-56,121-130
+packages/infra/.env.schema
+  s_0cfc56a903e3bd::t_c56ddd28ea5e69 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "27a09bd3cb830e89c0e98142f1039e34665c38bc",
+  "prompts": {},
+  "sessions": {
+    "s_0cfc56a903e3bd": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "8e5d08b1-2a4a-4ecd-bb39-5f0b204ea76a",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
