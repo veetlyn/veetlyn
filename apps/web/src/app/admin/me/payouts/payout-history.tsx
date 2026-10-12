@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { formatMinor } from "@/lib/money";
-import { payoutStatusLabel } from "@/lib/payouts";
+import { MEMBER_STATUS_LABELS } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
 // Shares the payouts.mine query with the earnings section, which shows the loading and error states.
@@ -26,10 +26,12 @@ export function PayoutHistory() {
                 <span className="font-medium">
                   {request.teamName} · {formatMinor(request.amountMinor, request.currency)}
                 </span>
-                <span className="text-muted-foreground">{payoutStatusLabel(request)}</span>
+                <span className="text-muted-foreground">{MEMBER_STATUS_LABELS[request.status]}</span>
               </div>
               <p className="text-muted-foreground">Requested {new Date(request.createdAt).toLocaleDateString()}</p>
-              {request.failureMessage ? <p className="text-destructive">{request.failureMessage}</p> : null}
+              {request.status === "failed" && request.failureMessage ? (
+                <p className="text-destructive">{request.failureMessage}</p>
+              ) : null}
             </li>
           ))}
         </ul>

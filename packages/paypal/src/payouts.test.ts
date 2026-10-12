@@ -18,6 +18,18 @@ function clientAnswering(status: number, body: JsonBody) {
   return { client, requests };
 }
 
+const CREATE_INPUT = {
+  senderBatchId: "payout:req-1",
+  requestId: "payout-send:req-1",
+  emailSubject: "You have a payout",
+  item: {
+    receiverPayerId: "PAYER1",
+    amount: { value: "25.00", currency: "USD" },
+    note: "Earnings from Acme",
+    senderItemId: "req-1",
+  },
+};
+
 describe("payouts.create", () => {
   it("sends one PAYPAL_ID item under the sender batch id and reads the batch id", async () => {
     const { client, requests } = clientAnswering(201, {
@@ -29,17 +41,7 @@ describe("payouts.create", () => {
       links: [],
     });
 
-    const created = await client.payouts.create({
-      senderBatchId: "payout:req-1",
-      requestId: "payout-send:req-1",
-      emailSubject: "You have a payout",
-      item: {
-        receiverPayerId: "PAYER1",
-        amount: { value: "25.00", currency: "USD" },
-        note: "Earnings from Acme",
-        senderItemId: "req-1",
-      },
-    });
+    const created = await client.payouts.create(CREATE_INPUT);
 
     expect(created).toEqual({ batchId: "BATCH1", batchStatus: "PENDING" });
     const call = recordedAt(requests, 1);
@@ -58,6 +60,14 @@ describe("payouts.create", () => {
         },
       ],
     });
+  });
+
+  // A retry's answer would hide that PayPal may have made the batch on the first attempt.
+  it("sends once and throws when PayPal answers 5xx", async () => {
+    const { client, requests } = clientAnswering(500, { name: "INTERNAL_SERVICE_ERROR", debug_id: "d500" });
+
+    await expect(client.payouts.create(CREATE_INPUT)).rejects.toMatchObject({ status: 500, debugId: "d500" });
+    expect(requests.filter((r) => r.method === "POST" && r.url.endsWith("/v1/payments/payouts"))).toHaveLength(1);
   });
 });
 

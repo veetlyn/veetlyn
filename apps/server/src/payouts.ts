@@ -1,7 +1,7 @@
 import type { PayoutServices } from "@jendal-workspace/api/context";
 import { type PayoutDeps, settlePayout } from "@jendal-workspace/api/use-cases/payouts";
 import { hashToken, type TenantEnvironment } from "@jendal-workspace/core";
-import { listSentPayoutRequests } from "@jendal-workspace/db/repositories/payout-requests";
+import { listSentPayoutRequests, touchSentPayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
 import {
   createKvTokenCache,
   createPayPalClient,
@@ -64,12 +64,12 @@ export function createPayoutServices(input: {
 // Payout webhooks go to each team's own REST app, so payouts PayPal is working on are settled by reading their batch.
 // One request failing (no credentials, PayPal down) is logged and the others still settle.
 export async function settleSentPayouts(
-  deps: PayoutDeps & { now?: () => Date },
+  deps: PayoutDeps & { now?: () => Date; limit?: number },
 ): Promise<{ checked: number; settled: number }> {
   const now = (deps.now ?? (() => new Date()))().getTime();
   const requests = await listSentPayoutRequests(deps.db, {
     sentBefore: new Date(now - PAYOUT_SETTLE_DELAY_MS),
-    limit: PAYOUT_SETTLE_BATCH,
+    limit: deps.limit ?? PAYOUT_SETTLE_BATCH,
   });
   let settled = 0;
   for (const request of requests) {
@@ -83,6 +83,7 @@ export async function settleSentPayouts(
         team: { id: request.teamId },
         error: { code: error instanceof TRPCError ? error.code : undefined, note: errorNote(error) },
       });
+      await touchSentPayoutRequest(deps.db, request.id);
     }
   }
   return { checked: requests.length, settled };

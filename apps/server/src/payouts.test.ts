@@ -100,7 +100,7 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
   afterEach(() => vi.restoreAllMocks());
   afterAll(() => db.$client.end());
 
-  async function sentRequest(input: { teamId: string; userId: string; batchId: string; sentAt: Date }) {
+  async function sentRequest(input: { teamId: string; userId: string; batchId: string; sentAt: Date; updatedAt?: Date }) {
     const request = await insertPayoutRequest(db, {
       id: crypto.randomUUID(),
       teamId: input.teamId,
@@ -110,7 +110,25 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
       receiverPayerId: "G83JXTJ5EHCQ2",
     });
     if (!request) throw new Error("No payout request inserted");
-    return updatePayoutRequest(db, request.id, { status: "sent", paypalBatchId: input.batchId, sentAt: input.sentAt });
+    return updatePayoutRequest(db, request.id, {
+      status: "sent",
+      paypalBatchId: input.batchId,
+      sentAt: input.sentAt,
+      updatedAt: input.updatedAt,
+    });
+  }
+
+  async function saveCredentials(teamId: string) {
+    const sealed = await sealSecret(await importSecretKey(TEST_KEY), "v1", GOOD_SECRET, teamId);
+    await saveTeamPayoutCredentials(db, {
+      teamId,
+      clientId: CLIENT_ID,
+      secretCiphertext: sealed.ciphertext,
+      secretIv: sealed.iv,
+      keyId: sealed.keyId,
+      paypalAccountId: null,
+      verifiedAt: NOW,
+    });
   }
 
   // $850 earned on a completed project, $25 of it reserved by the payout request.
@@ -141,16 +159,7 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
     const settled = await sentRequest({ teamId: paying.teamId, userId: ada, batchId: "BATCH-B", sentAt: secondsAgo(300) });
     const recent = await sentRequest({ teamId: paying.teamId, userId: grace, batchId: "BATCH-C", sentAt: secondsAgo(30) });
     await reserve(paying.teamId, ada, settled.id);
-    const sealed = await sealSecret(secretKey, "v1", GOOD_SECRET, paying.teamId);
-    await saveTeamPayoutCredentials(db, {
-      teamId: paying.teamId,
-      clientId: CLIENT_ID,
-      secretCiphertext: sealed.ciphertext,
-      secretIv: sealed.iv,
-      keyId: sealed.keyId,
-      paypalAccountId: null,
-      verifiedAt: NOW,
-    });
+    await saveCredentials(paying.teamId);
     const paypal = fakeFetch((request) => {
       if (pathOf(request) === "/v1/oauth2/token") return jsonResponse(200, FAKE_TOKEN_RESPONSE);
       if (pathOf(request) !== "/v1/payments/payouts/BATCH-B") return jsonResponse(500, { name: "UNEXPECTED_CALL" });
@@ -183,5 +192,42 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
       team: { id: noCredentials.teamId },
       error: { code: "PRECONDITION_FAILED", note: expect.any(String) },
     });
+  });
+
+  it("moves each checked payout to the back, so payouts that stay pending or fail never block the others", async () => {
+    const noCredentials = await seedServicesTeamWithAdmin(db, { slug: "no-credentials" });
+    const paying = await seedServicesTeamWithAdmin(db, { slug: "paying" });
+    await saveCredentials(paying.teamId);
+    const ada = await seedUser(db, "Ada");
+    const grace = await seedUser(db, "Grace");
+    const longAgo = (day: number) => new Date(Date.UTC(2000, 0, day));
+    await sentRequest({ teamId: noCredentials.teamId, userId: ada, batchId: "BATCH-A", sentAt: secondsAgo(900), updatedAt: longAgo(1) });
+    const pending = await sentRequest({ teamId: paying.teamId, userId: ada, batchId: "BATCH-B", sentAt: secondsAgo(600), updatedAt: longAgo(2) });
+    const newest = await sentRequest({ teamId: paying.teamId, userId: grace, batchId: "BATCH-C", sentAt: secondsAgo(300), updatedAt: longAgo(3) });
+    const paypal = fakeFetch((request) => {
+      if (pathOf(request) === "/v1/oauth2/token") return jsonResponse(200, FAKE_TOKEN_RESPONSE);
+      const batchId = pathOf(request).split("/").at(-1) ?? "";
+      const requestId = batchId === "BATCH-B" ? pending.id : newest.id;
+      return jsonResponse(200, {
+        batch_header: { payout_batch_id: batchId, batch_status: "PROCESSING" },
+        items: [{ payout_item_id: `ITEM-${batchId}`, transaction_status: "PENDING", payout_item: { sender_item_id: requestId } }],
+      });
+    });
+    const payouts = createPayoutServices({
+      secretKey: await importSecretKey(TEST_KEY),
+      environment: "sandbox",
+      tokenKv: fakeKv().kv,
+      fetch: paypal.fetch,
+    });
+    vi.spyOn(log, "error").mockImplementation(() => undefined);
+
+    for (let run = 0; run < 3; run++) {
+      await expect(settleSentPayouts({ db, payouts, now: () => NOW, limit: 1 })).resolves.toEqual({ checked: 1, settled: 0 });
+    }
+
+    expect(paypal.requests.filter((r) => pathOf(r).startsWith("/v1/payments/payouts/")).map(pathOf)).toEqual([
+      "/v1/payments/payouts/BATCH-B",
+      "/v1/payments/payouts/BATCH-C",
+    ]);
   });
 });

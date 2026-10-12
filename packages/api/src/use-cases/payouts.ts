@@ -285,13 +285,30 @@ function isInsufficientFunds(error: PayPalError): boolean {
 
 const BATCH_LINK = /^(?:https?:\/\/[^/]+)?\/v1\/payments\/payouts\/([^/?#]+)\/?(?:[?#]|$)/;
 
-// PayPal refuses a sender_batch_id it already used with a link to the original batch, which is this request's.
+// PayPal refuses a sender_batch_id it already used with a link to the original batch.
 function linkedBatchId(error: PayPalError): string | null {
   for (const link of error.links) {
     const batchId = BATCH_LINK.exec(link.href)?.[1];
     if (batchId) return decodeURIComponent(batchId);
   }
   return null;
+}
+
+// A link in an error body is only a claim: the batch is this request's when it carries an item for it.
+async function linkedBatchOutcome(
+  client: PayPalClient,
+  request: PayoutRequestRow,
+  batchId: string,
+  refusal: PayPalError,
+): Promise<SendOutcome> {
+  try {
+    const batch = await client.payouts.getBatch(batchId);
+    return batch.items.some((item) => item.senderItemId === request.id)
+      ? { kind: "sent", batchId }
+      : { kind: "uncertain", cause: refusal };
+  } catch (cause) {
+    return { kind: "uncertain", cause };
+  }
 }
 
 // A negative balance pays nothing.
@@ -349,7 +366,7 @@ async function attemptSend(
     return { kind: "sent", batchId: created.batchId };
   } catch (error) {
     const linked = error instanceof PayPalError ? linkedBatchId(error) : null;
-    if (linked) return { kind: "sent", batchId: linked };
+    if (linked && error instanceof PayPalError) return linkedBatchOutcome(client, request, linked, error);
     if (!isSettledPayPalRefusal(error) || isPayPalRequestInProgress(error)) return { kind: "uncertain", cause: error };
     if (isInsufficientFunds(error)) return { kind: "held", message: LOW_BALANCE, cause: error };
     return { kind: "refused", message: payPalRefusalMessage(error).slice(0, MAX_FAILURE_MESSAGE), cause: error };
@@ -455,10 +472,24 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
 type Settlement =
   | { kind: "succeeded"; item: PayoutItem }
   | { kind: "failed"; itemId: string | null; itemStatus: string | null; message: string }
-  | { kind: "pending"; item: PayoutItem | undefined };
+  | { kind: "pending"; item: PayoutItem | undefined }
+  | { kind: "unmatched" };
+
+const NO_MATCHING_ITEM = "PayPal's batch has no item for this payout";
+
+// An item whose sender_item_id PayPal left out is taken only when it is the batch's one item.
+function itemFor(request: PayoutRequestRow, batch: PayoutBatch): PayoutItem | undefined {
+  const [only] = batch.items;
+  return (
+    batch.items.find((entry) => entry.senderItemId === request.id) ??
+    (batch.items.length === 1 && only?.senderItemId === undefined ? only : undefined)
+  );
+}
 
 function settlementOf(request: PayoutRequestRow, batch: PayoutBatch): Settlement {
-  const item = batch.items.find((entry) => entry.senderItemId === request.id) ?? (batch.items.length === 1 ? batch.items[0] : undefined);
+  const item = itemFor(request, batch);
+  // Items that all belong to other payouts say nothing about this one, not even through the batch status.
+  if (!item && batch.items.length > 0) return { kind: "unmatched" };
   const itemOutcome = payoutItemOutcome(item?.status);
   if (item && itemOutcome === "succeeded") return { kind: "succeeded", item };
   if (item && itemOutcome === "failed") {
@@ -490,10 +521,20 @@ function payoutFee(request: PayoutRequestRow, item: PayoutItem): PayoutFee {
 }
 
 async function recordSettlement(tx: Transaction, request: PayoutRequestRow, settlement: Settlement): Promise<PayoutRequestRow> {
+  if (settlement.kind === "unmatched") {
+    log.warn({
+      action: "payout.settle",
+      payoutRequest: { id: request.id },
+      paypal: { batchId: request.paypalBatchId },
+      reviewReason: NO_MATCHING_ITEM,
+    });
+    return updatePayoutRequest(tx, request.id, { reviewReason: NO_MATCHING_ITEM });
+  }
   if (settlement.kind === "pending") {
     return updatePayoutRequest(tx, request.id, {
       paypalItemId: settlement.item?.itemId ?? request.paypalItemId,
       paypalItemStatus: settlement.item?.status ?? null,
+      reviewReason: null,
     });
   }
   if (settlement.kind === "failed") {
@@ -502,6 +543,7 @@ async function recordSettlement(tx: Transaction, request: PayoutRequestRow, sett
       paypalItemId: settlement.itemId,
       paypalItemStatus: settlement.itemStatus,
       failureMessage: settlement.message.slice(0, MAX_FAILURE_MESSAGE),
+      reviewReason: null,
       settledAt: new Date(),
     });
     await postIfNew(tx, request.teamId, payoutReleasedTransfer(postingFor(request)));
@@ -535,9 +577,15 @@ export async function settlePayout(deps: PayoutDeps, request: PayoutRequestRow):
     log.warn({ action: "payout.settle", payoutRequest: { id: request.id }, credentials: { saved: false } });
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: NO_CREDENTIALS });
   }
+  let client: PayPalClient;
+  try {
+    client = await payoutClientFromCredentials(deps.payouts, credentials);
+  } catch (cause) {
+    log.warn({ action: "payout.settle", payoutRequest: { id: request.id }, error: payPalErrorLog(cause) });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: SEALED_SECRET_UNREADABLE, cause });
+  }
   let batch: PayoutBatch;
   try {
-    const client = await payoutClientFromCredentials(deps.payouts, credentials);
     batch = await client.payouts.getBatch(batchId);
   } catch (cause) {
     log.warn({ action: "payout.settle", payoutRequest: { id: request.id }, error: payPalErrorLog(cause) });

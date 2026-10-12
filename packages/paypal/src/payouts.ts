@@ -34,6 +34,7 @@ export function createPayouts(request: PayPalRequest) {
           method: "POST",
           path: "/v1/payments/payouts",
           requestId: input.requestId,
+          retry: false,
           body: {
             sender_batch_header: { sender_batch_id: input.senderBatchId, email_subject: input.emailSubject },
             items: [

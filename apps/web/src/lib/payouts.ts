@@ -17,6 +17,17 @@ export function payoutStatusLabel(request: PayoutState): string {
   return STATUS_LABELS[request.status];
 }
 
+// Members see no sending details: holds and retries are the admins' to handle.
+export const MEMBER_STATUS_LABELS = {
+  requested: "Waiting for approval",
+  queued: "Approved, being sent",
+  sending: "Approved, being sent",
+  sent: "Approved, being sent",
+  succeeded: "Paid",
+  failed: "Failed",
+  rejected: "Rejected",
+} satisfies Record<PayoutRequestStatus, string>;
+
 export type PayoutAction = "approve" | "reject" | "retry" | "refresh";
 
 // A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once. A `sending`

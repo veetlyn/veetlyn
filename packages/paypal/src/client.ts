@@ -49,6 +49,8 @@ export type PayPalRequestOptions = {
   prefer?: "return=representation" | "return=minimal";
   // Sent as is instead of JSON.stringify(body): webhook verification must echo PayPal's bytes (R1 facts §4).
   rawBody?: string;
+  // False sends once: a retry after a 5xx would hide that the first attempt's outcome is unknown.
+  retry?: boolean;
 };
 
 // The body is decoded with `schema`; a 204 has no body, so its schema must accept undefined.
@@ -84,11 +86,11 @@ function defaultSleep(ms: number): Promise<void> {
 
 // 429 and 5xx are retried with backoff and jitter (spec §6.3). Retried POSTs carry the
 // caller's PayPal-Request-Id, so PayPal applies them at most once (Fact 8).
-async function send(config: ResolvedConfig, build: () => Request): Promise<Response> {
+async function send(config: ResolvedConfig, build: () => Request, maxAttempts = config.maxAttempts): Promise<Response> {
   for (let attempt = 1; ; attempt++) {
     const response = await config.fetch(build());
     if (response.status !== 429 && response.status < 500) return response;
-    if (attempt >= config.maxAttempts) return response;
+    if (attempt >= maxAttempts) return response;
     await config.sleep(backoffDelay(config, response, attempt));
   }
 }
@@ -163,13 +165,14 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
         headers: { ...headers, authorization: `Bearer ${token}` },
         body: options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
       });
-    let response = await send(resolved, build);
+    const maxAttempts = options.retry === false ? 1 : resolved.maxAttempts;
+    let response = await send(resolved, build, maxAttempts);
     // A token can be revoked before it expires; one fresh token and one retry, then the error stands.
     if (response.status === 401) {
       await response.body?.cancel();
       await resolved.tokenCache.clear();
       token = await freshAccessToken();
-      response = await send(resolved, build);
+      response = await send(resolved, build, maxAttempts);
     }
     if (!response.ok) throw await payPalErrorFromResponse(response);
     const body: unknown = response.status === 204 ? undefined : await response.json();

@@ -83,7 +83,8 @@ export async function listUserPayoutRequests(db: DbExecutor, userId: string): Pr
   return rows.map(({ request, teamName, teamSlug }) => ({ ...request, teamName, teamSlug }));
 }
 
-// Oldest first, so a sweep with a limit eventually reaches every sent request.
+// Least recently checked first: every check rewrites the row (or touches it), so a sweep with a limit moves on to
+// the others instead of rereading the same requests while they stay pending.
 export async function listSentPayoutRequests(
   db: DbExecutor,
   input: { sentBefore: Date; limit: number },
@@ -92,8 +93,17 @@ export async function listSentPayoutRequests(
     .select()
     .from(payoutRequest)
     .where(and(eq(payoutRequest.status, "sent"), lt(payoutRequest.sentAt, input.sentBefore)))
-    .orderBy(asc(payoutRequest.sentAt), asc(payoutRequest.id))
+    .orderBy(asc(payoutRequest.updatedAt), asc(payoutRequest.id))
     .limit(input.limit);
+}
+
+// Moves a sent request to the back of the settle sweep. Only `sent` rows: on a `sending` row updated_at names the
+// current send claim.
+export async function touchSentPayoutRequest(db: DbExecutor, id: string): Promise<void> {
+  await db
+    .update(payoutRequest)
+    .set({ updatedAt: new Date() })
+    .where(and(eq(payoutRequest.id, id), eq(payoutRequest.status, "sent")));
 }
 
 // A payout PayPal may be working on with the team's current credentials.

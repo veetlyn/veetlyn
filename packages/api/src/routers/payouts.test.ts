@@ -467,6 +467,20 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`, `payout_succeeded:${id}`]);
   });
 
+  it("leaves a payout sent and flags it for review when PayPal's batch only has another payout's item", async () => {
+    const { teamId, admin, member, answers } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    await admin.payouts.approve({ ...TEAM, requestId: id });
+
+    answers.batch = () => batchAnswer("another-request", { transaction_status: "FAILED" });
+    await expect(admin.payouts.refresh({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "sent",
+      reviewReason: "PayPal's batch has no item for this payout",
+      settledAt: null,
+    });
+    expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`]);
+  });
+
   it("releases the reserved earnings when an admin rejects the request, and accepts a new one", async () => {
     const { teamId, memberId, admin, member, paypal } = await payoutTeam();
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
@@ -535,17 +549,29 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     message: "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.",
   };
 
+  function duplicateRefusal(batchId: string) {
+    return jsonResponse(400, {
+      name: "USER_BUSINESS_ERROR",
+      message: "Batch with given sender_batch_id already exists",
+      debug_id: "d400",
+      links: [{ href: `https://api-m.sandbox.paypal.com/v1/payments/payouts/${batchId}`, rel: "self", method: "GET" }],
+    });
+  }
+
   it.each([
-    { case: "the batch it created", answer: () => batchCreated("BATCH1"), batchId: "BATCH1" },
+    {
+      case: "the batch it created",
+      answer: (answers: TeamPayPalAnswers) => {
+        answers.payout = () => batchCreated("BATCH1");
+      },
+      batchId: "BATCH1",
+    },
     {
       case: "a duplicate refusal linking that batch",
-      answer: () =>
-        jsonResponse(400, {
-          name: "USER_BUSINESS_ERROR",
-          message: "Batch with given sender_batch_id already exists",
-          debug_id: "d400",
-          links: [{ href: "https://api-m.sandbox.paypal.com/v1/payments/payouts/BATCH-FIRST", rel: "self", method: "GET" }],
-        }),
+      answer: (answers: TeamPayPalAnswers, requestId: string) => {
+        answers.payout = () => duplicateRefusal("BATCH-FIRST");
+        answers.batch = () => batchAnswer(requestId, { transaction_status: "PENDING" });
+      },
       batchId: "BATCH-FIRST",
     },
   ])("keeps an unconfirmed send open and resends the same batch until PayPal answers with $case", async (row) => {
@@ -566,7 +592,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(admin.payouts.list(TEAM)).resolves.toEqual(unconfirmed);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000 });
 
-    answers.payout = row.answer;
+    row.answer(answers, id);
     await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "sent",
       paypalBatchId: row.batchId,
@@ -579,6 +605,25 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(new Set(ids.map((pair) => pair.join(" ")))).toEqual(new Set([`payout:${id}:0 ${id}-0`]));
     // Only the first attempt reads the balance: after an unknown outcome PayPal may already have paid from it.
     expect(balanceReads(paypal.requests)).toHaveLength(1);
+  });
+
+  it.each([
+    { case: "has no item for the request", batch: () => batchAnswer("another-request", { transaction_status: "SUCCESS" }) },
+    { case: "cannot be read", batch: () => jsonResponse(404, { name: "RESOURCE_NOT_FOUND", debug_id: "d404" }) },
+  ])("keeps a send unconfirmed when the batch a duplicate refusal links $case", async (row) => {
+    const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    answers.payout = () => duplicateRefusal("BATCH-X");
+    answers.batch = row.batch;
+
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(UNCERTAIN);
+
+    expect(paypal.requests.map((r) => `${r.method} ${pathOf(r)}`).at(-1)).toBe("GET /v1/payments/payouts/BATCH-X");
+    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+      expect.objectContaining({ status: "sending", uncertain: true, paypalBatchId: null }),
+    ]);
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000, paidOut: 0 });
+    expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`]);
   });
 
   it("records an attempt's answer only while its claim is current, so a takeover's batch is never released", async () => {
