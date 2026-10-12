@@ -1,9 +1,14 @@
-import { PAYOUT_REQUEST_STATUSES } from "@jendal-workspace/core";
+import { OPEN_PAYOUT_REQUEST_STATUSES, PAYOUT_REQUEST_STATUSES } from "@jendal-workspace/core";
 import { sql } from "drizzle-orm";
 import { bigint, check, index, integer, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { team } from "./organization";
+
+// The predicate of the one-open-request partial index below; the insert conflict target must name the same one.
+export const PAYOUT_REQUEST_OPEN_WHERE = sql.raw(
+  `status in (${OPEN_PAYOUT_REQUEST_STATUSES.map((status) => `'${status}'`).join(", ")})`,
+);
 
 const CURRENCIES = ["USD", "EUR"] as const;
 const minor = (name: string) => bigint(name, { mode: "number" });
@@ -90,9 +95,7 @@ export const payoutRequest = pgTable(
   (t) => [
     index("payout_request_team_status_idx").on(t.teamId, t.status),
     index("payout_request_user_team_idx").on(t.userId, t.teamId),
-    uniqueIndex("payout_request_open_idx")
-      .on(t.teamId, t.userId)
-      .where(sql`status in ('requested', 'queued', 'sending', 'sent')`),
+    uniqueIndex("payout_request_open_idx").on(t.teamId, t.userId).where(PAYOUT_REQUEST_OPEN_WHERE),
     check("payout_request_amount_positive", sql`${t.amountMinor} > 0`),
     check(
       "payout_request_status_check",

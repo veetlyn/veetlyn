@@ -119,6 +119,8 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
                     variant="outline"
                     onClick={() => {
                       setReplacing(false);
+                      setClientId("");
+                      setClientSecret("");
                       save.reset();
                     }}
                   >

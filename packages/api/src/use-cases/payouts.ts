@@ -88,6 +88,8 @@ const LOW_BALANCE = "The team's PayPal balance is too low. Add funds, then retry
 const BALANCE_UNREADABLE = "We could not read the team's PayPal balance. Try again.";
 const CREDENTIALS_REFUSED = "PayPal refused the team's payout credentials. Replace them.";
 const UNCERTAIN = "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.";
+const DESTINATION_UNQUALIFIED = "The member's PayPal account no longer qualifies for payouts.";
+const DESTINATION_CHANGED = "The member changed their PayPal account. Reject this request; they can request again.";
 const MAX_FAILURE_MESSAGE = 500;
 // A claim whose worker died before recording PayPal's answer stays `sending`; past this age a retry may take it over.
 const STALE_SEND_MS = 5 * 60_000;
@@ -106,7 +108,8 @@ function payoutRequestView(row: PayoutRequestRow): PayoutRequestView {
     currency: row.currency,
     amountMinor: row.amountMinor,
     status: row.status,
-    uncertain: row.uncertainAt !== null,
+    // A stale `sending` claim counts as unconfirmed too: its worker may have died before recording the answer.
+    uncertain: row.uncertainAt !== null || (row.status === "sending" && row.updatedAt.getTime() < Date.now() - STALE_SEND_MS),
     receiverPayerId: row.receiverPayerId,
     failureMessage: row.failureMessage,
     reviewReason: row.reviewReason,
@@ -255,6 +258,20 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string): 
   const uncertainAt = stale ? new Date(now) : request.uncertainAt;
   if (uncertainAt && uncertainAt.getTime() < now - MAX_UNCERTAIN_RETRY_MS) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This payout is too old to retry safely. Contact support." });
+  }
+  // Only a fresh send re-checks the destination: an uncertain retry may already have a batch with PayPal, so it
+  // must go on and record it.
+  if (uncertainAt === null) {
+    const destination = await getPayoutDestination(tx, request.userId);
+    const destinationHold =
+      !destination?.ageConfirmedAt
+        ? DESTINATION_UNQUALIFIED
+        : destination.paypalPayerId !== request.receiverPayerId
+          ? DESTINATION_CHANGED
+          : null;
+    if (destinationHold) {
+      return { kind: "held", request: await updatePayoutRequest(tx, request.id, { failureMessage: destinationHold }) };
+    }
   }
   const credentials = await lockTeamPayoutCredentialsForSend(tx, team.id);
   const heldBecause = !credentials ? NO_CREDENTIALS : credentialsMatchTeam(credentials, team) ? null : OTHER_ACCOUNT;
@@ -416,7 +433,7 @@ async function recordBatch(db: Database, requestId: string, batchId: string): Pr
 
 // No transaction or lock is held across PayPal's calls. Held and refused sends return the request with its
 // status and message; an unknown outcome is recorded and thrown as BAD_GATEWAY.
-export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: string): Promise<PayoutRequestRow> {
+async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: string): Promise<PayoutRequestRow> {
   const claim = await deps.db.transaction((tx) => claimSend(tx, team, requestId));
   if (claim.kind === "held") return claim.request;
   const { request } = claim;
@@ -513,10 +530,11 @@ function settlementOf(request: PayoutRequestRow, batch: PayoutBatch): Settlement
 type PayoutFee = { feeMinor: number | null; reviewReason: string | null };
 
 function payoutFee(request: PayoutRequestRow, item: PayoutItem): PayoutFee {
-  if (item.fee && item.fee.currency !== request.currency) {
+  if (!item.fee) return { feeMinor: null, reviewReason: "Payout fee missing" };
+  if (item.fee.currency !== request.currency) {
     return { feeMinor: null, reviewReason: "Payout fee in another currency" };
   }
-  const feeMinor = item.fee ? payPalValueMinor(item.fee.value) : null;
+  const feeMinor = payPalValueMinor(item.fee.value);
   return feeMinor === null ? { feeMinor: null, reviewReason: "Payout fee unreadable" } : { feeMinor, reviewReason: null };
 }
 

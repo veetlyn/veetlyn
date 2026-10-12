@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
 import { team } from "../schema/organization";
-import { payoutRequest } from "../schema/payouts";
+import { PAYOUT_REQUEST_OPEN_WHERE, payoutRequest } from "../schema/payouts";
 
 export type PayoutRequestRow = typeof payoutRequest.$inferSelect;
 export type NewPayoutRequest = Pick<
@@ -40,7 +40,7 @@ export async function insertPayoutRequest(tx: DbExecutor, values: NewPayoutReque
     .values(values)
     .onConflictDoNothing({
       target: [payoutRequest.teamId, payoutRequest.userId],
-      where: sql`status in ('requested', 'queued', 'sending', 'sent')`,
+      where: PAYOUT_REQUEST_OPEN_WHERE,
     })
     .returning();
   return row ?? null;

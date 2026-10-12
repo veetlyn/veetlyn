@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_PAYOUT_MINOR } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -34,9 +35,9 @@ function TeamEarningsCard({
     }),
   );
 
-  const value = amount ?? minorToPriceInput(earnings.availableMinor);
+  const value = amount ?? minorToPriceInput(Math.min(earnings.availableMinor, MAX_PAYOUT_MINOR));
   const inputId = `payout-amount-${earnings.teamId}-${earnings.currency}`;
-  const disabled = earnings.availableMinor === 0 || requestBlockedReason !== null;
+  const disabled = earnings.availableMinor === 0 || earnings.reservedMinor > 0 || requestBlockedReason !== null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,6 +71,9 @@ function TeamEarningsCard({
             {request.isPending ? "Requesting…" : "Request payout"}
           </Button>
         </div>
+        {earnings.reservedMinor > 0 ? (
+          <p className="text-sm text-muted-foreground">A payout is already in progress for this team.</p>
+        ) : null}
         {earnings.availableMinor > 0 && requestBlockedReason ? (
           <p className="text-sm text-muted-foreground">{requestBlockedReason}</p>
         ) : null}

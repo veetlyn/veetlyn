@@ -14,14 +14,14 @@ import { log } from "evlog";
 
 import { errorNote } from "./paypal-webhook-queue";
 
-export const PAYOUT_SETTLE_DELAY_MS = 60_000;
-export const PAYOUT_SETTLE_BATCH = 50;
+const PAYOUT_SETTLE_DELAY_MS = 60_000;
+const PAYOUT_SETTLE_BATCH = 50;
 
 type TeamApp = { teamId: string; clientId: string; clientSecret: string };
 
 // The key carries a digest of the client id and secret: verifying newly pasted credentials must fetch a token with
 // them, never reuse one the team's earlier credentials obtained.
-export async function teamTokenCacheKey(environment: TenantEnvironment, app: TeamApp): Promise<string> {
+async function teamTokenCacheKey(environment: TenantEnvironment, app: TeamApp): Promise<string> {
   const digest = await hashToken(`${app.clientId}:${app.clientSecret}`);
   return `paypal-token:${environment}:team:${app.teamId}:${digest}`;
 }

@@ -10,7 +10,7 @@ import {
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { getTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
-import { savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
+import { deletePayoutDestination, savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
 import { payoutRequest } from "@jendal-workspace/db/schema/payouts";
@@ -33,7 +33,6 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PayoutServices } from "../context";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
-import { payoutClientForTeam } from "../use-cases/payout-credentials";
 import { appRouter } from "./index";
 
 const TEST_KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
@@ -84,12 +83,10 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   const { auth } = createTestAuth(db);
 
   async function makePayouts(fetchImpl: ReturnType<typeof fakeFetch>["fetch"]) {
-    const clientsFor: { teamId: string; clientId: string; clientSecret: string }[] = [];
     const payouts: PayoutServices = {
       secretKey: await importSecretKey(TEST_KEY),
       keyId: "v1",
       clientFor(input) {
-        clientsFor.push(input);
         return createPayPalClient({
           clientId: input.clientId,
           clientSecret: input.clientSecret,
@@ -99,7 +96,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         });
       },
     };
-    return { payouts, clientsFor };
+    return { payouts };
   }
 
   const callerFor = (userId: string, payouts?: PayoutServices) =>
@@ -126,7 +123,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   it("verifies the credentials with PayPal, stores the secret sealed for the team and never returns it", async () => {
     const { userId, teamId } = await connectedTeam();
     const paypal = fakeTeamPayPal();
-    const { payouts, clientsFor } = await makePayouts(paypal.fetch);
+    const { payouts } = await makePayouts(paypal.fetch);
     const admin = callerFor(userId, payouts);
 
     const saved = await admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
@@ -146,8 +143,6 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const sealed = { ciphertext: row?.secretCiphertext ?? "", iv: row?.secretIv ?? "", keyId: row?.keyId ?? "" };
     await expect(openSecret(payouts.secretKey, sealed, teamId)).resolves.toBe(CLIENT_SECRET);
 
-    await payoutClientForTeam(db, payouts, teamId);
-    expect(clientsFor.at(-1)).toEqual({ teamId, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
     await expect(admin.servicesTeam.get({ teamSlug: "acme-studio" })).resolves.toMatchObject({
       payoutCredentialsSaved: true,
     });
@@ -445,17 +440,25 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     ]);
   });
 
-  it("posts no fee and flags the payout for review when PayPal charges the fee in another currency", async () => {
+  it.each([
+    {
+      case: "in another currency",
+      fee: { currency: "EUR", value: "0.23" },
+      reason: "Payout fee in another currency",
+    },
+    { case: "unreadable", fee: { currency: "USD", value: "abc" }, reason: "Payout fee unreadable" },
+    { case: "missing", fee: undefined, reason: "Payout fee missing" },
+  ])("posts no fee and flags the payout for review when the fee on a successful item is $case", async ({ fee, reason }) => {
     const { teamId, memberId, admin, member, answers } = await payoutTeam();
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
     await admin.payouts.approve({ ...TEAM, requestId: id });
 
     answers.batch = () =>
-      batchAnswer(id, { transaction_status: "SUCCESS", payout_item_fee: { currency: "EUR", value: "0.23" } });
+      batchAnswer(id, fee ? { transaction_status: "SUCCESS", payout_item_fee: fee } : { transaction_status: "SUCCESS" });
     await expect(admin.payouts.refresh({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "succeeded",
       feeMinor: null,
-      reviewReason: "Payout fee in another currency",
+      reviewReason: reason,
     });
     expect(await ledgerOf(teamId, memberId)).toEqual({
       available: 35_000,
@@ -638,11 +641,14 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       message: "This payout is being sent.",
     });
 
-    // Five minutes on, the first attempt looks dead and a retry takes the request over.
+    // Five minutes on, the first attempt looks dead: the request reads as unconfirmed so the admin can retry it.
     await db
       .update(payoutRequest)
       .set({ updatedAt: new Date(Date.now() - 6 * 60_000) })
       .where(eq(payoutRequest.id, id));
+    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+      expect.objectContaining({ status: "sending", uncertain: true }),
+    ]);
     const takeover = admin.payouts.retry({ ...TEAM, requestId: id });
     await vi.waitFor(() => expect(gate.held).toHaveLength(2));
 
@@ -714,6 +720,20 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       },
       message:
         "These payout credentials belong to another PayPal account than the one connected to this team. Replace them.",
+    },
+    {
+      case: "the member removed their PayPal destination after requesting",
+      unsettle: async (team: Awaited<ReturnType<typeof payoutTeam>>) => {
+        await deletePayoutDestination(db, team.memberId);
+      },
+      message: "The member's PayPal account no longer qualifies for payouts.",
+    },
+    {
+      case: "the member changed their PayPal account after requesting",
+      unsettle: async (team: Awaited<ReturnType<typeof payoutTeam>>) => {
+        await savePayoutDestination(db, team.memberId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null }, null);
+      },
+      message: "The member changed their PayPal account. Reject this request; they can request again.",
     },
   ])("keeps an approved request queued and sends nothing when $case", async ({ unsettle, message }) => {
     const team = await payoutTeam();

@@ -155,13 +155,3 @@ export async function payoutClientFromCredentials(
   );
   return payouts.clientFor({ teamId: row.teamId, clientId: row.clientId, clientSecret });
 }
-
-// Null when the team has saved no credentials.
-export async function payoutClientForTeam(
-  db: DbExecutor,
-  payouts: PayoutServices,
-  teamId: string,
-): Promise<PayPalClient | null> {
-  const row = await getTeamPayoutCredentials(db, teamId);
-  return row ? payoutClientFromCredentials(payouts, row) : null;
-}

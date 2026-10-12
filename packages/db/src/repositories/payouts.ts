@@ -26,7 +26,7 @@ const destinationColumns = {
   ageSource: payoutDestination.ageSource,
 };
 
-export async function getPayoutDestination(db: Database, userId: string): Promise<PayoutDestinationRecord | null> {
+export async function getPayoutDestination(db: DbExecutor, userId: string): Promise<PayoutDestinationRecord | null> {
   const [row] = await db
     .select(destinationColumns)
     .from(payoutDestination)
