@@ -154,6 +154,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       capturedAt: null,
       paypalFeeMinor: null,
       platformFeeMinor: null,
+      reviewReason: null,
       ...overrides,
     };
   }

@@ -1,6 +1,7 @@
 import { orderIdFromCustomId } from "@jendal-workspace/core";
 import { findOrderByCaptureId, findOrderById, type OrderRow } from "@jendal-workspace/db/repositories/orders";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
+import type { PaymentRow } from "@jendal-workspace/db/repositories/projects";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { payment } from "@jendal-workspace/db/schema/projects";
 import { captureFromOrder, PayPalError, type PayPalOrder } from "@jendal-workspace/paypal";
@@ -8,14 +9,8 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
 import type { EmailServices } from "../context";
-import {
-  applyOrderCaptureFact,
-  applyOrderRefund,
-  captureOrderFromWebhook,
-  isRefundedCaptureStatus,
-  orderCaptureFact,
-  recordOrderFees,
-} from "./orders";
+import { applyOrderCaptureFact, applyOrderRefund, captureOrderFromWebhook, orderCaptureFact, recordOrderFees } from "./orders";
+import { applyPaymentRefunds } from "./payment-refunds";
 import {
   applyCaptureFact,
   CaptureFactConflict,
@@ -24,6 +19,7 @@ import {
   type PaymentDeps,
   recordCaptureFees,
 } from "./payments";
+import { isRefundedCaptureStatus } from "./paypal-amounts";
 
 export type WebhookOutcome = { status: "processed" | "ignored" | "parked"; note: string };
 export type WebhookDeps = PaymentDeps & { email?: EmailServices };
@@ -34,8 +30,7 @@ const CAPTURE_EVENTS = new Set([
   "PAYMENT.CAPTURE.DECLINED",
   "PAYMENT.CAPTURE.DENIED",
 ]);
-const PARKED_EVENTS = new Set(["PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"]);
-const REFUND_NOTE = "refunds and reversals need a person";
+const REFUND_EVENTS = new Set(["PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"]);
 const NOT_OURS: WebhookOutcome = { status: "ignored", note: "not a Payleor payment" };
 // Refusals the pay page shows the client; the webhook has nothing left to do after them.
 const CLIENT_REFUSALS = new Set(["CONFLICT", "BAD_REQUEST", "UNPROCESSABLE_CONTENT"]);
@@ -89,7 +84,7 @@ async function teamMerchant(deps: PaymentDeps, teamId: string, event: PayPalWebh
 // look at; the PayPal order is re-fetched and its current state applied through the same idempotent steps as
 // the browser. Store orders carry an "order:" custom id; refunds carry neither id and are found by capture id.
 export async function processPayPalWebhookEvent(deps: WebhookDeps, event: PayPalWebhookEventRow): Promise<WebhookOutcome> {
-  const isRefund = PARKED_EVENTS.has(event.eventType);
+  const isRefund = REFUND_EVENTS.has(event.eventType);
   if (!CAPTURE_EVENTS.has(event.eventType) && event.eventType !== "CHECKOUT.ORDER.APPROVED" && !isRefund) {
     return { status: "ignored", note: "event type not handled" };
   }
@@ -101,12 +96,8 @@ export async function processPayPalWebhookEvent(deps: WebhookDeps, event: PayPal
   if (isRefund && event.captureId) {
     const order = await findOrderByCaptureId(deps.db, event.captureId);
     if (order) return processOrderEvent(deps, order, event);
-    const [refunded] = await deps.db
-      .select({ id: payment.id })
-      .from(payment)
-      .where(eq(payment.paypalCaptureId, event.captureId))
-      .limit(1);
-    if (refunded) return { status: "parked", note: REFUND_NOTE };
+    const [refunded] = await deps.db.select().from(payment).where(eq(payment.paypalCaptureId, event.captureId)).limit(1);
+    if (refunded) return processPaymentEvent(deps, event, refunded);
   }
   return processPaymentEvent(deps, event);
 }
@@ -132,7 +123,7 @@ async function processOrderEvent(deps: WebhookDeps, order: OrderRow, event: PayP
       }
     }
     const paypalOrder = await deps.paypal.client.orders.get({ orderId: paypalOrderId, merchantId });
-    if (PARKED_EVENTS.has(event.eventType)) return await refundOutcome(deps, order, paypalOrder, event);
+    if (REFUND_EVENTS.has(event.eventType)) return await refundOutcome(deps, order, paypalOrder, event);
     const capture = captureFromOrder(paypalOrder);
     // PayPal sent a capture event, so its order lookup is lagging; the queue retries.
     if (!capture) throw new Error(`Order ${paypalOrderId} has no capture yet`);
@@ -149,21 +140,28 @@ async function processOrderEvent(deps: WebhookDeps, order: OrderRow, event: PayP
   }
 }
 
+function expectedRefundId(event: PayPalWebhookEventRow): string | null {
+  return event.eventType === "PAYMENT.CAPTURE.REFUNDED" && event.resourceType === "refund" ? event.resourceId : null;
+}
+
 async function refundOutcome(
   deps: WebhookDeps,
   order: OrderRow,
   paypalOrder: PayPalOrder,
   event: PayPalWebhookEventRow,
 ): Promise<WebhookOutcome> {
-  const expectedRefundId =
-    event.eventType === "PAYMENT.CAPTURE.REFUNDED" && event.resourceType === "refund" ? event.resourceId : null;
-  return { status: "processed", note: await applyOrderRefund(deps, order.id, paypalOrder, { expectedRefundId }) };
+  const note = await applyOrderRefund(deps, order.id, paypalOrder, { expectedRefundId: expectedRefundId(event) });
+  return { status: "processed", note };
 }
 
-async function processPaymentEvent(deps: PaymentDeps, event: PayPalWebhookEventRow): Promise<WebhookOutcome> {
-  const row = await findPayment(deps, event);
+// found: the payment a refund event named by its capture id.
+async function processPaymentEvent(
+  deps: PaymentDeps,
+  event: PayPalWebhookEventRow,
+  found?: PaymentRow,
+): Promise<WebhookOutcome> {
+  const row = found ?? (await findPayment(deps, event));
   if (!row) return NOT_OURS;
-  if (PARKED_EVENTS.has(event.eventType)) return { status: "parked", note: REFUND_NOTE };
 
   const merchant = await teamMerchant(deps, row.teamId, event);
   if (!merchant.found) return merchant.outcome;
@@ -187,11 +185,12 @@ async function processPaymentEvent(deps: PaymentDeps, event: PayPalWebhookEventR
     }
     const order = await deps.paypal.client.orders.get({ orderId, merchantId });
     const capture = captureFromOrder(order);
+    if (REFUND_EVENTS.has(event.eventType) || (capture && isRefundedCaptureStatus(capture.status))) {
+      const note = await applyPaymentRefunds(deps, row.id, order, { expectedRefundId: expectedRefundId(event) });
+      return { status: "processed", note };
+    }
     // PayPal sent a capture event, so its order lookup is lagging; the queue retries.
     if (!capture) throw new Error(`Order ${orderId} has no capture yet`);
-    if (capture.status === "REFUNDED" || capture.status === "PARTIALLY_REFUNDED") {
-      return { status: "parked", note: REFUND_NOTE };
-    }
     const fact = captureFact(row.id, orderId, capture);
     const result = await applyCaptureFact(deps.db, fact);
     // applyCaptureFact only logs a fee failure; here it throws, so the queue retries it and then marks it failed.

@@ -613,6 +613,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         capturedAt: null,
         paypalFeeMinor: null,
         platformFeeMinor: null,
+        reviewReason: null,
       });
       if (result !== "applied") throw new Error(`deposit capture was ${result}`);
       return { userId, organizationId, freelancer, projectId, token, teamId };

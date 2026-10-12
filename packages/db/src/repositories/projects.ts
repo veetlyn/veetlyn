@@ -1,7 +1,14 @@
-import { type CaptureReviewReason, OPEN_PROJECT_STATUSES, type ProjectPaid } from "@jendal-workspace/core";
+import {
+  type CaptureReviewReason,
+  ledgerAccounts,
+  OPEN_PROJECT_STATUSES,
+  paidAfterRefunds,
+  type ProjectPaid,
+} from "@jendal-workspace/core";
 import { and, asc, count, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
+import { ledgerEntry, ledgerTransfer } from "../schema/ledger";
 import { amendment, delivery, payment, project, quote, quoteItem } from "../schema/projects";
 
 export type ProjectRow = typeof project.$inferSelect;
@@ -134,7 +141,9 @@ export async function setPaymentReviewReason(
 
 export type ProjectFactsRow = ProjectPaid & { pendingAmendment: boolean; unpaidTopUp: boolean };
 
-// What the state machine guards and the money math need, read inside the transaction (§6.1).
+// What the state machine guards and the money math need, read inside the transaction (§6.1). Paid totals count
+// every captured payment, refunded or not, less the refunds posted as payment_refunded; overpayment refunds are
+// not subtracted, since completion already counted them through refund_requested.
 export async function getProjectFacts(tx: DbExecutor, projectId: string): Promise<ProjectFactsRow> {
   const [paid] = await tx
     .select({
@@ -142,7 +151,22 @@ export async function getProjectFacts(tx: DbExecutor, projectId: string): Promis
       paidManagementFeeMinor: sql<number>`coalesce(sum(${payment.managementFeeMinor}), 0)`.mapWith(Number),
     })
     .from(payment)
-    .where(and(eq(payment.projectId, projectId), eq(payment.status, "captured")));
+    .where(and(eq(payment.projectId, projectId), inArray(payment.status, ["captured", "refunded"])));
+  const clientHeld = ledgerAccounts.clientHeld(projectId);
+  const [refunded] = await tx
+    .select({
+      fromClientHeldMinor:
+        sql<number>`coalesce(-sum(${ledgerEntry.amountMinor}) filter (where ${ledgerEntry.account} = ${clientHeld}), 0)`.mapWith(
+          Number,
+        ),
+      fromTeamRevenueMinor:
+        sql<number>`coalesce(-sum(${ledgerEntry.amountMinor}) filter (where ${ledgerEntry.account} = ${ledgerAccounts.teamRevenue}), 0)`.mapWith(
+          Number,
+        ),
+    })
+    .from(ledgerEntry)
+    .innerJoin(ledgerTransfer, eq(ledgerTransfer.id, ledgerEntry.transferId))
+    .where(and(eq(ledgerTransfer.projectId, projectId), eq(ledgerTransfer.kind, "payment_refunded")));
   const [credit] = await tx
     .select({
       managementFeeCreditedMinor: sql<number>`coalesce(sum(${amendment.managementFeeCreditMinor}), 0)`.mapWith(Number),
@@ -163,9 +187,13 @@ export async function getProjectFacts(tx: DbExecutor, projectId: string): Promis
     )
     .limit(1);
   return {
-    paidQuoteMinor: paid?.paidQuoteMinor ?? 0,
-    paidManagementFeeMinor: paid?.paidManagementFeeMinor ?? 0,
-    managementFeeCreditedMinor: credit?.managementFeeCreditedMinor ?? 0,
+    ...paidAfterRefunds({
+      paidQuoteMinor: paid?.paidQuoteMinor ?? 0,
+      paidManagementFeeMinor: paid?.paidManagementFeeMinor ?? 0,
+      managementFeeCreditedMinor: credit?.managementFeeCreditedMinor ?? 0,
+      refundedFromClientHeldMinor: refunded?.fromClientHeldMinor ?? 0,
+      refundedFromTeamRevenueMinor: refunded?.fromTeamRevenueMinor ?? 0,
+    }),
     pendingAmendment: pendingAmendment !== undefined,
     unpaidTopUp: unpaidTopUp !== undefined,
   };

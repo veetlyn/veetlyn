@@ -9,8 +9,6 @@ import {
   grantState,
   type GrantState,
   hashToken,
-  LedgerError,
-  type LedgerTransferDraft,
   maskEmail,
   newToken,
   orderCustomId,
@@ -54,19 +52,16 @@ import { orderDownloadEmail } from "@jendal-workspace/email";
 import {
   captureFromOrder,
   type PayPalCapture,
-  type PayPalCaptureBreakdown,
   PayPalError,
-  type PayPalMoney,
   type PayPalOrder,
-  type PayPalRefundBreakdown,
   refundsFromOrder,
 } from "@jendal-workspace/paypal";
-import { captureSchema, parsedItems } from "@jendal-workspace/paypal/schemas";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { EmailServices, PayPalServices } from "../context";
+import { captureFees, capturesIn, isRefundedCaptureStatus, postOnce, returnedFees } from "./paypal-amounts";
 import { CaptureFactConflict, databaseErrorFields, unconfirmedCapture } from "./payments";
 
 export type OrderDeps = { db: Database; paypal: PayPalServices; email?: EmailServices };
@@ -200,30 +195,6 @@ export async function startCheckout(
   });
   await setOrderPayPalOrder(deps.db, order.id, { paypalOrderId: paypalOrder.id, platformFeeMinor: fee });
   return { orderId: paypalOrder.id, secret };
-}
-
-function minorIn(currency: string | null, money: PayPalMoney | undefined): number | null {
-  return money && money.currency_code === currency ? parseMajorAmount(money.value) : null;
-}
-
-const ZERO_AMOUNT = /^0+(?:\.0{1,2})?$/;
-
-// parseMajorAmount refuses zero, but PayPal reports a fee it did not return as "0.00".
-function feeMinorIn(currency: string, fee: PayPalMoney): number | null {
-  if (fee.currency_code !== currency) return null;
-  return ZERO_AMOUNT.test(fee.value.trim()) ? 0 : parseMajorAmount(fee.value);
-}
-
-// A fee in another currency (a converted receivable) posts no fees at all, since posting the others alone would
-// misstate the team's balance; the order is flagged for review instead.
-function captureFees(
-  currency: string | null,
-  breakdown: PayPalCaptureBreakdown,
-): Pick<OrderCaptureFact, "paypalFeeMinor" | "platformFeeMinor"> {
-  const platformFee = breakdown.platform_fees[0]?.amount;
-  const platformFeeMinor = platformFee ? (currency ? feeMinorIn(currency, platformFee) : null) : 0;
-  if (platformFeeMinor === null) return { paypalFeeMinor: null, platformFeeMinor: null };
-  return { paypalFeeMinor: minorIn(currency, breakdown.paypal_fee), platformFeeMinor };
 }
 
 export function orderCaptureFact(orderId: string, paypalOrderId: string, capture: PayPalCapture): OrderCaptureFact {
@@ -490,12 +461,6 @@ async function issueBrowserGrant(db: Database, orderId: string): Promise<Checkou
   return { outcome: "captured", orderPath: `/orders/${token}` };
 }
 
-const REFUNDED_CAPTURE_STATUSES = new Set(["REFUNDED", "PARTIALLY_REFUNDED", "REVERSED"]);
-
-export function isRefundedCaptureStatus(status: string): boolean {
-  return REFUNDED_CAPTURE_STATUSES.has(status);
-}
-
 // Captures the order's PayPal order and applies the result; shared by the browser's call and the webhook.
 async function captureAndApply(
   deps: OrderDeps,
@@ -553,39 +518,6 @@ export async function captureOrderFromWebhook(
 }
 
 export type OrderRefundResult = "refunded" | "already refunded" | "not paid";
-
-// Captures that cannot be read are skipped, as captureFromOrder does.
-function capturesIn(paypalOrder: PayPalOrder): PayPalCapture[] {
-  return parsedItems(captureSchema, paypalOrder.purchase_units?.[0]?.payments?.captures ?? []);
-}
-
-async function postOnce(db: Database, teamId: string, transfer: LedgerTransferDraft): Promise<void> {
-  try {
-    await db.transaction((tx) => createPostgresLedger(teamId, tx).post([transfer]));
-  } catch (error) {
-    if (error instanceof LedgerError && error.code === "duplicate_reference") return;
-    throw error;
-  }
-}
-
-// Null unless every returned fee is readable and in the order's currency: posting part of them would misstate
-// the team's balance.
-function returnedFees(
-  currency: string,
-  breakdown: PayPalRefundBreakdown | undefined,
-): { paypalFeeMinor: number; platformFeeMinor: number } | null {
-  if (!breakdown) return null;
-  // An absent paypal_fee means PayPal returned none of its fee.
-  const paypalFeeMinor = breakdown.paypal_fee ? feeMinorIn(currency, breakdown.paypal_fee) : 0;
-  if (paypalFeeMinor === null) return null;
-  let platformFeeMinor = 0;
-  for (const fee of breakdown.platform_fees) {
-    const minor = feeMinorIn(currency, fee.amount);
-    if (minor === null) return null;
-    platformFeeMinor += minor;
-  }
-  return { paypalFeeMinor, platformFeeMinor };
-}
 
 type MarkedRefund = { result: OrderRefundResult; order: OrderRow; capture: PayPalCapture | null };
 

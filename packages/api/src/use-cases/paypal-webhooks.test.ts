@@ -3,7 +3,15 @@ import { ledgerAccounts, createFakeFileStore, hashToken, orderFeesTransfer, type
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
-import { findProjectById } from "@jendal-workspace/db/repositories/projects";
+import {
+  createProjectRefund,
+  findProjectRefundForProject,
+  listRefundParts,
+  setProjectRefundStatus,
+  setRefundPartPayPalRefund,
+  upsertRefundPart,
+} from "@jendal-workspace/db/repositories/project-refunds";
+import { findProjectById, listProjectQuotes } from "@jendal-workspace/db/repositories/projects";
 import { ledgerBalance, ledgerEntry, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
 import { downloadGrant, orders } from "@jendal-workspace/db/schema/orders";
 import { team } from "@jendal-workspace/db/schema/organization";
@@ -29,6 +37,7 @@ import { appRouter } from "../routers/index";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
 import { captureCheckout, issueGrant, verifyCheckout } from "./orders";
+import { applyCaptureFact } from "./payments";
 import { processPayPalWebhookEvent } from "./paypal-webhooks";
 
 const SECRET = TEST_AUTH_CONFIG.BETTER_AUTH_SECRET;
@@ -154,7 +163,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       quoteId,
     });
     await markTeamPayPalMerchant(db, { teamId, merchantId: "SELLER1" });
-    return { projectId, paymentId, token: await signPayLink(SECRET, paymentId) };
+    return { userId, teamId, freelancer, projectId, paymentId, token: await signPayLink(SECRET, paymentId) };
   }
 
   // A connected deposit whose client has approved ORDER1 but whose browser never reported back.
@@ -335,24 +344,259 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     expect((await paymentRow(paymentId))?.status).toBe("pending");
   });
 
-  it("parks refunds and reversals, found by their capture id", async () => {
-    const { paymentId, deps } = await startedDeposit({ lookup: completedLookup });
-    await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }));
+  it("flags a services payment paid in converted funds for review", async () => {
+    const capture = {
+      ...FEE_BREAKDOWN,
+      seller_receivable_breakdown: {
+        ...FEE_BREAKDOWN.seller_receivable_breakdown,
+        receivable_amount: { currency_code: "EUR", value: "527.00" },
+      },
+    };
+    const { paymentId, deps } = await startedDeposit({
+      lookup: () => jsonResponse(200, capturedOrder("COMPLETED", "600.00", capture)),
+    });
 
-    for (const eventType of ["PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"]) {
+    expect(await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }))).toEqual({
+      status: "processed",
+      note: "applied",
+    });
+    expect(await paymentRow(paymentId)).toMatchObject({ reviewReason: "converted_receivable", paypalFeeMinor: 2_370 });
+  });
+
+  describe("refunds and reversals of services payments", () => {
+    type ShownRefund = { id: string; value: string; breakdown?: JsonObject };
+
+    // CAPTURE1 as PayPal's order shows it after the refunds.
+    function refundedDepositOrder(captureStatus: string, refunds: ShownRefund[]) {
+      return {
+        id: "ORDER1",
+        status: "COMPLETED",
+        purchase_units: [
+          {
+            payments: {
+              captures: [
+                { id: "CAPTURE1", status: captureStatus, amount: { currency_code: "USD", value: "600.00" }, ...FEE_BREAKDOWN },
+              ],
+              refunds: refunds.map((refund) => ({
+                id: refund.id,
+                status: "COMPLETED",
+                amount: { currency_code: "USD", value: refund.value },
+                seller_payable_breakdown: refund.breakdown ?? null,
+              })),
+            },
+          },
+        ],
+      };
+    }
+
+    // The $600 deposit captured through the webhook; showRefunds changes what PayPal's order lookup answers.
+    async function capturedDeposit() {
+      let lookup: JsonObject = capturedOrder("COMPLETED", "600.00", FEE_BREAKDOWN);
+      const seeded = await startedDeposit({ lookup: () => jsonResponse(200, lookup) });
+      await processPayPalWebhookEvent(seeded.deps, storedEvent({ customId: seeded.paymentId }));
+      const showRefunds = (captureStatus: string, refunds: ShownRefund[]) => {
+        lookup = refundedDepositOrder(captureStatus, refunds);
+      };
+      return { ...seeded, showRefunds };
+    }
+
+    function refundEvent(refundId: string) {
+      return storedEvent({
+        id: `WH-${refundId}`,
+        eventType: "PAYMENT.CAPTURE.REFUNDED",
+        resourceType: "refund",
+        resourceId: refundId,
+        customId: null,
+        orderId: null,
+        captureId: "CAPTURE1",
+      });
+    }
+
+    const reversalEvent = storedEvent({
+      id: "WH-REVERSAL",
+      eventType: "PAYMENT.CAPTURE.REVERSED",
+      resourceType: "capture",
+      resourceId: "CAPTURE1",
+      customId: null,
+      orderId: null,
+      captureId: "CAPTURE1",
+    });
+
+    async function postingsOf(kind: "payment_refunded" | "refund_fees" | "refund_confirmed") {
+      return db
+        .select({ reference: ledgerTransfer.reference, account: ledgerEntry.account, amountMinor: ledgerEntry.amountMinor })
+        .from(ledgerTransfer)
+        .innerJoin(ledgerEntry, eq(ledgerEntry.transferId, ledgerTransfer.id))
+        .where(eq(ledgerTransfer.kind, kind))
+        .orderBy(ledgerTransfer.reference, ledgerEntry.account);
+    }
+
+    async function balanceOf(account: string) {
+      const [row] = await db.select().from(ledgerBalance).where(eq(ledgerBalance.account, account));
+      return row?.balanceMinor ?? 0;
+    }
+
+    async function acceptDelivery(projectId: string, freelancer: string) {
+      const { deliveryId } = await callerFor(freelancer).project.deliver({ teamSlug: "team", projectId, note: "Here it is" });
+      return callerFor(null).project.clientAcceptDelivery({ token: await signClientLink(SECRET, projectId), deliveryId });
+    }
+
+    // The balance is paid on another PayPal order, applied as the pay page would.
+    async function captureBalance(balancePaymentId: string, amountMinor: number) {
+      await db.update(payment).set({ paypalOrderId: "ORDER2" }).where(eq(payment.id, balancePaymentId));
+      const result = await applyCaptureFact(db, {
+        paymentId: balancePaymentId,
+        orderId: "ORDER2",
+        captureId: "CAPTURE2",
+        status: "COMPLETED",
+        amountMinor,
+        currency: "USD",
+        capturedAt: null,
+        paypalFeeMinor: null,
+        platformFeeMinor: null,
+        reviewReason: null,
+      });
+      expect(result).toBe("applied");
+    }
+
+    const REFUND_BREAKDOWN = {
+      paypal_fee: { currency_code: "USD", value: "3.95" },
+      platform_fees: [{ amount: { currency_code: "USD", value: "1.00" } }],
+      net_amount: { currency_code: "USD", value: "95.05" },
+    };
+
+    it("posts a refund on an open project from client_held with its returned fees, once, and the balance asks for it again", async () => {
+      const { projectId, paymentId, freelancer, deps, showRefunds } = await capturedDeposit();
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "100.00", breakdown: REFUND_BREAKDOWN }]);
+      const clientHeld = ledgerAccounts.clientHeld(projectId);
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent("R1"))).toEqual({ status: "processed", note: "refunded" });
+      const refunded = [
+        { reference: "payment_refunded:refund:R1", account: clientHeld, amountMinor: -10_000 },
+        { reference: "payment_refunded:refund:R1", account: ledgerAccounts.paypalClearing, amountMinor: 10_000 },
+      ];
+      const fees = [
+        { reference: "refund_fees:R1", account: ledgerAccounts.payleorFees, amountMinor: -100 },
+        { reference: "refund_fees:R1", account: ledgerAccounts.paypalFees, amountMinor: -395 },
+        { reference: "refund_fees:R1", account: ledgerAccounts.teamRevenue, amountMinor: 495 },
+      ];
+      expect(await postingsOf("payment_refunded")).toEqual(refunded);
+      expect(await postingsOf("refund_fees")).toEqual(fees);
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "captured", refundedMinor: 10_000 });
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent("R1"))).toEqual({ status: "processed", note: "refunded" });
+      expect(await postingsOf("payment_refunded")).toEqual(refunded);
+      expect(await postingsOf("refund_fees")).toEqual(fees);
+      expect((await paymentRow(paymentId))?.refundedMinor).toBe(10_000);
+
+      // The client got $100 of the deposit back, so the balance is $600, not $500, and completion empties client_held.
+      const { balancePaymentId } = await acceptDelivery(projectId, freelancer);
+      if (!balancePaymentId) throw new Error("no balance payment");
+      expect((await paymentRow(balancePaymentId))?.amountMinor).toBe(60_000);
+      await captureBalance(balancePaymentId, 60_000);
+      expect((await findProjectById(db, projectId))?.status).toBe("completed");
+      expect(await balanceOf(clientHeld)).toBe(0);
+    });
+
+    it("takes a refund on a completed project from team_revenue", async () => {
+      const { projectId, freelancer, deps, showRefunds } = await capturedDeposit();
+      const { balancePaymentId } = await acceptDelivery(projectId, freelancer);
+      if (!balancePaymentId) throw new Error("no balance payment");
+      await captureBalance(balancePaymentId, 50_000);
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "100.00" }]);
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent("R1"))).toEqual({ status: "processed", note: "refunded" });
+      expect(await postingsOf("payment_refunded")).toEqual([
+        { reference: "payment_refunded:refund:R1", account: ledgerAccounts.paypalClearing, amountMinor: 10_000 },
+        { reference: "payment_refunded:refund:R1", account: ledgerAccounts.teamRevenue, amountMinor: -10_000 },
+      ]);
+      // No breakdown on the refund: no returned fees are guessed.
+      expect(await postingsOf("refund_fees")).toEqual([]);
+    });
+
+    it("posts a reversal after a partial refund for what the refund left, once, whichever event reports it", async () => {
+      const { projectId, paymentId, deps, showRefunds } = await capturedDeposit();
+      const clientHeld = ledgerAccounts.clientHeld(projectId);
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "100.00" }]);
+      await processPayPalWebhookEvent(deps, refundEvent("R1"));
+      showRefunds("REVERSED", [{ id: "R1", value: "100.00" }]);
+
+      expect(await processPayPalWebhookEvent(deps, reversalEvent)).toEqual({ status: "processed", note: "refunded" });
+      // client_held had $400 left after the refund; the rest of the $500 comes from team_revenue.
+      const postings = [
+        { reference: "payment_refunded:refund:R1", account: clientHeld, amountMinor: -10_000 },
+        { reference: "payment_refunded:refund:R1", account: ledgerAccounts.paypalClearing, amountMinor: 10_000 },
+        { reference: "payment_refunded:reversal:CAPTURE1", account: clientHeld, amountMinor: -40_000 },
+        { reference: "payment_refunded:reversal:CAPTURE1", account: ledgerAccounts.paypalClearing, amountMinor: 50_000 },
+        { reference: "payment_refunded:reversal:CAPTURE1", account: ledgerAccounts.teamRevenue, amountMinor: -10_000 },
+      ];
+      expect(await postingsOf("payment_refunded")).toEqual(postings);
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "refunded", refundedMinor: 60_000 });
+
+      // A late capture event now finds the capture REVERSED.
+      expect(await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }))).toEqual({
+        status: "processed",
+        note: "refunded",
+      });
+      expect(await processPayPalWebhookEvent(deps, reversalEvent)).toEqual({ status: "processed", note: "refunded" });
+      expect(await postingsOf("payment_refunded")).toEqual(postings);
+    });
+
+    it("confirms an overpayment refund Payleor issued, completing its part and the project refund", async () => {
+      const { userId, teamId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit();
+      // Build ($600) removed: the $400 final price and $40 fee leave $160 of the $600 deposit to refund.
+      const [current] = await listProjectQuotes(db, projectId);
+      const build = current?.items.find((item) => item.description === "Build");
+      if (!build) throw new Error("missing item");
+      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+        teamSlug: "team",
+        projectId,
+        add: [],
+        removeItemIds: [build.id],
+      });
+      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
+      expect(await acceptDelivery(projectId, freelancer)).toMatchObject({ status: "completed" });
+      expect(await balanceOf(ledgerAccounts.clientRefunds)).toBe(16_000);
+
+      const refundId = `completion-${projectId}`;
+      await createProjectRefund(db, { id: refundId, teamId, projectId, currency: "USD", amountMinor: 16_000 });
+      await setProjectRefundStatus(db, refundId, "issuing");
+      const part = await upsertRefundPart(db, { projectRefundId: refundId, paymentId, captureId: "CAPTURE1", amountMinor: 16_000 });
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "160.00", breakdown: REFUND_BREAKDOWN }]);
+
+      // PayPal's webhook can arrive before the admin's call stored the refund id: it waits for it.
+      await expect(processPayPalWebhookEvent(deps, refundEvent("R1"))).rejects.toThrow(/still being issued/);
+      expect(await postingsOf("payment_refunded")).toEqual([]);
+
+      await setRefundPartPayPalRefund(db, part.id, { paypalRefundId: "R1", status: "pending" });
+      expect(await processPayPalWebhookEvent(deps, refundEvent("R1"))).toEqual({ status: "processed", note: "refunded" });
+      expect(await processPayPalWebhookEvent(deps, refundEvent("R1"))).toEqual({ status: "processed", note: "refunded" });
+
+      expect(await postingsOf("refund_confirmed")).toEqual([
+        { reference: "refund_confirmed:R1", account: ledgerAccounts.clientRefunds, amountMinor: -16_000 },
+        { reference: "refund_confirmed:R1", account: ledgerAccounts.paypalClearing, amountMinor: 16_000 },
+      ]);
+      expect(await postingsOf("refund_fees")).toHaveLength(3);
+      expect(await postingsOf("payment_refunded")).toEqual([]);
+      expect(await balanceOf(ledgerAccounts.clientRefunds)).toBe(0);
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "captured", refundedMinor: 16_000 });
+      expect(await listRefundParts(db, refundId)).toEqual([expect.objectContaining({ status: "completed" })]);
+      expect(await findProjectRefundForProject(db, projectId)).toMatchObject({
+        status: "completed",
+        completedAt: expect.any(Date),
+      });
+    });
+
+    it("ignores a refund whose capture is not a Payleor payment", async () => {
+      const { deps } = await capturedDeposit();
+
       expect(
         await processPayPalWebhookEvent(
           deps,
-          storedEvent({ eventType, resourceId: "REFUND1", customId: null, orderId: null, captureId: "CAPTURE1" }),
+          storedEvent({ eventType: "PAYMENT.CAPTURE.REFUNDED", customId: null, orderId: null, captureId: "OTHER" }),
         ),
-      ).toEqual({ status: "parked", note: "refunds and reversals need a person" });
-    }
-    expect(
-      await processPayPalWebhookEvent(
-        deps,
-        storedEvent({ eventType: "PAYMENT.CAPTURE.REFUNDED", customId: null, orderId: null, captureId: "OTHER" }),
-      ),
-    ).toEqual({ status: "ignored", note: "not a Payleor payment" });
+      ).toEqual({ status: "ignored", note: "not a Payleor payment" });
+    });
   });
 
   it("parks a capture that does not match the payment", async () => {
