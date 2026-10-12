@@ -282,7 +282,6 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       settings: { ...defaultServicesTeamSettings(studio.id), settingsSavedAt: null },
       offeringCount: 0,
       productCount: 0,
-      payoutCredentialsSaved: false,
     });
     await expect(callerFor(outsider.userId).servicesTeam.get({ teamSlug: "acme-studio" })).rejects.toMatchObject({
       code: "NOT_FOUND",

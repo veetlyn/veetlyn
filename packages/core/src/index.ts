@@ -42,7 +42,6 @@ export * from "./projects/refunds";
 export * from "./projects/events";
 export * from "./payouts/destination";
 export * from "./payouts/requests";
-export * from "./crypto/secret-box";
 export * from "./files/rules";
 export * from "./files/store";
 export * from "./files/testing";

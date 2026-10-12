@@ -292,8 +292,7 @@ describe("revoked token", () => {
 });
 
 describe("error mapping", () => {
-  it("carries status, debug id, name, details and links", async () => {
-    const link = { href: "https://api-m.sandbox.paypal.com/v1/payments/payouts/BATCH1", rel: "self", method: "GET" };
+  it("carries status, debug id, name and details", async () => {
     const { fetch } = fakeFetch((request) =>
       request.url.endsWith("/v1/oauth2/token")
         ? jsonResponse(200, FAKE_TOKEN_RESPONSE)
@@ -302,7 +301,6 @@ describe("error mapping", () => {
             message: "Request is not well-formed.",
             debug_id: "abc123",
             details: [{ field: "/tracking_id", value: "", issue: "INVALID_STRING_LENGTH", description: "Too short." }],
-            links: [link, { rel: "no-href" }],
           }),
     );
 
@@ -317,7 +315,6 @@ describe("error mapping", () => {
       message: "Request is not well-formed.",
       debugId: "abc123",
       details: [{ field: "/tracking_id", value: "", issue: "INVALID_STRING_LENGTH", description: "Too short." }],
-      links: [link],
     });
   });
 

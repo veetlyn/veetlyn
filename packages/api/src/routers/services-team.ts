@@ -10,7 +10,6 @@ import {
 } from "@jendal-workspace/core";
 import { countDigitalProducts } from "@jendal-workspace/db/repositories/catalog";
 import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
-import { hasTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import {
   addServicesTeamMember,
   applySoloTeamDefaults,
@@ -101,13 +100,12 @@ export const servicesTeamRouter = router({
     }),
 
   get: servicesTeamProcedure.query(async ({ ctx }) => {
-    const [settings, offeringCount, productCount, payoutCredentialsSaved] = await Promise.all([
+    const [settings, offeringCount, productCount] = await Promise.all([
       getServicesTeamSettings(ctx.db, ctx.servicesTeam.id),
       // All offerings count: a draft service still counts as "added" to the checklist.
       countServicesOfferings(ctx.db, ctx.servicesTeam.id),
       // All digital products count, drafts included (same rule as offerings).
       countDigitalProducts(ctx.db, ctx.servicesTeam.id),
-      hasTeamPayoutCredentials(ctx.db, ctx.servicesTeam.id),
     ]);
     return {
       team: ctx.servicesTeam,
@@ -115,7 +113,6 @@ export const servicesTeamRouter = router({
       settings: settings ? { ...settings, settingsSavedAt: isoOrNull(settings.settingsSavedAt) } : null,
       offeringCount,
       productCount,
-      payoutCredentialsSaved,
     };
   }),
 

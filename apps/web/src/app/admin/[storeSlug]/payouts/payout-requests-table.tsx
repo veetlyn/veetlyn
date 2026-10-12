@@ -4,38 +4,29 @@ import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 
-import type { AppRouter } from "@jendal-workspace/api/routers/index";
-import type { inferRouterOutputs } from "@trpc/server";
-
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
-import { payoutActions, payoutStatusLabel } from "@/lib/payouts";
+import { ADMIN_STATUS_LABELS } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
-import { ConfirmDialog } from "./confirm-dialog";
+import { MarkPaidDialog, type TeamPayoutRequest } from "./mark-paid-dialog";
 
-type TeamPayoutRequest = inferRouterOutputs<AppRouter>["payouts"]["list"][number];
-
-function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayoutRequest }) {
+function RequestRow({
+  teamSlug,
+  request,
+  sendMoneyUrl,
+}: {
+  teamSlug: string;
+  request: TeamPayoutRequest;
+  sendMoneyUrl: string;
+}) {
   const queryClient = useQueryClient();
-  const approveDialogRef = useRef<HTMLDialogElement>(null);
-  // onSettled: a failed send still changes the request (held, or left unconfirmed), so the row must reload either way.
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: trpc.payouts.list.queryKey({ teamSlug }) });
-  const approve = useMutation(trpc.payouts.approve.mutationOptions({ onSettled: invalidate }));
-  const reject = useMutation(trpc.payouts.reject.mutationOptions({ onSettled: invalidate }));
-  const retry = useMutation(trpc.payouts.retry.mutationOptions({ onSettled: invalidate }));
-  const refresh = useMutation(trpc.payouts.refresh.mutationOptions({ onSettled: invalidate }));
-
-  const mutations = [approve, reject, retry, refresh];
-  const pending = mutations.some((mutation) => mutation.isPending);
-  const error = mutations.find((mutation) => mutation.error)?.error ?? null;
-  const actions = payoutActions(request);
-  const amount = formatMinor(request.amountMinor, request.currency);
-  const input = { teamSlug, requestId: request.id };
-
-  function resetErrors() {
-    for (const mutation of mutations) mutation.reset();
-  }
+  const payDialogRef = useRef<HTMLDialogElement>(null);
+  const reject = useMutation(
+    trpc.payouts.reject.mutationOptions({
+      onSettled: () => queryClient.invalidateQueries({ queryKey: trpc.payouts.list.queryKey({ teamSlug }) }),
+    }),
+  );
 
   return (
     <tr className="align-top">
@@ -43,110 +34,78 @@ function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayo
         <p className="font-medium">{request.memberName}</p>
         <p className="text-muted-foreground">{request.memberEmail}</p>
       </td>
-      <td className="px-4 py-3 whitespace-nowrap">{amount}</td>
+      <td className="px-4 py-3 break-all">{request.receiverEmail}</td>
+      <td className="px-4 py-3 whitespace-nowrap">{formatMinor(request.amountMinor, request.currency)}</td>
       <td className="px-4 py-3 whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString()}</td>
       <td className="space-y-1 px-4 py-3">
-        <p>{payoutStatusLabel(request)}</p>
-        {request.feeMinor !== null ? (
-          <p className="text-muted-foreground">PayPal fee {formatMinor(request.feeMinor, request.currency)}</p>
+        <p>
+          {request.status === "paid" && request.paidAt
+            ? `Paid ${new Date(request.paidAt).toLocaleDateString()}`
+            : ADMIN_STATUS_LABELS[request.status]}
+        </p>
+        {request.receivedMinor !== null && request.receivedMinor !== request.amountMinor ? (
+          <p className="text-muted-foreground">Received {formatMinor(request.receivedMinor, request.currency)}</p>
         ) : null}
-        {request.failureMessage ? <p className="text-destructive">{request.failureMessage}</p> : null}
-        {request.reviewReason ? (
-          <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-            Needs review
-          </span>
+        {request.paypalTransactionId ? (
+          <p className="text-muted-foreground break-all">Transaction {request.paypalTransactionId}</p>
         ) : null}
-        {error ? (
+        {reject.error ? (
           <p role="alert" className="text-destructive">
-            {error.message}
+            {reject.error.message}
           </p>
         ) : null}
       </td>
       <td className="px-4 py-3">
-        <div className="flex justify-end gap-2">
-          {actions.includes("approve") ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={pending}
-              onClick={() => {
-                resetErrors();
-                approveDialogRef.current?.showModal();
-              }}
-            >
-              {approve.isPending ? "Sending…" : "Approve"}
-            </Button>
-          ) : null}
-          {actions.includes("reject") ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={pending}
-              onClick={() => {
-                resetErrors();
-                reject.mutate(input);
-              }}
-            >
-              {reject.isPending ? "Rejecting…" : "Reject"}
-            </Button>
-          ) : null}
-          {actions.includes("retry") ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={pending}
-              onClick={() => {
-                resetErrors();
-                retry.mutate(input);
-              }}
-            >
-              {retry.isPending ? "Sending…" : "Retry"}
-            </Button>
-          ) : null}
-          {actions.includes("refresh") ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={pending}
-              onClick={() => {
-                resetErrors();
-                refresh.mutate(input);
-              }}
-            >
-              {refresh.isPending ? "Checking…" : "Refresh"}
-            </Button>
-          ) : null}
-        </div>
-        <ConfirmDialog
-          dialogRef={approveDialogRef}
-          id={`approve-dialog-${request.id}`}
-          title={`Send ${amount} to ${request.memberName}?`}
-          body="PayPal sends it from your PayPal account."
-          confirmLabel={`Send ${amount}`}
-          onConfirm={() => approve.mutate(input)}
-        />
+        {request.status === "requested" ? (
+          <>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={reject.isPending}
+                onClick={() => {
+                  reject.reset();
+                  payDialogRef.current?.showModal();
+                }}
+              >
+                Pay
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={reject.isPending}
+                onClick={() => {
+                  reject.reset();
+                  reject.mutate({ teamSlug, requestId: request.id });
+                }}
+              >
+                {reject.isPending ? "Rejecting…" : "Reject"}
+              </Button>
+            </div>
+            <MarkPaidDialog dialogRef={payDialogRef} teamSlug={teamSlug} request={request} sendMoneyUrl={sendMoneyUrl} />
+          </>
+        ) : null}
       </td>
     </tr>
   );
 }
 
 export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
-  const requests = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const payouts = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   return (
     <section aria-labelledby="requests-heading" className="space-y-3">
       <h2 id="requests-heading" className="font-medium">
         Payout requests
       </h2>
-      {requests.isPending ? (
+      {payouts.isPending ? (
         <Loader />
-      ) : requests.isError ? (
+      ) : payouts.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {requests.error.message}
+          {payouts.error.message}
         </p>
-      ) : requests.data.length === 0 ? (
+      ) : payouts.data.requests.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No payout requests yet. Members ask for a payout of their earnings from their own Payouts page.
         </p>
@@ -157,6 +116,9 @@ export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
               <tr>
                 <th scope="col" className="px-4 py-2 font-normal">
                   Member
+                </th>
+                <th scope="col" className="px-4 py-2 font-normal">
+                  PayPal
                 </th>
                 <th scope="col" className="px-4 py-2 font-normal">
                   Amount
@@ -173,8 +135,13 @@ export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {requests.data.map((request) => (
-                <RequestRow key={request.id} teamSlug={teamSlug} request={request} />
+              {payouts.data.requests.map((request) => (
+                <RequestRow
+                  key={request.id}
+                  teamSlug={teamSlug}
+                  request={request}
+                  sendMoneyUrl={payouts.data.sendMoneyUrl}
+                />
               ))}
             </tbody>
           </table>
