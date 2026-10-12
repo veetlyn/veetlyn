@@ -1,0 +1,23 @@
+packages/auth/src/paypal.ts
+  s_d8d0f67a017e70::t_60f9f33fb21d50 1-2
+packages/auth/src/index.test.ts
+  s_d8d0f67a017e70::t_ba304fec57aec5 382
+packages/auth/src/paypal.test.ts
+  s_d8d0f67a017e70::t_cf8c6e2f35fad5 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "95ec33cbe0dc915d799398ba84c547965c5cc574",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
