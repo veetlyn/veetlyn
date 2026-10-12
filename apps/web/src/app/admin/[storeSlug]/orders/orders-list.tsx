@@ -47,6 +47,11 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
                 ) : (
                   <p className="text-sm text-muted-foreground">Paid {formatDate(order.paidAt)}</p>
                 )}
+                {order.reviewReason ? (
+                  <span className="ml-2 inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    Needs review
+                  </span>
+                ) : null}
               </div>
             </li>
           ))}

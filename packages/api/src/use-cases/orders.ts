@@ -1,5 +1,7 @@
 import {
   buyerEmailProblem,
+  captureReviewReason,
+  type CaptureReviewReason,
   errorName,
   type FileStore,
   DOWNLOADS_PER_GRANT,
@@ -17,6 +19,7 @@ import {
   orderRefundedTransfer,
   parseMajorAmount,
   platformFeeMinor,
+  refundFeesTransfer,
   sellerPlanFor,
   toPayPalValue,
 } from "@jendal-workspace/core";
@@ -38,6 +41,7 @@ import {
   revokeOrderGrants,
   setOrderFees,
   setOrderPayPalOrder,
+  setOrderReviewReason,
   useDownload,
 } from "@jendal-workspace/db/repositories/orders";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
@@ -53,6 +57,7 @@ import {
   PayPalError,
   type PayPalMoney,
   type PayPalOrder,
+  type PayPalRefundBreakdown,
   refundsFromOrder,
 } from "@jendal-workspace/paypal";
 import { captureSchema, parsedItems } from "@jendal-workspace/paypal/schemas";
@@ -77,6 +82,7 @@ export type OrderCaptureFact = {
   capturedAt: Date | null;
   paypalFeeMinor: number | null;
   platformFeeMinor: number | null;
+  reviewReason: CaptureReviewReason | null;
 };
 
 // "stale": the fact changes nothing; the order has moved past it.
@@ -214,6 +220,7 @@ export function orderCaptureFact(orderId: string, paypalOrderId: string, capture
     // A fee in another currency (a converted receivable) is not posted; the reconciliation job will show it.
     paypalFeeMinor: breakdown ? minorIn(currency, breakdown.paypal_fee) : null,
     platformFeeMinor: breakdown ? (minorIn(currency, breakdown.platform_fees[0]?.amount) ?? 0) : null,
+    reviewReason: breakdown && currency ? captureReviewReason(breakdown, currency) : null,
   };
 }
 
@@ -266,29 +273,39 @@ async function lockOrderOrThrow(tx: Transaction, orderId: string): Promise<Order
   return row;
 }
 
+function checkCaptureFact(row: OrderRow, fact: OrderCaptureFact): void {
+  if (row.paypalCaptureId && row.paypalCaptureId !== fact.captureId) {
+    throw new CaptureFactConflict(`Order ${row.id} already has capture ${row.paypalCaptureId}; PayPal reported ${fact.captureId}`);
+  }
+  if (row.paypalOrderId !== fact.paypalOrderId) {
+    throw new CaptureFactConflict(`Capture ${fact.captureId} completed on PayPal order ${fact.paypalOrderId}, which order ${row.id} does not use`);
+  }
+}
+
+// For a pending order the caller holds locked and has checked with checkCaptureFact.
+async function markLockedOrderPaid(tx: Transaction, row: OrderRow, fact: OrderCaptureFact): Promise<OrderRow> {
+  if (fact.amountMinor !== row.amountMinor || fact.currency !== row.currency) {
+    throw new CaptureFactConflict(
+      `Capture ${fact.captureId} (${fact.currency} ${fact.amountMinor}) does not match order ${row.id} (${row.currency} ${row.amountMinor})`,
+    );
+  }
+  const paidAt = fact.capturedAt ?? new Date();
+  if (!(await markOrderPaid(tx, { orderId: row.id, captureId: fact.captureId, paidAt }))) {
+    throw new Error(`Order ${row.id} left pending while locked`);
+  }
+  await createPostgresLedger(row.teamId, tx).post([
+    orderPaidTransfer({ currency: row.currency, orderId: row.id, amountMinor: row.amountMinor }),
+  ]);
+  return { ...row, status: "paid", paypalCaptureId: fact.captureId, paidAt };
+}
+
 // The order stays locked for the transaction, so the browser's capture and a webhook cannot both apply it.
 function applyCompletion(db: Database, fact: OrderCaptureFact): Promise<AppliedCompletion> {
   return db.transaction(async (tx) => {
     const row = await lockOrderOrThrow(tx, fact.orderId);
-    if (row.paypalCaptureId && row.paypalCaptureId !== fact.captureId) {
-      throw new CaptureFactConflict(`Order ${row.id} already has capture ${row.paypalCaptureId}; PayPal reported ${fact.captureId}`);
-    }
-    if (row.paypalOrderId !== fact.paypalOrderId) {
-      throw new CaptureFactConflict(`Capture ${fact.captureId} completed on PayPal order ${fact.paypalOrderId}, which order ${row.id} does not use`);
-    }
+    checkCaptureFact(row, fact);
     if (row.status !== "pending") return { result: "already_applied" as const };
-    if (fact.amountMinor !== row.amountMinor || fact.currency !== row.currency) {
-      throw new CaptureFactConflict(
-        `Capture ${fact.captureId} (${fact.currency} ${fact.amountMinor}) does not match order ${row.id} (${row.currency} ${row.amountMinor})`,
-      );
-    }
-    const paidAt = fact.capturedAt ?? new Date();
-    if (!(await markOrderPaid(tx, { orderId: row.id, captureId: fact.captureId, paidAt }))) {
-      throw new Error(`Order ${row.id} left pending while locked`);
-    }
-    await createPostgresLedger(row.teamId, tx).post([
-      orderPaidTransfer({ currency: row.currency, orderId: row.id, amountMinor: row.amountMinor }),
-    ]);
+    const paid = await markLockedOrderPaid(tx, row, fact);
     // One grant for the buyer email; the browser's capture call issues its own. The email's team is read here
     // too, so nothing between the commit and the send can fail and lose the email.
     const emailToken = await issueGrant(tx, row.id);
@@ -296,7 +313,7 @@ function applyCompletion(db: Database, fact: OrderCaptureFact): Promise<AppliedC
     if (!team) throw new Error(`Order ${row.id} has no team`);
     return {
       result: "applied" as const,
-      order: { ...row, status: "paid" as const, paypalCaptureId: fact.captureId, paidAt },
+      order: paid,
       team,
       emailToken,
     };
@@ -330,13 +347,19 @@ export async function applyOrderCaptureFact(
 }
 
 // Records PayPal's fee and Payleor's fee for a paid order, once: the first fact that carries the breakdown wins.
+// A refunded capture keeps its breakdown, and PayPal still charged the fees. Converted funds are flagged here.
 export async function recordOrderFees(db: Database, fact: OrderCaptureFact): Promise<void> {
-  const { paypalFeeMinor } = fact;
-  if (fact.status !== "COMPLETED" || paypalFeeMinor === null) return;
+  const { paypalFeeMinor, reviewReason } = fact;
+  if (fact.status !== "COMPLETED" && !isRefundedCaptureStatus(fact.status)) return;
+  if (paypalFeeMinor === null && reviewReason === null) return;
   await db.transaction(async (tx) => {
     const row = await lockOrderOrThrow(tx, fact.orderId);
-    // A refund can land before the fees are recorded; PayPal still charged them.
-    if (row.status === "pending" || row.paypalCaptureId !== fact.captureId || row.paypalFeeMinor !== null) return;
+    if (row.status === "pending" || row.paypalCaptureId !== fact.captureId) return;
+    if (reviewReason && row.reviewReason === null) {
+      await setOrderReviewReason(tx, row.id, reviewReason);
+      log.warn({ action: "order.fees", order: { id: row.id }, review: reviewReason });
+    }
+    if (paypalFeeMinor === null || row.paypalFeeMinor !== null) return;
     const platformFee = fact.platformFeeMinor ?? 0;
     await setOrderFees(tx, { orderId: row.id, paypalFeeMinor, platformFeeMinor: platformFee });
     const transfer = orderFeesTransfer({
@@ -462,9 +485,10 @@ async function captureAndApply(
   const paypalOrder = await captureAtPayPal(deps, paypalOrderId, merchantId);
   const capture = captureFromOrder(paypalOrder);
   if (!capture) throw new Error(`PayPal order ${paypalOrderId} has no capture`);
-  // The capture went through and was refunded before this call saw it; the refund news settles the order.
+  // The capture went through and was refunded before this call saw it: recorded as paid and refunded.
   if (isRefundedCaptureStatus(capture.status)) {
     log.warn({ action: "order.capture", order: { id: orderId }, capture: { id: capture.id, status: capture.status } });
+    await applyOrderRefund(deps, orderId, paypalOrder);
     throw refunded();
   }
   const result = await applyOrderCaptureFact(deps, orderCaptureFact(orderId, paypalOrderId, capture));
@@ -510,9 +534,8 @@ export async function captureOrderFromWebhook(
 export type OrderRefundResult = "refunded" | "already refunded" | "not paid";
 
 // Captures that cannot be read are skipped, as captureFromOrder does.
-function captureStatusIn(paypalOrder: PayPalOrder, captureId: string): string | null {
-  const captures = parsedItems(captureSchema, paypalOrder.purchase_units?.[0]?.payments?.captures ?? []);
-  return captures.find((capture) => capture.id === captureId)?.status ?? null;
+function capturesIn(paypalOrder: PayPalOrder): PayPalCapture[] {
+  return parsedItems(captureSchema, paypalOrder.purchase_units?.[0]?.payments?.captures ?? []);
 }
 
 async function postOnce(db: Database, teamId: string, transfer: LedgerTransferDraft): Promise<void> {
@@ -524,38 +547,79 @@ async function postOnce(db: Database, teamId: string, transfer: LedgerTransferDr
   }
 }
 
+const ZERO_AMOUNT = /^0+(?:\.0{1,2})?$/;
+
+// parseMajorAmount refuses zero, but PayPal reports a fee it did not return as "0.00".
+function feeMinorIn(currency: string, fee: PayPalMoney): number | null {
+  if (fee.currency_code !== currency) return null;
+  return ZERO_AMOUNT.test(fee.value.trim()) ? 0 : parseMajorAmount(fee.value);
+}
+
+// Null unless every returned fee is readable and in the order's currency: posting part of them would misstate
+// the team's balance.
+function returnedFees(
+  currency: string,
+  breakdown: PayPalRefundBreakdown | undefined,
+): { paypalFeeMinor: number; platformFeeMinor: number } | null {
+  if (!breakdown) return null;
+  const paypalFeeMinor = breakdown.paypal_fee ? feeMinorIn(currency, breakdown.paypal_fee) : 0;
+  if (paypalFeeMinor === null) return null;
+  let platformFeeMinor = 0;
+  for (const fee of breakdown.platform_fees) {
+    const minor = feeMinorIn(currency, fee.amount);
+    if (minor === null) return null;
+    platformFeeMinor += minor;
+  }
+  return { paypalFeeMinor, platformFeeMinor };
+}
+
+type MarkedRefund = { result: OrderRefundResult; order: OrderRow; capture: PayPalCapture | null };
+
 // Sellers decision: any refund or reversal, full or partial, refunds the order and revokes every grant. Each
-// PayPal refund is posted once by its id, and a reversal once by its capture, whichever event reports it.
+// PayPal refund is posted once by its id, with the fees it returned, and a reversal once by its capture,
+// whichever event reports it. A capture refunded before Payleor applied it is recorded as paid then refunded,
+// without a grant or an email, so the ledger still shows the payment, its fees and the refund.
 // expectedRefundId is the refund the event reported: until PayPal's order lists it, the queue retries.
 export async function applyOrderRefund(
   deps: { db: Database },
-  order: OrderRow,
+  orderId: string,
   paypalOrder: PayPalOrder,
   options: { expectedRefundId?: string | null; now?: Date } = {},
 ): Promise<OrderRefundResult> {
   const now = options.now ?? new Date();
-  const captureId = order.paypalCaptureId;
-  if (!captureId) return "not paid";
-  const captureStatus = captureStatusIn(paypalOrder, captureId);
-  const reversed = captureStatus === "REVERSED";
+  const captures = capturesIn(paypalOrder);
   const refunds = refundsFromOrder(paypalOrder).filter((refund) => refund.status === "COMPLETED");
-  if (!reversed && refunds.length === 0 && !(captureStatus && isRefundedCaptureStatus(captureStatus))) {
-    // PayPal sent refund news, so its order lookup is lagging; the queue retries.
-    throw new Error(`PayPal order ${paypalOrder.id} shows no refund yet for capture ${captureId}`);
-  }
 
   // The lock orders this against the browser's grant and a fresh link, which both refuse a refunded order.
-  const marked = await deps.db.transaction(async (tx) => {
-    const row = await lockOrderOrThrow(tx, order.id);
-    if (row.status === "pending") return "not paid" as const;
-    if (row.status === "refunded") return "already refunded" as const;
+  const marked = await deps.db.transaction(async (tx): Promise<MarkedRefund> => {
+    let row = await lockOrderOrThrow(tx, orderId);
+    if (row.status === "pending") {
+      const early = captures.find((capture) => isRefundedCaptureStatus(capture.status));
+      if (!early) return { result: "not paid", order: row, capture: null };
+      const fact = orderCaptureFact(row.id, paypalOrder.id, early);
+      checkCaptureFact(row, fact);
+      row = await markLockedOrderPaid(tx, row, fact);
+    }
+    const capture = captures.find((item) => item.id === row.paypalCaptureId) ?? null;
+    const captureStatus = capture?.status ?? null;
+    if (captureStatus !== "REVERSED" && refunds.length === 0 && !(captureStatus && isRefundedCaptureStatus(captureStatus))) {
+      // PayPal sent refund news, so its order lookup is lagging; the queue retries.
+      throw new Error(`PayPal order ${paypalOrder.id} shows no refund yet for capture ${row.paypalCaptureId}`);
+    }
+    if (row.status === "refunded") return { result: "already refunded", order: row, capture };
     if (!(await markOrderRefunded(tx, { orderId: row.id, refundedAt: now }))) {
       throw new Error(`Order ${row.id} left paid while locked`);
     }
     await revokeOrderGrants(tx, row.id, now);
-    return "refunded" as const;
+    return { result: "refunded", order: row, capture };
   });
-  if (marked === "not paid") return marked;
+  if (marked.result === "not paid") return marked.result;
+  const { order, capture } = marked;
+  const captureId = order.paypalCaptureId;
+  if (!captureId) throw new Error(`Order ${order.id} is ${order.status} without a capture`);
+  // The capture's fees may not be recorded yet: the capture was refunded before Payleor applied it, or a
+  // refund landed before the fee step.
+  if (capture) await recordOrderFees(deps.db, orderCaptureFact(order.id, paypalOrder.id, capture));
 
   let refundedMinor = 0;
   for (const refund of refunds) {
@@ -570,8 +634,15 @@ export async function applyOrderRefund(
       order.teamId,
       orderRefundedTransfer({ currency: order.currency, orderId: order.id, refundKey: `refund:${refund.id}`, amountMinor }),
     );
+    const fees = returnedFees(order.currency, refund.seller_payable_breakdown);
+    if (!fees) {
+      log.warn({ action: "order.refund_fees", order: { id: order.id }, refund: { id: refund.id, posted: false } });
+      continue;
+    }
+    const feesTransfer = refundFeesTransfer({ currency: order.currency, projectId: null, refundId: refund.id, ...fees });
+    if (feesTransfer) await postOnce(deps.db, order.teamId, feesTransfer);
   }
-  if (reversed) {
+  if (capture?.status === "REVERSED") {
     // A reversal takes back what the refunds left with the seller, not the full amount again.
     const reversedMinor = Math.max(0, order.amountMinor - refundedMinor);
     if (reversedMinor > 0) {
@@ -595,7 +666,7 @@ export async function applyOrderRefund(
     // A later partial refund on an order already refunded: posted on the retry once PayPal lists it.
     throw new Error(`PayPal order ${paypalOrder.id} does not list refund ${expectedRefundId} as completed yet`);
   }
-  return marked;
+  return marked.result;
 }
 
 // The R2b download length: long enough to start the download, too short to share.
@@ -714,5 +785,6 @@ export async function listOrders(db: Database, teamId: string) {
     status: row.status,
     paidAt: row.paidAt?.toISOString() ?? null,
     refundedAt: row.refundedAt?.toISOString() ?? null,
+    reviewReason: row.reviewReason,
   }));
 }

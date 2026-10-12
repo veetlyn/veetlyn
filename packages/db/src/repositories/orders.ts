@@ -12,7 +12,16 @@ export type NewOrder = Pick<
 >;
 export type TeamOrderRow = Pick<
   OrderRow,
-  "id" | "productTitle" | "buyerEmail" | "amountMinor" | "currency" | "status" | "createdAt" | "paidAt" | "refundedAt"
+  | "id"
+  | "productTitle"
+  | "buyerEmail"
+  | "amountMinor"
+  | "currency"
+  | "status"
+  | "createdAt"
+  | "paidAt"
+  | "refundedAt"
+  | "reviewReason"
 >;
 
 export async function insertOrder(db: DbExecutor, values: NewOrder): Promise<OrderRow> {
@@ -167,6 +176,7 @@ export async function listTeamOrders(db: DbExecutor, teamId: string): Promise<Te
       createdAt: orders.createdAt,
       paidAt: orders.paidAt,
       refundedAt: orders.refundedAt,
+      reviewReason: orders.reviewReason,
     })
     .from(orders)
     .where(and(eq(orders.teamId, teamId), inArray(orders.status, ["paid", "refunded"])))

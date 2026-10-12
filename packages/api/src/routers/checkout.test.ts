@@ -391,10 +391,35 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
       expect(mailer.sent).toHaveLength(1);
     });
 
-    it("says the order was refunded when PayPal reports the capture refunded", async () => {
+    it("records a capture PayPal reports refunded as paid then refunded, without a grant or email", async () => {
+      const lookup = {
+        id: "ORDER1",
+        status: "COMPLETED",
+        purchase_units: [
+          {
+            payments: {
+              captures: [
+                { id: "CAPTURE1", status: "PARTIALLY_REFUNDED", amount: { currency_code: "USD", value: "19.00" }, ...FEE_BREAKDOWN },
+              ],
+              refunds: [
+                {
+                  id: "R1",
+                  status: "COMPLETED",
+                  amount: { currency_code: "USD", value: "5.00" },
+                  seller_payable_breakdown: {
+                    paypal_fee: { currency_code: "USD", value: "0.19" },
+                    platform_fees: [{ amount: { currency_code: "USD", value: "0.05" } }],
+                    net_amount: { currency_code: "USD", value: "4.76" },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
       const { teamId, caller, mailer, secret } = await started({
         capture: () => jsonResponse(422, ALREADY_CAPTURED),
-        lookup: () => jsonResponse(200, capturedOrder("REFUNDED")),
+        lookup: () => jsonResponse(200, lookup),
       });
 
       await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).rejects.toMatchObject({
@@ -402,9 +427,20 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         message: "This order was refunded.",
       });
       const order = await onlyOrder();
-      expect(order.status).toBe("pending");
+      expect(order).toMatchObject({
+        status: "refunded",
+        paypalCaptureId: "CAPTURE1",
+        paidAt: new Date("2026-10-10T00:00:00Z"),
+        refundedAt: expect.any(Date),
+        paypalFeeMinor: 121,
+      });
       expect(await grantsOf(order.id)).toHaveLength(0);
-      expect(await transfersOf(teamId)).toHaveLength(0);
+      expect((await transfersOf(teamId)).map((transfer) => transfer.reference).sort()).toEqual([
+        `order_fees:${order.id}`,
+        `order_paid:${order.id}`,
+        "order_refunded:refund:R1",
+        "refund_fees:R1",
+      ]);
       expect(mailer.sent).toHaveLength(0);
     });
 

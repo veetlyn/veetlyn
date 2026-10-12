@@ -157,7 +157,7 @@ async function refundOutcome(
 ): Promise<WebhookOutcome> {
   const expectedRefundId =
     event.eventType === "PAYMENT.CAPTURE.REFUNDED" && event.resourceType === "refund" ? event.resourceId : null;
-  return { status: "processed", note: await applyOrderRefund(deps, order, paypalOrder, { expectedRefundId }) };
+  return { status: "processed", note: await applyOrderRefund(deps, order.id, paypalOrder, { expectedRefundId }) };
 }
 
 async function processPaymentEvent(deps: PaymentDeps, event: PayPalWebhookEventRow): Promise<WebhookOutcome> {
