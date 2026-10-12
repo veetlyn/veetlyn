@@ -1,0 +1,57 @@
+packages/api/src/use-cases/paypal-amounts.ts
+  s_49cb15331938bb::t_de709cb1d4e890 36-46
+  s_49cb15331938bb::t_d7073c0cea4919 1
+packages/db/src/repositories/payout-requests.ts
+  s_49cb15331938bb::t_0dddaa2ee917e5 17
+  s_49cb15331938bb::t_5ba0a6b96d706f 29
+packages/api/src/use-cases/payout-credentials.ts
+  s_49cb15331938bb::t_9b4a58956e60c8 18
+  s_49cb15331938bb::t_311bec04e77e9d 74
+  s_49cb15331938bb::t_aeec79daf17b33 1
+packages/api/src/use-cases/payouts.ts
+  s_49cb15331938bb::t_4040ede2a58335 49
+  s_49cb15331938bb::t_fa4868410f39a5 543
+  s_49cb15331938bb::t_de42ba94e246ff 264-271,286-296,319,339-340,351-352,359,362,365-367,371-397,412,414,421,424,427-431,435,446,450
+packages/paypal/src/schemas.ts
+  s_49cb15331938bb::t_bddcb249ca4380 43
+packages/paypal/src/errors.ts
+  s_49cb15331938bb::t_ef59201cc060d2 10-11,16-17,19-26,33,37
+  s_49cb15331938bb::t_3a5eec515fe794 54
+packages/paypal/src/client.test.ts
+  s_49cb15331938bb::t_11e672164379fb 320
+  s_49cb15331938bb::t_53c6307bb401b1 295-296,305
+packages/db/src/schema/payouts.ts
+  s_49cb15331938bb::t_073f3ce564869b 50-51
+  s_49cb15331938bb::t_513e4a70a2f10d 69-71
+  s_49cb15331938bb::t_9b3808dc055586 3
+packages/api/src/routers/payouts.test.ts
+  s_49cb15331938bb::t_a9f6ffcd6f4221 16
+  s_49cb15331938bb::t_2a8e9ee5dd44e7 76
+  s_49cb15331938bb::t_a532c475ab4408 28
+  s_49cb15331938bb::t_eda36eec2c82f4 327-328,340-344,348,351-352
+  s_49cb15331938bb::t_d2b325033de3c1 339
+  s_49cb15331938bb::t_81f052d3c8e653 31
+  s_49cb15331938bb::t_fd45bc466dff46 74-75
+  s_49cb15331938bb::t_c16fd80fdaaf74 353
+  s_49cb15331938bb::t_334a062ef3166f 399,401,448-469,494,507,509,520,528-530,533-551,554,557,560,562-565,569,572,577-579,584-616,686-687,723-731
+packages/db/src/migrations/20261012132855_r5a_team_payouts/migration.sql
+  s_49cb15331938bb::t_154e1558d2e249 9
+packages/db/src/migrations/20261012132855_r5a_team_payouts/snapshot.json
+  s_49cb15331938bb::t_c36e033349c629 4903-4915
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da79e88bcfd723866f420156d066542b8358fe84",
+  "prompts": {},
+  "sessions": {
+    "s_49cb15331938bb": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "62983363-4ae7-46da-98c5-68a0a29dea47",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
