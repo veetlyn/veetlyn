@@ -25,12 +25,10 @@ export type MaintenanceDeps = {
   db: Database;
   enqueueWebhookEvents: (eventIds: string[]) => Promise<void>;
   files: Pick<FileStore, "delete">;
-  // Absent when payouts are not set up on this server; the payouts sweep is then skipped.
-  settlePayouts?: () => Promise<{ checked: number; settled: number }>;
   now?: () => Date;
 };
 
-export type MaintenanceSweep = "webhooks" | "requestLimits" | "uploads" | "orders" | "payouts";
+export type MaintenanceSweep = "webhooks" | "requestLimits" | "uploads" | "orders";
 
 export type MaintenanceReport = {
   webhookEventsRequeued: number;
@@ -38,8 +36,6 @@ export type MaintenanceReport = {
   requestLimitsDeleted: number;
   uploadsDeleted: number;
   ordersDeleted: number;
-  payoutsChecked: number;
-  payoutsSettled: number;
   errors: MaintenanceSweep[];
 };
 
@@ -52,8 +48,6 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     requestLimitsDeleted: 0,
     uploadsDeleted: 0,
     ordersDeleted: 0,
-    payoutsChecked: 0,
-    payoutsSettled: 0,
     errors: [],
   };
 
@@ -117,16 +111,6 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     });
     return { deleted: report.ordersDeleted };
   });
-
-  const settlePayouts = deps.settlePayouts;
-  if (settlePayouts) {
-    await sweep("payouts", async () => {
-      const { checked, settled } = await settlePayouts();
-      report.payoutsChecked = checked;
-      report.payoutsSettled = settled;
-      return { checked, settled };
-    });
-  }
 
   return report;
 }

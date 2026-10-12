@@ -1,12 +1,11 @@
 import type { CatalogServices } from "@jendal-workspace/api/catalog/service";
-import type { EmailServices, PayoutServices, PayPalServices } from "@jendal-workspace/api/context";
+import type { EmailServices, PayPalServices } from "@jendal-workspace/api/context";
 import { createAuth as createConfiguredAuth } from "@jendal-workspace/auth";
 import { createChannel3Client } from "@jendal-workspace/channel3";
-import { errorName, type FileStore, importSecretKey, type TenantEnvironment } from "@jendal-workspace/core";
+import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
 import { type Database, createDb } from "@jendal-workspace/db";
 import { createMailer } from "@jendal-workspace/email";
 import { createKvTokenCache, createPayPalClient } from "@jendal-workspace/paypal";
-import { log } from "evlog";
 import type { ExecutionContext } from "hono";
 
 import { createHttpImageDownloader } from "./catalog/image-downloader";
@@ -15,7 +14,6 @@ import { createKvTextCache } from "./catalog/text-cache";
 import { logEmailError } from "./email-log";
 import { ENV } from "./env.server";
 import { createR2FileStore } from "./files/file-store";
-import { createPayoutServices } from "./payouts";
 import { storeOriginFor } from "./store-origin";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 
@@ -64,28 +62,6 @@ export function getPayPalServices(): PayPalServices | undefined {
     sdk: { clientId: ENV.PAYPAL_CLIENT_ID, partnerAttributionId: ENV.PAYPAL_ATTRIBUTION_ID, environment },
     onTeamMerchantChanged: invalidateStoreLookup,
   };
-}
-
-let payoutServices: Promise<PayoutServices | undefined> | undefined;
-
-// The key is imported once per isolate. An unreadable key is logged and leaves payouts off rather than failing every
-// request that builds a context.
-export function getPayoutServices(): Promise<PayoutServices | undefined> {
-  payoutServices ??= loadPayoutServices();
-  return payoutServices;
-}
-
-async function loadPayoutServices(): Promise<PayoutServices | undefined> {
-  if (!ENV.PAYOUT_CREDENTIALS_KEY) return undefined;
-  let secretKey: CryptoKey;
-  try {
-    secretKey = await importSecretKey(ENV.PAYOUT_CREDENTIALS_KEY);
-  } catch (error) {
-    log.error({ action: "payouts.key", error: { name: errorName(error), note: "PAYOUT_CREDENTIALS_KEY is unreadable." } });
-    return undefined;
-  }
-  const environment: TenantEnvironment = ENV.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
-  return createPayoutServices({ secretKey, environment, tokenKv: ENV.STORE_CACHE });
 }
 
 // A change to team.paypal_merchant_id or team.status must drop the cached storefront lookups (cacheKeyFor in

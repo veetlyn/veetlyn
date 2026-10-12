@@ -33,11 +33,6 @@ export async function insertPayoutRequest(tx: DbExecutor, values: NewPayoutReque
   return row ?? null;
 }
 
-export async function getPayoutRequest(db: DbExecutor, id: string): Promise<PayoutRequestRow | null> {
-  const [row] = await db.select().from(payoutRequest).where(eq(payoutRequest.id, id)).limit(1);
-  return row ?? null;
-}
-
 // Holds the request until the transaction ends, so a status change and its ledger post happen once.
 export async function lockPayoutRequest(tx: Transaction, id: string): Promise<PayoutRequestRow | null> {
   const [row] = await tx.select().from(payoutRequest).where(eq(payoutRequest.id, id)).limit(1).for("update");
