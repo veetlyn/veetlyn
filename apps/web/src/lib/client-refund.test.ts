@@ -45,10 +45,18 @@ describe("refundPartStatusLabel", () => {
 describe("staffRefundAction", () => {
   it.each([
     ["requested", [], "refund"],
-    ["issuing", [{ failureMessage: null }], null],
-    ["issuing", [{ failureMessage: null }, { failureMessage: "We could not confirm the refund with PayPal." }], "retry"],
-    ["failed", [{ failureMessage: "PayPal refused the refund." }], "retry"],
-    ["completed", [{ failureMessage: null }], null],
+    ["issuing", [{ status: "pending", sent: true, failureMessage: null }], null],
+    ["issuing", [{ status: "completed", sent: true, failureMessage: null }, { status: "pending", sent: false, failureMessage: null }], "retry"],
+    [
+      "issuing",
+      [
+        { status: "completed", sent: true, failureMessage: null },
+        { status: "pending", sent: false, failureMessage: "We could not confirm the refund with PayPal." },
+      ],
+      "retry",
+    ],
+    ["failed", [{ status: "failed", sent: false, failureMessage: "PayPal refused the refund." }], "retry"],
+    ["completed", [{ status: "completed", sent: true, failureMessage: null }], null],
   ] as const)("%s with %o", (status, parts, action) => {
     expect(staffRefundAction({ status, parts: [...parts] })).toBe(action);
   });

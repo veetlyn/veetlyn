@@ -45,7 +45,15 @@ export type ProjectRefundView = {
 };
 
 export type StaffProjectRefundView = ProjectRefundView & {
-  parts: { paymentId: string; amountMinor: number; status: ProjectRefundPartStatus; failureMessage: string | null }[];
+  // `sent` is false until PayPal answers with a refund id; a pending unsent part of an issuing refund was never
+  // sent, or its request died before the answer was recorded, so the admin may send it again.
+  parts: {
+    paymentId: string;
+    amountMinor: number;
+    status: ProjectRefundPartStatus;
+    sent: boolean;
+    failureMessage: string | null;
+  }[];
 };
 
 const MAX_FAILURE_MESSAGE = 500;
@@ -86,6 +94,7 @@ export async function getStaffRefundView(db: DbExecutor, projectId: string): Pro
       paymentId: part.paymentId,
       amountMinor: part.amountMinor,
       status: part.status,
+      sent: part.paypalRefundId !== null,
       failureMessage: part.failureMessage,
     })),
   };
@@ -103,6 +112,14 @@ async function prepareParts(tx: Transaction, projectRefundId: string): Promise<P
   if (!refund) throw new Error(`Project refund ${projectRefundId} disappeared`);
   if (refund.status === "completed") fail("BAD_REQUEST", "This refund was already sent.");
   const existing = await listRefundParts(tx, refund.id);
+  // An issuing refund passes only when a part is uncertain (it has a message) or was never sent; otherwise a
+  // send is in flight or PayPal's answer is pending, and the webhook finishes it.
+  if (
+    refund.status === "issuing" &&
+    !existing.some((part) => part.failureMessage !== null || (part.status === "pending" && part.paypalRefundId === null))
+  ) {
+    fail("BAD_REQUEST", "This refund is being sent.");
+  }
   if (existing.length === 0) {
     const payments = (await listRefundablePayments(tx, refund.projectId)).filter((p) => p.currency === refund.currency);
     const split = splitProjectRefund({

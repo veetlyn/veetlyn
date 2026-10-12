@@ -26,8 +26,8 @@ import { log } from "evlog";
 import { capturesIn, isRefundedCaptureStatus, postIfNew, returnedFees } from "./paypal-amounts";
 import { CaptureFactConflict, captureFact, recordCaptureFees } from "./payments";
 
-export type PaymentRefundResult = "refunded" | "not captured";
-export type AppliedRefund = "applied" | "already_applied" | "skipped";
+type PaymentRefundResult = "refunded" | "not captured";
+type AppliedRefund = "applied" | "already_applied" | "skipped";
 
 async function findPaymentRow(tx: DbExecutor, paymentId: string): Promise<PaymentRow> {
   const [row] = await tx.select().from(payment).where(eq(payment.id, paymentId)).limit(1);

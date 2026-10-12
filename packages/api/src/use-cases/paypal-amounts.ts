@@ -28,10 +28,10 @@ export function isSettledPayPalRefusal(cause: unknown): cause is PayPalError {
   );
 }
 
-export type CaptureFees = { paypalFeeMinor: number | null; platformFeeMinor: number | null };
-export type ReturnedFees = { paypalFeeMinor: number; platformFeeMinor: number };
+type CaptureFees = { paypalFeeMinor: number | null; platformFeeMinor: number | null };
+type ReturnedFees = { paypalFeeMinor: number; platformFeeMinor: number };
 
-export function minorIn(currency: string | null, money: PayPalMoney | undefined): number | null {
+function minorIn(currency: string | null, money: PayPalMoney | undefined): number | null {
   return money && money.currency_code === currency ? parseMajorAmount(money.value) : null;
 }
 

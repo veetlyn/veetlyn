@@ -68,7 +68,7 @@ export function RefundSection({
           ))}
         </ul>
       ) : null}
-      {action === "refund" ? (
+      {action ? (
         <Button
           disabled={refundClient.isPending}
           onClick={() => {
@@ -76,12 +76,7 @@ export function RefundSection({
             dialogRef.current?.showModal();
           }}
         >
-          Refund {amount} to the client
-        </Button>
-      ) : null}
-      {action === "retry" ? (
-        <Button disabled={refundClient.isPending} onClick={send}>
-          Try again
+          {action === "retry" ? "Try again" : `Refund ${amount} to the client`}
         </Button>
       ) : null}
       {refundClient.error ? (

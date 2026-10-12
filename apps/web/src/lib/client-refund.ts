@@ -35,14 +35,15 @@ export function refundPartStatusLabel(status: ProjectRefundPartStatus): string {
   }
 }
 
-// "retry" covers a part PayPal left uncertain: it stays pending with a message, and sending it again with the
-// same request id cannot refund twice.
+// "retry" covers a part PayPal left uncertain (pending with a message) and a part of an issuing refund that was
+// never sent (its request died first). Sending again with the same request id cannot refund twice.
 export function staffRefundAction(refund: {
   status: ProjectRefundStatus;
-  parts: { failureMessage: string | null }[];
+  parts: { status: ProjectRefundPartStatus; sent: boolean; failureMessage: string | null }[];
 }): "refund" | "retry" | null {
   if (refund.status === "completed") return null;
   if (refund.status === "failed" || refund.parts.some((part) => part.failureMessage !== null)) return "retry";
+  if (refund.status === "issuing" && refund.parts.some((part) => part.status === "pending" && !part.sent)) return "retry";
   if (refund.status === "requested") return "refund";
   return null;
 }

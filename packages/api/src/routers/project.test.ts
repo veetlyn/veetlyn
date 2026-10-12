@@ -14,6 +14,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
+import { setProjectRefundStatus, upsertRefundPart } from "@jendal-workspace/db/repositories/project-refunds";
 import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { findFileUpload, insertFileUpload } from "@jendal-workspace/db/repositories/files";
 import {
@@ -977,8 +978,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           status: "completed",
           completedAt: expect.any(Date),
           parts: [
-            { paymentId: topUpId, amountMinor: 50_000, status: "completed", failureMessage: null },
-            { paymentId: depositId, amountMinor: 16_000, status: "completed", failureMessage: null },
+            { paymentId: topUpId, amountMinor: 50_000, status: "completed", sent: true, failureMessage: null },
+            { paymentId: depositId, amountMinor: 16_000, status: "completed", sent: true, failureMessage: null },
           ],
         });
         expect(
@@ -1028,23 +1029,45 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect(refundCalls()).toHaveLength(2);
       });
 
-      it("sends the same request ids again while PayPal holds the refunds, and posts each refund once", async () => {
-        const { userId, projectId, depositId, topUpId } = await overpaidProject();
-        const { paypal, refundCalls } = fakePayPalRefunds((_captureId, call) => (call === 1 ? "PENDING" : "COMPLETED"));
+      it("leaves refunds PayPal holds to the webhook, and refuses to send them again meanwhile", async () => {
+        const { userId, projectId } = await overpaidProject();
+        const { paypal, refundCalls } = fakePayPalRefunds(() => "PENDING");
         const caller = callerFor(userId, undefined, paypal);
 
         const pending = await caller.project.refundClient({ teamSlug: "team", projectId });
         expect(pending.status).toBe("issuing");
-        expect(pending.parts.map((p) => p.status)).toEqual(["pending", "pending"]);
+        expect(pending.parts.map((p) => [p.status, p.sent])).toEqual([
+          ["pending", true],
+          ["pending", true],
+        ]);
         expect(await postingsOf("refund_confirmed")).toEqual([]);
 
-        const done = await caller.project.refundClient({ teamSlug: "team", projectId });
-        expect(done.status).toBe("completed");
-        const requestIds = refundCalls().map((r) => r.headers.get("paypal-request-id"));
-        expect(requestIds.slice(2)).toEqual(requestIds.slice(0, 2));
-        expect(await postingsOf("refund_confirmed")).toHaveLength(4);
-        expect(await refundedOf(topUpId)).toEqual({ status: "refunded", refundedMinor: 50_000 });
-        expect(await refundedOf(depositId)).toEqual({ status: "captured", refundedMinor: 16_000 });
+        await expect(caller.project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+          message: "This refund is being sent.",
+        });
+        expect(refundCalls()).toHaveLength(2);
+      });
+
+      it("sends the parts of a refund whose request died before PayPal answered, once each", async () => {
+        const { userId, projectId, depositId, topUpId, refundId } = await overpaidProject();
+        await db.transaction(async (tx) => {
+          await upsertRefundPart(tx, { projectRefundId: refundId, paymentId: topUpId, captureId: "CAPTURE2", amountMinor: 50_000 });
+          await upsertRefundPart(tx, { projectRefundId: refundId, paymentId: depositId, captureId: "CAPTURE1", amountMinor: 16_000 });
+          await setProjectRefundStatus(tx, refundId, "issuing");
+        });
+        const { paypal, refundCalls } = fakePayPalRefunds(() => "COMPLETED");
+        const caller = callerFor(userId, undefined, paypal);
+        expect((await caller.project.get({ teamSlug: "team", projectId })).refund).toMatchObject({
+          status: "issuing",
+          parts: [
+            { paymentId: topUpId, status: "pending", sent: false, failureMessage: null },
+            { paymentId: depositId, status: "pending", sent: false, failureMessage: null },
+          ],
+        });
+
+        expect((await caller.project.refundClient({ teamSlug: "team", projectId })).status).toBe("completed");
+        expect(refundCalls().map((r) => r.url.split("/").at(-2))).toEqual(["CAPTURE2", "CAPTURE1"]);
         expect(await balanceOf("client_refunds")).toBe(0);
       });
 
