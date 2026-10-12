@@ -1,0 +1,49 @@
+packages/db/src/schema/project-refunds.ts
+  s_fb01439f7cbac7::t_0e7a8945d3fd2b 1-60
+packages/db/src/repositories/project-refunds.ts
+  s_fb01439f7cbac7::t_f73e96851ee719 1-136
+packages/db/src/schema/index.ts
+  s_fb01439f7cbac7::t_ba726a6c57c390 11
+packages/core/src/projects/quotes.ts
+  s_fb01439f7cbac7::t_a8b288414430cc 13-14,17-21
+  s_fb01439f7cbac7::t_d5e5ed4816858f 22
+packages/db/src/repositories/project-refunds.test.ts
+  s_fb01439f7cbac7::t_b97022f651e8c6 1-94,97-149
+  s_fb01439f7cbac7::t_d9aba07a545acf 95-96
+apps/web/src/lib/pay-page.test.ts
+  s_fb01439f7cbac7::t_0e16798c5fbc35 13,20
+apps/web/src/lib/pay-page.ts
+  s_fb01439f7cbac7::t_6d3b0ccbaab93e 2,23
+packages/db/src/migrations/20261012040312_b3_payout_prerequisites/migration.sql
+  s_fb01439f7cbac7::t_3952666a1237f6 1-37
+packages/db/src/migrations/20261012040312_b3_payout_prerequisites/snapshot.json
+  s_fb01439f7cbac7::t_c3a2d2f8eceb00 1-7667
+packages/db/src/repositories/orders.ts
+  s_fb01439f7cbac7::t_b46d6644226aa4 1,92-95
+packages/db/src/repositories/projects.test.ts
+  s_fb01439f7cbac7::t_839cb0204d6031 4-12,78-124
+packages/db/src/repositories/projects.ts
+  s_fb01439f7cbac7::t_fec06d961a7b57 1-2,93-134
+packages/db/src/schema/orders.ts
+  s_fb01439f7cbac7::t_a7f8862c2c06c9 1,40-41
+packages/db/src/schema/projects.ts
+  s_fb01439f7cbac7::t_932f8f4f95f7b8 3,187-189,212
+packages/db/src/testing/db.ts
+  s_fb01439f7cbac7::t_a01066b506bed2 1,10,23,235-269
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "646e9576a7b157403d34e1a1c7ea9a370d262d02",
+  "prompts": {},
+  "sessions": {
+    "s_fb01439f7cbac7": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f0fd0fd3-111d-462a-98af-ce64f45062ea",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
