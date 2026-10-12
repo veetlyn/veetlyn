@@ -6,6 +6,8 @@ import { createMerchantIntegrations } from "./merchant-integrations";
 import { createOrders } from "./orders";
 import { createPartnerReferrals } from "./partner-referrals";
 import { createPayments } from "./payments";
+import { createPayouts } from "./payouts";
+import { createReporting } from "./reporting";
 import { tokenResponseSchema } from "./schemas";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
 import { createWebhooks } from "./webhooks";
@@ -58,6 +60,8 @@ export interface PayPalClient {
   merchantIntegrations: ReturnType<typeof createMerchantIntegrations>;
   orders: ReturnType<typeof createOrders>;
   payments: ReturnType<typeof createPayments>;
+  payouts: ReturnType<typeof createPayouts>;
+  reporting: ReturnType<typeof createReporting>;
   webhooks: ReturnType<typeof createWebhooks>;
 }
 
@@ -186,6 +190,8 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     merchantIntegrations: createMerchantIntegrations(request),
     orders: createOrders(request),
     payments: createPayments(request),
+    payouts: createPayouts(request),
+    reporting: createReporting(request),
     webhooks: createWebhooks(request),
   };
 }
