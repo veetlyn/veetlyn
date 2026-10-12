@@ -7,6 +7,7 @@ import {
   createCatalogServices,
   createFileStore,
   getEmailServices,
+  getPayoutServices,
   getPayPalServices,
   invalidateStoreLookup,
 } from "./services";
@@ -34,5 +35,6 @@ export async function createContext(
     files,
     onTeamStatusChanged: invalidateStoreLookup,
     email: getEmailServices(executionCtx),
+    payouts: await getPayoutServices(),
   };
 }

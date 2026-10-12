@@ -25,6 +25,7 @@ export function servicesTeamSetupSteps(
     solo: boolean;
     offeringCount: number;
     productCount: number;
+    payoutCredentialsSaved: boolean;
   },
   links: ServicesTeamSetupLinks,
 ): SetupStep[] {
@@ -35,7 +36,9 @@ export function servicesTeamSetupSteps(
     step("connect-paypal", "Connect PayPal", state.paypalMerchantId !== null, links.connectPaypal),
     // A solo seller keeps the whole price, so there are no rates and no payouts to set up (run 5).
     ...(state.solo ? [] : [step("set-rates", "Set your rates", state.settingsSaved, links.settings)]),
-    ...(state.solo ? [] : [step("add-payout-credentials", "Add payout credentials", false, links.payoutCredentials)]),
+    ...(state.solo
+      ? []
+      : [step("add-payout-credentials", "Add payout credentials", state.payoutCredentialsSaved, links.payoutCredentials)]),
     // Sellers design §3.3: the seller page stays a draft until an admin publishes it.
     step("publish", "Publish your seller page", state.status === "active", links.publish),
     step("link-discord", "Link Discord", state.discordGuildId !== null, links.linkDiscord),

@@ -28,13 +28,13 @@ import {
   listRefundablePayments,
 } from "@jendal-workspace/db/repositories/projects";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
-import { PayPalError, type PayPalRefund } from "@jendal-workspace/paypal";
+import type { PayPalRefund } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayPalServices } from "../context";
 import { applyCompletedPaymentRefund } from "./payment-refunds";
-import { isSettledPayPalRefusal } from "./paypal-amounts";
+import { isPayPalRequestInProgress, isSettledPayPalRefusal, payPalRefusalMessage } from "./paypal-amounts";
 import { fail, type ProjectActor } from "./projects";
 
 export type ProjectRefundView = {
@@ -193,18 +193,6 @@ async function recordUncertain(db: Database, part: ProjectRefundPartRow, answere
   });
 }
 
-// PayPal answers a repeated request id with 409 while the first request is still running: that one may refund.
-function inProgressElsewhere(error: PayPalError): boolean {
-  return error.status === 409 || error.details.some((detail) => detail.issue === "PREVIOUS_REQUEST_IN_PROGRESS");
-}
-
-// Shown to the admin: PayPal's error name, message and first issue, never request details or credentials.
-function refusalMessage(error: PayPalError): string {
-  const [detail] = error.details;
-  const issue = detail?.issue ? ` (${[detail.issue, detail.description].filter(Boolean).join(": ")})` : "";
-  return `${error.name}: ${error.message}${issue}`;
-}
-
 type PartOutcome = { kind: "refused"; message: string; cause: unknown } | { kind: "uncertain"; cause: unknown };
 
 async function sendPart(
@@ -222,8 +210,8 @@ async function sendPart(
     });
   } catch (error) {
     // After an attempt with an unknown outcome PayPal may hold a refund for this part, so no refusal is final.
-    if (isSettledPayPalRefusal(error) && !inProgressElsewhere(error) && part.uncertainAt === null) {
-      return { answered: null, outcome: { kind: "refused", message: refusalMessage(error), cause: error } };
+    if (isSettledPayPalRefusal(error) && !isPayPalRequestInProgress(error) && part.uncertainAt === null) {
+      return { answered: null, outcome: { kind: "refused", message: payPalRefusalMessage(error), cause: error } };
     }
     return { answered: null, outcome: { kind: "uncertain", cause: error } };
   }

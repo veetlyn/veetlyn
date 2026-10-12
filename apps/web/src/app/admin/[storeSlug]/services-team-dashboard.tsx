@@ -9,7 +9,6 @@ import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import Loader from "@/components/loader";
 import PayPalConnectCard from "@/components/paypal-connect-card";
 import PublishCard from "@/components/seller-page/publish-card";
-import ComingSoon from "@/components/services-team/coming-soon";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import SetupChecklist from "@/components/setup-checklist";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
@@ -33,7 +32,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings, offeringCount, productCount } = result.data;
+  const { team, role, settings, offeringCount, productCount, payoutCredentialsSaved } = result.data;
   const solo = settings?.solo ?? false;
   const steps = servicesTeamSetupSteps(
     {
@@ -44,6 +43,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       solo,
       offeringCount,
       productCount,
+      payoutCredentialsSaved,
     },
     {
       settings: `/${team.slug}/settings`,
@@ -51,6 +51,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       connectPaypal: "#paypal",
       publish: "#publish",
       linkDiscord: `/${team.slug}/discord`,
+      payoutCredentials: `/${team.slug}/payouts`,
     },
   );
 
@@ -87,6 +88,11 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
         {!solo ? (
           <Link href={`/${team.slug}/members`} className="underline underline-offset-4">
             Members
+          </Link>
+        ) : null}
+        {!solo ? (
+          <Link href={`/${team.slug}/payouts`} className="underline underline-offset-4">
+            Payouts
           </Link>
         ) : null}
       </nav>
@@ -168,7 +174,20 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
         <dt className="text-muted-foreground">Selling as</dt>
         <dd>{solo ? "Just me" : "A team"}</dd>
       </dl>
-      {!solo ? <ComingSoon title="Payouts" /> : null}
+      {!solo ? (
+        <section className="grid gap-2 border p-4">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="font-medium">Payouts</h2>
+            <Link href={`/${team.slug}/payouts`} className="text-sm underline underline-offset-4">
+              Open payouts
+            </Link>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Members ask for a payout of their earnings, and an admin approves it. PayPal sends it from the team's
+            PayPal account.
+          </p>
+        </section>
+      ) : null}
     </main>
   );
 }

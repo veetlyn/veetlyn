@@ -1,17 +1,16 @@
 import {
   bioProblem,
-  canServicesTeam,
   hasStoreWideRole,
   MAX_RATE_BPS,
   SERVICES_TEAM_ROLES,
   SOLO_MANAGEMENT_FEE_BPS,
   SOLO_TEAM_CUT_BPS,
-  type ServicesTeamRole,
   teamSlugProblem,
   validateStoreSlug,
 } from "@jendal-workspace/core";
 import { countDigitalProducts } from "@jendal-workspace/db/repositories/catalog";
 import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
+import { hasTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import {
   addServicesTeamMember,
   applySoloTeamDefaults,
@@ -35,7 +34,7 @@ import { log } from "evlog";
 import { z } from "zod";
 
 import { protectedProcedure, router } from "../index";
-import { servicesTeamProcedure } from "../services-team-procedure";
+import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
 import { organizationForNewTeam, toTRPCError } from "../team-creation";
 
 const slugInput = z.string().max(100);
@@ -44,14 +43,6 @@ const roleInput = z.enum(SERVICES_TEAM_ROLES);
 // tRPC has no transformer here, so a Date would reach the browser as a string anyway; make it explicit.
 function isoOrNull(date: Date | null): string | null {
   return date?.toISOString() ?? null;
-}
-
-function requireAction(
-  role: ServicesTeamRole,
-  action: Parameters<typeof canServicesTeam>[1],
-  message: string,
-): void {
-  if (!canServicesTeam(role, action)) throw new TRPCError({ code: "FORBIDDEN", message });
 }
 
 export const servicesTeamRouter = router({
@@ -110,12 +101,13 @@ export const servicesTeamRouter = router({
     }),
 
   get: servicesTeamProcedure.query(async ({ ctx }) => {
-    const [settings, offeringCount, productCount] = await Promise.all([
+    const [settings, offeringCount, productCount, payoutCredentialsSaved] = await Promise.all([
       getServicesTeamSettings(ctx.db, ctx.servicesTeam.id),
       // All offerings count: a draft service still counts as "added" to the checklist.
       countServicesOfferings(ctx.db, ctx.servicesTeam.id),
       // All digital products count, drafts included (same rule as offerings).
       countDigitalProducts(ctx.db, ctx.servicesTeam.id),
+      hasTeamPayoutCredentials(ctx.db, ctx.servicesTeam.id),
     ]);
     return {
       team: ctx.servicesTeam,
@@ -123,6 +115,7 @@ export const servicesTeamRouter = router({
       settings: settings ? { ...settings, settingsSavedAt: isoOrNull(settings.settingsSavedAt) } : null,
       offeringCount,
       productCount,
+      payoutCredentialsSaved,
     };
   }),
 

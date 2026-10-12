@@ -1,5 +1,6 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore, type JsonValue } from "@jendal-workspace/core";
+import { getPayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { account } from "@jendal-workspace/db/schema/auth";
 import { createTestDb, hasTestDatabase, seedUser, truncateAll } from "@jendal-workspace/db/testing/db";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -82,7 +83,12 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
 
     const saved = await caller(userId).payoutDestination.connect();
 
-    expect(saved).toEqual({ paypalPayerId: PAYER_ID, paypalEmail: "bea@example.com", verifiedAt: expect.any(String) });
+    expect(saved).toEqual({
+      paypalPayerId: PAYER_ID,
+      paypalEmail: "bea@example.com",
+      verifiedAt: expect.any(String),
+      ageConfirmed: false,
+    });
     expect(calls).toEqual([
       {
         url: "https://api-m.sandbox.paypal.com/v1/identity/oauth2/userinfo?schema=paypalv1.1",
@@ -117,5 +123,66 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
     stubUserInfo({ name: "invalid_token" }, 401);
     await expect(caller(userId).payoutDestination.connect()).rejects.toMatchObject(unconfirmed);
     await expect(caller(userId).payoutDestination.get()).resolves.toBeNull();
+  });
+
+  it.each<{ name: string; userInfo: JsonValue; confirmAdult: boolean; source: string }>([
+    {
+      name: "PayPal's age range",
+      userInfo: { user_id: PAYPAL_USER_ID, payer_id: PAYER_ID, age_range: "18-24" },
+      confirmAdult: false,
+      source: "paypal",
+    },
+    {
+      name: "the member's confirmation when PayPal sends no age",
+      userInfo: { user_id: PAYPAL_USER_ID, payer_id: PAYER_ID },
+      confirmAdult: true,
+      source: "self",
+    },
+  ])("records the age from $name", async ({ userInfo, confirmAdult, source }) => {
+    const userId = await seedUser(db, "Eve");
+    await linkPayPal(userId);
+    stubUserInfo(userInfo);
+
+    await expect(caller(userId).payoutDestination.connect({ confirmAdult })).resolves.toMatchObject({
+      ageConfirmed: true,
+    });
+    await expect(getPayoutDestination(db, userId)).resolves.toMatchObject({
+      ageSource: source,
+      ageConfirmedAt: expect.any(Date),
+    });
+  });
+
+  it("refuses an account PayPal reports as under 18 and removes the destination saved before", async () => {
+    const userId = await seedUser(db, "Fay");
+    await linkPayPal(userId);
+    stubUserInfo({ user_id: PAYPAL_USER_ID, payer_id: PAYER_ID });
+    await caller(userId).payoutDestination.connect({ confirmAdult: true });
+
+    stubUserInfo({ user_id: PAYPAL_USER_ID, payer_id: PAYER_ID, age_range: "13-17" });
+    await expect(caller(userId).payoutDestination.connect({ confirmAdult: true })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "PayPal says this account belongs to someone under 18. Payouts need a recipient who is 18 or older.",
+    });
+    await expect(caller(userId).payoutDestination.get()).resolves.toBeNull();
+  });
+
+  it("saves without an age when PayPal sends none, until the member confirms", async () => {
+    const userId = await seedUser(db, "Gus");
+    await linkPayPal(userId);
+    stubUserInfo({ user_id: PAYPAL_USER_ID, payer_id: PAYER_ID });
+
+    await expect(caller(userId).payoutDestination.connect()).resolves.toMatchObject({ ageConfirmed: false });
+    await expect(caller(userId).payoutDestination.confirmAdult()).resolves.toMatchObject({ ageConfirmed: true });
+    await expect(caller(userId).payoutDestination.get()).resolves.toMatchObject({ ageConfirmed: true });
+    await expect(getPayoutDestination(db, userId)).resolves.toMatchObject({ ageSource: "self" });
+  });
+
+  it("refuses an age confirmation without a destination", async () => {
+    const userId = await seedUser(db, "Hal");
+
+    await expect(caller(userId).payoutDestination.confirmAdult()).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Connect PayPal first, then confirm your age.",
+    });
   });
 });

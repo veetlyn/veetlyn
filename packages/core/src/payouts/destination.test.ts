@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { payoutDestinationFromUserInfo } from "./destination";
+import { payoutAgeFromUserInfo, payoutDestinationFromUserInfo } from "./destination";
 
 // Shapes from PayPal's userinfo endpoint (schema=paypalv1.1, Fact 14). The account ID Better Auth
 // stores for a PayPal account is this user_id, which is not the payer ID.
@@ -48,5 +48,19 @@ describe("payoutDestinationFromUserInfo", () => {
     expect(payoutDestinationFromUserInfo(USER_ID, { user_id: USER_ID, payer_id: USER_ID })).toBeNull();
     expect(payoutDestinationFromUserInfo(USER_ID, { user_id: USER_ID, payer_id: "g83jxtj5ehcq2" })).toBeNull();
     expect(payoutDestinationFromUserInfo(USER_ID, null)).toBeNull();
+  });
+});
+
+describe("payoutAgeFromUserInfo", () => {
+  it.each([
+    { ageRange: "18-24", kind: "adult" },
+    { ageRange: "65+", kind: "adult" },
+    { ageRange: "13-17", kind: "minor" },
+    { ageRange: "16-24", kind: "minor" },
+    { ageRange: undefined, kind: "unknown" },
+    { ageRange: "", kind: "unknown" },
+    { ageRange: "unknown", kind: "unknown" },
+  ])("reads age_range $ageRange as $kind", ({ ageRange, kind }) => {
+    expect(payoutAgeFromUserInfo({ user_id: USER_ID, age_range: ageRange })).toEqual({ kind });
   });
 });

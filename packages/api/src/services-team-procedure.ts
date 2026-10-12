@@ -1,3 +1,4 @@
+import { canServicesTeam, type ServicesTeamAction, type ServicesTeamRole } from "@jendal-workspace/core";
 import { findServicesTeamBySlug, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -14,3 +15,7 @@ export const servicesTeamProcedure = protectedProcedure
     if (!role) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found." });
     return next({ ctx: { servicesTeam: team, servicesTeamRole: role } });
   });
+
+export function requireAction(role: ServicesTeamRole, action: ServicesTeamAction, message: string): void {
+  if (!canServicesTeam(role, action)) throw new TRPCError({ code: "FORBIDDEN", message });
+}
