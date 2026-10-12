@@ -1,0 +1,39 @@
+apps/web/src/app/admin/[storeSlug]/payouts/payout-credentials-card.tsx
+  s_e76588bfdc1e5d::t_23bc2ad3a39785 3,5,7,10,15-47,50,56-57,63,66-76,78,81-82,87-91,94-109,113-115,123-128,130-144,150-196,199-203
+apps/web/src/app/admin/[storeSlug]/payouts/payout-requests-table.tsx
+  s_e76588bfdc1e5d::t_70e4d01a3a2dfa 42
+  s_e76588bfdc1e5d::t_87330a67a3a198 59-60
+  s_e76588bfdc1e5d::t_afd10dfcf285cf 62-65
+  s_e76588bfdc1e5d::t_89ab5d89a5285f 61,136-138
+  s_e76588bfdc1e5d::t_15bba32102725a 12,19-27
+  s_e76588bfdc1e5d::t_d82aa82ddbb384 85
+  s_e76588bfdc1e5d::t_62131d631b5983 201
+  s_e76588bfdc1e5d::t_270bd1770f2cbe 154-160
+packages/core/src/services-teams/setup-steps.ts
+  s_e76588bfdc1e5d::t_e1d78986af7e50 41
+apps/web/src/app/admin/me/payouts/payout-history.tsx
+  s_e76588bfdc1e5d::t_95a35d4aaa859a 23-47
+  s_e76588bfdc1e5d::t_6b92fb5a0105f8 6
+apps/web/src/app/admin/me/payouts/earnings-section.tsx
+  s_e76588bfdc1e5d::t_3af336d4de0b7c 85-90
+  s_e76588bfdc1e5d::t_d8d0cd78e082cf 42-51
+  s_e76588bfdc1e5d::t_3db1e3bd6debb6 14-15
+packages/core/src/services-teams/setup-steps.test.ts
+  s_e76588bfdc1e5d::t_1614a8691fb969 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a810356529d0ac8218bb4beeca1e68b0e522090",
+  "prompts": {},
+  "sessions": {
+    "s_e76588bfdc1e5d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "975a5b71-1188-4fca-8357-373799036ace",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
