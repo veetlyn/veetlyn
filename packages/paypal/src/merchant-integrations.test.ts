@@ -17,6 +17,7 @@ const INTEGRATION_BODY = {
   capabilities: [{ name: "PAYPAL_CHECKOUT", status: "ACTIVE" }],
   payments_receivable: true,
   legal_name: "Acme LLC",
+  country: "SN",
   primary_email: "seller@example.com",
   primary_email_confirmed: true,
   oauth_integrations: [
@@ -56,6 +57,7 @@ describe("merchantIntegrations.get", () => {
       primaryEmail: "seller@example.com",
       primaryEmailConfirmed: true,
       legalName: "Acme LLC",
+      country: "SN",
       products: [{ name: "EXPRESS_CHECKOUT", status: "ACTIVE", vettingStatus: undefined }],
       capabilities: [{ name: "PAYPAL_CHECKOUT", status: "ACTIVE" }],
       oauthIntegrations: [

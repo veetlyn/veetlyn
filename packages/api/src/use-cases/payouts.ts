@@ -1,19 +1,22 @@
 import {
+  estimatePayoutFeeMinor,
   ledgerAccounts,
   parseMajorAmount,
   payoutAmountProblem,
   payoutBatchOutcome,
+  payoutFeeRecoveredTransfer,
   payoutFeesTransfer,
   payoutItemOutcome,
   payoutReleasedTransfer,
   payoutRequestedTransfer,
   type PayoutRequestStatus,
+  payoutSentProblem,
   payoutSucceededTransfer,
   type ServicesTeamRecord,
   toPayPalValue,
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
-import type { Transaction } from "@jendal-workspace/db/executor";
+import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import {
   getTeamPayoutCredentials,
@@ -30,6 +33,7 @@ import {
   updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
 import { getPayoutDestination, listMemberEarnings, type MemberEarningsRow } from "@jendal-workspace/db/repositories/payouts";
+import { getTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import {
   type PayoutBatch,
@@ -64,6 +68,10 @@ export type PayoutRequestView = {
   receiverPayerId: string;
   failureMessage: string | null;
   reviewReason: string | null;
+  // PayPal's fee as estimated when the send was claimed, and what was sent: the amount less that estimate.
+  feeEstimateMinor: number | null;
+  sentMinor: number | null;
+  // The fee PayPal reported once the payout succeeded.
   feeMinor: number | null;
   paypalBatchId: string | null;
   paypalItemStatus: string | null;
@@ -75,7 +83,12 @@ export type PayoutRequestView = {
 
 export type TeamPayoutRequestView = PayoutRequestView & { memberName: string; memberEmail: string };
 export type MemberPayoutRequestView = PayoutRequestView & { teamName: string; teamSlug: string };
-export type MemberPayoutsView = { earnings: MemberEarningsRow[]; requests: MemberPayoutRequestView[] };
+// senderCountry and receiverCountry are the countries estimatePayoutFeeMinor takes for a payout from this team.
+export type MemberEarningsView = Omit<MemberEarningsRow, "teamPayPalCountry"> & {
+  senderCountry: string | null;
+  receiverCountry: string | null;
+};
+export type MemberPayoutsView = { earnings: MemberEarningsView[]; requests: MemberPayoutRequestView[] };
 
 export type PayoutTeam = Pick<ServicesTeamRecord, "id" | "name" | "paypalMerchantId">;
 export type PayoutDeps = { db: Database; payouts: PayoutServices };
@@ -113,6 +126,8 @@ function payoutRequestView(row: PayoutRequestRow): PayoutRequestView {
     receiverPayerId: row.receiverPayerId,
     failureMessage: row.failureMessage,
     reviewReason: row.reviewReason,
+    feeEstimateMinor: row.feeEstimateMinor,
+    sentMinor: row.sentMinor,
     feeMinor: row.feeMinor,
     paypalBatchId: row.paypalBatchId,
     paypalItemStatus: row.paypalItemStatus,
@@ -130,6 +145,29 @@ function postingFor(request: PayoutRequestRow) {
     freelancerId: request.userId,
     amountMinor: request.amountMinor,
   };
+}
+
+type SendAmounts = { feeEstimateMinor: number; sentMinor: number };
+
+// PayPal's fee comes off the payout, estimated from the team's and the member's PayPal countries.
+async function sendAmountsFor(db: DbExecutor, request: PayoutRequestRow): Promise<SendAmounts> {
+  const senderCountry = await getTeamPayPalCountry(db, request.teamId);
+  const destination = await getPayoutDestination(db, request.userId);
+  const feeEstimateMinor = estimatePayoutFeeMinor({
+    currency: request.currency,
+    amountMinor: request.amountMinor,
+    senderCountry,
+    receiverCountry: destination?.paypalCountry ?? null,
+  });
+  return { feeEstimateMinor, sentMinor: request.amountMinor - feeEstimateMinor };
+}
+
+// A claimed send always stored both (the table's check keeps them together).
+function claimedAmounts(request: PayoutRequestRow): SendAmounts {
+  if (request.feeEstimateMinor === null || request.sentMinor === null) {
+    throw new Error(`Payout request ${request.id} was sent without its fee estimate`);
+  }
+  return { feeEstimateMinor: request.feeEstimateMinor, sentMinor: request.sentMinor };
 }
 
 function notFound(): TRPCError {
@@ -221,6 +259,8 @@ export async function approvePayoutRequest(
   await deps.db.transaction(async (tx) => {
     const request = await lockTeamRequest(tx, input.team.id, input.requestId);
     if (request.status !== "requested") throw alreadyDecided();
+    const tooSmall = payoutSentProblem((await sendAmountsFor(tx, request)).sentMinor);
+    if (tooSmall) throw new TRPCError({ code: "BAD_REQUEST", message: tooSmall });
     await updatePayoutRequest(tx, request.id, {
       status: "queued",
       decidedByUserId: input.deciderId,
@@ -259,8 +299,9 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string): 
   if (uncertainAt && uncertainAt.getTime() < now - MAX_UNCERTAIN_RETRY_MS) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This payout is too old to retry safely. Contact support." });
   }
-  // Only a fresh send re-checks the destination: an uncertain retry may already have a batch with PayPal, so it
-  // must go on and record it.
+  // Only a fresh send re-checks the destination and estimates the fee: an uncertain retry may already have a batch
+  // with PayPal, so it must go on with the same amount and record it.
+  let amounts: SendAmounts | null = null;
   if (uncertainAt === null) {
     const destination = await getPayoutDestination(tx, request.userId);
     const destinationHold =
@@ -269,8 +310,10 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string): 
         : destination.paypalPayerId !== request.receiverPayerId
           ? DESTINATION_CHANGED
           : null;
-    if (destinationHold) {
-      return { kind: "held", request: await updatePayoutRequest(tx, request.id, { failureMessage: destinationHold }) };
+    amounts = await sendAmountsFor(tx, request);
+    const hold = destinationHold ?? payoutSentProblem(amounts.sentMinor);
+    if (hold) {
+      return { kind: "held", request: await updatePayoutRequest(tx, request.id, { failureMessage: hold }) };
     }
   }
   const credentials = await lockTeamPayoutCredentialsForSend(tx, team.id);
@@ -285,6 +328,7 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string): 
     uncertainAt,
     failureMessage: null,
     updatedAt: claimedAt,
+    ...amounts,
   });
   return { kind: "claimed", request: claimed, credentials };
 }
@@ -347,6 +391,7 @@ async function balanceProblem(
   const balance = balances.balances.find((entry) => entry.currency === request.currency);
   const availableMinor = balance ? availableMinorIn(balance.available) : 0;
   if (availableMinor === null) return { message: BALANCE_UNREADABLE, cause: null };
+  // The team's balance pays what is sent and PayPal's fee on top: about the whole requested amount.
   return availableMinor < request.amountMinor ? { message: LOW_BALANCE, cause: null } : null;
 }
 
@@ -357,6 +402,7 @@ async function attemptSend(
   claim: { request: PayoutRequestRow; credentials: TeamPayoutCredentialsRow },
 ): Promise<SendOutcome> {
   const { request } = claim;
+  const { sentMinor } = claimedAmounts(request);
   let client: PayPalClient;
   try {
     client = await payoutClientFromCredentials(deps.payouts, claim.credentials);
@@ -375,7 +421,7 @@ async function attemptSend(
       emailSubject: `You have a payout from ${team.name}`,
       item: {
         receiverPayerId: request.receiverPayerId,
-        amount: { value: toPayPalValue(request.amountMinor), currency: request.currency },
+        amount: { value: toPayPalValue(sentMinor), currency: request.currency },
         note: `Payout from ${team.name} via Payleor`,
         senderItemId: request.id,
       },
@@ -570,6 +616,7 @@ async function recordSettlement(tx: Transaction, request: PayoutRequestRow, sett
   const { item } = settlement;
   const { feeMinor, reviewReason } = payoutFee(request, item);
   if (reviewReason) log.warn({ action: "payout.fee", payoutRequest: { id: request.id }, reviewReason });
+  const { feeEstimateMinor, sentMinor } = claimedAmounts(request);
   const succeeded = await updatePayoutRequest(tx, request.id, {
     status: "succeeded",
     paypalItemId: item.itemId,
@@ -578,10 +625,20 @@ async function recordSettlement(tx: Transaction, request: PayoutRequestRow, sett
     reviewReason,
     settledAt: new Date(),
   });
-  await postIfNew(tx, request.teamId, payoutSucceededTransfer(postingFor(request)));
-  const fees =
-    feeMinor === null ? null : payoutFeesTransfer({ currency: request.currency, payoutRequestId: request.id, feeMinor });
-  if (fees) await postIfNew(tx, request.teamId, fees);
+  // The team's balance paid PayPal's fee; the member bears it up to the estimate kept back from their payout. A
+  // lower fee releases the rest of the estimate to them, and the team absorbs a higher one. Without a usable fee
+  // the estimate stands in for it, and the review reason says so.
+  const chargedMinor = feeMinor ?? feeEstimateMinor;
+  const posting = postingFor(request);
+  const transfers = [
+    payoutSucceededTransfer({ ...posting, sentMinor }),
+    payoutFeesTransfer({ currency: request.currency, payoutRequestId: request.id, feeMinor: chargedMinor }),
+    payoutFeeRecoveredTransfer({ ...posting, amountMinor: Math.min(chargedMinor, feeEstimateMinor) }),
+    chargedMinor < feeEstimateMinor
+      ? payoutReleasedTransfer({ ...posting, amountMinor: feeEstimateMinor - chargedMinor })
+      : null,
+  ];
+  for (const transfer of transfers) if (transfer) await postIfNew(tx, request.teamId, transfer);
   return succeeded;
 }
 
@@ -632,9 +689,17 @@ export async function listTeamPayouts(db: Database, teamId: string): Promise<Tea
 }
 
 export async function getMemberPayouts(db: Database, userId: string): Promise<MemberPayoutsView> {
-  const [earnings, requests] = await Promise.all([listMemberEarnings(db, userId), listUserPayoutRequests(db, userId)]);
+  const [earnings, requests, destination] = await Promise.all([
+    listMemberEarnings(db, userId),
+    listUserPayoutRequests(db, userId),
+    getPayoutDestination(db, userId),
+  ]);
   return {
-    earnings,
+    earnings: earnings.map(({ teamPayPalCountry, ...row }) => ({
+      ...row,
+      senderCountry: teamPayPalCountry,
+      receiverCountry: destination?.paypalCountry ?? null,
+    })),
     requests: requests.map((row) => ({ ...payoutRequestView(row), teamName: row.teamName, teamSlug: row.teamSlug })),
   };
 }

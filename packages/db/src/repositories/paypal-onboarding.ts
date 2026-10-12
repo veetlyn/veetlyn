@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 
+import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
 import { team } from "../schema/organization";
 import {
@@ -87,4 +88,14 @@ export async function markTeamPayPalMerchant(
     .where(eq(team.id, input.teamId))
     .returning({ slug: team.slug });
   return row ?? null;
+}
+
+// PayPal reports the connected account's country on its merchant integration.
+export async function saveTeamPayPalCountry(db: DbExecutor, input: { teamId: string; country: string }): Promise<void> {
+  await db.update(team).set({ paypalCountry: input.country }).where(eq(team.id, input.teamId));
+}
+
+export async function getTeamPayPalCountry(db: DbExecutor, teamId: string): Promise<string | null> {
+  const [row] = await db.select({ country: team.paypalCountry }).from(team).where(eq(team.id, teamId)).limit(1);
+  return row?.country ?? null;
 }

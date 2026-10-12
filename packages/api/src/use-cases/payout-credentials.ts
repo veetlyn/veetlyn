@@ -14,6 +14,7 @@ import {
   type TeamPayoutCredentialsRow,
 } from "@jendal-workspace/db/repositories/payout-credentials";
 import { hasActivePayoutSend } from "@jendal-workspace/db/repositories/payout-requests";
+import { saveTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import {
   actionUrlFromLinks,
@@ -27,6 +28,7 @@ import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayoutServices, PayPalServices } from "../context";
+import { payPalCountry } from "../paypal/onboarding";
 import { payPalErrorLog } from "./paypal-amounts";
 
 // accountId is null for credentials saved before PayPal reported which account they belong to.
@@ -174,6 +176,18 @@ async function readBalances(client: PayPalClient, currency: string, teamId: stri
   }
 }
 
+// Teams connected before Payleor kept the PayPal country get it here. Payout fees fall back to the international
+// estimate without it, so a failure only logs.
+async function refreshTeamPayPalCountry(db: Database, paypal: PayPalServices, teamId: string, merchantId: string) {
+  try {
+    const integration = await paypal.client.merchantIntegrations.get(paypal.partnerId, merchantId);
+    const country = payPalCountry(integration.country);
+    if (country) await saveTeamPayPalCountry(db, { teamId, country });
+  } catch (cause) {
+    log.warn({ action: "payout_connect.country", team: { id: teamId }, error: payPalErrorLog(cause) });
+  }
+}
+
 function otherAccount(merchantId: string): TRPCError {
   return new TRPCError({
     code: "PRECONDITION_FAILED",
@@ -220,6 +234,7 @@ export async function completePayoutConnect(
       return saved;
     },
   );
+  await refreshTeamPayPalCountry(db, paypal, team.id, merchantId);
   return toView(row);
 }
 

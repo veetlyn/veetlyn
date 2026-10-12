@@ -18,6 +18,8 @@ export type PayoutRequestPatch = Partial<
     | "paypalBatchId"
     | "paypalItemId"
     | "paypalItemStatus"
+    | "feeEstimateMinor"
+    | "sentMinor"
     | "feeMinor"
     | "failureMessage"
     | "reviewReason"

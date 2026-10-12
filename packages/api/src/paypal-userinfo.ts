@@ -23,6 +23,10 @@ const payPalUserInfoSchema = z.looseObject({
   email_verified: z.boolean().optional().catch(undefined),
   emails: z.array(emailEntrySchema).optional().catch(undefined),
   age_range: z.string().optional().catch(undefined),
+  address: z
+    .looseObject({ country: z.string().optional().catch(undefined) })
+    .optional()
+    .catch(undefined),
 }) satisfies z.ZodType<PayPalUserInfo>;
 
 // Null on any failure: the caller treats it as "PayPal did not confirm", and nothing here is logged,

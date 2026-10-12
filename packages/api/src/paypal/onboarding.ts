@@ -6,6 +6,7 @@ import {
   type PayPalOnboardingRow,
   savePayPalIntegration,
   savePayPalReferral,
+  saveTeamPayPalCountry,
 } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { actionUrlFromLinks, PARTNER_REFERRAL_FEATURES, type PayPalClient } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
@@ -59,6 +60,11 @@ export function viewFor(team: StoreRecord, row: PayPalOnboardingRow | null): Pay
     primaryEmailConfirmed: row.primaryEmailConfirmed,
   };
   return row.status === "pending" ? { state: "pending", ...stored } : { state: "needs_attention", ...stored };
+}
+
+// The merchant integration's ISO country code; anything else is ignored.
+export function payPalCountry(value: string | undefined): string | null {
+  return value !== undefined && /^[A-Z]{2}$/.test(value) ? value : null;
 }
 
 // PayPal caps tracking_id and return_url at 127 characters (Fact 2).
@@ -130,6 +136,8 @@ export async function refreshPayPalOnboarding(
     primaryEmailConfirmed: status.primaryEmailConfirmed === true,
     oauthIntegrations: status.oauthIntegrations,
   });
+  const country = payPalCountry(status.country);
+  if (country) await saveTeamPayPalCountry(deps.db, { teamId: team.id, country });
   if (connected && team.paypalMerchantId !== lookup.merchantId) {
     const updated = await markTeamPayPalMerchant(deps.db, { teamId: team.id, merchantId: lookup.merchantId });
     if (updated) await dropCachedLookups(deps.onTeamMerchantChanged, { id: team.id, slug: updated.slug });

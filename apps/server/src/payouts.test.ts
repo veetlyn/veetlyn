@@ -112,6 +112,8 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
     if (!request) throw new Error("No payout request inserted");
     return updatePayoutRequest(db, request.id, {
       status: "sent",
+      feeEstimateMinor: 25,
+      sentMinor: 2_475,
       paypalBatchId: input.batchId,
       sentAt: input.sentAt,
       updatedAt: input.updatedAt,

@@ -32,6 +32,11 @@ export function payoutAmountProblem(input: { amountMinor: number; availableMinor
   return null;
 }
 
+// PayPal's fee comes off the payout, so what is sent must still be a payout PayPal accepts.
+export function payoutSentProblem(sentMinor: number): string | null {
+  return sentMinor < MIN_PAYOUT_MINOR ? "This payout is too small to cover PayPal's fee." : null;
+}
+
 // Enough of a team's PayPal merchant id for an admin to recognise the account.
 export function maskedPayPalAccountId(accountId: string): string {
   return `••••${accountId.slice(-4)}`;

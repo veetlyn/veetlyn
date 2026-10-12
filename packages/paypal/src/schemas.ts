@@ -128,6 +128,7 @@ export const merchantIntegrationSchema = z.looseObject({
   primary_email: optionalText,
   primary_email_confirmed: optionalFlag,
   legal_name: optionalText,
+  country: optionalText,
   products: lenientArray(z.looseObject({ name: z.string().catch(""), status: optionalText, vetting_status: optionalText })),
   capabilities: lenientArray(z.looseObject({ name: z.string().catch(""), status: optionalText })),
   oauth_integrations: lenientArray(

@@ -11,6 +11,7 @@ import {
   paymentCapturedTransfer,
   paymentFeesTransfer,
   paymentRefundedTransfer,
+  payoutFeeRecoveredTransfer,
   payoutFeesTransfer,
   payoutReleasedTransfer,
   payoutRequestedTransfer,
@@ -77,7 +78,7 @@ describe("services spec §6.3 postings for the §5.3 example", () => {
       { account: "owed:f1:available", currency: "USD", amountMinor: -72_250 },
       { account: "owed:f1:reserved", currency: "USD", amountMinor: 72_250 },
     ]);
-    expect(payoutSucceededTransfer({ ...payout, amountMinor: 72_250 }).entries).toEqual([
+    expect(payoutSucceededTransfer({ ...payout, sentMinor: 72_250 }).entries).toEqual([
       { account: "owed:f1:reserved", currency: "USD", amountMinor: -72_250 },
       { account: "paid_out:f1", currency: "USD", amountMinor: 72_250 },
     ]);
@@ -98,6 +99,19 @@ describe("services spec §6.3 postings for the §5.3 example", () => {
       ],
     });
     expect(payoutFeesTransfer({ currency: "USD", payoutRequestId: "po1", feeMinor: 0 })).toBeNull();
+  });
+
+  it("recovers the member's share of a payout fee from their reserved earnings, or posts nothing for zero", () => {
+    expect(payoutFeeRecoveredTransfer({ ...payout, amountMinor: 25 })).toEqual({
+      kind: "payout_fee_recovered",
+      reference: "payout_fee_recovered:po1",
+      projectId: null,
+      entries: [
+        { account: "owed:f1:reserved", currency: "USD", amountMinor: -25 },
+        { account: "team_revenue", currency: "USD", amountMinor: 25 },
+      ],
+    });
+    expect(payoutFeeRecoveredTransfer({ ...payout, amountMinor: 0 })).toBeNull();
   });
 
   it("moves a penalty after completion to the team or to client refunds", () => {
@@ -152,11 +166,16 @@ describe("every posting builder balances (property-style, 500 random cases each)
         fromTeamRevenueMinor: amount(),
       }),
     payoutRequested: () => payoutRequestedTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
-    payoutSucceeded: () => payoutSucceededTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
+    payoutSucceeded: () => payoutSucceededTransfer({ ...payout, currency: currency(), sentMinor: amount() }),
     payoutReleased: () => payoutReleasedTransfer({ ...payout, currency: currency(), amountMinor: amount() }),
     payoutFees: () => {
       const transfer = payoutFeesTransfer({ currency: currency(), payoutRequestId: "po1", feeMinor: amount() });
       if (!transfer) throw new Error("A non-zero payout fee has a transfer.");
+      return transfer;
+    },
+    payoutFeeRecovered: () => {
+      const transfer = payoutFeeRecoveredTransfer({ ...payout, currency: currency(), amountMinor: amount() });
+      if (!transfer) throw new Error("A non-zero recovered fee has a transfer.");
       return transfer;
     },
     penaltyAfterCompletion: () =>

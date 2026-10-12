@@ -27,6 +27,8 @@ export const payoutDestination = pgTable(
     // Payout recipients are 18 or older: PayPal's age range says so, or the member confirmed it when PayPal sent none.
     ageConfirmedAt: timestamp("age_confirmed_at"),
     ageSource: text("age_source", { enum: ["paypal", "self"] }),
+    // ISO country code from PayPal's userinfo; it sets PayPal's payout fee. Null when PayPal did not share it.
+    paypalCountry: text("paypal_country"),
   },
   (t) => [check("payout_destination_age_source_check", sql`${t.ageSource} in ('paypal', 'self')`)],
 );
@@ -96,6 +98,11 @@ export const payoutRequest = pgTable(
     paypalBatchId: text("paypal_batch_id").unique(),
     paypalItemId: text("paypal_item_id"),
     paypalItemStatus: text("paypal_item_status"),
+    // Set when a fresh send is claimed and kept for its retries: PayPal's fee is estimated and taken off the payout,
+    // so sent_minor + fee_estimate_minor = amount_minor.
+    feeEstimateMinor: minor("fee_estimate_minor"),
+    sentMinor: minor("sent_minor"),
+    // The fee PayPal reported when the payout succeeded.
     feeMinor: minor("fee_minor"),
     failureMessage: text("failure_message"),
     reviewReason: text("review_reason"),
@@ -116,6 +123,10 @@ export const payoutRequest = pgTable(
     index("payout_request_user_team_idx").on(t.userId, t.teamId),
     uniqueIndex("payout_request_open_idx").on(t.teamId, t.userId).where(PAYOUT_REQUEST_OPEN_WHERE),
     check("payout_request_amount_positive", sql`${t.amountMinor} > 0`),
+    check(
+      "payout_request_sent_check",
+      sql`(${t.sentMinor} is null and ${t.feeEstimateMinor} is null) or (${t.sentMinor} > 0 and ${t.feeEstimateMinor} >= 0 and ${t.sentMinor} + ${t.feeEstimateMinor} = ${t.amountMinor})`,
+    ),
     check(
       "payout_request_status_check",
       sql`${t.status} in ('requested', 'rejected', 'queued', 'sending', 'sent', 'succeeded', 'failed')`,

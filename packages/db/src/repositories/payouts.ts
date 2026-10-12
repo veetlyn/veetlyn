@@ -16,6 +16,7 @@ export type PayoutDestinationRecord = {
   verifiedAt: Date;
   ageConfirmedAt: Date | null;
   ageSource: PayoutAgeSource | null;
+  paypalCountry: string | null;
 };
 
 const destinationColumns = {
@@ -24,6 +25,7 @@ const destinationColumns = {
   verifiedAt: payoutDestination.verifiedAt,
   ageConfirmedAt: payoutDestination.ageConfirmedAt,
   ageSource: payoutDestination.ageSource,
+  paypalCountry: payoutDestination.paypalCountry,
 };
 
 export async function getPayoutDestination(db: DbExecutor, userId: string): Promise<PayoutDestinationRecord | null> {
@@ -89,6 +91,8 @@ export type MemberEarningsRow = {
   availableMinor: number;
   reservedMinor: number;
   paidOutMinor: number;
+  // The team's PayPal country, which with the member's sets PayPal's payout fee.
+  teamPayPalCountry: string | null;
 };
 
 // The member's earnings per team and currency, from the ledger balances; teams where every balance is zero are left out.
@@ -109,11 +113,12 @@ export async function listMemberEarnings(db: DbExecutor, userId: string): Promis
       availableMinor: sumFor(available),
       reservedMinor: sumFor(reserved),
       paidOutMinor: sumFor(paidOut),
+      teamPayPalCountry: team.paypalCountry,
     })
     .from(ledgerBalance)
     .innerJoin(team, eq(team.id, ledgerBalance.teamId))
     .where(and(inArray(ledgerBalance.account, [available, reserved, paidOut]), ne(ledgerBalance.balanceMinor, 0)))
-    .groupBy(team.id, team.name, team.slug, ledgerBalance.currency)
+    .groupBy(team.id, team.name, team.slug, team.paypalCountry, ledgerBalance.currency)
     .orderBy(team.name, ledgerBalance.currency);
 }
 

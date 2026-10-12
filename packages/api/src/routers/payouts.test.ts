@@ -11,7 +11,7 @@ import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { getTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
 import { deletePayoutDestination, savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
-import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
+import { getTeamPayPalCountry, markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
 import { payoutConnectAttempt, payoutRequest } from "@jendal-workspace/db/schema/payouts";
 import {
@@ -84,6 +84,9 @@ function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
       return jsonResponse(201, { links: [{ href: ACTION_URL, rel: "action_url", method: "GET" }] });
     }
     if (path === CREDENTIALS_PATH) return answers.sellerCredentials?.() ?? sellerCredentialsAnswer();
+    if (path.startsWith(`/v1/customer/partners/${PARTNER_ID}/merchant-integrations/`)) {
+      return jsonResponse(200, { merchant_id: path.split("/").at(-1) ?? "", country: "US" });
+    }
     if (path === "/v1/reporting/balances") return answers.balances?.() ?? jsonResponse(200, balancesAnswer(MERCHANT_ID));
     if (path === "/v1/payments/payouts" && answers.payout) return answers.payout();
     if (path.startsWith("/v1/payments/payouts/") && answers.batch) return answers.batch();
@@ -208,6 +211,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(openSecret(services.payouts.secretKey, sealed, teamId)).resolves.toBe(CLIENT_SECRET);
 
     await expect(admin.servicesTeam.get(TEAM)).resolves.toMatchObject({ payoutCredentialsSaved: true });
+    // Teams connected before Payleor kept the PayPal country get it now; it sets PayPal's payout fee.
+    await expect(getTeamPayPalCountry(db, teamId)).resolves.toBe("US");
   });
 
   const CONNECT_EXPIRED = { code: "BAD_REQUEST", message: "This PayPal connection expired. Turn on automatic payouts again." };
@@ -362,11 +367,11 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     );
   }
 
-  async function confirmedDestination(userId: string) {
+  async function confirmedDestination(userId: string, paypalCountry: string | null = "US") {
     await savePayoutDestination(
       db,
       userId,
-      { paypalPayerId: PAYER_ID, paypalEmail: "ada@example.com" },
+      { paypalPayerId: PAYER_ID, paypalEmail: "ada@example.com", paypalCountry },
       { confirmedAt: new Date(), source: "self" },
     );
   }
@@ -390,13 +395,14 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
   }
 
-  // Automatic payouts on for MERCHANT1, $900 available in the team's PayPal balance, and Ada, a freelancer owed $850
-  // with a confirmed destination. PayPal requests made while turning payouts on are dropped. While `gate.on`
-  // is true, each payout POST waits in `gate.held` until the test answers it, so two sends can interleave.
-  async function payoutTeam() {
+  // Automatic payouts on for MERCHANT1, a US account, $900 available in the team's PayPal balance, and Ada, a
+  // freelancer owed $850 with a confirmed destination in `memberCountry`: between two US accounts PayPal's fee is
+  // estimated at $0.25. PayPal requests made while turning payouts on are dropped. While `gate.on` is true, each
+  // payout POST waits in `gate.held` until the test answers it, so two sends can interleave.
+  async function payoutTeam(memberCountry: string | null = "US") {
     const { userId: adminId, organizationId, teamId } = await connectedTeam();
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
-    await confirmedDestination(memberId);
+    await confirmedDestination(memberId, memberCountry);
     await earn(teamId, memberId);
     const answers: TeamPayPalAnswers = {
       balances: () => jsonResponse(200, balancesAnswer(MERCHANT_ID, "900.00")),
@@ -441,7 +447,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       .sort();
   }
 
-  it("pays an approved request from the team's PayPal account and settles it once", async () => {
+  it("pays an approved request less PayPal's estimated fee from the team's PayPal account and settles it once", async () => {
     const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
 
     const requested = await member.payouts.request({ ...TEAM, amount: "500.00" });
@@ -458,6 +464,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "sent",
       paypalBatchId: "BATCH1",
+      feeEstimateMinor: 25,
+      sentMinor: 49_975,
       failureMessage: null,
       uncertain: false,
     });
@@ -470,7 +478,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         {
           recipient_type: "PAYPAL_ID",
           receiver: PAYER_ID,
-          amount: { value: "500.00", currency: "USD" },
+          amount: { value: "499.75", currency: "USD" },
           note: "Payout from acme-studio via Payleor",
           sender_item_id: id,
         },
@@ -486,12 +494,18 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       reviewReason: null,
     });
     expect(paypal.requests.map((r) => `${r.method} ${pathOf(r)}`).at(-1)).toBe("GET /v1/payments/payouts/BATCH1");
-    const settled = { available: 35_000, reserved: 0, paidOut: 50_000, teamRevenue: 14_975, paypalFees: 25 };
+    // The team's balance paid the $0.25 fee and took it back from Ada's payout.
+    const settled = { available: 35_000, reserved: 0, paidOut: 49_975, teamRevenue: 15_000, paypalFees: 25 };
     expect(await ledgerOf(teamId, memberId)).toEqual(settled);
 
     await admin.payouts.refresh({ ...TEAM, requestId: id });
     expect(await ledgerOf(teamId, memberId)).toEqual(settled);
-    expect(await payoutReferences(teamId)).toEqual([`payout_fees:${id}`, `payout_requested:${id}`, `payout_succeeded:${id}`]);
+    expect(await payoutReferences(teamId)).toEqual([
+      `payout_fee_recovered:${id}`,
+      `payout_fees:${id}`,
+      `payout_requested:${id}`,
+      `payout_succeeded:${id}`,
+    ]);
 
     await expect(member.payouts.mine()).resolves.toEqual({
       earnings: [
@@ -502,25 +516,81 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
           currency: "USD",
           availableMinor: 35_000,
           reservedMinor: 0,
-          paidOutMinor: 50_000,
+          paidOutMinor: 49_975,
+          senderCountry: "US",
+          receiverCountry: "US",
         },
       ],
-      requests: [expect.objectContaining({ id, status: "succeeded", teamName: "acme-studio", teamSlug: "acme-studio" })],
+      requests: [
+        expect.objectContaining({
+          id,
+          status: "succeeded",
+          sentMinor: 49_975,
+          feeMinor: 25,
+          teamName: "acme-studio",
+          teamSlug: "acme-studio",
+        }),
+      ],
     });
     await expect(admin.payouts.list(TEAM)).resolves.toEqual([
-      expect.objectContaining({ id, userId: memberId, memberName: "Ada", status: "succeeded", feeMinor: 25 }),
+      expect.objectContaining({ id, userId: memberId, memberName: "Ada", status: "succeeded", sentMinor: 49_975, feeMinor: 25 }),
     ]);
+  });
+
+  it("estimates PayPal's international fee when PayPal did not share the member's country", async () => {
+    const { admin, member, paypal } = await payoutTeam(null);
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "sent",
+      feeEstimateMinor: 1_000,
+      sentMinor: 49_000,
+    });
+    expect(JSON.parse(payoutPosts(paypal.requests)[0]?.body ?? "").items[0].amount).toEqual({ value: "490.00", currency: "USD" });
   });
 
   it.each([
     {
-      case: "in another currency",
-      fee: { currency: "EUR", value: "0.23" },
-      reason: "Payout fee in another currency",
+      case: "below the estimate releases the rest of the estimate to the member",
+      fee: { currency: "USD", value: "0.10" },
+      feeMinor: 10,
+      reviewReason: null,
+      ledger: { available: 35_015, teamRevenue: 15_000, paypalFees: 10 },
+      released: true,
     },
-    { case: "unreadable", fee: { currency: "USD", value: "abc" }, reason: "Payout fee unreadable" },
-    { case: "missing", fee: undefined, reason: "Payout fee missing" },
-  ])("posts no fee and flags the payout for review when the fee on a successful item is $case", async ({ fee, reason }) => {
+    {
+      case: "above the estimate is absorbed by the team",
+      fee: { currency: "USD", value: "0.40" },
+      feeMinor: 40,
+      reviewReason: null,
+      ledger: { available: 35_000, teamRevenue: 14_985, paypalFees: 40 },
+      released: false,
+    },
+    {
+      case: "in another currency stands at the estimate and is flagged for review",
+      fee: { currency: "EUR", value: "0.23" },
+      feeMinor: null,
+      reviewReason: "Payout fee in another currency",
+      ledger: { available: 35_000, teamRevenue: 15_000, paypalFees: 25 },
+      released: false,
+    },
+    {
+      case: "unreadable stands at the estimate and is flagged for review",
+      fee: { currency: "USD", value: "abc" },
+      feeMinor: null,
+      reviewReason: "Payout fee unreadable",
+      ledger: { available: 35_000, teamRevenue: 15_000, paypalFees: 25 },
+      released: false,
+    },
+    {
+      case: "missing stands at the estimate and is flagged for review",
+      fee: undefined,
+      feeMinor: null,
+      reviewReason: "Payout fee missing",
+      ledger: { available: 35_000, teamRevenue: 15_000, paypalFees: 25 },
+      released: false,
+    },
+  ])("settles a payout whose PayPal fee $case", async ({ fee, feeMinor, reviewReason, ledger, released }) => {
     const { teamId, memberId, admin, member, answers } = await payoutTeam();
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
     await admin.payouts.approve({ ...TEAM, requestId: id });
@@ -529,17 +599,34 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       batchAnswer(id, fee ? { transaction_status: "SUCCESS", payout_item_fee: fee } : { transaction_status: "SUCCESS" });
     await expect(admin.payouts.refresh({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "succeeded",
-      feeMinor: null,
-      reviewReason: reason,
+      feeMinor,
+      reviewReason,
     });
-    expect(await ledgerOf(teamId, memberId)).toEqual({
-      available: 35_000,
-      reserved: 0,
-      paidOut: 50_000,
-      teamRevenue: 15_000,
-      paypalFees: 0,
+    expect(await ledgerOf(teamId, memberId)).toEqual({ reserved: 0, paidOut: 49_975, ...ledger });
+    expect(await payoutReferences(teamId)).toEqual(
+      [
+        `payout_fee_recovered:${id}`,
+        `payout_fees:${id}`,
+        ...(released ? [`payout_released:${id}`] : []),
+        `payout_requested:${id}`,
+        `payout_succeeded:${id}`,
+      ].sort(),
+    );
+  });
+
+  it("refuses to approve a payout too small to cover PayPal's fee", async () => {
+    const { teamId, memberId, admin, member, paypal } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "1.20" });
+
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "This payout is too small to cover PayPal's fee.",
     });
-    expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`, `payout_succeeded:${id}`]);
+    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+      expect.objectContaining({ id, status: "requested", decidedAt: null, sentMinor: null }),
+    ]);
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 84_880, reserved: 120 });
+    expect(paypal.requests).toEqual([]);
   });
 
   it("leaves a payout sent and flags it for review when PayPal's batch only has another payout's item", async () => {
@@ -803,7 +890,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     {
       case: "the member changed their PayPal account after requesting",
       unsettle: async (team: Awaited<ReturnType<typeof payoutTeam>>) => {
-        await savePayoutDestination(db, team.memberId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null }, null);
+        await savePayoutDestination(db, team.memberId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null, paypalCountry: "US" }, null);
       },
       message: "The member changed their PayPal account. Reject this request; they can request again.",
     },
@@ -828,7 +915,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       message: "Connect your PayPal account on this page first.",
     });
     const unconfirmed = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Cy" });
-    await savePayoutDestination(db, unconfirmed, { paypalPayerId: "PAYER2", paypalEmail: null }, null);
+    await savePayoutDestination(db, unconfirmed, { paypalPayerId: "PAYER2", paypalEmail: null, paypalCountry: null }, null);
     await expect(caller(unconfirmed).request({ ...TEAM, amount: "10.00" })).rejects.toMatchObject({
       message: "Confirm you are 18 or older first.",
     });

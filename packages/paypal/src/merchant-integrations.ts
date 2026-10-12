@@ -24,6 +24,8 @@ export type MerchantIntegration = {
   primaryEmail?: string;
   primaryEmailConfirmed?: boolean;
   legalName?: string;
+  // ISO country code of the merchant's account.
+  country?: string;
   products: { name: string; status?: string; vettingStatus?: string }[];
   capabilities: { name: string; status?: string }[];
   oauthIntegrations: OAuthIntegration[];
@@ -40,6 +42,7 @@ function toMerchantIntegration(body: z.output<typeof merchantIntegrationSchema>)
     primaryEmail: body.primary_email,
     primaryEmailConfirmed: body.primary_email_confirmed,
     legalName: body.legal_name,
+    country: body.country,
     products: body.products.map((product) => ({
       name: product.name,
       status: product.status,

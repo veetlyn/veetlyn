@@ -51,6 +51,7 @@ describe.skipIf(!hasTestDatabase)("payout requests repository", () => {
         availableMinor: 0,
         reservedMinor: 0,
         paidOutMinor: 700,
+        teamPayPalCountry: null,
       },
       {
         teamId: studio.teamId,
@@ -60,6 +61,7 @@ describe.skipIf(!hasTestDatabase)("payout requests repository", () => {
         availableMinor: 5_000,
         reservedMinor: 1_000,
         paidOutMinor: 0,
+        teamPayPalCountry: null,
       },
     ]);
   });
