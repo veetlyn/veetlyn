@@ -18,6 +18,15 @@ export async function getTeamPayoutCredentials(db: DbExecutor, teamId: string): 
   return row ?? null;
 }
 
+export async function hasTeamPayoutCredentials(db: DbExecutor, teamId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ teamId: teamPayoutCredentials.teamId })
+    .from(teamPayoutCredentials)
+    .where(eq(teamPayoutCredentials.teamId, teamId))
+    .limit(1);
+  return row !== undefined;
+}
+
 export async function saveTeamPayoutCredentials(
   db: DbExecutor,
   input: TeamPayoutCredentialsInput,

@@ -1,5 +1,4 @@
 import {
-  canServicesTeam,
   departmentNameProblem,
   MAX_INTAKE_QUESTION_CHARS,
   MAX_INTAKE_QUESTIONS,
@@ -10,7 +9,6 @@ import {
   normalizeOfferingDraft,
   validateOfferingDraft,
   type OfferingDraft,
-  type ServicesTeamRole,
 } from "@jendal-workspace/core";
 import { type Database } from "@jendal-workspace/db";
 import {
@@ -29,17 +27,9 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { router } from "../index";
-import { servicesTeamProcedure } from "../services-team-procedure";
+import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
 
 const ADMIN_ONLY = "Only an admin can manage the catalog.";
-
-function requireAction(
-  role: ServicesTeamRole,
-  action: Parameters<typeof canServicesTeam>[1],
-  message: string,
-): void {
-  if (!canServicesTeam(role, action)) throw new TRPCError({ code: "FORBIDDEN", message });
-}
 
 const offeringInput = z.object({
   name: z.string().trim().min(1).max(MAX_OFFERING_NAME),
