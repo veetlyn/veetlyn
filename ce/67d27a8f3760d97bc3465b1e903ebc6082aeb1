@@ -1,0 +1,35 @@
+packages/api/src/routers/project.test.ts
+  s_66718518cdfac9::t_bc62a5a69ef5d6 924-962,1053-1058,1063-1064,1067-1068,1075,1095,1098,1101-1102,1108,1131-1201,1205,1208
+packages/api/src/use-cases/client-refunds.ts
+  s_66718518cdfac9::t_92578820deb92e 16,30,51-52,112,122-126,128,131-132,136,161-163,167-171,175-186,203-205,210,247
+packages/api/src/use-cases/payment-refunds.ts
+  s_66718518cdfac9::t_586a706d604c65 11,109-111,124,131-133
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_66718518cdfac9::t_823d135a004d96 609,626-659
+packages/db/src/migrations/20261012052419_b3_refund_part_uncertain/migration.sql
+  s_66718518cdfac9::t_48597edab7653a 1
+packages/db/src/migrations/20261012052419_b3_refund_part_uncertain/snapshot.json
+  s_66718518cdfac9::t_bc0a2db1c8f614 1-7680
+packages/db/src/repositories/ledger.ts
+  s_66718518cdfac9::t_824472c36ef8f7 122-130
+packages/db/src/repositories/project-refunds.ts
+  s_66718518cdfac9::t_14e8ba63b318d0 2-3,132-133,138-162
+packages/db/src/schema/project-refunds.ts
+  s_66718518cdfac9::t_49f24552574ec1 53-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ce67d27a8f3760d97bc3465b1e903ebc6082aeb1",
+  "prompts": {},
+  "sessions": {
+    "s_66718518cdfac9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "5e8cc356-38eb-4be0-ab69-55d0c24c149f",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
