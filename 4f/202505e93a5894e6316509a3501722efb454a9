@@ -1,0 +1,33 @@
+apps/web/src/app/admin/[storeSlug]/orders/orders-list.tsx
+  s_2b18df31d82b8b::t_199f3774634d79 50-54
+packages/api/src/routers/checkout.test.ts
+  s_2b18df31d82b8b::t_d00aeb499507fd 394-419,422,430-436,438-443
+packages/api/src/routers/order.test.ts
+  s_2b18df31d82b8b::t_ee441f6b6dd5bd 235,250
+packages/api/src/use-cases/orders.ts
+  s_2b18df31d82b8b::t_ac1ecd986bdc3b 3-4,22,44,60,85,223,276-301,306,308,316,350,352-354,357-362,488,491,537-538,550-577,579-581,585,590,594-609,614,616-622,637-643,645,669,788
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_2b18df31d82b8b::t_28b4e9f794cecb 464-467,480-481,489-505,600-602,604,620-625,632,781-836
+packages/api/src/use-cases/paypal-webhooks.ts
+  s_2b18df31d82b8b::t_7f3e81e8666be3 160
+packages/db/src/repositories/orders.test.ts
+  s_2b18df31d82b8b::t_5e7e538a0940e3 199
+packages/db/src/repositories/orders.ts
+  s_2b18df31d82b8b::t_168a614bf2a17f 15-24,179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4f202505e93a5894e6316509a3501722efb454a9",
+  "prompts": {},
+  "sessions": {
+    "s_2b18df31d82b8b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "daaf2560-56ea-489e-9220-4c0341dd68ff",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
