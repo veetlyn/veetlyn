@@ -16,7 +16,7 @@ export type PayoutRequestStatus = (typeof PAYOUT_REQUEST_STATUSES)[number];
 // A member has at most one open request per team.
 export const OPEN_PAYOUT_REQUEST_STATUSES = ["requested", "queued", "sending", "sent"] as const satisfies readonly PayoutRequestStatus[];
 
-export const MIN_PAYOUT_MINOR = 100;
+const MIN_PAYOUT_MINOR = 100;
 // PayPal's per-item maximum for Payouts.
 export const MAX_PAYOUT_MINOR = 2_000_000;
 
