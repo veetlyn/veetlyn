@@ -26,11 +26,17 @@ export function PayoutHistory() {
                 <span className="font-medium">
                   {request.teamName} · {formatMinor(request.amountMinor, request.currency)}
                 </span>
-                <span className="text-muted-foreground">{MEMBER_STATUS_LABELS[request.status]}</span>
+                <span className="text-muted-foreground">
+                  {request.status === "paid" && request.paidAt
+                    ? `Paid ${new Date(request.paidAt).toLocaleDateString()}`
+                    : MEMBER_STATUS_LABELS[request.status]}
+                </span>
               </div>
               <p className="text-muted-foreground">Requested {new Date(request.createdAt).toLocaleDateString()}</p>
-              {request.status === "failed" && request.failureMessage ? (
-                <p className="text-destructive">{request.failureMessage}</p>
+              {request.status === "paid" && request.receivedMinor !== null ? (
+                <p className="text-muted-foreground">
+                  You received {formatMinor(request.receivedMinor, request.currency)}
+                </p>
               ) : null}
             </li>
           ))}

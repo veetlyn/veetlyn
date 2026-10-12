@@ -32,7 +32,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings, offeringCount, productCount, payoutCredentialsSaved } = result.data;
+  const { team, role, settings, offeringCount, productCount } = result.data;
   const solo = settings?.solo ?? false;
   const steps = servicesTeamSetupSteps(
     {
@@ -43,7 +43,6 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       solo,
       offeringCount,
       productCount,
-      payoutCredentialsSaved,
     },
     {
       settings: `/${team.slug}/settings`,
@@ -51,7 +50,6 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       connectPaypal: "#paypal",
       publish: "#publish",
       linkDiscord: `/${team.slug}/discord`,
-      payoutCredentials: `/${team.slug}/payouts`,
     },
   );
 
