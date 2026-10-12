@@ -28,6 +28,18 @@ export function isSettledPayPalRefusal(cause: unknown): cause is PayPalError {
   );
 }
 
+// PayPal answers a repeated request id with 409 while the first request is still running: that one may succeed.
+export function isPayPalRequestInProgress(error: PayPalError): boolean {
+  return error.status === 409 || error.details.some((detail) => detail.issue === "PREVIOUS_REQUEST_IN_PROGRESS");
+}
+
+// Shown to an admin: PayPal's error name, message and first issue, never request details or credentials.
+export function payPalRefusalMessage(error: PayPalError): string {
+  const [detail] = error.details;
+  const issue = detail?.issue ? ` (${[detail.issue, detail.description].filter(Boolean).join(": ")})` : "";
+  return `${error.name}: ${error.message}${issue}`;
+}
+
 type CaptureFees = { paypalFeeMinor: number | null; platformFeeMinor: number | null };
 type ReturnedFees = { paypalFeeMinor: number; platformFeeMinor: number };
 
@@ -37,10 +49,13 @@ function minorIn(currency: string | null, money: PayPalMoney | undefined): numbe
 
 const ZERO_AMOUNT = /^0+(?:\.0{1,2})?$/;
 
-// parseMajorAmount refuses zero, but PayPal reports a fee it did not return as "0.00".
+// parseMajorAmount refuses zero, but PayPal reports a fee it did not charge or return, or an empty balance, as "0.00".
+export function payPalValueMinor(value: string): number | null {
+  return ZERO_AMOUNT.test(value.trim()) ? 0 : parseMajorAmount(value);
+}
+
 function feeMinorIn(currency: string, fee: PayPalMoney): number | null {
-  if (fee.currency_code !== currency) return null;
-  return ZERO_AMOUNT.test(fee.value.trim()) ? 0 : parseMajorAmount(fee.value);
+  return fee.currency_code === currency ? payPalValueMinor(fee.value) : null;
 }
 
 // A fee in another currency (a converted receivable) posts no fees at all, since posting the others alone would

@@ -1,18 +1,32 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
-import { createFakeFileStore, importSecretKey, type JsonObject, openSecret } from "@jendal-workspace/core";
+import {
+  completionTransfer,
+  createFakeFileStore,
+  importSecretKey,
+  type JsonObject,
+  openSecret,
+  paymentCapturedTransfer,
+} from "@jendal-workspace/core";
+import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { getTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
+import { savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
+import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
 import {
   createTestDb,
   hasTestDatabase,
+  seedOrganization,
+  seedProject,
+  seedServicesTeam,
   seedServicesTeamMember,
   seedServicesTeamWithAdmin,
   seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { createPayPalClient } from "@jendal-workspace/paypal";
-import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse } from "@jendal-workspace/paypal/testing";
+import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { PayoutServices } from "../context";
@@ -27,27 +41,41 @@ const CLIENT_ID = "team-app-client-id-WXYZ";
 const CLIENT_SECRET = "team-app-secret";
 
 // PayPal may leave out account_id; null builds that answer.
-function balancesAnswer(accountId: string | null): JsonObject {
+function balancesAnswer(accountId: string | null, available = "250.00"): JsonObject {
   const answer: JsonObject = {
-    balances: [{ currency: "USD", primary: true, total_balance: { currency_code: "USD", value: "250.00" } }],
+    balances: [{ currency: "USD", primary: true, total_balance: { currency_code: "USD", value: available } }],
     as_of_time: "2026-10-12T00:00:00Z",
   };
   if (accountId !== null) answer.account_id = accountId;
   return answer;
 }
 
-// A fake PayPal API for the team's own REST app: token and balances.
-function fakeTeamPayPal(options: { token?: () => Response; balances?: () => Response } = {}) {
+// Answers of the fake PayPal API; a test may swap one between calls.
+type TeamPayPalAnswers = {
+  token?: () => Response;
+  balances?: () => Response;
+  payout?: () => Response;
+  batch?: () => Response;
+};
+
+// A fake PayPal API for the team's own REST app: token, balances, payouts.
+function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
   return fakeFetch((request) => {
-    if (request.url.endsWith("/v1/oauth2/token")) return options.token?.() ?? jsonResponse(200, FAKE_TOKEN_RESPONSE);
-    if (request.url.includes("/v1/reporting/balances")) {
-      return options.balances?.() ?? jsonResponse(200, balancesAnswer(MERCHANT_ID));
-    }
+    const path = new URL(request.url).pathname;
+    if (path === "/v1/oauth2/token") return answers.token?.() ?? jsonResponse(200, FAKE_TOKEN_RESPONSE);
+    if (path === "/v1/reporting/balances") return answers.balances?.() ?? jsonResponse(200, balancesAnswer(MERCHANT_ID));
+    if (path === "/v1/payments/payouts" && answers.payout) return answers.payout();
+    if (path.startsWith("/v1/payments/payouts/") && answers.batch) return answers.batch();
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
   });
 }
 
-describe.skipIf(!hasTestDatabase)("payouts credentials", () => {
+const pathOf = (request: RecordedRequest) => new URL(request.url).pathname;
+const payoutPosts = (requests: RecordedRequest[]) =>
+  requests.filter((r) => r.method === "POST" && pathOf(r) === "/v1/payments/payouts");
+const balanceReads = (requests: RecordedRequest[]) => requests.filter((r) => pathOf(r) === "/v1/reporting/balances");
+
+describe.skipIf(!hasTestDatabase)("payouts", () => {
   const db = createTestDb();
   const { auth } = createTestAuth(db);
 
@@ -234,5 +262,381 @@ describe.skipIf(!hasTestDatabase)("payouts credentials", () => {
     ).rejects.toMatchObject(forbidden);
     await expect(freelancer.payouts.credentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
     await expect(freelancer.payouts.removeCredentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
+  });
+
+  const TEAM = { teamSlug: "acme-studio" };
+  const PAYER_ID = "G83JXTJ5EHCQ2";
+  const LOW_BALANCE = "The team's PayPal balance is too low. Add funds, then retry.";
+  const receiverRefusal = {
+    name: "UNPROCESSABLE_ENTITY",
+    message: "Receiver is unregistered.",
+    details: [{ issue: "RECEIVER_UNREGISTERED", description: "Receiver is unregistered." }],
+    debug_id: "d422",
+  };
+
+  // A completed $1,000 project with a 15% team cut: $850 owed to the freelancer, $150 team revenue.
+  async function earn(teamId: string, freelancerId: string) {
+    const projectId = await seedProject(db, { teamId });
+    await db.transaction((tx) =>
+      createPostgresLedger(teamId, tx).post([
+        paymentCapturedTransfer({
+          currency: "USD",
+          projectId,
+          paymentId: crypto.randomUUID(),
+          quotePartMinor: 100_000,
+          managementFeeMinor: 0,
+        }),
+        completionTransfer({ currency: "USD", projectId, freelancerId, finalPriceMinor: 100_000, teamCutBps: 1_500 }),
+      ]),
+    );
+  }
+
+  async function confirmedDestination(userId: string) {
+    await savePayoutDestination(
+      db,
+      userId,
+      { paypalPayerId: PAYER_ID, paypalEmail: "ada@example.com" },
+      { confirmedAt: new Date(), source: "self" },
+    );
+  }
+
+  function batchCreated(batchId: string) {
+    return jsonResponse(201, {
+      batch_header: { payout_batch_id: batchId, batch_status: "PENDING", sender_batch_header: { sender_batch_id: "x" } },
+    });
+  }
+
+  function batchAnswer(requestId: string, item: JsonObject) {
+    return jsonResponse(200, {
+      batch_header: { payout_batch_id: "BATCH1", batch_status: "SUCCESS" },
+      items: [
+        {
+          payout_item_id: "ITEM1",
+          payout_item: { sender_item_id: requestId, receiver: PAYER_ID, amount: { value: "500.00", currency: "USD" } },
+          ...item,
+        },
+      ],
+    });
+  }
+
+  // Saved credentials for MERCHANT1, $900 available in the team's PayPal balance, and Ada, a freelancer owed $850
+  // with a confirmed destination. PayPal requests made while saving the credentials are dropped.
+  async function payoutTeam() {
+    const { userId: adminId, organizationId, teamId } = await connectedTeam();
+    const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
+    await confirmedDestination(memberId);
+    await earn(teamId, memberId);
+    const answers: TeamPayPalAnswers = {
+      balances: () => jsonResponse(200, balancesAnswer(MERCHANT_ID, "900.00")),
+      payout: () => batchCreated("BATCH1"),
+    };
+    const paypal = fakeTeamPayPal(answers);
+    const { payouts } = await makePayouts(paypal.fetch);
+    const admin = callerFor(adminId, payouts);
+    await admin.payouts.saveCredentials({ ...TEAM, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
+    paypal.requests.splice(0);
+    return { organizationId, teamId, memberId, admin, member: callerFor(memberId, payouts), answers, paypal };
+  }
+
+  async function ledgerOf(teamId: string, userId: string) {
+    const rows = await db.select().from(ledgerBalance).where(eq(ledgerBalance.teamId, teamId));
+    const balance = (account: string) => rows.find((row) => row.account === account)?.balanceMinor ?? 0;
+    return {
+      available: balance(`owed:${userId}:available`),
+      reserved: balance(`owed:${userId}:reserved`),
+      paidOut: balance(`paid_out:${userId}`),
+      teamRevenue: balance("team_revenue"),
+      paypalFees: balance("paypal_fees"),
+    };
+  }
+
+  async function payoutReferences(teamId: string) {
+    const rows = await db
+      .select({ reference: ledgerTransfer.reference })
+      .from(ledgerTransfer)
+      .where(eq(ledgerTransfer.teamId, teamId));
+    return rows
+      .map((row) => row.reference)
+      .filter((reference) => reference.startsWith("payout_"))
+      .sort();
+  }
+
+  it("pays an approved request from the team's PayPal account and settles it once", async () => {
+    const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
+
+    const requested = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    const { id } = requested;
+    expect(requested).toMatchObject({ status: "requested", amountMinor: 50_000, receiverPayerId: PAYER_ID, teamSlug: "acme-studio" });
+    expect(await ledgerOf(teamId, memberId)).toEqual({
+      available: 35_000,
+      reserved: 50_000,
+      paidOut: 0,
+      teamRevenue: 15_000,
+      paypalFees: 0,
+    });
+
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "sent",
+      paypalBatchId: "BATCH1",
+      failureMessage: null,
+      uncertain: false,
+    });
+    const posts = payoutPosts(paypal.requests);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.headers.get("paypal-request-id")).toBe(`payout:${id}`);
+    expect(JSON.parse(posts[0]?.body ?? "")).toEqual({
+      sender_batch_header: { sender_batch_id: id, email_subject: "You have a payout from acme-studio" },
+      items: [
+        {
+          recipient_type: "PAYPAL_ID",
+          receiver: PAYER_ID,
+          amount: { value: "500.00", currency: "USD" },
+          note: "Payout from acme-studio via Payleor",
+          sender_item_id: id,
+        },
+      ],
+    });
+
+    answers.batch = () =>
+      batchAnswer(id, { transaction_status: "SUCCESS", payout_item_fee: { currency: "USD", value: "0.25" } });
+    await expect(admin.payouts.refresh({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "succeeded",
+      paypalItemStatus: "SUCCESS",
+      feeMinor: 25,
+      reviewReason: null,
+    });
+    expect(paypal.requests.map((r) => `${r.method} ${pathOf(r)}`).at(-1)).toBe("GET /v1/payments/payouts/BATCH1");
+    const settled = { available: 35_000, reserved: 0, paidOut: 50_000, teamRevenue: 14_975, paypalFees: 25 };
+    expect(await ledgerOf(teamId, memberId)).toEqual(settled);
+
+    await admin.payouts.refresh({ ...TEAM, requestId: id });
+    expect(await ledgerOf(teamId, memberId)).toEqual(settled);
+    expect(await payoutReferences(teamId)).toEqual([`payout_fees:${id}`, `payout_requested:${id}`, `payout_succeeded:${id}`]);
+
+    await expect(member.payouts.mine()).resolves.toEqual({
+      earnings: [
+        {
+          teamId,
+          teamName: "acme-studio",
+          teamSlug: "acme-studio",
+          currency: "USD",
+          availableMinor: 35_000,
+          reservedMinor: 0,
+          paidOutMinor: 50_000,
+        },
+      ],
+      requests: [expect.objectContaining({ id, status: "succeeded", teamName: "acme-studio", teamSlug: "acme-studio" })],
+    });
+    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+      expect.objectContaining({ id, userId: memberId, memberName: "Ada", status: "succeeded", feeMinor: 25 }),
+    ]);
+  });
+
+  it("releases the reserved earnings when an admin rejects the request, and accepts a new one", async () => {
+    const { teamId, memberId, admin, member, paypal } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+
+    await expect(admin.payouts.reject({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "rejected",
+      decidedAt: expect.any(String),
+    });
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 85_000, reserved: 0 });
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject({
+      message: "This payout request was already decided.",
+    });
+
+    await expect(member.payouts.request({ ...TEAM, amount: "850.00" })).resolves.toMatchObject({ status: "requested" });
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 0, reserved: 85_000 });
+    expect(paypal.requests).toEqual([]);
+  });
+
+  it.each([
+    {
+      case: "the team's balance is below the amount",
+      hold: (answers: TeamPayPalAnswers) => {
+        answers.balances = () => jsonResponse(200, balancesAnswer(MERCHANT_ID, "100.00"));
+      },
+      payoutCalls: 0,
+    },
+    {
+      case: "PayPal answers INSUFFICIENT_FUNDS",
+      hold: (answers: TeamPayPalAnswers) => {
+        answers.payout = () =>
+          jsonResponse(422, {
+            name: "UNPROCESSABLE_ENTITY",
+            message: "The requested action could not be performed.",
+            details: [{ issue: "INSUFFICIENT_FUNDS" }],
+            debug_id: "d422",
+          });
+      },
+      payoutCalls: 1,
+    },
+  ])("keeps an approved request queued when $case, and sends it on retry", async ({ hold, payoutCalls }) => {
+    const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
+    const ready = { ...answers };
+    hold(answers);
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "queued",
+      failureMessage: LOW_BALANCE,
+      decidedAt: expect.any(String),
+    });
+    expect(payoutPosts(paypal.requests)).toHaveLength(payoutCalls);
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000, paidOut: 0 });
+
+    Object.assign(answers, ready);
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "sent",
+      failureMessage: null,
+    });
+    expect(payoutPosts(paypal.requests)).toHaveLength(payoutCalls + 1);
+  });
+
+  it("keeps an unconfirmed send open and resends the same batch until PayPal answers with it", async () => {
+    const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    const uncertain = {
+      code: "BAD_GATEWAY",
+      message: "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.",
+    };
+    const unconfirmed = [expect.objectContaining({ status: "sending", uncertain: true, failureMessage: uncertain.message })];
+
+    answers.payout = () => jsonResponse(500, { name: "INTERNAL_SERVICE_ERROR", message: "Internal error", debug_id: "d500" });
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(uncertain);
+    await expect(admin.payouts.list(TEAM)).resolves.toEqual(unconfirmed);
+
+    // PayPal may hold the first batch, so a refusal now is not final.
+    answers.payout = () => jsonResponse(422, receiverRefusal);
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject(uncertain);
+    await expect(admin.payouts.list(TEAM)).resolves.toEqual(unconfirmed);
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000 });
+
+    answers.payout = () => batchCreated("BATCH1");
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "sent",
+      paypalBatchId: "BATCH1",
+      uncertain: false,
+      failureMessage: null,
+    });
+
+    const posts = payoutPosts(paypal.requests);
+    expect(posts.length).toBeGreaterThan(2);
+    expect(new Set(posts.map((post) => post.headers.get("paypal-request-id")))).toEqual(new Set([`payout:${id}`]));
+    expect(new Set(posts.map((post) => JSON.parse(post.body ?? "").sender_batch_header.sender_batch_id))).toEqual(
+      new Set([id]),
+    );
+    // Only the first attempt reads the balance: after an unknown outcome PayPal may already have paid from it.
+    expect(balanceReads(paypal.requests)).toHaveLength(1);
+  });
+
+  it.each([
+    {
+      case: "refuses the payout",
+      answer: (answers: TeamPayPalAnswers) => {
+        answers.payout = () => jsonResponse(422, receiverRefusal);
+      },
+      message: "UNPROCESSABLE_ENTITY: Receiver is unregistered. (RECEIVER_UNREGISTERED: Receiver is unregistered.)",
+    },
+    {
+      case: "fails the item",
+      answer: (answers: TeamPayPalAnswers, requestId: string) => {
+        answers.batch = () =>
+          batchAnswer(requestId, {
+            transaction_status: "FAILED",
+            errors: { name: "RECEIVER_UNREGISTERED", message: "Receiver is unregistered" },
+          });
+      },
+      message: "RECEIVER_UNREGISTERED: Receiver is unregistered",
+    },
+  ])("releases the reserved earnings and keeps PayPal's reason when PayPal $case", async ({ answer, message }) => {
+    const { teamId, memberId, admin, member, answers } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    answer(answers, id);
+
+    await admin.payouts.approve({ ...TEAM, requestId: id });
+    await expect(admin.payouts.refresh({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "failed",
+      failureMessage: message,
+      settledAt: expect.any(String),
+    });
+    expect(await ledgerOf(teamId, memberId)).toEqual({
+      available: 85_000,
+      reserved: 0,
+      paidOut: 0,
+      teamRevenue: 15_000,
+      paypalFees: 0,
+    });
+    expect(await payoutReferences(teamId)).toEqual([`payout_released:${id}`, `payout_requested:${id}`]);
+  });
+
+  it.each([
+    {
+      case: "the team has no payout credentials",
+      unsettle: async (team: Awaited<ReturnType<typeof payoutTeam>>) => {
+        await team.admin.payouts.removeCredentials(TEAM);
+      },
+      message: "Add the team's payout credentials first.",
+    },
+    {
+      case: "the saved credentials belong to another PayPal account than the team's",
+      unsettle: async (team: Awaited<ReturnType<typeof payoutTeam>>) => {
+        await markTeamPayPalMerchant(db, { teamId: team.teamId, merchantId: "MERCHANT2" });
+      },
+      message:
+        "These payout credentials belong to another PayPal account than the one connected to this team. Replace them.",
+    },
+  ])("keeps an approved request queued and sends nothing when $case", async ({ unsettle, message }) => {
+    const team = await payoutTeam();
+    const { id } = await team.member.payouts.request({ ...TEAM, amount: "500.00" });
+    await unsettle(team);
+
+    await expect(team.admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "queued",
+      failureMessage: message,
+    });
+    expect(team.paypal.requests).toEqual([]);
+  });
+
+  it("refuses requests the member cannot make, and approvals from anyone but an admin", async () => {
+    const { organizationId, teamId, memberId, member, paypal } = await payoutTeam();
+    const caller = (userId: string) => callerFor(userId).payouts;
+
+    const noDestination = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Bo" });
+    await expect(caller(noDestination).request({ ...TEAM, amount: "10.00" })).rejects.toMatchObject({
+      message: "Connect your PayPal account on this page first.",
+    });
+    const unconfirmed = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Cy" });
+    await savePayoutDestination(db, unconfirmed, { paypalPayerId: "PAYER2", paypalEmail: null }, null);
+    await expect(caller(unconfirmed).request({ ...TEAM, amount: "10.00" })).rejects.toMatchObject({
+      message: "Confirm you are 18 or older first.",
+    });
+    // Someone with no earnings in the team, such as a stranger, has nothing to request.
+    const stranger = await seedUser(db, "Eve");
+    await confirmedDestination(stranger);
+    await expect(caller(stranger).request({ ...TEAM, amount: "1.00" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "You can request up to 0.00.",
+    });
+    const solo = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId: solo.organizationId, slug: "solo-seller", solo: true });
+    await expect(member.payouts.request({ teamSlug: "solo-seller", amount: "10.00" })).rejects.toMatchObject({
+      message: "A solo seller has no payouts to send.",
+    });
+
+    await expect(member.payouts.request({ ...TEAM, amount: "850.01" })).rejects.toMatchObject({
+      message: "You can request up to 850.00.",
+    });
+    const { id } = await member.payouts.request({ ...TEAM, amount: "100.00" });
+    await expect(member.payouts.request({ ...TEAM, amount: "100.00" })).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "You already have a payout in progress for this team.",
+    });
+
+    const forbidden = { code: "FORBIDDEN", message: "Only an admin can approve payouts." };
+    await expect(member.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
+    await expect(member.payouts.list(TEAM)).rejects.toMatchObject(forbidden);
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 75_000, reserved: 10_000 });
+    expect(paypal.requests).toEqual([]);
   });
 });
