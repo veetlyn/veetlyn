@@ -1,0 +1,62 @@
+apps/web/src/lib/paypal-onboarding.ts
+  s_e76588bfdc1e5d::t_6597214618042f 1-21
+apps/web/src/app/admin/[storeSlug]/payouts/payout-requests-table.tsx
+  s_e76588bfdc1e5d::t_d82aa82ddbb384 85
+  s_e76588bfdc1e5d::t_87330a67a3a198 59-60
+  s_e76588bfdc1e5d::t_89ab5d89a5285f 61,136-138
+  s_e76588bfdc1e5d::t_afd10dfcf285cf 62-65
+  s_e76588bfdc1e5d::t_270bd1770f2cbe 154-160
+  s_e76588bfdc1e5d::t_62131d631b5983 201
+  s_e76588bfdc1e5d::t_70e4d01a3a2dfa 42
+  s_e76588bfdc1e5d::t_15bba32102725a 12,19-27
+apps/web/src/app/admin/[storeSlug]/payouts/payout-credentials-card.tsx
+  s_e76588bfdc1e5d::t_23bc2ad3a39785 3,5,7,10,15-47,50,56-57,63,66-76,78,81-82,87-91,94-109,113-115,123-128,130-144,150-196,199-203
+apps/web/src/app/admin/me/payouts/payout-history.tsx
+  s_e76588bfdc1e5d::t_95a35d4aaa859a 23-47
+  s_e76588bfdc1e5d::t_6b92fb5a0105f8 6
+packages/core/src/services-teams/setup-steps.test.ts
+  s_e76588bfdc1e5d::t_1614a8691fb969 27
+apps/web/src/lib/payouts.ts
+  s_e76588bfdc1e5d::t_f81770b3ee6b4f 1
+  s_e76588bfdc1e5d::t_7eb31c4d525fb7 51-67,70-75,77
+  s_e76588bfdc1e5d::t_0ebff26e9a47ad 68-69,76
+  s_2fcdd9395514c2::t_7a0510eeb2ade7 79
+  s_e76588bfdc1e5d::t_e11fc996b86b74 78
+apps/web/src/lib/payouts.test.ts
+  s_e76588bfdc1e5d::t_b713cc3fb62696 3
+  s_e76588bfdc1e5d::t_1ebe7745c454e1 19-41,45-47,51-53
+  s_2fcdd9395514c2::t_cf87c29a46e9bb 58-59
+  s_e76588bfdc1e5d::t_93b6dbfa0749d5 42-44,48-50,54-57
+apps/web/src/lib/paypal-onboarding.test.ts
+  s_e76588bfdc1e5d::t_3c4cc408c0d14c 1-30
+apps/web/src/app/admin/me/payouts/earnings-section.tsx
+  s_e76588bfdc1e5d::t_3af336d4de0b7c 85-90
+  s_e76588bfdc1e5d::t_3db1e3bd6debb6 14-15
+  s_e76588bfdc1e5d::t_d8d0cd78e082cf 42-51
+packages/core/src/services-teams/setup-steps.ts
+  s_e76588bfdc1e5d::t_e1d78986af7e50 41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a016b23ace9418640415f9ae6d1b734194d1b0b",
+  "prompts": {},
+  "sessions": {
+    "s_2fcdd9395514c2": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "2277e369-8d20-4dd7-9ebe-9285cd3a772a",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_e76588bfdc1e5d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "975a5b71-1188-4fca-8357-373799036ace",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
