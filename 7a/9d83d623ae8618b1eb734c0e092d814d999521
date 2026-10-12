@@ -1,0 +1,40 @@
+packages/core/src/web-globals.d.ts
+  s_e3acdc8d3c0e0f::t_13d2ab891bc11e 3-6,10-21,28-30
+packages/core/src/crypto/secret-box.test.ts
+  s_e3acdc8d3c0e0f::t_5523b545228128 1-41
+packages/core/src/ledger/postings.test.ts
+  s_e3acdc8d3c0e0f::t_92576f8ced66f5 90-102
+  s_e3acdc8d3c0e0f::t_b0faa55b0de370 14,157-161
+packages/core/src/crypto/secret-box.ts
+  s_e3acdc8d3c0e0f::t_25f8bbc23b2152 1-53
+packages/core/src/payouts/requests.ts
+  s_e3acdc8d3c0e0f::t_7ff6cd42d5a675 1-49
+packages/core/src/payouts/requests.test.ts
+  s_e3acdc8d3c0e0f::t_09a0312e0399fd 1-47
+packages/core/src/index.ts
+  s_e3acdc8d3c0e0f::t_22202c7b17cd92 44-45
+packages/core/src/ledger/postings.ts
+  s_e3acdc8d3c0e0f::t_7f2b830e230c43 240-255
+packages/core/src/ledger/transfers.ts
+  s_e3acdc8d3c0e0f::t_aed486ea30f9aa 14
+packages/core/src/payouts/destination.test.ts
+  s_e3acdc8d3c0e0f::t_bc3b72f74249b1 3,53-66
+packages/core/src/payouts/destination.ts
+  s_e3acdc8d3c0e0f::t_baf81becd11826 13-14,39-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a9d83d623ae8618b1eb734c0e092d814d999521",
+  "prompts": {},
+  "sessions": {
+    "s_e3acdc8d3c0e0f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "44d2cf11-4208-4247-897a-8c5bf11566f8",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
