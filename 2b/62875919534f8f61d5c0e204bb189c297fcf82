@@ -1,0 +1,37 @@
+packages/api/src/routers/project.ts
+  s_47e50da0b3d4a1::t_18c4feeae45605 328
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/refund-section.tsx
+  s_47e50da0b3d4a1::t_73f4d2f517afa1 1-31,33-115
+  s_47e50da0b3d4a1::t_2fd20c7799e175 32
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_47e50da0b3d4a1::t_0cce207664fa16 58
+  s_47e50da0b3d4a1::t_d83dc22cafdc16 257
+  s_47e50da0b3d4a1::t_46716c99efe7b9 13
+  s_47e50da0b3d4a1::t_eadf0450eeb46a 81
+apps/web/src/lib/client-refund.test.ts
+  s_47e50da0b3d4a1::t_2f9ae27c2fe911 1-55
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_47e50da0b3d4a1::t_7742ab32e3a0d5 563-574
+  s_47e50da0b3d4a1::t_1ff5659217d4e5 34
+  s_47e50da0b3d4a1::t_1aac76b6500695 40-41
+  s_47e50da0b3d4a1::t_06ad69803b8345 538,540-547
+  s_47e50da0b3d4a1::t_6fdbc46ebb005a 210
+apps/web/src/lib/client-refund.ts
+  s_47e50da0b3d4a1::t_fd2e5d5997e931 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2b62875919534f8f61d5c0e204bb189c297fcf82",
+  "prompts": {},
+  "sessions": {
+    "s_47e50da0b3d4a1": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "dc2ec7d9-26b7-4da0-a926-d10d70e3552f",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
