@@ -1,0 +1,23 @@
+apps/web/src/app/admin/[storeSlug]/orders/orders-list.tsx
+  s_2b18df31d82b8b::t_c87f001beb4c11 43-56
+packages/api/src/use-cases/orders.ts
+  s_2b18df31d82b8b::t_0596b851dbecc2 57,209-228,232,242-243,578,613-616
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_2b18df31d82b8b::t_e8036d0323b745 605-611,652,811-829,851-859
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6e61dc698b9d273390498d982cbc18bd16a8bc12",
+  "prompts": {},
+  "sessions": {
+    "s_2b18df31d82b8b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "daaf2560-56ea-489e-9220-4c0341dd68ff",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
