@@ -1,0 +1,40 @@
+packages/api/src/use-cases/client-refunds.ts
+  s_66718518cdfac9::t_aab42b0f22be33 1-110,112,115-205
+  s_66718518cdfac9::t_f29be680fa8465 111,113-114
+  s_66718518cdfac9::t_ddedfd03d96582 206-221
+packages/core/src/projects/refunds.test.ts
+  s_66718518cdfac9::t_a91e1b2f4f26af 1-40
+packages/core/src/projects/refunds.ts
+  s_66718518cdfac9::t_1635579f7ab4b3 1-21
+packages/api/src/routers/project.ts
+  s_66718518cdfac9::t_bc15188b0dec80 314,319
+  s_66718518cdfac9::t_c2dee03dfecc7e 141,146,155
+  s_66718518cdfac9::t_acb79abae93d0d 384
+  s_66718518cdfac9::t_e9ef939214fa99 22
+  s_66718518cdfac9::t_2b42e32a2ca77b 240-243
+packages/core/src/index.ts
+  s_66718518cdfac9::t_32defce58f3101 41
+packages/api/src/use-cases/projects.ts
+  s_66718518cdfac9::t_c208c83e2a6154 730-738
+  s_66718518cdfac9::t_a1f22a984cc27c 47
+packages/api/src/routers/project.test.ts
+  s_66718518cdfac9::t_b5198d9875f439 16,29,32-33,38,82,91,810-1047
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_66718518cdfac9::t_6b3b7f69e2788e 66-69,81,172,395,397,548,591-625
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8cb146dd8b7713b925d988558a2882498b9f7cdb",
+  "prompts": {},
+  "sessions": {
+    "s_66718518cdfac9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "5e8cc356-38eb-4be0-ab69-55d0c24c149f",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
