@@ -1,0 +1,49 @@
+packages/db/src/schema/payouts.ts
+  s_236666826cf3eb::t_8a3098f21277d4 1,8-11
+  s_236666826cf3eb::t_f5278597b3c1df 98
+  s_236666826cf3eb::t_d8af0be6798e6a 12
+apps/web/src/app/admin/[storeSlug]/payouts/payout-credentials-card.tsx
+  s_236666826cf3eb::t_7a2003c022b34e 122-123
+apps/web/src/app/admin/me/payouts/earnings-section.tsx
+  s_236666826cf3eb::t_d940cc0f511f9a 3
+  s_236666826cf3eb::t_fb6436754e2c45 38,40
+  s_236666826cf3eb::t_4bb888a53c50e6 74-76
+apps/server/src/payouts.ts
+  s_236666826cf3eb::t_723996bb9ea70b 17-18
+  s_236666826cf3eb::t_7a005520ca0eb3 24
+packages/db/src/repositories/payout-requests.ts
+  s_236666826cf3eb::t_f9c87d7d729e3c 6
+  s_236666826cf3eb::t_133eaf91d41a09 43
+  s_236666826cf3eb::t_7dd34831d63727 1
+packages/api/src/use-cases/payouts.ts
+  s_236666826cf3eb::t_486b3e38307271 262-275
+  s_236666826cf3eb::t_a6c0dbedb54add 111-112
+  s_236666826cf3eb::t_b93cc9f514fe3d 436
+  s_236666826cf3eb::t_3bc60eb1c8162b 91-92
+  s_236666826cf3eb::t_d2efd4d42342c5 533-534,537
+packages/api/src/routers/payouts.test.ts
+  s_236666826cf3eb::t_9d77eb249d4bbf 126
+  s_236666826cf3eb::t_e7f248200fe33b 99
+  s_236666826cf3eb::t_ba4c49a749694b 443-451,457,461
+  s_236666826cf3eb::t_e8f8abfa819672 644,649-651
+  s_236666826cf3eb::t_5db89b0b23567e 13
+  s_236666826cf3eb::t_c9c93a88ff2edf 724-737
+packages/db/src/repositories/payouts.ts
+  s_236666826cf3eb::t_d94622daa0bcfd 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dba3aabd5aa230789b2131293d6abf8ccb1e7916",
+  "prompts": {},
+  "sessions": {
+    "s_236666826cf3eb": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f41a990f-06b2-428c-ac6d-07e784bde140",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
