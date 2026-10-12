@@ -1,0 +1,23 @@
+packages/api/src/routers/payout-destination.ts
+  s_91936c9a47ba15::t_e9675417a1f5be 1,3-4,7-8,12,18,23,34-35,42-45,62-86
+packages/api/src/paypal-userinfo.ts
+  s_91936c9a47ba15::t_cf8d25a2173d8a 25
+packages/api/src/routers/payout-destination.test.ts
+  s_91936c9a47ba15::t_743ae2deaf1223 3,86-91,127-187
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ff44bb4ec08eb0a36d2b6bb8edbeac94b74c814",
+  "prompts": {},
+  "sessions": {
+    "s_91936c9a47ba15": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "8c0d8397-7a95-471e-8e1b-c73bc7aea611",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
