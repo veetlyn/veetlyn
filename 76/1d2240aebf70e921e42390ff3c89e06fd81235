@@ -1,0 +1,32 @@
+packages/api/src/use-cases/payout-credentials.ts
+  s_161b33edfba928::t_418683c49fc4e8 3,7,19-20,29-37,47-65,92,106-107,113,118-132,136-143,149
+  s_161b33edfba928::t_1b02bddabe4d61 144-148,150-155,165
+packages/db/src/repositories/payout-credentials.ts
+  s_161b33edfba928::t_ad814342988603 3
+  s_161b33edfba928::t_074be3130c2853 19,21-45
+  s_161b33edfba928::t_4da15da8424ae2 20
+packages/api/src/routers/payouts.test.ts
+  s_161b33edfba928::t_d45971702c503d 2,29-31,35-36,158,160-175,187-194,196-205,207-222,236
+packages/db/src/migrations/20261012132855_r5a_team_payouts/migration.sql
+  s_161b33edfba928::t_fbaee0bdcafe70 32
+packages/db/src/migrations/20261012132855_r5a_team_payouts/snapshot.json
+  s_161b33edfba928::t_866b01d39596c5 4,5140
+packages/db/src/schema/payouts.ts
+  s_161b33edfba928::t_c2a48fdadc72fd 39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "761d2240aebf70e921e42390ff3c89e06fd81235",
+  "prompts": {},
+  "sessions": {
+    "s_161b33edfba928": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "90159796-aeee-472b-b6cc-3912fdba58a8",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
