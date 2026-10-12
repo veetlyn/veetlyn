@@ -4,7 +4,6 @@ import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import {
-  createProjectRefund,
   findProjectRefundForProject,
   listRefundParts,
   setProjectRefundStatus,
@@ -64,8 +63,10 @@ function capturedOrder(status: string, value = "600.00", extra: JsonObject = {})
   };
 }
 
-// A fake PayPal API: token, order create (always ORDER1), capture and order lookup.
-function fakePayPalApi(options: { capture?: () => Response; lookup?: () => Response } = {}) {
+type FakePayPalOptions = { capture?: () => Response; lookup?: () => Response; refund?: () => Response };
+
+// A fake PayPal API: token, order create (always ORDER1), capture, order lookup and capture refund.
+function fakePayPalApi(options: FakePayPalOptions = {}) {
   return fakeFetch((request) => {
     if (request.url.endsWith("/v1/oauth2/token")) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
     if (request.method === "POST" && request.url.endsWith("/v2/checkout/orders")) {
@@ -77,6 +78,7 @@ function fakePayPalApi(options: { capture?: () => Response; lookup?: () => Respo
     if (request.method === "GET" && request.url.endsWith("/v2/checkout/orders/ORDER1")) {
       return options.lookup?.() ?? jsonResponse(200, { id: "ORDER1", status: "APPROVED" });
     }
+    if (options.refund && request.url.endsWith("/v2/payments/captures/CAPTURE1/refund")) return options.refund();
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
   });
 }
@@ -167,7 +169,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
   }
 
   // A connected deposit whose client has approved ORDER1 but whose browser never reported back.
-  async function startedDeposit(options: { capture?: () => Response; lookup?: () => Response } = {}) {
+  async function startedDeposit(options: FakePayPalOptions = {}) {
     const seeded = await connectedDeposit();
     const api = fakePayPalApi(options);
     const paypal = makePayPal(api.fetch);
@@ -390,9 +392,9 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     }
 
     // The $600 deposit captured through the webhook; showRefunds changes what PayPal's order lookup answers.
-    async function capturedDeposit() {
+    async function capturedDeposit(options: Pick<FakePayPalOptions, "refund"> = {}) {
       let lookup: JsonObject = capturedOrder("COMPLETED", "600.00", FEE_BREAKDOWN);
-      const seeded = await startedDeposit({ lookup: () => jsonResponse(200, lookup) });
+      const seeded = await startedDeposit({ ...options, lookup: () => jsonResponse(200, lookup) });
       await processPayPalWebhookEvent(seeded.deps, storedEvent({ customId: seeded.paymentId }));
       const showRefunds = (captureStatus: string, refunds: ShownRefund[]) => {
         lookup = refundedDepositOrder(captureStatus, refunds);
@@ -543,7 +545,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     });
 
     it("confirms an overpayment refund Payleor issued, completing its part and the project refund", async () => {
-      const { userId, teamId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit();
+      const { userId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit();
       // Build ($600) removed: the $400 final price and $40 fee leave $160 of the $600 deposit to refund.
       const [current] = await listProjectQuotes(db, projectId);
       const build = current?.items.find((item) => item.description === "Build");
@@ -559,7 +561,6 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       expect(await balanceOf(ledgerAccounts.clientRefunds)).toBe(16_000);
 
       const refundId = `completion-${projectId}`;
-      await createProjectRefund(db, { id: refundId, teamId, projectId, currency: "USD", amountMinor: 16_000 });
       await setProjectRefundStatus(db, refundId, "issuing");
       const part = await upsertRefundPart(db, { projectRefundId: refundId, paymentId, captureId: "CAPTURE1", amountMinor: 16_000 });
       showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "160.00", breakdown: REFUND_BREAKDOWN }]);
@@ -585,6 +586,41 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         status: "completed",
         completedAt: expect.any(Date),
       });
+    });
+
+    it("posts a client's own refund on a payment whose overpayment refund failed, without waiting for it", async () => {
+      const refused = { name: "UNPROCESSABLE_ENTITY", message: "The requested action could not be performed.", debug_id: "d422" };
+      const { userId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit({
+        refund: () => jsonResponse(422, refused),
+      });
+      const [current] = await listProjectQuotes(db, projectId);
+      const build = current?.items.find((item) => item.description === "Build");
+      if (!build) throw new Error("missing item");
+      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+        teamSlug: "team",
+        projectId,
+        add: [],
+        removeItemIds: [build.id],
+      });
+      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
+      await acceptDelivery(projectId, freelancer);
+      await expect(
+        callerFor(userId, deps.paypal).project.refundClient({ teamSlug: "team", projectId }),
+      ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+      const refundId = `completion-${projectId}`;
+      expect(await listRefundParts(db, refundId)).toEqual([
+        expect.objectContaining({ paymentId, status: "failed", paypalRefundId: null }),
+      ]);
+      // An admin's retry is under way: the failed part is not waiting for a PayPal refund id.
+      await setProjectRefundStatus(db, refundId, "issuing");
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R9", value: "50.00" }]);
+
+      expect(await processPayPalWebhookEvent(deps, refundEvent("R9"))).toEqual({ status: "processed", note: "refunded" });
+      expect(await postingsOf("payment_refunded")).toEqual([
+        { reference: "payment_refunded:refund:R9", account: ledgerAccounts.paypalClearing, amountMinor: 5_000 },
+        { reference: "payment_refunded:refund:R9", account: ledgerAccounts.teamRevenue, amountMinor: -5_000 },
+      ]);
+      expect((await paymentRow(paymentId))?.refundedMinor).toBe(5_000);
     });
 
     it("parks a capture refunded before Payleor applied it, posting nothing", async () => {
