@@ -1,8 +1,15 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { delivery } from "../schema/projects";
-import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, truncateAll } from "../testing/db";
-import { countOpenWebRequests, listProjectDeliveries } from "./projects";
+import {
+  createTestDb,
+  hasTestDatabase,
+  seedPayment,
+  seedProject,
+  seedServicesTeamWithAdmin,
+  truncateAll,
+} from "../testing/db";
+import { addPaymentRefunded, countOpenWebRequests, listProjectDeliveries, listRefundablePayments } from "./projects";
 
 describe.skipIf(!hasTestDatabase)("countOpenWebRequests", () => {
   const db = createTestDb();
@@ -66,5 +73,52 @@ describe.skipIf(!hasTestDatabase)("project deliveries", () => {
       .catch((cause: unknown) => cause);
     expect(failure).toMatchObject({ cause: { code: "23505", constraint_name: "delivery_open_idx" } });
     expect(await listProjectDeliveries(db, projectId)).toHaveLength(2);
+  });
+});
+
+describe.skipIf(!hasTestDatabase)("payment refunds", () => {
+  const db = createTestDb();
+
+  beforeEach(() => truncateAll(db));
+  afterAll(() => db.$client.end());
+
+  async function seedCaptured(amountMinor = 10_000) {
+    const { teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId, status: "in_progress" });
+    const row = await seedPayment(db, { projectId, teamId, amountMinor });
+    return { teamId, projectId, payment: row };
+  }
+
+  it("keeps a partly refunded payment captured and marks it refunded once nothing is left", async () => {
+    const { payment } = await seedCaptured();
+
+    expect(await addPaymentRefunded(db, payment.id, 4_000)).toMatchObject({ refundedMinor: 4_000, status: "captured" });
+    expect(await addPaymentRefunded(db, payment.id, 6_000)).toMatchObject({ refundedMinor: 10_000, status: "refunded" });
+    expect(await addPaymentRefunded(db, "missing", 1)).toBeNull();
+  });
+
+  it("refuses to refund more than was captured", async () => {
+    const { payment } = await seedCaptured();
+    await addPaymentRefunded(db, payment.id, 9_000);
+
+    const failure = await addPaymentRefunded(db, payment.id, 2_000).catch((cause: unknown) => cause);
+    expect(failure).toMatchObject({ cause: { code: "23514", constraint_name: "payment_refunded_check" } });
+  });
+
+  it("lists captured payments with something left to refund, newest capture first", async () => {
+    const { teamId, projectId } = await seedCaptured();
+    const [older] = await listRefundablePayments(db, projectId);
+    const newer = await seedPayment(db, {
+      projectId,
+      teamId,
+      kind: "top_up",
+      capturedAt: new Date(Date.now() + 60_000),
+    });
+    const refunded = await seedPayment(db, { projectId, teamId, kind: "balance", amountMinor: 5_000 });
+    await addPaymentRefunded(db, refunded.id, 5_000);
+    const otherProject = await seedProject(db, { teamId });
+    await seedPayment(db, { projectId: otherProject, teamId });
+
+    expect((await listRefundablePayments(db, projectId)).map((p) => p.id)).toEqual([newer.id, older?.id]);
   });
 });

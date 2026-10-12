@@ -1,3 +1,4 @@
+import type { CaptureReviewReason } from "@jendal-workspace/core";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
@@ -86,6 +87,10 @@ export async function markOrderRefunded(
     .where(and(eq(orders.id, input.orderId), eq(orders.status, "paid")))
     .returning({ id: orders.id });
   return rows.length > 0;
+}
+
+export async function setOrderReviewReason(db: DbExecutor, orderId: string, reason: CaptureReviewReason): Promise<void> {
+  await db.update(orders).set({ reviewReason: reason }).where(eq(orders.id, orderId));
 }
 
 export async function revokeOrderGrants(db: DbExecutor, orderId: string, now: Date): Promise<void> {

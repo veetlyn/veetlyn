@@ -1,4 +1,4 @@
-import { ORDER_STATUSES } from "@jendal-workspace/core";
+import { type CaptureReviewReason, ORDER_STATUSES } from "@jendal-workspace/core";
 import { sql } from "drizzle-orm";
 import { bigint, check, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
@@ -37,6 +37,8 @@ export const orders = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     paidAt: timestamp("paid_at"),
     refundedAt: timestamp("refunded_at"),
+    // Set when PayPal converted the funds or charged fees in another currency; someone reconciles it by hand.
+    reviewReason: text("review_reason").$type<CaptureReviewReason>(),
   },
   (t) => [
     index("orders_team_created_idx").on(t.teamId, t.createdAt),

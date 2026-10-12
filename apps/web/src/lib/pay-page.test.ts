@@ -10,13 +10,14 @@ describe("payPageState", () => {
     expect(payPageState({ ...base, status: "failed" })).toEqual({ view: "pay" });
   });
 
-  it("shows paid, processing and cancelled payments without a button", () => {
+  it("shows paid, processing, cancelled and refunded payments without a button", () => {
     expect(payPageState({ ...base, status: "captured" })).toEqual({ view: "paid", message: "Paid. Thank you." });
     expect(payPageState({ ...base, processing: true })).toEqual({
       view: "processing",
       message: "PayPal is still processing this payment. This page updates on its own.",
     });
     expect(payPageState({ ...base, status: "cancelled" })).toEqual({ view: "closed", message: "This payment was cancelled." });
+    expect(payPageState({ ...base, status: "refunded" })).toEqual({ view: "closed", message: "This payment was refunded." });
   });
 
   it("offers the button for every kind of payment", () => {

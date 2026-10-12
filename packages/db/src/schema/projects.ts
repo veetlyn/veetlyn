@@ -1,5 +1,6 @@
 import {
   AMENDMENT_STATUSES,
+  type CaptureReviewReason,
   DELIVERY_STATUSES,
   PAYMENT_KINDS,
   PAYMENT_STATUSES,
@@ -183,6 +184,9 @@ export const payment = pgTable(
     platformFeeMinor: minor("platform_fee_minor"),
     // PayPal's fee on the capture, from its seller receivable breakdown; null until a fact carried it (R1c).
     paypalFeeMinor: minor("paypal_fee_minor"),
+    // What PayPal has given back to the client so far, whether Payleor asked for it or the seller did.
+    refundedMinor: minor("refunded_minor").notNull().default(0),
+    reviewReason: text("review_reason").$type<CaptureReviewReason>(),
     lines: jsonb("lines").$type<PaymentLine[]>().notNull(),
     amendmentId: text("amendment_id").references(() => amendment.id, { onDelete: "restrict" }),
     paypalOrderId: text("paypal_order_id").unique(),
@@ -205,6 +209,7 @@ export const payment = pgTable(
       "payment_paypal_fee_check",
       sql`paypal_fee_minor is null or (paypal_fee_minor >= 0 and paypal_fee_minor <= amount_minor)`,
     ),
+    check("payment_refunded_check", sql`refunded_minor >= 0 and refunded_minor <= amount_minor`),
   ],
 );
 

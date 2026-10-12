@@ -1,5 +1,5 @@
-import { OPEN_PROJECT_STATUSES, type ProjectPaid } from "@jendal-workspace/core";
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { type CaptureReviewReason, OPEN_PROJECT_STATUSES, type ProjectPaid } from "@jendal-workspace/core";
+import { and, asc, count, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { amendment, delivery, payment, project, quote, quoteItem } from "../schema/projects";
@@ -88,6 +88,48 @@ export async function listProjectPayments(tx: DbExecutor, projectId: string): Pr
     .from(payment)
     .where(eq(payment.projectId, projectId))
     .orderBy(asc(payment.createdAt), asc(payment.id));
+}
+
+// Payments a refund can still be taken from, newest capture first.
+export async function listRefundablePayments(tx: DbExecutor, projectId: string): Promise<PaymentRow[]> {
+  return tx
+    .select()
+    .from(payment)
+    .where(
+      and(
+        eq(payment.projectId, projectId),
+        eq(payment.status, "captured"),
+        isNotNull(payment.paypalCaptureId),
+        gt(payment.amountMinor, payment.refundedMinor),
+      ),
+    )
+    .orderBy(desc(payment.capturedAt), desc(payment.id));
+}
+
+// Adds a refund PayPal made on the capture; once nothing is left the payment becomes "refunded". Refunding more
+// than was captured breaks payment_refunded_check, so a miscounted refund fails instead of posting.
+export async function addPaymentRefunded(
+  tx: DbExecutor,
+  paymentId: string,
+  amountMinor: number,
+): Promise<PaymentRow | null> {
+  const [row] = await tx
+    .update(payment)
+    .set({
+      refundedMinor: sql`${payment.refundedMinor} + ${amountMinor}`,
+      status: sql`case when ${payment.refundedMinor} + ${amountMinor} >= ${payment.amountMinor} then 'refunded' else ${payment.status} end`,
+    })
+    .where(eq(payment.id, paymentId))
+    .returning();
+  return row ?? null;
+}
+
+export async function setPaymentReviewReason(
+  tx: DbExecutor,
+  paymentId: string,
+  reason: CaptureReviewReason,
+): Promise<void> {
+  await tx.update(payment).set({ reviewReason: reason }).where(eq(payment.id, paymentId));
 }
 
 export type ProjectFactsRow = ProjectPaid & { pendingAmendment: boolean; unpaidTopUp: boolean };

@@ -1,4 +1,4 @@
-import type { OrderStatus, ProjectSource, ProjectStatus, QuoteRequestAnswer } from "@jendal-workspace/core";
+import type { OrderStatus, PaymentKind, PaymentStatus, ProjectSource, ProjectStatus, QuoteRequestAnswer } from "@jendal-workspace/core";
 import { sql } from "drizzle-orm";
 
 import { createDb, type Database } from "../index";
@@ -7,7 +7,7 @@ import { products, productVariants } from "../schema/catalog";
 import { fileUpload } from "../schema/files";
 import { orders } from "../schema/orders";
 import { member, organization, team, teamMember } from "../schema/organization";
-import { project } from "../schema/projects";
+import { payment, project } from "../schema/projects";
 import { servicesOffering } from "../schema/services-catalog";
 import { servicesTeamMember, servicesTeamSettings } from "../schema/services-teams";
 
@@ -20,7 +20,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "outbox", "paypal_webhook_event", "download_grant", "orders", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "outbox", "paypal_webhook_event", "download_grant", "orders", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "project_refund_part", "project_refund", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }
@@ -230,6 +230,41 @@ export async function seedProject(
     .returning({ id: project.id });
   if (!row) throw new Error("Insert into project returned no row");
   return row.id;
+}
+
+// A services payment with no management fee; captured ones get a capture id.
+export async function seedPayment(
+  db: Database,
+  input: {
+    projectId: string;
+    teamId: string;
+    kind?: PaymentKind;
+    status?: PaymentStatus;
+    amountMinor?: number;
+    capturedAt?: Date;
+  },
+): Promise<typeof payment.$inferSelect> {
+  const kind = input.kind ?? "deposit";
+  const status = input.status ?? "captured";
+  const amountMinor = input.amountMinor ?? 10_000;
+  const [row] = await db
+    .insert(payment)
+    .values({
+      projectId: input.projectId,
+      teamId: input.teamId,
+      kind,
+      status,
+      currency: "USD",
+      quotePartMinor: amountMinor,
+      managementFeeMinor: 0,
+      amountMinor,
+      lines: [{ kind, label: kind, amountMinor }],
+      paypalCaptureId: status === "pending" ? null : `CAP-${crypto.randomUUID()}`,
+      capturedAt: status === "pending" ? null : (input.capturedAt ?? new Date()),
+    })
+    .returning();
+  if (!row) throw new Error("Insert into payment returned no row");
+  return row;
 }
 
 // A catalog product with one variant (run 4a: digital products always have exactly one).
