@@ -46,8 +46,9 @@ async function lockCapturedPayment(tx: Transaction, paymentId: string): Promise<
 
 // Services decision 4: money PayPal gave back without a request comes out of client_held first (see
 // splitServicesRefund), and the payment counts it as refunded. The balance is read under the payment lock but
-// another payment of the project may move client_held meanwhile; the ledger then refuses a negative balance and
-// the queue retries with a fresh read.
+// another payment of the project may move client_held meanwhile. A higher stale read is refused by the ledger
+// (negative balance) and the queue retries with a fresh read; a lower one only shifts the split toward
+// team_revenue, which getProjectFacts reads back from the posting, so paid totals stay consistent.
 async function postUnrequestedRefund(
   tx: Transaction,
   row: PaymentRow,
@@ -93,9 +94,11 @@ export async function applyCompletedPaymentRefund(
     log.warn({ action: "payment.refund", payment: { id: unlocked.id }, refund: { id: refund.id, posted: false } });
     return "skipped";
   }
-  const projectRefund = await findProjectRefundForProject(tx, unlocked.projectId);
-  // Waits for an admin's refund call still storing PayPal's refund id, so its refund is matched below.
-  if (projectRefund) await lockProjectRefund(tx, projectRefund.id);
+  const found = await findProjectRefundForProject(tx, unlocked.projectId);
+  // Waits for an admin's refund call still storing PayPal's refund id, so its refund is matched below. The status
+  // checked further down must come from this locked read: a stale "requested" would post an overpayment refund
+  // as payment_refunded.
+  const projectRefund = found ? await lockProjectRefund(tx, found.id) : null;
   const part = await findRefundPartByPayPalRefundId(tx, refund.id);
   const row = await lockCapturedPayment(tx, input.paymentId);
 

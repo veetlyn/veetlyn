@@ -587,6 +587,19 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       });
     });
 
+    it("parks a capture refunded before Payleor applied it, posting nothing", async () => {
+      const { paymentId, deps } = await startedDeposit({
+        lookup: () => jsonResponse(200, refundedDepositOrder("REFUNDED", [{ id: "R1", value: "600.00" }])),
+      });
+
+      const outcome = await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }));
+
+      expect(outcome.status).toBe("parked");
+      expect(outcome.note).toContain("refunded before Payleor applied it");
+      expect(await paymentRow(paymentId)).toMatchObject({ status: "pending", refundedMinor: 0 });
+      expect(await db.select().from(ledgerTransfer)).toEqual([]);
+    });
+
     it("ignores a refund whose capture is not a Payleor payment", async () => {
       const { deps } = await capturedDeposit();
 

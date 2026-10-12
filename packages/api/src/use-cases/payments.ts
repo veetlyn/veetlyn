@@ -173,7 +173,11 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
       }
       throw new StaleFact();
     }
-    if (row.status === "captured" || (row.status === "failed" && row.paypalCaptureId === fact.captureId)) {
+    if (
+      row.status === "captured" ||
+      row.status === "refunded" ||
+      (row.status === "failed" && row.paypalCaptureId === fact.captureId)
+    ) {
       throw new FactAlreadyApplied();
     }
     const projectRow = await findProjectById(tx, row.projectId);
@@ -393,12 +397,17 @@ async function keepsCurrentOrder(deps: PaymentDeps, row: PaymentRow, merchantId:
   return order.status === "CREATED" || order.status === "APPROVED" || order.status === "PAYER_ACTION_REQUIRED";
 }
 
+function paymentRefunded(): TRPCError {
+  return new TRPCError({ code: "BAD_REQUEST", message: "This payment was refunded." });
+}
+
 // Services spec §5.4. The client keeps the payment's order while PayPal can still capture it; a new order is
 // created only once the old one is dead (declined, expired), so two orders can never both be paid.
 export async function startPayment(deps: PaymentDeps, paymentId: string): Promise<{ orderId: string }> {
   const row = await requirePayment(deps.db, paymentId);
   if (row.status === "captured") throw new TRPCError({ code: "CONFLICT", message: "This payment is already paid." });
   if (row.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "This payment was cancelled." });
+  if (row.status === "refunded") throw paymentRefunded();
   if (row.status === "pending" && row.paypalCaptureId) {
     throw new TRPCError({ code: "CONFLICT", message: "PayPal is still processing this payment. Check back soon." });
   }
@@ -468,6 +477,7 @@ export async function capturePayment(
   }
   if (row.status === "captured") return { outcome: "captured" };
   if (row.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "This payment was cancelled." });
+  if (row.status === "refunded") throw paymentRefunded();
   if (row.status === "failed") {
     throw new TRPCError({ code: "CONFLICT", message: "This payment needs a fresh start. Reload the page and try again." });
   }
