@@ -4901,6 +4901,19 @@
       "table": "payout_request"
     },
     {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "send_attempt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payout_request"
+    },
+    {
       "type": "text",
       "typeSchema": null,
       "notNull": false,

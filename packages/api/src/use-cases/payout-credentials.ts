@@ -1,4 +1,4 @@
-import { errorName, openSecret, sealSecret } from "@jendal-workspace/core";
+import { openSecret, sealSecret } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
@@ -15,6 +15,7 @@ import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
+import { payPalErrorLog } from "./paypal-amounts";
 
 // accountId is null when PayPal did not report which account the credentials belong to.
 export type PayoutCredentialsView = { clientIdEnding: string; accountId: string | null; verifiedAt: string };
@@ -70,7 +71,7 @@ async function readBalances(client: PayPalClient, currency: string, teamId: stri
     return await client.reporting.balances(currency);
   } catch (cause) {
     const status = cause instanceof PayPalError ? cause.status : null;
-    log.warn({ action: "payout_credentials.verify", team: { id: teamId }, error: { name: errorName(cause), status } });
+    log.warn({ action: "payout_credentials.verify", team: { id: teamId }, error: payPalErrorLog(cause) });
     if (status === 401) {
       throw new TRPCError({
         code: "BAD_REQUEST",

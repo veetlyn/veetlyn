@@ -1,6 +1,6 @@
 import { PAYOUT_REQUEST_STATUSES } from "@jendal-workspace/core";
 import { sql } from "drizzle-orm";
-import { bigint, check, index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { bigint, check, index, integer, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { team } from "./organization";
@@ -47,7 +47,8 @@ export const teamPayoutCredentials = pgTable("team_payout_credentials", {
 });
 
 // A member's request to be paid their available earnings from one team. The id is the ledger's payout request id
-// and PayPal's sender_batch_id, so every retry names the same batch.
+// and PayPal's sender_item_id; with send_attempt it names the batch, so a retry of an unconfirmed send names the
+// same batch.
 export const payoutRequest = pgTable(
   "payout_request",
   {
@@ -65,6 +66,9 @@ export const payoutRequest = pgTable(
     status: text("status", { enum: PAYOUT_REQUEST_STATUSES }).notNull().default("requested"),
     // The member's destination when they asked: what the admin approves is what PayPal pays.
     receiverPayerId: text("receiver_payer_id").notNull(),
+    // Numbers PayPal's sender_batch_id and PayPal-Request-Id. It moves on only after PayPal definitely made no
+    // payout, so a resend is not answered with the replayed refusal; an unknown outcome keeps the same ids.
+    sendAttempt: integer("send_attempt").notNull().default(0),
     paypalBatchId: text("paypal_batch_id").unique(),
     paypalItemId: text("paypal_item_id"),
     paypalItemStatus: text("paypal_item_status"),

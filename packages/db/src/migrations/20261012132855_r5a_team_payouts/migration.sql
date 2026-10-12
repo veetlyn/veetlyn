@@ -6,6 +6,7 @@ CREATE TABLE "payout_request" (
 	"amount_minor" bigint NOT NULL,
 	"status" text DEFAULT 'requested' NOT NULL,
 	"receiver_payer_id" text NOT NULL,
+	"send_attempt" integer DEFAULT 0 NOT NULL,
 	"paypal_batch_id" text UNIQUE,
 	"paypal_item_id" text,
 	"paypal_item_status" text,

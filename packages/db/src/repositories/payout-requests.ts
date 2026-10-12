@@ -14,6 +14,7 @@ export type PayoutRequestPatch = Partial<
   Pick<
     typeof payoutRequest.$inferInsert,
     | "status"
+    | "sendAttempt"
     | "paypalBatchId"
     | "paypalItemId"
     | "paypalItemStatus"
@@ -25,6 +26,7 @@ export type PayoutRequestPatch = Partial<
     | "decidedAt"
     | "sentAt"
     | "settledAt"
+    | "updatedAt"
   >
 >;
 export type TeamPayoutRequestRow = PayoutRequestRow & { memberName: string; memberEmail: string };

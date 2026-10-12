@@ -40,6 +40,7 @@ export const errorBodySchema = z.looseObject({
   details: lenientArray(
     z.object({ field: optionalText, value: optionalText, issue: optionalText, description: optionalText }),
   ),
+  links: lenientArray(z.looseObject({ href: z.string(), rel: optionalText, method: optionalText })),
 });
 
 export const moneySchema = z.object({ currency_code: z.string(), value: z.string() });

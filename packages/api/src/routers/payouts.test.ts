@@ -13,6 +13,7 @@ import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/r
 import { savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
+import { payoutRequest } from "@jendal-workspace/db/schema/payouts";
 import {
   createTestDb,
   hasTestDatabase,
@@ -24,10 +25,10 @@ import {
   seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
-import { createPayPalClient } from "@jendal-workspace/paypal";
+import { createPayPalClient, type FetchLike } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PayoutServices } from "../context";
 import { makeSession } from "../testing";
@@ -69,6 +70,9 @@ function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
   });
 }
+
+// While `on`, payout POSTs wait in `held` until the test answers them by hand.
+type PayoutGate = { on: boolean; held: { request: Request; answer: (response: Response) => void }[] };
 
 const pathOf = (request: RecordedRequest) => new URL(request.url).pathname;
 const payoutPosts = (requests: RecordedRequest[]) =>
@@ -320,7 +324,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   }
 
   // Saved credentials for MERCHANT1, $900 available in the team's PayPal balance, and Ada, a freelancer owed $850
-  // with a confirmed destination. PayPal requests made while saving the credentials are dropped.
+  // with a confirmed destination. PayPal requests made while saving the credentials are dropped. While `gate.on`
+  // is true, each payout POST waits in `gate.held` until the test answers it, so two sends can interleave.
   async function payoutTeam() {
     const { userId: adminId, organizationId, teamId } = await connectedTeam();
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
@@ -331,12 +336,20 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       payout: () => batchCreated("BATCH1"),
     };
     const paypal = fakeTeamPayPal(answers);
-    const { payouts } = await makePayouts(paypal.fetch);
+    const gate: PayoutGate = { on: false, held: [] };
+    const gatedFetch: FetchLike = (request) =>
+      gate.on && new URL(request.url).pathname === "/v1/payments/payouts"
+        ? new Promise((resolve) => gate.held.push({ request, answer: resolve }))
+        : paypal.fetch(request);
+    const { payouts } = await makePayouts(gatedFetch);
     const admin = callerFor(adminId, payouts);
     await admin.payouts.saveCredentials({ ...TEAM, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
     paypal.requests.splice(0);
-    return { organizationId, teamId, memberId, admin, member: callerFor(memberId, payouts), answers, paypal };
+    return { organizationId, teamId, memberId, admin, member: callerFor(memberId, payouts), answers, paypal, payouts, gate };
   }
+
+  const batchIdsOf = (posts: RecordedRequest[]) =>
+    posts.map((post) => [post.headers.get("paypal-request-id"), JSON.parse(post.body ?? "").sender_batch_header.sender_batch_id]);
 
   async function ledgerOf(teamId: string, userId: string) {
     const rows = await db.select().from(ledgerBalance).where(eq(ledgerBalance.teamId, teamId));
@@ -383,9 +396,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
     const posts = payoutPosts(paypal.requests);
     expect(posts).toHaveLength(1);
-    expect(posts[0]?.headers.get("paypal-request-id")).toBe(`payout:${id}`);
+    expect(posts[0]?.headers.get("paypal-request-id")).toBe(`payout:${id}:0`);
     expect(JSON.parse(posts[0]?.body ?? "")).toEqual({
-      sender_batch_header: { sender_batch_id: id, email_subject: "You have a payout from acme-studio" },
+      sender_batch_header: { sender_batch_id: `${id}-0`, email_subject: "You have a payout from acme-studio" },
       items: [
         {
           recipient_type: "PAYPAL_ID",
@@ -432,6 +445,28 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     ]);
   });
 
+  it("posts no fee and flags the payout for review when PayPal charges the fee in another currency", async () => {
+    const { teamId, memberId, admin, member, answers } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    await admin.payouts.approve({ ...TEAM, requestId: id });
+
+    answers.batch = () =>
+      batchAnswer(id, { transaction_status: "SUCCESS", payout_item_fee: { currency: "EUR", value: "0.23" } });
+    await expect(admin.payouts.refresh({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "succeeded",
+      feeMinor: null,
+      reviewReason: "Payout fee in another currency",
+    });
+    expect(await ledgerOf(teamId, memberId)).toEqual({
+      available: 35_000,
+      reserved: 0,
+      paidOut: 50_000,
+      teamRevenue: 15_000,
+      paypalFees: 0,
+    });
+    expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`, `payout_succeeded:${id}`]);
+  });
+
   it("releases the reserved earnings when an admin rejects the request, and accepts a new one", async () => {
     const { teamId, memberId, admin, member, paypal } = await payoutTeam();
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
@@ -456,7 +491,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       hold: (answers: TeamPayPalAnswers) => {
         answers.balances = () => jsonResponse(200, balancesAnswer(MERCHANT_ID, "100.00"));
       },
-      payoutCalls: 0,
+      attempts: [1],
     },
     {
       case: "PayPal answers INSUFFICIENT_FUNDS",
@@ -469,9 +504,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
             debug_id: "d422",
           });
       },
-      payoutCalls: 1,
+      attempts: [0, 1],
     },
-  ])("keeps an approved request queued when $case, and sends it on retry", async ({ hold, payoutCalls }) => {
+  ])("keeps an approved request queued when $case, and sends it on retry with fresh ids", async ({ hold, attempts }) => {
     const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
     const ready = { ...answers };
     hold(answers);
@@ -482,7 +517,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       failureMessage: LOW_BALANCE,
       decidedAt: expect.any(String),
     });
-    expect(payoutPosts(paypal.requests)).toHaveLength(payoutCalls);
+    expect(payoutPosts(paypal.requests)).toHaveLength(attempts.length - 1);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000, paidOut: 0 });
 
     Object.assign(answers, ready);
@@ -490,44 +525,93 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       status: "sent",
       failureMessage: null,
     });
-    expect(payoutPosts(paypal.requests)).toHaveLength(payoutCalls + 1);
+    expect(batchIdsOf(payoutPosts(paypal.requests))).toEqual(
+      attempts.map((attempt) => [`payout:${id}:${attempt}`, `${id}-${attempt}`]),
+    );
   });
 
-  it("keeps an unconfirmed send open and resends the same batch until PayPal answers with it", async () => {
+  const UNCERTAIN = {
+    code: "BAD_GATEWAY",
+    message: "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.",
+  };
+
+  it.each([
+    { case: "the batch it created", answer: () => batchCreated("BATCH1"), batchId: "BATCH1" },
+    {
+      case: "a duplicate refusal linking that batch",
+      answer: () =>
+        jsonResponse(400, {
+          name: "USER_BUSINESS_ERROR",
+          message: "Batch with given sender_batch_id already exists",
+          debug_id: "d400",
+          links: [{ href: "https://api-m.sandbox.paypal.com/v1/payments/payouts/BATCH-FIRST", rel: "self", method: "GET" }],
+        }),
+      batchId: "BATCH-FIRST",
+    },
+  ])("keeps an unconfirmed send open and resends the same batch until PayPal answers with $case", async (row) => {
     const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
-    const uncertain = {
-      code: "BAD_GATEWAY",
-      message: "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.",
-    };
-    const unconfirmed = [expect.objectContaining({ status: "sending", uncertain: true, failureMessage: uncertain.message })];
+    const unconfirmed = [expect.objectContaining({ status: "sending", uncertain: true, failureMessage: UNCERTAIN.message })];
 
     answers.payout = () => jsonResponse(500, { name: "INTERNAL_SERVICE_ERROR", message: "Internal error", debug_id: "d500" });
-    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(uncertain);
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(UNCERTAIN);
     await expect(admin.payouts.list(TEAM)).resolves.toEqual(unconfirmed);
 
-    // PayPal may hold the first batch, so a refusal now is not final.
+    // PayPal may hold the first batch, so neither a refusal nor INSUFFICIENT_FUNDS is final now.
     answers.payout = () => jsonResponse(422, receiverRefusal);
-    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject(uncertain);
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject(UNCERTAIN);
+    answers.payout = () =>
+      jsonResponse(422, { name: "UNPROCESSABLE_ENTITY", message: "No funds.", details: [{ issue: "INSUFFICIENT_FUNDS" }] });
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject(UNCERTAIN);
     await expect(admin.payouts.list(TEAM)).resolves.toEqual(unconfirmed);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000 });
 
-    answers.payout = () => batchCreated("BATCH1");
+    answers.payout = row.answer;
     await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "sent",
-      paypalBatchId: "BATCH1",
+      paypalBatchId: row.batchId,
       uncertain: false,
       failureMessage: null,
     });
 
-    const posts = payoutPosts(paypal.requests);
-    expect(posts.length).toBeGreaterThan(2);
-    expect(new Set(posts.map((post) => post.headers.get("paypal-request-id")))).toEqual(new Set([`payout:${id}`]));
-    expect(new Set(posts.map((post) => JSON.parse(post.body ?? "").sender_batch_header.sender_batch_id))).toEqual(
-      new Set([id]),
-    );
+    const ids = batchIdsOf(payoutPosts(paypal.requests));
+    expect(ids.length).toBeGreaterThan(3);
+    expect(new Set(ids.map((pair) => pair.join(" ")))).toEqual(new Set([`payout:${id}:0 ${id}-0`]));
     // Only the first attempt reads the balance: after an unknown outcome PayPal may already have paid from it.
     expect(balanceReads(paypal.requests)).toHaveLength(1);
+  });
+
+  it("records an attempt's answer only while its claim is current, so a takeover's batch is never released", async () => {
+    const { teamId, memberId, admin, member, gate } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    gate.on = true;
+
+    const first = admin.payouts.approve({ ...TEAM, requestId: id });
+    await vi.waitFor(() => expect(gate.held).toHaveLength(1));
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "This payout is being sent.",
+    });
+
+    // Five minutes on, the first attempt looks dead and a retry takes the request over.
+    await db
+      .update(payoutRequest)
+      .set({ updatedAt: new Date(Date.now() - 6 * 60_000) })
+      .where(eq(payoutRequest.id, id));
+    const takeover = admin.payouts.retry({ ...TEAM, requestId: id });
+    await vi.waitFor(() => expect(gate.held).toHaveLength(2));
+
+    gate.held[0]?.answer(jsonResponse(422, receiverRefusal));
+    await expect(first).resolves.toMatchObject({ status: "sending", uncertain: true });
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000 });
+    expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`]);
+
+    gate.held[1]?.answer(batchCreated("BATCH1"));
+    await expect(takeover).resolves.toMatchObject({ status: "sent", paypalBatchId: "BATCH1" });
+    expect(gate.held.map((held) => held.request.headers.get("paypal-request-id"))).toEqual([
+      `payout:${id}:0`,
+      `payout:${id}:0`,
+    ]);
   });
 
   it.each([
@@ -599,8 +683,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   });
 
   it("refuses requests the member cannot make, and approvals from anyone but an admin", async () => {
-    const { organizationId, teamId, memberId, member, paypal } = await payoutTeam();
-    const caller = (userId: string) => callerFor(userId).payouts;
+    const { organizationId, teamId, memberId, member, paypal, payouts } = await payoutTeam();
+    const caller = (userId: string) => callerFor(userId, payouts).payouts;
 
     const noDestination = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Bo" });
     await expect(caller(noDestination).request({ ...TEAM, amount: "10.00" })).rejects.toMatchObject({
@@ -636,6 +720,15 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const forbidden = { code: "FORBIDDEN", message: "Only an admin can approve payouts." };
     await expect(member.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
     await expect(member.payouts.list(TEAM)).rejects.toMatchObject(forbidden);
+
+    // An admin of another team cannot reach the request through their own team.
+    const other = await seedServicesTeamWithAdmin(db, { slug: "other-studio" });
+    const otherTeam = { teamSlug: "other-studio", requestId: id };
+    const notFound = { code: "NOT_FOUND", message: "Payout request not found." };
+    await expect(caller(other.userId).approve(otherTeam)).rejects.toMatchObject(notFound);
+    await expect(caller(other.userId).reject(otherTeam)).rejects.toMatchObject(notFound);
+    await expect(caller(other.userId).retry(otherTeam)).rejects.toMatchObject(notFound);
+    await expect(caller(other.userId).refresh(otherTeam)).rejects.toMatchObject(notFound);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 75_000, reserved: 10_000 });
     expect(paypal.requests).toEqual([]);
   });

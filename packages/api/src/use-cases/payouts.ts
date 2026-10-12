@@ -1,5 +1,4 @@
 import {
-  errorName,
   ledgerAccounts,
   parseMajorAmount,
   payoutAmountProblem,
@@ -27,7 +26,6 @@ import {
   listTeamPayoutRequests,
   listUserPayoutRequests,
   lockPayoutRequest,
-  type PayoutRequestPatch,
   type PayoutRequestRow,
   updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
@@ -48,6 +46,7 @@ import { credentialsMatchTeam, payoutClientFromCredentials } from "./payout-cred
 import {
   isPayPalRequestInProgress,
   isSettledPayPalRefusal,
+  payPalErrorLog,
   payPalRefusalMessage,
   payPalValueMinor,
   postIfNew,
@@ -262,7 +261,14 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string): 
   if (!credentials || heldBecause) {
     return { kind: "held", request: await updatePayoutRequest(tx, request.id, { uncertainAt, failureMessage: heldBecause }) };
   }
-  const claimed = await updatePayoutRequest(tx, request.id, { status: "sending", uncertainAt, failureMessage: null });
+  // updated_at identifies this claim when its answer is recorded, so it must differ from every earlier claim's.
+  const claimedAt = new Date(Math.max(now, request.updatedAt.getTime() + 1));
+  const claimed = await updatePayoutRequest(tx, request.id, {
+    status: "sending",
+    uncertainAt,
+    failureMessage: null,
+    updatedAt: claimedAt,
+  });
   return { kind: "claimed", request: claimed, credentials };
 }
 
@@ -275,6 +281,17 @@ type SendOutcome =
 
 function isInsufficientFunds(error: PayPalError): boolean {
   return error.name === "INSUFFICIENT_FUNDS" || error.details.some((detail) => detail.issue === "INSUFFICIENT_FUNDS");
+}
+
+const BATCH_LINK = /^(?:https?:\/\/[^/]+)?\/v1\/payments\/payouts\/([^/?#]+)\/?(?:[?#]|$)/;
+
+// PayPal refuses a sender_batch_id it already used with a link to the original batch, which is this request's.
+function linkedBatchId(error: PayPalError): string | null {
+  for (const link of error.links) {
+    const batchId = BATCH_LINK.exec(link.href)?.[1];
+    if (batchId) return decodeURIComponent(batchId);
+  }
+  return null;
 }
 
 // A negative balance pays nothing.
@@ -299,7 +316,7 @@ async function balanceProblem(
   return availableMinor < request.amountMinor ? { message: LOW_BALANCE, cause: null } : null;
 }
 
-// Every attempt for one request names the same batch, item and PayPal-Request-Id, so PayPal pays it once.
+// Every attempt with the same send_attempt names the same batch and PayPal-Request-Id, so PayPal pays it once.
 async function attemptSend(
   deps: PayoutDeps,
   team: PayoutTeam,
@@ -319,8 +336,8 @@ async function attemptSend(
   }
   try {
     const created = await client.payouts.create({
-      senderBatchId: request.id,
-      requestId: `payout:${request.id}`,
+      senderBatchId: `${request.id}-${request.sendAttempt}`,
+      requestId: `payout:${request.id}:${request.sendAttempt}`,
       emailSubject: `You have a payout from ${team.name}`,
       item: {
         receiverPayerId: request.receiverPayerId,
@@ -331,27 +348,53 @@ async function attemptSend(
     });
     return { kind: "sent", batchId: created.batchId };
   } catch (error) {
+    const linked = error instanceof PayPalError ? linkedBatchId(error) : null;
+    if (linked) return { kind: "sent", batchId: linked };
     if (!isSettledPayPalRefusal(error) || isPayPalRequestInProgress(error)) return { kind: "uncertain", cause: error };
     if (isInsufficientFunds(error)) return { kind: "held", message: LOW_BALANCE, cause: error };
     return { kind: "refused", message: payPalRefusalMessage(error).slice(0, MAX_FAILURE_MESSAGE), cause: error };
   }
 }
 
-// Records under the request lock. A request no longer `sending` was recorded by another attempt and is left as is.
-async function recordSend(
+async function underRequestLock(
   db: Database,
   requestId: string,
-  apply: (tx: Transaction, request: PayoutRequestRow) => Promise<PayoutRequestRow>,
+  apply: (tx: Transaction, locked: PayoutRequestRow) => Promise<PayoutRequestRow>,
 ): Promise<PayoutRequestRow> {
   return db.transaction(async (tx) => {
-    const request = await lockPayoutRequest(tx, requestId);
-    if (!request) throw new Error(`Payout request ${requestId} disappeared`);
-    return request.status === "sending" ? apply(tx, request) : request;
+    const locked = await lockPayoutRequest(tx, requestId);
+    if (!locked) throw new Error(`Payout request ${requestId} disappeared`);
+    return apply(tx, locked);
   });
 }
 
-function patchOnly(patch: PayoutRequestPatch) {
-  return (tx: Transaction, request: PayoutRequestRow) => updatePayoutRequest(tx, request.id, patch);
+// A held, refused or unconfirmed answer speaks only for its own claim: once a retry has taken the request over,
+// that retry's batch may be with PayPal, so the older answer changes nothing.
+async function recordForClaim(
+  db: Database,
+  claimed: PayoutRequestRow,
+  apply: (tx: Transaction, locked: PayoutRequestRow) => Promise<PayoutRequestRow>,
+): Promise<PayoutRequestRow> {
+  return underRequestLock(db, claimed.id, (tx, locked) =>
+    locked.status === "sending" && locked.updatedAt.getTime() === claimed.updatedAt.getTime()
+      ? apply(tx, locked)
+      : Promise.resolve(locked),
+  );
+}
+
+// A batch id is PayPal's word that it holds this payout, whichever attempt it answered.
+async function recordBatch(db: Database, requestId: string, batchId: string): Promise<PayoutRequestRow> {
+  return underRequestLock(db, requestId, (tx, locked) =>
+    locked.status === "sending" || locked.status === "queued"
+      ? updatePayoutRequest(tx, locked.id, {
+          status: "sent",
+          paypalBatchId: batchId,
+          sentAt: new Date(),
+          uncertainAt: null,
+          failureMessage: null,
+        })
+      : Promise.resolve(locked),
+  );
 }
 
 // No transaction or lock is held across PayPal's calls. Held and refused sends return the request with its
@@ -365,33 +408,31 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
   // After an unknown outcome PayPal may hold a batch for this request, so only an answer with that batch is final.
   if (request.uncertainAt !== null && outcome.kind !== "sent") outcome = { kind: "uncertain", cause: outcome.cause };
   if (outcome.kind === "sent") {
-    const { batchId } = outcome;
     try {
-      return await recordSend(
-        deps.db,
-        request.id,
-        patchOnly({ status: "sent", paypalBatchId: batchId, sentAt: new Date(), uncertainAt: null, failureMessage: null }),
-      );
+      return await recordBatch(deps.db, request.id, outcome.batchId);
     } catch (cause) {
-      // PayPal made the batch; a retry gets it back under the same request id and records it.
+      // PayPal made the batch; a retry gets it back under the same ids and records it.
       outcome = { kind: "uncertain", cause };
     }
   }
 
-  const status = outcome.cause instanceof PayPalError ? outcome.cause.status : null;
   log.warn({
     action: "payout.send",
-    payoutRequest: { id: request.id },
+    payoutRequest: { id: request.id, sendAttempt: request.sendAttempt },
     team: { id: team.id },
     outcome: outcome.kind,
-    error: { name: outcome.cause === null ? "none" : errorName(outcome.cause), status },
+    error: payPalErrorLog(outcome.cause),
   });
   if (outcome.kind === "held") {
-    return recordSend(deps.db, request.id, patchOnly({ status: "queued", failureMessage: outcome.message }));
+    const message = outcome.message;
+    // The next attempt gets fresh ids: PayPal made no payout under these, and might replay this refusal for them.
+    return recordForClaim(deps.db, request, (tx, locked) =>
+      updatePayoutRequest(tx, locked.id, { status: "queued", failureMessage: message, sendAttempt: locked.sendAttempt + 1 }),
+    );
   }
   if (outcome.kind === "refused") {
     const message = outcome.message;
-    return recordSend(deps.db, request.id, async (tx, locked) => {
+    return recordForClaim(deps.db, request, async (tx, locked) => {
       const failed = await updatePayoutRequest(tx, locked.id, {
         status: "failed",
         failureMessage: message,
@@ -402,11 +443,11 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
     });
   }
   try {
-    await recordSend(deps.db, request.id, (tx, locked) =>
+    await recordForClaim(deps.db, request, (tx, locked) =>
       updatePayoutRequest(tx, locked.id, { uncertainAt: locked.uncertainAt ?? new Date(), failureMessage: UNCERTAIN }),
     );
   } catch (recordError) {
-    log.error({ action: "payout.send_record", payoutRequest: { id: request.id }, error: { name: errorName(recordError) } });
+    log.error({ action: "payout.send_record", payoutRequest: { id: request.id }, error: payPalErrorLog(recordError) });
   }
   throw new TRPCError({ code: "BAD_GATEWAY", message: UNCERTAIN, cause: outcome.cause ?? undefined });
 }
@@ -499,8 +540,7 @@ export async function settlePayout(deps: PayoutDeps, request: PayoutRequestRow):
     const client = await payoutClientFromCredentials(deps.payouts, credentials);
     batch = await client.payouts.getBatch(batchId);
   } catch (cause) {
-    const status = cause instanceof PayPalError ? cause.status : null;
-    log.warn({ action: "payout.settle", payoutRequest: { id: request.id }, error: { name: errorName(cause), status } });
+    log.warn({ action: "payout.settle", payoutRequest: { id: request.id }, error: payPalErrorLog(cause) });
     throw new TRPCError({ code: "BAD_GATEWAY", message: "PayPal did not answer. Try again.", cause });
   }
   const settlement = settlementOf(request, batch);

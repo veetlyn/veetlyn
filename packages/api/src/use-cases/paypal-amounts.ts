@@ -1,4 +1,4 @@
-import { LedgerError, type LedgerTransferDraft, parseMajorAmount } from "@jendal-workspace/core";
+import { errorName, LedgerError, type LedgerTransferDraft, parseMajorAmount } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
@@ -31,6 +31,17 @@ export function isSettledPayPalRefusal(cause: unknown): cause is PayPalError {
 // PayPal answers a repeated request id with 409 while the first request is still running: that one may succeed.
 export function isPayPalRequestInProgress(error: PayPalError): boolean {
   return error.status === 409 || error.details.some((detail) => detail.issue === "PREVIOUS_REQUEST_IN_PROGRESS");
+}
+
+export type PayPalErrorLog = { name: string; status: number | null; debugId: string | null; message: string | null };
+
+// What a log keeps of a failure: PayPal's status, debug_id and message when PayPal answered. Other errors keep
+// only their name, since their messages may carry request data.
+export function payPalErrorLog(cause: unknown): PayPalErrorLog {
+  if (cause instanceof PayPalError) {
+    return { name: cause.name, status: cause.status, debugId: cause.debugId ?? null, message: cause.message };
+  }
+  return { name: cause === null || cause === undefined ? "none" : errorName(cause), status: null, debugId: null, message: null };
 }
 
 // Shown to an admin: PayPal's error name, message and first issue, never request details or credentials.
