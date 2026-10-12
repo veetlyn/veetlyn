@@ -1,0 +1,47 @@
+packages/api/src/routers/services-team.test.ts
+  s_161b33edfba928::t_f46ebfd25a0441 285
+packages/api/src/context.ts
+  s_161b33edfba928::t_c82cf4fc3e0c79 32-40
+  s_161b33edfba928::t_7f91a4613a014c 58-60
+packages/api/src/routers/payouts.test.ts
+  s_161b33edfba928::t_22ed7016fdb8ce 1-28,30,32-191
+  s_161b33edfba928::t_b50869cbc0ba03 29,31
+packages/core/src/services-teams/setup-steps.ts
+  s_161b33edfba928::t_cc902d782772bd 39-41
+  s_161b33edfba928::t_0cad50c8420ec9 28
+packages/db/src/repositories/payout-credentials.ts
+  s_161b33edfba928::t_c098c987ccb2ff 21-29
+packages/api/src/use-cases/payout-credentials.ts
+  s_161b33edfba928::t_57c1899de69a58 1,3-125
+  s_161b33edfba928::t_e7c778252e5ddf 2
+packages/api/src/routers/payouts.ts
+  s_161b33edfba928::t_a12165c5e418f8 1-37
+apps/web/src/app/admin/[storeSlug]/services-team-dashboard.tsx
+  s_161b33edfba928::t_22b380a72a3079 36,47
+packages/api/src/routers/index.ts
+  s_161b33edfba928::t_76245e362694b1 9,27
+packages/api/src/routers/services-catalog.ts
+  s_161b33edfba928::t_7b82fe714ea8de 30
+packages/api/src/routers/services-team.ts
+  s_161b33edfba928::t_6acd31cb0f77bd 13,37,104,110,118
+packages/api/src/services-team-procedure.ts
+  s_161b33edfba928::t_bc397163e3d06a 1,18-21
+packages/core/src/services-teams/setup-steps.test.ts
+  s_161b33edfba928::t_bdd099b8f51b2c 17,34,44,55,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b8e393b41a3d7c038e016ed801c57014a2ecb02e",
+  "prompts": {},
+  "sessions": {
+    "s_161b33edfba928": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "90159796-aeee-472b-b6cc-3912fdba58a8",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
