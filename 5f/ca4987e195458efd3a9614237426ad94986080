@@ -1,0 +1,29 @@
+apps/web/src/lib/client-refund.test.ts
+  s_cf997ed6621518::t_fba30b15b1b1f0 3
+packages/api/src/routers/project.test.ts
+  s_cf997ed6621518::t_430f30bf3a44fe 1156-1157,1164-1174,1176-1186,1188-1192,1194-1195,1197-1200
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_cf997ed6621518::t_ee2a7d3588fd93 464-478,564,600,622,1103,1113-1117,1122-1123
+packages/core/src/ledger/postings.test.ts
+  s_cf997ed6621518::t_331683be6fb46d 279,293
+packages/db/src/repositories/projects.ts
+  s_cf997ed6621518::t_39b5a2330085a4 118-119,125
+packages/paypal/src/payments.ts
+  s_cf997ed6621518::t_accdf1745ac901 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5fca4987e195458efd3a9614237426ad94986080",
+  "prompts": {},
+  "sessions": {
+    "s_cf997ed6621518": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "dda86d3b-2834-4016-9a28-40cb3683cf20",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
