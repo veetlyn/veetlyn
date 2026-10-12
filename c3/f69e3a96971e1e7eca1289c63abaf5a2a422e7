@@ -1,0 +1,34 @@
+packages/core/src/ledger/postings.ts
+  s_2ae612c625f84a::t_e28c86750c1430 98-100
+  s_2ae612c625f84a::t_2787cfe524e0f5 107
+  s_2ae612c625f84a::t_a1fddf8792378d 95-97
+  s_2ae612c625f84a::t_71a5818b41d185 101-106
+  s_2ae612c625f84a::t_06b520aa5c7490 108-110
+  s_2ae612c625f84a::t_e2ad090ef4c6ca 72-94,111-120
+packages/core/src/payments/review.ts
+  s_2ae612c625f84a::t_2c20dbf7421caf 1-23
+packages/core/src/index.ts
+  s_2ae612c625f84a::t_96a70cfbc0e6a0 37
+packages/core/src/ledger/postings.test.ts
+  s_2ae612c625f84a::t_f3fb7889e04451 13,19,21,132-139,243-319
+packages/core/src/ledger/transfers.ts
+  s_2ae612c625f84a::t_81b7c1abd4c532 19-20
+packages/core/src/payments/review.test.ts
+  s_2ae612c625f84a::t_dcaa3df597b1b2 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c3f69e3a96971e1e7eca1289c63abaf5a2a422e7",
+  "prompts": {},
+  "sessions": {
+    "s_2ae612c625f84a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "9a34e1ca-389f-41ed-b767-306f8f6914d5",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
