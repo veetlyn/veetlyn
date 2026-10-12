@@ -51,6 +51,6 @@ export const payoutDestinationRouter = router({
     const userInfo = await fetchPayPalUserInfo(ctx.environment, tokens.accessToken);
     const draft = payoutDestinationFromUserInfo(linked.accountId, userInfo);
     if (!draft) throw unconfirmed();
-    return toDestinationView(await savePayoutDestination(ctx.db, userId, draft));
+    return toDestinationView(await savePayoutDestination(ctx.db, userId, draft, null));
   }),
 });
