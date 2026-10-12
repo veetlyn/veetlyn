@@ -89,14 +89,6 @@ describe.skipIf(!hasTestDatabase)("payment refunds", () => {
     return { teamId, projectId, payment: row };
   }
 
-  it("keeps a partly refunded payment captured and marks it refunded once nothing is left", async () => {
-    const { payment } = await seedCaptured();
-
-    expect(await addPaymentRefunded(db, payment.id, 4_000)).toMatchObject({ refundedMinor: 4_000, status: "captured" });
-    expect(await addPaymentRefunded(db, payment.id, 6_000)).toMatchObject({ refundedMinor: 10_000, status: "refunded" });
-    expect(await addPaymentRefunded(db, "missing", 1)).toBeNull();
-  });
-
   it("refuses to refund more than was captured", async () => {
     const { payment } = await seedCaptured();
     await addPaymentRefunded(db, payment.id, 9_000);

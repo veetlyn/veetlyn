@@ -34,7 +34,6 @@ describe("payments.refundCapture", () => {
       merchantId: "SELLER1",
       requestId: "project-refund:completion-p1:pay-1",
       amount: { currency_code: "USD", value: "5.00" },
-      noteToPayer: "Overpayment",
     });
 
     expect(refund).toEqual({
@@ -57,7 +56,6 @@ describe("payments.refundCapture", () => {
     expect(call.headers.get("prefer")).toBe("return=representation");
     expect(JSON.parse(call.body ?? "")).toEqual({
       amount: { currency_code: "USD", value: "5.00" },
-      note_to_payer: "Overpayment",
     });
   });
 });

@@ -115,20 +115,14 @@ export async function listRefundablePayments(tx: DbExecutor, projectId: string):
 
 // Adds a refund PayPal made on the capture; once nothing is left the payment becomes "refunded". Refunding more
 // than was captured breaks payment_refunded_check, so a miscounted refund fails instead of posting.
-export async function addPaymentRefunded(
-  tx: DbExecutor,
-  paymentId: string,
-  amountMinor: number,
-): Promise<PaymentRow | null> {
-  const [row] = await tx
+export async function addPaymentRefunded(tx: DbExecutor, paymentId: string, amountMinor: number): Promise<void> {
+  await tx
     .update(payment)
     .set({
       refundedMinor: sql`${payment.refundedMinor} + ${amountMinor}`,
       status: sql`case when ${payment.refundedMinor} + ${amountMinor} >= ${payment.amountMinor} then 'refunded' else ${payment.status} end`,
     })
-    .where(eq(payment.id, paymentId))
-    .returning();
-  return row ?? null;
+    .where(eq(payment.id, paymentId));
 }
 
 export async function setPaymentReviewReason(

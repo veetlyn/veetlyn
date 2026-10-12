@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clientRefundLabel, paymentRefundLabel, refundPartStatusLabel, staffRefundAction } from "./client-refund";
+import { clientRefundLabel, paymentRefundLabel, staffRefundAction } from "./client-refund";
 
 const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -29,16 +29,6 @@ describe("paymentRefundLabel", () => {
     [{ status: "captured", amountMinor: 5000, refundedMinor: 5000 }, "Refunded"],
   ])("%o", (payment, label) => {
     expect(paymentRefundLabel(payment, "USD")).toBe(label);
-  });
-});
-
-describe("refundPartStatusLabel", () => {
-  it.each([
-    ["completed", "Sent"],
-    ["pending", "Waiting for PayPal"],
-    ["failed", "Failed"],
-  ] as const)("%s", (status, label) => {
-    expect(refundPartStatusLabel(status)).toBe(label);
   });
 });
 
