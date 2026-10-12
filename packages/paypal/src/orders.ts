@@ -7,12 +7,14 @@ import {
   moneySchema,
   orderSchema,
   parsedItems,
+  refundBreakdownSchema,
   refundSchema,
 } from "./schemas";
 
 export type PayPalMoney = z.output<typeof moneySchema>;
 export type PayPalCaptureBreakdown = z.output<typeof captureBreakdownSchema>;
 export type PayPalCapture = z.output<typeof captureSchema>;
+export type PayPalRefundBreakdown = z.output<typeof refundBreakdownSchema>;
 export type PayPalRefund = z.output<typeof refundSchema>;
 export type PayPalOrder = z.output<typeof orderSchema>;
 
