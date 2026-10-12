@@ -1,9 +1,10 @@
 import { errorName, openSecret, sealSecret } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
-import type { DbExecutor } from "@jendal-workspace/db/executor";
+import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
   deleteTeamPayoutCredentials,
   getTeamPayoutCredentials,
+  lockTeamPayoutCredentials,
   saveTeamPayoutCredentials,
   type TeamPayoutCredentialsRow,
 } from "@jendal-workspace/db/repositories/payout-credentials";
@@ -15,13 +16,23 @@ import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
 
-export type PayoutCredentialsView = { clientIdEnding: string; accountId: string; verifiedAt: string };
+// accountId is null when PayPal did not report which account the credentials belong to.
+export type PayoutCredentialsView = { clientIdEnding: string; accountId: string | null; verifiedAt: string };
 
 type PayoutTeam = { id: string; paypalMerchantId: string | null };
 
 export function requirePayoutServices(payouts: PayoutServices | undefined): PayoutServices {
   if (!payouts) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Payouts are not set up on this server." });
   return payouts;
+}
+
+// Payouts go out only from the PayPal account connected to the team. Credentials whose account PayPal did not
+// report cannot be checked, and are allowed.
+export function credentialsMatchTeam(
+  row: Pick<TeamPayoutCredentialsRow, "paypalAccountId">,
+  team: Pick<PayoutTeam, "paypalMerchantId">,
+): boolean {
+  return row.paypalAccountId === null || row.paypalAccountId === team.paypalMerchantId;
 }
 
 function toView(row: TeamPayoutCredentialsRow): PayoutCredentialsView {
@@ -33,11 +44,25 @@ export async function getPayoutCredentialsView(db: DbExecutor, teamId: string): 
   return row ? toView(row) : null;
 }
 
-// New credentials while PayPal works on a payout would leave the settle step reading the batch with another app.
-async function refuseWhileSending(db: DbExecutor, teamId: string): Promise<void> {
-  if (await hasActivePayoutSend(db, teamId)) {
-    throw new TRPCError({ code: "CONFLICT", message: "Wait for the payouts in progress to finish." });
-  }
+function payoutsInProgress(): TRPCError {
+  return new TRPCError({ code: "CONFLICT", message: "Wait for the payouts in progress to finish." });
+}
+
+// Runs `write` holding the credentials row lock, after re-checking for payouts in progress under it; a send claim
+// takes the same row `for share`, so none can start between the check and the write. While payouts are in
+// progress, only credentials of the same PayPal account may replace the current ones: the settle step reads the
+// batch with whatever credentials are saved, and only an app of the sending account can read it.
+async function writeUnlessSendingElsewhere<T>(
+  db: Database,
+  teamId: string,
+  allowedWhileSending: (current: TeamPayoutCredentialsRow | null) => boolean,
+  write: (tx: Transaction) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    const current = await lockTeamPayoutCredentials(tx, teamId);
+    if ((await hasActivePayoutSend(tx, teamId)) && !allowedWhileSending(current)) throw payoutsInProgress();
+    return write(tx);
+  });
 }
 
 async function readBalances(client: PayPalClient, currency: string, teamId: string): Promise<PayPalBalances> {
@@ -64,7 +89,7 @@ async function readBalances(client: PayPalClient, currency: string, teamId: stri
 }
 
 // The credentials are checked against PayPal before they are stored: they must open a token, read the balance
-// and belong to the PayPal account connected to the team.
+// and belong to the PayPal account connected to the team. The PayPal call happens before any lock is taken.
 export async function saveTeamPayoutCredentialsChecked(
   deps: { db: Database; payouts: PayoutServices },
   input: { team: PayoutTeam; clientId: string; clientSecret: string },
@@ -76,36 +101,58 @@ export async function saveTeamPayoutCredentialsChecked(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A solo seller has no payouts to send." });
   }
   if (!team.paypalMerchantId) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Connect PayPal first." });
-  await refuseWhileSending(db, team.id);
 
   const client = payouts.clientFor({ teamId: team.id, clientId: input.clientId, clientSecret: input.clientSecret });
-  const balances = await readBalances(client, settings?.currency ?? "USD", team.id);
-  if (balances.accountId !== null && balances.accountId !== team.paypalMerchantId) {
+  const { accountId } = await readBalances(client, settings?.currency ?? "USD", team.id);
+  if (accountId !== null && accountId !== team.paypalMerchantId) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "These credentials belong to another PayPal account than the one connected to this team.",
     });
   }
-  if (balances.accountId === null) {
+  if (accountId === null) {
     log.warn({ action: "payout_credentials.account", team: { id: team.id }, account: { reported: false } });
   }
 
   const sealed = await sealSecret(payouts.secretKey, payouts.keyId, input.clientSecret, team.id);
-  const row = await saveTeamPayoutCredentials(db, {
-    teamId: team.id,
-    clientId: input.clientId,
-    secretCiphertext: sealed.ciphertext,
-    secretIv: sealed.iv,
-    keyId: sealed.keyId,
-    paypalAccountId: balances.accountId ?? team.paypalMerchantId,
-    verifiedAt: new Date(),
-  });
+  const row = await writeUnlessSendingElsewhere(
+    db,
+    team.id,
+    (current) => accountId !== null && current?.paypalAccountId === accountId,
+    (tx) =>
+      saveTeamPayoutCredentials(tx, {
+        teamId: team.id,
+        clientId: input.clientId,
+        secretCiphertext: sealed.ciphertext,
+        secretIv: sealed.iv,
+        keyId: sealed.keyId,
+        paypalAccountId: accountId,
+        verifiedAt: new Date(),
+      }),
+  );
   return toView(row);
 }
 
-export async function removeTeamPayoutCredentials(db: DbExecutor, teamId: string): Promise<void> {
-  await refuseWhileSending(db, teamId);
-  await deleteTeamPayoutCredentials(db, teamId);
+export async function removeTeamPayoutCredentials(db: Database, teamId: string): Promise<void> {
+  await writeUnlessSendingElsewhere(
+    db,
+    teamId,
+    () => false,
+    (tx) => deleteTeamPayoutCredentials(tx, teamId),
+  );
+}
+
+// Builds the client from a row the caller already holds, such as the one a send claim locked.
+export async function payoutClientFromCredentials(
+  payouts: PayoutServices,
+  row: TeamPayoutCredentialsRow,
+): Promise<PayPalClient> {
+  const clientSecret = await openSecret(
+    payouts.secretKey,
+    { ciphertext: row.secretCiphertext, iv: row.secretIv, keyId: row.keyId },
+    row.teamId,
+  );
+  return payouts.clientFor({ teamId: row.teamId, clientId: row.clientId, clientSecret });
 }
 
 // Null when the team has saved no credentials.
@@ -115,11 +162,5 @@ export async function payoutClientForTeam(
   teamId: string,
 ): Promise<PayPalClient | null> {
   const row = await getTeamPayoutCredentials(db, teamId);
-  if (!row) return null;
-  const clientSecret = await openSecret(
-    payouts.secretKey,
-    { ciphertext: row.secretCiphertext, iv: row.secretIv, keyId: row.keyId },
-    teamId,
-  );
-  return payouts.clientFor({ teamId, clientId: row.clientId, clientSecret });
+  return row ? payoutClientFromCredentials(payouts, row) : null;
 }

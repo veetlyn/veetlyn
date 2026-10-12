@@ -1,5 +1,5 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
-import { createFakeFileStore, importSecretKey, openSecret } from "@jendal-workspace/core";
+import { createFakeFileStore, importSecretKey, type JsonObject, openSecret } from "@jendal-workspace/core";
 import { getTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
@@ -26,12 +26,14 @@ const MERCHANT_ID = "MERCHANT1";
 const CLIENT_ID = "team-app-client-id-WXYZ";
 const CLIENT_SECRET = "team-app-secret";
 
-function balancesAnswer(accountId: string) {
-  return {
-    account_id: accountId,
+// PayPal may leave out account_id; null builds that answer.
+function balancesAnswer(accountId: string | null): JsonObject {
+  const answer: JsonObject = {
     balances: [{ currency: "USD", primary: true, total_balance: { currency_code: "USD", value: "250.00" } }],
     as_of_time: "2026-10-12T00:00:00Z",
   };
+  if (accountId !== null) answer.account_id = accountId;
+  return answer;
 }
 
 // A fake PayPal API for the team's own REST app: token and balances.
@@ -153,9 +155,24 @@ describe.skipIf(!hasTestDatabase)("payouts credentials", () => {
     await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toBeNull();
   });
 
-  it("refuses replacing or removing the credentials while a payout is with PayPal", async () => {
+  it("stores no account when PayPal does not report which account the credentials belong to", async () => {
     const { userId, teamId } = await connectedTeam();
-    const { payouts } = await makePayouts(fakeTeamPayPal().fetch);
+    const { payouts } = await makePayouts(fakeTeamPayPal({ balances: () => jsonResponse(200, balancesAnswer(null)) }).fetch);
+    const admin = callerFor(userId, payouts);
+
+    await expect(
+      admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET }),
+    ).resolves.toMatchObject({ clientIdEnding: "WXYZ", accountId: null });
+    await expect(getTeamPayoutCredentials(db, teamId)).resolves.toMatchObject({ paypalAccountId: null });
+  });
+
+  // Saved credentials for MERCHANT1 and a payout PayPal is working on; `report` sets the account the next balance
+  // answer names.
+  async function teamWithSentPayout() {
+    const { userId, teamId } = await connectedTeam();
+    let reported: string | null = MERCHANT_ID;
+    const paypal = fakeTeamPayPal({ balances: () => jsonResponse(200, balancesAnswer(reported)) });
+    const { payouts } = await makePayouts(paypal.fetch);
     const admin = callerFor(userId, payouts);
     await admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
     const request = await insertPayoutRequest(db, {
@@ -167,13 +184,42 @@ describe.skipIf(!hasTestDatabase)("payouts credentials", () => {
       receiverPayerId: "G83JXTJ5EHCQ2",
     });
     await updatePayoutRequest(db, request?.id ?? "", { status: "sent", paypalBatchId: "BATCH1" });
+    return {
+      admin,
+      teamId,
+      report: (accountId: string | null) => {
+        reported = accountId;
+      },
+    };
+  }
 
-    const inProgress = { code: "CONFLICT", message: "Wait for the payouts in progress to finish." };
-    await expect(
-      admin.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: "other-app", clientSecret: "other-secret" }),
-    ).rejects.toMatchObject(inProgress);
+  const inProgress = { code: "CONFLICT", message: "Wait for the payouts in progress to finish." };
+  const otherApp = { teamSlug: "acme-studio", clientId: "other-app-ABCD", clientSecret: "other-secret" };
+
+  it("replaces the credentials while a payout is with PayPal when they belong to the same account, but never removes them", async () => {
+    const { admin } = await teamWithSentPayout();
+
+    await expect(admin.payouts.saveCredentials(otherApp)).resolves.toMatchObject({
+      clientIdEnding: "ABCD",
+      accountId: MERCHANT_ID,
+    });
     await expect(admin.payouts.removeCredentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(inProgress);
-    await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toMatchObject({ clientIdEnding: "WXYZ" });
+    await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toMatchObject({ clientIdEnding: "ABCD" });
+  });
+
+  it.each([
+    { case: "another account than the saved one", merchantId: "MERCHANT2", reported: "MERCHANT2" },
+    { case: "no account", merchantId: MERCHANT_ID, reported: null },
+  ])("refuses replacing the credentials while a payout is with PayPal when PayPal reports $case", async (row) => {
+    const { admin, teamId, report } = await teamWithSentPayout();
+    await markTeamPayPalMerchant(db, { teamId, merchantId: row.merchantId });
+    report(row.reported);
+
+    await expect(admin.payouts.saveCredentials(otherApp)).rejects.toMatchObject(inProgress);
+    await expect(admin.payouts.credentials({ teamSlug: "acme-studio" })).resolves.toMatchObject({
+      clientIdEnding: "WXYZ",
+      accountId: MERCHANT_ID,
+    });
   });
 
   it("lets only admins see or change the credentials", async () => {
@@ -187,5 +233,6 @@ describe.skipIf(!hasTestDatabase)("payouts credentials", () => {
       freelancer.payouts.saveCredentials({ teamSlug: "acme-studio", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET }),
     ).rejects.toMatchObject(forbidden);
     await expect(freelancer.payouts.credentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
+    await expect(freelancer.payouts.removeCredentials({ teamSlug: "acme-studio" })).rejects.toMatchObject(forbidden);
   });
 });

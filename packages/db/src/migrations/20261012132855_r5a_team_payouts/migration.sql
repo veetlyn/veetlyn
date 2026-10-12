@@ -29,7 +29,7 @@ CREATE TABLE "team_payout_credentials" (
 	"secret_ciphertext" text NOT NULL,
 	"secret_iv" text NOT NULL,
 	"key_id" text NOT NULL,
-	"paypal_account_id" text NOT NULL,
+	"paypal_account_id" text,
 	"verified_at" timestamp NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL

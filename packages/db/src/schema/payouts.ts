@@ -36,7 +36,8 @@ export const teamPayoutCredentials = pgTable("team_payout_credentials", {
   secretCiphertext: text("secret_ciphertext").notNull(),
   secretIv: text("secret_iv").notNull(),
   keyId: text("key_id").notNull(),
-  paypalAccountId: text("paypal_account_id").notNull(),
+  // The account PayPal reported for these credentials; null when PayPal did not say.
+  paypalAccountId: text("paypal_account_id"),
   verifiedAt: timestamp("verified_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")

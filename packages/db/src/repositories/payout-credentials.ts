@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import type { DbExecutor } from "../executor";
+import type { DbExecutor, Transaction } from "../executor";
 import { teamPayoutCredentials } from "../schema/payouts";
 
 export type TeamPayoutCredentialsRow = typeof teamPayoutCredentials.$inferSelect;
@@ -15,6 +15,33 @@ export async function getTeamPayoutCredentials(db: DbExecutor, teamId: string): 
     .from(teamPayoutCredentials)
     .where(eq(teamPayoutCredentials.teamId, teamId))
     .limit(1);
+  return row ?? null;
+}
+
+// Replacing or removing the credentials holds this lock while it re-checks for payouts in progress, so no send can be
+// claimed in between. Null when the team has none (nothing is locked then).
+export async function lockTeamPayoutCredentials(tx: Transaction, teamId: string): Promise<TeamPayoutCredentialsRow | null> {
+  const [row] = await tx
+    .select()
+    .from(teamPayoutCredentials)
+    .where(eq(teamPayoutCredentials.teamId, teamId))
+    .limit(1)
+    .for("update");
+  return row ?? null;
+}
+
+// A send claim takes this in the transaction that moves a request to `sending`: it waits for a replacement in
+// progress, and a replacement after it sees the request as in progress.
+export async function lockTeamPayoutCredentialsForSend(
+  tx: Transaction,
+  teamId: string,
+): Promise<TeamPayoutCredentialsRow | null> {
+  const [row] = await tx
+    .select()
+    .from(teamPayoutCredentials)
+    .where(eq(teamPayoutCredentials.teamId, teamId))
+    .limit(1)
+    .for("share");
   return row ?? null;
 }
 
