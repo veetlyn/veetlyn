@@ -325,6 +325,7 @@ export const projectRouter = router({
         kind: p.kind,
         status: p.status,
         amountMinor: p.amountMinor,
+        refundedMinor: p.refundedMinor,
         lines: p.lines,
         createdAt: p.createdAt,
         // PayPal holds a capture it has not finished; the id itself stays server-side.
