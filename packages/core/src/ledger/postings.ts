@@ -237,6 +237,22 @@ export function payoutReleasedTransfer(input: PayoutPosting): LedgerTransferDraf
   });
 }
 
+// The team bears PayPal's fee on a successful payout item. Null when PayPal charged nothing.
+export function payoutFeesTransfer(input: {
+  currency: MoneyCurrency;
+  payoutRequestId: string;
+  feeMinor: number;
+}): LedgerTransferDraft | null {
+  if (input.feeMinor === 0) return null;
+  return transferFromMoves({
+    kind: "payout_fees",
+    reference: `payout_fees:${input.payoutRequestId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [{ from: a.teamRevenue, to: a.paypalFees, amountMinor: input.feeMinor }],
+  });
+}
+
 // Case outcome after completion: earnings move to the team, or to client refunds when the client is refunded.
 export function penaltyAfterCompletionTransfer(
   input: ProjectPosting & {

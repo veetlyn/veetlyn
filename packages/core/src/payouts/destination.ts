@@ -10,6 +10,8 @@ export type PayPalUserInfo = {
   email?: string;
   email_verified?: boolean;
   emails?: PayPalEmailEntry[];
+  // Formats like "18-24" or "65+"; PayPal documents it only as a string, and the sandbox never sends it.
+  age_range?: string;
 };
 
 // PAYPAL_ID payouts take "the encrypted PayPal account number" (e.g. G83JXTJ5EHCQ2, Fact 14).
@@ -33,4 +35,15 @@ export function payoutDestinationFromUserInfo(
   if (userInfo.user_id !== paypalAccountId) return null;
   if (userInfo.payer_id === undefined || !PAYER_ID_PATTERN.test(userInfo.payer_id)) return null;
   return { paypalPayerId: userInfo.payer_id, paypalEmail: verifiedEmail(userInfo) };
+}
+
+export type PayoutAge = { kind: "adult" } | { kind: "minor" } | { kind: "unknown" };
+
+const ADULT_AGE = 18;
+
+// The range's lower bound decides; without a readable one the member confirms their age themselves.
+export function payoutAgeFromUserInfo(userInfo: PayPalUserInfo): PayoutAge {
+  const lowerBound = /^\s*(\d+)/.exec(userInfo.age_range ?? "")?.[1];
+  if (lowerBound === undefined) return { kind: "unknown" };
+  return Number(lowerBound) >= ADULT_AGE ? { kind: "adult" } : { kind: "minor" };
 }
