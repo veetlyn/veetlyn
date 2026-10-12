@@ -8,7 +8,7 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
-import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
+import { createPostgresLedger, hasLedgerReference } from "@jendal-workspace/db/repositories/ledger";
 import {
   completeProjectRefundIfDone,
   findProjectRefundForProject,
@@ -106,6 +106,9 @@ export async function applyCompletedPaymentRefund(
     if (part.paymentId !== row.id) {
       throw new CaptureFactConflict(`Refund ${refund.id} belongs to payment ${part.paymentId}, not ${row.id}`);
     }
+    if (await hasLedgerReference(tx, row.teamId, `payment_refunded:refund:${refund.id}`)) {
+      throw new CaptureFactConflict(`Refund ${refund.id} was posted as unrequested before it matched its overpayment part`);
+    }
     const posted = await postIfNew(
       tx,
       row.teamId,
@@ -118,12 +121,15 @@ export async function applyCompletedPaymentRefund(
     return posted ? "applied" : "already_applied";
   }
 
-  if (projectRefund?.status === "issuing") {
+  if (projectRefund && projectRefund.status !== "completed") {
     const parts = await listRefundParts(tx, projectRefund.id);
     if (parts.some((item) => item.paymentId === row.id && item.status === "pending" && item.paypalRefundId === null)) {
       // Posting it as unrequested would refund the overpayment from client_held; the retry finds its part.
       throw new Error(`Refund ${refund.id} of payment ${row.id} may be the overpayment refund still being issued`);
     }
+  }
+  if (await hasLedgerReference(tx, row.teamId, `refund_confirmed:${refund.id}`)) {
+    throw new CaptureFactConflict(`Refund ${refund.id} was confirmed as an overpayment refund but no part names it`);
   }
   const posted = await postUnrequestedRefund(tx, row, { refundKey: `refund:${refund.id}`, amountMinor });
   await postReturnedFees(tx, row, refund);

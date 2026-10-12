@@ -50,6 +50,9 @@ export const projectRefundPart = pgTable(
     status: text("status", { enum: PROJECT_REFUND_PART_STATUSES }).notNull().default("pending"),
     // PayPal's message when the refund call failed, shown to the admin who retries.
     failureMessage: text("failure_message"),
+    // Set when an attempt left PayPal's outcome unknown: from then on PayPal may hold a refund for this part, so
+    // a later refusal is not trusted to mean there is none.
+    uncertainAt: timestamp("uncertain_at", { withTimezone: true }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [

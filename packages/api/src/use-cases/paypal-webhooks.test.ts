@@ -606,7 +606,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       await acceptDelivery(projectId, freelancer);
       await expect(
         callerFor(userId, deps.paypal).project.refundClient({ teamSlug: "team", projectId }),
-      ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+      ).rejects.toMatchObject({ code: "BAD_GATEWAY" });
       const refundId = `completion-${projectId}`;
       expect(await listRefundParts(db, refundId)).toEqual([
         expect.objectContaining({ paymentId, status: "failed", paypalRefundId: null }),
@@ -621,6 +621,40 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         { reference: "payment_refunded:refund:R9", account: ledgerAccounts.teamRevenue, amountMinor: -5_000 },
       ]);
       expect((await paymentRow(paymentId))?.refundedMinor).toBe(5_000);
+    });
+
+    it("holds a refund while a part of a failed overpayment refund was never sent, and parks a refund posted both ways", async () => {
+      const { userId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit();
+      const [current] = await listProjectQuotes(db, projectId);
+      const build = current?.items.find((item) => item.description === "Build");
+      if (!build) throw new Error("missing item");
+      const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+        teamSlug: "team",
+        projectId,
+        add: [],
+        removeItemIds: [build.id],
+      });
+      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
+      await acceptDelivery(projectId, freelancer);
+      const refundId = `completion-${projectId}`;
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "160.00" }]);
+
+      // No part yet: PayPal's refund is the client's own, posted as unrequested.
+      expect(await processPayPalWebhookEvent(deps, refundEvent("R1"))).toEqual({ status: "processed", note: "refunded" });
+      expect(await postingsOf("payment_refunded")).toHaveLength(2);
+
+      const part = await upsertRefundPart(db, { projectRefundId: refundId, paymentId, captureId: "CAPTURE1", amountMinor: 16_000 });
+      await setProjectRefundStatus(db, refundId, "failed");
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R2", value: "10.00" }]);
+      await expect(processPayPalWebhookEvent(deps, refundEvent("R2"))).rejects.toThrow(/still being issued/);
+
+      // The same refund later named by a part would be posted twice: a person has to look.
+      await setRefundPartPayPalRefund(db, part.id, { paypalRefundId: "R1", status: "pending" });
+      showRefunds("PARTIALLY_REFUNDED", [{ id: "R1", value: "160.00" }]);
+      const parked = await processPayPalWebhookEvent(deps, refundEvent("R1"));
+      expect(parked.status).toBe("parked");
+      expect(parked.note).toContain("posted as unrequested");
+      expect(await postingsOf("refund_confirmed")).toEqual([]);
     });
 
     it("parks a capture refunded before Payleor applied it, posting nothing", async () => {

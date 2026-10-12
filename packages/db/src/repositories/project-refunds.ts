@@ -1,5 +1,6 @@
 import type { ProjectRefundPartStatus, ProjectRefundStatus } from "@jendal-workspace/core";
-import { and, asc, desc, eq, exists, ne, notExists } from "drizzle-orm";
+import { and, asc, desc, eq, exists, isNull, ne, notExists, sql } from "drizzle-orm";
+import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { projectRefund, projectRefundPart } from "../schema/project-refunds";
@@ -128,12 +129,37 @@ export async function markRefundPartCompleted(tx: DbExecutor, partId: string): P
   return rows.length > 0;
 }
 
-// A retry sends every part that is not completed again, so the failed ones are back in flight.
+// A retry sends every part that is not completed again, so the failed ones are back in flight. A part with an
+// uncertain attempt is never failed, and stays as it is.
 export async function resendFailedRefundParts(tx: DbExecutor, projectRefundId: string): Promise<void> {
   await tx
     .update(projectRefundPart)
     .set({ status: "pending", failureMessage: null })
-    .where(and(eq(projectRefundPart.projectRefundId, projectRefundId), eq(projectRefundPart.status, "failed")));
+    .where(
+      and(
+        eq(projectRefundPart.projectRefundId, projectRefundId),
+        eq(projectRefundPart.status, "failed"),
+        isNull(projectRefundPart.uncertainAt),
+      ),
+    );
+}
+
+// PayPal's outcome is unknown: the part keeps its status, and the first uncertain time is kept, since PayPal
+// replays a request id only for a limited time from the first attempt.
+export async function markRefundPartUncertain(
+  tx: DbExecutor,
+  partId: string,
+  input: { at: Date; failureMessage: string; paypalRefundId: string | null },
+): Promise<void> {
+  const set: PgUpdateSetSource<typeof projectRefundPart> = {
+    uncertainAt: sql`coalesce(${projectRefundPart.uncertainAt}, ${input.at.toISOString()}::timestamptz)`,
+    failureMessage: input.failureMessage,
+  };
+  if (input.paypalRefundId !== null) set.paypalRefundId = input.paypalRefundId;
+  await tx
+    .update(projectRefundPart)
+    .set(set)
+    .where(and(eq(projectRefundPart.id, partId), ne(projectRefundPart.status, "completed")));
 }
 
 export async function markRefundPartFailed(tx: DbExecutor, partId: string, failureMessage: string): Promise<void> {
