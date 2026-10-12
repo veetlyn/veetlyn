@@ -96,7 +96,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     const { leftover, attached, recent, abandonedOrder, recentOrder } = await seedEverything();
     const info = vi.spyOn(log, "info");
     const error = vi.spyOn(log, "error");
-    const d = deps();
+    const d = deps({ settlePayouts: vi.fn(async () => ({ checked: 3, settled: 2 })) });
 
     const report = await runMaintenance(d);
 
@@ -106,6 +106,8 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       requestLimitsDeleted: 1,
       uploadsDeleted: 1,
       ordersDeleted: 1,
+      payoutsChecked: 3,
+      payoutsSettled: 2,
       errors: [],
     });
     expect(d.enqueueWebhookEvents).toHaveBeenCalledExactlyOnceWith(["WH-stale"]);
@@ -134,6 +136,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(info).toHaveBeenCalledWith({ action: "maintenance.requestLimits", maintenance: { deleted: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.uploads", maintenance: { deleted: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.orders", maintenance: { deleted: 1 } });
+    expect(info).toHaveBeenCalledWith({ action: "maintenance.payouts", maintenance: { checked: 3, settled: 2 } });
   });
 
   it("does not enqueue when no event is stale", async () => {
@@ -163,6 +166,21 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(error).toHaveBeenCalledWith({
       action: "maintenance.webhooks",
       error: { name: "TypeError", note: "TypeError: Queue send failed" },
+    });
+  });
+
+  it("records a failed payouts sweep in the report", async () => {
+    const error = vi.spyOn(log, "error");
+    const d = deps({
+      settlePayouts: vi.fn(async () => {
+        throw new TypeError("Database unavailable");
+      }),
+    });
+
+    expect(await runMaintenance(d)).toMatchObject({ payoutsChecked: 0, errors: ["payouts"] });
+    expect(error).toHaveBeenCalledWith({
+      action: "maintenance.payouts",
+      error: { name: "TypeError", note: "TypeError: Database unavailable" },
     });
   });
 

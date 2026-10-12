@@ -3,18 +3,50 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
 import {
+  getPayoutCredentialsView,
+  removeTeamPayoutCredentials,
+  requirePayoutServices,
+  saveTeamPayoutCredentialsChecked,
+} from "../use-cases/payout-credentials";
+import {
+  approvePayoutRequest,
   getMemberPayouts,
   listTeamPayouts,
-  markPayoutPaid,
+  refreshPayout,
   rejectPayoutRequest,
   requestPayout,
+  retryPayout,
 } from "../use-cases/payouts";
 
+const SETTINGS_ONLY = "Only an admin can change the team settings.";
 const PAYOUTS_ONLY = "Only an admin can approve payouts.";
 
 const requestIdInput = z.object({ requestId: z.string().trim().min(1).max(100) });
 
 export const payoutsRouter = router({
+  // The secret is never returned; the admin recognises the app by the end of its client ID.
+  credentials: servicesTeamProcedure.query(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ONLY);
+    return getPayoutCredentialsView(ctx.db, ctx.servicesTeam.id);
+  }),
+
+  saveCredentials: servicesTeamProcedure
+    .input(z.object({ clientId: z.string().trim().min(1).max(500), clientSecret: z.string().trim().min(1).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ONLY);
+      const payouts = requirePayoutServices(ctx.payouts);
+      return saveTeamPayoutCredentialsChecked(
+        { db: ctx.db, payouts },
+        { team: ctx.servicesTeam, clientId: input.clientId, clientSecret: input.clientSecret },
+      );
+    }),
+
+  removeCredentials: servicesTeamProcedure.mutation(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ONLY);
+    await removeTeamPayoutCredentials(ctx.db, ctx.servicesTeam.id);
+    return { removed: true };
+  }),
+
   // Any signed-in user may ask; the amount is checked against the caller's own earnings in the team.
   request: protectedProcedure
     .input(z.object({ teamSlug: z.string().trim().toLowerCase().min(1), amount: z.string().trim().min(1).max(32) }))
@@ -26,7 +58,7 @@ export const payoutsRouter = router({
 
   list: servicesTeamProcedure.query(async ({ ctx }) => {
     requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
-    return listTeamPayouts(ctx.db, { teamId: ctx.servicesTeam.id, environment: ctx.environment });
+    return listTeamPayouts(ctx.db, ctx.servicesTeam.id);
   }),
 
   reject: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {
@@ -38,27 +70,24 @@ export const payoutsRouter = router({
     });
   }),
 
-  // An empty field in the form means "not given".
-  markPaid: servicesTeamProcedure
-    .input(
-      requestIdInput.extend({
-        received: z.string().trim().max(32).optional(),
-        paypalTransactionId: z
-          .string()
-          .trim()
-          .regex(/^[A-Za-z0-9]{1,40}$/, "Enter the transaction ID as PayPal shows it, letters and digits only.")
-          .or(z.literal(""))
-          .optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
-      return markPayoutPaid(ctx.db, {
-        teamId: ctx.servicesTeam.id,
-        requestId: input.requestId,
-        deciderId: ctx.session.user.id,
-        received: input.received || null,
-        paypalTransactionId: input.paypalTransactionId || null,
-      });
-    }),
+  approve: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {
+    requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
+    const payouts = requirePayoutServices(ctx.payouts);
+    return approvePayoutRequest(
+      { db: ctx.db, payouts },
+      { team: ctx.servicesTeam, requestId: input.requestId, deciderId: ctx.session.user.id },
+    );
+  }),
+
+  retry: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {
+    requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
+    const payouts = requirePayoutServices(ctx.payouts);
+    return retryPayout({ db: ctx.db, payouts }, { team: ctx.servicesTeam, requestId: input.requestId });
+  }),
+
+  refresh: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {
+    requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
+    const payouts = requirePayoutServices(ctx.payouts);
+    return refreshPayout({ db: ctx.db, payouts }, { teamId: ctx.servicesTeam.id, requestId: input.requestId });
+  }),
 });

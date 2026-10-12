@@ -113,6 +113,7 @@ export const server = Cloudflare.Worker("server", {
     FILES: Files,
     FILES_S3: Cloudflare.R2.S3Credentials(Files, { access: "read-write" }),
     CHANNEL3_API_KEY: Config.Redacted("CHANNEL3_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
+    PAYOUT_CREDENTIALS_KEY: Config.Redacted("PAYOUT_CREDENTIALS_KEY").pipe(Config.withDefault(Redacted.make(""))),
   },
   dev: {
     port: ports.api,

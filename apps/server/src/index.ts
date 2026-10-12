@@ -19,11 +19,19 @@ import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
+import { settleSentPayouts } from "./payouts";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
 import { storeInfoRoute } from "./routes/store-info";
-import { createAuth, createFileStore, getDb, getEmailServices, getPayPalServices } from "./services";
+import {
+  createAuth,
+  createFileStore,
+  getDb,
+  getEmailServices,
+  getPayoutServices,
+  getPayPalServices,
+} from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 import { tenantMiddleware } from "./tenant/middleware";
 import { trpcErrorContext } from "./trpc-error-log";
@@ -120,12 +128,14 @@ export default {
   },
   async scheduled(_controller, _env, ctx) {
     const db = getDb();
+    const payouts = await getPayoutServices();
     try {
       await runMaintenance({
         db,
         enqueueWebhookEvents: (eventIds) =>
           ENV.PAYPAL_WEBHOOKS.sendBatch(eventIds.map((eventId) => ({ body: { eventId } }))).then(() => undefined),
         files: createFileStore(),
+        settlePayouts: payouts ? () => settleSentPayouts({ db, payouts }) : undefined,
       });
     } finally {
       ctx.waitUntil(db.$client.end());

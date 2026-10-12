@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
@@ -8,12 +8,25 @@ import { PAYOUT_REQUEST_OPEN_WHERE, payoutRequest } from "../schema/payouts";
 export type PayoutRequestRow = typeof payoutRequest.$inferSelect;
 export type NewPayoutRequest = Pick<
   typeof payoutRequest.$inferInsert,
-  "id" | "teamId" | "userId" | "currency" | "amountMinor" | "receiverPayerId" | "receiverEmail"
+  "id" | "teamId" | "userId" | "currency" | "amountMinor" | "receiverPayerId"
 >;
 export type PayoutRequestPatch = Partial<
   Pick<
     typeof payoutRequest.$inferInsert,
-    "status" | "decidedByUserId" | "decidedAt" | "receivedMinor" | "paypalTransactionId" | "paidAt"
+    | "status"
+    | "sendAttempt"
+    | "paypalBatchId"
+    | "paypalItemId"
+    | "paypalItemStatus"
+    | "feeMinor"
+    | "failureMessage"
+    | "reviewReason"
+    | "uncertainAt"
+    | "decidedByUserId"
+    | "decidedAt"
+    | "sentAt"
+    | "settledAt"
+    | "updatedAt"
   >
 >;
 export type TeamPayoutRequestRow = PayoutRequestRow & { memberName: string; memberEmail: string };
@@ -30,6 +43,11 @@ export async function insertPayoutRequest(tx: DbExecutor, values: NewPayoutReque
       where: PAYOUT_REQUEST_OPEN_WHERE,
     })
     .returning();
+  return row ?? null;
+}
+
+export async function getPayoutRequest(db: DbExecutor, id: string): Promise<PayoutRequestRow | null> {
+  const [row] = await db.select().from(payoutRequest).where(eq(payoutRequest.id, id)).limit(1);
   return row ?? null;
 }
 
@@ -63,4 +81,37 @@ export async function listUserPayoutRequests(db: DbExecutor, userId: string): Pr
     .where(eq(payoutRequest.userId, userId))
     .orderBy(desc(payoutRequest.createdAt), desc(payoutRequest.id));
   return rows.map(({ request, teamName, teamSlug }) => ({ ...request, teamName, teamSlug }));
+}
+
+// Least recently checked first: every check rewrites the row (or touches it), so a sweep with a limit moves on to
+// the others instead of rereading the same requests while they stay pending.
+export async function listSentPayoutRequests(
+  db: DbExecutor,
+  input: { sentBefore: Date; limit: number },
+): Promise<PayoutRequestRow[]> {
+  return db
+    .select()
+    .from(payoutRequest)
+    .where(and(eq(payoutRequest.status, "sent"), lt(payoutRequest.sentAt, input.sentBefore)))
+    .orderBy(asc(payoutRequest.updatedAt), asc(payoutRequest.id))
+    .limit(input.limit);
+}
+
+// Moves a sent request to the back of the settle sweep. Only `sent` rows: on a `sending` row updated_at names the
+// current send claim.
+export async function touchSentPayoutRequest(db: DbExecutor, id: string): Promise<void> {
+  await db
+    .update(payoutRequest)
+    .set({ updatedAt: new Date() })
+    .where(and(eq(payoutRequest.id, id), eq(payoutRequest.status, "sent")));
+}
+
+// A payout PayPal may be working on with the team's current credentials.
+export async function hasActivePayoutSend(db: DbExecutor, teamId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: payoutRequest.id })
+    .from(payoutRequest)
+    .where(and(eq(payoutRequest.teamId, teamId), inArray(payoutRequest.status, ["sending", "sent"])))
+    .limit(1);
+  return row !== undefined;
 }

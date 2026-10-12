@@ -6,4 +6,6 @@ export * from "./merchant-integrations";
 export * from "./partner-referrals";
 export * from "./orders";
 export * from "./payments";
+export * from "./payouts";
+export * from "./reporting";
 export * from "./webhooks";

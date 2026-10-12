@@ -224,7 +224,7 @@ export function payoutSucceededTransfer(input: PayoutPosting): LedgerTransferDra
   });
 }
 
-// Payout request rejected: the reserved earnings become available again.
+// Payout failed, returned, blocked or rejected: the reserved earnings become available again.
 export function payoutReleasedTransfer(input: PayoutPosting): LedgerTransferDraft {
   return transferFromMoves({
     kind: "payout_released",
@@ -234,6 +234,22 @@ export function payoutReleasedTransfer(input: PayoutPosting): LedgerTransferDraf
     moves: [
       { from: a.owedReserved(input.freelancerId), to: a.owedAvailable(input.freelancerId), amountMinor: input.amountMinor },
     ],
+  });
+}
+
+// The team bears PayPal's fee on a successful payout item. Null when PayPal charged nothing.
+export function payoutFeesTransfer(input: {
+  currency: MoneyCurrency;
+  payoutRequestId: string;
+  feeMinor: number;
+}): LedgerTransferDraft | null {
+  if (input.feeMinor === 0) return null;
+  return transferFromMoves({
+    kind: "payout_fees",
+    reference: `payout_fees:${input.payoutRequestId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [{ from: a.teamRevenue, to: a.paypalFees, amountMinor: input.feeMinor }],
   });
 }
 

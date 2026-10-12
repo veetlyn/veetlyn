@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_PAYOUT_MINOR } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -34,7 +35,7 @@ function TeamEarningsCard({
     }),
   );
 
-  const value = amount ?? minorToPriceInput(earnings.availableMinor);
+  const value = amount ?? minorToPriceInput(Math.min(earnings.availableMinor, MAX_PAYOUT_MINOR));
   const inputId = `payout-amount-${earnings.teamId}-${earnings.currency}`;
   const disabled = earnings.availableMinor === 0 || earnings.reservedMinor > 0 || requestBlockedReason !== null;
 
@@ -70,9 +71,6 @@ function TeamEarningsCard({
             {request.isPending ? "Requesting…" : "Request payout"}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          The team pays you in PayPal. PayPal takes its fee when the payment arrives.
-        </p>
         {earnings.reservedMinor > 0 ? (
           <p className="text-sm text-muted-foreground">A payout is already in progress for this team.</p>
         ) : null}
@@ -86,7 +84,7 @@ function TeamEarningsCard({
         ) : null}
         {request.isSuccess ? (
           <p className="text-sm text-emerald-700 dark:text-emerald-400">
-            Payout requested. {earnings.teamName} pays you in PayPal.
+            Payout requested. An admin of {earnings.teamName} reviews it.
           </p>
         ) : null}
       </form>
