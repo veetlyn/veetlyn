@@ -6,8 +6,6 @@ import { createMerchantIntegrations } from "./merchant-integrations";
 import { createOrders } from "./orders";
 import { createPartnerReferrals } from "./partner-referrals";
 import { createPayments } from "./payments";
-import { createPayouts } from "./payouts";
-import { createReporting } from "./reporting";
 import { tokenResponseSchema } from "./schemas";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
 import { createWebhooks } from "./webhooks";
@@ -49,8 +47,6 @@ export type PayPalRequestOptions = {
   prefer?: "return=representation" | "return=minimal";
   // Sent as is instead of JSON.stringify(body): webhook verification must echo PayPal's bytes (R1 facts §4).
   rawBody?: string;
-  // False sends once: a retry after a 5xx would hide that the first attempt's outcome is unknown.
-  retry?: boolean;
 };
 
 // The body is decoded with `schema`; a 204 has no body, so its schema must accept undefined.
@@ -62,8 +58,6 @@ export interface PayPalClient {
   merchantIntegrations: ReturnType<typeof createMerchantIntegrations>;
   orders: ReturnType<typeof createOrders>;
   payments: ReturnType<typeof createPayments>;
-  payouts: ReturnType<typeof createPayouts>;
-  reporting: ReturnType<typeof createReporting>;
   webhooks: ReturnType<typeof createWebhooks>;
 }
 
@@ -86,11 +80,11 @@ function defaultSleep(ms: number): Promise<void> {
 
 // 429 and 5xx are retried with backoff and jitter (spec §6.3). Retried POSTs carry the
 // caller's PayPal-Request-Id, so PayPal applies them at most once (Fact 8).
-async function send(config: ResolvedConfig, build: () => Request, maxAttempts = config.maxAttempts): Promise<Response> {
+async function send(config: ResolvedConfig, build: () => Request): Promise<Response> {
   for (let attempt = 1; ; attempt++) {
     const response = await config.fetch(build());
     if (response.status !== 429 && response.status < 500) return response;
-    if (attempt >= maxAttempts) return response;
+    if (attempt >= config.maxAttempts) return response;
     await config.sleep(backoffDelay(config, response, attempt));
   }
 }
@@ -165,14 +159,13 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
         headers: { ...headers, authorization: `Bearer ${token}` },
         body: options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
       });
-    const maxAttempts = options.retry === false ? 1 : resolved.maxAttempts;
-    let response = await send(resolved, build, maxAttempts);
+    let response = await send(resolved, build);
     // A token can be revoked before it expires; one fresh token and one retry, then the error stands.
     if (response.status === 401) {
       await response.body?.cancel();
       await resolved.tokenCache.clear();
       token = await freshAccessToken();
-      response = await send(resolved, build, maxAttempts);
+      response = await send(resolved, build);
     }
     if (!response.ok) throw await payPalErrorFromResponse(response);
     const body: unknown = response.status === 204 ? undefined : await response.json();
@@ -193,8 +186,6 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     merchantIntegrations: createMerchantIntegrations(request),
     orders: createOrders(request),
     payments: createPayments(request),
-    payouts: createPayouts(request),
-    reporting: createReporting(request),
     webhooks: createWebhooks(request),
   };
 }

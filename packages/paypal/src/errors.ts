@@ -7,34 +7,22 @@ export type PayPalErrorDetail = {
   description?: string;
 };
 
-export type PayPalErrorLink = { href: string; rel?: string; method?: string };
-
 export class PayPalError extends Error {
   readonly status: number;
   readonly debugId: string | undefined;
   readonly details: PayPalErrorDetail[];
-  // HATEOAS links some refusals carry, such as the original payout batch a duplicate sender_batch_id points to.
-  readonly links: PayPalErrorLink[];
 
-  constructor(input: {
-    status: number;
-    message: string;
-    debugId?: string;
-    name?: string;
-    details?: PayPalErrorDetail[];
-    links?: PayPalErrorLink[];
-  }) {
+  constructor(input: { status: number; message: string; debugId?: string; name?: string; details?: PayPalErrorDetail[] }) {
     super(input.message);
     // PayPal's error name (INVALID_REQUEST, …) is more useful in logs than the class name.
     this.name = input.name ?? "PayPalError";
     this.status = input.status;
     this.debugId = input.debugId;
     this.details = input.details ?? [];
-    this.links = input.links ?? [];
   }
 }
 
-// Error bodies carry name, message, details, links and debug_id (Fact 3).
+// Error bodies carry name, message, details and debug_id (Fact 3).
 export async function payPalErrorFromResponse(response: Response): Promise<PayPalError> {
   const text = await response.text();
   let body: unknown;
@@ -51,6 +39,5 @@ export async function payPalErrorFromResponse(response: Response): Promise<PayPa
     debugId: record?.debug_id,
     name: record?.name,
     details: record?.details ?? [],
-    links: record?.links ?? [],
   });
 }

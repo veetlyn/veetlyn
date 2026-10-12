@@ -29,15 +29,6 @@ export type EmailServices = {
   onError?: (cause: unknown, email: { kind: string; to: string }) => void | Promise<void>;
 };
 
-export type PayoutServices = {
-  // Seals the teams' PayPal client secrets (AES-GCM, the team id as additional data).
-  secretKey: CryptoKey;
-  keyId: string;
-  // Builds a PayPal client for one team's own REST app; the server gives it a per-team token cache. That cache
-  // must be keyed by the secret too: verifying new credentials must never reuse a token the old ones obtained.
-  clientFor(input: { teamId: string; clientId: string; clientSecret: string }): PayPalClient;
-};
-
 export type Context = {
   session: Session | null;
   db: Database;
@@ -55,7 +46,4 @@ export type Context = {
   onTeamStatusChanged?: (team: { id: string; slug: string }) => void | Promise<void>;
   // Absent in tests that do not send email; the request procedure then fails with PRECONDITION_FAILED.
   email?: EmailServices;
-  // Absent when no payout credentials key is configured; saving credentials and sending payouts then fail with
-  // PRECONDITION_FAILED.
-  payouts?: PayoutServices;
 };
