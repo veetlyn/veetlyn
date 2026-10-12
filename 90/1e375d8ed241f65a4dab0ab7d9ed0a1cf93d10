@@ -1,0 +1,27 @@
+apps/server/src/index.ts
+  s_c912b6a17077a1::t_006d8dd1f64182 26
+apps/server/src/maintenance.test.ts
+  s_c912b6a17077a1::t_d07d16b405d694 99
+apps/server/src/maintenance.ts
+  s_c912b6a17077a1::t_f5c5f2e8335eb7 31
+apps/server/src/services.ts
+  s_c912b6a17077a1::t_8f5023bd084d48 2,5
+packages/infra/.env.schema
+  s_c912b6a17077a1::t_2a2344ec07bd3f 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "901e375d8ed241f65a4dab0ab7d9ed0a1cf93d10",
+  "prompts": {},
+  "sessions": {
+    "s_c912b6a17077a1": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "fa86f283-414f-4939-a5ef-28996e41ede2",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
