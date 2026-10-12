@@ -24,7 +24,7 @@ describe("servicesTeamSetupSteps", () => {
       { id: "add-service", label: "Add a service or a product", done: false, href: "/acme-studio/services" },
       { id: "connect-paypal", label: "Connect PayPal", done: false },
       { id: "set-rates", label: "Set your rates", done: false, href: "/acme-studio/settings" },
-      { id: "add-payout-credentials", label: "Add payout credentials", done: false },
+      { id: "add-payout-credentials", label: "Turn on automatic payouts", done: false },
       { id: "publish", label: "Publish your seller page", done: false },
       { id: "link-discord", label: "Link Discord", done: false },
     ]);

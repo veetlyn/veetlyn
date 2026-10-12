@@ -1,4 +1,4 @@
-import type { PayoutRequestStatus } from "@jendal-workspace/core";
+import { estimatePayoutFeeMinor, type MoneyCurrency, type PayoutRequestStatus } from "@jendal-workspace/core";
 
 type PayoutState = { status: PayoutRequestStatus; uncertain: boolean };
 
@@ -47,4 +47,33 @@ export function payoutActions(request: PayoutState): readonly PayoutAction[] {
     case "rejected":
       return [];
   }
+}
+
+type PayoutAmounts = {
+  status: PayoutRequestStatus;
+  feeMinor: number | null;
+  feeEstimateMinor: number | null;
+  sentMinor: number | null;
+};
+
+// Before PayPal settles a payout there is only the estimate taken off it; afterwards the fee PayPal charged.
+export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor: number } | null {
+  if (request.feeMinor !== null) return { label: "PayPal's fee", feeMinor: request.feeMinor };
+  if (request.feeEstimateMinor !== null && request.status !== "failed" && request.status !== "rejected") {
+    return { label: "PayPal's fee (about)", feeMinor: request.feeEstimateMinor };
+  }
+  return null;
+}
+
+export type PayoutNet = { feeEstimateMinor: number; netMinor: number };
+
+// What the member receives out of a requested amount once PayPal's fee estimate comes off it.
+export function payoutNetMinor(input: {
+  amountMinor: number;
+  currency: MoneyCurrency;
+  senderCountry: string | null;
+  receiverCountry: string | null;
+}): PayoutNet {
+  const feeEstimateMinor = estimatePayoutFeeMinor(input);
+  return { feeEstimateMinor, netMinor: Math.max(0, input.amountMinor - feeEstimateMinor) };
 }

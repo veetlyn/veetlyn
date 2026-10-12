@@ -38,7 +38,7 @@ export function servicesTeamSetupSteps(
     ...(state.solo ? [] : [step("set-rates", "Set your rates", state.settingsSaved, links.settings)]),
     ...(state.solo
       ? []
-      : [step("add-payout-credentials", "Add payout credentials", state.payoutCredentialsSaved, links.payoutCredentials)]),
+      : [step("add-payout-credentials", "Turn on automatic payouts", state.payoutCredentialsSaved, links.payoutCredentials)]),
     // Sellers design §3.3: the seller page stays a draft until an admin publishes it.
     step("publish", "Publish your seller page", state.status === "active", links.publish),
     step("link-discord", "Link Discord", state.discordGuildId !== null, links.linkDiscord),

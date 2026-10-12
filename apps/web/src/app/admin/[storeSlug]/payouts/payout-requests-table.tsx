@@ -9,14 +9,22 @@ import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
-import { payoutActions, payoutStatusLabel } from "@/lib/payouts";
+import { payoutActions, payoutFeeLine, payoutStatusLabel } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
 import { ConfirmDialog } from "./confirm-dialog";
 
 type TeamPayoutRequest = inferRouterOutputs<AppRouter>["payouts"]["list"][number];
 
-function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayoutRequest }) {
+function RequestRow({
+  teamSlug,
+  request,
+  automaticPayoutsOn,
+}: {
+  teamSlug: string;
+  request: TeamPayoutRequest;
+  automaticPayoutsOn: boolean;
+}) {
   const queryClient = useQueryClient();
   const approveDialogRef = useRef<HTMLDialogElement>(null);
   // onSettled: a failed send still changes the request (held, or left unconfirmed), so the row must reload either way.
@@ -31,6 +39,7 @@ function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayo
   const error = mutations.find((mutation) => mutation.error)?.error ?? null;
   const actions = payoutActions(request);
   const amount = formatMinor(request.amountMinor, request.currency);
+  const fee = payoutFeeLine(request);
   const input = { teamSlug, requestId: request.id };
 
   function resetErrors() {
@@ -47,8 +56,13 @@ function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayo
       <td className="px-4 py-3 whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString()}</td>
       <td className="space-y-1 px-4 py-3">
         <p>{payoutStatusLabel(request)}</p>
-        {request.feeMinor !== null ? (
-          <p className="text-muted-foreground">PayPal fee {formatMinor(request.feeMinor, request.currency)}</p>
+        {request.sentMinor !== null ? (
+          <p className="text-muted-foreground">Sends {formatMinor(request.sentMinor, request.currency)}</p>
+        ) : null}
+        {fee ? (
+          <p className="text-muted-foreground">
+            {fee.label} {formatMinor(fee.feeMinor, request.currency)}
+          </p>
         ) : null}
         {request.failureMessage ? <p className="text-destructive">{request.failureMessage}</p> : null}
         {request.reviewReason ? (
@@ -68,7 +82,7 @@ function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayo
             <Button
               type="button"
               size="sm"
-              disabled={pending}
+              disabled={pending || !automaticPayoutsOn}
               onClick={() => {
                 resetErrors();
                 approveDialogRef.current?.showModal();
@@ -119,6 +133,9 @@ function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayo
             </Button>
           ) : null}
         </div>
+        {!automaticPayoutsOn && actions.includes("approve") ? (
+          <p className="mt-1 text-right text-muted-foreground">Turn on automatic payouts to pay requests.</p>
+        ) : null}
         <ConfirmDialog
           dialogRef={approveDialogRef}
           id={`approve-dialog-${request.id}`}
@@ -134,6 +151,13 @@ function RequestRow({ teamSlug, request }: { teamSlug: string; request: TeamPayo
 
 export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
   const requests = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  // Approve sends through the team's saved credentials, so it stays off until automatic payouts are on.
+  const credentials = useQuery({
+    ...trpc.payouts.credentials.queryOptions({ teamSlug }),
+    retry: false,
+    meta: { silent: true },
+  });
+  const automaticPayoutsOn = credentials.data != null;
 
   return (
     <section aria-labelledby="requests-heading" className="space-y-3">
@@ -174,7 +198,7 @@ export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
             </thead>
             <tbody className="divide-y">
               {requests.data.map((request) => (
-                <RequestRow key={request.id} teamSlug={teamSlug} request={request} />
+                <RequestRow key={request.id} teamSlug={teamSlug} request={request} automaticPayoutsOn={automaticPayoutsOn} />
               ))}
             </tbody>
           </table>
