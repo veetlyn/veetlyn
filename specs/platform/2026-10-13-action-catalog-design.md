@@ -89,7 +89,7 @@ Later runs add `{ kind: "api_key"; keyId; teamId }` (B: an explicit permission s
 | Grant | Passes when |
 |---|---|
 | `{ grant: "member", permission, message }` | The actor is a user whose effective services-team role passes `canServicesTeam` |
-| `{ grant: "client" }` | A1: the actor holds the client link of the scope's project and is not a member of its team. A2 replaces this with §5.4 |
+| `{ grant: "client" }` | A1: the actor holds the client link of the scope's project (today's behavior). A2 replaces this with §5.4, which adds the rule that a team member is never the client, together with "Preview as client" |
 | `{ grant: "signed_in" }` | Any user; the use case decides (for example a payout request, where the money owed is the authorization) |
 | `{ grant: "anyone" }` | Always; rate limits apply inside the use case |
 | `{ grant: "system" }` | The actor is `system` |

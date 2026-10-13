@@ -6,8 +6,8 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 - **Date:** 2026-10-13. Last code merge on main: `2f2cb35` (R5b-1). Check `git log` for the latest docs commits.
 - **Goal:** the demo video and the sandbox app live at `payleor.com` / `payleor.app`, submitted before Nov 12, 2026, 12:00 pm PST. **Code finished by Oct 31** (AI tooling ends around Nov 1); Nov 1–12 is fixes, README, Devpost and the video.
-- **Step:** the A1/A2 design ([`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md)) and the spike scope are approved. Writing the A1 plan and the spike plan.
-- **Next:** write the A1 plan and the spike plan, then run them in parallel (Oct 14–15).
+- **Step:** the A1 plan ([`platform/plans/2026-10-14-a1-action-registry.md`](platform/plans/2026-10-14-a1-action-registry.md)) and the spike plan ([`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md)) are written.
+- **Next:** build A1 (subagents, own worktree and test database) and run the spike on Mouhamed's machine, in parallel (Oct 14–15).
 - **Waiting on Mouhamed:** for the spike, connecting the connector in Claude (account `contact@mdbm.ovh`) and a ChatGPT account that can add a custom connector (check whether developer mode needs a paid plan); for run E, three Discord accounts and the test server.
 - **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.
 
@@ -19,8 +19,8 @@ From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-age
 
 | Dates | Run | Scope | Design | Plan | Status |
 |---|---|---|---|---|---|
-| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | not written | Approved; plan next |
-| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | not written | Design approved; plan next |
+| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | Plan written; runs on Mouhamed's machine (tunnel) |
+| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | Plan written; ready to build |
 | Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | not written | Design approved |
 | Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | Not started |
 | Oct 20–23 | C | Client's AI plugin: offering search (opt-in listing), request, status, widgets with widget-only accept, pay page, client OAuth | after the spike | | Not started |
