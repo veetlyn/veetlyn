@@ -7,7 +7,6 @@ import { createOrders } from "./orders";
 import { createPartnerReferrals } from "./partner-referrals";
 import { createPayments } from "./payments";
 import { createPayouts } from "./payouts";
-import { createReporting } from "./reporting";
 import { tokenResponseSchema } from "./schemas";
 import { createSellerCredentials } from "./seller-credentials";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
@@ -64,7 +63,8 @@ export interface PayPalClient {
   orders: ReturnType<typeof createOrders>;
   payments: ReturnType<typeof createPayments>;
   payouts: ReturnType<typeof createPayouts>;
-  reporting: ReturnType<typeof createReporting>;
+  // Fetches a fresh token and returns the scopes PayPal granted it, such as https://uri.paypal.com/payments/payouts.
+  grantedScopes(): Promise<string[]>;
   sellerCredentials: ReturnType<typeof createSellerCredentials>;
   webhooks: ReturnType<typeof createWebhooks>;
 }
@@ -116,7 +116,7 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
   };
   const baseUrl = PAYPAL_BASE_URLS[config.environment];
 
-  async function fetchToken(): Promise<PayPalToken> {
+  async function fetchToken(): Promise<{ token: PayPalToken; scopes: string[] }> {
     const response = await send(
       resolved,
       () =>
@@ -133,7 +133,10 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     const parsed = tokenResponseSchema.safeParse(await response.json());
     if (!parsed.success) throw new Error("PayPal's token response has no access_token.");
     const expiresIn = parsed.data.expires_in ?? 3600;
-    return { accessToken: parsed.data.access_token, expiresAt: resolved.now() + expiresIn * 1000 };
+    return {
+      token: { accessToken: parsed.data.access_token, expiresAt: resolved.now() + expiresIn * 1000 },
+      scopes: parsed.data.scope?.split(" ").filter(Boolean) ?? [],
+    };
   }
 
   async function accessToken(): Promise<string> {
@@ -143,9 +146,15 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
   }
 
   async function freshAccessToken(): Promise<string> {
-    const token = await fetchToken();
+    const { token } = await fetchToken();
     await resolved.tokenCache.set(token);
     return token.accessToken;
+  }
+
+  async function grantedScopes(): Promise<string[]> {
+    const { token, scopes } = await fetchToken();
+    await resolved.tokenCache.set(token);
+    return scopes;
   }
 
   async function request<S extends z.ZodType>(options: PayPalRequestOptions, schema: S): Promise<z.output<S>> {
@@ -196,7 +205,7 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     orders: createOrders(request),
     payments: createPayments(request),
     payouts: createPayouts(request),
-    reporting: createReporting(request),
+    grantedScopes,
     sellerCredentials: createSellerCredentials({
       baseUrl,
       fetch: resolved.fetch,

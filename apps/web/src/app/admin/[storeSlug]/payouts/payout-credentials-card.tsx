@@ -55,6 +55,8 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
   });
   const [connect, setConnect] = useState<Connect | null>(null);
   const [linkProblem, setLinkProblem] = useState(false);
+  // PayPal can call onPayPalConnected more than once for one consent, and its authorization code works only once.
+  const completedAttemptsRef = useRef(new Set<string>());
 
   // The checklist on the dashboard reads payoutCredentialsSaved from servicesTeam.get.
   const invalidate = () =>
@@ -96,8 +98,11 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
   const onboardAnchorRef = useCallback(
     (anchor: HTMLAnchorElement | null) => {
       if (anchor === null || connect === null) return undefined;
+      const { attemptId } = connect;
       window.onPayPalConnected = (authCode, sharedId) => {
-        complete.mutate({ teamSlug, attemptId: connect.attemptId, authCode, sharedId });
+        if (completedAttemptsRef.current.has(attemptId)) return;
+        completedAttemptsRef.current.add(attemptId);
+        complete.mutate({ teamSlug, attemptId, authCode, sharedId });
       };
       loadPartnerScript(connect.partnerScriptSrc);
       return () => {
