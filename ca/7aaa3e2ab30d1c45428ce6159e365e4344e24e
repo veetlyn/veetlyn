@@ -1,0 +1,79 @@
+apps/server/src/index.ts
+  s_825dbc23a3635f::t_c8c25db7891f5a 139-141
+  s_825dbc23a3635f::t_4d6d9b712b1cde 3
+packages/api/src/use-cases/payout-sweeps.ts
+  s_825dbc23a3635f::t_a9862956bc93cf 46-47
+  s_825dbc23a3635f::t_50a41291df8e08 1-45,48-70
+packages/db/src/repositories/payout-rules.ts
+  s_825dbc23a3635f::t_b652224f7bca1b 5
+  s_825dbc23a3635f::t_1ac2fcf66ded97 51-55,57
+packages/db/src/repositories/payout-requests.ts
+  s_825dbc23a3635f::t_0ba649a7d96606 272-279,289-290
+  s_825dbc23a3635f::t_0c0e635c226a8e 225,238-240,242-244,251
+  s_825dbc23a3635f::t_1120bfef608f79 1
+  s_825dbc23a3635f::t_3f7a7456fd9bee 231-235,241
+  s_825dbc23a3635f::t_9b80f5de1047e8 5
+  s_825dbc23a3635f::t_26a0a077e2884d 280-281,291-293
+  s_825dbc23a3635f::t_27dba3779f2605 171-175,181-183,186
+  s_825dbc23a3635f::t_0f33950f9fab73 10
+apps/server/src/maintenance.ts
+  s_825dbc23a3635f::t_26a1b3c03781fb 66-67
+  s_825dbc23a3635f::t_dfff5389092c32 134-151
+  s_825dbc23a3635f::t_82707bf74cc03a 28-30,35-42,50-51
+apps/server/src/maintenance.test.ts
+  s_825dbc23a3635f::t_0cbfcfa2598061 117-118
+  s_825dbc23a3635f::t_0c4ebe323ff3d3 40-57
+  s_825dbc23a3635f::t_2ae1f953425e97 196-200,202,204-205,210-211,213
+  s_825dbc23a3635f::t_1df8463a94566f 161-162
+  s_825dbc23a3635f::t_4685c833880fe0 128-129
+  s_825dbc23a3635f::t_5d780af932c940 134
+packages/api/src/routers/payouts.ts
+  s_825dbc23a3635f::t_f1cbe034eb2fb5 158
+packages/api/src/use-cases/payouts.ts
+  s_825dbc23a3635f::t_657959d17cc359 975-993,1001
+  s_825dbc23a3635f::t_2edc14f6acc1ff 155-194
+  s_825dbc23a3635f::t_0f931dd2797bc4 534-537,541-555
+  s_825dbc23a3635f::t_0f8e4bb549b142 2
+  s_825dbc23a3635f::t_e1ddb899afe65c 108-115
+  s_825dbc23a3635f::t_0e01637c9eb994 350-351,354
+  s_825dbc23a3635f::t_7a7fc40ca21964 437-439
+  s_825dbc23a3635f::t_e73c8bb6d2e79b 688-689
+  s_825dbc23a3635f::t_09350c3f37203f 28,33,37,42
+  s_825dbc23a3635f::t_0fbff4a2691a20 132
+  s_825dbc23a3635f::t_ee4f10b6a2e3de 501-503,505
+  s_825dbc23a3635f::t_29308aa0a286f5 470-474,476
+  s_825dbc23a3635f::t_91145b1c756d9e 358-410
+  s_825dbc23a3635f::t_3e9e0a12781bc6 19
+  s_825dbc23a3635f::t_7d2ed496759941 755-760
+  s_825dbc23a3635f::t_16c3c488729e59 695-720,722-728
+packages/api/src/routers/payouts.test.ts
+  s_825dbc23a3635f::t_a64d1cd274056f 1492-1609,1619-1620,1622-1658
+  s_825dbc23a3635f::t_f1b2071380ec81 40
+  s_825dbc23a3635f::t_385d9811cc4431 468-470,483-485,492
+  s_825dbc23a3635f::t_176c1b16de07d1 1062
+  s_825dbc23a3635f::t_fd790564abd7ab 1439
+  s_825dbc23a3635f::t_c7a48840b1f1e0 19
+  s_825dbc23a3635f::t_f0b82cff4acd5f 533
+  s_825dbc23a3635f::t_c816e964fbd471 1610-1618,1621
+  s_825dbc23a3635f::t_3d2763d5f3042a 550
+  s_825dbc23a3635f::t_1b88c4c5eab417 486-491,493-494
+  s_825dbc23a3635f::t_20fb124b91dbca 76,82-83
+  s_825dbc23a3635f::t_2518359477cf56 1337-1359,1361
+  s_825dbc23a3635f::t_c236e1d6733c5f 1659
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca7aaa3e2ab30d1c45428ce6159e365e4344e24e",
+  "prompts": {},
+  "sessions": {
+    "s_825dbc23a3635f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "070393e9-657a-47fd-bc06-4115d4c6dce7",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
