@@ -1,0 +1,48 @@
+packages/api/src/use-cases/payouts.ts
+  s_8315201708f4f7::t_530e306b69eba3 671-690
+packages/paypal/src/partner-referrals.test.ts
+  s_8315201708f4f7::t_33c6ffe0cac535 102-105
+packages/db/src/repositories/payout-credentials.ts
+  s_8315201708f4f7::t_7ab3d2550268ad 40
+packages/paypal/src/reporting.test.ts
+  s_8315201708f4f7::t_f5e1868be4768e 1-51
+packages/paypal/src/reporting.ts
+  s_8315201708f4f7::t_e3f69d57e88893 1-38
+packages/paypal/src/schemas.ts
+  s_8315201708f4f7::t_979d513f8efe04 179-189
+packages/api/src/routers/payouts.test.ts
+  s_8315201708f4f7::t_b358a38c79c9be 214
+  s_8315201708f4f7::t_cacf5aff49bcd5 68,72-77,79-82
+  s_8315201708f4f7::t_66a97f5f55d760 236-248
+  s_8315201708f4f7::t_894f4cf0eadcc6 71,78
+  s_8315201708f4f7::t_25d6ce69e7a155 106
+  s_8315201708f4f7::t_8b6d614c424071 49
+  s_8315201708f4f7::t_1e47f416f6636f 194-197
+  s_8315201708f4f7::t_ee9f360c3f8f70 83
+packages/paypal/src/partner-referrals.ts
+  s_8315201708f4f7::t_c987b37fcc02b5 28-29
+  s_8315201708f4f7::t_6be7abcb6c0864 30-32
+  s_8315201708f4f7::t_c87f37d68c71c7 33-36
+packages/api/src/use-cases/payout-credentials.ts
+  s_8315201708f4f7::t_b46c27f64e0437 33-35,44,61,174,191,214-215,229,247
+packages/paypal/src/client.ts
+  s_8315201708f4f7::t_5219413d888e07 10,67,210
+packages/paypal/src/index.ts
+  s_8315201708f4f7::t_b62f7f7128cb4d 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9b2be6ee2197061314bb30e1d68ec7cf1722f101",
+  "prompts": {},
+  "sessions": {
+    "s_8315201708f4f7": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "a1287ffd-d773-4918-bc0d-755aeaffe933",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
