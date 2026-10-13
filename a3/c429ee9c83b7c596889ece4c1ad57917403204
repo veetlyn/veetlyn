@@ -1,0 +1,32 @@
+packages/api/src/use-cases/payout-credentials.ts
+  s_56de74e7dedd35::t_02a208e6686b1a 172-173,175,178-179,183-187
+  s_56de74e7dedd35::t_b691d0d754e1a8 42,88,94,188,211-212,219,226
+packages/paypal/src/client.test.ts
+  s_56de74e7dedd35::t_77301c1c488d4a 77-106
+apps/server/src/payouts.test.ts
+  s_56de74e7dedd35::t_fe4f95ba9e23ce 64,72-73,75-77
+packages/api/src/routers/payouts.test.ts
+  s_56de74e7dedd35::t_ff18b98a165fe8 48-52,63-64,70,79-80,101-102,203-204,231-232,235-241,243-248,448,457,714,717-723,732,737-768
+packages/api/src/use-cases/payouts.ts
+  s_56de74e7dedd35::t_0deed9bc7bbda7 38,417-420
+packages/paypal/src/client.ts
+  s_56de74e7dedd35::t_f15fda16007a4f 66-67,119,136-139,149,154-159,208
+packages/paypal/src/schemas.ts
+  s_56de74e7dedd35::t_18d696c348dafc 31-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3c429ee9c83b7c596889ece4c1ad57917403204",
+  "prompts": {},
+  "sessions": {
+    "s_56de74e7dedd35": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4aab232e-d5e6-4af2-be04-657e8304c55b",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
