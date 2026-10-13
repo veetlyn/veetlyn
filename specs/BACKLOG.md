@@ -8,6 +8,12 @@ Moved here from the sellers design §11.1 on 2026-10-13. Run letters (S, A1, A2,
 
 | Gap | Owner |
 |---|---|
+| New users land on `{dash}/new`, the Commerce "Create your store" form, after verifying their email or when they have no sellers; nothing links to `/new/services-team`, so a first-time freelancer or team must type the URL. Send new users to the seller setup ("Just me" or "A team") and keep the store form one click away | H (judges sign up on the deployed app) |
+| The landing page still shows the old seller fee ("0.5% + 0.10", "Plan prices are coming soon") and the "Commerce / Payouts" and "Services teams" wording; the approved pricing (2% solo, 1% team) and the program's positioning should show | H |
+| The sandbox banner's checkout variant (buyer login and test card) is built but no page renders it, not even the pay page or the store checkout; judges need it to pay in the sandbox | H |
+| Only workspace owners and admins can connect PayPal (`paypal.*` checks `hasStoreWideRole`); a team admin who is not a workspace admin does not see the PayPal card, although services spec §4.1 gives team admins the connection | After the hackathon |
+| Stories marked "Built (not walked through)" in `stories/` (declined and pending payments, top-ups, expired download links, payout retries, trusted members, hold days, paydays, team minimum, cancel export, the R5b-1 walkthrough fixes, among others) have only test coverage. Run the ones the demo touches on the deployed hosts | Freeze (Oct 31 walkthrough) |
+| Older documents drifted from the code (found while writing the stories): services spec §5.4 "Already paid" and a receipt (the code says "Paid. Thank you."), §9 ledger and timeline on the team's project page (not built), §5.2 a ping to the freelancer on capture (run B), the R5c plan's disabled Approve and "Sent" label (now "Waiting for export…" and "Paid"), the B2 plan's 24-hour order sweep (4 days). The stories follow the code | After the hackathon (docs) |
 | Judges need access to the plugin: check whether connecting a custom MCP connector needs a paid ChatGPT plan, and write the steps for Claude and ChatGPT in the testing instructions | S (find out), Submission (write it) |
 | The demo team must pay the freelancer within the video: seed it with hold 0, and either wait for the 10-minute cron or show Refresh | Submission (demo seed) |
 | The "three open requests per email" refusal tells a requester that the email already has open requests with that team; answer with a generic message | After the hackathon |

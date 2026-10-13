@@ -10,6 +10,9 @@ This folder holds everything needed to pick up the build: the designs, the plans
 2. [`BACKLOG.md`](BACKLOG.md): open gaps with their owner, and done items with their commit.
 3. [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-agentic-surfaces-program.md): the current program (dated runs to Oct 31), the demo and the hackathon deliverables.
 4. The design and plan of the current run (linked from `PROGRESS.md`).
+5. [`stories/`](stories/README.md): the story book, every feature as steps and expected results that a person or a browser agent checks against the deployed sandbox app.
+
+Agents: [`../CLAUDE.md`](../CLAUDE.md) is the entry point for Claude Code, with the workflow skills in `../.claude/skills/`.
 
 The PayPal technical references are local clones in `refs/` next to the repository checkout (not in git); their guides are copied in [`references/`](references/README.md). Follow [`references/AGENTS.md`](references/AGENTS.md) when you write stories, including the template under "Writing user stories and specs".
 
@@ -17,6 +20,7 @@ The PayPal technical references are local clones in `refs/` next to the reposito
 |---|---|
 | [`PROGRESS.md`](PROGRESS.md) | Progress tracking: now, run board, how a run works, environment, decisions log |
 | [`BACKLOG.md`](BACKLOG.md) | Open and done gaps from testing, reviews and designs (moved from the sellers design §11.1 on 2026-10-13) |
+| [`stories/`](stories/README.md) | Story book: 153 stories in nine areas (accounts, catalog, requests and quotes, payments, delivery, store, payouts, Discord, planned agentic stories), each with a status (Built, Built (not walked through), Verified, Failing, Planned) |
 | [`parking-lot.md`](parking-lot.md) | Worries about the product's direction, parked until real evidence reopens them |
 | [`references/`](references/README.md) | Copies of `refs/README.md` (the reference index) and `refs/AGENTS.md` (rules for using the references and writing PayPal stories) |
 | [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md) | Platform design spec: architecture, tenancy and routing, onboarding, checkout and payment rails, protocol adapters, MCP plugin, agents and disputes, admin scope, data model, logging (evlog), testing, milestone plan |

@@ -1,0 +1,77 @@
+# Story book
+
+Every finished feature of Payleor as a user story with steps and expected results that a person or a browser agent (Claude in Chrome, Playwright) can check against the deployed sandbox app. A story is a claim: "this works, like this". Walkthroughs run stories; a failed check becomes a backlog row.
+
+## Hosts
+
+| Placeholder | Today (dev tunnel) | After run H (deployed sandbox) |
+|---|---|---|
+| `{site}` | `https://payleor.com` | `https://payleor.com` |
+| `{dash}` | `https://admin.payleor.com` | `https://dash.payleor.com` |
+| `{seller}` | `https://<slug>.payleor.app` | `https://<slug>.payleor.app` |
+| `{api}` | `https://api.payleor.com` | the api Worker's host on `payleor.com` |
+
+Everything runs in the PayPal sandbox. No real money moves.
+
+## Accounts (by role)
+
+Stories name roles, never passwords. Where to find each login: `../PROGRESS.md` (Environment, "Sandbox walkthrough accounts"); PayPal sandbox logins are the `SANDBOX_*` values in `packages/infra/.env` (never printed or committed).
+
+| Role | Who |
+|---|---|
+| Team admin | "Walk Through", owner of team `walk-crew` (`mdbm-agent@agentmail.to`) |
+| Second and third admins | `mdbm-agent+admin2@agentmail.to`, `mdbm-agent+admin3@agentmail.to` (admins of `walk-crew`) |
+| Freelancer | A `walk-crew` member with the freelancer role (Walk Through also acts as the assigned member and payee) |
+| Solo seller | `walk-b2-solo` (draft solo seller; `walk-crew-solo` became a team in R3a), or a new one from ACC-08 |
+| Client | Any email the tester reads (an AgentMail plus address such as `mdbm-agent+client1@agentmail.to`) |
+| PayPal buyer | Sandbox buyer 2 (`SANDBOX_BUYER_2_*`) pays project and store payments |
+| PayPal seller | Sandbox seller 3 (`SANDBOX_SELLER_3_*`), the merchant behind `walk-crew` |
+| Member payout destination | Sandbox buyer 1 (`SANDBOX_BUYER_1_*`) |
+
+Emails to AgentMail addresses are read in the AgentMail inbox (`AGENT_MAIL_*` in `apps/server/.env`).
+
+## Story format
+
+Each area file holds stories in this shape:
+
+```md
+### PAY-01: Client pays the deposit
+
+- **Actor:** client · **Surface:** web (pay page) · **Delivered by:** R1b (`a46bcf2`) · **Status:** Built
+- **Preconditions:** a `walk-crew` project with an accepted quote (see QUO-03).
+- **Steps:**
+  1. Open the client page link from the client email, then **Pay with PayPal**.
+  2. [human] Log in as the PayPal buyer in the popup and approve.
+- **Expected:**
+  - Back on the pay page: "Paid. Thank you." with the payment lines.
+  - The client page shows the project in progress and the deposit as paid.
+  - The team's project page shows the payment captured.
+- **Edge cases:** a declined card lets the buyer pick another funding source (`INSTRUMENT_DECLINED`); opening a paid link again shows it paid.
+```
+
+- **ID:** area prefix and number, never reused.
+- **Status:** `Built` (merged, walked through once in dev), `Built (not walked through)` (merged and covered by tests, never exercised in a walkthrough; edge cases inside a Built story are flagged the same way), `Verified <date> on <host> at <commit>` (last passing check), `Failing <date>: <backlog row>`, or `Planned (<run>)` for stories a run of the program will deliver.
+- **[human]** marks a step an agent must not do: logging in to PayPal and approving a payment, uploading a Payouts Web file, connecting the plugin in Claude or ChatGPT, anything on a real Discord account.
+- **Expected** lists observable results: page text, emails, links, states. Quote UI text only as it appears in the code. Results no page shows (ledger postings, fees, webhook handling) are marked "DB check (developer)".
+- Stories may depend on earlier stories (named by ID) for their preconditions.
+
+## Areas
+
+| File | Prefix | Covers |
+|---|---|---|
+| [`01-accounts-and-setup.md`](01-accounts-and-setup.md) | `ACC` | Landing page, sign-up and sign-in, email verification and reset, seller setup (solo or team), PayPal connection, members and roles, settings |
+| [`02-seller-page-and-catalog.md`](02-seller-page-and-catalog.md) | `CAT` | Services catalog, bio, publishing, seller page, preview, policies and legal pages |
+| [`03-requests-and-quotes.md`](03-requests-and-quotes.md) | `QUO` | Quote request form and its limits, projects, assignment, quotes, the quote calculator, amendments |
+| [`04-payments.md`](04-payments.md) | `PAY` | Pay page (deposit, top-up, balance), PayPal webhooks, fees in the ledger |
+| [`05-delivery-and-completion.md`](05-delivery-and-completion.md) | `DEL` | Deliveries (note, link, file), changes requested, acceptance, completion, refunds to the client |
+| [`06-store.md`](06-store.md) | `STO` | Digital products, store switch, checkout, orders, downloads, refunds revoking access |
+| [`07-payouts.md`](07-payouts.md) | `OUT` | Payout destination, automatic payouts connection, requests, approvals, payout rules, sweeps, Payouts Web export and import |
+| [`08-discord.md`](08-discord.md) | `DIS` | Discord sign-in and account link, server link, `/payleor link`, `/payouts setup` (built in S2, never checked on a real server) |
+| [`09-agentic.md`](09-agentic.md) | `AGT` | Planned stories of the agentic surfaces program: the AI plugin, Discord channels, agents, analytics, API and webhooks, the AI seller |
+
+## Running stories
+
+1. Pick the stories for the walkthrough (a run's new stories plus the ones its changes touch).
+2. Follow the steps on the host named in the run's walkthrough; stop at each [human] step and ask Mouhamed.
+3. Update each story's **Status** in the same commit as the walkthrough record; a failure gets a backlog row and `Failing <date>: <row>`.
+4. New features add or change stories in the run that builds them; a plan's walkthrough task lists the story IDs it checks.
