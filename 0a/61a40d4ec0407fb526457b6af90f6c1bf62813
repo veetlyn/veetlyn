@@ -1,0 +1,32 @@
+packages/api/src/use-cases/payouts.ts
+  s_f4d28995b496d9::t_b7edb76058e44a 893-894
+  s_f4d28995b496d9::t_55eb4f7708c38b 892
+  s_f4d28995b496d9::t_2411f641bb41b5 273-278,520
+packages/db/src/repositories/payout-requests.ts
+  s_f4d28995b496d9::t_6e87c130294f65 223
+  s_f4d28995b496d9::t_0b8151efa8624c 208-209
+apps/web/src/app/admin/[storeSlug]/payouts/payout-requests-table.tsx
+  s_f4d28995b496d9::t_a8581be4a422ba 136,233
+apps/web/src/app/admin/[storeSlug]/payouts/payouts-web-section.tsx
+  s_f4d28995b496d9::t_8a52446b0741ec 19-20,22,38-43
+packages/api/src/routers/payouts.test.ts
+  s_f4d28995b496d9::t_40e18e4a1f383a 1712-1722,1728,1845,1900,1910,1916-1959,1961-1997
+packages/api/src/use-cases/payouts-web.ts
+  s_f4d28995b496d9::t_d04c160ce12595 24,42-43,46-53,71,96-97,122-131,135-139,143-144,156,186,193-194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a61a40d4ec0407fb526457b6af90f6c1bf62813",
+  "prompts": {},
+  "sessions": {
+    "s_f4d28995b496d9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "88c85dda-c422-404c-a226-b0df610fb20a",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
