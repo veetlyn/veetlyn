@@ -1,0 +1,27 @@
+packages/api/src/use-cases/payout-rules.ts
+  s_5bab33b7650c6b::t_b0202ef32d31d3 37-43
+  s_5bab33b7650c6b::t_7e78256e8de96d 91-95,98-102
+  s_5bab33b7650c6b::t_dd25110e137281 111-114
+packages/db/src/repositories/payout-rules.ts
+  s_5bab33b7650c6b::t_1e68bd58767987 40-41
+packages/api/src/routers/payouts.test.ts
+  s_5bab33b7650c6b::t_175d40fdb8eaed 19
+  s_5bab33b7650c6b::t_277413ca7c7da0 33
+  s_5bab33b7650c6b::t_9040543afb2827 1254-1266
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "99765a4267ea931ecfdd2504433f7c052de49481",
+  "prompts": {},
+  "sessions": {
+    "s_5bab33b7650c6b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "bb5200ef-9600-4435-955d-ada95ced6030",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
