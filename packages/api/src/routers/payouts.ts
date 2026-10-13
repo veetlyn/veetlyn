@@ -59,7 +59,13 @@ export const payoutsRouter = router({
       requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ONLY);
       return completePayoutConnect(
         { db: ctx.db, payouts: requirePayoutServices(ctx.payouts), paypal: requirePayPal(ctx.paypal) },
-        { team: ctx.servicesTeam, attemptId: input.attemptId, authCode: input.authCode, sharedId: input.sharedId },
+        {
+          team: ctx.servicesTeam,
+          userId: ctx.session.user.id,
+          attemptId: input.attemptId,
+          authCode: input.authCode,
+          sharedId: input.sharedId,
+        },
       );
     }),
 

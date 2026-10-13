@@ -28,7 +28,7 @@ import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayoutServices, PayPalServices } from "../context";
-import { payPalCountry } from "../paypal/onboarding";
+import { PAYPAL_URL_MAX_LENGTH, payPalCountry } from "../paypal/onboarding";
 import { payPalErrorLog } from "./paypal-amounts";
 
 // accountId is null for credentials saved before PayPal reported which account they belong to.
@@ -108,16 +108,17 @@ export async function startPayoutConnect(
   const { db, paypal } = deps;
   const { team } = input;
   await requirePayoutTeam(db, team);
-  const attempt = await insertPayoutConnectAttempt(db, {
-    teamId: team.id,
-    sellerNonce: sellerNonce(),
-    createdByUserId: input.userId,
-  });
+  const returnUrl = new URL(`/${team.slug}/payouts`, paypal.returnUrl).toString();
+  if (returnUrl.length > PAYPAL_URL_MAX_LENGTH) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The PayPal return URL is longer than 127 characters." });
+  }
+  // The attempt is saved only once PayPal has started the onboarding, under the id and nonce PayPal was given.
+  const attempt = { id: crypto.randomUUID(), teamId: team.id, sellerNonce: sellerNonce(), createdByUserId: input.userId };
   let actionUrl: string | null;
   try {
     const referral = await paypal.client.partnerReferrals.createFirstParty({
       requestId: `payout-connect:${attempt.id}`,
-      returnUrl: new URL(`/${team.slug}/payouts`, paypal.returnUrl).toString(),
+      returnUrl,
       sellerNonce: attempt.sellerNonce,
       features: FIRST_PARTY_REFERRAL_FEATURES,
     });
@@ -127,16 +128,27 @@ export async function startPayoutConnect(
     throw new TRPCError({ code: "BAD_GATEWAY", message: "PayPal did not answer. Try again.", cause });
   }
   if (!actionUrl) throw new Error("PayPal's first-party referral response has no action_url link.");
+  await insertPayoutConnectAttempt(db, attempt);
   return { actionUrl, attemptId: attempt.id };
 }
 
-function usableAttempt(attempt: PayoutConnectAttemptRow | null, teamId: string): attempt is PayoutConnectAttemptRow {
+// Only the admin who started the attempt may complete it: the authorization code is bound to its nonce.
+function usableAttempt(
+  attempt: PayoutConnectAttemptRow | null,
+  teamId: string,
+  userId: string,
+): attempt is PayoutConnectAttemptRow {
   return (
     attempt !== null &&
     attempt.teamId === teamId &&
+    attempt.createdByUserId === userId &&
     attempt.usedAt === null &&
     attempt.createdAt.getTime() > Date.now() - CONNECT_ATTEMPT_TTL_MS
   );
+}
+
+function connectExpired(): TRPCError {
+  return new TRPCError({ code: "BAD_REQUEST", message: CONNECT_EXPIRED });
 }
 
 async function sellerCredentialsFor(
@@ -199,13 +211,13 @@ function otherAccount(merchantId: string): TRPCError {
 // account connected to the team and can read its balance; PayPal's calls happen before any lock is taken.
 export async function completePayoutConnect(
   deps: { db: Database; payouts: PayoutServices; paypal: PayPalServices },
-  input: { team: PayoutTeam; attemptId: string; authCode: string; sharedId: string },
+  input: { team: PayoutTeam; userId: string; attemptId: string; authCode: string; sharedId: string },
 ): Promise<PayoutCredentialsView> {
   const { db, payouts, paypal } = deps;
   const { team } = input;
   const { merchantId, currency } = await requirePayoutTeam(db, team);
   const attempt = await getPayoutConnectAttempt(db, input.attemptId);
-  if (!usableAttempt(attempt, team.id)) throw new TRPCError({ code: "BAD_REQUEST", message: CONNECT_EXPIRED });
+  if (!usableAttempt(attempt, team.id, input.userId)) throw connectExpired();
 
   const credentials = await sellerCredentialsFor(paypal, attempt, input);
   if (credentials.payerId !== merchantId) throw otherAccount(merchantId);
@@ -220,7 +232,7 @@ export async function completePayoutConnect(
     (current) => current?.paypalAccountId === merchantId,
     async (tx) => {
       const locked = await lockPayoutConnectAttempt(tx, attempt.id);
-      if (!usableAttempt(locked, team.id)) throw new TRPCError({ code: "BAD_REQUEST", message: CONNECT_EXPIRED });
+      if (!usableAttempt(locked, team.id, input.userId)) throw connectExpired();
       const saved = await saveTeamPayoutCredentials(tx, {
         teamId: team.id,
         clientId: credentials.clientId,

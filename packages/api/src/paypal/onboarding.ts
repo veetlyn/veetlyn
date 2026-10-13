@@ -68,7 +68,7 @@ export function payPalCountry(value: string | undefined): string | null {
 }
 
 // PayPal caps tracking_id and return_url at 127 characters (Fact 2).
-const PAYPAL_URL_MAX_LENGTH = 127;
+export const PAYPAL_URL_MAX_LENGTH = 127;
 
 // Services teams ship nothing, so they leave shipment tracking out. PayPal rejects the whole referral
 // with 422 FEATURES_UNAUTHORIZED when the partner app is not approved for any feature it asks for.

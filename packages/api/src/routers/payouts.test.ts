@@ -285,6 +285,49 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(admin.payouts.credentials(TEAM)).resolves.toBeNull();
   });
 
+  it("refuses a connection started by another admin of the team, before asking PayPal", async () => {
+    const { userId, organizationId, teamId } = await connectedTeam();
+    const otherAdminId = await seedServicesTeamMember(db, { organizationId, teamId, role: "admin", name: "Bo" });
+    const paypal = fakeTeamPayPal();
+    const services = await makePayouts(paypal.fetch);
+    const { attemptId } = await callerFor(userId, services).payouts.connectStart(TEAM);
+    paypal.requests.splice(0);
+
+    const otherAdmin = callerFor(otherAdminId, services);
+    await expect(
+      otherAdmin.payouts.connectComplete({ ...TEAM, attemptId, authCode: AUTH_CODE, sharedId: SHARED_ID }),
+    ).rejects.toMatchObject(CONNECT_EXPIRED);
+    expect(paypal.requests).toEqual([]);
+    await expect(otherAdmin.payouts.credentials(TEAM)).resolves.toBeNull();
+  });
+
+  it("refuses to start a connection whose return URL PayPal would reject, and keeps no attempt", async () => {
+    const slug = `studio-${"a".repeat(100)}`;
+    const seeded = await seedServicesTeamWithAdmin(db, { slug });
+    await markTeamPayPalMerchant(db, { teamId: seeded.teamId, merchantId: MERCHANT_ID });
+    const paypal = fakeTeamPayPal();
+    const admin = callerFor(seeded.userId, await makePayouts(paypal.fetch));
+
+    await expect(admin.payouts.connectStart({ teamSlug: slug })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "The PayPal return URL is longer than 127 characters.",
+    });
+    expect(paypal.requests).toEqual([]);
+    await expect(db.select().from(payoutConnectAttempt)).resolves.toEqual([]);
+  });
+
+  it("keeps no connection attempt when PayPal does not start the onboarding", async () => {
+    const { userId } = await connectedTeam();
+    const failing = fakeFetch(() => jsonResponse(500, { name: "INTERNAL_SERVICE_ERROR", debug_id: "d500" }));
+    const admin = callerFor(userId, await makePayouts(failing.fetch));
+
+    await expect(admin.payouts.connectStart(TEAM)).rejects.toMatchObject({
+      code: "BAD_GATEWAY",
+      message: "PayPal did not answer. Try again.",
+    });
+    await expect(db.select().from(payoutConnectAttempt)).resolves.toEqual([]);
+  });
+
   // Credentials saved for MERCHANT1 and a payout PayPal is working on; the next shared credentials carry `clientId`.
   async function teamWithSentPayout() {
     const { userId, teamId } = await connectedTeam();

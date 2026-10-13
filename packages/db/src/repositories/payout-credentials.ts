@@ -7,7 +7,7 @@ export type PayoutConnectAttemptRow = typeof payoutConnectAttempt.$inferSelect;
 
 export async function insertPayoutConnectAttempt(
   db: DbExecutor,
-  input: Pick<typeof payoutConnectAttempt.$inferInsert, "teamId" | "sellerNonce" | "createdByUserId">,
+  input: Pick<typeof payoutConnectAttempt.$inferInsert, "id" | "teamId" | "sellerNonce" | "createdByUserId">,
 ): Promise<PayoutConnectAttemptRow> {
   const [row] = await db.insert(payoutConnectAttempt).values(input).returning();
   if (!row) throw new Error(`Insert into payout_connect_attempt returned no row for team ${input.teamId}`);
