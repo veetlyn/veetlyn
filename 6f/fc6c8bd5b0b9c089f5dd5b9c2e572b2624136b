@@ -1,0 +1,189 @@
+README.md
+  s_d8d0f67a017e70::t_0b26dc1194b2f6 3-4
+specs/references/AGENTS.md
+  s_d8d0f67a017e70::t_758595711fb06c 3-4
+  s_d8d0f67a017e70::t_e47c6c120e3e56 8-87
+  s_d8d0f67a017e70::t_f4b49458ae676c 5-7
+  s_d8d0f67a017e70::t_1159044981ca2b 1-2
+specs/platform/2026-10-03-payleor-platform-design.md
+  s_c0209e681a81c3::t_09be49631ca675 1-629
+specs/platform/plans/2026-10-03-w1a-foundations-tenancy.md
+  s_c0209e681a81c3::t_f528f8d46ddc69 1-4246
+specs/platform/plans/2026-10-06-s4-ledger-projects-quotes.md
+  s_e52545ee672940::t_49dc9a6f161f38 1-5980
+specs/platform/plans/2026-10-08-r1c-paypal-webhooks.md
+  s_6aef7c4dffa70a::t_66831fa88115a8 1-1270
+specs/platform/plans/2026-10-07-hackathon-one-flow.md
+  s_c0209e681a81c3::t_cb5e3130c83dcd 1-61
+specs/platform/2026-10-04-public-site-auth-onboarding-design.md
+  s_c0209e681a81c3::t_915b11f6e080f2 1-177
+specs/platform/plans/evidence/r5b1-payouts-web-log.csv
+  s_d8d0f67a017e70::t_b838a9f7472b63 1-21
+specs/platform/plans/2026-10-08-r3c-quote-request-form.md
+  s_c0209e681a81c3::t_fe2b65cb4736dc 1-582
+specs/platform/2026-10-07-services-amendments-proposal.md
+  s_c0209e681a81c3::t_8801901de7aa0c 1-305
+specs/platform/plans/2026-10-11-b2-maintenance.md
+  s_d8d0f67a017e70::t_e00cc53ec5b6d1 1-137
+specs/platform/plans/2026-10-08-r2b-delivery-files.md
+  s_6aef7c4dffa70a::t_74ecd296939684 1-318
+specs/hackathon/sponsors.md
+  s_c0209e681a81c3::t_29230306ff6ee2 1-63
+specs/parking-lot.md
+  s_c0209e681a81c3::t_5de22f2786f712 1-12
+specs/platform/plans/2026-10-09-r4a-digital-products.md
+  s_c0209e681a81c3::t_957b02f70907c7 1-1103
+specs/platform/plans/2026-10-12-r5a2-manual-payouts.md
+  s_d8d0f67a017e70::t_f32d7b0c7f85f2 1-196
+specs/platform/plans/2026-10-06-parallel-execution.md
+  s_c0209e681a81c3::t_a3e08f365a707c 1-74
+specs/platform/2026-10-05-services-teams-design.md
+  s_c0209e681a81c3::t_93cca57ecea906 1-376
+specs/README.md
+  s_d8d0f67a017e70::t_68725ac4e65d1b 23-44,55-59
+  s_d8d0f67a017e70::t_fe845b6f3c0206 20-22,45-47
+  s_d8d0f67a017e70::t_752ca3faa4856a 3-19
+  s_d8d0f67a017e70::t_6bdf8f2f317391 49-50
+  s_d8d0f67a017e70::t_bd1632a084e083 51
+  s_d8d0f67a017e70::t_7118b1858f5f5f 48
+  s_d8d0f67a017e70::t_1f93a90f7022b7 1-2
+  s_d8d0f67a017e70::t_502f7c2a6753ed 52-54
+specs/platform/plans/2026-10-07-r0-services-paypal-features.md
+  s_c0209e681a81c3::t_712dfec6be09e2 1-427
+specs/platform/2026-10-02-cloudflare-birthday-week.md
+  s_d8d0f67a017e70::t_55214fdaf96f12 1-38
+specs/platform/plans/2026-10-07-r1b-pay-page.md
+  s_c0209e681a81c3::t_8e50ee03d4bbd9 1-1053
+specs/platform/plans/2026-10-08-b1-maintenance.md
+  s_6aef7c4dffa70a::t_b66ba9c69436c6 1-187
+specs/platform/plans/2026-10-08-r3a-seller-setup-and-catalog.md
+  s_c0209e681a81c3::t_5eb0e598d52007 1-1206
+specs/platform/plans/2026-10-13-r5b1-payout-rules.md
+  s_d8d0f67a017e70::t_c424293c5e2bad 1-666
+specs/platform/plans/2026-10-06-s5-catalog-channel3.md
+  s_c0209e681a81c3::t_274fdf96f07b3b 1-5043
+specs/BACKLOG.md
+  s_d8d0f67a017e70::t_2d217ac4467458 11,14,21-22,24,26,28-29,31
+  s_d8d0f67a017e70::t_1aa5c900b1f39c 1-10,12-13,15-20,23,25,27,30,32-64
+specs/platform/plans/2026-10-08-r2-delivery-and-completion.md
+  s_6aef7c4dffa70a::t_e9ff19f9d8ec18 1-612
+specs/platform/plans/2026-10-08-r3b-seller-page-and-publishing.md
+  s_c0209e681a81c3::t_f2260e8bb795e5 1-851
+specs/platform/plans/2026-10-06-s3-paypal-client-onboarding.md
+  s_0595ccbad8afd9::t_4ec15a322ab086 1-3194
+specs/hackathon/README.md
+  s_d8d0f67a017e70::t_58bf710bb7ceba 1-119
+specs/platform/plans/2026-10-06-s2-discord.md
+  s_c0209e681a81c3::t_171f4a05f5f93c 1-2924
+specs/platform/2026-10-07-r1-paypal-facts.md
+  s_c0209e681a81c3::t_18689ba47080b4 1-368
+specs/platform/research.md
+  s_d8d0f67a017e70::t_2ad15973c0890d 1-360
+specs/hackathon/resources.md
+  s_d8d0f67a017e70::t_9264de2e7ddd0d 1-89
+specs/hackathon/rules.md
+  s_aecaf4ca6d8e10::t_4291a2f7b48428 1-186
+specs/platform/2026-10-07-sellers-minimal-flow-design.md
+  s_d8d0f67a017e70::t_1216b503aa8f0f 1-198
+specs/platform/plans/2026-10-05-w1d-public-site-auth-onboarding.md
+  s_c0209e681a81c3::t_d69a7c8e957155 1-4647
+specs/platform/2026-10-05-sponsor-integrations-design.md
+  s_c0209e681a81c3::t_992a79c5c41f43 1-225
+specs/platform/2026-10-13-agentic-surfaces-program.md
+  s_d8d0f67a017e70::t_fbe2c2af5ac86d 44,48-49
+  s_d8d0f67a017e70::t_5cebf1788690c6 1-43,45-47,50-62
+specs/platform/plans/evidence/r5b1-payouts-web-log-walkthrough.csv
+  s_d8d0f67a017e70::t_6237db225956c1 1-21
+specs/platform/2026-10-13-discord-ticket-flow-design.md
+  s_d8d0f67a017e70::t_891d370e6df88b 1-240
+specs/platform/2026-10-13-payout-rules-design.md
+  s_d8d0f67a017e70::t_d8358795f62972 1-139
+specs/platform/plans/2026-10-06-s1-services-teams-foundation.md
+  s_c0209e681a81c3::t_d1edfda7817006 1-4239
+specs/platform/plans/2026-10-10-r4b-checkout-orders.md
+  s_c0209e681a81c3::t_00191e76e52d8b 1-847
+specs/platform/2026-10-06-auth-federation-design.md
+  s_c0209e681a81c3::t_276ac4c974e2ff 1-131
+specs/platform/plans/2026-10-12-r5c-automatic-payouts.md
+  s_d8d0f67a017e70::t_6c13f36e89ef88 1-121
+specs/platform/plans/2026-10-11-l1-lint-cleanup.md
+  s_d8d0f67a017e70::t_ff79b2c36c3e94 1-159
+specs/platform/2026-10-07-pricing-research.md
+  s_6aef7c4dffa70a::t_0f9c3384090aee 1-265
+specs/platform/plans/2026-10-12-r5a-team-payouts.md
+  s_d8d0f67a017e70::t_a0f78873dec3ff 1-173
+specs/platform/2026-10-13-action-catalog-design.md
+  s_d8d0f67a017e70::t_99722c5a33f569 1-201
+specs/platform/plans/2026-10-12-b3-payout-prerequisites.md
+  s_d8d0f67a017e70::t_aba4e64885b268 1-141
+specs/references/README.md
+  s_d8d0f67a017e70::t_2413a81a432fd0 3-4
+  s_d8d0f67a017e70::t_7bc0be04f0a610 1-2
+  s_d8d0f67a017e70::t_dcbf708322124c 5-7
+  s_d8d0f67a017e70::t_0a5a07832ebd64 8-184
+specs/platform/2026-10-07-seller-pricing-proposal.md
+  s_c0209e681a81c3::t_9b8555dbebd55e 1-108
+specs/platform/plans/2026-10-07-r1a-server-payments.md
+  s_c0209e681a81c3::t_44641a188aa6ac 1-1923
+specs/PROGRESS.md
+  s_d8d0f67a017e70::t_f84cf03cfc8926 49
+  s_d8d0f67a017e70::t_5df128929a3c26 3,22,26-27,78
+  s_d8d0f67a017e70::t_9e34794aeaf038 7
+  s_d8d0f67a017e70::t_8ca8a629ff5942 1-2,4-6,8-21,23-25,28-48,50-77,79-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6ffc6c8bd5b0b9c089f5dd5b9c2e572b2624136b",
+  "prompts": {},
+  "sessions": {
+    "s_0595ccbad8afd9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "282a04a1-dd05-4423-8055-edec1a5fcd5b",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_6aef7c4dffa70a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "20524647-f1c3-4ba0-9dff-2bae30f8d35f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_aecaf4ca6d8e10": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "3450eb6c-0b25-42d5-b27d-b0c87ad51bae",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_c0209e681a81c3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "94c5da88-cd98-4c69-a30a-9d8d65bb6cdb",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_e52545ee672940": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4a0fabbe-2ed3-4581-bdb0-6c3457ae9516",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
