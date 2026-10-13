@@ -1549,6 +1549,19 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect((await projectPayouts(admin)).map((payout) => payout.amountMinor)).toEqual(amounts);
     });
 
+    it("never pays an older project out of a newer project's earnings still inside the hold", async () => {
+      const { teamId, memberId, projectId, admin, member, services } = await payoutTeam();
+      await admin.payouts.saveRules(PROJECT_RULES);
+      await member.payouts.request({ ...TEAM, amount: "850.00" });
+      const newer = await earn(teamId, memberId);
+      const sweep = (now: Date) => createProjectPayouts({ db, payouts: services.payouts }, { now });
+
+      await expect(sweep(later(await completionOf(projectId), 3 * DAY))).resolves.toEqual({ created: 0 });
+      await expect(sweep(later(await completionOf(newer), 3 * DAY))).resolves.toEqual({ created: 1 });
+
+      expect((await projectPayouts(admin)).map((payout) => payout.amountMinor)).toEqual([85_000]);
+    });
+
     it("lists a member without a PayPal destination as waiting, and pays them once they connect", async () => {
       const { adminId, memberId, projectId, admin, services } = await payoutTeam();
       await admin.payouts.saveRules(PROJECT_RULES);

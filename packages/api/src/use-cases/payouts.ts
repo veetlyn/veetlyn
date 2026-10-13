@@ -31,6 +31,7 @@ import {
 } from "@jendal-workspace/db/repositories/payout-credentials";
 import {
   type CompletedProjectWithoutPayout,
+  earningsOnHoldMinor,
   getPayoutRequest,
   insertPayoutApproval,
   insertPayoutRequest,
@@ -356,8 +357,9 @@ export async function requestPayout(
 }
 
 // The payout of a completed project past its hold: the member's earnings from it, capped at what they have available
-// now (an earlier request may have taken some). Null when nothing is created: the member cannot be paid yet, nothing
-// is left, or the amount is under the team minimum or too small to cover PayPal's fee.
+// now (an earlier request may have taken some) less their earnings from projects still inside the hold, which are
+// not this project's to pay. Null when nothing is created: the member cannot be paid yet, nothing is left, or the
+// amount is under the team minimum or too small to cover PayPal's fee.
 export async function createProjectPayout(
   deps: RequestPayoutDeps,
   input: { team: PayoutTeam; rules: PayoutRules; project: CompletedProjectWithoutPayout; now: Date },
@@ -375,7 +377,13 @@ export async function createProjectPayout(
   const decided = await deps.db.transaction(async (tx): Promise<Decided | null> => {
     const ledger = createPostgresLedger(team.id, tx);
     const availableMinor = await ledger.balance(ledgerAccounts.owedAvailable(memberId), project.currency);
-    const amountMinor = Math.min(project.earningsMinor, availableMinor);
+    const onHoldMinor = await earningsOnHoldMinor(tx, {
+      teamId: team.id,
+      memberId,
+      currency: project.currency,
+      completedAfter: holdEndsBefore(rules, now),
+    });
+    const amountMinor = Math.min(project.earningsMinor, availableMinor - onHoldMinor);
     if (amountMinor <= 0) return null;
     const { sentMinor } = await estimateSendAmounts(tx, {
       teamId: team.id,

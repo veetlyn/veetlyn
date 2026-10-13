@@ -1,4 +1,20 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  or,
+  type SQL,
+  sql,
+  type SQLWrapper,
+} from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
@@ -228,11 +244,50 @@ export type CompletedProjectWithoutPayout = {
   completedAt: Date;
 };
 
+// What the member earned from the team's completed projects that completed after `completedAfter` and have no payout
+// yet, in `currency`: money still inside the hold, which no project payout may take. The member and currency may be
+// columns of an outer query.
+function earningsOnHoldSql(input: {
+  teamId: string;
+  memberId: SQLWrapper | string;
+  currency: SQLWrapper | string;
+  completedAfter: Date;
+}): SQL<string> {
+  // Compared as UTC wall time, as drizzle writes and reads these timestamp columns.
+  const completedAfter = input.completedAfter.toISOString();
+  return sql<string>`coalesce((
+    select sum(held_entry.amount_minor)
+    from project held_project
+    join ledger_transfer held_transfer
+      on held_transfer.team_id = held_project.team_id
+      and held_transfer.kind = 'completion'
+      and held_transfer.reference = 'completion:' || held_project.id
+    join ledger_entry held_entry
+      on held_entry.transfer_id = held_transfer.id
+      and held_entry.account = 'owed:' || held_project.assigned_freelancer_id || ':available'
+    where held_project.team_id = ${input.teamId}
+      and held_project.status = 'completed'
+      and held_project.assigned_freelancer_id = ${input.memberId}
+      and held_entry.currency = ${input.currency}
+      and held_transfer.created_at > ${completedAfter}::timestamp
+      and not exists (select 1 from payout_request held_payout where held_payout.project_id = held_project.id)
+  ), 0)`;
+}
+
+export async function earningsOnHoldMinor(
+  db: DbExecutor,
+  input: { teamId: string; memberId: string; currency: PayoutRequestRow["currency"]; completedAfter: Date },
+): Promise<number> {
+  const [row] = await db.select({ minor: earningsOnHoldSql(input) }).from(team).where(eq(team.id, input.teamId));
+  return Number(row?.minor ?? 0);
+}
+
 // Completed projects of the team whose completion credited the assigned member before `completedBefore` and that have
 // no payout yet. The completion transfer's time is the completion time. A project's payout is its earnings capped at
-// the member's available balance, so projects where either is under `minAmountMinor` are left out: otherwise they
-// would come back on every run and, past the limit, hide the projects that can be paid. `destination` picks members
-// who can be paid (a verified PayPal destination and the 18+ confirmation) or those who cannot yet.
+// the member's available balance less their earnings still on hold, so projects where either is under
+// `minAmountMinor` are left out: otherwise they would come back on every run and, past the limit, hide the projects
+// that can be paid. `destination` picks members who can be paid (a verified PayPal destination and the 18+
+// confirmation) or those who cannot yet.
 export async function listCompletedProjectsWithoutPayout(
   db: DbExecutor,
   input: {
@@ -287,7 +342,12 @@ export async function listCompletedProjectsWithoutPayout(
         isNotNull(project.assignedFreelancerId),
         lte(ledgerTransfer.createdAt, input.completedBefore),
         gte(ledgerEntry.amountMinor, input.minAmountMinor),
-        gte(ledgerBalance.balanceMinor, input.minAmountMinor),
+        sql`${ledgerBalance.balanceMinor} - ${earningsOnHoldSql({
+          teamId: input.teamId,
+          memberId: project.assignedFreelancerId,
+          currency: ledgerEntry.currency,
+          completedAfter: input.completedBefore,
+        })} >= ${input.minAmountMinor}`,
         input.destination === "qualified"
           ? isNotNull(payoutDestination.ageConfirmedAt)
           : isNull(payoutDestination.ageConfirmedAt),
