@@ -742,30 +742,63 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
   const authenticationFailure = { name: "AUTHENTICATION_FAILURE", message: "Authentication failed.", debug_id: "d401" };
 
+  const CREDENTIALS_REFUSED = "PayPal refused the team's automatic payouts connection. Turn on automatic payouts again.";
+  const PAYOUTS_NOT_ENABLED =
+    "PayPal has not turned on Payouts for the team's PayPal account. Ask PayPal to turn it on, then retry.";
+  const notAuthorized = {
+    name: "NOT_AUTHORIZED",
+    message: "Authorization failed due to insufficient permissions.",
+    debug_id: "d403",
+  };
+
   it.each([
     {
       case: "refuses the team's token",
       refuse: (answers: TeamPayPalAnswers) => {
         answers.teamToken = () => jsonResponse(401, { error: "invalid_client", error_description: "Client Authentication failed" });
       },
+      message: CREDENTIALS_REFUSED,
     },
     {
       case: "refuses the payout as unauthenticated",
       refuse: (answers: TeamPayPalAnswers) => {
         answers.payout = () => jsonResponse(401, authenticationFailure);
       },
+      message: CREDENTIALS_REFUSED,
     },
-  ])("keeps an approved request queued with its earnings reserved when PayPal $case", async ({ refuse }) => {
+    {
+      case: "refuses the team's token as not authorized",
+      refuse: (answers: TeamPayPalAnswers) => {
+        answers.teamToken = () => jsonResponse(403, notAuthorized);
+      },
+      message: PAYOUTS_NOT_ENABLED,
+    },
+    {
+      case: "refuses the payout as not authorized",
+      refuse: (answers: TeamPayPalAnswers) => {
+        answers.payout = () => jsonResponse(403, notAuthorized);
+      },
+      message: PAYOUTS_NOT_ENABLED,
+    },
+  ])("keeps an approved request queued with its earnings reserved when PayPal $case, and sends it on retry", async ({ refuse, message }) => {
     const { teamId, memberId, admin, member, answers } = await payoutTeam();
+    const ready = { ...answers };
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
     refuse(answers);
 
     await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "queued",
-      failureMessage: "PayPal refused the team's automatic payouts connection. Turn on automatic payouts again.",
+      failureMessage: message,
     });
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000, paidOut: 0 });
     expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`]);
+
+    delete answers.teamToken;
+    Object.assign(answers, ready);
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "sent",
+      failureMessage: null,
+    });
   });
 
   const UNCERTAIN = {

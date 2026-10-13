@@ -93,6 +93,8 @@ const OTHER_ACCOUNT =
 const SEALED_SECRET_UNREADABLE = "The team's automatic payouts connection could not be read. Turn on automatic payouts again.";
 const LOW_BALANCE = "The team's PayPal balance is too low. Add funds, then retry.";
 const CREDENTIALS_REFUSED = "PayPal refused the team's automatic payouts connection. Turn on automatic payouts again.";
+const PAYOUTS_NOT_ENABLED =
+  "PayPal has not turned on Payouts for the team's PayPal account. Ask PayPal to turn it on, then retry.";
 const UNCERTAIN = "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.";
 const DESTINATION_UNQUALIFIED = "The member's PayPal account no longer qualifies for payouts.";
 const DESTINATION_CHANGED = "The member changed their PayPal account. Reject this request; they can request again.";
@@ -417,6 +419,10 @@ async function attemptSend(
     // The client already retried a 401 with a fresh token, so PayPal refused these credentials and made no payout.
     if (error instanceof PayPalError && error.status === 401) {
       return { kind: "held", message: CREDENTIALS_REFUSED, cause: error };
+    }
+    // The account lacks Payouts permission: PayPal made no payout, and the admin can fix that and retry.
+    if (error instanceof PayPalError && error.status === 403) {
+      return { kind: "held", message: PAYOUTS_NOT_ENABLED, cause: error };
     }
     if (!isSettledPayPalRefusal(error) || isPayPalRequestInProgress(error)) return { kind: "uncertain", cause: error };
     if (isInsufficientFunds(error)) return { kind: "held", message: LOW_BALANCE, cause: error };
