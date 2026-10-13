@@ -1,0 +1,147 @@
+specs/stories/03-requests-and-quotes.md
+  s_39d51778505805::t_4c506c0dbbb0b4 80
+  s_39d51778505805::t_c5d21dcaa0063b 153
+  s_39d51778505805::t_d3db974324e975 1-79,81-152,154-208
+specs/stories/08-discord.md
+  s_edd496ecb852f4::t_8a988e3ef34d9c 1-2,4-99
+  s_edd496ecb852f4::t_77174078b51da6 3
+specs/stories/09-agentic.md
+  s_edd496ecb852f4::t_b6474444a6a698 1-380
+specs/stories/01-accounts-and-setup.md
+  s_39d51778505805::t_2dfaeb31b69e12 1-230
+specs/stories/07-payouts.md
+  s_edd496ecb852f4::t_48ee53f94a0b68 1-215,217-392
+  s_edd496ecb852f4::t_4173febd881711 216
+CLAUDE.md
+  s_d8d0f67a017e70::t_dc86ba69b8e270 1-48
+specs/stories/06-store.md
+  s_d2824080378fde::t_5127e29472e3f2 1-220
+specs/stories/README.md
+  s_d8d0f67a017e70::t_e9740df60d4c8b 1-76
+  s_d8d0f67a017e70::t_b10c7c5f8a1776 77
+specs/stories/02-seller-page-and-catalog.md
+  s_39d51778505805::t_d3df1815a0a90a 1-100,102-159
+  s_39d51778505805::t_e5b95942b94bee 101
+.github/workflows/ci.yml
+  s_d8d0f67a017e70::t_e9190a8e3b91ed 1-42
+specs/stories/05-delivery-and-completion.md
+  s_d2824080378fde::t_31f8c3ce6d0418 117
+  s_d2824080378fde::t_d258d14bb52007 118
+  s_d2824080378fde::t_dde8138c76cd49 1-116,119-159
+.claude/skills/README.md
+  s_d8d0f67a017e70::t_73e335d515c83f 1-14
+specs/stories/04-payments.md
+  s_d2824080378fde::t_91942a9c3d221a 1-201
+.claude/skills/anti-slop/CLAUDE_MD_UPDATES.md
+  s_d8d0f67a017e70::t_36d1410166dbe0 1-375
+.claude/skills/anti-slop/README.md
+  s_d8d0f67a017e70::t_935214e56a7681 1-488
+.claude/skills/anti-slop/SKILL.md
+  s_d8d0f67a017e70::t_538ac724d25978 1-418
+.claude/skills/anti-slop/references/code-patterns.md
+  s_d8d0f67a017e70::t_94e5a5d34acee7 1-352
+.claude/skills/anti-slop/references/design-patterns.md
+  s_d8d0f67a017e70::t_4edb4747a74691 1-342
+.claude/skills/anti-slop/references/text-patterns.md
+  s_d8d0f67a017e70::t_e08b2eef6f4809 1-202
+.claude/skills/anti-slop/scripts/clean_slop.py
+  s_d8d0f67a017e70::t_f63e84845c473c 1-341
+.claude/skills/anti-slop/scripts/detect_slop.py
+  s_d8d0f67a017e70::t_1c455d9f56aa04 1-276
+.claude/skills/brainstorming/SKILL.md
+  s_d8d0f67a017e70::t_cd3091285795a0 1-164
+.claude/skills/brainstorming/scripts/frame-template.html
+  s_d8d0f67a017e70::t_1b4d1d1b454717 1-214
+.claude/skills/brainstorming/scripts/helper.js
+  s_d8d0f67a017e70::t_156ad5dc7408e7 1-88
+.claude/skills/brainstorming/scripts/server.cjs
+  s_d8d0f67a017e70::t_5c9cb43ed11d8e 1-354
+.claude/skills/brainstorming/scripts/start-server.sh
+  s_d8d0f67a017e70::t_8ddb8cd5cc21c7 1-148
+.claude/skills/brainstorming/scripts/stop-server.sh
+  s_d8d0f67a017e70::t_b0ca74c99027f1 1-56
+.claude/skills/brainstorming/spec-document-reviewer-prompt.md
+  s_d8d0f67a017e70::t_ee4a27276e1fce 1-49
+.claude/skills/brainstorming/visual-companion.md
+  s_d8d0f67a017e70::t_9902abbcaae3f6 1-287
+.claude/skills/executing-plans/SKILL.md
+  s_d8d0f67a017e70::t_502ec7ebffe58d 1-70
+.claude/skills/finishing-a-development-branch/SKILL.md
+  s_d8d0f67a017e70::t_8ca8089f1e6d45 1-200
+.claude/skills/requesting-code-review/SKILL.md
+  s_d8d0f67a017e70::t_8b248c16b7314c 1-105
+.claude/skills/requesting-code-review/code-reviewer.md
+  s_d8d0f67a017e70::t_19a1f5bd07ab10 1-146
+.claude/skills/subagent-driven-development/SKILL.md
+  s_d8d0f67a017e70::t_7686e7086a9dda 1-277
+.claude/skills/subagent-driven-development/code-quality-reviewer-prompt.md
+  s_d8d0f67a017e70::t_1adc441deb50ce 1-26
+.claude/skills/subagent-driven-development/implementer-prompt.md
+  s_d8d0f67a017e70::t_2437cc273b52aa 1-113
+.claude/skills/subagent-driven-development/spec-reviewer-prompt.md
+  s_d8d0f67a017e70::t_cc74d35bcc6d89 1-61
+.claude/skills/test-audit/CAMPAIGN.md
+  s_d8d0f67a017e70::t_83d8ed5c092531 1-116
+.claude/skills/test-audit/SKILL.md
+  s_d8d0f67a017e70::t_7a58eddaee61b1 1-171
+.claude/skills/test-driven-development/SKILL.md
+  s_d8d0f67a017e70::t_1eb0aa960dca8f 1-371
+.claude/skills/test-driven-development/testing-anti-patterns.md
+  s_d8d0f67a017e70::t_45ec337785a86a 1-299
+.claude/skills/using-git-worktrees/SKILL.md
+  s_d8d0f67a017e70::t_6a39751f8b6df6 1-218
+.claude/skills/verification-before-completion/SKILL.md
+  s_d8d0f67a017e70::t_d11427d3fbdfa8 1-139
+.claude/skills/writing-plans/SKILL.md
+  s_d8d0f67a017e70::t_3ff146157a0799 1-152
+.claude/skills/writing-plans/plan-document-reviewer-prompt.md
+  s_d8d0f67a017e70::t_9134ab017668ff 1-49
+specs/BACKLOG.md
+  s_d8d0f67a017e70::t_de5b2409ec49c4 11-16
+specs/PROGRESS.md
+  s_d8d0f67a017e70::t_dfcbb1dbc3a01f 66-67,84-86,89,92
+specs/README.md
+  s_d8d0f67a017e70::t_2a3c74e5ab4616 13-15,23
+specs/platform/2026-10-13-agentic-surfaces-program.md
+  s_39d51778505805::t_903bd1e9f95b19 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "083d553b92033c06800d754748023bdb5dc0f940",
+  "prompts": {},
+  "sessions": {
+    "s_39d51778505805": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "68477f85-b2d7-4ef5-a92b-925620991f42",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_d2824080378fde": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "cd848dd0-c21b-4764-acaf-de40d461e0db",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_edd496ecb852f4": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "577d3bea-3764-4c48-8ff3-fd56399eff19",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
