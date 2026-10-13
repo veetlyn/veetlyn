@@ -2,6 +2,7 @@ import { presetRules, type PayoutRules } from "@jendal-workspace/core";
 import { asc, eq } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
+import { team } from "../schema/organization";
 import { teamPayoutRules, teamPayoutTrustedMember } from "../schema/payouts";
 
 const rulesColumns = {
@@ -47,11 +48,13 @@ export async function savePayoutRules(db: DbExecutor, teamId: string, rules: Pay
   });
 }
 
-export async function listTeamsPayingCompletedProjects(db: DbExecutor): Promise<string[]> {
-  const rows = await db
-    .select({ teamId: teamPayoutRules.teamId })
+export type TeamPayingCompletedProjects = { id: string; name: string; paypalMerchantId: string | null };
+
+export async function listTeamsPayingCompletedProjects(db: DbExecutor): Promise<TeamPayingCompletedProjects[]> {
+  return db
+    .select({ id: team.id, name: team.name, paypalMerchantId: team.paypalMerchantId })
     .from(teamPayoutRules)
+    .innerJoin(team, eq(team.id, teamPayoutRules.teamId))
     .where(eq(teamPayoutRules.payCompletedProjects, true))
     .orderBy(asc(teamPayoutRules.teamId));
-  return rows.map((row) => row.teamId);
 }

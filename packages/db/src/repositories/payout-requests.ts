@@ -1,12 +1,13 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
-import { ledgerEntry, ledgerTransfer } from "../schema/ledger";
+import { ledgerBalance, ledgerEntry, ledgerTransfer } from "../schema/ledger";
 import { team } from "../schema/organization";
 import {
   PAYOUT_REQUEST_MEMBER_OPEN_WHERE,
   payoutApproval,
+  payoutDestination,
   payoutRequest,
   teamPayoutCredentials,
 } from "../schema/payouts";
@@ -167,16 +168,22 @@ export async function listPayoutApproverIds(db: DbExecutor, requestId: string): 
   return rows.map((row) => row.adminUserId);
 }
 
+export type DuePayoutRequest = {
+  request: PayoutRequestRow;
+  team: { id: string; name: string; paypalMerchantId: string | null };
+};
+
 // Approved payouts whose payday and backoff have passed, longest waiting first. Teams without saved credentials are
 // left out: their payouts wait for a Payouts Web export instead of being retried.
 export async function listDuePayoutRequests(
   db: DbExecutor,
   input: { now: Date; limit: number },
-): Promise<PayoutRequestRow[]> {
-  const rows = await db
-    .select({ request: payoutRequest })
+): Promise<DuePayoutRequest[]> {
+  return db
+    .select({ request: payoutRequest, team: { id: team.id, name: team.name, paypalMerchantId: team.paypalMerchantId } })
     .from(payoutRequest)
     .innerJoin(teamPayoutCredentials, eq(teamPayoutCredentials.teamId, payoutRequest.teamId))
+    .innerJoin(team, eq(team.id, payoutRequest.teamId))
     .where(
       and(
         eq(payoutRequest.status, "queued"),
@@ -190,7 +197,6 @@ export async function listDuePayoutRequests(
       asc(payoutRequest.id),
     )
     .limit(input.limit);
-  return rows.map((row) => row.request);
 }
 
 // Queued payouts of the team still waiting for a later payday move to `sendAfter`; the rest of their decision stays.
@@ -216,22 +222,33 @@ export type CompletedProjectWithoutPayout = {
   projectId: string;
   title: string;
   freelancerId: string;
+  memberName: string;
   earningsMinor: number;
   currency: PayoutRequestRow["currency"];
   completedAt: Date;
 };
 
-// Completed projects of the team whose completion credited the assigned member's earnings before `completedBefore`
-// and that have no payout yet. The completion transfer's time is the completion time.
+// Completed projects of the team whose completion credited the assigned member before `completedBefore` and that have
+// no payout yet. The completion transfer's time is the completion time. A project's payout is its earnings capped at
+// the member's available balance, so projects where either is under `minAmountMinor` are left out: otherwise they
+// would come back on every run and, past the limit, hide the projects that can be paid. `destination` picks members
+// who can be paid (a verified PayPal destination and the 18+ confirmation) or those who cannot yet.
 export async function listCompletedProjectsWithoutPayout(
   db: DbExecutor,
-  input: { teamId: string; completedBefore: Date; limit: number },
+  input: {
+    teamId: string;
+    completedBefore: Date;
+    minAmountMinor: number;
+    destination: "qualified" | "missing";
+    limit: number;
+  },
 ): Promise<CompletedProjectWithoutPayout[]> {
   const rows = await db
     .select({
       projectId: project.id,
       title: project.title,
       freelancerId: project.assignedFreelancerId,
+      memberName: user.name,
       earningsMinor: ledgerEntry.amountMinor,
       currency: ledgerEntry.currency,
       completedAt: ledgerTransfer.createdAt,
@@ -252,6 +269,16 @@ export async function listCompletedProjectsWithoutPayout(
         eq(ledgerEntry.account, sql`'owed:' || ${project.assignedFreelancerId} || ':available'`),
       ),
     )
+    .innerJoin(
+      ledgerBalance,
+      and(
+        eq(ledgerBalance.teamId, project.teamId),
+        eq(ledgerBalance.account, ledgerEntry.account),
+        eq(ledgerBalance.currency, ledgerEntry.currency),
+      ),
+    )
+    .innerJoin(user, eq(user.id, project.assignedFreelancerId))
+    .leftJoin(payoutDestination, eq(payoutDestination.userId, project.assignedFreelancerId))
     .leftJoin(payoutRequest, eq(payoutRequest.projectId, project.id))
     .where(
       and(
@@ -259,6 +286,11 @@ export async function listCompletedProjectsWithoutPayout(
         eq(project.status, "completed"),
         isNotNull(project.assignedFreelancerId),
         lte(ledgerTransfer.createdAt, input.completedBefore),
+        gte(ledgerEntry.amountMinor, input.minAmountMinor),
+        gte(ledgerBalance.balanceMinor, input.minAmountMinor),
+        input.destination === "qualified"
+          ? isNotNull(payoutDestination.ageConfirmedAt)
+          : isNull(payoutDestination.ageConfirmedAt),
         isNull(payoutRequest.id),
       ),
     )

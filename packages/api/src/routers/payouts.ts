@@ -155,7 +155,7 @@ export const payoutsRouter = router({
 
   list: servicesTeamProcedure.query(async ({ ctx }) => {
     requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
-    return listTeamPayouts(ctx.db, ctx.servicesTeam);
+    return listTeamPayouts({ db: ctx.db, now: ctx.now }, ctx.servicesTeam);
   }),
 
   reject: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {

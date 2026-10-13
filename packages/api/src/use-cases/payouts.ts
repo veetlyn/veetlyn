@@ -1,4 +1,5 @@
 import {
+  balanceHold,
   decidePayout,
   estimatePayoutFeeMinor,
   ledgerAccounts,
@@ -15,6 +16,7 @@ import {
   type PayoutRules,
   payoutSentProblem,
   payoutSucceededTransfer,
+  retryDelayMs,
   type ServicesTeamRecord,
   toPayPalValue,
 } from "@jendal-workspace/core";
@@ -23,17 +25,21 @@ import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import {
   getTeamPayoutCredentials,
+  hasTeamPayoutCredentials,
   lockTeamPayoutCredentialsForSend,
   type TeamPayoutCredentialsRow,
 } from "@jendal-workspace/db/repositories/payout-credentials";
 import {
+  type CompletedProjectWithoutPayout,
   getPayoutRequest,
   insertPayoutApproval,
   insertPayoutRequest,
+  listCompletedProjectsWithoutPayout,
   listPayoutApproverIds,
   listTeamPayoutRequests,
   listUserPayoutRequests,
   lockPayoutRequest,
+  type PayoutRequestPatch,
   type PayoutRequestRow,
   type TeamPayoutRequestRow,
   updatePayoutRequest,
@@ -99,7 +105,14 @@ export type TeamPayoutRequestView = PayoutRequestView & {
   approvals: number;
   approvalsNeeded: number;
 };
-export type TeamPayoutsView = { payouts: TeamPayoutRequestView[]; adminCount: number };
+// A completed project past its hold whose member cannot be paid yet (no verified PayPal destination or no 18+
+// confirmation); the project sweep creates its payout once they can.
+export type WaitingForDestinationView = { projectId: string; title: string; memberName: string; earningsMinor: number };
+export type TeamPayoutsView = {
+  payouts: TeamPayoutRequestView[];
+  adminCount: number;
+  waitingForDestination: WaitingForDestinationView[];
+};
 // approvalsNeeded is 0 once the payout is approved.
 export type PayoutApprovalView = PayoutRequestView & { approvalsNeeded: number };
 export type MemberPayoutRequestView = PayoutRequestView & { teamName: string; teamSlug: string };
@@ -116,6 +129,7 @@ export type PayoutDeps = { db: Database; payouts: PayoutServices; now?: () => Da
 export type RequestPayoutDeps = Omit<PayoutDeps, "payouts"> & { payouts?: PayoutServices };
 
 const NO_CREDENTIALS = "Turn on automatic payouts to pay requests.";
+const WAITING_FOR_EXPORT = "Waiting for export or for automatic payouts.";
 const OTHER_ACCOUNT =
   "Automatic payouts are on for another PayPal account than the one connected to this team. Turn them on again.";
 const SEALED_SECRET_UNREADABLE = "The team's automatic payouts connection could not be read. Turn on automatic payouts again.";
@@ -138,8 +152,46 @@ function nowOf(deps: { now?: () => Date }): Date {
   return deps.now?.() ?? new Date();
 }
 
-function isDue(row: PayoutRequestRow, now: Date): boolean {
-  return row.status === "queued" && row.sendAfter !== null && row.sendAfter.getTime() <= now.getTime();
+const DAY_MS = 86_400_000;
+
+// Projects completed up to this time are past the team's hold.
+export function holdEndsBefore(rules: Pick<PayoutRules, "holdDays">, now: Date): Date {
+  return new Date(now.getTime() - rules.holdDays * DAY_MS);
+}
+
+function backoff(request: PayoutRequestRow, now: Date): PayoutRequestPatch {
+  return { waitCount: request.waitCount + 1, nextAttemptAt: new Date(now.getTime() + retryDelayMs(request.waitCount)) };
+}
+
+type Decided = { row: PayoutRequestRow; sendNow: boolean };
+
+// A team without automatic payouts never has its approved payouts sent by Payleor: they wait for a Payouts Web export
+// (or for automatic payouts to be turned on).
+async function markApproved(
+  tx: DbExecutor,
+  request: PayoutRequestRow,
+  input: { now: Date; sendAfter: Date; decidedByUserId?: string },
+): Promise<Decided> {
+  const automatic = await hasTeamPayoutCredentials(tx, request.teamId);
+  const row = await updatePayoutRequest(tx, request.id, {
+    status: "queued",
+    decidedByUserId: input.decidedByUserId,
+    decidedAt: input.now,
+    sendAfter: input.sendAfter,
+    failureMessage: automatic ? null : WAITING_FOR_EXPORT,
+  });
+  return { row, sendNow: automatic && input.sendAfter.getTime() <= input.now.getTime() };
+}
+
+// A failed send leaves the payout approved and queued; the send sweep tries it again.
+async function sendDecided(deps: RequestPayoutDeps, team: PayoutTeam, decided: Decided, now: Date): Promise<PayoutRequestRow> {
+  if (!deps.payouts || !decided.sendNow) return decided.row;
+  try {
+    return await sendPayout({ ...deps, payouts: deps.payouts, now: () => now }, team, decided.row.id);
+  } catch (error) {
+    log.warn({ action: "payout.request_send", payoutRequest: { id: decided.row.id }, error: payPalErrorLog(error) });
+    return (await getPayoutRequest(deps.db, decided.row.id)) ?? decided.row;
+  }
 }
 
 function isoOrNull(date: Date | null): string | null {
@@ -295,21 +347,65 @@ export async function requestPayout(
     const decision = decidePayout(rules, { ...facts, balanceMinor }, currency);
     if (decision.kind === "refused") throw new TRPCError({ code: "BAD_REQUEST", message: decision.reason });
     await ledger.post([payoutRequestedTransfer(postingFor(inserted))]);
-    if (decision.kind !== "approved") return inserted;
-    return updatePayoutRequest(tx, inserted.id, { status: "queued", decidedAt: now, sendAfter: decision.sendAfter });
+    if (decision.kind !== "approved") return { row: inserted, sendNow: false };
+    return markApproved(tx, inserted, { now, sendAfter: decision.sendAfter });
   });
 
-  let row = decided;
-  if (deps.payouts && isDue(decided, now)) {
-    try {
-      row = await sendPayout({ ...deps, payouts: deps.payouts }, team, decided.id);
-    } catch (error) {
-      // The request stays approved and queued; the send sweep tries it again.
-      log.warn({ action: "payout.request_send", payoutRequest: { id: decided.id }, error: payPalErrorLog(error) });
-      row = (await getPayoutRequest(db, decided.id)) ?? decided;
-    }
-  }
+  const row = await sendDecided(deps, team, decided, now);
   return { ...payoutRequestView(row), teamName: team.name, teamSlug: team.slug };
+}
+
+// The payout of a completed project past its hold: the member's earnings from it, capped at what they have available
+// now (an earlier request may have taken some). Null when nothing is created: the member cannot be paid yet, nothing
+// is left, or the amount is under the team minimum or too small to cover PayPal's fee.
+export async function createProjectPayout(
+  deps: RequestPayoutDeps,
+  input: { team: PayoutTeam; rules: PayoutRules; project: CompletedProjectWithoutPayout; now: Date },
+): Promise<PayoutRequestRow | null> {
+  const { team, rules, project, now } = input;
+  const memberId = project.freelancerId;
+  const destination = await getPayoutDestination(deps.db, memberId);
+  if (!destination?.ageConfirmedAt) return null;
+  // Read before the transaction so no lock is held across PayPal's answer; only a floor needs it.
+  const balanceMinor =
+    rules.balanceFloorMinor !== null && deps.payouts
+      ? await readTeamBalanceMinor({ ...deps, payouts: deps.payouts }, team, project.currency)
+      : null;
+
+  const decided = await deps.db.transaction(async (tx): Promise<Decided | null> => {
+    const ledger = createPostgresLedger(team.id, tx);
+    const availableMinor = await ledger.balance(ledgerAccounts.owedAvailable(memberId), project.currency);
+    const amountMinor = Math.min(project.earningsMinor, availableMinor);
+    if (amountMinor <= 0) return null;
+    const { sentMinor } = await estimateSendAmounts(tx, {
+      teamId: team.id,
+      currency: project.currency,
+      amountMinor,
+      receiverCountry: destination.paypalCountry,
+    });
+    if (payoutSentProblem(sentMinor)) return null;
+    const decision = decidePayout(
+      rules,
+      { amountMinor, source: "project", memberId, approverIds: [], balanceMinor, now },
+      project.currency,
+    );
+    if (decision.kind === "refused") return null;
+    const inserted = await insertPayoutRequest(tx, {
+      id: crypto.randomUUID(),
+      teamId: team.id,
+      userId: memberId,
+      currency: project.currency,
+      amountMinor,
+      receiverPayerId: destination.paypalPayerId,
+      source: "project",
+      projectId: project.projectId,
+    });
+    if (!inserted) throw new Error(`Payout for project ${project.projectId} was not inserted`);
+    await ledger.post([payoutRequestedTransfer(postingFor(inserted))]);
+    if (decision.kind !== "approved") return { row: inserted, sendNow: false };
+    return markApproved(tx, inserted, { now, sendAfter: decision.sendAfter });
+  });
+  return decided && sendDecided(deps, team, decided, now);
 }
 
 function alreadyDecided(): TRPCError {
@@ -338,8 +434,9 @@ export async function rejectPayoutRequest(
   return payoutRequestView(row);
 }
 
-// The approval stands even when the send that follows is held (no credentials, low balance) or refused: the
-// returned request carries the status and the message. A payout approved before its payday is sent then.
+// The approval stands even when the send that follows is held (low balance, floor) or refused: the returned request
+// carries the status and the message. A payout approved before its payday is sent then, and one of a team without
+// automatic payouts waits for an export.
 export async function approvePayoutRequest(
   deps: PayoutDeps,
   input: { team: PayoutTeam; requestId: string; deciderId: string },
@@ -370,16 +467,13 @@ export async function approvePayoutRequest(
       request.currency,
     );
     if (decision.kind === "refused") throw new TRPCError({ code: "BAD_REQUEST", message: decision.reason });
-    if (decision.kind === "needs_approval") return { row: request, approvalsNeeded: decision.approvalsNeeded };
-    const approved = await updatePayoutRequest(tx, request.id, {
-      status: "queued",
-      decidedByUserId: input.deciderId,
-      decidedAt: now,
-      sendAfter: decision.sendAfter,
-    });
-    return { row: approved, approvalsNeeded: 0 };
+    if (decision.kind === "needs_approval") {
+      return { row: request, sendNow: false, approvalsNeeded: decision.approvalsNeeded };
+    }
+    const approved = await markApproved(tx, request, { now, sendAfter: decision.sendAfter, decidedByUserId: input.deciderId });
+    return { ...approved, approvalsNeeded: 0 };
   });
-  const row = isDue(decided.row, now) ? await sendPayout(deps, input.team, input.requestId) : decided.row;
+  const row = decided.sendNow ? await sendPayout(deps, input.team, input.requestId) : decided.row;
   return { ...payoutRequestView(row), approvalsNeeded: decided.approvalsNeeded };
 }
 
@@ -404,9 +498,11 @@ type SendClaim =
   | { kind: "claimed"; request: PayoutRequestRow; credentials: TeamPayoutCredentialsRow };
 
 // Locks the request, then the credentials row (every claim takes them in this order), and commits `sending`
-// before any PayPal call. Without usable credentials the request keeps its status and gets the reason.
-async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string): Promise<SendClaim> {
+// before any PayPal call. Without usable credentials the request keeps its status and gets the reason. Holds that
+// need someone to act back off from `attemptAt`, except missing credentials: the send sweep never picks those up.
+async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string, attemptAt: Date): Promise<SendClaim> {
   const request = await lockTeamRequest(tx, team.id, requestId);
+  // The claim's own times use the wall clock: they are compared with updated_at, which the database keeps.
   const now = Date.now();
   const sending = request.status === "sending";
   const stale = sending && request.uncertainAt === null && request.updatedAt.getTime() < now - STALE_SEND_MS;
@@ -435,13 +531,28 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string): 
     amounts = await sendAmountsFor(tx, request);
     const hold = destinationHold ?? payoutSentProblem(amounts.sentMinor);
     if (hold) {
-      return { kind: "held", request: await updatePayoutRequest(tx, request.id, { failureMessage: hold }) };
+      return {
+        kind: "held",
+        request: await updatePayoutRequest(tx, request.id, { failureMessage: hold, ...backoff(request, attemptAt) }),
+      };
     }
   }
   const credentials = await lockTeamPayoutCredentialsForSend(tx, team.id);
-  const heldBecause = !credentials ? NO_CREDENTIALS : credentialsMatchTeam(credentials, team) ? null : OTHER_ACCOUNT;
-  if (!credentials || heldBecause) {
-    return { kind: "held", request: await updatePayoutRequest(tx, request.id, { uncertainAt, failureMessage: heldBecause }) };
+  if (!credentials) {
+    return {
+      kind: "held",
+      request: await updatePayoutRequest(tx, request.id, { uncertainAt, failureMessage: NO_CREDENTIALS }),
+    };
+  }
+  if (!credentialsMatchTeam(credentials, team)) {
+    return {
+      kind: "held",
+      request: await updatePayoutRequest(tx, request.id, {
+        uncertainAt,
+        failureMessage: OTHER_ACCOUNT,
+        ...backoff(request, attemptAt),
+      }),
+    };
   }
   // updated_at identifies this claim when its answer is recorded, so it must differ from every earlier claim's.
   const claimedAt = new Date(Math.max(now, request.updatedAt.getTime() + 1));
@@ -574,15 +685,47 @@ async function recordBatch(db: Database, requestId: string, batchId: string): Pr
           sentAt: new Date(),
           uncertainAt: null,
           failureMessage: null,
+          waitCount: 0,
+          nextAttemptAt: null,
         })
       : Promise.resolve(locked),
   );
 }
 
+// Checked before every fresh send, before the claim so no lock is held while PayPal answers. An unconfirmed send
+// skips it: PayPal may already have paid that payout, and only the retry finds out. Without usable credentials the
+// claim gives the reason instead.
+async function holdForBalance(
+  deps: PayoutDeps,
+  team: PayoutTeam,
+  requestId: string,
+  now: Date,
+): Promise<PayoutRequestRow | null> {
+  const request = await getPayoutRequest(deps.db, requestId);
+  if (!request || request.teamId !== team.id || request.status !== "queued" || request.uncertainAt !== null) return null;
+  const credentials = await getTeamPayoutCredentials(deps.db, team.id);
+  if (!credentials || !credentialsMatchTeam(credentials, team)) return null;
+  const hold = balanceHold(await getPayoutRules(deps.db, team.id), {
+    amountMinor: request.amountMinor,
+    balanceMinor: await readTeamBalanceMinor(deps, team, request.currency),
+    currency: request.currency,
+  });
+  if (!hold) return null;
+  return deps.db.transaction(async (tx) => {
+    const locked = await lockPayoutRequest(tx, requestId);
+    if (locked?.status !== "queued" || locked.uncertainAt !== null) return null;
+    return updatePayoutRequest(tx, locked.id, { failureMessage: hold, ...backoff(locked, now) });
+  });
+}
+
 // No transaction or lock is held across PayPal's calls. Held and refused sends return the request with its
-// status and message; an unknown outcome is recorded and thrown as BAD_GATEWAY.
-async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: string): Promise<PayoutRequestRow> {
-  const claim = await deps.db.transaction((tx) => claimSend(tx, team, requestId));
+// status and message; an unknown outcome is recorded and thrown as BAD_GATEWAY. A held payout waits for its next
+// try: 15 minutes, 1 hour, 6 hours, then daily.
+export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: string): Promise<PayoutRequestRow> {
+  const now = nowOf(deps);
+  const heldForBalance = await holdForBalance(deps, team, requestId, now);
+  if (heldForBalance) return heldForBalance;
+  const claim = await deps.db.transaction((tx) => claimSend(tx, team, requestId, now));
   if (claim.kind === "held") return claim.request;
   const { request } = claim;
 
@@ -609,7 +752,12 @@ async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: string)
     const message = outcome.message;
     // The next attempt gets fresh ids: PayPal made no payout under these, and might replay this refusal for them.
     return recordForClaim(deps.db, request, (tx, locked) =>
-      updatePayoutRequest(tx, locked.id, { status: "queued", failureMessage: message, sendAttempt: locked.sendAttempt + 1 }),
+      updatePayoutRequest(tx, locked.id, {
+        status: "queued",
+        failureMessage: message,
+        sendAttempt: locked.sendAttempt + 1,
+        ...backoff(locked, now),
+      }),
     );
   }
   if (outcome.kind === "refused") {
@@ -824,7 +972,25 @@ function approvalsStillNeeded(rules: PayoutRules, row: TeamPayoutRequestRow): nu
   return decision.kind === "needs_approval" ? decision.approvalsNeeded : 0;
 }
 
-export async function listTeamPayouts(db: Database, team: PayoutRulesTeam): Promise<TeamPayoutsView> {
+const WAITING_FOR_DESTINATION_LIMIT = 100;
+
+async function listWaitingForDestination(db: Database, teamId: string, rules: PayoutRules, now: Date) {
+  if (!rules.payCompletedProjects) return [];
+  const projects = await listCompletedProjectsWithoutPayout(db, {
+    teamId,
+    completedBefore: holdEndsBefore(rules, now),
+    minAmountMinor: rules.minimumPayoutMinor,
+    destination: "missing",
+    limit: WAITING_FOR_DESTINATION_LIMIT,
+  });
+  return projects.map(({ projectId, title, memberName, earningsMinor }) => ({ projectId, title, memberName, earningsMinor }));
+}
+
+export async function listTeamPayouts(
+  deps: { db: Database; now?: () => Date },
+  team: PayoutRulesTeam,
+): Promise<TeamPayoutsView> {
+  const { db } = deps;
   const [rows, rules, members] = await Promise.all([
     listTeamPayoutRequests(db, team.id),
     getPayoutRules(db, team.id),
@@ -832,6 +998,7 @@ export async function listTeamPayouts(db: Database, team: PayoutRulesTeam): Prom
   ]);
   return {
     adminCount: adminCountOf(members),
+    waitingForDestination: await listWaitingForDestination(db, team.id, rules, nowOf(deps)),
     payouts: rows.map((row) => ({
       ...payoutRequestView(row),
       memberName: row.memberName,
