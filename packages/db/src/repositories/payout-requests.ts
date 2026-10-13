@@ -297,8 +297,9 @@ export async function earningsOnHoldMinor(
   return Number(row?.minor ?? 0);
 }
 
-// Completed projects of the team whose completion credited the assigned member before `completedBefore` and that have
-// no payout yet. The completion transfer's time is the completion time. A project's payout is its earnings capped at
+// Completed projects of the team whose completion credited the assigned member from `completedSince` (when the team
+// turned on paying completed projects) to `completedBefore`, and that have no payout yet. The completion transfer's
+// time is the completion time. A project's payout is its earnings capped at
 // the member's available balance less their earnings still on hold, so projects where either is under
 // `minAmountMinor` are left out: otherwise they would come back on every run and, past the limit, hide the projects
 // that can be paid. `destination` picks members who can be paid (a verified PayPal destination and the 18+
@@ -307,6 +308,7 @@ export async function listCompletedProjectsWithoutPayout(
   db: DbExecutor,
   input: {
     teamId: string;
+    completedSince: Date;
     completedBefore: Date;
     minAmountMinor: number;
     destination: "qualified" | "missing";
@@ -355,6 +357,7 @@ export async function listCompletedProjectsWithoutPayout(
         eq(project.teamId, input.teamId),
         eq(project.status, "completed"),
         isNotNull(project.assignedFreelancerId),
+        gte(ledgerTransfer.createdAt, input.completedSince),
         lte(ledgerTransfer.createdAt, input.completedBefore),
         gte(ledgerEntry.amountMinor, input.minAmountMinor),
         sql`${ledgerBalance.balanceMinor} - ${earningsOnHoldSql({

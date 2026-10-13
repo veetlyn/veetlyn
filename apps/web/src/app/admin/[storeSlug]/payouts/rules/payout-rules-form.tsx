@@ -389,6 +389,12 @@ function RulesForm({
           />
           Pay each completed project automatically
         </label>
+        {values.payCompletedProjects && rules.payCompletedProjectsSince ? (
+          <p className="text-sm text-muted-foreground">
+            Pays projects completed since{" "}
+            {new Date(rules.payCompletedProjectsSince).toLocaleDateString(undefined, { dateStyle: "long" })}.
+          </p>
+        ) : null}
         <TextField
           id="hold-days"
           label="Days to wait after a project completes"

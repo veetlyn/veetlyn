@@ -9,13 +9,15 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { rescheduleWaitingPayouts } from "@jendal-workspace/db/repositories/payout-requests";
-import { getPayoutRules, savePayoutRules } from "@jendal-workspace/db/repositories/payout-rules";
+import { getPayoutRules, savePayoutRules, type StoredPayoutRules } from "@jendal-workspace/db/repositories/payout-rules";
 import { getServicesTeamSettings, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 
-// Amounts are minor units in `currency`; an auto-approve amount of ANY_AMOUNT_MINOR means any amount.
+// Amounts are minor units in `currency`; an auto-approve amount of ANY_AMOUNT_MINOR means any amount. Projects
+// completed before payCompletedProjectsSince are not paid out on their own.
 export type PayoutRulesView = Omit<PayoutRules, "trustedMemberIds"> & {
   trustedMemberIds: string[];
+  payCompletedProjectsSince: string | null;
   currency: Currency;
   adminCount: number;
 };
@@ -38,11 +40,12 @@ async function teamFacts(db: Database, team: PayoutRulesTeam): Promise<TeamFacts
   };
 }
 
-function view(rules: PayoutRules, facts: TeamFacts): PayoutRulesView {
+function view(rules: StoredPayoutRules, facts: TeamFacts): PayoutRulesView {
   // A trusted member who left the team drops off the list shown and saved.
   return {
     ...rules,
     trustedMemberIds: rules.trustedMemberIds.filter((id) => facts.memberIds.has(id)),
+    payCompletedProjectsSince: rules.payCompletedProjectsSince?.toISOString() ?? null,
     currency: facts.currency,
     adminCount: facts.adminCount,
   };
@@ -62,16 +65,26 @@ const paydayChanged = (before: PayoutRules, after: PayoutRules) =>
   before.paydayWeekday !== after.paydayWeekday ||
   before.paydayMonthDay !== after.paydayMonthDay;
 
+// Turning paying completed projects on starts from now, so projects completed earlier are not paid out as a backlog.
+function payCompletedProjectsSince(before: StoredPayoutRules, rules: PayoutRules, now: Date): Date | null {
+  if (!rules.payCompletedProjects) return null;
+  return before.payCompletedProjects ? (before.payCompletedProjectsSince ?? now) : now;
+}
+
 // A rules change applies to payouts decided after it, except the payday: queued payouts still waiting for one
 // move to the new payday.
 async function store(
   db: Database,
-  input: { team: PayoutRulesTeam; before: PayoutRules; rules: PayoutRules; facts: TeamFacts; now: Date },
+  input: { team: PayoutRulesTeam; before: StoredPayoutRules; rules: PayoutRules; facts: TeamFacts; now: Date },
 ): Promise<PayoutRulesView> {
   const problem = payoutRulesProblem(input.rules, { adminCount: input.facts.adminCount, currency: input.facts.currency });
   if (problem) throw badRequest(problem);
+  const stored: StoredPayoutRules = {
+    ...input.rules,
+    payCompletedProjectsSince: payCompletedProjectsSince(input.before, input.rules, input.now),
+  };
   await db.transaction(async (tx) => {
-    await savePayoutRules(tx, input.team.id, input.rules);
+    await savePayoutRules(tx, input.team.id, stored);
     if (paydayChanged(input.before, input.rules)) {
       await rescheduleWaitingPayouts(tx, {
         teamId: input.team.id,
@@ -80,7 +93,7 @@ async function store(
       });
     }
   });
-  return view(input.rules, input.facts);
+  return view(stored, input.facts);
 }
 
 export async function saveTeamPayoutRules(

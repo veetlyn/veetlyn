@@ -19,8 +19,11 @@ export async function createProjectPayouts(
   for (const team of await listTeamsPayingCompletedProjects(deps.db)) {
     if (remaining <= 0) break;
     const rules = await getPayoutRules(deps.db, team.id);
+    // Null only when the rules were turned off since the team was listed.
+    if (!rules.payCompletedProjectsSince) continue;
     const projects = await listCompletedProjectsWithoutPayout(deps.db, {
       teamId: team.id,
+      completedSince: rules.payCompletedProjectsSince,
       completedBefore: holdEndsBefore(rules, input.now),
       minAmountMinor: rules.minimumPayoutMinor,
       destination: "qualified",

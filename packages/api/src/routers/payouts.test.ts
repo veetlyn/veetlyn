@@ -525,11 +525,17 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   // Automatic payouts on for MERCHANT1, a US account, and Ada, a
   // freelancer owed $850 with a confirmed destination in `memberCountry`: between two US accounts PayPal's fee is
   // estimated at $0.25. PayPal requests made while turning payouts on are dropped. While `gate.on` is true, each
-  // payout POST waits in `gate.held` until the test answers it, so two sends can interleave.
-  async function payoutTeam(memberCountry: string | null = "US", initialAnswers: TeamPayPalAnswers = {}) {
+  // payout POST waits in `gate.held` until the test answers it, so two sends can interleave. `rules` are saved before
+  // Ada's project completes, so a team paying completed projects pays it.
+  async function payoutTeam(
+    memberCountry: string | null = "US",
+    initialAnswers: TeamPayPalAnswers = {},
+    rules?: Parameters<Caller["payouts"]["saveRules"]>[0],
+  ) {
     const { userId: adminId, organizationId, teamId } = await connectedTeam();
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
     await confirmedDestination(memberId, memberCountry);
+    if (rules) await callerFor(adminId).payouts.saveRules(rules);
     const projectId = await earn(teamId, memberId);
     const answers: TeamPayPalAnswers = { payout: () => batchCreated("BATCH1"), ...initialAnswers };
     const paypal = fakeTeamPayPal(answers);
@@ -1232,6 +1238,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         paydayMonthDay: null,
         balanceFloorMinor: null,
         minimumPayoutMinor: 100,
+        payCompletedProjectsSince: null,
         adminCount: 1,
       });
 
@@ -1256,8 +1263,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(await admin.payouts.rules(TEAM)).toMatchObject({ autoApproveUpToMinor: ANY_AMOUNT_MINOR });
 
       await admin.payouts.applyRulesPreset({ ...TEAM, preset: "automatic" });
-      const { adminCount, currency, ...rules } = await admin.payouts.rules(TEAM);
+      const { adminCount, currency, payCompletedProjectsSince, ...rules } = await admin.payouts.rules(TEAM);
       expect(rules).toEqual({ ...presetRules("automatic"), trustedMemberIds: [memberId] });
+      expect(payCompletedProjectsSince).toEqual(expect.any(String));
       expect({ adminCount, currency }).toEqual({ adminCount: 1, currency: "USD" });
     });
 
@@ -1518,8 +1526,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const projectPayouts = async (admin: Caller) => (await listed(admin)).filter((payout) => payout.source === "project");
 
     it("pays a completed project once its hold has passed, and only once", async () => {
-      const { teamId, memberId, projectId, admin, member, paypal, services } = await payoutTeam();
-      await admin.payouts.saveRules(PROJECT_RULES);
+      const { teamId, memberId, projectId, admin, member, paypal, services } = await payoutTeam("US", {}, PROJECT_RULES);
       const completed = await completionOf(projectId);
       const sweep = (now: Date) => createProjectPayouts({ db, payouts: services.payouts }, { now });
 
@@ -1545,12 +1552,30 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 0, reserved: 85_000 });
     });
 
+    it("pays only projects completed after paying completed projects was turned on", async () => {
+      const { teamId, memberId, admin, services } = await payoutTeam();
+      await admin.payouts.saveRules(PROJECT_RULES);
+      const { payCompletedProjectsSince } = await admin.payouts.rules(TEAM);
+      expect(payCompletedProjectsSince).toEqual(expect.any(String));
+      const newer = await earn(teamId, memberId);
+      // Staying on keeps the date.
+      await admin.payouts.saveRules({ ...PROJECT_RULES, holdDays: 2 });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ payCompletedProjectsSince });
+
+      await expect(
+        createProjectPayouts({ db, payouts: services.payouts }, { now: later(await completionOf(newer), 3 * DAY) }),
+      ).resolves.toEqual({ created: 1 });
+      expect((await projectPayouts(admin)).map((payout) => payout.projectId)).toEqual([newer]);
+
+      await admin.payouts.saveRules({ ...PROJECT_RULES, payCompletedProjects: false });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ payCompletedProjectsSince: null });
+    });
+
     it.each([
       { requested: "800.00", amounts: [5_000] },
       { requested: "850.00", amounts: [] },
     ])("caps a project payout at what the member has left after requesting $requested", async ({ requested, amounts }) => {
-      const { projectId, admin, member, services } = await payoutTeam();
-      await admin.payouts.saveRules(PROJECT_RULES);
+      const { projectId, admin, member, services } = await payoutTeam("US", {}, PROJECT_RULES);
       const completed = await completionOf(projectId);
       await member.payouts.request({ ...TEAM, amount: requested });
 
@@ -1560,8 +1585,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
 
     it("never pays an older project out of a newer project's earnings still inside the hold", async () => {
-      const { teamId, memberId, projectId, admin, member, services } = await payoutTeam();
-      await admin.payouts.saveRules(PROJECT_RULES);
+      const { teamId, memberId, projectId, admin, member, services } = await payoutTeam("US", {}, PROJECT_RULES);
       await member.payouts.request({ ...TEAM, amount: "850.00" });
       const newer = await earn(teamId, memberId);
       const sweep = (now: Date) => createProjectPayouts({ db, payouts: services.payouts }, { now });
@@ -1573,8 +1597,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
 
     it("lists a member without a PayPal destination as waiting, and pays them once they connect", async () => {
-      const { adminId, memberId, projectId, admin, services } = await payoutTeam();
-      await admin.payouts.saveRules(PROJECT_RULES);
+      const { adminId, memberId, projectId, services } = await payoutTeam("US", {}, PROJECT_RULES);
       const completed = await completionOf(projectId);
       await deletePayoutDestination(db, memberId);
       const sweep = () => createProjectPayouts({ db, payouts: services.payouts }, { now: later(completed, 3 * DAY) });
@@ -1659,8 +1682,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
 
     it("creates and approves project payouts of a team without automatic payouts, which wait for an export", async () => {
-      const { teamId, projectId, admin, paypal, services } = await payoutTeam();
-      await admin.payouts.saveRules(PROJECT_RULES);
+      const { teamId, projectId, admin, paypal, services } = await payoutTeam("US", {}, PROJECT_RULES);
       await admin.payouts.removeCredentials(TEAM);
       const completed = await completionOf(projectId);
 

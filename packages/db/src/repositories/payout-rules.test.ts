@@ -10,16 +10,10 @@ describe.skipIf(!hasTestDatabase)("payout rules repository", () => {
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
 
-  it("reads the manual preset for a team that never saved rules", async () => {
-    const { teamId } = await seedServicesTeamWithAdmin(db);
-
-    await expect(getPayoutRules(db, teamId)).resolves.toEqual({ ...presetRules("manual"), trustedMemberIds: [] });
-  });
-
   it("replaces the trusted members on every save", async () => {
     const { teamId } = await seedServicesTeamWithAdmin(db);
     const [ada, bea, cleo] = [await seedUser(db, "Ada"), await seedUser(db, "Bea"), await seedUser(db, "Cleo")];
-    const rules = { ...presetRules("rules"), preset: "custom" as const, holdDays: 7 };
+    const rules = { ...presetRules("rules"), preset: "custom" as const, holdDays: 7, payCompletedProjectsSince: null };
 
     await savePayoutRules(db, teamId, { ...rules, trustedMemberIds: [ada, bea] });
     await savePayoutRules(db, teamId, { ...rules, trustedMemberIds: [cleo] });

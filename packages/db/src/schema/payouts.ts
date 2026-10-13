@@ -185,6 +185,9 @@ export const teamPayoutRules = pgTable(
     secondApproverAboveMinor: minor("second_approver_above_minor"),
     secondApproverScope: text("second_approver_scope", { enum: PAYOUT_RULE_SCOPES }).notNull().default("both"),
     payCompletedProjects: boolean("pay_completed_projects").notNull().default(false),
+    // When paying completed projects was last turned on; projects completed before then are never paid out on their
+    // own, so turning it on does not pay out a backlog.
+    payCompletedProjectsSince: timestamp("pay_completed_projects_since", { withTimezone: true }),
     holdDays: integer("hold_days").notNull().default(0),
     payday: text("payday", { enum: PAYDAYS }).notNull().default("immediate"),
     paydayWeekday: integer("payday_weekday"),
@@ -201,6 +204,10 @@ export const teamPayoutRules = pgTable(
     check("team_payout_rules_payday_month_day_check", sql`${t.paydayMonthDay} between 1 and 28`),
     check("team_payout_rules_payday_weekday_check", sql`${t.paydayWeekday} between 0 and 6`),
     check("team_payout_rules_minimum_check", sql`${t.minimumPayoutMinor} >= 100`),
+    check(
+      "team_payout_rules_pay_completed_since_check",
+      sql`${t.payCompletedProjects} = (${t.payCompletedProjectsSince} is not null)`,
+    ),
   ],
 );
 

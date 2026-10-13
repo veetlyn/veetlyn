@@ -45,7 +45,7 @@ import {
   type TeamPayoutRequestRow,
   updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
-import { getPayoutRules } from "@jendal-workspace/db/repositories/payout-rules";
+import { getPayoutRules, type StoredPayoutRules } from "@jendal-workspace/db/repositories/payout-rules";
 import { getPayoutDestination, listMemberEarnings, type MemberEarningsRow } from "@jendal-workspace/db/repositories/payouts";
 import { getTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import {
@@ -1012,10 +1012,11 @@ function approvalsStillNeeded(rules: PayoutRules, row: TeamPayoutRequestRow): nu
 
 const WAITING_FOR_DESTINATION_LIMIT = 100;
 
-async function listWaitingForDestination(db: Database, teamId: string, rules: PayoutRules, now: Date) {
-  if (!rules.payCompletedProjects) return [];
+async function listWaitingForDestination(db: Database, teamId: string, rules: StoredPayoutRules, now: Date) {
+  if (!rules.payCompletedProjectsSince) return [];
   const projects = await listCompletedProjectsWithoutPayout(db, {
     teamId,
+    completedSince: rules.payCompletedProjectsSince,
     completedBefore: holdEndsBefore(rules, now),
     minAmountMinor: rules.minimumPayoutMinor,
     destination: "missing",

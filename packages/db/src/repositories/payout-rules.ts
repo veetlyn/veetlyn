@@ -19,20 +19,27 @@ const rulesColumns = {
   paydayMonthDay: teamPayoutRules.paydayMonthDay,
   balanceFloorMinor: teamPayoutRules.balanceFloorMinor,
   minimumPayoutMinor: teamPayoutRules.minimumPayoutMinor,
+  payCompletedProjectsSince: teamPayoutRules.payCompletedProjectsSince,
 };
 
+// The rules with when paying completed projects was turned on: set exactly while it is on.
+export type StoredPayoutRules = PayoutRules & { payCompletedProjectsSince: Date | null };
+
 // A team without a rules row follows the manual preset.
-export async function getPayoutRules(db: DbExecutor, teamId: string): Promise<PayoutRules> {
+export async function getPayoutRules(db: DbExecutor, teamId: string): Promise<StoredPayoutRules> {
   const [row] = await db.select(rulesColumns).from(teamPayoutRules).where(eq(teamPayoutRules.teamId, teamId)).limit(1);
   const trusted = await db
     .select({ userId: teamPayoutTrustedMember.userId })
     .from(teamPayoutTrustedMember)
     .where(eq(teamPayoutTrustedMember.teamId, teamId))
     .orderBy(asc(teamPayoutTrustedMember.userId));
-  return { ...(row ?? presetRules("manual")), trustedMemberIds: trusted.map((t) => t.userId) };
+  return {
+    ...(row ?? { ...presetRules("manual"), payCompletedProjectsSince: null }),
+    trustedMemberIds: trusted.map((t) => t.userId),
+  };
 }
 
-export async function savePayoutRules(db: DbExecutor, teamId: string, rules: PayoutRules): Promise<void> {
+export async function savePayoutRules(db: DbExecutor, teamId: string, rules: StoredPayoutRules): Promise<void> {
   const { trustedMemberIds, ...settings } = rules;
   await db.transaction(async (tx) => {
     await tx
