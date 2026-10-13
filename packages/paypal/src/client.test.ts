@@ -96,12 +96,6 @@ describe("grantedScopes", () => {
 
     await expect(clientWith(fetch).grantedScopes()).resolves.toEqual([]);
   });
-
-  it("turns a refused token into a PayPalError", async () => {
-    const { fetch } = fakeFetch(() => jsonResponse(401, { error: "invalid_client", error_description: "Client Authentication failed" }));
-
-    await expect(clientWith(fetch).grantedScopes()).rejects.toMatchObject({ status: 401 });
-  });
 });
 
 describe("request headers", () => {

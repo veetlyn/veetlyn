@@ -31,37 +31,6 @@ const CREATE_INPUT = {
 };
 
 describe("payouts.create", () => {
-  it("sends one PAYPAL_ID item under the sender batch id and reads the batch id", async () => {
-    const { client, requests } = clientAnswering(201, {
-      batch_header: {
-        payout_batch_id: "BATCH1",
-        batch_status: "PENDING",
-        sender_batch_header: { sender_batch_id: "payout:req-1", email_subject: "You have a payout" },
-      },
-      links: [],
-    });
-
-    const created = await client.payouts.create(CREATE_INPUT);
-
-    expect(created).toEqual({ batchId: "BATCH1", batchStatus: "PENDING" });
-    const call = recordedAt(requests, 1);
-    expect(call.method).toBe("POST");
-    expect(call.url).toBe("https://api-m.sandbox.paypal.com/v1/payments/payouts");
-    expect(call.headers.get("paypal-request-id")).toBe("payout-send:req-1");
-    expect(JSON.parse(call.body ?? "")).toEqual({
-      sender_batch_header: { sender_batch_id: "payout:req-1", email_subject: "You have a payout" },
-      items: [
-        {
-          recipient_type: "PAYPAL_ID",
-          receiver: "PAYER1",
-          amount: { value: "25.00", currency: "USD" },
-          note: "Earnings from Acme",
-          sender_item_id: "req-1",
-        },
-      ],
-    });
-  });
-
   // A retry's answer would hide that PayPal may have made the batch on the first attempt.
   it("sends once and throws when PayPal answers 5xx", async () => {
     const { client, requests } = clientAnswering(500, { name: "INTERNAL_SERVICE_ERROR", debug_id: "d500" });

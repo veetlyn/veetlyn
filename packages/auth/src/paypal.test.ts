@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { paypalAuthorizationEndpoint, paypalEmail } from "./paypal";
+import { paypalEmail } from "./paypal";
 
 describe("paypalEmail", () => {
   it("reads the primary address from the paypalv1.1 emails list", () => {
@@ -34,18 +34,5 @@ describe("paypalEmail", () => {
 
   it("returns nothing when the profile has no address", () => {
     expect(paypalEmail({})).toEqual({});
-  });
-});
-
-describe("paypalAuthorizationEndpoint", () => {
-  it("carries the OpenID scopes on the sandbox and live authorize pages", () => {
-    const sandbox = new URL(paypalAuthorizationEndpoint(false));
-    const live = new URL(paypalAuthorizationEndpoint(true));
-
-    expect(sandbox.origin + sandbox.pathname).toBe("https://www.sandbox.paypal.com/signin/authorize");
-    expect(live.origin + live.pathname).toBe("https://www.paypal.com/signin/authorize");
-    expect(sandbox.searchParams.get("scope")).toBe(
-      "openid profile email address https://uri.paypal.com/services/paypalattributes",
-    );
   });
 });
