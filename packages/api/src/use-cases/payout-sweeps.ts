@@ -1,7 +1,8 @@
 import { listCompletedProjectsWithoutPayout, listDuePayoutRequests } from "@jendal-workspace/db/repositories/payout-requests";
-import { getPayoutRules, listTeamsPayingCompletedProjects } from "@jendal-workspace/db/repositories/payout-rules";
+import { listTeamsPayingCompletedProjects } from "@jendal-workspace/db/repositories/payout-rules";
 import { log } from "evlog";
 
+import { decisionRules } from "./payout-rules";
 import { createProjectPayout, holdEndsBefore, type PayoutDeps, type RequestPayoutDeps, sendPayout } from "./payouts";
 import { payPalErrorLog } from "./paypal-amounts";
 
@@ -18,7 +19,7 @@ export async function createProjectPayouts(
   let created = 0;
   for (const team of await listTeamsPayingCompletedProjects(deps.db)) {
     if (remaining <= 0) break;
-    const rules = await getPayoutRules(deps.db, team.id);
+    const rules = await decisionRules(deps.db, team);
     // Null only when the rules were turned off since the team was listed.
     if (!rules.payCompletedProjectsSince) continue;
     const projects = await listCompletedProjectsWithoutPayout(deps.db, {

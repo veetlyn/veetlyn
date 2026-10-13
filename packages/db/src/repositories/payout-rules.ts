@@ -55,11 +55,16 @@ export async function savePayoutRules(db: DbExecutor, teamId: string, rules: Sto
   });
 }
 
-export type TeamPayingCompletedProjects = { id: string; name: string; paypalMerchantId: string | null };
+export type TeamPayingCompletedProjects = {
+  id: string;
+  organizationId: string;
+  name: string;
+  paypalMerchantId: string | null;
+};
 
 export async function listTeamsPayingCompletedProjects(db: DbExecutor): Promise<TeamPayingCompletedProjects[]> {
   return db
-    .select({ id: team.id, name: team.name, paypalMerchantId: team.paypalMerchantId })
+    .select({ id: team.id, organizationId: team.organizationId, name: team.name, paypalMerchantId: team.paypalMerchantId })
     .from(teamPayoutRules)
     .innerJoin(team, eq(team.id, teamPayoutRules.teamId))
     .where(eq(teamPayoutRules.payCompletedProjects, true))

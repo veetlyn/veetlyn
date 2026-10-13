@@ -1386,6 +1386,17 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(await rowOf(requested.id)).toMatchObject({ decidedByUserId: null });
     });
 
+    it("leaves the request of a trusted member who left the team for an admin", async () => {
+      const { teamId, memberId, admin, member, paypal } = await payoutTeam();
+      await admin.payouts.saveRules({ ...MANUAL, trustedMemberIds: [memberId] });
+      await db
+        .delete(servicesTeamMember)
+        .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, memberId)));
+
+      await expect(member.payouts.request({ ...TEAM, amount: "100.00" })).resolves.toMatchObject({ status: "requested" });
+      expect(payoutPosts(paypal.requests)).toEqual([]);
+    });
+
     it("keeps an auto-approved request queued until the weekly payday, without calling PayPal", async () => {
       const { memberId, admin, paypal, services } = await payoutTeam();
       await admin.payouts.saveRules({ ...MANUAL, autoApproveUpTo: "1000.00", payday: "weekly", paydayWeekday: 5 });

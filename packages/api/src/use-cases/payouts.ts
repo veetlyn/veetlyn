@@ -60,7 +60,7 @@ import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
 import { credentialsMatchTeam, payoutClientFromCredentials } from "./payout-credentials";
-import { adminCountOf, type PayoutRulesTeam } from "./payout-rules";
+import { adminCountOf, decisionRules, type PayoutRulesTeam } from "./payout-rules";
 import {
   isPayPalRequestInProgress,
   isSettledPayPalRefusal,
@@ -339,7 +339,7 @@ export async function requestPayout(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirm you are 18 or older first." });
   }
   const currency = settings?.currency ?? "USD";
-  const rules = await getPayoutRules(db, team.id);
+  const rules = await decisionRules(db, team);
   const facts: PayoutFacts = { amountMinor, source: "member", memberId: userId, approverIds: [], balanceMinor: null, now };
   // Read before the transaction so no lock is held across PayPal's answer.
   const balanceMinor = await balanceForAutoApproval(deps, team, { rules, facts, currency });

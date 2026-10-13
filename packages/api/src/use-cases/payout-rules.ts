@@ -55,6 +55,13 @@ function badRequest(message: string): TRPCError {
   return new TRPCError({ code: "BAD_REQUEST", message });
 }
 
+// The rules a payout is decided by: a trusted member who left the team is no longer trusted.
+export async function decisionRules(db: Database, team: PayoutRulesTeam): Promise<StoredPayoutRules> {
+  const [rules, members] = await Promise.all([getPayoutRules(db, team.id), listServicesTeamMembers(db, team)]);
+  const memberIds = new Set(members.map((m) => m.userId));
+  return { ...rules, trustedMemberIds: rules.trustedMemberIds.filter((id) => memberIds.has(id)) };
+}
+
 export async function getTeamPayoutRules(db: Database, team: PayoutRulesTeam): Promise<PayoutRulesView> {
   const [rules, facts] = await Promise.all([getPayoutRules(db, team.id), teamFacts(db, team)]);
   return view(rules, facts);
