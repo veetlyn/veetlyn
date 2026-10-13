@@ -7,6 +7,7 @@ import {
   type JsonObject,
   openSecret,
   paymentCapturedTransfer,
+  payoutRequestedTransfer,
   presetRules,
 } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
@@ -31,7 +32,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { createPayPalClient, type FetchLike } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PayoutServices, PayPalServices } from "../context";
@@ -1196,6 +1197,51 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(paypal.requests).toEqual([]);
   });
 
+  it("refuses a request that a project payout overtook, saying how much is left", async () => {
+    const { teamId, memberId, member } = await payoutTeam();
+    // Each test database has one connection: the overtaking payout and the lock watch need their own.
+    const [other, watch] = [createTestDb(), createTestDb()];
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let posted = () => {};
+    const reserved = new Promise<void>((resolve) => {
+      posted = resolve;
+    });
+    try {
+      // The other payout reserves $800 of Ada's $850 and keeps her balance locked while she asks for $500.
+      const overtaking = other.transaction(async (tx) => {
+        await createPostgresLedger(teamId, tx).post([
+          payoutRequestedTransfer({
+            currency: "USD",
+            payoutRequestId: crypto.randomUUID(),
+            freelancerId: memberId,
+            amountMinor: 80_000,
+          }),
+        ]);
+        posted();
+        await released;
+      });
+      await reserved;
+      const refused = expect(member.payouts.request({ ...TEAM, amount: "500.00" })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "You can request up to 50.00.",
+      });
+      await vi.waitFor(async () => {
+        const waiting = await watch.execute(sql`select 1 from pg_stat_activity where wait_event_type = 'Lock'`);
+        expect(waiting.length).toBeGreaterThan(0);
+      });
+      release();
+      await overtaking;
+
+      await refused;
+    } finally {
+      release();
+      await Promise.all([other.$client.end(), watch.$client.end()]);
+    }
+  });
+
   describe("payout rules", () => {
     const noTrustedMembers: string[] = [];
     const CUSTOM_RULES = {
@@ -1275,6 +1321,10 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       await expect(
         admin.payouts.saveRules({ ...CUSTOM_RULES, autoApproveUpTo: null, secondApproverAbove: "500.00" }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Add a second admin before requiring two approvals." });
+      await expect(admin.payouts.saveRules({ ...CUSTOM_RULES, minimumPayout: "30000000.00" })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Enter an amount up to 1,000,000.00.",
+      });
 
       const stranger = await seedUser(db, "Eve");
       await expect(admin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [stranger] })).rejects.toMatchObject({
@@ -1282,6 +1332,15 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         message: "Trusted members must be on the team.",
       });
       expect(await admin.payouts.rules(TEAM)).toMatchObject({ preset: "manual" });
+    });
+
+    it("stores only the payday fields the payday uses", async () => {
+      const { admin } = await rulesTeam();
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, payday: "immediate", paydayWeekday: 9, paydayMonthDay: 40 });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ payday: "immediate", paydayWeekday: null, paydayMonthDay: null });
+
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, payday: "weekly", paydayWeekday: 5, paydayMonthDay: 40 });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ payday: "weekly", paydayWeekday: 5, paydayMonthDay: null });
     });
 
     it("lets only another admin add an admin to the trusted list", async () => {

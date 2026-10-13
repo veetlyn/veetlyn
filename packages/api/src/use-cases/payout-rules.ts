@@ -78,25 +78,35 @@ function payCompletedProjectsSince(before: StoredPayoutRules, rules: PayoutRules
   return before.payCompletedProjects ? (before.payCompletedProjectsSince ?? now) : now;
 }
 
+// The form may send the weekday and day of the month whatever the payday; only the one the payday uses is kept.
+function withPaydayFields(rules: PayoutRules): PayoutRules {
+  return {
+    ...rules,
+    paydayWeekday: rules.payday === "weekly" ? rules.paydayWeekday : null,
+    paydayMonthDay: rules.payday === "monthly" ? rules.paydayMonthDay : null,
+  };
+}
+
 // A rules change applies to payouts decided after it, except the payday: queued payouts still waiting for one
 // move to the new payday.
 async function store(
   db: Database,
   input: { team: PayoutRulesTeam; before: StoredPayoutRules; rules: PayoutRules; facts: TeamFacts; now: Date },
 ): Promise<PayoutRulesView> {
-  const problem = payoutRulesProblem(input.rules, { adminCount: input.facts.adminCount, currency: input.facts.currency });
+  const rules = withPaydayFields(input.rules);
+  const problem = payoutRulesProblem(rules, { adminCount: input.facts.adminCount, currency: input.facts.currency });
   if (problem) throw badRequest(problem);
   const stored: StoredPayoutRules = {
-    ...input.rules,
-    payCompletedProjectsSince: payCompletedProjectsSince(input.before, input.rules, input.now),
+    ...rules,
+    payCompletedProjectsSince: payCompletedProjectsSince(input.before, rules, input.now),
   };
   await db.transaction(async (tx) => {
     await savePayoutRules(tx, input.team.id, stored);
-    if (paydayChanged(input.before, input.rules)) {
+    if (paydayChanged(input.before, rules)) {
       await rescheduleWaitingPayouts(tx, {
         teamId: input.team.id,
         now: input.now,
-        sendAfter: nextPaydayAt(input.rules, input.now),
+        sendAfter: nextPaydayAt(rules, input.now),
       });
     }
   });

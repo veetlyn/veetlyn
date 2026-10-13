@@ -232,6 +232,11 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       solo: false,
       quoteCalculator: { platformFeeBps: 100, senderCountry: "US", receiverCountry: "FR" },
     });
+    // Only admins and the payee see the payee's country.
+    const manager = await seedServicesTeamMember(db, { organizationId, teamId: studioTeam.id, role: "manager" });
+    await expect(callerFor(manager).project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
+      quoteCalculator: { senderCountry: "US", receiverCountry: null },
+    });
   });
 
   it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {

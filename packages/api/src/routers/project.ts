@@ -141,8 +141,10 @@ export const projectRouter = router({
   get: servicesTeamProcedure.input(projectIdInput).query(async ({ ctx, input }) => {
     const { row, settings } = await requireVisibleProject(ctx, input.projectId);
     // The quote calculator estimates the payout fee for the member who would be paid: the assigned one, or a
-    // freelancer quoting for themselves.
+    // freelancer quoting for themselves. Only admins and the payee see the payee's PayPal country; others get the
+    // international estimate.
     const payeeId = row.assignedFreelancerId ?? (ctx.servicesTeamRole === "freelancer" ? ctx.session.user.id : null);
+    const seesPayee = ctx.servicesTeamRole === "admin" || payeeId === ctx.session.user.id;
     const [quotes, amendments, payments, deliveries, refund, senderCountry, payee] = await Promise.all([
       listProjectQuotes(ctx.db, row.id),
       listProjectAmendments(ctx.db, row.id),
@@ -150,7 +152,7 @@ export const projectRouter = router({
       listProjectDeliveries(ctx.db, row.id),
       getStaffRefundView(ctx.db, row.id),
       getTeamPayPalCountry(ctx.db, ctx.servicesTeam.id),
-      payeeId ? getPayoutDestination(ctx.db, payeeId) : null,
+      payeeId && seesPayee ? getPayoutDestination(ctx.db, payeeId) : null,
     ]);
     const clientToken = await signClientLink(linkSecret(ctx.auth), row.id);
     return {

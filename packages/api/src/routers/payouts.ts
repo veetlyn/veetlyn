@@ -39,10 +39,15 @@ const MAX_PAYOUTS_WEB_LOG_CHARS = 2_000_000;
 
 const amountInput = z.string().trim().min(1).max(32);
 const scopeInput = z.enum(PAYOUT_RULE_SCOPES);
+// Keeps rule amounts inside their columns: the minimum payout is an integer column.
+const MAX_RULE_AMOUNT_MINOR = 100_000_000;
 
 function minorOf(amount: string): number {
   const minor = parseMajorAmount(amount);
   if (minor === null) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter an amount like 25.00." });
+  if (minor > MAX_RULE_AMOUNT_MINOR) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Enter an amount up to 1,000,000.00." });
+  }
   return minor;
 }
 

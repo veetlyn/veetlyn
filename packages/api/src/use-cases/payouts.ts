@@ -3,6 +3,7 @@ import {
   decidePayout,
   estimatePayoutFeeMinor,
   ledgerAccounts,
+  LedgerError,
   MAX_PAYOUT_MINOR,
   parseMajorAmount,
   payoutAmountProblem,
@@ -375,7 +376,17 @@ export async function requestPayout(
     if (tooSmall) throw new TRPCError({ code: "BAD_REQUEST", message: tooSmall });
     const decision = decidePayout(rules, { ...facts, balanceMinor }, currency);
     if (decision.kind === "refused") throw new TRPCError({ code: "BAD_REQUEST", message: decision.reason });
-    await ledger.post([payoutRequestedTransfer(postingFor(inserted))]);
+    try {
+      await ledger.post([payoutRequestedTransfer(postingFor(inserted))]);
+    } catch (error) {
+      // A project payout may have reserved part of the balance since it was read; the post locked the balance row,
+      // so it reads current now.
+      if (!(error instanceof LedgerError && error.code === "negative_balance")) throw error;
+      const left = await ledger.balance(ledgerAccounts.owedAvailable(userId), currency);
+      const message = payoutAmountProblem({ amountMinor, availableMinor: left });
+      if (!message) throw error;
+      throw new TRPCError({ code: "BAD_REQUEST", message, cause: error });
+    }
     if (decision.kind !== "approved") return { row: inserted, sendNow: false };
     return markApproved(tx, inserted, { now, sendAfter: decision.sendAfter });
   });
