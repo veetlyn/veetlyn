@@ -9,7 +9,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
-import { payoutActions, payoutFeeLine, payoutStatusLabel } from "@/lib/payouts";
+import { payoutActions, payoutFeeLine, payoutSentMinor, payoutStatusLabel } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
 import { ConfirmDialog } from "./confirm-dialog";
@@ -40,6 +40,7 @@ function RequestRow({
   const actions = payoutActions(request);
   const amount = formatMinor(request.amountMinor, request.currency);
   const fee = payoutFeeLine(request);
+  const sentMinor = payoutSentMinor(request);
   const input = { teamSlug, requestId: request.id };
 
   function resetErrors() {
@@ -56,8 +57,8 @@ function RequestRow({
       <td className="px-4 py-3 whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString()}</td>
       <td className="space-y-1 px-4 py-3">
         <p>{payoutStatusLabel(request)}</p>
-        {request.sentMinor !== null ? (
-          <p className="text-muted-foreground">Sends {formatMinor(request.sentMinor, request.currency)}</p>
+        {sentMinor !== null ? (
+          <p className="text-muted-foreground">Sends {formatMinor(sentMinor, request.currency)}</p>
         ) : null}
         {fee ? (
           <p className="text-muted-foreground">

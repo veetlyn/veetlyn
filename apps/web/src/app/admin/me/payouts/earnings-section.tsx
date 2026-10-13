@@ -82,12 +82,14 @@ function TeamEarningsCard({
             {request.isPending ? "Requesting…" : "Request payout"}
           </Button>
         </div>
-        {net !== null ? (
+        {net === null ? null : net.tooSmall ? (
+          <p className="text-sm text-muted-foreground">{net.tooSmall}</p>
+        ) : (
           <p className="text-sm text-muted-foreground">
             You'll receive about {formatMinor(net.netMinor, earnings.currency)} after PayPal's fee of about{" "}
             {formatMinor(net.feeEstimateMinor, earnings.currency)}.
           </p>
-        ) : null}
+        )}
         {earnings.reservedMinor > 0 ? (
           <p className="text-sm text-muted-foreground">A payout is already in progress for this team.</p>
         ) : null}

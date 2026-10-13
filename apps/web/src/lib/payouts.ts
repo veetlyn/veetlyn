@@ -1,4 +1,9 @@
-import { estimatePayoutFeeMinor, type MoneyCurrency, type PayoutRequestStatus } from "@jendal-workspace/core";
+import {
+  estimatePayoutFeeMinor,
+  type MoneyCurrency,
+  type PayoutRequestStatus,
+  payoutSentProblem,
+} from "@jendal-workspace/core";
 
 type PayoutState = { status: PayoutRequestStatus; uncertain: boolean };
 
@@ -30,14 +35,14 @@ export const MEMBER_STATUS_LABELS = {
 
 export type PayoutAction = "approve" | "reject" | "retry" | "refresh";
 
-// A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once. A `sending`
-// request that is not uncertain has a PayPal call in flight and must be left alone.
+// A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once, and cannot be
+// rejected. A `sending` request that is not uncertain has a PayPal call in flight and must be left alone.
 export function payoutActions(request: PayoutState): readonly PayoutAction[] {
   switch (request.status) {
     case "requested":
       return ["approve", "reject"];
     case "queued":
-      return ["retry"];
+      return request.uncertain ? ["retry"] : ["reject", "retry"];
     case "sending":
       return request.uncertain ? ["retry"] : [];
     case "sent":
@@ -65,7 +70,25 @@ export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor
   return null;
 }
 
-export type PayoutNet = { feeEstimateMinor: number; netMinor: number };
+// The amount a send claimed stays on the request after it goes back to the queue or fails, when nothing was sent.
+export function payoutSentMinor(request: { status: PayoutRequestStatus; sentMinor: number | null }): number | null {
+  const sent = request.status === "sending" || request.status === "sent" || request.status === "succeeded";
+  return sent ? request.sentMinor : null;
+}
+
+// The member bears PayPal's fee up to the estimate kept back from their payout; the team absorbs the rest. Without
+// a usable fee from PayPal the estimate stood in for it.
+export function memberPayoutFeeMinor(request: {
+  status: PayoutRequestStatus;
+  feeMinor: number | null;
+  feeEstimateMinor: number | null;
+}): number | null {
+  if (request.status !== "succeeded" || request.feeEstimateMinor === null) return null;
+  return Math.min(request.feeMinor ?? request.feeEstimateMinor, request.feeEstimateMinor);
+}
+
+// tooSmall is the reason the request would be refused when what is left falls below PayPal's minimum payout.
+export type PayoutNet = { feeEstimateMinor: number; netMinor: number; tooSmall: string | null };
 
 // What the member receives out of a requested amount once PayPal's fee estimate comes off it.
 export function payoutNetMinor(input: {
@@ -75,5 +98,6 @@ export function payoutNetMinor(input: {
   receiverCountry: string | null;
 }): PayoutNet {
   const feeEstimateMinor = estimatePayoutFeeMinor(input);
-  return { feeEstimateMinor, netMinor: Math.max(0, input.amountMinor - feeEstimateMinor) };
+  const sentMinor = input.amountMinor - feeEstimateMinor;
+  return { feeEstimateMinor, netMinor: Math.max(0, sentMinor), tooSmall: payoutSentProblem(sentMinor) };
 }
