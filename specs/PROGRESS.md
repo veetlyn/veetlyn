@@ -4,27 +4,34 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 ## Now
 
-- **Date:** 2026-10-13. **main:** `2e1312e` (`specs/` moved into the repository; last code merge `2f2cb35`).
-- **Step:** run A (action and query catalog) design written: [`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md). Waiting for Mouhamed's review.
-- **Next:** after approval, write the run A plan in `platform/plans/` (writing-plans), then execute it task by task (see "How a run works").
-- **Deadline:** hackathon submission Nov 12, 2026, 12:00 pm PST ([`hackathon/README.md`](hackathon/README.md)). Keep the last five days for deploying, walkthrough fixes and the video.
-- **Waiting on Mouhamed:** review of the run A design.
+- **Date:** 2026-10-13. Last code merge on main: `2f2cb35` (R5b-1). Check `git log` for the latest docs commits.
+- **Goal:** the demo video and the sandbox app live at `payleor.com` / `payleor.app`, submitted before Nov 12, 2026, 12:00 pm PST. **Code finished by Oct 31** (AI tooling ends around Nov 1); Nov 1–12 is fixes, README, Devpost and the video.
+- **Step:** the program and the run A design were revised after four independent reviews (codebase fit, security, program and demo, handoff). Waiting for Mouhamed's review of [`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md) (A1 and A2) and the spike scope in the program §4.
+- **Next:** write the A1 plan and the spike plan, then run them in parallel (Oct 14–15).
+- **Waiting on Mouhamed:** design review; for the spike, signed-in Claude and ChatGPT accounts that can add a custom connector (check whether ChatGPT developer mode needs a paid plan); for run E, three Discord accounts and the test server.
+- **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.
 
 ## Run board
 
 ### Hackathon program (current)
 
-From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-agentic-surfaces-program.md). Each run: design → plan → build → merge → walkthrough → outcome recorded.
+From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-agentic-surfaces-program.md) §4. Each run: design → plan → build → merge → walkthrough → outcome recorded. Cut order if a run slips: AI seller, Discord client buttons, webhooks, AG Studio agent.
 
-| Run | Scope | Design | Plan | Status |
-|---|---|---|---|---|
-| A | Action and query catalog, actors, client contacts, action log, payout events | [design](platform/2026-10-13-action-catalog-design.md) | not written | Design waiting for review |
-| B | Delivery pipeline (webhook and email targets), public API, webhooks, offering fulfilment type, demo AI seller | not written | | Not started |
-| C | Client's AI plugin (MCP server, MCP Apps widgets, client accounts, MCP authorization) | not written | | Not started |
-| D | Web agents (intake agent, team copilot) | not written | | Not started |
-| E | Discord ticket flow on the conversation layer, `/ask` | [source design](platform/2026-10-13-discord-ticket-flow-design.md) (revise first) | | Not started |
-| F | Slack ops (team-only install, payout approvals, alerts, ops assistant), payout fixes | not written | | Not started |
-| G | `dash.` rename, deploy, seeded demo sellers, the video (maintenance batch first if time allows) | not written | | Not started |
+| Dates | Run | Scope | Design | Plan | Status |
+|---|---|---|---|---|---|
+| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | not written | Waiting for review |
+| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | not written | Design waiting for review |
+| Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | not written | Design waiting for review |
+| Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | Not started |
+| Oct 20–23 | C | Client's AI plugin: offering search (opt-in listing), request, status, widgets with widget-only accept, pay page, client OAuth | after the spike | | Not started |
+| Oct 24–25 | B | Delivery pipeline with email and webhooks, API keys, AI seller endpoints, payout events, fulfilment type | not written | | Not started |
+| Oct 26–27 | E | Discord minimum: channel for any project, card, notices, `/deliver`, client buttons, draft confirmation | [source design](platform/2026-10-13-discord-ticket-flow-design.md) (revise to the minimum first) | | Not started |
+| Oct 28–29 | D | Intake agent proposals; AG Studio team analytics with the copilot (agent-toolkit) | not written | | Not started |
+| Oct 30 | AI seller | Separate Worker on the public API (optional, first to cut) | not written | | Not started |
+| Oct 31 | Freeze | Full demo walkthrough on the deployed hosts | | | |
+| Nov 1–12 | Submission | Fixes, seed data, AG Studio key (Nov 1), README, Devpost, public repo with licence, video | | | |
+
+After the hackathon: Slack ops, the rest of Discord, payout fixes, full books, billing, domain errors, cases.
 
 ### Done before the program
 
@@ -54,30 +61,41 @@ The sellers design §11 ([`platform/2026-10-07-sellers-minimal-flow-design.md`](
 
 1. **Design.** Brainstorm with Mouhamed (one question at a time, approaches with a recommendation, design sections approved one by one). Write the design in `platform/` with a date prefix, add a row to `README.md`, update **Now**. Mouhamed reviews the written design before planning.
 2. **Plan.** Write the plan in `platform/plans/`: base commit, branch, worktree, test database, facts with file and line references, tasks with checkboxes, a final controller task (review, merge, walkthrough), and an empty Outcome section.
-3. **Build.** One branch and worktree per run (`worktrees/<run>`), its own test database (`jendal_test_<run>`, created in the `jendal-pg` container; the Vitest global setup migrates it; point the worktree's `.env.test.local` at it). One worker per task; the controller reviews each task and the whole branch. Checks per task: `npx vitest run <paths>`, `pnpm check-types`, `pnpm lint`. Conventional Commits ending with `Co-authored-by: factory-droid[bot] <138933559+factory-droid[bot]@users.noreply.github.com>`. Never push.
+3. **Build.** One branch and worktree per run (for A1: branch `a1-action-registry`, worktree `worktrees/a1-action-registry`), its own test database (`jendal_test_a1`; see Environment for the commands). One worker per task; the controller reviews each task and the whole branch. Checks per task: `npx vitest run <paths>`, `pnpm check-types`, `pnpm lint`. Conventional Commits ending with `Co-authored-by: factory-droid[bot] <138933559+factory-droid[bot]@users.noreply.github.com>`. Never push.
 4. **Merge.** `git merge --no-ff` into main, `pnpm install`, `pnpm db:migrate:dev` (check the dev data before and after), restart the dev stack.
 5. **Walkthrough.** Over the tunnel in the PayPal sandbox, with Playwright. Mouhamed does the steps PayPal refuses to automate (paying in the PayPal popup, Payouts Web uploads). Fixes found go in a follow-up branch.
 6. **Record.** Fill the plan's Outcome, set the design's status, move finished backlog rows to Done and add new findings to Open, update the run board and **Now**. Remove the worktree, branch and test database.
 
 Spec and plan edits are committed on main (`docs(specs): …`), not on feature branches.
 
+The agent tooling named in plans (writing-plans, subagent-driven-development, explorer and worker subagents, Playwright and Chrome DevTools for walkthroughs) are Droid skills and subagents. A person can follow the same steps by hand: the plan's tasks are self-contained.
+
 ## Environment
 
-- **Repository:** `github.com/payleor/payleor` (private). Local layout: `/home/mouhamed/dev/repos/jendal/` holds `worktrees/main` (main), run worktrees under `worktrees/`, and `refs/` (PayPal and stack reference clones, not in git; guide copies in [`references/`](references/README.md)). `jendal/specs` is a symlink to `worktrees/main/specs`.
-- **Stack:** pnpm and turbo monorepo; api Worker (Hono + tRPC, `apps/server`), web Worker (vinext, `apps/web`), Postgres through Hyperdrive, Drizzle, Better Auth, evlog, Alchemy for infrastructure (`packages/infra/alchemy.run.ts`). Design details: [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md).
-- **Dev:** Postgres in Docker (`jendal-pg`, port 5432; dev database `jendal-dev`), MinIO for R2 (`mdbm-start-minio`). `pnpm dev` from `worktrees/main`; `pnpm tunnel` serves `admin.payleor.com` and `*.payleor.app` (a bare `cloudflared tunnel run` loads no ingress rules and every host returns 503). After a merge that changes dependencies, the web app can load two copies of React (blank page, "Invalid hook call"): stop dev, delete `apps/web/node_modules/.vite`, restart, clear the browser cache.
-- **Secrets:** only in ignored env files (`apps/server/.env`, `.env.test.local`) and the PayPal developer dashboard. Never print or commit them.
+- **Repository:** `github.com/payleor/payleor` (private until the submission, then public with a licence). Local layout: `/home/mouhamed/dev/repos/jendal/` holds `worktrees/main` (main), run worktrees under `worktrees/`, `refs/` (PayPal and stack reference clones, not in git; guide copies in [`references/`](references/README.md)) and `pitch/` (personal documents, never in git). `jendal/specs` is a symlink to `worktrees/main/specs`. Only `worktrees/main` is active; the other worktrees are leftovers of merged runs. "jendal" is the code name; the product is Payleor.
+- **Stack:** pnpm and turbo monorepo; api Worker (Hono + tRPC, `apps/server`), web Worker (vinext, `apps/web`), Postgres through Hyperdrive, Drizzle, Better Auth, evlog, Alchemy for infrastructure (`packages/infra/alchemy.run.ts`). Hosting: Cloudflare Workers Paid. Domains: `payleor.com` (platform hosts) and `payleor.app` (seller pages and portals as subdomains). Design details: [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md).
+- **Set up from scratch:**
+  1. `pnpm install` in `worktrees/main` (Varlock generates the env accessors).
+  2. Env values: the keys are listed in each `.env.schema` (`apps/server`, `apps/web`, `packages/db`, `packages/infra`); values come from Mouhamed or the dashboards (PayPal developer, Cloudflare, Discord developer portal, Resend, AgentMail). They go in ignored env files (`apps/server/.env`, `.env.test.local`). Never print or commit them.
+  3. Postgres: `docker run -d --name jendal-pg --restart unless-stopped -p 5432:5432 -e POSTGRES_PASSWORD=<choose> -v jendal-pg-data:/var/lib/postgresql/data postgres:17`, then `docker exec jendal-pg createdb -U postgres jendal-dev`. `DEV_DATABASE_URL` points at it; `pnpm db:migrate:dev` migrates it.
+  4. Files: R2 is emulated by `alchemy dev` (`/cdn-cgi/local/r2/s3` on the api port); no MinIO is needed (the `mdbm-start-minio` container on this machine belongs to another project).
+  5. Tunnel: `pnpm tunnel:setup` once (Cloudflare access), then `pnpm tunnel` serves `admin.payleor.com` and `*.payleor.app` (a bare `cloudflared tunnel run` loads no ingress rules and every host returns 503).
+  6. Dev: `pnpm dev` from `worktrees/main`. Stop with Ctrl-C; if a port stays taken, find the leftover `workerd`, `vite` or `alchemy` process with `ss -ltnp` and stop it. After a merge that changes dependencies, the web app can load two copies of React (blank page, "Invalid hook call"): stop dev, delete `apps/web/node_modules/.vite`, restart, clear the browser cache.
+- **Tests:** `pnpm test` (Vitest) uses `TEST_DATABASE_URL` from `.env.test.local`; the global setup migrates and resets it and refuses any database whose name lacks "test". Per run: `docker exec jendal-pg createdb -U postgres jendal_test_<run>`, copy `.env.test.local` into the worktree and point `TEST_DATABASE_URL` at it; drop it when the run is done. Before each commit: `pnpm check-types` and `pnpm lint`.
 - **Sandbox walkthrough accounts:**
-  - Team `walk-crew` (services team, merchant `TR4W3HLBT75MG`, seller 3 `sb-h9zfs53161788@business.example.com`). Owner and payee "Walk Through" (`mdbm-agent@agentmail.to`, payout destination buyer 1 `AWVNN2ZZ6ZWT4`). Extra admins `mdbm-agent+admin2@agentmail.to` and `mdbm-agent+admin3@agentmail.to`.
-  - Buyers: buyer 2 `sb-vexyv53252581@personal.example.com` pays project invoices.
-  - The AgentMail inbox (`mdbm-agent@agentmail.to`, plus addresses included) is read with the `AGENT_MAIL_*` values in `apps/server/.env`. Sign-ups from scripts need the Origin `https://admin.payleor.com`.
+  - Team `walk-crew` (services team, merchant `TR4W3HLBT75MG`, seller 3 `sb-h9zfs53161788@business.example.com`). Owner and payee "Walk Through" (`mdbm-agent@agentmail.to`, payout destination buyer 1, payer ID `AWVNN2ZZ6ZWT4`). Extra admins `mdbm-agent+admin2@agentmail.to` and `mdbm-agent+admin3@agentmail.to`. Solo seller `walk-crew-solo`.
+  - Buyer 2 `sb-vexyv53252581@personal.example.com` pays project invoices.
+  - Payleor sign-in: email and password. Passwords are not kept in the repository; use "Forgot password" and read the reset email in the AgentMail inbox (`AGENT_MAIL_*` values in `apps/server/.env`; plus addresses arrive in the same inbox). Sign-ups from scripts need the Origin `https://admin.payleor.com`.
+  - PayPal sandbox accounts and passwords: developer.paypal.com > Sandbox > Accounts. Mouhamed pays in the PayPal popup and does Payouts Web uploads (PayPal refuses automation there).
   - walk-crew ends R5b-1 with automatic payouts off and Custom payout rules (see the R5b-1 plan's Outcome).
+  - Discord (needed from run E): the Discord application and its test server are not documented yet; Mouhamed provides three accounts (admin, freelancer, client) before run E.
 
 ## Decisions log (latest first)
 
-- 2026-10-13: Backlog items without a run got owners: client email notifications in run B, payout fixes in run F, minor items in a maintenance batch before G if time allows.
+- 2026-10-13: After four independent reviews: code finished by Oct 31; run A split into A1 (registry) and A2 (client contacts) with the review fixes; a plugin spike in parallel with A1; the first deploy to our domains moves to run H (Oct 18–19); runs C, B, E, D in that order with minimum scopes; Slack after the hackathon; the AG Grid sponsor prize (AG Studio analytics in run D) alongside the grand prize and the Agentic Commerce and PayPal + AI honorable mentions; a member of a project's team is never its client; personal pitch documents kept out of git.
+- 2026-10-13: Backlog items without a run got owners: client email notifications in run B, payout fixes in run F, minor items in a maintenance batch before G if time allows (superseded by the entry above).
 - 2026-10-13: `specs/` moved into the repository with this progress file and [`BACKLOG.md`](BACKLOG.md); together with the designs and plans they replace any separate handoff document.
-- 2026-10-13: Run A design approved section by section: registry of action definitions, client contacts in run A, the delivery pipeline moved to run B.
+- 2026-10-13: Run A design sections approved in brainstorming (the written document still needed review): registry of action definitions, client contacts in run A, the delivery pipeline moved to run B.
 - 2026-10-13: Agentic surfaces program approved (runs A–G, demo story). Full AI seller support: any team plugs its own agent through the API and webhooks. Slack is team-only; Discord serves businesses with their clients.
 - 2026-10-13: Discord run 5b-2 designed, then reframed as run E.
 - Earlier decisions are recorded in each design's Decisions section and each plan's "Decisions during execution".

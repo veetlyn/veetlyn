@@ -1,62 +1,83 @@
 # Agentic surfaces: program for the hackathon
 
-**Date:** 2026-10-13. **Status:** approved by Mouhamed in brainstorming on 2026-10-13. Each run gets its own design and plan.
+**Date:** 2026-10-13. **Status:** approved by Mouhamed on 2026-10-13, then revised the same day after four independent reviews (codebase fit, security, program and demo, handoff) and Mouhamed's decisions: code finished by Oct 31, Slack after the hackathon, the AG Grid sponsor prize alongside the main prizes. Each run gets its own design and plan.
 
-**Replaces:** the run order after 5b-1 in the sellers design (§11: 5b-2 Discord, 5b-3 books, 6 intake agent, 7 deploy, 8 billing). The Discord design (`2026-10-13-discord-ticket-flow-design.md`) becomes the source for run E.
+**Goal that decides every trade-off:** a demo video under 3 minutes and the sandbox app live at our domains (`payleor.com` for the platform, `payleor.app` for seller pages and portals), submitted on Devpost before **Nov 12, 2026, 12:00 pm PST**. Code is finished by **Oct 31**, because the AI tooling subscriptions end around Nov 1 (`plans/2026-10-07-hackathon-one-flow.md`).
+
+**Replaces:** the run order after 5b-1 in the sellers design (§11). The Discord design (`2026-10-13-discord-ticket-flow-design.md`) is the source for run E.
 
 ## 1. Positioning
 
 AI tools (Claude, Lovable, Bolt, v0 and specialised generators) now produce generic outputs in minutes. People still pay for judgment, accountability, expertise, integration, the last stretch AI gets wrong, and an ongoing relationship. Sellers become human and AI studios, and some become fully automated agents.
 
-Payleor is the money flow and the trust around paid work: quote, pay, deliver, accept, resolve, pay out. It works the same whether a person, a person with AI tools, or an agent does the work. The cheaper outputs get, the more acceptance, recourse, evidence and refunds matter.
+Payleor is the money flow and the trust around paid work: quote, pay, deliver, accept, resolve, pay out. It works the same whether a person, a person with AI tools, or an agent does the work. The cheaper outputs get, the more acceptance, recourse, evidence and refunds matter. Payleor is never a party to the deal: the team is the merchant and PayPal moves the money.
 
-- **When your AI needs a professional, it hires through Payleor.** The client's AI tries the task, and when it needs accountability or expertise it hires a seller through the Payleor plugin.
-- **Offerings say how they are fulfilled:** by people, automated, or both (for example "draft in 10 minutes for $29, or human-polished in 3 days for $350"). Buyers always see it.
+- **When your AI needs a professional, it hires through Payleor.** The client's AI searches the sellers who chose to be listed and hires one through the Payleor plugin.
+- **Offerings say how they are fulfilled:** by people, automated, or both. Buyers always see it.
 - **AI can hire AI.** Any team can plug its own agent into Payleor through the API and webhooks. The buyer still approves every payment in PayPal, and the team's payout rules still apply.
 
 ## 2. Surfaces
 
-| Surface | Who is there | What they do | Agent there |
-|---|---|---|---|
-| Client's AI (Payleor plugin for ChatGPT and Claude, MCP Apps) | Clients, and agents acting for them | Find sellers, request, compare, accept, pay, follow, accept delivery | The client's own AI calls Payleor's tools; Payleor's widgets show quotes, payment and status |
-| Web: seller page and client page | Clients | Request, accept, pay, review | Intake agent; a project assistant on the client page |
-| Web: dashboard | Team admins and members | Everything | Team copilot: drafts quotes, answers questions, prepares payouts |
-| Discord | Businesses serving their clients in the same server | Ticket flow (a channel per project), member payouts | An assistant in the project channel (`/ask`), drafting for a person to confirm |
-| Slack | The team only | Support, disputes, financial results, payout approvals, alerts | Ops assistant |
-| Public API and webhooks | Teams' own agents and bots | The same actions as the web | The team's own |
+| Surface | Who is there | What they do | Agent there | Before Nov 12 |
+|---|---|---|---|---|
+| Client's AI (Payleor plugin for Claude and ChatGPT, MCP Apps) | Clients | Search listed offerings, request, see quotes, accept and pay (widget buttons), follow, accept delivery | The client's AI calls Payleor's read and request tools; commitments need a widget button | Yes (run C) |
+| Web: seller page, client page, pay page | Clients | Request, accept, pay, review | Intake agent drafts the team's quote | Yes |
+| Web: dashboard | Team admins and members | Everything; team analytics in AG Studio | Team copilot as AG Studio's agent | Yes (run D) |
+| Discord | Businesses serving their clients in the same server, and teams that run their work there | Project channel per project (client inside when the client is on Discord, team-only otherwise), card, notices, `/deliver`, client buttons, confirming agent drafts | Proposal cards a person confirms | Yes, minimum (run E) |
+| Public API and webhooks | Teams' own agents | The same actions as the web | The team's own | Minimum (run B) |
+| Slack | The team only | Support, disputes, financial results, payout approvals, alerts | Ops assistant | After the hackathon |
 
-Clients are never in Slack. A project records the client's home surface (web and email, Discord, or their AI), and notices to the client go there. A project started outside Discord can still get a team-only Discord channel.
+A project records the client's home surface (web and email, Discord, or their AI). Notices to the client go there, and clients whose home is their AI also get email, because ChatGPT and Claude cannot receive pushes; the widget shows the current state on the next tool call.
 
 ## 3. Architecture principles
 
-1. **Core** owns money and projects and knows nothing about chat or agents. A client is a neutral contact with identities (email, Discord user, Slack user, Payleor account).
-2. **Action catalog:** every action that changes something, typed with zod, with who may perform it. The web, the API, Discord, Slack and the agents all call the same entry, and the agents use it as their tools.
-3. **Query catalog:** every read (project status, earnings, financial results, disputes), for screens and for agents.
-4. **Actors and authority:** every action records the actor (a person, an agent acting for someone, an API key), on whose behalf, and the surface. Agents read freely and draft. A person confirms anything that commits the team or moves money, except what a team has delegated (payout rules, automated offerings). Every payment needs the payer's PayPal approval.
-5. **Conversation layer:** rooms, participants, cards and notices are neutral; Discord and Slack are adapters with renderers. Delivery goes through the outbox and one delivery pipeline with targets (webhook, Discord, Slack).
-6. **Natural language in Discord** starts with a `/ask` command (HTTP interactions). Reading channel messages needs the Gateway WebSocket (a Durable Object) and the Message Content intent; that comes later. Slack delivers channel messages over HTTP.
+1. **Core** owns money and projects and knows nothing about chat or agents. A client is a contact with identities (email, Payleor account, Discord user).
+2. **Action catalog:** every action that changes something, typed with zod, with who may perform it. The web, the API, MCP, Discord and the agents call the same `perform`; agents use it as their tools.
+3. **Query catalog:** reads for screens and agents (project status, offerings, team results).
+4. **Actors and authority:**
+   - Every action records the actor (a person, a client holding a link, an API key, an agent acting for a person), on whose behalf, and the surface.
+   - **A member of the project's team is never its client**, whatever link, contact or email they hold.
+   - Only identities Payleor verified count (an email whose link was clicked, a Discord user who interacted, a signed-in account).
+   - Agents read freely and draft. A person with the right grant confirms anything that commits the team or the client or moves money; an agent never confirms, and an API key never acts as a client.
+   - Accepting a quote or a delivery from an AI client needs a press on a Payleor widget button (a tool only the widget can call), so the model cannot commit for the client.
+   - Every payment needs the payer's PayPal approval on the pay page.
+5. **Delivery:** the outbox and one delivery pipeline with targets (email, webhooks, Discord; Slack later). Discord is never called inside a database transaction.
+6. **Hosts:** Cloudflare Workers (Workers Paid) deployed with Alchemy. `payleor.com` carries the platform hosts (`dash.` after the rename, the api Worker, OAuth and MCP endpoints), `payleor.app` carries seller pages and portals as subdomains. The demo runs on these hosts in the PayPal sandbox.
 
-## 4. Runs
+## 4. Runs (code finished Oct 31)
 
-| Run | Builds |
-|---|---|
-| A | Action and query catalog, actor model, client contacts, action log, payout events in the outbox (`2026-10-13-action-catalog-design.md`) |
-| B | The generic delivery pipeline (outbox delivery table, queue, cron catch-up) with webhook and email targets (client notifications, Cloudflare Email first), public API (keys, `/v1`, idempotency, OpenAPI), signed outgoing webhooks with a delivery log, the offering fulfilment type, a demo AI seller built only on the API and webhooks |
-| C | Client's AI plugin: MCP server with MCP Apps widgets, client accounts and MCP authorization (auth host), the client tools |
-| D | Web agents: the intake agent and the team copilot |
-| E | Discord ticket flow on the conversation layer (from the Discord design), with `/ask` |
-| F | Slack ops: team-only install, payout approvals, alerts, ops assistant with financial results from the ledger; the payout fixes from the backlog |
-| G | The `dash.` rename, deploy, seeded demo sellers, the video. Before it, a maintenance batch for the minor backlog items if time allows |
+Each run is about two days of subagent work with review, merge and walkthrough. Dates are targets; the run board in `../PROGRESS.md` tracks the real state.
 
-After the hackathon: full books (journal, statements, reconciliation, reserve), billing, the Discord Gateway agent, cases.
+| Dates | Run | Delivers |
+|---|---|---|
+| Oct 14–15 | **S: plugin spike** (in parallel with A1) | A throwaway MCP server on the tunnel with Better Auth as the OAuth provider and one MCP Apps widget, connected in Claude and in ChatGPT; a widget button that opens a sandbox `/pay/{token}` page through the host's open-link request. Output: a facts note and go or no-go per AI client, before run C is designed |
+| Oct 14–15 | **A1: action registry** | Registry, `perform`, actors, `ActionError`, action log, for the actions the demo and the later surfaces use (`2026-10-13-action-catalog-design.md`) |
+| Oct 16–17 | **A2: client contacts** | Contacts and verified identities replacing the project's client columns, revocable client links tied to a contact, the client rule (team members excluded), the safe migration |
+| Oct 18–19 | **H: hosts and first deploy** | The `dash.` rename; the first deploy to our domains in the sandbox (both Workers, database, webhooks registered, PayPal return URLs); the sandbox partner app renamed from "Test Store" to Payleor. Every later registration (OAuth clients, Discord, PayPal) uses the final hosts |
+| Oct 20–23 | **C: client's AI plugin** | MCP server and widgets on the deployed hosts: offering search over listed sellers (sellers opt in), request, status, quote and delivery widgets with widget-only accept buttons, pay through the pay page, client accounts with OAuth |
+| Oct 24–25 | **B: delivery and API (minimum)** | The delivery pipeline (outbox delivery table, queue, cron catch-up) with email (client notices, Cloudflare Email first) and signed webhooks; API keys with explicit permissions; the endpoints an AI seller needs; payout events in the outbox; the offering fulfilment type |
+| Oct 26–27 | **E: Discord (minimum)** | A project channel for any project of a team with Discord (team-only when the client is not on Discord), the pinned card and notices, `/deliver`, the client's buttons, a card to confirm an agent's draft. Starts with the S2 real-server check |
+| Oct 28–29 | **D: agents and analytics** | The intake agent drafts the quote as a proposal on any new request (any surface), confirmed on the web or in Discord. Team analytics in AG Studio with custom widgets (money flow, payouts, agent and human work) and the team copilot as Studio's agent, reading the ledger and PayPal through agent-toolkit with the team's credentials |
+| Oct 30 | **AI seller** (optional) | A separate Worker that uses only the public API and webhooks: quotes a fixed price and delivers an image at once |
+| Oct 31 | **Freeze** | Full walkthrough of the demo on the deployed hosts; features end |
+| Nov 1–12 | **Submission** | Fixes only; demo seed data; AG Studio trial key (requested Nov 1 so it covers judging, Dec 1–15); README, Devpost text, tools list, testing access; the repository made public with a licence GitHub detects; the video |
 
-Runs have taken about a day each with the walkthrough. Keep each run lean, and keep the last five days before Nov 12 for deploying, walkthrough fixes and the video.
+**Cut order** if a run slips: the AI seller, then the Discord client buttons (the team side stays), then webhooks, then the AG Studio agent (the analytics page stays).
+
+**After the hackathon:** Slack ops; Discord amendments, payouts, `/ask` and archiving; the payout fixes in the backlog; full books (journal, statements, reconciliation, reserve); billing; moving use cases to domain errors; cases and disputes.
 
 ## 5. Demo (under 3 minutes)
 
-1. In Claude or ChatGPT: "Find someone to design a logo for my bakery, under $400, in 5 days." The plugin returns an instant AI seller ($29, now) and a human studio ($350, 5 days).
-2. The user picks the studio. A project channel opens in the studio's Discord; the intake agent drafts the quote and the admin confirms it.
-3. The quote widget appears in the AI; the client pays with PayPal.
-4. The freelancer delivers in Discord; the client accepts in the AI.
-5. The payout rules pay the freelancer automatically. In Slack the admin asks "what did we make this week?".
-6. Optionally, a second purchase from the AI seller, delivered at once.
+1. In Claude (or ChatGPT): "Find someone to design a logo for my bakery, under $400, in 5 days." The plugin lists matching offerings, an instant AI seller ($29, now) and a human studio ($350, 5 days), each labelled with how it is fulfilled.
+2. The user picks the studio; the request reaches the team. The studio's Discord gets a project channel, the intake agent's draft quote appears as a card, and the admin confirms it.
+3. The quote widget appears in the AI. The user presses Accept, then pays the deposit with PayPal on the pay page (the human approval moment).
+4. The freelancer delivers with `/deliver` in Discord. The user asks "Is my logo ready?"; the delivery widget shows it; the user presses Accept delivery and pays the balance.
+5. The payout rules pay the freelancer (seeded team: hold 0). In the dashboard, the admin asks the copilot "What did we make this week?" and AG Studio adds the widget.
+6. Optional: a second purchase from the AI seller, delivered at once.
+
+## 6. Hackathon deliverables and prizes
+
+- **Targets:** a grand prize or the Best Use of Agentic Commerce and Best Use of PayPal + AI honorable mentions, plus the AG Grid sponsor prize (one honorable mention or grand prize plus one sponsor prize can be won, `../hackathon/rules.md`).
+- **PayPal surface shown:** Orders v2 with JS SDK v6 on the pay page, partner onboarding and platform fees, webhooks, Payouts with the payout rules, the reporting API through agent-toolkit, human approval before every payment.
+- **Submission checklist** (`../hackathon/README.md`): working project on the deployed hosts, text description, tools list, public GitHub repository with all source and a licence GitHub detects, testing access (sandbox accounts, how to connect the plugin, free until Dec 15), a public YouTube video under 3 minutes with no third-party music, English throughout, the note that the project started after Oct 1, 2026.
+- **Judges may score from the description, images and video alone,** possibly with automated AI analysis: the README and the Devpost text are first-class deliverables.

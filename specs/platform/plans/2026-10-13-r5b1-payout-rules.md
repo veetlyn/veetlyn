@@ -630,9 +630,9 @@ Depends on Task 0's captured log.
 
 ### Task 10: review, merge, walkthrough (controller)
 
-- [ ] Whole-branch review (explorer, heavy) against the spec and this plan; fix findings in the branch.
-- [ ] Merge `--no-ff` into main with the trailer; `pnpm install`; on the dev DB check `select payout_mode, count(*) from services_team_settings group by 1` before migrating, `pnpm db:migrate:dev`, then check `team_payout_rules` has one row per services team with the carried preset; restart the stack (stop script `/tmp/jendal-stop.sh`, clear `apps/web/node_modules/.vite`, `pnpm dev`); clear the browser cache via CDP.
-- [ ] Walkthrough over the tunnel in the sandbox (Mouhamed signs in to PayPal where needed):
+- [x] Whole-branch review (explorer, heavy) against the spec and this plan; fix findings in the branch.
+- [x] Merge `--no-ff` into main with the trailer; `pnpm install`; on the dev DB check `select payout_mode, count(*) from services_team_settings group by 1` before migrating, `pnpm db:migrate:dev`, then check `team_payout_rules` has one row per services team with the carried preset; restart the stack (stop script `/tmp/jendal-stop.sh`, clear `apps/web/node_modules/.vite`, `pnpm dev`); clear the browser cache via CDP.
+- [x] Walkthrough over the tunnel in the sandbox (Mouhamed signs in to PayPal where needed):
   1. walk-crew reconnects automatic payouts (first-party consent now lists transaction search and balance); card no longer asks to reconnect; `can_read_balance` true.
   2. Rules page: apply "Automatic", then customise: hold 0 days, second approver above $500 (needs a second admin: add one), balance floor $100, weekly payday today.
   3. A project completes for Walk Through (accept delivery on a seeded project, or run the existing project flow) → within one cron tick a project payout is created and sent; settle; ledger checked as in R5c.

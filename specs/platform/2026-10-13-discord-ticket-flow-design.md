@@ -1,10 +1,10 @@
 # Discord ticket flow (run 5b-2): design
 
-**Date:** 2026-10-13. **Status:** reframed on 2026-10-13 by the agentic surfaces program (`2026-10-13-agentic-surfaces-program.md`): this becomes run E. Its flow, money rules and Discord facts carry over; the Discord-only tables (§4.1–4.3) and the Discord-specific consumer give way to the program's conversation layer and delivery pipeline (run A), and the client's home surface decides where client notices go. Revise before run E's plan.
+**Date:** 2026-10-13. **Status:** reframed on 2026-10-13 by the agentic surfaces program (`2026-10-13-agentic-surfaces-program.md`): this becomes run E. Its flow, money rules and Discord facts carry over; the Discord-only tables (§4.1–4.3) and the Discord-specific consumer give way to the client contacts (run A2) and the delivery pipeline (run B), and the client's home surface decides where client notices go. Run E builds only the minimum the demo needs (program §4: a channel for any project, card, notices, `/deliver`, client buttons, draft confirmation); amendments, payouts, `/ask` and archiving come after the hackathon. Revise to that scope before run E's plan.
 
 **Builds on:** S2 Discord (`plans/2026-10-06-s2-discord.md`: sign-in with Discord, account and server link, `/payleor link`, `/payouts setup`, the interaction endpoint and the unused REST client), services spec §5.2 (every step on every surface), §6.6 (outbox), §8.1 (shared use cases) and §8.4 (Payleor's bot), R5b-1 payout rules (`2026-10-13-payout-rules-design.md`).
 
-**Run 5b order (decided):** 5b-1 payout rules (done), then 5b-2 Discord (this document), then 5b-3 books.
+**Run order:** first written as run 5b-2; now run E of the agentic surfaces program.
 
 ## 1. Goal
 
