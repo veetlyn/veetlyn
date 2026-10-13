@@ -65,10 +65,12 @@ function RequestRow({
   teamSlug,
   request,
   automaticPayoutsOn,
+  ownPayout,
 }: {
   teamSlug: string;
   request: TeamPayoutRequest;
   automaticPayoutsOn: boolean;
+  ownPayout: boolean;
 }) {
   const queryClient = useQueryClient();
   const approveDialogRef = useRef<HTMLDialogElement>(null);
@@ -147,7 +149,7 @@ function RequestRow({
       </td>
       <td className="px-4 py-3">
         <div className="flex justify-end gap-2">
-          {actions.includes("approve") ? (
+          {actions.includes("approve") && !ownPayout ? (
             <Button
               type="button"
               size="sm"
@@ -255,7 +257,17 @@ function WaitingForMembers({ waiting }: { waiting: TeamPayouts["waitingForDestin
   );
 }
 
-function RequestsList({ teamSlug, data, automaticPayoutsOn }: { teamSlug: string; data: TeamPayouts; automaticPayoutsOn: boolean }) {
+function RequestsList({
+  teamSlug,
+  data,
+  automaticPayoutsOn,
+  viewerId,
+}: {
+  teamSlug: string;
+  data: TeamPayouts;
+  automaticPayoutsOn: boolean;
+  viewerId: string;
+}) {
   if (data.payouts.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -295,6 +307,7 @@ function RequestsList({ teamSlug, data, automaticPayoutsOn }: { teamSlug: string
               teamSlug={teamSlug}
               request={request}
               automaticPayoutsOn={automaticPayoutsOn}
+              ownPayout={request.userId === viewerId}
             />
           ))}
         </tbody>
@@ -303,7 +316,7 @@ function RequestsList({ teamSlug, data, automaticPayoutsOn }: { teamSlug: string
   );
 }
 
-export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
+export function PayoutRequestsTable({ teamSlug, viewerId }: { teamSlug: string; viewerId: string }) {
   const requests = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   // Without automatic payouts an approved payout waits for an export, so the approve dialog says so.
   const credentials = useQuery({
@@ -326,7 +339,12 @@ export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
         </p>
       ) : (
         <>
-          <RequestsList teamSlug={teamSlug} data={requests.data} automaticPayoutsOn={automaticPayoutsOn} />
+          <RequestsList
+            teamSlug={teamSlug}
+            data={requests.data}
+            automaticPayoutsOn={automaticPayoutsOn}
+            viewerId={viewerId}
+          />
           <WaitingForMembers waiting={requests.data.waitingForDestination} />
         </>
       )}

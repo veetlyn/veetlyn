@@ -12,7 +12,7 @@ import { PayoutCredentialsCard } from "./payout-credentials-card";
 import { PayoutRequestsTable } from "./payout-requests-table";
 import { PayoutsWebSection } from "./payouts-web-section";
 
-export default function TeamPayouts({ teamSlug }: { teamSlug: string }) {
+export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; viewerId: string }) {
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   if (result.isPending) return <Loader />;
@@ -51,7 +51,7 @@ export default function TeamPayouts({ teamSlug }: { teamSlug: string }) {
           </p>
           <PayoutCredentialsCard teamSlug={team.slug} />
           <PayoutsWebSection teamSlug={team.slug} />
-          <PayoutRequestsTable teamSlug={team.slug} />
+          <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
         </>
       )}
     </main>
