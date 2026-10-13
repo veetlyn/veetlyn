@@ -145,14 +145,17 @@ export const payoutsRouter = router({
   request: protectedProcedure
     .input(z.object({ teamSlug: z.string().trim().toLowerCase().min(1), amount: z.string().trim().min(1).max(32) }))
     .mutation(async ({ ctx, input }) =>
-      requestPayout(ctx.db, { userId: ctx.session.user.id, teamSlug: input.teamSlug, amount: input.amount }),
+      requestPayout(
+        { db: ctx.db, payouts: ctx.payouts, now: ctx.now },
+        { userId: ctx.session.user.id, teamSlug: input.teamSlug, amount: input.amount },
+      ),
     ),
 
   mine: protectedProcedure.query(async ({ ctx }) => getMemberPayouts(ctx.db, ctx.session.user.id)),
 
   list: servicesTeamProcedure.query(async ({ ctx }) => {
     requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
-    return listTeamPayouts(ctx.db, ctx.servicesTeam.id);
+    return listTeamPayouts(ctx.db, ctx.servicesTeam);
   }),
 
   reject: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {
@@ -168,7 +171,7 @@ export const payoutsRouter = router({
     requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
     const payouts = requirePayoutServices(ctx.payouts);
     return approvePayoutRequest(
-      { db: ctx.db, payouts },
+      { db: ctx.db, payouts, now: ctx.now },
       { team: ctx.servicesTeam, requestId: input.requestId, deciderId: ctx.session.user.id },
     );
   }),
@@ -176,7 +179,7 @@ export const payoutsRouter = router({
   retry: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {
     requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
     const payouts = requirePayoutServices(ctx.payouts);
-    return retryPayout({ db: ctx.db, payouts }, { team: ctx.servicesTeam, requestId: input.requestId });
+    return retryPayout({ db: ctx.db, payouts, now: ctx.now }, { team: ctx.servicesTeam, requestId: input.requestId });
   }),
 
   refresh: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {

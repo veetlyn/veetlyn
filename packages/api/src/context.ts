@@ -58,4 +58,6 @@ export type Context = {
   // Absent when no payout credentials key is configured; turning on automatic payouts and sending payouts then fail
   // with PRECONDITION_FAILED.
   payouts?: PayoutServices;
+  // The clock payout decisions read (paydays); tests fix it. Absent means the system clock.
+  now?: () => Date;
 };

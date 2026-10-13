@@ -14,7 +14,7 @@ import { trpc } from "@/utils/trpc";
 
 import { ConfirmDialog } from "./confirm-dialog";
 
-type TeamPayoutRequest = inferRouterOutputs<AppRouter>["payouts"]["list"][number];
+type TeamPayoutRequest = inferRouterOutputs<AppRouter>["payouts"]["list"]["payouts"][number];
 
 function RequestRow({
   teamSlug,
@@ -173,7 +173,7 @@ export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
         <p role="alert" className="text-sm text-destructive">
           {requests.error.message}
         </p>
-      ) : requests.data.length === 0 ? (
+      ) : requests.data.payouts.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No payout requests yet. Members ask for a payout of their earnings from their own Payouts page.
         </p>
@@ -200,7 +200,7 @@ export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {requests.data.map((request) => (
+              {requests.data.payouts.map((request) => (
                 <RequestRow key={request.id} teamSlug={teamSlug} request={request} automaticPayoutsOn={automaticPayoutsOn} />
               ))}
             </tbody>

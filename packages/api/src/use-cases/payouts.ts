@@ -1,15 +1,18 @@
 import {
+  decidePayout,
   estimatePayoutFeeMinor,
   ledgerAccounts,
   parseMajorAmount,
   payoutAmountProblem,
   payoutBatchOutcome,
+  type PayoutFacts,
   payoutFeeRecoveredTransfer,
   payoutFeesTransfer,
   payoutItemOutcome,
   payoutReleasedTransfer,
   payoutRequestedTransfer,
   type PayoutRequestStatus,
+  type PayoutRules,
   payoutSentProblem,
   payoutSucceededTransfer,
   type ServicesTeamRecord,
@@ -25,22 +28,31 @@ import {
 } from "@jendal-workspace/db/repositories/payout-credentials";
 import {
   getPayoutRequest,
+  insertPayoutApproval,
   insertPayoutRequest,
+  listPayoutApproverIds,
   listTeamPayoutRequests,
   listUserPayoutRequests,
   lockPayoutRequest,
   type PayoutRequestRow,
+  type TeamPayoutRequestRow,
   updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
+import { getPayoutRules } from "@jendal-workspace/db/repositories/payout-rules";
 import { getPayoutDestination, listMemberEarnings, type MemberEarningsRow } from "@jendal-workspace/db/repositories/payouts";
 import { getTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
-import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import {
+  findServicesTeamBySlug,
+  getServicesTeamSettings,
+  listServicesTeamMembers,
+} from "@jendal-workspace/db/repositories/services-teams";
 import { type PayoutBatch, type PayoutItem, type PayPalClient, PayPalError } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
 import { credentialsMatchTeam, payoutClientFromCredentials } from "./payout-credentials";
+import { adminCountOf, type PayoutRulesTeam } from "./payout-rules";
 import {
   isPayPalRequestInProgress,
   isSettledPayPalRefusal,
@@ -56,6 +68,8 @@ export type PayoutRequestView = {
   userId: string;
   currency: "USD" | "EUR";
   amountMinor: number;
+  source: PayoutRequestRow["source"];
+  projectId: string | null;
   status: PayoutRequestStatus;
   // True while PayPal's answer to a send is unknown; a retry sends the same batch again.
   uncertain: boolean;
@@ -71,11 +85,23 @@ export type PayoutRequestView = {
   paypalItemStatus: string | null;
   createdAt: string;
   decidedAt: string | null;
+  // The payday an approved payout waits for, and the next try of one the send sweep holds back.
+  sendAfter: string | null;
+  nextAttemptAt: string | null;
   sentAt: string | null;
   settledAt: string | null;
 };
 
-export type TeamPayoutRequestView = PayoutRequestView & { memberName: string; memberEmail: string };
+export type TeamPayoutRequestView = PayoutRequestView & {
+  memberName: string;
+  memberEmail: string;
+  projectTitle: string | null;
+  approvals: number;
+  approvalsNeeded: number;
+};
+export type TeamPayoutsView = { payouts: TeamPayoutRequestView[]; adminCount: number };
+// approvalsNeeded is 0 once the payout is approved.
+export type PayoutApprovalView = PayoutRequestView & { approvalsNeeded: number };
 export type MemberPayoutRequestView = PayoutRequestView & { teamName: string; teamSlug: string };
 // senderCountry and receiverCountry are the countries estimatePayoutFeeMinor takes for a payout from this team.
 export type MemberEarningsView = Omit<MemberEarningsRow, "teamPayPalCountry"> & {
@@ -85,7 +111,9 @@ export type MemberEarningsView = Omit<MemberEarningsRow, "teamPayPalCountry"> & 
 export type MemberPayoutsView = { earnings: MemberEarningsView[]; requests: MemberPayoutRequestView[] };
 
 export type PayoutTeam = Pick<ServicesTeamRecord, "id" | "name" | "paypalMerchantId">;
-export type PayoutDeps = { db: Database; payouts: PayoutServices };
+export type PayoutDeps = { db: Database; payouts: PayoutServices; now?: () => Date };
+// Without payout services a member can still request; an approved request then waits for the send sweep.
+export type RequestPayoutDeps = Omit<PayoutDeps, "payouts"> & { payouts?: PayoutServices };
 
 const NO_CREDENTIALS = "Turn on automatic payouts to pay requests.";
 const OTHER_ACCOUNT =
@@ -104,6 +132,15 @@ const STALE_SEND_MS = 5 * 60_000;
 // PayPal refuses a sender_batch_id reused within 30 days but may pay a later reuse again, so a retry of an
 // unconfirmed send stops well before that.
 const MAX_UNCERTAIN_RETRY_MS = 25 * 86_400_000;
+const PAYDAY_DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" });
+
+function nowOf(deps: { now?: () => Date }): Date {
+  return deps.now?.() ?? new Date();
+}
+
+function isDue(row: PayoutRequestRow, now: Date): boolean {
+  return row.status === "queued" && row.sendAfter !== null && row.sendAfter.getTime() <= now.getTime();
+}
 
 function isoOrNull(date: Date | null): string | null {
   return date ? date.toISOString() : null;
@@ -115,6 +152,8 @@ function payoutRequestView(row: PayoutRequestRow): PayoutRequestView {
     userId: row.userId,
     currency: row.currency,
     amountMinor: row.amountMinor,
+    source: row.source,
+    projectId: row.projectId,
     status: row.status,
     // A stale `sending` claim counts as unconfirmed too: its worker may have died before recording the answer.
     uncertain: row.uncertainAt !== null || (row.status === "sending" && row.updatedAt.getTime() < Date.now() - STALE_SEND_MS),
@@ -128,6 +167,8 @@ function payoutRequestView(row: PayoutRequestRow): PayoutRequestView {
     paypalItemStatus: row.paypalItemStatus,
     createdAt: row.createdAt.toISOString(),
     decidedAt: isoOrNull(row.decidedAt),
+    sendAfter: isoOrNull(row.sendAfter),
+    nextAttemptAt: isoOrNull(row.nextAttemptAt),
     sentAt: isoOrNull(row.sentAt),
     settledAt: isoOrNull(row.settledAt),
   };
@@ -181,13 +222,28 @@ async function lockTeamRequest(tx: Transaction, teamId: string, requestId: strin
   return request;
 }
 
+// The floor only decides auto-approval, so the balance is read only when an auto-approval rule would otherwise
+// approve the payout.
+async function balanceForAutoApproval(
+  deps: RequestPayoutDeps,
+  team: PayoutTeam,
+  input: { rules: PayoutRules; facts: PayoutFacts; currency: PayoutRequestRow["currency"] },
+): Promise<number | null> {
+  if (input.rules.balanceFloorMinor === null || !deps.payouts) return null;
+  const unlimited = decidePayout(input.rules, { ...input.facts, balanceMinor: Number.MAX_SAFE_INTEGER }, input.currency);
+  if (unlimited.kind !== "approved") return null;
+  return readTeamBalanceMinor({ ...deps, payouts: deps.payouts }, team, input.currency);
+}
+
 // Owed money is the authorization: the account key uses the caller's own user id, so a member removed from the
 // team can still request what they are owed, and anyone else has nothing to request.
 export async function requestPayout(
-  db: Database,
+  deps: RequestPayoutDeps,
   input: { userId: string; teamSlug: string; amount: string },
 ): Promise<MemberPayoutRequestView> {
+  const { db } = deps;
   const { userId } = input;
+  const now = nowOf(deps);
   const team = await findServicesTeamBySlug(db, input.teamSlug);
   if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found." });
   const settings = await getServicesTeamSettings(db, team.id);
@@ -204,8 +260,12 @@ export async function requestPayout(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirm you are 18 or older first." });
   }
   const currency = settings?.currency ?? "USD";
+  const rules = await getPayoutRules(db, team.id);
+  const facts: PayoutFacts = { amountMinor, source: "member", memberId: userId, approverIds: [], balanceMinor: null, now };
+  // Read before the transaction so no lock is held across PayPal's answer.
+  const balanceMinor = await balanceForAutoApproval(deps, team, { rules, facts, currency });
 
-  const row = await db.transaction(async (tx) => {
+  const decided = await db.transaction(async (tx) => {
     // The insert takes the one-open-request slot first: a concurrent request waits for this transaction and then
     // finds the slot taken, so two requests never spend the same balance.
     const inserted = await insertPayoutRequest(tx, {
@@ -232,9 +292,23 @@ export async function requestPayout(
     });
     const tooSmall = payoutSentProblem(sentMinor);
     if (tooSmall) throw new TRPCError({ code: "BAD_REQUEST", message: tooSmall });
+    const decision = decidePayout(rules, { ...facts, balanceMinor }, currency);
+    if (decision.kind === "refused") throw new TRPCError({ code: "BAD_REQUEST", message: decision.reason });
     await ledger.post([payoutRequestedTransfer(postingFor(inserted))]);
-    return inserted;
+    if (decision.kind !== "approved") return inserted;
+    return updatePayoutRequest(tx, inserted.id, { status: "queued", decidedAt: now, sendAfter: decision.sendAfter });
   });
+
+  let row = decided;
+  if (deps.payouts && isDue(decided, now)) {
+    try {
+      row = await sendPayout({ ...deps, payouts: deps.payouts }, team, decided.id);
+    } catch (error) {
+      // The request stays approved and queued; the send sweep tries it again.
+      log.warn({ action: "payout.request_send", payoutRequest: { id: decided.id }, error: payPalErrorLog(error) });
+      row = (await getPayoutRequest(db, decided.id)) ?? decided;
+    }
+  }
   return { ...payoutRequestView(row), teamName: team.name, teamSlug: team.slug };
 }
 
@@ -265,29 +339,63 @@ export async function rejectPayoutRequest(
 }
 
 // The approval stands even when the send that follows is held (no credentials, low balance) or refused: the
-// returned request carries the status and the message.
+// returned request carries the status and the message. A payout approved before its payday is sent then.
 export async function approvePayoutRequest(
   deps: PayoutDeps,
   input: { team: PayoutTeam; requestId: string; deciderId: string },
-): Promise<PayoutRequestView> {
-  await deps.db.transaction(async (tx) => {
+): Promise<PayoutApprovalView> {
+  const now = nowOf(deps);
+  const decided = await deps.db.transaction(async (tx) => {
     const request = await lockTeamRequest(tx, input.team.id, input.requestId);
     if (request.status !== "requested") throw alreadyDecided();
+    if (request.userId === input.deciderId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "You cannot approve a payout to yourself." });
+    }
     const tooSmall = payoutSentProblem((await sendAmountsFor(tx, request)).sentMinor);
     if (tooSmall) throw new TRPCError({ code: "BAD_REQUEST", message: tooSmall });
-    await updatePayoutRequest(tx, request.id, {
+    if (!(await insertPayoutApproval(tx, { requestId: request.id, adminUserId: input.deciderId }))) {
+      throw new TRPCError({ code: "CONFLICT", message: "You already approved this payout." });
+    }
+    // Enough admin approvals approve a payout whatever the balance; the floor is checked again before sending.
+    const decision = decidePayout(
+      await getPayoutRules(tx, request.teamId),
+      {
+        amountMinor: request.amountMinor,
+        source: request.source,
+        memberId: request.userId,
+        approverIds: await listPayoutApproverIds(tx, request.id),
+        balanceMinor: null,
+        now,
+      },
+      request.currency,
+    );
+    if (decision.kind === "refused") throw new TRPCError({ code: "BAD_REQUEST", message: decision.reason });
+    if (decision.kind === "needs_approval") return { row: request, approvalsNeeded: decision.approvalsNeeded };
+    const approved = await updatePayoutRequest(tx, request.id, {
       status: "queued",
       decidedByUserId: input.deciderId,
-      decidedAt: new Date(),
+      decidedAt: now,
+      sendAfter: decision.sendAfter,
     });
+    return { row: approved, approvalsNeeded: 0 };
   });
-  return payoutRequestView(await sendPayout(deps, input.team, input.requestId));
+  const row = isDue(decided.row, now) ? await sendPayout(deps, input.team, input.requestId) : decided.row;
+  return { ...payoutRequestView(row), approvalsNeeded: decided.approvalsNeeded };
 }
 
+// Retry skips the backoff but not the payday.
 export async function retryPayout(
   deps: PayoutDeps,
   input: { team: PayoutTeam; requestId: string },
 ): Promise<PayoutRequestView> {
+  const request = await getPayoutRequest(deps.db, input.requestId);
+  if (!request || request.teamId !== input.team.id) throw notFound();
+  if (request.sendAfter && request.sendAfter.getTime() > nowOf(deps).getTime()) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `This payout goes on payday, ${PAYDAY_DATE.format(request.sendAfter)}.`,
+    });
+  }
   return payoutRequestView(await sendPayout(deps, input.team, input.requestId));
 }
 
@@ -697,9 +805,42 @@ export async function refreshPayout(
   return payoutRequestView(await settlePayout(deps, request));
 }
 
-export async function listTeamPayouts(db: Database, teamId: string): Promise<TeamPayoutRequestView[]> {
-  const rows = await listTeamPayoutRequests(db, teamId);
-  return rows.map((row) => ({ ...payoutRequestView(row), memberName: row.memberName, memberEmail: row.memberEmail }));
+// Approvals a requested payout still needs under the current rules. Auto-approval had its chance when the payout
+// was made, and the minimum is checked again on approval, so neither counts here.
+function approvalsStillNeeded(rules: PayoutRules, row: TeamPayoutRequestRow): number {
+  if (row.status !== "requested") return 0;
+  const decision = decidePayout(
+    { ...rules, autoApproveUpToMinor: null, trustedMemberIds: [], minimumPayoutMinor: 0 },
+    {
+      amountMinor: row.amountMinor,
+      source: row.source,
+      memberId: row.userId,
+      approverIds: row.approverIds,
+      balanceMinor: null,
+      now: new Date(),
+    },
+    row.currency,
+  );
+  return decision.kind === "needs_approval" ? decision.approvalsNeeded : 0;
+}
+
+export async function listTeamPayouts(db: Database, team: PayoutRulesTeam): Promise<TeamPayoutsView> {
+  const [rows, rules, members] = await Promise.all([
+    listTeamPayoutRequests(db, team.id),
+    getPayoutRules(db, team.id),
+    listServicesTeamMembers(db, team),
+  ]);
+  return {
+    adminCount: adminCountOf(members),
+    payouts: rows.map((row) => ({
+      ...payoutRequestView(row),
+      memberName: row.memberName,
+      memberEmail: row.memberEmail,
+      projectTitle: row.projectTitle,
+      approvals: row.approverIds.length,
+      approvalsNeeded: approvalsStillNeeded(rules, row),
+    })),
+  };
 }
 
 export async function getMemberPayouts(db: Database, userId: string): Promise<MemberPayoutsView> {

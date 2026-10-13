@@ -44,7 +44,12 @@ export type PayoutRequestPatch = Partial<
     | "updatedAt"
   >
 >;
-export type TeamPayoutRequestRow = PayoutRequestRow & { memberName: string; memberEmail: string };
+export type TeamPayoutRequestRow = PayoutRequestRow & {
+  memberName: string;
+  memberEmail: string;
+  projectTitle: string | null;
+  approverIds: string[];
+};
 export type UserPayoutRequestRow = PayoutRequestRow & { teamName: string; teamSlug: string };
 
 // Null when the member already has an open request of their own for this team (project payouts never conflict). The
@@ -81,12 +86,24 @@ export async function updatePayoutRequest(tx: DbExecutor, id: string, patch: Pay
 
 export async function listTeamPayoutRequests(db: DbExecutor, teamId: string): Promise<TeamPayoutRequestRow[]> {
   const rows = await db
-    .select({ request: payoutRequest, memberName: user.name, memberEmail: user.email })
+    .select({
+      request: payoutRequest,
+      memberName: user.name,
+      memberEmail: user.email,
+      projectTitle: project.title,
+      // json rather than text[]: the client runs without fetch_types, so it leaves arrays unparsed.
+      approverIds: sql<string[]>`coalesce(
+        (select json_agg(${payoutApproval.adminUserId} order by ${payoutApproval.createdAt})
+          from ${payoutApproval} where ${payoutApproval.requestId} = ${payoutRequest.id}),
+        '[]'::json
+      )`,
+    })
     .from(payoutRequest)
     .innerJoin(user, eq(user.id, payoutRequest.userId))
+    .leftJoin(project, eq(project.id, payoutRequest.projectId))
     .where(eq(payoutRequest.teamId, teamId))
     .orderBy(desc(payoutRequest.createdAt), desc(payoutRequest.id));
-  return rows.map(({ request, memberName, memberEmail }) => ({ ...request, memberName, memberEmail }));
+  return rows.map(({ request, ...rest }) => ({ ...request, ...rest }));
 }
 
 export async function listUserPayoutRequests(db: DbExecutor, userId: string): Promise<UserPayoutRequestRow[]> {

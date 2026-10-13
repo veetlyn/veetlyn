@@ -24,12 +24,17 @@ export type PayoutRulesTeam = Pick<ServicesTeamRecord, "id" | "organizationId">;
 
 type TeamFacts = { currency: Currency; memberIds: Set<string>; adminCount: number };
 
+// Workspace owners and admins are listed as team admins too.
+export function adminCountOf(members: readonly { role: string }[]): number {
+  return members.filter((m) => m.role === "admin").length;
+}
+
 async function teamFacts(db: Database, team: PayoutRulesTeam): Promise<TeamFacts> {
   const [settings, members] = await Promise.all([getServicesTeamSettings(db, team.id), listServicesTeamMembers(db, team)]);
   return {
     currency: settings?.currency ?? "USD",
     memberIds: new Set(members.map((m) => m.userId)),
-    adminCount: members.filter((m) => m.role === "admin").length,
+    adminCount: adminCountOf(members),
   };
 }
 

@@ -151,9 +151,10 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     return { payouts, paypal };
   }
 
-  const callerFor = (userId: string, services?: Services) =>
+  const callerFor = (userId: string, services?: Services, now?: () => Date) =>
     appRouter.createCaller({
       db,
+      now,
       session: makeSession(userId),
       environment: "sandbox",
       auth,
@@ -165,6 +166,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
 
   type Caller = ReturnType<typeof callerFor>;
+
+  const listed = async (admin: Caller) => (await admin.payouts.list(TEAM)).payouts;
 
   async function turnOnAutomaticPayouts(admin: Caller) {
     const { attemptId } = await admin.payouts.connectStart(TEAM);
@@ -508,12 +511,12 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   // freelancer owed $850 with a confirmed destination in `memberCountry`: between two US accounts PayPal's fee is
   // estimated at $0.25. PayPal requests made while turning payouts on are dropped. While `gate.on` is true, each
   // payout POST waits in `gate.held` until the test answers it, so two sends can interleave.
-  async function payoutTeam(memberCountry: string | null = "US") {
+  async function payoutTeam(memberCountry: string | null = "US", initialAnswers: TeamPayPalAnswers = {}) {
     const { userId: adminId, organizationId, teamId } = await connectedTeam();
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
     await confirmedDestination(memberId, memberCountry);
     await earn(teamId, memberId);
-    const answers: TeamPayPalAnswers = { payout: () => batchCreated("BATCH1") };
+    const answers: TeamPayPalAnswers = { payout: () => batchCreated("BATCH1"), ...initialAnswers };
     const paypal = fakeTeamPayPal(answers);
     const gate: PayoutGate = { on: false, held: [] };
     const gatedFetch: FetchLike = (request) =>
@@ -524,7 +527,18 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const admin = callerFor(adminId, services);
     await turnOnAutomaticPayouts(admin);
     paypal.requests.splice(0);
-    return { organizationId, teamId, memberId, admin, member: callerFor(memberId, services), answers, paypal, services, gate };
+    return {
+      organizationId,
+      teamId,
+      adminId,
+      memberId,
+      admin,
+      member: callerFor(memberId, services),
+      answers,
+      paypal,
+      services,
+      gate,
+    };
   }
 
   const batchIdsOf = (posts: RecordedRequest[]) =>
@@ -638,7 +652,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         }),
       ],
     });
-    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+    await expect(listed(admin)).resolves.toEqual([
       expect.objectContaining({ id, userId: memberId, memberName: "Ada", status: "succeeded", sentMinor: 49_975, feeMinor: 25 }),
     ]);
   });
@@ -731,7 +745,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       code: "BAD_REQUEST",
       message: "This payout is too small to cover PayPal's fee.",
     });
-    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+    await expect(listed(admin)).resolves.toEqual([
       expect.objectContaining({ id, status: "requested", decidedAt: null, sentMinor: null }),
     ]);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 84_880, reserved: 120 });
@@ -897,7 +911,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
     answers.payout = () => jsonResponse(500, { name: "INTERNAL_SERVICE_ERROR", message: "Internal error", debug_id: "d500" });
     await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(UNCERTAIN);
-    await expect(admin.payouts.list(TEAM)).resolves.toEqual(unconfirmed);
+    await expect(listed(admin)).resolves.toEqual(unconfirmed);
 
     // PayPal may hold the first batch, so neither a refusal nor INSUFFICIENT_FUNDS is final now.
     answers.payout = () => jsonResponse(422, receiverRefusal);
@@ -905,7 +919,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     answers.payout = () =>
       jsonResponse(422, { name: "UNPROCESSABLE_ENTITY", message: "No funds.", details: [{ issue: "INSUFFICIENT_FUNDS" }] });
     await expect(admin.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject(UNCERTAIN);
-    await expect(admin.payouts.list(TEAM)).resolves.toEqual(unconfirmed);
+    await expect(listed(admin)).resolves.toEqual(unconfirmed);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000 });
 
     row.answer(answers, id);
@@ -933,7 +947,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(UNCERTAIN);
 
     expect(paypal.requests.map((r) => `${r.method} ${pathOf(r)}`).at(-1)).toBe("GET /v1/payments/payouts/BATCH-X");
-    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+    await expect(listed(admin)).resolves.toEqual([
       expect.objectContaining({ status: "sending", uncertain: true, paypalBatchId: null }),
     ]);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000, paidOut: 0 });
@@ -957,7 +971,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       .update(payoutRequest)
       .set({ updatedAt: new Date(Date.now() - 6 * 60_000) })
       .where(eq(payoutRequest.id, id));
-    await expect(admin.payouts.list(TEAM)).resolves.toEqual([
+    await expect(listed(admin)).resolves.toEqual([
       expect.objectContaining({ status: "sending", uncertain: true }),
     ]);
     const takeover = admin.payouts.retry({ ...TEAM, requestId: id });
@@ -1301,6 +1315,161 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(row).toMatchObject({ status: "queued", decidedByUserId: adminId, decidedAt });
       expect(row?.sendAfter?.getTime()).toBeGreaterThanOrEqual(before);
       expect(row?.sendAfter?.getTime()).toBeLessThanOrEqual(after);
+    });
+  });
+
+  describe("payouts under the team's rules", () => {
+    const noTrustedMembers: string[] = [];
+    // The manual preset as saveRules takes it; each test turns on the rules it needs.
+    const MANUAL = {
+      ...TEAM,
+      autoApproveUpTo: null,
+      autoApproveScope: "requests",
+      trustedScope: "requests",
+      trustedMemberIds: noTrustedMembers,
+      secondApproverAbove: null,
+      secondApproverScope: "both",
+      payCompletedProjects: false,
+      holdDays: 0,
+      payday: "immediate",
+      paydayWeekday: null,
+      paydayMonthDay: null,
+      balanceFloor: null,
+      minimumPayout: "1.00",
+    } as const;
+    const WEDNESDAY_14TH = new Date("2026-10-14T10:00:00Z");
+    const atWednesday = () => WEDNESDAY_14TH;
+
+    const rowOf = async (id: string) => (await db.select().from(payoutRequest).where(eq(payoutRequest.id, id)))[0];
+
+    it("sends a request the rules auto-approve at once, with no admin as the decider", async () => {
+      const { admin, member, paypal } = await payoutTeam();
+      await admin.payouts.saveRules({ ...MANUAL, autoApproveUpTo: "1000.00" });
+
+      const requested = await member.payouts.request({ ...TEAM, amount: "100.00" });
+
+      expect(requested).toMatchObject({ status: "sent", paypalBatchId: "BATCH1", decidedAt: expect.any(String) });
+      expect(payoutPosts(paypal.requests)).toHaveLength(1);
+      expect(await rowOf(requested.id)).toMatchObject({ decidedByUserId: null });
+    });
+
+    it("keeps an auto-approved request queued until the weekly payday, without calling PayPal", async () => {
+      const { memberId, admin, paypal, services } = await payoutTeam();
+      await admin.payouts.saveRules({ ...MANUAL, autoApproveUpTo: "1000.00", payday: "weekly", paydayWeekday: 5 });
+
+      const requested = await callerFor(memberId, services, atWednesday).payouts.request({ ...TEAM, amount: "100.00" });
+
+      expect(requested).toMatchObject({ status: "queued", sendAfter: "2026-10-16T00:00:00.000Z" });
+      expect(paypal.requests).toEqual([]);
+    });
+
+    it("refuses a request below the team minimum and reserves nothing", async () => {
+      const { teamId, memberId, admin, member } = await payoutTeam();
+      await admin.payouts.saveRules({ ...MANUAL, minimumPayout: "50.00" });
+
+      await expect(member.payouts.request({ ...TEAM, amount: "20.00" })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Payouts start at $50.00 for this team.",
+      });
+      expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 85_000, reserved: 0 });
+      expect(await listed(admin)).toEqual([]);
+    });
+
+    it("leaves a request for an admin when auto-approving it would take the balance under the floor", async () => {
+      const readsBalance = () => teamTokenAnswer(`${PAYOUTS_SCOPE} ${REPORTING_SCOPE} openid`);
+      const { admin, member, paypal } = await payoutTeam("US", { teamToken: readsBalance });
+      await admin.payouts.saveRules({ ...MANUAL, autoApproveUpTo: "1000.00", balanceFloor: "4950.00" });
+
+      // The fake balance is $5,000.00, so $100.00 would leave $4,900.00.
+      await expect(member.payouts.request({ ...TEAM, amount: "100.00" })).resolves.toMatchObject({ status: "requested" });
+      expect(paypal.requests.map((r) => `${r.method} ${pathOf(r)}`)).toContain("GET /v1/reporting/balances");
+      expect(payoutPosts(paypal.requests)).toEqual([]);
+    });
+
+    it("sends a payout above the second-approver amount once two different admins approve it", async () => {
+      const { organizationId, teamId, admin, member, paypal, services } = await payoutTeam();
+      const secondAdminId = await seedServicesTeamMember(db, { organizationId, teamId, role: "admin", name: "Bo" });
+      await admin.payouts.saveRules({ ...MANUAL, secondApproverAbove: "500.00" });
+      const { id } = await member.payouts.request({ ...TEAM, amount: "600.00" });
+
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+        status: "requested",
+        approvalsNeeded: 1,
+      });
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject({
+        code: "CONFLICT",
+        message: "You already approved this payout.",
+      });
+      expect(payoutPosts(paypal.requests)).toEqual([]);
+
+      await expect(callerFor(secondAdminId, services).payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+        status: "sent",
+        approvalsNeeded: 0,
+      });
+      expect(await rowOf(id)).toMatchObject({ decidedByUserId: secondAdminId });
+    });
+
+    it("lists the approvals a payout still needs and the team's admin count after an admin leaves", async () => {
+      const { organizationId, teamId, admin, member } = await payoutTeam();
+      const secondAdminId = await seedServicesTeamMember(db, { organizationId, teamId, role: "admin", name: "Bo" });
+      await admin.payouts.saveRules({ ...MANUAL, secondApproverAbove: "500.00" });
+      const { id } = await member.payouts.request({ ...TEAM, amount: "600.00" });
+      await db
+        .delete(servicesTeamMember)
+        .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, secondAdminId)));
+
+      await expect(admin.payouts.list(TEAM)).resolves.toEqual({
+        adminCount: 1,
+        payouts: [
+          expect.objectContaining({
+            id,
+            source: "member",
+            projectId: null,
+            projectTitle: null,
+            approvals: 0,
+            approvalsNeeded: 2,
+            sendAfter: null,
+            nextAttemptAt: null,
+          }),
+        ],
+      });
+    });
+
+    it("refuses an admin approving a payout to themselves", async () => {
+      const { teamId, adminId, admin, paypal } = await payoutTeam();
+      await savePayoutDestination(
+        db,
+        adminId,
+        { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null, paypalCountry: "US" },
+        { confirmedAt: new Date(), source: "self" },
+      );
+      await earn(teamId, adminId);
+      const { id } = await admin.payouts.request({ ...TEAM, amount: "100.00" });
+
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "You cannot approve a payout to yourself.",
+      });
+      expect(await rowOf(id)).toMatchObject({ status: "requested" });
+      expect(paypal.requests).toEqual([]);
+    });
+
+    it("queues an approved payout until the monthly payday and refuses retrying it before then", async () => {
+      const { adminId, admin, member, paypal, services } = await payoutTeam();
+      await admin.payouts.saveRules({ ...MANUAL, payday: "monthly", paydayMonthDay: 28 });
+      const { id } = await member.payouts.request({ ...TEAM, amount: "100.00" });
+      const clockedAdmin = callerFor(adminId, services, atWednesday);
+
+      await expect(clockedAdmin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+        status: "queued",
+        sendAfter: "2026-10-28T00:00:00.000Z",
+        approvalsNeeded: 0,
+      });
+      await expect(clockedAdmin.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "This payout goes on payday, October 28, 2026.",
+      });
+      expect(paypal.requests).toEqual([]);
     });
   });
 });
