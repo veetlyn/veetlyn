@@ -1,0 +1,19 @@
+apps/web/src/app/admin/[storeSlug]/payouts/payout-credentials-card.tsx
+  s_56de74e7dedd35::t_022c9c14f096c3 58-59,101,103-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d213065d6c6734c2f8a16de6373b1402f153c4e2",
+  "prompts": {},
+  "sessions": {
+    "s_56de74e7dedd35": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4aab232e-d5e6-4af2-be04-657e8304c55b",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
