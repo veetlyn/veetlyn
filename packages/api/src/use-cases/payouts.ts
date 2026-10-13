@@ -136,7 +136,7 @@ export type PayoutDeps = { db: Database; payouts: PayoutServices; now?: () => Da
 export type RequestPayoutDeps = Omit<PayoutDeps, "payouts"> & { payouts?: PayoutServices };
 
 const NO_CREDENTIALS = "Turn on automatic payouts to pay requests.";
-const WAITING_FOR_EXPORT = "Waiting for export or for automatic payouts.";
+export const WAITING_FOR_EXPORT = "Waiting for export or for automatic payouts.";
 const OTHER_ACCOUNT =
   "Automatic payouts are on for another PayPal account than the one connected to this team. Turn them on again.";
 const SEALED_SECRET_UNREADABLE = "The team's automatic payouts connection could not be read. Turn on automatic payouts again.";
@@ -155,7 +155,7 @@ const STALE_SEND_MS = 5 * 60_000;
 const MAX_UNCERTAIN_RETRY_MS = 25 * 86_400_000;
 const PAYDAY_DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" });
 
-function nowOf(deps: { now?: () => Date }): Date {
+export function nowOf(deps: { now?: () => Date }): Date {
   return deps.now?.() ?? new Date();
 }
 
@@ -205,7 +205,7 @@ function isoOrNull(date: Date | null): string | null {
   return date ? date.toISOString() : null;
 }
 
-function payoutRequestView(row: PayoutRequestRow): PayoutRequestView {
+export function payoutRequestView(row: PayoutRequestRow): PayoutRequestView {
   return {
     id: row.id,
     userId: row.userId,
@@ -258,9 +258,22 @@ async function estimateSendAmounts(
   return { feeEstimateMinor, sentMinor: payout.amountMinor - feeEstimateMinor };
 }
 
-async function sendAmountsFor(db: DbExecutor, request: PayoutRequestRow): Promise<SendAmounts> {
+export async function sendAmountsFor(db: DbExecutor, request: PayoutRequestRow): Promise<SendAmounts> {
   const destination = await getPayoutDestination(db, request.userId);
   return estimateSendAmounts(db, { ...request, receiverCountry: destination?.paypalCountry ?? null });
+}
+
+// Why an approved payout cannot go to the destination it was approved for, or null when it can.
+export async function destinationHold(db: DbExecutor, request: PayoutRequestRow): Promise<string | null> {
+  const destination = await getPayoutDestination(db, request.userId);
+  if (!destination?.ageConfirmedAt) return DESTINATION_UNQUALIFIED;
+  return destination.paypalPayerId === request.receiverPayerId ? null : DESTINATION_CHANGED;
+}
+
+export function paydayWait(request: PayoutRequestRow, now: Date): string | null {
+  return request.sendAfter && request.sendAfter.getTime() > now.getTime()
+    ? `This payout goes on payday, ${PAYDAY_DATE.format(request.sendAfter)}.`
+    : null;
 }
 
 // A claimed send always stored both (the table's check keeps them together).
@@ -275,7 +288,7 @@ function notFound(): TRPCError {
   return new TRPCError({ code: "NOT_FOUND", message: "Payout request not found." });
 }
 
-async function lockTeamRequest(tx: Transaction, teamId: string, requestId: string): Promise<PayoutRequestRow> {
+export async function lockTeamRequest(tx: Transaction, teamId: string, requestId: string): Promise<PayoutRequestRow> {
   const request = await lockPayoutRequest(tx, requestId);
   if (!request || request.teamId !== teamId) throw notFound();
   return request;
@@ -498,12 +511,8 @@ export async function retryPayout(
 ): Promise<PayoutRequestView> {
   const request = await getPayoutRequest(deps.db, input.requestId);
   if (!request || request.teamId !== input.team.id) throw notFound();
-  if (request.sendAfter && request.sendAfter.getTime() > nowOf(deps).getTime()) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: `This payout goes on payday, ${PAYDAY_DATE.format(request.sendAfter)}.`,
-    });
-  }
+  const wait = paydayWait(request, nowOf(deps));
+  if (wait) throw new TRPCError({ code: "BAD_REQUEST", message: wait });
   return payoutRequestView(await sendPayout(deps, input.team, input.requestId));
 }
 
@@ -535,15 +544,9 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string, a
   // with PayPal, so it must go on with the same amount and record it.
   let amounts: SendAmounts | null = null;
   if (uncertainAt === null) {
-    const destination = await getPayoutDestination(tx, request.userId);
-    const destinationHold =
-      !destination?.ageConfirmedAt
-        ? DESTINATION_UNQUALIFIED
-        : destination.paypalPayerId !== request.receiverPayerId
-          ? DESTINATION_CHANGED
-          : null;
+    const unpayable = await destinationHold(tx, request);
     amounts = await sendAmountsFor(tx, request);
-    const hold = destinationHold ?? payoutSentProblem(amounts.sentMinor);
+    const hold = unpayable ?? payoutSentProblem(amounts.sentMinor);
     if (hold) {
       return {
         kind: "held",
@@ -837,7 +840,12 @@ function settlementOf(request: PayoutRequestRow, batch: PayoutBatch): Settlement
 }
 
 // A null fee when PayPal's fee cannot be posted; the review reason says why.
-type PayoutFee = { feeMinor: number | null; reviewReason: string | null };
+export type PayoutFee = { feeMinor: number | null; reviewReason: string | null };
+
+// What PayPal decided for a payout, from its API or from a Payouts Web log; itemId is PayPal's item or transaction id.
+export type SettledOutcome =
+  | { kind: "succeeded"; itemId: string | null; itemStatus: string | null; fee: PayoutFee }
+  | { kind: "failed"; itemId: string | null; itemStatus: string | null; message: string };
 
 function payoutFee(request: PayoutRequestRow, item: PayoutItem): PayoutFee {
   if (!item.fee) return { feeMinor: null, reviewReason: "Payout fee missing" };
@@ -865,26 +873,42 @@ async function recordSettlement(tx: Transaction, request: PayoutRequestRow, sett
       reviewReason: null,
     });
   }
-  if (settlement.kind === "failed") {
+  if (settlement.kind === "failed") return applySettlement(tx, request, settlement);
+  const { item } = settlement;
+  return applySettlement(tx, request, {
+    kind: "succeeded",
+    itemId: item.itemId,
+    itemStatus: item.status ?? null,
+    fee: payoutFee(request, item),
+  });
+}
+
+// Records PayPal's final answer on a locked request PayPal had (sent or exported) and posts it once by reference: a
+// failure releases the reservation; a success pays the member and settles PayPal's fee against the estimate.
+export async function applySettlement(
+  tx: Transaction,
+  request: PayoutRequestRow,
+  outcome: SettledOutcome,
+): Promise<PayoutRequestRow> {
+  if (outcome.kind === "failed") {
     const failed = await updatePayoutRequest(tx, request.id, {
       status: "failed",
-      paypalItemId: settlement.itemId,
-      paypalItemStatus: settlement.itemStatus,
-      failureMessage: settlement.message.slice(0, MAX_FAILURE_MESSAGE),
+      paypalItemId: outcome.itemId,
+      paypalItemStatus: outcome.itemStatus,
+      failureMessage: outcome.message.slice(0, MAX_FAILURE_MESSAGE),
       reviewReason: null,
       settledAt: new Date(),
     });
     await postIfNew(tx, request.teamId, payoutReleasedTransfer(postingFor(request)));
     return failed;
   }
-  const { item } = settlement;
-  const { feeMinor, reviewReason } = payoutFee(request, item);
+  const { feeMinor, reviewReason } = outcome.fee;
   if (reviewReason) log.warn({ action: "payout.fee", payoutRequest: { id: request.id }, reviewReason });
   const { feeEstimateMinor, sentMinor } = claimedAmounts(request);
   const succeeded = await updatePayoutRequest(tx, request.id, {
     status: "succeeded",
-    paypalItemId: item.itemId,
-    paypalItemStatus: item.status ?? null,
+    paypalItemId: outcome.itemId,
+    paypalItemStatus: outcome.itemStatus,
     feeMinor,
     reviewReason,
     settledAt: new Date(),

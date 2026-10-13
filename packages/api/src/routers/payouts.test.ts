@@ -1169,6 +1169,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(member.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
     await expect(member.payouts.refresh({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
     await expect(member.payouts.list(TEAM)).rejects.toMatchObject(forbidden);
+    await expect(member.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [id] })).rejects.toMatchObject(forbidden);
+    await expect(member.payouts.importPayoutsWeb({ ...TEAM, csv: "Transaction ID" })).rejects.toMatchObject(forbidden);
+    await expect(member.payouts.cancelExport({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
 
     // An admin of another team cannot reach the request through their own team.
     const other = await seedServicesTeamWithAdmin(db, { slug: "other-studio" });
@@ -1178,6 +1181,10 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(caller(other.userId).reject(otherTeam)).rejects.toMatchObject(notFound);
     await expect(caller(other.userId).retry(otherTeam)).rejects.toMatchObject(notFound);
     await expect(caller(other.userId).refresh(otherTeam)).rejects.toMatchObject(notFound);
+    await expect(caller(other.userId).cancelExport(otherTeam)).rejects.toMatchObject(notFound);
+    await expect(
+      caller(other.userId).exportPayoutsWeb({ teamSlug: "other-studio", requestIds: [id] }),
+    ).rejects.toMatchObject(notFound);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 75_000, reserved: 10_000 });
     expect(paypal.requests).toEqual([]);
   });
@@ -1671,6 +1678,216 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       });
       expect(await rowOf(payout?.id ?? "")).toMatchObject({ teamId, waitCount: 0 });
       expect(paypal.requests).toEqual([]);
+    });
+  });
+
+  describe("PayPal Payouts Web", () => {
+    const BO_PAYER_ID = "BQWJ7Z9TNXYV2";
+    const WAITING_FOR_EXPORT = "Waiting for export or for automatic payouts.";
+    const LOG_MISMATCH = "PayPal's log shows another amount or currency for this payout.";
+    const LOG_HEADER =
+      "Transaction ID,Recipient,Recipient Name,Unique Identifier,Amount,Fee,Total,Status,Reason Code,Custom Note,Message";
+    const noResults = { settled: 0, failed: 0, pending: 0, unmatched: 0, mismatched: 0 };
+
+    type LogRow = { reference: string; amount: string; fee: string; status: string; message?: string };
+
+    // PayPal's Payouts Web log layout: a preamble, then one row per payout with money in the account's locale.
+    function payoutsWebLog(rows: LogRow[]): string {
+      const lines = rows.map(
+        (row, index) =>
+          `TX${index + 1},PAYER,,${row.reference},"${row.amount}","${row.fee}",,${row.status},,,${row.message ?? ""}`,
+      );
+      return ["\uFEFFTransaction Type: Mass Payment", "", LOG_HEADER, ...lines].join("\n");
+    }
+
+    const referenceOf = async (id: string) => (await rowOf(id))?.offlineReference ?? "";
+
+    // payoutTeam with automatic payouts turned off, and two approved payouts waiting for an export: Ada's $500.00 and
+    // Bo's $100.00, each with PayPal's $0.25 fee estimated between two US accounts.
+    async function exportTeam() {
+      const team = await payoutTeam();
+      const { organizationId, teamId, admin, member, services } = team;
+      await admin.payouts.removeCredentials(TEAM);
+      const boId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Bo" });
+      await savePayoutDestination(
+        db,
+        boId,
+        { paypalPayerId: BO_PAYER_ID, paypalEmail: null, paypalCountry: "US" },
+        { confirmedAt: new Date(), source: "self" },
+      );
+      await earn(teamId, boId);
+      const ada = await member.payouts.request({ ...TEAM, amount: "500.00" });
+      const bo = await callerFor(boId, services).payouts.request({ ...TEAM, amount: "100.00" });
+      for (const { id } of [ada, bo]) await admin.payouts.approve({ ...TEAM, requestId: id });
+      return { ...team, boId, adaPayoutId: ada.id, boPayoutId: bo.id };
+    }
+
+    it("exports approved payouts as PayPal's upload file, less the fee estimate, and marks them exported", async () => {
+      const { adminId, adaPayoutId, boPayoutId, admin, paypal, services } = await exportTeam();
+      expect(await listed(admin)).toEqual([
+        expect.objectContaining({ id: boPayoutId, status: "queued", failureMessage: WAITING_FOR_EXPORT }),
+        expect.objectContaining({ id: adaPayoutId, status: "queued", failureMessage: WAITING_FOR_EXPORT }),
+      ]);
+
+      const exported = await callerFor(adminId, services, atWednesday).payouts.exportPayoutsWeb({
+        ...TEAM,
+        requestIds: [adaPayoutId, boPayoutId],
+      });
+
+      const [ada, bo] = [await rowOf(adaPayoutId), await rowOf(boPayoutId)];
+      expect(exported).toEqual({
+        filename: "payleor-payouts-2026-10-14.csv",
+        count: 2,
+        csv: [
+          `${PAYER_ID},499.75,USD,${ada?.offlineReference},Payout from acme-studio via Payleor,PAYPAL`,
+          `${BO_PAYER_ID},99.75,USD,${bo?.offlineReference},Payout from acme-studio via Payleor,PAYPAL`,
+        ].join("\r\n"),
+      });
+      const exportedRow = {
+        status: "exported",
+        failureMessage: null,
+        feeEstimateMinor: 25,
+        sentAt: expect.any(Date),
+        offlineReference: expect.stringMatching(/^PL[A-Z2-9]{12}$/),
+      };
+      expect(ada).toMatchObject({ ...exportedRow, sentMinor: 49_975 });
+      expect(bo).toMatchObject({ ...exportedRow, sentMinor: 9_975 });
+      expect(ada?.offlineBatchId).toEqual(expect.any(String));
+      expect(bo?.offlineBatchId).toBe(ada?.offlineBatchId);
+      expect(paypal.requests).toEqual([]);
+    });
+
+    it.each([
+      {
+        case: "a payout still waiting for approval",
+        patch: { status: "requested", decidedAt: null },
+        message: "Only approved payouts can be exported.",
+      },
+      {
+        case: "a payout PayPal may already have",
+        patch: { uncertainAt: new Date() },
+        message: "PayPal may already have this payout. Turn on automatic payouts and retry it to find out.",
+      },
+      {
+        case: "a payout waiting for its payday",
+        patch: { sendAfter: new Date("2026-10-28T00:00:00Z") },
+        message: "This payout goes on payday, October 28, 2026.",
+      },
+    ] as const)("refuses to export $case, and exports nothing", async ({ patch, message }) => {
+      const { adminId, adaPayoutId, boPayoutId, services } = await exportTeam();
+      await updatePayoutRequest(db, boPayoutId, patch);
+      const clockedAdmin = callerFor(adminId, services, atWednesday);
+
+      await expect(
+        clockedAdmin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId, boPayoutId] }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message });
+      expect(await rowOf(adaPayoutId)).toMatchObject({ status: "queued", offlineReference: null, sentMinor: null });
+    });
+
+    it("refuses to export for a team with automatic payouts on", async () => {
+      const { admin, member } = await payoutTeam();
+      const { id } = await member.payouts.request({ ...TEAM, amount: "100.00" });
+
+      await expect(admin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [id] })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Automatic payouts send these for you.",
+      });
+    });
+
+    it("settles exported payouts from PayPal's log with the automatic payouts' postings, once", async () => {
+      const { teamId, memberId, boId, adaPayoutId, boPayoutId, admin } = await exportTeam();
+      await admin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId, boPayoutId] });
+      await expect(admin.payouts.importPayoutsWeb({ ...TEAM, csv: "Name,Amount\nAda,1.00\n" })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "This file has no Customer ID column. Download the payout's CSV log from PayPal.",
+      });
+      const log = payoutsWebLog([
+        { reference: await referenceOf(adaPayoutId), amount: "$499,75 USD", fee: "$0,20 USD", status: "Completed" },
+        {
+          reference: await referenceOf(boPayoutId),
+          amount: "$99,75 USD",
+          fee: "$0,00 USD",
+          status: "Denied",
+          message: "Receiver is unregistered",
+        },
+        { reference: "PLNOTEXPORTED", amount: "$5,00 USD", fee: "$0,00 USD", status: "Completed" },
+      ]);
+      const counts = { settled: 1, failed: 1, pending: 0, unmatched: 1, mismatched: 0 };
+
+      await expect(admin.payouts.importPayoutsWeb({ ...TEAM, csv: log })).resolves.toEqual(counts);
+
+      expect(await rowOf(adaPayoutId)).toMatchObject({
+        status: "succeeded",
+        feeMinor: 20,
+        paypalItemId: "TX1",
+        paypalItemStatus: "Completed",
+        reviewReason: null,
+        settledAt: expect.any(Date),
+      });
+      expect(await rowOf(boPayoutId)).toMatchObject({
+        status: "failed",
+        failureMessage: "PayPal did not pay this payout (Denied): Receiver is unregistered",
+      });
+      // PayPal's $0.20 fee came in under the $0.25 estimate, so the other $0.05 goes back to Ada.
+      const adaLedger = { available: 35_005, reserved: 0, paidOut: 49_975, teamRevenue: 30_000, paypalFees: 20 };
+      expect(await ledgerOf(teamId, memberId)).toEqual(adaLedger);
+      expect(await ledgerOf(teamId, boId)).toMatchObject({ available: 85_000, reserved: 0, paidOut: 0 });
+      const references = [
+        `payout_fee_recovered:${adaPayoutId}`,
+        `payout_fees:${adaPayoutId}`,
+        `payout_released:${adaPayoutId}`,
+        `payout_requested:${adaPayoutId}`,
+        `payout_succeeded:${adaPayoutId}`,
+        `payout_released:${boPayoutId}`,
+        `payout_requested:${boPayoutId}`,
+      ].sort();
+      expect(await payoutReferences(teamId)).toEqual(references);
+
+      await expect(admin.payouts.importPayoutsWeb({ ...TEAM, csv: log })).resolves.toEqual(counts);
+      expect(await ledgerOf(teamId, memberId)).toEqual(adaLedger);
+      expect(await payoutReferences(teamId)).toEqual(references);
+    });
+
+    const mismatched = { counted: { mismatched: 1 }, reviewReason: LOG_MISMATCH };
+
+    it.each([
+      { case: "still pending", amount: "$499,75 USD", status: "Unclaimed", counted: { pending: 1 }, reviewReason: null },
+      { case: "for another amount", amount: "$400,00 USD", status: "Completed", ...mismatched },
+      { case: "in another currency", amount: "€499,75 EUR", status: "Completed", ...mismatched },
+    ])("leaves a payout exported when PayPal's log shows it $case", async ({ amount, status, counted, reviewReason }) => {
+      const { teamId, adaPayoutId, admin } = await exportTeam();
+      await admin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId] });
+      const log = payoutsWebLog([{ reference: await referenceOf(adaPayoutId), amount, fee: "$0,20 USD", status }]);
+
+      await expect(admin.payouts.importPayoutsWeb({ ...TEAM, csv: log })).resolves.toEqual({ ...noResults, ...counted });
+
+      expect(await rowOf(adaPayoutId)).toMatchObject({ status: "exported", reviewReason, settledAt: null });
+      expect((await payoutReferences(teamId)).filter((reference) => reference.endsWith(adaPayoutId))).toEqual([
+        `payout_requested:${adaPayoutId}`,
+      ]);
+    });
+
+    it("puts a cancelled export back with the approved payouts, so its log no longer matches", async () => {
+      const { adaPayoutId, admin } = await exportTeam();
+      await admin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId] });
+      const reference = await referenceOf(adaPayoutId);
+
+      await expect(admin.payouts.cancelExport({ ...TEAM, requestId: adaPayoutId })).resolves.toMatchObject({
+        status: "queued",
+        feeEstimateMinor: null,
+        sentMinor: null,
+        sentAt: null,
+        failureMessage: WAITING_FOR_EXPORT,
+      });
+      expect(await rowOf(adaPayoutId)).toMatchObject({ offlineReference: null, offlineBatchId: null });
+      await expect(admin.payouts.cancelExport({ ...TEAM, requestId: adaPayoutId })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Only a payout exported for PayPal Payouts Web can be cancelled.",
+      });
+
+      const log = payoutsWebLog([{ reference, amount: "$499,75 USD", fee: "$0,25 USD", status: "Completed" }]);
+      await expect(admin.payouts.importPayoutsWeb({ ...TEAM, csv: log })).resolves.toEqual({ ...noResults, unmatched: 1 });
+      expect(await rowOf(adaPayoutId)).toMatchObject({ status: "queued" });
     });
   });
 });

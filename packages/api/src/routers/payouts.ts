@@ -1,4 +1,10 @@
-import { ANY_AMOUNT_MINOR, PAYDAYS, parseMajorAmount, PAYOUT_RULE_SCOPES } from "@jendal-workspace/core";
+import {
+  ANY_AMOUNT_MINOR,
+  PAYDAYS,
+  parseMajorAmount,
+  PAYOUT_RULE_SCOPES,
+  PAYOUTS_WEB_MAX_ROWS,
+} from "@jendal-workspace/core";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -22,11 +28,14 @@ import {
   requestPayout,
   retryPayout,
 } from "../use-cases/payouts";
+import { cancelPayoutsWebExport, exportPayoutsWeb, importPayoutsWeb } from "../use-cases/payouts-web";
 
 const SETTINGS_ONLY = "Only an admin can change the team settings.";
 const PAYOUTS_ONLY = "Only an admin can approve payouts.";
 
 const requestIdInput = z.object({ requestId: z.string().trim().min(1).max(100) });
+// A log of PayPal's 5000-payout maximum stays well under this.
+const MAX_PAYOUTS_WEB_LOG_CHARS = 2_000_000;
 
 const amountInput = z.string().trim().min(1).max(32);
 const scopeInput = z.enum(PAYOUT_RULE_SCOPES);
@@ -186,5 +195,25 @@ export const payoutsRouter = router({
     requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
     const payouts = requirePayoutServices(ctx.payouts);
     return refreshPayout({ db: ctx.db, payouts }, { teamId: ctx.servicesTeam.id, requestId: input.requestId });
+  }),
+
+  exportPayoutsWeb: servicesTeamProcedure
+    .input(z.object({ requestIds: z.array(z.string().trim().min(1).max(100)).min(1).max(PAYOUTS_WEB_MAX_ROWS) }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
+      return exportPayoutsWeb({ db: ctx.db, now: ctx.now }, { team: ctx.servicesTeam, requestIds: input.requestIds });
+    }),
+
+  // The text of the payout's CSV log downloaded from PayPal.
+  importPayoutsWeb: servicesTeamProcedure
+    .input(z.object({ csv: z.string().min(1).max(MAX_PAYOUTS_WEB_LOG_CHARS) }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
+      return importPayoutsWeb(ctx.db, { teamId: ctx.servicesTeam.id, csv: input.csv });
+    }),
+
+  cancelExport: servicesTeamProcedure.input(requestIdInput).mutation(async ({ ctx, input }) => {
+    requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
+    return cancelPayoutsWebExport(ctx.db, { teamId: ctx.servicesTeam.id, requestId: input.requestId });
   }),
 });

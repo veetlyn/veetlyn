@@ -95,6 +95,20 @@ export async function lockPayoutRequest(tx: Transaction, id: string): Promise<Pa
   return row ?? null;
 }
 
+// The team's request exported under this Payouts Web Customer ID, locked like lockPayoutRequest.
+export async function lockPayoutRequestByOfflineReference(
+  tx: Transaction,
+  input: { teamId: string; reference: string },
+): Promise<PayoutRequestRow | null> {
+  const [row] = await tx
+    .select()
+    .from(payoutRequest)
+    .where(and(eq(payoutRequest.teamId, input.teamId), eq(payoutRequest.offlineReference, input.reference)))
+    .limit(1)
+    .for("update");
+  return row ?? null;
+}
+
 export async function updatePayoutRequest(tx: DbExecutor, id: string, patch: PayoutRequestPatch): Promise<PayoutRequestRow> {
   const [row] = await tx.update(payoutRequest).set(patch).where(eq(payoutRequest.id, id)).returning();
   if (!row) throw new Error(`Update of payout_request ${id} returned no row`);

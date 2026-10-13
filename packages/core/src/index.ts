@@ -45,6 +45,7 @@ export * from "./payouts/requests";
 export * from "./payouts/fees";
 export * from "./payouts/rules";
 export * from "./payouts/checkout-fees";
+export * from "./payouts/payouts-web";
 export * from "./projects/quote-calculator";
 export * from "./crypto/secret-box";
 export * from "./files/rules";
