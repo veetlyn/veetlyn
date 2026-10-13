@@ -1,0 +1,34 @@
+packages/db/src/repositories/payout-requests.ts
+  s_67bb5cbcc49f62::t_93baa1d8316cc4 94-99
+  s_67bb5cbcc49f62::t_6357323f88ae13 91-93
+  s_67bb5cbcc49f62::t_194c1783675c79 100
+  s_67bb5cbcc49f62::t_af170715e53768 47-52,89-90,103,106
+packages/api/src/context.ts
+  s_67bb5cbcc49f62::t_02f9c4cb622217 61-62
+apps/web/src/app/admin/[storeSlug]/payouts/payout-requests-table.tsx
+  s_67bb5cbcc49f62::t_c6a3bf18c1366f 17,176,203
+packages/api/src/routers/payouts.test.ts
+  s_67bb5cbcc49f62::t_b3250203a07189 154,157,170-171,514,519,530-541,655,748,914,922,950,974,1320-1474
+packages/api/src/routers/payouts.ts
+  s_67bb5cbcc49f62::t_526550236a5945 148-151,158,174,182
+packages/api/src/use-cases/payout-rules.ts
+  s_67bb5cbcc49f62::t_57541842843df2 27-31,37
+packages/api/src/use-cases/payouts.ts
+  s_67bb5cbcc49f62::t_4237514af25f0e 2,8,15,31,33,38,41,44-48,55,71-72,88-90,95-104,114-116,135-143,155-156,170-171,225-237,241,244,246,263-266,268,295-296,298-299,301-311,342,346-348,351-353,356-374,377-378,380,382-383,386,391-398,808-843
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e1f810943bef0c772c361742f021985c7b72ace6",
+  "prompts": {},
+  "sessions": {
+    "s_67bb5cbcc49f62": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "03cc2f04-40a8-495c-ade0-386ffd3830a3",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
