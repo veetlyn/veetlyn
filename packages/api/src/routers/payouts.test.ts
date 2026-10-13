@@ -1706,6 +1706,40 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(paypal.requests).toEqual([]);
     });
 
+    it.each([
+      { case: "PayPal fails to answer", balances: () => jsonResponse(503, { name: "SERVICE_UNAVAILABLE", debug_id: "d503" }) },
+      {
+        case: "PayPal lists no balance in the team's currency",
+        balances: () => jsonResponse(200, { account_id: MERCHANT_ID, balances: [] }),
+      },
+    ])("holds a payout under a floor when $case, and sends it once there is no floor", async ({ balances }) => {
+      const { admin, member } = await payoutTeam("US", { teamToken: readsBalance, balances });
+      await admin.payouts.saveRules({ ...MANUAL, balanceFloor: "100.00" });
+      const { id } = await member.payouts.request({ ...TEAM, amount: "100.00" });
+
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+        status: "queued",
+        failureMessage: "Turn on automatic payouts again so Payleor can read your PayPal balance.",
+      });
+      await admin.payouts.saveRules(MANUAL);
+      await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "sent" });
+    });
+
+    it("creates a project payout the rules leave for an admin, and sends it once approved", async () => {
+      const { projectId, admin, paypal, services } = await payoutTeam("US", {}, { ...PROJECT_RULES, autoApproveUpTo: null });
+
+      await expect(
+        createProjectPayouts({ db, payouts: services.payouts }, { now: later(await completionOf(projectId), 3 * DAY) }),
+      ).resolves.toEqual({ created: 1 });
+      const [payout] = await projectPayouts(admin);
+      expect(payout).toMatchObject({ status: "requested", approvalsNeeded: 1 });
+      expect(payoutPosts(paypal.requests)).toEqual([]);
+
+      await expect(admin.payouts.approve({ ...TEAM, requestId: payout?.id ?? "" })).resolves.toMatchObject({
+        status: "sent",
+      });
+    });
+
     it("creates and approves project payouts of a team without automatic payouts, which wait for an export", async () => {
       const { teamId, projectId, admin, paypal, services } = await payoutTeam("US", {}, PROJECT_RULES);
       await admin.payouts.removeCredentials(TEAM);
