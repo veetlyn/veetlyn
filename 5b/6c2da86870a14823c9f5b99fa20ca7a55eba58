@@ -1,0 +1,29 @@
+packages/api/src/routers/payouts.test.ts
+  s_f4d28995b496d9::t_06db942c2017d2 10,35,1200-1244,1324-1327,1337-1345
+packages/api/src/routers/payouts.ts
+  s_f4d28995b496d9::t_1808baabbace4b 42-43,48-50
+packages/api/src/routers/project.test.ts
+  s_f4d28995b496d9::t_530979f9fdd896 235-239
+packages/api/src/routers/project.ts
+  s_f4d28995b496d9::t_3ffffc1e7a4cce 144-145,147,155
+packages/api/src/use-cases/payout-rules.ts
+  s_f4d28995b496d9::t_86e1c40ad356a3 81-89,96-97,100-101,105,109
+packages/api/src/use-cases/payouts.ts
+  s_f4d28995b496d9::t_8dc2678c329747 6,379-389
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5b6c2da86870a14823c9f5b99fa20ca7a55eba58",
+  "prompts": {},
+  "sessions": {
+    "s_f4d28995b496d9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "88c85dda-c422-404c-a226-b0df610fb20a",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
