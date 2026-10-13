@@ -26,22 +26,19 @@ describe("payoutActions", () => {
 });
 
 describe("payoutFeeLine", () => {
-  it("shows the estimate while the payout has not settled", () => {
-    expect(
-      payoutFeeLine({ status: "sent", feeMinor: null, feeEstimateMinor: 25, sentMinor: 975 }),
-    ).toEqual({ label: "PayPal's fee (about)", feeMinor: 25 });
-  });
+  const ESTIMATE = { label: "PayPal's fee (about)", feeMinor: 25 };
 
-  it("shows the actual fee once PayPal reports it", () => {
-    expect(
-      payoutFeeLine({ status: "succeeded", feeMinor: 22, feeEstimateMinor: 25, sentMinor: 975 }),
-    ).toEqual({ label: "PayPal's fee", feeMinor: 22 });
-  });
-
-  it("hides the fee for payouts that never sent", () => {
-    expect(payoutFeeLine({ status: "requested", feeMinor: null, feeEstimateMinor: null, sentMinor: null })).toBeNull();
-    expect(payoutFeeLine({ status: "failed", feeMinor: null, feeEstimateMinor: 25, sentMinor: 975 })).toBeNull();
-    expect(payoutFeeLine({ status: "rejected", feeMinor: null, feeEstimateMinor: null, sentMinor: null })).toBeNull();
+  it.each([
+    ["requested", null, null, null],
+    ["queued", null, 25, null],
+    ["sending", null, 25, ESTIMATE],
+    ["sent", null, 25, ESTIMATE],
+    ["succeeded", 22, 25, { label: "PayPal's fee", feeMinor: 22 }],
+    ["succeeded", null, 25, ESTIMATE],
+    ["failed", null, 25, null],
+    ["rejected", null, 25, null],
+  ] as const)("%s with fee %s and estimate %s shows %o", (status, feeMinor, feeEstimateMinor, line) => {
+    expect(payoutFeeLine({ status, feeMinor, feeEstimateMinor })).toEqual(line);
   });
 });
 

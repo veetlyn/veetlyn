@@ -58,16 +58,24 @@ type PayoutAmounts = {
   status: PayoutRequestStatus;
   feeMinor: number | null;
   feeEstimateMinor: number | null;
-  sentMinor: number | null;
 };
 
-// Before PayPal settles a payout there is only the estimate taken off it; afterwards the fee PayPal charged.
+// Before PayPal settles a payout there is only the estimate taken off it; afterwards the fee PayPal charged. A send
+// that was held goes back to `queued` still carrying its estimate, though nothing was sent.
 export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor: number } | null {
-  if (request.feeMinor !== null) return { label: "PayPal's fee", feeMinor: request.feeMinor };
-  if (request.feeEstimateMinor !== null && request.status !== "failed" && request.status !== "rejected") {
-    return { label: "PayPal's fee (about)", feeMinor: request.feeEstimateMinor };
+  const estimate = request.feeEstimateMinor === null ? null : { label: "PayPal's fee (about)", feeMinor: request.feeEstimateMinor };
+  switch (request.status) {
+    case "sending":
+    case "sent":
+      return estimate;
+    case "succeeded":
+      return request.feeMinor === null ? estimate : { label: "PayPal's fee", feeMinor: request.feeMinor };
+    case "requested":
+    case "queued":
+    case "failed":
+    case "rejected":
+      return null;
   }
-  return null;
 }
 
 // The amount a send claimed stays on the request after it goes back to the queue or fails, when nothing was sent.
