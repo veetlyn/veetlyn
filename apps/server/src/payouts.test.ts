@@ -61,9 +61,7 @@ describe("createPayoutServices", () => {
           ? jsonResponse(200, FAKE_TOKEN_RESPONSE)
           : jsonResponse(401, { error: "invalid_client", error_description: "Client Authentication failed" });
       }
-      return jsonResponse(200, {
-        balances: [{ currency: "USD", total_balance: { currency_code: "USD", value: "10.00" } }],
-      });
+      return jsonResponse(200, { batch_header: { payout_batch_id: "BATCH1", batch_status: "SUCCESS" }, items: [] });
     });
     const services = createPayoutServices({
       secretKey: await importSecretKey(TEST_KEY),
@@ -71,12 +69,12 @@ describe("createPayoutServices", () => {
       tokenKv: kv,
       fetch: paypal.fetch,
     });
-    const balancesWith = (clientSecret: string) =>
-      services.clientFor({ teamId: "team-1", clientId: CLIENT_ID, clientSecret }).reporting.balances("USD");
+    const batchWith = (clientSecret: string) =>
+      services.clientFor({ teamId: "team-1", clientId: CLIENT_ID, clientSecret }).payouts.getBatch("BATCH1");
 
-    await balancesWith(GOOD_SECRET);
-    const wrong = await balancesWith("wrong-secret").catch((error: Error) => error);
-    await balancesWith(GOOD_SECRET);
+    await batchWith(GOOD_SECRET);
+    const wrong = await batchWith("wrong-secret").catch((error: Error) => error);
+    await batchWith(GOOD_SECRET);
 
     expect(wrong).toBeInstanceOf(PayPalError);
     expect(wrong).toMatchObject({ status: 401 });

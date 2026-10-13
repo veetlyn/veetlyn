@@ -45,14 +45,11 @@ const SHARED_ID = "shared-id-1";
 const ACTION_URL = "https://www.sandbox.paypal.com/bizsignup/entry?token=REF-1";
 const CREDENTIALS_PATH = `/v1/customer/partners/${PARTNER_ID}/merchant-integrations/credentials/`;
 
-// PayPal may leave out account_id; null builds that answer.
-function balancesAnswer(accountId: string | null, available = "250.00"): JsonObject {
-  const answer: JsonObject = {
-    balances: [{ currency: "USD", primary: true, total_balance: { currency_code: "USD", value: available } }],
-    as_of_time: "2026-10-12T00:00:00Z",
-  };
-  if (accountId !== null) answer.account_id = accountId;
-  return answer;
+const PAYOUTS_SCOPE = "https://uri.paypal.com/payments/payouts";
+const PARTNER_APP_AUTH = `Basic ${btoa("partner-client-id:partner-secret")}`;
+
+function teamTokenAnswer(scope = `https://uri.paypal.com/services/payments/refund ${PAYOUTS_SCOPE} openid`): Response {
+  return jsonResponse(200, { ...FAKE_TOKEN_RESPONSE, scope });
 }
 
 function sellerCredentialsAnswer(payerId = MERCHANT_ID, clientId = CLIENT_ID): Response {
@@ -63,13 +60,14 @@ function sellerCredentialsAnswer(payerId = MERCHANT_ID, clientId = CLIENT_ID): R
 type TeamPayPalAnswers = {
   exchange?: () => Response;
   sellerCredentials?: () => Response;
-  balances?: () => Response;
+  // The token answer for the team's own REST app.
+  teamToken?: () => Response;
   payout?: () => Response;
   batch?: () => Response;
 };
 
 // A fake PayPal API for the partner app (first-party referral, the seller's authorization code and credentials) and
-// for the team's own REST app (token, balances, payouts).
+// for the team's own REST app (token, payouts).
 function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
   return fakeFetch((request) => {
     const path = new URL(request.url).pathname;
@@ -78,7 +76,8 @@ function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
       if (grant === "authorization_code") {
         return answers.exchange?.() ?? jsonResponse(200, { access_token: "seller-token", expires_in: 28800 });
       }
-      return jsonResponse(200, FAKE_TOKEN_RESPONSE);
+      if (request.headers.get("authorization") === PARTNER_APP_AUTH) return jsonResponse(200, FAKE_TOKEN_RESPONSE);
+      return answers.teamToken?.() ?? teamTokenAnswer();
     }
     if (path === "/v2/customer/partner-referrals") {
       return jsonResponse(201, { links: [{ href: ACTION_URL, rel: "action_url", method: "GET" }] });
@@ -87,7 +86,6 @@ function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
     if (path.startsWith(`/v1/customer/partners/${PARTNER_ID}/merchant-integrations/`)) {
       return jsonResponse(200, { merchant_id: path.split("/").at(-1) ?? "", country: "US" });
     }
-    if (path === "/v1/reporting/balances") return answers.balances?.() ?? jsonResponse(200, balancesAnswer(MERCHANT_ID));
     if (path === "/v1/payments/payouts" && answers.payout) return answers.payout();
     if (path.startsWith("/v1/payments/payouts/") && answers.batch) return answers.batch();
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
@@ -100,7 +98,8 @@ type PayoutGate = { on: boolean; held: { request: Request; answer: (response: Re
 const pathOf = (request: RecordedRequest) => new URL(request.url).pathname;
 const payoutPosts = (requests: RecordedRequest[]) =>
   requests.filter((r) => r.method === "POST" && pathOf(r) === "/v1/payments/payouts");
-const balanceReads = (requests: RecordedRequest[]) => requests.filter((r) => pathOf(r) === "/v1/reporting/balances");
+const teamTokenCalls = (requests: RecordedRequest[]) =>
+  requests.filter((r) => r.headers.get("authorization") === `Basic ${btoa(`${CLIENT_ID}:${CLIENT_SECRET}`)}`);
 
 // The first-party details of the recorded referral.
 function referralDetails(requests: RecordedRequest[]): JsonObject {
@@ -201,8 +200,8 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(exchange?.headers.get("authorization")).toBe(`Basic ${btoa(`${SHARED_ID}:`)}`);
     expect(new URLSearchParams(exchange?.body ?? "").get("code_verifier")).toBe(attempt?.sellerNonce);
     expect(attempt?.usedAt).toEqual(expect.any(Date));
-    // The shared credentials must read the team's balance before they are kept.
-    expect(balanceReads(paypal.requests)[0]?.url).toContain("currency_code=USD");
+    // The shared credentials must get a token with the payouts scope before they are kept.
+    expect(teamTokenCalls(paypal.requests)).toHaveLength(1);
 
     const row = await getTeamPayoutCredentials(db, teamId);
     expect(row).toMatchObject({ clientId: CLIENT_ID, keyId: "v1", paypalAccountId: MERCHANT_ID });
@@ -229,15 +228,24 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       error: { code: "BAD_GATEWAY", message: "PayPal did not confirm the connection. Try again." },
     },
     {
-      case: "credentials that cannot read the balance",
-      answers: {
-        balances: () => jsonResponse(403, { name: "NOT_AUTHORIZED", message: "Insufficient permissions.", debug_id: "d403" }),
-      },
+      case: "credentials whose token lacks the payouts scope",
+      answers: { teamToken: () => teamTokenAnswer("https://uri.paypal.com/services/payments/refund openid") },
       error: {
         code: "PRECONDITION_FAILED",
-        message:
-          "PayPal does not let Payleor read this team's PayPal balance, which payouts need. Ask PayPal to turn on Payouts for the account, then try again.",
+        message: "PayPal has not turned on Payouts for this PayPal account. Ask PayPal to turn it on, then try again.",
       },
+    },
+    {
+      case: "credentials PayPal will not give a token",
+      answers: {
+        teamToken: () => jsonResponse(401, { error: "invalid_client", error_description: "Client Authentication failed" }),
+      },
+      error: { code: "BAD_GATEWAY", message: "PayPal did not confirm the connection. Try again." },
+    },
+    {
+      case: "PayPal failing to answer for the credentials' token",
+      answers: { teamToken: () => jsonResponse(500, { name: "INTERNAL_SERVICE_ERROR", debug_id: "d500" }) },
+      error: { code: "BAD_GATEWAY", message: "PayPal did not answer. Try again." },
     },
   ])("refuses $case and saves nothing", async ({ answers, error }) => {
     const { userId } = await connectedTeam();
@@ -361,7 +369,6 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const { admin, teamId, answers } = await teamWithSentPayout();
     await markTeamPayPalMerchant(db, { teamId, merchantId: "MERCHANT2" });
     answers.sellerCredentials = () => sellerCredentialsAnswer("MERCHANT2", "other-app");
-    answers.balances = () => jsonResponse(200, balancesAnswer("MERCHANT2"));
 
     await expect(turnOnAutomaticPayouts(admin)).rejects.toMatchObject(inProgress);
     await expect(getTeamPayoutCredentials(db, teamId)).resolves.toMatchObject({
@@ -438,7 +445,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     });
   }
 
-  // Automatic payouts on for MERCHANT1, a US account, $900 available in the team's PayPal balance, and Ada, a
+  // Automatic payouts on for MERCHANT1, a US account, and Ada, a
   // freelancer owed $850 with a confirmed destination in `memberCountry`: between two US accounts PayPal's fee is
   // estimated at $0.25. PayPal requests made while turning payouts on are dropped. While `gate.on` is true, each
   // payout POST waits in `gate.held` until the test answers it, so two sends can interleave.
@@ -447,10 +454,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
     await confirmedDestination(memberId, memberCountry);
     await earn(teamId, memberId);
-    const answers: TeamPayPalAnswers = {
-      balances: () => jsonResponse(200, balancesAnswer(MERCHANT_ID, "900.00")),
-      payout: () => batchCreated("BATCH1"),
-    };
+    const answers: TeamPayPalAnswers = { payout: () => batchCreated("BATCH1") };
     const paypal = fakeTeamPayPal(answers);
     const gate: PayoutGate = { on: false, held: [] };
     const gatedFetch: FetchLike = (request) =>
@@ -707,49 +711,61 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(paypal.requests).toEqual([]);
   });
 
-  it.each([
-    {
-      case: "the team's balance is below the amount",
-      hold: (answers: TeamPayPalAnswers) => {
-        answers.balances = () => jsonResponse(200, balancesAnswer(MERCHANT_ID, "100.00"));
-      },
-      attempts: [1],
-    },
-    {
-      case: "PayPal answers INSUFFICIENT_FUNDS",
-      hold: (answers: TeamPayPalAnswers) => {
-        answers.payout = () =>
-          jsonResponse(422, {
-            name: "UNPROCESSABLE_ENTITY",
-            message: "The requested action could not be performed.",
-            details: [{ issue: "INSUFFICIENT_FUNDS" }],
-            debug_id: "d422",
-          });
-      },
-      attempts: [0, 1],
-    },
-  ])("keeps an approved request queued when $case, and sends it on retry with fresh ids", async ({ hold, attempts }) => {
+  it("keeps an approved request queued with its earnings reserved when PayPal answers INSUFFICIENT_FUNDS, and sends it on retry with fresh ids", async () => {
     const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
-    const ready = { ...answers };
-    hold(answers);
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    answers.payout = () =>
+      jsonResponse(422, {
+        name: "UNPROCESSABLE_ENTITY",
+        message: "Sender does not have sufficient funds.",
+        details: [{ issue: "INSUFFICIENT_FUNDS" }],
+        debug_id: "d422",
+      });
 
     await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "queued",
       failureMessage: LOW_BALANCE,
       decidedAt: expect.any(String),
     });
-    expect(payoutPosts(paypal.requests)).toHaveLength(attempts.length - 1);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000, paidOut: 0 });
 
-    Object.assign(answers, ready);
+    answers.payout = () => batchCreated("BATCH1");
     await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({
       status: "sent",
       failureMessage: null,
     });
-    expect(batchIdsOf(payoutPosts(paypal.requests))).toEqual(
-      attempts.map((attempt) => [`payout:${id}:${attempt}`, `${id}-${attempt}`]),
-    );
+    expect(batchIdsOf(payoutPosts(paypal.requests))).toEqual([
+      [`payout:${id}:0`, `${id}-0`],
+      [`payout:${id}:1`, `${id}-1`],
+    ]);
+  });
+
+  const authenticationFailure = { name: "AUTHENTICATION_FAILURE", message: "Authentication failed.", debug_id: "d401" };
+
+  it.each([
+    {
+      case: "refuses the team's token",
+      refuse: (answers: TeamPayPalAnswers) => {
+        answers.teamToken = () => jsonResponse(401, { error: "invalid_client", error_description: "Client Authentication failed" });
+      },
+    },
+    {
+      case: "refuses the payout as unauthenticated",
+      refuse: (answers: TeamPayPalAnswers) => {
+        answers.payout = () => jsonResponse(401, authenticationFailure);
+      },
+    },
+  ])("keeps an approved request queued with its earnings reserved when PayPal $case", async ({ refuse }) => {
+    const { teamId, memberId, admin, member, answers } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    refuse(answers);
+
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+      status: "queued",
+      failureMessage: "PayPal refused the team's automatic payouts connection. Turn on automatic payouts again.",
+    });
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000, paidOut: 0 });
+    expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`]);
   });
 
   const UNCERTAIN = {
@@ -811,8 +827,6 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const ids = batchIdsOf(payoutPosts(paypal.requests));
     expect(ids.length).toBeGreaterThan(3);
     expect(new Set(ids.map((pair) => pair.join(" ")))).toEqual(new Set([`payout:${id}:0 ${id}-0`]));
-    // Only the first attempt reads the balance: after an unknown outcome PayPal may already have paid from it.
-    expect(balanceReads(paypal.requests)).toHaveLength(1);
   });
 
   it.each([

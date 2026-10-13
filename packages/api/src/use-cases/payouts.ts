@@ -35,13 +35,7 @@ import {
 import { getPayoutDestination, listMemberEarnings, type MemberEarningsRow } from "@jendal-workspace/db/repositories/payouts";
 import { getTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
-import {
-  type PayoutBatch,
-  type PayoutItem,
-  type PayPalBalances,
-  type PayPalClient,
-  PayPalError,
-} from "@jendal-workspace/paypal";
+import { type PayoutBatch, type PayoutItem, type PayPalClient, PayPalError } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
@@ -98,7 +92,6 @@ const OTHER_ACCOUNT =
   "Automatic payouts are on for another PayPal account than the one connected to this team. Turn them on again.";
 const SEALED_SECRET_UNREADABLE = "The team's automatic payouts connection could not be read. Turn on automatic payouts again.";
 const LOW_BALANCE = "The team's PayPal balance is too low. Add funds, then retry.";
-const BALANCE_UNREADABLE = "We could not read the team's PayPal balance. Try again.";
 const CREDENTIALS_REFUSED = "PayPal refused the team's automatic payouts connection. Turn on automatic payouts again.";
 const UNCERTAIN = "We could not confirm the payout with PayPal. Try again; the member will not be paid twice.";
 const DESTINATION_UNQUALIFIED = "The member's PayPal account no longer qualifies for payouts.";
@@ -391,29 +384,6 @@ async function linkedBatchOutcome(
   }
 }
 
-// A negative balance pays nothing.
-function availableMinorIn(value: string): number | null {
-  return value.trim().startsWith("-") ? 0 : payPalValueMinor(value);
-}
-
-async function balanceProblem(
-  client: PayPalClient,
-  request: PayoutRequestRow,
-): Promise<{ message: string; cause: unknown } | null> {
-  let balances: PayPalBalances;
-  try {
-    balances = await client.reporting.balances(request.currency);
-  } catch (cause) {
-    const refused = cause instanceof PayPalError && cause.status === 401;
-    return { message: refused ? CREDENTIALS_REFUSED : BALANCE_UNREADABLE, cause };
-  }
-  const balance = balances.balances.find((entry) => entry.currency === request.currency);
-  const availableMinor = balance ? availableMinorIn(balance.available) : 0;
-  if (availableMinor === null) return { message: BALANCE_UNREADABLE, cause: null };
-  // The team's balance pays what is sent and PayPal's fee on top: about the whole requested amount.
-  return availableMinor < request.amountMinor ? { message: LOW_BALANCE, cause: null } : null;
-}
-
 // Every attempt with the same send_attempt names the same batch and PayPal-Request-Id, so PayPal pays it once.
 async function attemptSend(
   deps: PayoutDeps,
@@ -427,11 +397,6 @@ async function attemptSend(
     client = await payoutClientFromCredentials(deps.payouts, claim.credentials);
   } catch (cause) {
     return { kind: "held", message: SEALED_SECRET_UNREADABLE, cause };
-  }
-  // After an unknown outcome PayPal may already have paid from the balance, so it is not checked again.
-  if (request.uncertainAt === null) {
-    const problem = await balanceProblem(client, request);
-    if (problem) return { kind: "held", ...problem };
   }
   try {
     const created = await client.payouts.create({
@@ -449,6 +414,10 @@ async function attemptSend(
   } catch (error) {
     const linked = error instanceof PayPalError ? linkedBatchId(error) : null;
     if (linked && error instanceof PayPalError) return linkedBatchOutcome(client, request, linked, error);
+    // The client already retried a 401 with a fresh token, so PayPal refused these credentials and made no payout.
+    if (error instanceof PayPalError && error.status === 401) {
+      return { kind: "held", message: CREDENTIALS_REFUSED, cause: error };
+    }
     if (!isSettledPayPalRefusal(error) || isPayPalRequestInProgress(error)) return { kind: "uncertain", cause: error };
     if (isInsufficientFunds(error)) return { kind: "held", message: LOW_BALANCE, cause: error };
     return { kind: "refused", message: payPalRefusalMessage(error).slice(0, MAX_FAILURE_MESSAGE), cause: error };

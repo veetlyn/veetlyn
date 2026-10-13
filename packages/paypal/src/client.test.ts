@@ -74,6 +74,36 @@ describe("OAuth token", () => {
   });
 });
 
+describe("grantedScopes", () => {
+  it("fetches a fresh token and returns the scopes PayPal granted it", async () => {
+    const scope = "https://uri.paypal.com/services/payments/refund https://uri.paypal.com/payments/payouts";
+    const { requests, fetch } = fakeFetch(() => jsonResponse(200, { ...FAKE_TOKEN_RESPONSE, scope }));
+    const client = clientWith(fetch);
+
+    await expect(client.grantedScopes()).resolves.toEqual([
+      "https://uri.paypal.com/services/payments/refund",
+      "https://uri.paypal.com/payments/payouts",
+    ]);
+    await expect(client.grantedScopes()).resolves.toHaveLength(2);
+    expect(requests.map((r) => r.url)).toEqual([
+      "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+      "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+    ]);
+  });
+
+  it("returns no scopes when PayPal's token response lists none", async () => {
+    const { fetch } = fakeFetch(() => jsonResponse(200, FAKE_TOKEN_RESPONSE));
+
+    await expect(clientWith(fetch).grantedScopes()).resolves.toEqual([]);
+  });
+
+  it("turns a refused token into a PayPalError", async () => {
+    const { fetch } = fakeFetch(() => jsonResponse(401, { error: "invalid_client", error_description: "Client Authentication failed" }));
+
+    await expect(clientWith(fetch).grantedScopes()).rejects.toMatchObject({ status: 401 });
+  });
+});
+
 describe("request headers", () => {
   async function postWithHeaders(extra: Partial<PayPalClientConfig> = {}, options: Partial<PayPalRequestOptions> = {}) {
     const { requests, fetch } = fakeFetch((request) =>

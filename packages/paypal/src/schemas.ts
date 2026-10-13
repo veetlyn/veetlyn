@@ -28,6 +28,8 @@ export type JsonBody = z.output<typeof jsonSchema>;
 export const tokenResponseSchema = z.looseObject({
   access_token: z.string(),
   expires_in: z.number().optional().catch(undefined),
+  // Space-separated scope URIs granted to the token.
+  scope: z.string().optional().catch(undefined),
 });
 
 export const storedTokenSchema = z.object({ accessToken: z.string(), expiresAt: z.number() });
@@ -170,17 +172,6 @@ export const payoutBatchSchema = z.looseObject({
       payout_item_fee: payoutMoneySchema.optional().catch(undefined),
       payout_item: z.looseObject({ sender_item_id: optionalText }).optional().catch(undefined),
       errors: z.looseObject({ name: z.string(), message: z.string().catch("") }).optional().catch(undefined),
-    }),
-  ),
-});
-
-export const balancesSchema = z.looseObject({
-  account_id: optionalText,
-  balances: lenientArray(
-    z.looseObject({
-      currency: z.string(),
-      total_balance: moneySchema,
-      available_balance: readableMoney,
     }),
   ),
 });

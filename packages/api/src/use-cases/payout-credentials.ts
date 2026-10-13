@@ -20,7 +20,6 @@ import {
   actionUrlFromLinks,
   FIRST_PARTY_REFERRAL_FEATURES,
   PayPalError,
-  type PayPalBalances,
   type PayPalClient,
   type SellerCredentials,
 } from "@jendal-workspace/paypal";
@@ -40,6 +39,7 @@ const CONNECT_ATTEMPT_TTL_MS = 3_600_000;
 const SELLER_NONCE_BYTES = 64;
 const CONNECTION_UNCONFIRMED = "PayPal did not confirm the connection. Try again.";
 const CONNECT_EXPIRED = "This PayPal connection expired. Turn on automatic payouts again.";
+const PAYOUTS_SCOPE = "https://uri.paypal.com/payments/payouts";
 
 export function requirePayoutServices(payouts: PayoutServices | undefined): PayoutServices {
   if (!payouts) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Payouts are not set up on this server." });
@@ -85,13 +85,13 @@ async function writeUnlessSendingElsewhere<T>(
   });
 }
 
-async function requirePayoutTeam(db: Database, team: PayoutTeam): Promise<{ merchantId: string; currency: string }> {
+async function requirePayoutTeam(db: Database, team: PayoutTeam): Promise<{ merchantId: string }> {
   const settings = await getServicesTeamSettings(db, team.id);
   if (settings?.solo) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A solo seller has no payouts to send." });
   }
   if (!team.paypalMerchantId) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Connect PayPal first." });
-  return { merchantId: team.paypalMerchantId, currency: settings?.currency ?? "USD" };
+  return { merchantId: team.paypalMerchantId };
 }
 
 function sellerNonce(): string {
@@ -169,22 +169,22 @@ async function sellerCredentialsFor(
   }
 }
 
-async function readBalances(client: PayPalClient, currency: string, teamId: string): Promise<PayPalBalances> {
+async function requirePayoutsScope(client: PayPalClient, teamId: string): Promise<void> {
+  let scopes: string[];
   try {
-    return await client.reporting.balances(currency);
+    scopes = await client.grantedScopes();
   } catch (cause) {
-    const status = cause instanceof PayPalError ? cause.status : null;
     log.warn({ action: "payout_connect.verify", team: { id: teamId }, error: payPalErrorLog(cause) });
-    if (status === 401) throw new TRPCError({ code: "BAD_GATEWAY", message: CONNECTION_UNCONFIRMED, cause });
-    if (status === 403) {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message:
-          "PayPal does not let Payleor read this team's PayPal balance, which payouts need. Ask PayPal to turn on Payouts for the account, then try again.",
-        cause,
-      });
+    if (cause instanceof PayPalError && cause.status === 401) {
+      throw new TRPCError({ code: "BAD_GATEWAY", message: CONNECTION_UNCONFIRMED, cause });
     }
     throw new TRPCError({ code: "BAD_GATEWAY", message: "PayPal did not answer. Try again.", cause });
+  }
+  if (!scopes.includes(PAYOUTS_SCOPE)) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "PayPal has not turned on Payouts for this PayPal account. Ask PayPal to turn it on, then try again.",
+    });
   }
 }
 
@@ -208,22 +208,22 @@ function otherAccount(merchantId: string): TRPCError {
 }
 
 // PayPal shares the team's own REST credentials after consent. They are kept only when they belong to the PayPal
-// account connected to the team and can read its balance; PayPal's calls happen before any lock is taken.
+// account connected to the team and their token carries the payouts scope. Balances are not read: PayPal does not
+// grant first-party credentials the reporting scope. PayPal's calls happen before any lock is taken.
 export async function completePayoutConnect(
   deps: { db: Database; payouts: PayoutServices; paypal: PayPalServices },
   input: { team: PayoutTeam; userId: string; attemptId: string; authCode: string; sharedId: string },
 ): Promise<PayoutCredentialsView> {
   const { db, payouts, paypal } = deps;
   const { team } = input;
-  const { merchantId, currency } = await requirePayoutTeam(db, team);
+  const { merchantId } = await requirePayoutTeam(db, team);
   const attempt = await getPayoutConnectAttempt(db, input.attemptId);
   if (!usableAttempt(attempt, team.id, input.userId)) throw connectExpired();
 
   const credentials = await sellerCredentialsFor(paypal, attempt, input);
   if (credentials.payerId !== merchantId) throw otherAccount(merchantId);
   const client = payouts.clientFor({ teamId: team.id, clientId: credentials.clientId, clientSecret: credentials.clientSecret });
-  const { accountId } = await readBalances(client, currency, team.id);
-  if (accountId !== null && accountId !== merchantId) throw otherAccount(merchantId);
+  await requirePayoutsScope(client, team.id);
 
   const sealed = await sealSecret(payouts.secretKey, payouts.keyId, credentials.clientSecret, team.id);
   const row = await writeUnlessSendingElsewhere(
