@@ -205,7 +205,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
     const row = await getTeamPayoutCredentials(db, teamId);
     expect(row).toMatchObject({ clientId: CLIENT_ID, keyId: "v1", paypalAccountId: MERCHANT_ID });
-    expect(row?.secretCiphertext).not.toContain(CLIENT_SECRET);
+    expect(atob(row?.secretCiphertext ?? "")).not.toContain(CLIENT_SECRET);
     const sealed = { ciphertext: row?.secretCiphertext ?? "", iv: row?.secretIv ?? "", keyId: row?.keyId ?? "" };
     await expect(openSecret(services.payouts.secretKey, sealed, teamId)).resolves.toBe(CLIENT_SECRET);
 

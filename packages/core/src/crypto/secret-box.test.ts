@@ -12,7 +12,7 @@ describe("secret box", () => {
     const sealed = await sealSecret(key, "v1", "team-client-secret", "team-1");
 
     expect(sealed.keyId).toBe("v1");
-    expect(sealed.ciphertext).not.toContain("team-client-secret");
+    expect(atob(sealed.ciphertext)).not.toContain("team-client-secret");
     await expect(openSecret(key, sealed, "team-1")).resolves.toBe("team-client-secret");
   });
 

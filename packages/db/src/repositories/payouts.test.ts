@@ -1,12 +1,13 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { account } from "../schema/auth";
-import { createTestDb, hasTestDatabase, seedUser, truncateAll } from "../testing/db";
-import { findLinkedPayPalAccount, getPayoutDestination, savePayoutDestination } from "./payouts";
+import { ledgerBalance } from "../schema/ledger";
+import { createTestDb, hasTestDatabase, seedServicesTeamWithAdmin, seedUser, truncateAll } from "../testing/db";
+import { findLinkedPayPalAccount, getPayoutDestination, listMemberEarnings, savePayoutDestination } from "./payouts";
 
 const PAYPAL_USER_ID = "https://www.paypal.com/webapps/auth/identity/user/abc123";
 
-describe.skipIf(!hasTestDatabase)("payout destination repository", () => {
+describe.skipIf(!hasTestDatabase)("payouts repository", () => {
   const db = createTestDb();
 
   beforeEach(() => truncateAll(db));
@@ -60,5 +61,45 @@ describe.skipIf(!hasTestDatabase)("payout destination repository", () => {
     await expect(
       savePayoutDestination(db, userId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null, paypalCountry: null }, null),
     ).resolves.toMatchObject({ paypalPayerId: "WDJJHEBZ4X2LY", ageConfirmedAt: confirmedAt, ageSource: "paypal" });
+  });
+
+  it("lists a member's earnings per team and currency and leaves out teams with only zero balances", async () => {
+    const studio = await seedServicesTeamWithAdmin(db, { slug: "studio" });
+    const quiet = await seedServicesTeamWithAdmin(db, { slug: "quiet" });
+    const userId = await seedUser(db, "Ada");
+    const otherId = await seedUser(db, "Bea");
+    await db.insert(ledgerBalance).values([
+      { teamId: studio.teamId, account: `owed:${userId}:available`, currency: "USD", balanceMinor: 5_000 },
+      { teamId: studio.teamId, account: `owed:${userId}:reserved`, currency: "USD", balanceMinor: 1_000 },
+      { teamId: studio.teamId, account: `paid_out:${userId}`, currency: "USD", balanceMinor: 0 },
+      { teamId: studio.teamId, account: `paid_out:${userId}`, currency: "EUR", balanceMinor: 700 },
+      { teamId: studio.teamId, account: `owed:${otherId}:available`, currency: "USD", balanceMinor: 9_000 },
+      { teamId: studio.teamId, account: "team_revenue", currency: "USD", balanceMinor: 3_000 },
+      { teamId: quiet.teamId, account: `owed:${userId}:available`, currency: "USD", balanceMinor: 0 },
+      { teamId: quiet.teamId, account: `paid_out:${userId}`, currency: "USD", balanceMinor: 0 },
+    ]);
+
+    await expect(listMemberEarnings(db, userId)).resolves.toEqual([
+      {
+        teamId: studio.teamId,
+        teamName: "studio",
+        teamSlug: "studio",
+        currency: "EUR",
+        availableMinor: 0,
+        reservedMinor: 0,
+        paidOutMinor: 700,
+        teamPayPalCountry: null,
+      },
+      {
+        teamId: studio.teamId,
+        teamName: "studio",
+        teamSlug: "studio",
+        currency: "USD",
+        availableMinor: 5_000,
+        reservedMinor: 1_000,
+        paidOutMinor: 0,
+        teamPayPalCountry: null,
+      },
+    ]);
   });
 });

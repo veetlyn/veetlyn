@@ -13,7 +13,7 @@ export type CreatePayoutInput = {
   item: { receiverPayerId: string; amount: PayoutMoney; note: string; senderItemId: string };
 };
 
-export type PayoutBatchCreated = { batchId: string; batchStatus: string };
+export type PayoutBatchCreated = { batchId: string };
 
 export type PayoutItem = {
   itemId: string;
@@ -50,7 +50,7 @@ export function createPayouts(request: PayPalRequest) {
         },
         payoutBatchCreatedSchema,
       );
-      return { batchId: body.batch_header.payout_batch_id, batchStatus: body.batch_header.batch_status };
+      return { batchId: body.batch_header.payout_batch_id };
     },
 
     async getBatch(batchId: string): Promise<PayoutBatch> {

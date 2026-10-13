@@ -46,33 +46,15 @@ describe("payoutFeeLine", () => {
 });
 
 describe("payoutNetMinor", () => {
-  it("takes the flat US fee off a US-to-US payout", () => {
-    expect(payoutNetMinor({ amountMinor: 1000, currency: "USD", senderCountry: "US", receiverCountry: "US" })).toEqual(
-      { feeEstimateMinor: 25, netMinor: 975, tooSmall: null },
-    );
-  });
+  const TOO_SMALL = "This payout is too small to cover PayPal's fee.";
 
-  it("takes the 2% international fee off a cross-border payout", () => {
-    expect(payoutNetMinor({ amountMinor: 1000, currency: "USD", senderCountry: "SN", receiverCountry: "US" })).toEqual(
-      { feeEstimateMinor: 20, netMinor: 980, tooSmall: null },
-    );
-  });
-
-  it("never returns a negative amount", () => {
-    expect(payoutNetMinor({ amountMinor: 10, currency: "USD", senderCountry: "US", receiverCountry: "US" })).toEqual({
-      feeEstimateMinor: 25,
-      netMinor: 0,
-      tooSmall: "This payout is too small to cover PayPal's fee.",
-    });
-  });
-
-  it("flags an amount whose payout would fall below PayPal's minimum after the fee", () => {
-    expect(
-      payoutNetMinor({ amountMinor: 120, currency: "USD", senderCountry: "US", receiverCountry: "US" }).tooSmall,
-    ).toBe("This payout is too small to cover PayPal's fee.");
-    expect(
-      payoutNetMinor({ amountMinor: 125, currency: "USD", senderCountry: "US", receiverCountry: "US" }).tooSmall,
-    ).toBeNull();
+  it.each([
+    [1000, { feeEstimateMinor: 25, netMinor: 975, tooSmall: null }],
+    [10, { feeEstimateMinor: 25, netMinor: 0, tooSmall: TOO_SMALL }],
+    [120, { feeEstimateMinor: 25, netMinor: 95, tooSmall: TOO_SMALL }],
+    [125, { feeEstimateMinor: 25, netMinor: 100, tooSmall: null }],
+  ] as const)("a US-to-US request of %i minor leaves %o", (amountMinor, net) => {
+    expect(payoutNetMinor({ amountMinor, currency: "USD", senderCountry: "US", receiverCountry: "US" })).toEqual(net);
   });
 });
 

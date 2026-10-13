@@ -53,7 +53,7 @@ const pathOf = (request: RecordedRequest) => new URL(request.url).pathname;
 const tokenCalls = (requests: RecordedRequest[]) => requests.filter((r) => pathOf(r) === "/v1/oauth2/token");
 
 describe("createPayoutServices", () => {
-  it("never verifies a wrong secret with the token cached for the team's earlier credentials", async () => {
+  it("never uses a token cached for one secret with another, and keys the cache without the secret", async () => {
     const { kv, entries } = fakeKv();
     const paypal = fakeFetch((request) => {
       if (pathOf(request) === "/v1/oauth2/token") {
