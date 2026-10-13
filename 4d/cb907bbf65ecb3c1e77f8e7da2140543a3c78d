@@ -1,0 +1,20 @@
+packages/api/src/routers/payouts.test.ts
+  s_ac3ef0384a6639::t_5a4fc9568429e9 312-335
+  s_ac3ef0384a6639::t_c6f02ef30f696c 963-969,1061,1103-1105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4dcb907bbf65ecb3c1e77f8e7da2140543a3c78d",
+  "prompts": {},
+  "sessions": {
+    "s_ac3ef0384a6639": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "acc9bd22-4ed7-48b7-bf0d-313f31bc41f6",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
