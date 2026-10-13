@@ -1,0 +1,27 @@
+packages/core/src/projects/quote-calculator.test.ts
+  s_506497fa46be4a::t_c2e1bbe1ac91ed 1-39
+packages/core/src/payouts/checkout-fees.ts
+  s_506497fa46be4a::t_df88a97da4b6d5 1-17
+packages/core/src/payouts/checkout-fees.test.ts
+  s_506497fa46be4a::t_f95558ac67fdf2 1-11
+packages/core/src/index.ts
+  s_506497fa46be4a::t_dc06f25d70028c 47-48
+packages/core/src/projects/quote-calculator.ts
+  s_506497fa46be4a::t_ece5e1578baf7b 1-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "313232bc58a16d739a21b8f9b49e83e283134c81",
+  "prompts": {},
+  "sessions": {
+    "s_506497fa46be4a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "fb807de7-7c4d-47df-b253-3eb9b9ca58ab",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
