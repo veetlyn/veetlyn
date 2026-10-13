@@ -1,0 +1,52 @@
+packages/api/src/use-cases/payouts.ts
+  s_ccba1df21739f3::t_b1b0ba44c3751b 208
+  s_ccba1df21739f3::t_183b3d213ab81b 547,549
+  s_ccba1df21739f3::t_4499eeafbf7131 261,266-276
+  s_ccba1df21739f3::t_1036e83fb617fe 158
+  s_ccba1df21739f3::t_41950c665e9053 291
+  s_ccba1df21739f3::t_e7f921e51e7f9c 514-515
+  s_ccba1df21739f3::t_6cd08b25ff8c37 843-848
+  s_ccba1df21739f3::t_eaebd9556c8189 277,876-893,896-898,905,910-911
+  s_ccba1df21739f3::t_bf38bd55cdea5b 139
+  s_ccba1df21739f3::t_15117b562d043b 278
+packages/db/src/repositories/payout-requests.ts
+  s_ccba1df21739f3::t_aceec417626528 98-111
+packages/core/src/index.ts
+  s_ccba1df21739f3::t_113305e2df1e3b 48
+packages/api/src/routers/payouts.test.ts
+  s_ccba1df21739f3::t_65c461eb96192a 1683-1745,1755-1778,1780-1781,1783-1850,1853-1854,1857-1892
+  s_ccba1df21739f3::t_c931b622635c86 1779,1782
+  s_ccba1df21739f3::t_a70a651f766ff1 1172-1174,1184-1187
+  s_ccba1df21739f3::t_c3e697f8023d41 1851-1852,1855-1856
+  s_ccba1df21739f3::t_2eb3facdd80181 1746-1754
+packages/core/src/payouts/payouts-web.test.ts
+  s_ccba1df21739f3::t_8761437686fbd0 153-156,162-171
+  s_ccba1df21739f3::t_8186ed53a03138 1-152,157-161,172-183
+packages/api/src/use-cases/payouts-web.ts
+  s_ccba1df21739f3::t_6d7520339dd0f0 1-95,103-189
+  s_ccba1df21739f3::t_888f2b459a0b7c 96-102
+packages/api/src/routers/payouts.ts
+  s_ccba1df21739f3::t_d7a7d6b7907c9f 37-38
+  s_ccba1df21739f3::t_a038ec039a908b 1-7
+  s_ccba1df21739f3::t_30b114d6ef2604 31
+  s_ccba1df21739f3::t_ed65c46ebcbf5a 199-218
+packages/core/src/payouts/payouts-web.ts
+  s_ccba1df21739f3::t_5f0c444c59c174 43,46,49-51
+  s_ccba1df21739f3::t_c584184dc257ee 1-42,44-45,47-48,52-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e16965dd9ee8446006d29bdb77534c757e59990e",
+  "prompts": {},
+  "sessions": {
+    "s_ccba1df21739f3": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "7dc799dc-eb3c-4516-8cff-d5f3494b5e6c",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
