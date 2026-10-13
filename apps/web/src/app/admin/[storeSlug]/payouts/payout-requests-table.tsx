@@ -74,6 +74,7 @@ function RequestRow({
 }) {
   const queryClient = useQueryClient();
   const approveDialogRef = useRef<HTMLDialogElement>(null);
+  const cancelExportDialogRef = useRef<HTMLDialogElement>(null);
   // onSettled: a failed send still changes the request (held, or left unconfirmed), so the row must reload either way.
   const invalidate = () => queryClient.invalidateQueries({ queryKey: trpc.payouts.list.queryKey({ teamSlug }) });
   const approve = useMutation(
@@ -87,8 +88,9 @@ function RequestRow({
   const reject = useMutation(trpc.payouts.reject.mutationOptions({ onSettled: invalidate }));
   const retry = useMutation(trpc.payouts.retry.mutationOptions({ onSettled: invalidate }));
   const refresh = useMutation(trpc.payouts.refresh.mutationOptions({ onSettled: invalidate }));
+  const cancelExport = useMutation(trpc.payouts.cancelExport.mutationOptions({ onSettled: invalidate }));
 
-  const mutations = [approve, reject, retry, refresh];
+  const mutations = [approve, reject, retry, refresh, cancelExport];
   const pending = mutations.some((mutation) => mutation.isPending);
   const error = mutations.find((mutation) => mutation.error)?.error ?? null;
   const actions = payoutActions(request);
@@ -131,6 +133,9 @@ function RequestRow({
         {waiting ? <p className="text-muted-foreground">{waiting}</p> : null}
         {approval.progress ? <p className="text-muted-foreground">{approval.progress}</p> : null}
         {approval.note ? <p className="text-muted-foreground">{approval.note}</p> : null}
+        {request.status === "exported" && request.reviewReason ? (
+          <p className="text-destructive">{request.reviewReason}</p>
+        ) : null}
         {request.reviewReason ? (
           <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
             Needs review
@@ -198,6 +203,20 @@ function RequestRow({
               {refresh.isPending ? "Checking…" : "Refresh"}
             </Button>
           ) : null}
+          {actions.includes("cancel_export") ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                resetErrors();
+                cancelExportDialogRef.current?.showModal();
+              }}
+            >
+              {cancelExport.isPending ? "Cancelling…" : "Cancel export"}
+            </Button>
+          ) : null}
         </div>
         <ConfirmDialog
           dialogRef={approveDialogRef}
@@ -206,6 +225,14 @@ function RequestRow({
           body={dialog.body}
           confirmLabel={dialog.confirmLabel}
           onConfirm={() => approve.mutate(input)}
+        />
+        <ConfirmDialog
+          dialogRef={cancelExportDialogRef}
+          id={`cancel-export-dialog-${request.id}`}
+          title={`Cancel the export of ${amount} for ${request.memberName}?`}
+          body="Only cancel if you did not send this file in PayPal. If PayPal already paid it, cancelling lets Payleor pay it again."
+          confirmLabel="Cancel export"
+          onConfirm={() => cancelExport.mutate(input)}
         />
       </td>
     </tr>

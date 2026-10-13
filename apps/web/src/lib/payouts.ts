@@ -15,7 +15,7 @@ const STATUS_LABELS = {
   succeeded: "Paid",
   failed: "Failed",
   rejected: "Rejected",
-  exported: "Exported for Payouts Web",
+  exported: "Sent through PayPal Payouts Web",
 } satisfies Record<PayoutRequestStatus, string>;
 
 export function payoutStatusLabel(request: PayoutState): string {
@@ -35,7 +35,7 @@ export const MEMBER_STATUS_LABELS = {
   exported: "Approved, being sent",
 } satisfies Record<PayoutRequestStatus, string>;
 
-export type PayoutAction = "approve" | "reject" | "retry" | "refresh";
+export type PayoutAction = "approve" | "reject" | "retry" | "refresh" | "cancel_export";
 
 // A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once, and cannot be
 // rejected. A `sending` request that is not uncertain has a PayPal call in flight and must be left alone.
@@ -49,10 +49,11 @@ export function payoutActions(request: PayoutState): readonly PayoutAction[] {
       return request.uncertain ? ["retry"] : [];
     case "sent":
       return ["refresh"];
+    case "exported":
+      return ["cancel_export"];
     case "succeeded":
     case "failed":
     case "rejected":
-    case "exported":
       return [];
   }
 }
@@ -105,6 +106,7 @@ export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor
   switch (request.status) {
     case "sending":
     case "sent":
+    case "exported":
       return estimate;
     case "succeeded":
       return request.feeMinor === null ? estimate : { label: "PayPal's fee", feeMinor: request.feeMinor };
@@ -112,14 +114,17 @@ export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor
     case "queued":
     case "failed":
     case "rejected":
-    case "exported":
       return null;
   }
 }
 
 // The amount a send claimed stays on the request after it goes back to the queue or fails, when nothing was sent.
 export function payoutSentMinor(request: { status: PayoutRequestStatus; sentMinor: number | null }): number | null {
-  const sent = request.status === "sending" || request.status === "sent" || request.status === "succeeded";
+  const sent =
+    request.status === "sending" ||
+    request.status === "sent" ||
+    request.status === "exported" ||
+    request.status === "succeeded";
   return sent ? request.sentMinor : null;
 }
 

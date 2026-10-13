@@ -10,6 +10,7 @@ import { trpc } from "@/utils/trpc";
 
 import { PayoutCredentialsCard } from "./payout-credentials-card";
 import { PayoutRequestsTable } from "./payout-requests-table";
+import { PayoutsWebSection } from "./payouts-web-section";
 
 export default function TeamPayouts({ teamSlug }: { teamSlug: string }) {
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
@@ -49,6 +50,7 @@ export default function TeamPayouts({ teamSlug }: { teamSlug: string }) {
             <span className="text-muted-foreground">: who approves payouts, and when they are sent.</span>
           </p>
           <PayoutCredentialsCard teamSlug={team.slug} />
+          <PayoutsWebSection teamSlug={team.slug} />
           <PayoutRequestsTable teamSlug={team.slug} />
         </>
       )}

@@ -22,6 +22,7 @@ describe("payoutActions", () => {
     ["succeeded", false, []],
     ["failed", false, []],
     ["rejected", false, []],
+    ["exported", false, ["cancel_export"]],
   ] as const)("%s (uncertain: %s)", (status, uncertain, actions) => {
     expect(payoutActions({ status, uncertain })).toEqual(actions);
   });
@@ -68,6 +69,7 @@ describe("payoutFeeLine", () => {
     ["succeeded", null, 25, ESTIMATE],
     ["failed", null, 25, null],
     ["rejected", null, 25, null],
+    ["exported", null, 25, ESTIMATE],
   ] as const)("%s with fee %s and estimate %s shows %o", (status, feeMinor, feeEstimateMinor, line) => {
     expect(payoutFeeLine({ status, feeMinor, feeEstimateMinor })).toEqual(line);
   });
@@ -91,6 +93,7 @@ describe("payoutSentMinor", () => {
     ["sending", 975],
     ["sent", 975],
     ["succeeded", 975],
+    ["exported", 975],
     ["queued", null],
     ["failed", null],
     ["rejected", null],
