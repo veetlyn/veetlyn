@@ -226,6 +226,9 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
                 ))}
               </select>
             </div>
+            <Link href={`/${team.slug}/payouts/rules`} className="text-sm underline underline-offset-4">
+              Payout rules
+            </Link>
           </>
         )}
         {save.error ? <p className="text-sm text-destructive">{save.error.message}</p> : null}

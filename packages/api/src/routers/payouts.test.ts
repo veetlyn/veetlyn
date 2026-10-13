@@ -1,11 +1,13 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import {
+  ANY_AMOUNT_MINOR,
   completionTransfer,
   createFakeFileStore,
   importSecretKey,
   type JsonObject,
   openSecret,
   paymentCapturedTransfer,
+  presetRules,
 } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { getTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
@@ -1147,5 +1149,144 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(caller(other.userId).refresh(otherTeam)).rejects.toMatchObject(notFound);
     expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 75_000, reserved: 10_000 });
     expect(paypal.requests).toEqual([]);
+  });
+
+  describe("payout rules", () => {
+    const noTrustedMembers: string[] = [];
+    const CUSTOM_RULES = {
+      ...TEAM,
+      autoApproveUpTo: "50.00",
+      autoApproveScope: "requests",
+      trustedScope: "both",
+      trustedMemberIds: noTrustedMembers,
+      secondApproverAbove: null,
+      secondApproverScope: "both",
+      payCompletedProjects: true,
+      holdDays: 7,
+      payday: "weekly",
+      paydayWeekday: 5,
+      paydayMonthDay: null,
+      balanceFloor: "200.00",
+      minimumPayout: "20.00",
+    } as const;
+
+    async function rulesTeam() {
+      const { userId: adminId, organizationId, teamId } = await seedServicesTeamWithAdmin(db, { slug: "acme-studio" });
+      const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
+      return { adminId, organizationId, teamId, memberId, admin: callerFor(adminId) };
+    }
+
+    it("reads the manual preset for a new team, then saves custom rules with trusted members", async () => {
+      const { memberId, admin } = await rulesTeam();
+      expect(await admin.payouts.rules(TEAM)).toEqual({
+        currency: "USD",
+        preset: "manual",
+        autoApproveUpToMinor: null,
+        autoApproveScope: "requests",
+        trustedScope: "requests",
+        trustedMemberIds: [],
+        secondApproverAboveMinor: null,
+        secondApproverScope: "both",
+        payCompletedProjects: false,
+        holdDays: 0,
+        payday: "immediate",
+        paydayWeekday: null,
+        paydayMonthDay: null,
+        balanceFloorMinor: null,
+        minimumPayoutMinor: 100,
+        adminCount: 1,
+      });
+
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [memberId] });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({
+        preset: "custom",
+        autoApproveUpToMinor: 5_000,
+        trustedScope: "both",
+        trustedMemberIds: [memberId],
+        payCompletedProjects: true,
+        holdDays: 7,
+        payday: "weekly",
+        paydayWeekday: 5,
+        balanceFloorMinor: 20_000,
+        minimumPayoutMinor: 2_000,
+      });
+    });
+
+    it("applies a preset's settings and keeps the trusted list", async () => {
+      const { memberId, admin } = await rulesTeam();
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, autoApproveUpTo: "any", trustedMemberIds: [memberId] });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ autoApproveUpToMinor: ANY_AMOUNT_MINOR });
+
+      await admin.payouts.applyRulesPreset({ ...TEAM, preset: "automatic" });
+      const { adminCount, currency, ...rules } = await admin.payouts.rules(TEAM);
+      expect(rules).toEqual({ ...presetRules("automatic"), trustedMemberIds: [memberId] });
+      expect({ adminCount, currency }).toEqual({ adminCount: 1, currency: "USD" });
+    });
+
+    it("refuses rules the team cannot follow and trusted members who are not on the team", async () => {
+      const { admin } = await rulesTeam();
+      await expect(
+        admin.payouts.saveRules({ ...CUSTOM_RULES, autoApproveUpTo: null, secondApproverAbove: "500.00" }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Add a second admin before requiring two approvals." });
+
+      const stranger = await seedUser(db, "Eve");
+      await expect(admin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [stranger] })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Trusted members must be on the team.",
+      });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ preset: "manual" });
+    });
+
+    it("lets only another admin add an admin to the trusted list", async () => {
+      const { adminId, organizationId, teamId, admin } = await rulesTeam();
+      await expect(admin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [adminId] })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Another admin has to add you to the trusted list.",
+      });
+
+      const secondAdmin = callerFor(await seedServicesTeamMember(db, { organizationId, teamId, role: "admin" }));
+      await secondAdmin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [adminId] });
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, holdDays: 3, trustedMemberIds: [adminId] });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ holdDays: 3, trustedMemberIds: [adminId], adminCount: 2 });
+    });
+
+    it("lets only admins read or change the rules", async () => {
+      const { memberId } = await rulesTeam();
+      const freelancer = callerFor(memberId);
+      const forbidden = { code: "FORBIDDEN", message: "Only an admin can change the team settings." };
+      await expect(freelancer.payouts.rules(TEAM)).rejects.toMatchObject(forbidden);
+      await expect(freelancer.payouts.saveRules(CUSTOM_RULES)).rejects.toMatchObject(forbidden);
+      await expect(freelancer.payouts.applyRulesPreset({ ...TEAM, preset: "rules" })).rejects.toMatchObject(forbidden);
+    });
+
+    it("moves queued payouts waiting for a payday to the new payday and keeps their decision", async () => {
+      const { adminId, teamId, memberId, admin } = await rulesTeam();
+      await admin.payouts.saveRules(CUSTOM_RULES);
+      const decidedAt = new Date("2026-10-01T12:00:00Z");
+      const waiting = await insertPayoutRequest(db, {
+        id: crypto.randomUUID(),
+        teamId,
+        userId: memberId,
+        currency: "USD",
+        amountMinor: 10_000,
+        receiverPayerId: PAYER_ID,
+      });
+      if (!waiting) throw new Error("seed payout not inserted");
+      await updatePayoutRequest(db, waiting.id, {
+        status: "queued",
+        decidedByUserId: adminId,
+        decidedAt,
+        sendAfter: new Date(Date.now() + 3 * 86_400_000),
+      });
+
+      const before = Date.now();
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, payday: "immediate", paydayWeekday: null });
+      const after = Date.now();
+
+      const [row] = await db.select().from(payoutRequest).where(eq(payoutRequest.id, waiting.id));
+      expect(row).toMatchObject({ status: "queued", decidedByUserId: adminId, decidedAt });
+      expect(row?.sendAfter?.getTime()).toBeGreaterThanOrEqual(before);
+      expect(row?.sendAfter?.getTime()).toBeLessThanOrEqual(after);
+    });
   });
 });

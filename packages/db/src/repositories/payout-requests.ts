@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
@@ -174,6 +174,25 @@ export async function listDuePayoutRequests(
     )
     .limit(input.limit);
   return rows.map((row) => row.request);
+}
+
+// Queued payouts of the team still waiting for a later payday move to `sendAfter`; the rest of their decision stays.
+export async function rescheduleWaitingPayouts(
+  db: DbExecutor,
+  input: { teamId: string; now: Date; sendAfter: Date },
+): Promise<number> {
+  const rows = await db
+    .update(payoutRequest)
+    .set({ sendAfter: input.sendAfter, updatedAt: input.now })
+    .where(
+      and(
+        eq(payoutRequest.teamId, input.teamId),
+        eq(payoutRequest.status, "queued"),
+        gt(payoutRequest.sendAfter, input.now),
+      ),
+    )
+    .returning({ id: payoutRequest.id });
+  return rows.length;
 }
 
 export type CompletedProjectWithoutPayout = {
