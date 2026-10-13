@@ -98,7 +98,7 @@ export function QuoteCalculator({
           aria-describedby="member-target-result"
         />
       </div>
-      <div id="member-target-result" className="space-y-2 text-sm">
+      <div id="member-target-result" aria-live="polite" className="space-y-2 text-sm">
         {calculation.kind === "problem" ? <p className="text-destructive">{calculation.message}</p> : null}
         {calculation.kind === "quote" ? (
           <QuoteResult breakdown={calculation.breakdown} format={format} onUseQuote={onUseQuote} />

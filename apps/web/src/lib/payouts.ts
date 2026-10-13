@@ -38,13 +38,16 @@ export const MEMBER_STATUS_LABELS = {
 export type PayoutAction = "approve" | "reject" | "retry" | "refresh" | "cancel_export";
 
 // A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once, and cannot be
-// rejected. A `sending` request that is not uncertain has a PayPal call in flight and must be left alone.
-export function payoutActions(request: PayoutState): readonly PayoutAction[] {
+// rejected. A `sending` request that is not uncertain has a PayPal call in flight and must be left alone. Without
+// automatic payouts a queued payout waits for an export, so there is nothing to retry.
+export function payoutActions(request: PayoutState, automaticPayoutsOn: boolean): readonly PayoutAction[] {
   switch (request.status) {
     case "requested":
       return ["approve", "reject"];
-    case "queued":
-      return request.uncertain ? ["retry"] : ["reject", "retry"];
+    case "queued": {
+      const retry: PayoutAction[] = automaticPayoutsOn ? ["retry"] : [];
+      return request.uncertain ? retry : ["reject", ...retry];
+    }
     case "sending":
       return request.uncertain ? ["retry"] : [];
     case "sent":

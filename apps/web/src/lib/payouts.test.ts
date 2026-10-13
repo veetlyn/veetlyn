@@ -13,18 +13,20 @@ import {
 
 describe("payoutActions", () => {
   it.each([
-    ["requested", false, ["approve", "reject"]],
-    ["queued", false, ["reject", "retry"]],
-    ["queued", true, ["retry"]],
-    ["sending", false, []],
-    ["sending", true, ["retry"]],
-    ["sent", false, ["refresh"]],
-    ["succeeded", false, []],
-    ["failed", false, []],
-    ["rejected", false, []],
-    ["exported", false, ["cancel_export"]],
-  ] as const)("%s (uncertain: %s)", (status, uncertain, actions) => {
-    expect(payoutActions({ status, uncertain })).toEqual(actions);
+    ["requested", false, true, ["approve", "reject"]],
+    ["queued", false, true, ["reject", "retry"]],
+    ["queued", true, true, ["retry"]],
+    ["queued", false, false, ["reject"]],
+    ["queued", true, false, []],
+    ["sending", false, true, []],
+    ["sending", true, true, ["retry"]],
+    ["sent", false, true, ["refresh"]],
+    ["succeeded", false, true, []],
+    ["failed", false, true, []],
+    ["rejected", false, true, []],
+    ["exported", false, false, ["cancel_export"]],
+  ] as const)("%s (uncertain: %s, automatic payouts: %s)", (status, uncertain, automaticPayoutsOn, actions) => {
+    expect(payoutActions({ status, uncertain }, automaticPayoutsOn)).toEqual(actions);
   });
 });
 

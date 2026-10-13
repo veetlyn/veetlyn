@@ -91,7 +91,7 @@ function RequestRow({
   const mutations = [approve, reject, retry, refresh, cancelExport];
   const pending = mutations.some((mutation) => mutation.isPending);
   const error = mutations.find((mutation) => mutation.error)?.error ?? null;
-  const actions = payoutActions(request);
+  const actions = payoutActions(request, automaticPayoutsOn);
   const amount = formatMinor(request.amountMinor, request.currency);
   const fee = payoutFeeLine(request);
   const sentMinor = payoutSentMinor(request);
