@@ -309,6 +309,30 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(otherAdmin.payouts.credentials(TEAM)).resolves.toBeNull();
   });
 
+  it("completes an attempt once when two completions race, keeping the credentials of the one that finished", async () => {
+    const { userId, teamId } = await connectedTeam();
+    const shared = ["first-app", CLIENT_ID];
+    // The fake takes the same authorization code twice, so only the attempt's own check can refuse the second use.
+    const paypal = fakeTeamPayPal({ sellerCredentials: () => sellerCredentialsAnswer(MERCHANT_ID, shared.shift()) });
+    // The first completion waits in `held` when it asks for a token with the credentials it was shared.
+    const held: ((response: Response) => void)[] = [];
+    const gatedFetch: FetchLike = (request) =>
+      request.headers.get("authorization") === `Basic ${btoa(`first-app:${CLIENT_SECRET}`)}`
+        ? new Promise((resolve) => held.push(resolve))
+        : paypal.fetch(request);
+    const admin = callerFor(userId, await makePayouts(gatedFetch));
+    const { attemptId } = await admin.payouts.connectStart(TEAM);
+    const complete = () => admin.payouts.connectComplete({ ...TEAM, attemptId, authCode: AUTH_CODE, sharedId: SHARED_ID });
+
+    const first = complete();
+    await vi.waitFor(() => expect(held).toHaveLength(1));
+    await expect(complete()).resolves.toMatchObject({ accountId: MERCHANT_ID });
+
+    held[0]?.(teamTokenAnswer());
+    await expect(first).rejects.toMatchObject(CONNECT_EXPIRED);
+    await expect(getTeamPayoutCredentials(db, teamId)).resolves.toMatchObject({ clientId: CLIENT_ID });
+  });
+
   it("refuses to start a connection whose return URL PayPal would reject, and keeps no attempt", async () => {
     const slug = `studio-${"a".repeat(100)}`;
     const seeded = await seedServicesTeamWithAdmin(db, { slug });
@@ -936,6 +960,13 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       },
       message: "RECEIVER_UNREGISTERED: Receiver is unregistered",
     },
+    ...["DENIED", "CANCELED"].map((batchStatus) => ({
+      case: `marks the batch ${batchStatus} before it has an item`,
+      answer: (answers: TeamPayPalAnswers) => {
+        answers.batch = () => jsonResponse(200, { batch_header: { payout_batch_id: "BATCH1", batch_status: batchStatus }, items: [] });
+      },
+      message: `PayPal did not pay this payout (batch ${batchStatus}).`,
+    })),
   ])("releases the reserved earnings and keeps PayPal's reason when PayPal $case", async ({ answer, message }) => {
     const { teamId, memberId, admin, member, answers } = await payoutTeam();
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
@@ -1027,7 +1058,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`]);
   });
 
-  it("refuses requests the member cannot make, and approvals from anyone but an admin", async () => {
+  it("refuses requests the member cannot make, and listing or deciding payouts from anyone but an admin", async () => {
     const { organizationId, teamId, memberId, member, paypal, services } = await payoutTeam();
     const caller = (userId: string) => callerFor(userId, services).payouts;
 
@@ -1069,6 +1100,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
     const forbidden = { code: "FORBIDDEN", message: "Only an admin can approve payouts." };
     await expect(member.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
+    await expect(member.payouts.reject({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
+    await expect(member.payouts.retry({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
+    await expect(member.payouts.refresh({ ...TEAM, requestId: id })).rejects.toMatchObject(forbidden);
     await expect(member.payouts.list(TEAM)).rejects.toMatchObject(forbidden);
 
     // An admin of another team cannot reach the request through their own team.
