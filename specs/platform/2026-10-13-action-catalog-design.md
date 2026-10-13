@@ -1,6 +1,6 @@
 # Action registry (run A1) and client contacts (run A2): design
 
-**Date:** 2026-10-13. **Status:** revised after the codebase-fit and security reviews of 2026-10-13 (first version approved section by section in brainstorming). Waiting for Mouhamed's review. Run A is split: A1 (registry) Oct 14–15, A2 (client contacts) Oct 16–17.
+**Date:** 2026-10-13. **Status:** approved by Mouhamed on 2026-10-13, after the codebase-fit and security reviews. Run A is split: A1 (registry) Oct 14–15, A2 (client contacts) Oct 16–17.
 
 **Program:** runs A1 and A2 of the agentic surfaces program (`2026-10-13-agentic-surfaces-program.md`). Runs B (API, webhooks, email), C (client's AI plugin), D (agents and analytics) and E (Discord) call this registry.
 

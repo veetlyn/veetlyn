@@ -6,9 +6,9 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 - **Date:** 2026-10-13. Last code merge on main: `2f2cb35` (R5b-1). Check `git log` for the latest docs commits.
 - **Goal:** the demo video and the sandbox app live at `payleor.com` / `payleor.app`, submitted before Nov 12, 2026, 12:00 pm PST. **Code finished by Oct 31** (AI tooling ends around Nov 1); Nov 1–12 is fixes, README, Devpost and the video.
-- **Step:** the program and the run A design were revised after four independent reviews (codebase fit, security, program and demo, handoff). Waiting for Mouhamed's review of [`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md) (A1 and A2) and the spike scope in the program §4.
+- **Step:** the A1/A2 design ([`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md)) and the spike scope are approved. Writing the A1 plan and the spike plan.
 - **Next:** write the A1 plan and the spike plan, then run them in parallel (Oct 14–15).
-- **Waiting on Mouhamed:** design review; for the spike, signed-in Claude and ChatGPT accounts that can add a custom connector (check whether ChatGPT developer mode needs a paid plan); for run E, three Discord accounts and the test server.
+- **Waiting on Mouhamed:** for the spike, connecting the connector in Claude (account `contact@mdbm.ovh`) and a ChatGPT account that can add a custom connector (check whether developer mode needs a paid plan); for run E, three Discord accounts and the test server.
 - **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.
 
 ## Run board
@@ -19,9 +19,9 @@ From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-age
 
 | Dates | Run | Scope | Design | Plan | Status |
 |---|---|---|---|---|---|
-| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | not written | Waiting for review |
-| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | not written | Design waiting for review |
-| Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | not written | Design waiting for review |
+| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | not written | Approved; plan next |
+| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | not written | Design approved; plan next |
+| Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | not written | Design approved |
 | Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | Not started |
 | Oct 20–23 | C | Client's AI plugin: offering search (opt-in listing), request, status, widgets with widget-only accept, pay page, client OAuth | after the spike | | Not started |
 | Oct 24–25 | B | Delivery pipeline with email and webhooks, API keys, AI seller endpoints, payout events, fulfilment type | not written | | Not started |
@@ -95,6 +95,7 @@ The agent tooling named in plans (writing-plans, subagent-driven-development, ex
 
 ## Decisions log (latest first)
 
+- 2026-10-13: Mouhamed approved the A1/A2 design and the spike scope. The spike uses his Claude account (`contact@mdbm.ovh`).
 - 2026-10-13: After four independent reviews: code finished by Oct 31; run A split into A1 (registry) and A2 (client contacts) with the review fixes; a plugin spike in parallel with A1; the first deploy to our domains moves to run H (Oct 18–19); runs C, B, E, D in that order with minimum scopes; Slack after the hackathon; the AG Grid sponsor prize (AG Studio analytics in run D) alongside the grand prize and the Agentic Commerce and PayPal + AI honorable mentions; a member of a project's team is never its client; personal pitch documents kept out of git.
 - 2026-10-13: Backlog items without a run got owners: client email notifications in run B, payout fixes in run F, minor items in a maintenance batch before G if time allows (superseded by the entry above).
 - 2026-10-13: `specs/` moved into the repository with this progress file and [`BACKLOG.md`](BACKLOG.md); together with the designs and plans they replace any separate handoff document.
