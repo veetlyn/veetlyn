@@ -78,16 +78,17 @@ export function waitingLine(request: WaitingPayout, now: Date, timeZone?: string
 
 export type ApprovalState = { progress: string | null; note: string | null };
 
-// Admins who already approved cannot approve again, so only the others can still give the approvals needed. An
-// approver who has since left the team is still counted among them, which errs towards asking for another admin.
-export function approvalState(
-  request: { status: PayoutRequestStatus; approvals: number; approvalsNeeded: number },
-  adminCount: number,
-): ApprovalState {
+// eligibleApprovers are the admins who can still approve: an admin cannot approve their own payout or approve twice.
+export function approvalState(request: {
+  status: PayoutRequestStatus;
+  approvals: number;
+  approvalsNeeded: number;
+  eligibleApprovers: number;
+}): ApprovalState {
   if (request.status !== "requested" || request.approvalsNeeded === 0) return { progress: null, note: null };
   const required = request.approvals + request.approvalsNeeded;
   const progress = required > 1 ? `${request.approvals} of ${required} approvals` : null;
-  if (request.approvalsNeeded > adminCount - request.approvals) {
+  if (request.approvalsNeeded > request.eligibleApprovers) {
     return { progress, note: "Add a second admin or lower the second-approver amount." };
   }
   return { progress, note: request.approvals > 0 ? "Waiting for a second admin" : null };

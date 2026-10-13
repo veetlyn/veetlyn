@@ -1444,6 +1444,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         message: "You already approved this payout.",
       });
       expect(payoutPosts(paypal.requests)).toEqual([]);
+      expect(await listed(admin)).toEqual([expect.objectContaining({ id, approvalsNeeded: 1, eligibleApprovers: 1 })]);
 
       await expect(callerFor(secondAdminId, services).payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
         status: "sent",
@@ -1495,6 +1496,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         message: "You cannot approve a payout to yourself.",
       });
       expect(await rowOf(id)).toMatchObject({ status: "requested" });
+      expect(await listed(admin)).toEqual([expect.objectContaining({ id, eligibleApprovers: 0 })]);
       expect(paypal.requests).toEqual([]);
     });
 

@@ -106,6 +106,8 @@ export type TeamPayoutRequestView = PayoutRequestView & {
   projectTitle: string | null;
   approvals: number;
   approvalsNeeded: number;
+  // Admins who can still approve it: not the payee, and not one who already approved.
+  eligibleApprovers: number;
 };
 // A completed project past its hold whose member cannot be paid yet (no verified PayPal destination or no 18+
 // confirmation); the project sweep creates its payout once they can.
@@ -1049,6 +1051,7 @@ export async function listTeamPayouts(
     getPayoutRules(db, team.id),
     listServicesTeamMembers(db, team),
   ]);
+  const adminIds = members.filter((m) => m.role === "admin").map((m) => m.userId);
   return {
     adminCount: adminCountOf(members),
     waitingForDestination: await listWaitingForDestination(db, team.id, rules, nowOf(deps)),
@@ -1059,6 +1062,7 @@ export async function listTeamPayouts(
       projectTitle: row.projectTitle,
       approvals: row.approverIds.length,
       approvalsNeeded: approvalsStillNeeded(rules, row),
+      eligibleApprovers: adminIds.filter((id) => id !== row.userId && !row.approverIds.includes(id)).length,
     })),
   };
 }

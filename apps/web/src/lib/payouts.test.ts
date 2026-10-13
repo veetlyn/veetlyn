@@ -48,12 +48,12 @@ describe("approvalState", () => {
   it.each([
     ["one approval needed", "requested", 0, 1, 2, { progress: null, note: null }],
     ["two needed, none given", "requested", 0, 2, 2, { progress: "0 of 2 approvals", note: null }],
-    ["one of two given", "requested", 1, 1, 2, { progress: "1 of 2 approvals", note: WAITING }],
-    ["two needed with one admin", "requested", 0, 2, 1, { progress: "0 of 2 approvals", note: ADD_ADMIN }],
-    ["the only admin left already approved", "requested", 1, 1, 1, { progress: "1 of 2 approvals", note: ADD_ADMIN }],
-    ["already approved", "queued", 2, 0, 2, { progress: null, note: null }],
-  ] as const)("%s", (_name, status, approvals, approvalsNeeded, adminCount, state) => {
-    expect(approvalState({ status, approvals, approvalsNeeded }, adminCount)).toEqual(state);
+    ["one of two given", "requested", 1, 1, 1, { progress: "1 of 2 approvals", note: WAITING }],
+    ["the only admin left already approved", "requested", 1, 1, 0, { progress: "1 of 2 approvals", note: ADD_ADMIN }],
+    ["an admin's own payout needing both of two admins", "requested", 0, 2, 1, { progress: "0 of 2 approvals", note: ADD_ADMIN }],
+    ["already approved", "queued", 2, 0, 0, { progress: null, note: null }],
+  ] as const)("%s", (_name, status, approvals, approvalsNeeded, eligibleApprovers, state) => {
+    expect(approvalState({ status, approvals, approvalsNeeded, eligibleApprovers })).toEqual(state);
   });
 });
 

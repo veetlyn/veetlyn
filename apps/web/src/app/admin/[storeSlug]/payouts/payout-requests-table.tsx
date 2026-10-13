@@ -64,12 +64,10 @@ function PayoutSource({ teamSlug, request }: { teamSlug: string; request: TeamPa
 function RequestRow({
   teamSlug,
   request,
-  adminCount,
   automaticPayoutsOn,
 }: {
   teamSlug: string;
   request: TeamPayoutRequest;
-  adminCount: number;
   automaticPayoutsOn: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -98,7 +96,7 @@ function RequestRow({
   const fee = payoutFeeLine(request);
   const sentMinor = payoutSentMinor(request);
   const waiting = waitingLine(request, new Date());
-  const approval = approvalState(request, adminCount);
+  const approval = approvalState(request);
   const dialog = approveDialogCopy(request, amount, automaticPayoutsOn);
   const input = { teamSlug, requestId: request.id };
 
@@ -296,7 +294,6 @@ function RequestsList({ teamSlug, data, automaticPayoutsOn }: { teamSlug: string
               key={request.id}
               teamSlug={teamSlug}
               request={request}
-              adminCount={data.adminCount}
               automaticPayoutsOn={automaticPayoutsOn}
             />
           ))}
