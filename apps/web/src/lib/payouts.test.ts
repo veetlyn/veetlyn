@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { memberPayoutFeeMinor, payoutActions, payoutFeeLine, payoutNetMinor, payoutSentMinor } from "./payouts";
+import {
+  memberPayoutFeeMinor,
+  payPalConnectProblem,
+  payoutActions,
+  payoutFeeLine,
+  payoutNetMinor,
+  payoutSentMinor,
+} from "./payouts";
 
 describe("payoutActions", () => {
   it.each([
@@ -98,5 +105,22 @@ describe("memberPayoutFeeMinor", () => {
   it("is nothing before the payout succeeds", () => {
     expect(memberPayoutFeeMinor({ status: "sent", feeMinor: null, feeEstimateMinor: 25 })).toBeNull();
     expect(memberPayoutFeeMinor({ status: "failed", feeMinor: null, feeEstimateMinor: 25 })).toBeNull();
+  });
+});
+
+describe("payPalConnectProblem", () => {
+  it("is nothing without an error", () => {
+    expect(payPalConnectProblem(undefined)).toBeNull();
+  });
+
+  it("names a PayPal account that already belongs to another Payleor account", () => {
+    expect(payPalConnectProblem(["1", "account_already_linked_to_different_user"])).toMatch(
+      /already connected to another Payleor account/,
+    );
+  });
+
+  it("asks to try again for any other error", () => {
+    expect(payPalConnectProblem("1")).toBe("PayPal did not confirm the connection. Try again.");
+    expect(payPalConnectProblem(["1", "access_denied"])).toBe("PayPal did not confirm the connection. Try again.");
   });
 });
