@@ -1,0 +1,38 @@
+apps/web/src/app/admin/me/payouts/earnings-section.tsx
+  s_d8d0f67a017e70::t_e24296bee96ca9 18-32,36,40
+  s_d8d0f67a017e70::t_0160a26966fb9a 109-110
+  s_d8d0f67a017e70::t_f47e5a34f44f92 156
+  s_d8d0f67a017e70::t_b516a87e528e50 122-124
+  s_d8d0f67a017e70::t_79d91b4154d5c2 3
+  s_d8d0f67a017e70::t_c53d40b5907196 57
+apps/web/src/app/admin/[storeSlug]/payouts/page.tsx
+  s_d8d0f67a017e70::t_1f17a4c1315491 8,11
+apps/web/src/app/admin/[storeSlug]/payouts/payout-credentials-card.tsx
+  s_d8d0f67a017e70::t_297306e828fc00 222
+apps/web/src/app/admin/[storeSlug]/payouts/payout-requests-table.tsx
+  s_d8d0f67a017e70::t_48d5d98c40f516 342-347
+  s_d8d0f67a017e70::t_54e6908bc67e07 68,73
+  s_d8d0f67a017e70::t_3d0cfa45f1e2b1 260-270
+  s_d8d0f67a017e70::t_eb2a303d7ae63d 310
+  s_d8d0f67a017e70::t_2adc207a7474bf 319
+  s_d8d0f67a017e70::t_2a9571a32e1c8b 152
+apps/web/src/app/admin/[storeSlug]/payouts/team-payouts.tsx
+  s_d8d0f67a017e70::t_f53eb0f5603d26 15
+  s_d8d0f67a017e70::t_9c1b9d8b865d66 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9e7d5fa47bf80789c84985ee5c1a9ce5e0e6d34",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
