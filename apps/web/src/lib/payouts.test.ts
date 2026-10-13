@@ -119,6 +119,10 @@ describe("payPalConnectProblem", () => {
     );
   });
 
+  it("says the sign-in ran out of time when the state no longer matches", () => {
+    expect(payPalConnectProblem(["1", "state_mismatch"])).toMatch(/within 5 minutes/);
+  });
+
   it("asks to try again for any other error", () => {
     expect(payPalConnectProblem("1")).toBe("PayPal did not confirm the connection. Try again.");
     expect(payPalConnectProblem(["1", "access_denied"])).toBe("PayPal did not confirm the connection. Try again.");
