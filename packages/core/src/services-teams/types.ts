@@ -9,9 +9,6 @@ export type Currency = (typeof CURRENCIES)[number];
 export const QUOTING_MODES = ["open", "assigned", "team"] as const;
 export type QuotingMode = (typeof QUOTING_MODES)[number];
 
-export const PAYOUT_MODES = ["manual", "rules", "automatic"] as const;
-export type PayoutMode = (typeof PAYOUT_MODES)[number];
-
 // A services team is a Better Auth team with product "services"; `id` is the team ID.
 export type ServicesTeamRecord = {
   id: string;
@@ -35,7 +32,6 @@ export type ServicesTeamSettings = {
   teamCutBps: number;
   managementFeeBps: number;
   quotingMode: QuotingMode;
-  payoutMode: PayoutMode;
   // Null until an admin saves the settings once; the setup checklist reads it.
   settingsSavedAt: Date | null;
   // S2: the guild this team is linked to; unique across teams (one server per team, one team per server).
@@ -44,7 +40,7 @@ export type ServicesTeamSettings = {
 
 export type ServicesTeamSettingsInput = Pick<
   ServicesTeamSettings,
-  "currency" | "teamCutBps" | "managementFeeBps" | "quotingMode" | "payoutMode"
+  "currency" | "teamCutBps" | "managementFeeBps" | "quotingMode"
 >;
 
 export const MAX_RATE_BPS = 10_000;
@@ -62,7 +58,6 @@ export function defaultServicesTeamSettings(teamId: string): ServicesTeamSetting
     teamCutBps: 1500,
     managementFeeBps: 1000,
     quotingMode: "assigned",
-    payoutMode: "manual",
     settingsSavedAt: null,
     discordGuildId: null,
   };
@@ -99,8 +94,4 @@ export function isCurrency(value: string): value is Currency {
 
 export function isQuotingMode(value: string): value is QuotingMode {
   return oneOf(QUOTING_MODES, value);
-}
-
-export function isPayoutMode(value: string | null | undefined): value is PayoutMode {
-  return oneOf(PAYOUT_MODES, value);
 }

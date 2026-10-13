@@ -5,11 +5,8 @@ import {
   CURRENCIES,
   type Currency,
   isCurrency,
-  isPayoutMode,
   isQuotingMode,
   MAX_BIO_CHARS,
-  PAYOUT_MODES,
-  type PayoutMode,
   QUOTING_MODES,
   type QuotingMode,
   SOLO_MANAGEMENT_FEE_BPS,
@@ -25,7 +22,7 @@ import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
 import TeamNotFound from "@/components/services-team/team-not-found";
-import { PAYOUT_MODE_LABELS, QUOTING_MODE_LABELS } from "@/lib/services-team-labels";
+import { QUOTING_MODE_LABELS } from "@/lib/services-team-labels";
 import { rateField } from "@/lib/services-team-settings-form";
 import { trpc } from "@/utils/trpc";
 
@@ -70,7 +67,6 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   const [teamCut, setTeamCut] = useState<string | null>(null);
   const [managementFee, setManagementFee] = useState<string | null>(null);
   const [quotingMode, setQuotingMode] = useState<QuotingMode | null>(null);
-  const [payoutMode, setPayoutMode] = useState<PayoutMode | null>(null);
   const [bio, setBio] = useState<string | null>(null);
 
   const save = useMutation(
@@ -106,7 +102,6 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
     teamCut: teamCut ?? (current ? bpsToPercent(current.teamCutBps) : "15"),
     managementFee: managementFee ?? (current ? bpsToPercent(current.managementFeeBps) : "10"),
     quotingMode: quotingMode ?? current?.quotingMode ?? "assigned",
-    payoutMode: payoutMode ?? current?.payoutMode ?? "manual",
     bio: bio ?? current?.bio ?? "",
   };
 
@@ -129,7 +124,6 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
         teamCutBps: current?.teamCutBps ?? SOLO_TEAM_CUT_BPS,
         managementFeeBps: current?.managementFeeBps ?? SOLO_MANAGEMENT_FEE_BPS,
         quotingMode: current?.quotingMode ?? "assigned",
-        payoutMode: current?.payoutMode ?? "manual",
       });
       return;
     }
@@ -140,7 +134,6 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
       teamCutBps: teamCutField.bps,
       managementFeeBps: managementFeeField.bps,
       quotingMode: values.quotingMode,
-      payoutMode: values.payoutMode,
     });
   }
 
@@ -229,23 +222,6 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
                 {QUOTING_MODES.map((mode) => (
                   <option key={mode} value={mode}>
                     {QUOTING_MODE_LABELS[mode]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="payout-mode">Payouts</Label>
-              <select
-                id="payout-mode"
-                className={SELECT_CLASS}
-                value={values.payoutMode}
-                onChange={(e) => {
-                  if (isPayoutMode(e.target.value)) setPayoutMode(e.target.value);
-                }}
-              >
-                {PAYOUT_MODES.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {PAYOUT_MODE_LABELS[mode]}
                   </option>
                 ))}
               </select>

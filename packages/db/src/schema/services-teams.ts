@@ -50,9 +50,6 @@ export const servicesTeamSettings = pgTable(
     quotingMode: text("quoting_mode", { enum: ["open", "assigned", "team"] })
       .default("assigned")
       .notNull(),
-    payoutMode: text("payout_mode", { enum: ["manual", "rules", "automatic"] })
-      .default("manual")
-      .notNull(),
     settingsSavedAt: timestamp("settings_saved_at"),
     // S2: the guild this team is linked to; one server per team and one team per server (unique).
     discordGuildId: text("discord_guild_id").unique(),

@@ -35,7 +35,6 @@ const settingsColumns = {
   teamCutBps: servicesTeamSettings.teamCutBps,
   managementFeeBps: servicesTeamSettings.managementFeeBps,
   quotingMode: servicesTeamSettings.quotingMode,
-  payoutMode: servicesTeamSettings.payoutMode,
   settingsSavedAt: servicesTeamSettings.settingsSavedAt,
   discordGuildId: servicesTeamSettings.discordGuildId,
 };

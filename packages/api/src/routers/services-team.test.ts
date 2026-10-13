@@ -191,7 +191,6 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
         teamCutBps: 1500,
         managementFeeBps: 1000,
         quotingMode: "assigned",
-        payoutMode: "manual",
       }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
@@ -205,14 +204,12 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       teamCutBps: 10_000,
       managementFeeBps: 0,
       quotingMode: "team",
-      payoutMode: "automatic",
     });
     expect(saved).toMatchObject({
       currency: "EUR",
       teamCutBps: 10_000,
       managementFeeBps: 0,
       quotingMode: "team",
-      payoutMode: "automatic",
     });
   });
 
@@ -303,7 +300,6 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       teamCutBps: 2000,
       managementFeeBps: 500,
       quotingMode: "team",
-      payoutMode: "automatic",
     } as const;
 
     await expect(callerFor(managerId).servicesTeam.updateSettings(input)).rejects.toMatchObject({
@@ -313,7 +309,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
 
     const ownerCaller = callerFor(ownerId);
     const saved = await ownerCaller.servicesTeam.updateSettings(input);
-    expect(saved).toMatchObject({ currency: "EUR", teamCutBps: 2000, payoutMode: "automatic" });
+    expect(saved).toMatchObject({ currency: "EUR", teamCutBps: 2000, quotingMode: "team" });
     expect(saved.settingsSavedAt).toEqual(expect.any(String));
 
     const fetched = await ownerCaller.servicesTeam.get({ teamSlug: "acme-studio" });
@@ -331,7 +327,6 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
         teamCutBps: 10_001,
         managementFeeBps: 1000,
         quotingMode: "assigned",
-        payoutMode: "manual",
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });

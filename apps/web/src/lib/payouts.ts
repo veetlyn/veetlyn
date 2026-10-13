@@ -15,6 +15,7 @@ const STATUS_LABELS = {
   succeeded: "Paid",
   failed: "Failed",
   rejected: "Rejected",
+  exported: "Exported for Payouts Web",
 } satisfies Record<PayoutRequestStatus, string>;
 
 export function payoutStatusLabel(request: PayoutState): string {
@@ -31,6 +32,7 @@ export const MEMBER_STATUS_LABELS = {
   succeeded: "Paid",
   failed: "Failed",
   rejected: "Rejected",
+  exported: "Approved, being sent",
 } satisfies Record<PayoutRequestStatus, string>;
 
 export type PayoutAction = "approve" | "reject" | "retry" | "refresh";
@@ -50,6 +52,7 @@ export function payoutActions(request: PayoutState): readonly PayoutAction[] {
     case "succeeded":
     case "failed":
     case "rejected":
+    case "exported":
       return [];
   }
 }
@@ -74,6 +77,7 @@ export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor
     case "queued":
     case "failed":
     case "rejected":
+    case "exported":
       return null;
   }
 }

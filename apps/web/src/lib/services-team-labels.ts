@@ -1,4 +1,4 @@
-import type { PayoutMode, QuotingMode, ServicesTeamRole, TeamProduct } from "@jendal-workspace/core";
+import type { QuotingMode, ServicesTeamRole, TeamProduct } from "@jendal-workspace/core";
 
 export const PRODUCT_LABELS = {
   store: "Store",
@@ -22,9 +22,3 @@ export const QUOTING_MODE_LABELS = {
   assigned: "Assigned quotes",
   team: "Team quotes",
 } satisfies Record<QuotingMode, string>;
-
-export const PAYOUT_MODE_LABELS = {
-  manual: "Manual payouts",
-  rules: "Rule-based payouts",
-  automatic: "Automatic payouts",
-} satisfies Record<PayoutMode, string>;

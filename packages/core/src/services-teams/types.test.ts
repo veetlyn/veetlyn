@@ -5,10 +5,8 @@ import {
   CURRENCIES,
   defaultServicesTeamSettings,
   isCurrency,
-  isPayoutMode,
   isQuotingMode,
   isServicesTeamRole,
-  PAYOUT_MODES,
   QUOTING_MODES,
   SERVICES_TEAM_ROLES,
   soloServicesTeamSettings,
@@ -25,7 +23,6 @@ describe("defaultServicesTeamSettings", () => {
       teamCutBps: 1_500,
       managementFeeBps: 1_000,
       quotingMode: "assigned",
-      payoutMode: "manual",
       settingsSavedAt: null,
       discordGuildId: null,
     });
@@ -55,7 +52,5 @@ describe("value guards", () => {
     expect(isCurrency("GBP")).toBe(false);
     expect(QUOTING_MODES.every(isQuotingMode)).toBe(true);
     expect(isQuotingMode("bidding")).toBe(false);
-    expect(PAYOUT_MODES.every(isPayoutMode)).toBe(true);
-    expect(isPayoutMode(undefined)).toBe(false);
   });
 });

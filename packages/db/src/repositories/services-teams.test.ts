@@ -80,7 +80,6 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
       teamCutBps: 2000,
       managementFeeBps: 500,
       quotingMode: "open",
-      payoutMode: "rules",
     } as const;
 
     const saved = await saveServicesTeamSettings(db, studio.id, input);
@@ -147,7 +146,6 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
       teamCutBps: 2000,
       managementFeeBps: 500,
       quotingMode: "assigned",
-      payoutMode: "manual",
     });
     expect((await getServicesTeamSettings(db, studio.id))?.settingsSavedAt).toBeInstanceOf(Date);
 
