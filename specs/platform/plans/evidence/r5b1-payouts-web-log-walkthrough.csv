@@ -1,0 +1,21 @@
+﻿Transaction Type: Mass Payment
+Date and time of submission: 13 October 2026 at 13:09:26 GMT
+Date and time of processing: 13 October 2026 at 13:12:09 GMT
+Date and time of completed: 13 October 2026 at 13:12:09 GMT
+
+Subject: 
+Note: 
+
+"Payment Amount: $9,80 USD in 1 payment"
+"Fee Amount: $0,20 USD"
+"Total Amount: $10,00 USD"
+
+"Completed Amount: $9,80 USD in 1 payment"
+"Unclaimed Amount: $0,00 USD in 0 payments"
+"Returned Amount: $0,00 USD in 0 payments"
+"Denied Amount: $0,00 USD in 0 payments"
+"Pending Amount: $0,00 USD in 0 payments"
+"Blocked Amount: $0,00 USD in 0 payments"
+
+Transaction ID,Recipient,Recipient Name,Unique Identifier,Amount,Fee,Total,Status,Reason Code,Custom Note,Message
+0S564038PT845535M,AWVNN2ZZ6ZWT4,,PLC5WPPSB4JQ35,"$9,80 USD","$0,20 USD","$10,00 USD",Completed,,Payout from Walk Crew via Payleor,

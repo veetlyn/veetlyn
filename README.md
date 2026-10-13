@@ -1,5 +1,7 @@
 # jendal-workspace
 
+Payleor's designs, plans, backlog and progress tracking live in [`specs/`](specs/README.md). Start with [`specs/PROGRESS.md`](specs/PROGRESS.md).
+
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Hono, TRPC, and more.
 
 ## Features
