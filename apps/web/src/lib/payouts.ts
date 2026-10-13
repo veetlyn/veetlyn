@@ -57,6 +57,41 @@ export function payoutActions(request: PayoutState): readonly PayoutAction[] {
   }
 }
 
+const PAYDAY_DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" });
+
+type WaitingPayout = { status: PayoutRequestStatus; sendAfter: string | null; nextAttemptAt: string | null };
+
+// Paydays are UTC calendar days, as the server decides them; the next try shows in the admin's own time zone
+// unless one is given.
+export function waitingLine(request: WaitingPayout, now: Date, timeZone?: string): string | null {
+  if (request.status !== "queued") return null;
+  if (request.sendAfter !== null && Date.parse(request.sendAfter) > now.getTime()) {
+    return `Goes on payday, ${PAYDAY_DATE.format(new Date(request.sendAfter))}`;
+  }
+  if (request.nextAttemptAt !== null && Date.parse(request.nextAttemptAt) > now.getTime()) {
+    const time = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone });
+    return `Next try ${time.format(new Date(request.nextAttemptAt))}`;
+  }
+  return null;
+}
+
+export type ApprovalState = { progress: string | null; note: string | null };
+
+// Admins who already approved cannot approve again, so only the others can still give the approvals needed. An
+// approver who has since left the team is still counted among them, which errs towards asking for another admin.
+export function approvalState(
+  request: { status: PayoutRequestStatus; approvals: number; approvalsNeeded: number },
+  adminCount: number,
+): ApprovalState {
+  if (request.status !== "requested" || request.approvalsNeeded === 0) return { progress: null, note: null };
+  const required = request.approvals + request.approvalsNeeded;
+  const progress = required > 1 ? `${request.approvals} of ${required} approvals` : null;
+  if (request.approvalsNeeded > adminCount - request.approvals) {
+    return { progress, note: "Add a second admin or lower the second-approver amount." };
+  }
+  return { progress, note: request.approvals > 0 ? "Waiting for a second admin" : null };
+}
+
 type PayoutAmounts = {
   status: PayoutRequestStatus;
   feeMinor: number | null;

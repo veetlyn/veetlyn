@@ -178,13 +178,20 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
         <section className="grid gap-2 border p-4">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="font-medium">Payouts</h2>
-            <Link href={`/${team.slug}/payouts`} className="text-sm underline underline-offset-4">
-              Open payouts
-            </Link>
+            <div className="flex gap-4">
+              <Link href={`/${team.slug}/payouts`} className="text-sm underline underline-offset-4">
+                Open payouts
+              </Link>
+              {role === "admin" ? (
+                <Link href={`/${team.slug}/payouts/rules`} className="text-sm underline underline-offset-4">
+                  Payout rules
+                </Link>
+              ) : null}
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Members ask for a payout of their earnings, and an admin approves it. PayPal sends it from the team's
-            PayPal account.
+            Members ask for a payout of their earnings. The team's payout rules decide who approves it and when PayPal
+            sends it from the team's PayPal account.
           </p>
         </section>
       ) : null}

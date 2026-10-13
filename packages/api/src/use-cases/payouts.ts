@@ -108,7 +108,13 @@ export type TeamPayoutRequestView = PayoutRequestView & {
 };
 // A completed project past its hold whose member cannot be paid yet (no verified PayPal destination or no 18+
 // confirmation); the project sweep creates its payout once they can.
-export type WaitingForDestinationView = { projectId: string; title: string; memberName: string; earningsMinor: number };
+export type WaitingForDestinationView = {
+  projectId: string;
+  title: string;
+  memberName: string;
+  earningsMinor: number;
+  currency: PayoutRequestRow["currency"];
+};
 export type TeamPayoutsView = {
   payouts: TeamPayoutRequestView[];
   adminCount: number;
@@ -116,7 +122,7 @@ export type TeamPayoutsView = {
 };
 // approvalsNeeded is 0 once the payout is approved.
 export type PayoutApprovalView = PayoutRequestView & { approvalsNeeded: number };
-export type MemberPayoutRequestView = PayoutRequestView & { teamName: string; teamSlug: string };
+export type MemberPayoutRequestView = PayoutRequestView & { teamName: string; teamSlug: string; projectTitle: string | null };
 // senderCountry and receiverCountry are the countries estimatePayoutFeeMinor takes for a payout from this team.
 export type MemberEarningsView = Omit<MemberEarningsRow, "teamPayPalCountry"> & {
   senderCountry: string | null;
@@ -353,7 +359,7 @@ export async function requestPayout(
   });
 
   const row = await sendDecided(deps, team, decided, now);
-  return { ...payoutRequestView(row), teamName: team.name, teamSlug: team.slug };
+  return { ...payoutRequestView(row), teamName: team.name, teamSlug: team.slug, projectTitle: null };
 }
 
 // The payout of a completed project past its hold: the member's earnings from it, capped at what they have available
@@ -991,7 +997,13 @@ async function listWaitingForDestination(db: Database, teamId: string, rules: Pa
     destination: "missing",
     limit: WAITING_FOR_DESTINATION_LIMIT,
   });
-  return projects.map(({ projectId, title, memberName, earningsMinor }) => ({ projectId, title, memberName, earningsMinor }));
+  return projects.map(({ projectId, title, memberName, earningsMinor, currency }) => ({
+    projectId,
+    title,
+    memberName,
+    earningsMinor,
+    currency,
+  }));
 }
 
 export async function listTeamPayouts(
@@ -1030,6 +1042,11 @@ export async function getMemberPayouts(db: Database, userId: string): Promise<Me
       senderCountry: teamPayPalCountry,
       receiverCountry: destination?.paypalCountry ?? null,
     })),
-    requests: requests.map((row) => ({ ...payoutRequestView(row), teamName: row.teamName, teamSlug: row.teamSlug })),
+    requests: requests.map((row) => ({
+      ...payoutRequestView(row),
+      teamName: row.teamName,
+      teamSlug: row.teamSlug,
+      projectTitle: row.projectTitle,
+    })),
   };
 }

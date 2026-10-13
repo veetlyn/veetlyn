@@ -1511,7 +1511,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const projectPayouts = async (admin: Caller) => (await listed(admin)).filter((payout) => payout.source === "project");
 
     it("pays a completed project once its hold has passed, and only once", async () => {
-      const { teamId, memberId, projectId, admin, paypal, services } = await payoutTeam();
+      const { teamId, memberId, projectId, admin, member, paypal, services } = await payoutTeam();
       await admin.payouts.saveRules(PROJECT_RULES);
       const completed = await completionOf(projectId);
       const sweep = (now: Date) => createProjectPayouts({ db, payouts: services.payouts }, { now });
@@ -1530,6 +1530,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
           status: "sent",
           decidedAt: later(completed, 3 * DAY).toISOString(),
         }),
+      ]);
+      expect((await member.payouts.mine()).requests).toEqual([
+        expect.objectContaining({ source: "project", projectTitle: "Website" }),
       ]);
       expect(payoutPosts(paypal.requests)).toHaveLength(1);
       expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 0, reserved: 85_000 });
@@ -1574,7 +1577,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       await expect(clockedAdmin.payouts.list(TEAM)).resolves.toEqual({
         adminCount: 1,
         payouts: [],
-        waitingForDestination: [{ projectId, title: "Website", memberName: "Ada", earningsMinor: 85_000 }],
+        waitingForDestination: [{ projectId, title: "Website", memberName: "Ada", earningsMinor: 85_000, currency: "USD" }],
       });
 
       await confirmedDestination(memberId);

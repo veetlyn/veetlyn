@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  approvalState,
   memberPayoutFeeMinor,
   payPalConnectProblem,
   payoutActions,
   payoutFeeLine,
   payoutNetMinor,
   payoutSentMinor,
+  waitingLine,
 } from "./payouts";
 
 describe("payoutActions", () => {
@@ -22,6 +24,35 @@ describe("payoutActions", () => {
     ["rejected", false, []],
   ] as const)("%s (uncertain: %s)", (status, uncertain, actions) => {
     expect(payoutActions({ status, uncertain })).toEqual(actions);
+  });
+});
+
+describe("waitingLine", () => {
+  const NOW = new Date("2026-10-14T10:00:00Z");
+
+  it.each([
+    ["a future payday", "queued", "2026-10-16T00:00:00.000Z", null, "Goes on payday, October 16, 2026"],
+    ["a future next try", "queued", null, "2026-10-14T10:15:00.000Z", "Next try Oct 14, 2026, 10:15 AM"],
+    ["a payday and a next try already passed", "queued", "2026-10-14T00:00:00.000Z", "2026-10-14T09:45:00.000Z", null],
+    ["a payout no longer queued", "sent", "2026-10-16T00:00:00.000Z", null, null],
+  ] as const)("%s", (_name, status, sendAfter, nextAttemptAt, line) => {
+    expect(waitingLine({ status, sendAfter, nextAttemptAt }, NOW, "UTC")).toBe(line);
+  });
+});
+
+describe("approvalState", () => {
+  const WAITING = "Waiting for a second admin";
+  const ADD_ADMIN = "Add a second admin or lower the second-approver amount.";
+
+  it.each([
+    ["one approval needed", "requested", 0, 1, 2, { progress: null, note: null }],
+    ["two needed, none given", "requested", 0, 2, 2, { progress: "0 of 2 approvals", note: null }],
+    ["one of two given", "requested", 1, 1, 2, { progress: "1 of 2 approvals", note: WAITING }],
+    ["two needed with one admin", "requested", 0, 2, 1, { progress: "0 of 2 approvals", note: ADD_ADMIN }],
+    ["the only admin left already approved", "requested", 1, 1, 1, { progress: "1 of 2 approvals", note: ADD_ADMIN }],
+    ["already approved", "queued", 2, 0, 2, { progress: null, note: null }],
+  ] as const)("%s", (_name, status, approvals, approvalsNeeded, adminCount, state) => {
+    expect(approvalState({ status, approvals, approvalsNeeded }, adminCount)).toEqual(state);
   });
 });
 

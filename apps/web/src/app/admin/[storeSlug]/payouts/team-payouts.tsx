@@ -42,6 +42,12 @@ export default function TeamPayouts({ teamSlug }: { teamSlug: string }) {
         </p>
       ) : (
         <>
+          <p className="text-sm">
+            <Link href={`/${team.slug}/payouts/rules`} className="underline underline-offset-4">
+              Payout rules
+            </Link>
+            <span className="text-muted-foreground">: who approves payouts, and when they are sent.</span>
+          </p>
           <PayoutCredentialsCard teamSlug={team.slug} />
           <PayoutRequestsTable teamSlug={team.slug} />
         </>

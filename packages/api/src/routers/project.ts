@@ -7,9 +7,11 @@ import {
   listProjectQuotes,
   listTeamProjects,
 } from "@jendal-workspace/db/repositories/projects";
-import { canSeeProject, type ServicesTeamRole } from "@jendal-workspace/core";
+import { canSeeProject, type ServicesTeamRole, sellerPlanFor } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { listDeliveryFiles } from "@jendal-workspace/db/repositories/files";
+import { getPayoutDestination } from "@jendal-workspace/db/repositories/payouts";
+import { getTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { getServicesTeamSettings, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspace/email";
@@ -138,12 +140,17 @@ export const projectRouter = router({
 
   get: servicesTeamProcedure.input(projectIdInput).query(async ({ ctx, input }) => {
     const { row, settings } = await requireVisibleProject(ctx, input.projectId);
-    const [quotes, amendments, payments, deliveries, refund] = await Promise.all([
+    // The quote calculator estimates the payout fee for the member who would be paid: the assigned one, or a
+    // freelancer quoting for themselves.
+    const payeeId = row.assignedFreelancerId ?? (ctx.servicesTeamRole === "freelancer" ? ctx.session.user.id : null);
+    const [quotes, amendments, payments, deliveries, refund, senderCountry, payee] = await Promise.all([
       listProjectQuotes(ctx.db, row.id),
       listProjectAmendments(ctx.db, row.id),
       listProjectPayments(ctx.db, row.id),
       listProjectDeliveries(ctx.db, row.id),
       getStaffRefundView(ctx.db, row.id),
+      getTeamPayPalCountry(ctx.db, ctx.servicesTeam.id),
+      payeeId ? getPayoutDestination(ctx.db, payeeId) : null,
     ]);
     const clientToken = await signClientLink(linkSecret(ctx.auth), row.id);
     return {
@@ -158,6 +165,11 @@ export const projectRouter = router({
       quotingMode: settings?.quotingMode ?? "assigned",
       solo: settings?.solo ?? false,
       viewerId: ctx.session.user.id,
+      quoteCalculator: {
+        platformFeeBps: sellerPlanFor({ id: ctx.servicesTeam.id, solo: settings?.solo ?? false }).feeBps,
+        senderCountry,
+        receiverCountry: payee?.paypalCountry ?? null,
+      },
     };
   }),
 

@@ -67,7 +67,7 @@ export type TeamPayoutRequestRow = PayoutRequestRow & {
   projectTitle: string | null;
   approverIds: string[];
 };
-export type UserPayoutRequestRow = PayoutRequestRow & { teamName: string; teamSlug: string };
+export type UserPayoutRequestRow = PayoutRequestRow & { teamName: string; teamSlug: string; projectTitle: string | null };
 
 // Null when the member already has an open request of their own for this team (project payouts never conflict). The
 // conflict target names the partial unique index (same columns and predicate), so the refusal does not abort the
@@ -125,12 +125,13 @@ export async function listTeamPayoutRequests(db: DbExecutor, teamId: string): Pr
 
 export async function listUserPayoutRequests(db: DbExecutor, userId: string): Promise<UserPayoutRequestRow[]> {
   const rows = await db
-    .select({ request: payoutRequest, teamName: team.name, teamSlug: team.slug })
+    .select({ request: payoutRequest, teamName: team.name, teamSlug: team.slug, projectTitle: project.title })
     .from(payoutRequest)
     .innerJoin(team, eq(team.id, payoutRequest.teamId))
+    .leftJoin(project, eq(project.id, payoutRequest.projectId))
     .where(eq(payoutRequest.userId, userId))
     .orderBy(desc(payoutRequest.createdAt), desc(payoutRequest.id));
-  return rows.map(({ request, teamName, teamSlug }) => ({ ...request, teamName, teamSlug }));
+  return rows.map(({ request, ...rest }) => ({ ...request, ...rest }));
 }
 
 // Least recently checked first: every check rewrites the row (or touches it), so a sweep with a limit moves on to
