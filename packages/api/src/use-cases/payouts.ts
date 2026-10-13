@@ -270,6 +270,12 @@ export async function destinationHold(db: DbExecutor, request: PayoutRequestRow)
   return destination.paypalPayerId === request.receiverPayerId ? null : DESTINATION_CHANGED;
 }
 
+// A queued payout flagged for review (a cancelled export PayPal shows as pending) is not sent or exported until a
+// later log settles it or an admin rejects it.
+export function reviewHold(request: PayoutRequestRow): string | null {
+  return request.status === "queued" ? request.reviewReason : null;
+}
+
 export function paydayWait(request: PayoutRequestRow, now: Date): string | null {
   return request.sendAfter && request.sendAfter.getTime() > now.getTime()
     ? `This payout goes on payday, ${PAYDAY_DATE.format(request.sendAfter)}.`
@@ -511,7 +517,7 @@ export async function retryPayout(
 ): Promise<PayoutRequestView> {
   const request = await getPayoutRequest(deps.db, input.requestId);
   if (!request || request.teamId !== input.team.id) throw notFound();
-  const wait = paydayWait(request, nowOf(deps));
+  const wait = reviewHold(request) ?? paydayWait(request, nowOf(deps));
   if (wait) throw new TRPCError({ code: "BAD_REQUEST", message: wait });
   return payoutRequestView(await sendPayout(deps, input.team, input.requestId));
 }
@@ -883,8 +889,9 @@ async function recordSettlement(tx: Transaction, request: PayoutRequestRow, sett
   });
 }
 
-// Records PayPal's final answer on a locked request PayPal had (sent or exported) and posts it once by reference: a
-// failure releases the reservation; a success pays the member and settles PayPal's fee against the estimate.
+// Records PayPal's final answer on a locked request PayPal had (sent, exported, or a cancelled export) and posts it
+// once by reference: a failure releases the reservation; a success pays the member and settles PayPal's fee against
+// the estimate.
 export async function applySettlement(
   tx: Transaction,
   request: PayoutRequestRow,

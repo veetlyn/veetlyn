@@ -133,7 +133,7 @@ function RequestRow({
         {waiting ? <p className="text-muted-foreground">{waiting}</p> : null}
         {approval.progress ? <p className="text-muted-foreground">{approval.progress}</p> : null}
         {approval.note ? <p className="text-muted-foreground">{approval.note}</p> : null}
-        {request.status === "exported" && request.reviewReason ? (
+        {(request.status === "exported" || request.status === "queued") && request.reviewReason ? (
           <p className="text-destructive">{request.reviewReason}</p>
         ) : null}
         {request.reviewReason ? (
@@ -230,7 +230,7 @@ function RequestRow({
           dialogRef={cancelExportDialogRef}
           id={`cancel-export-dialog-${request.id}`}
           title={`Cancel the export of ${amount} for ${request.memberName}?`}
-          body="Only cancel if you did not send this file in PayPal. If PayPal already paid it, cancelling lets Payleor pay it again."
+          body="Only cancel if you did not send this file in PayPal. If PayPal already paid it, importing PayPal's log still settles it."
           confirmLabel="Cancel export"
           onConfirm={() => cancelExport.mutate(input)}
         />

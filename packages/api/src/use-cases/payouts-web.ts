@@ -21,6 +21,7 @@ import {
   applySettlement,
   destinationHold,
   lockTeamRequest,
+  reviewHold,
   nowOf,
   paydayWait,
   type PayoutRequestView,
@@ -38,9 +39,18 @@ const NOT_APPROVED = "Only approved payouts can be exported.";
 const MAYBE_WITH_PAYPAL = "PayPal may already have this payout. Turn on automatic payouts and retry it to find out.";
 const NOT_EXPORTED = "Only a payout exported for PayPal Payouts Web can be cancelled.";
 const LOG_MISMATCH = "PayPal's log shows another amount or currency for this payout.";
+const CANCELLED_EXPORT_PENDING = "PayPal shows this cancelled export as pending. Check PayPal before paying it again.";
+const PAID_TWICE = "PayPal paid this payout twice. Recover the extra payment in PayPal.";
 
 export type PayoutsWebExport = { csv: string; filename: string; count: number };
-export type PayoutsWebImport = { settled: number; failed: number; pending: number; unmatched: number; mismatched: number };
+export type PayoutsWebImport = {
+  settled: number;
+  failed: number;
+  pending: number;
+  unmatched: number;
+  mismatched: number;
+  paidTwice: number;
+};
 
 function badRequest(message: string): TRPCError {
   return new TRPCError({ code: "BAD_REQUEST", message });
@@ -58,7 +68,7 @@ function refusingBadFiles<T>(run: () => T): T {
 function exportRefusal(request: PayoutRequestRow, now: Date): string | null {
   if (request.status !== "queued") return NOT_APPROVED;
   if (request.uncertainAt !== null) return MAYBE_WITH_PAYPAL;
-  return paydayWait(request, now);
+  return reviewHold(request) ?? paydayWait(request, now);
 }
 
 // All or nothing: one payout that cannot be exported refuses the whole export.
@@ -83,7 +93,8 @@ export async function exportPayoutsWeb(
       const amounts = await sendAmountsFor(tx, request);
       const tooSmall = payoutSentProblem(amounts.sentMinor);
       if (tooSmall) throw badRequest(tooSmall);
-      const reference = payoutReference();
+      // A cancelled export keeps its reference, so the log of the cancelled file still matches this payout.
+      const reference = request.offlineReference ?? payoutReference();
       await updatePayoutRequest(tx, request.id, {
         status: "exported",
         offlineReference: reference,
@@ -108,13 +119,29 @@ export async function exportPayoutsWeb(
 
 type ImportCount = keyof PayoutsWebImport;
 
+// A payout that PayPal paid through the API, or through another file than the one an earlier import settled, was paid
+// again by this row. The same transaction is an earlier import's row read again.
+function paidTwice(request: PayoutRequestRow, result: PayoutsWebResult): boolean {
+  if (result.status !== "succeeded") return false;
+  if (request.status === "sending" || request.status === "sent") return true;
+  return (
+    request.status === "succeeded" && (request.paypalBatchId !== null || result.transactionId !== request.paypalItemId)
+  );
+}
+
 async function importResult(tx: Transaction, teamId: string, result: PayoutsWebResult): Promise<ImportCount> {
   const request = await lockPayoutRequestByOfflineReference(tx, { teamId, reference: result.reference });
   if (!request) return "unmatched";
+  if (paidTwice(request, result)) {
+    // Kept as it was: on a `sending` payout updated_at names the send claim in flight.
+    await updatePayoutRequest(tx, request.id, { reviewReason: PAID_TWICE, updatedAt: request.updatedAt });
+    return "paidTwice";
+  }
   // A row an earlier import already recorded counts as what its payout became, and changes nothing.
   if (request.status === "succeeded") return "settled";
   if (request.status === "failed") return "failed";
-  if (request.status !== "exported") return "unmatched";
+  // A queued payout with a reference is a cancelled export: PayPal may still have paid the cancelled file.
+  if (request.status !== "exported" && request.status !== "queued") return "unmatched";
   const sameCurrency = result.currency === null || result.currency === request.currency;
   const sameAmount = result.amountMinor === null || result.amountMinor === request.sentMinor;
   if (!sameCurrency || !sameAmount) {
@@ -126,7 +153,7 @@ async function importResult(tx: Transaction, teamId: string, result: PayoutsWebR
     await updatePayoutRequest(tx, request.id, {
       paypalItemId: result.transactionId ?? request.paypalItemId,
       paypalItemStatus: itemStatus,
-      reviewReason: null,
+      reviewReason: request.status === "queued" ? CANCELLED_EXPORT_PENDING : null,
     });
     return "pending";
   }
@@ -156,14 +183,15 @@ async function importResult(tx: Transaction, teamId: string, result: PayoutsWebR
 // importing the same log again changes nothing.
 export async function importPayoutsWeb(db: Database, input: { teamId: string; csv: string }): Promise<PayoutsWebImport> {
   const results = refusingBadFiles(() => parsePayoutsWebLog(input.csv));
-  const counts: PayoutsWebImport = { settled: 0, failed: 0, pending: 0, unmatched: 0, mismatched: 0 };
+  const counts: PayoutsWebImport = { settled: 0, failed: 0, pending: 0, unmatched: 0, mismatched: 0, paidTwice: 0 };
   for (const result of results) {
     counts[await db.transaction((tx) => importResult(tx, input.teamId, result))]++;
   }
   return counts;
 }
 
-// Back to approved, for a payout the admin did not send in PayPal after all.
+// Back to approved, for a payout the admin did not send in PayPal after all. The reference and the amounts stay, so
+// importing the cancelled file's log still settles the payout if PayPal paid it.
 export async function cancelPayoutsWebExport(
   db: Database,
   input: { teamId: string; requestId: string },
@@ -174,10 +202,7 @@ export async function cancelPayoutsWebExport(
     const automatic = await hasTeamPayoutCredentials(tx, request.teamId);
     return updatePayoutRequest(tx, request.id, {
       status: "queued",
-      offlineReference: null,
       offlineBatchId: null,
-      feeEstimateMinor: null,
-      sentMinor: null,
       sentAt: null,
       paypalItemId: null,
       paypalItemStatus: null,

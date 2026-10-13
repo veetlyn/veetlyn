@@ -16,9 +16,10 @@ import { trpc } from "@/utils/trpc";
 type TeamPayoutRequest = inferRouterOutputs<AppRouter>["payouts"]["list"]["payouts"][number];
 type ImportCounts = inferRouterOutputs<AppRouter>["payouts"]["importPayoutsWeb"];
 
-// Unconfirmed sends may already be with PayPal, and a payout before its payday must wait, so the server refuses both.
+// Unconfirmed sends and cancelled exports PayPal shows as pending may already be with PayPal, and a payout before its
+// payday must wait, so the server refuses them.
 function exportable(request: TeamPayoutRequest, now: Date): boolean {
-  if (request.status !== "queued" || request.uncertain) return false;
+  if (request.status !== "queued" || request.uncertain || request.reviewReason !== null) return false;
   return request.sendAfter === null || Date.parse(request.sendAfter) <= now.getTime();
 }
 
@@ -34,9 +35,12 @@ function downloadCsv(csv: string, filename: string) {
 }
 
 function importSummary(counts: ImportCounts): string {
-  const summary = `${counts.settled} settled, ${counts.failed} failed, ${counts.pending} still pending, ${counts.unmatched} not matched.`;
-  if (counts.mismatched === 0) return summary;
-  return `${summary} ${counts.mismatched} did not match the exported amount; check them in PayPal.`;
+  let summary = `${counts.settled} settled, ${counts.failed} failed, ${counts.pending} still pending, ${counts.unmatched} not matched.`;
+  if (counts.mismatched > 0) {
+    summary += ` ${counts.mismatched} did not match the exported amount; check them in PayPal.`;
+  }
+  if (counts.paidTwice > 0) summary += ` ${counts.paidTwice} were paid twice; recover the extra payment in PayPal.`;
+  return summary;
 }
 
 export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {

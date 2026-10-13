@@ -205,7 +205,8 @@ export type DuePayoutRequest = {
 };
 
 // Approved payouts whose payday and backoff have passed, longest waiting first. Teams without saved credentials are
-// left out: their payouts wait for a Payouts Web export instead of being retried.
+// left out: their payouts wait for a Payouts Web export instead of being retried. So are payouts flagged for review
+// (a cancelled export PayPal shows as pending), which PayPal may still pay.
 export async function listDuePayoutRequests(
   db: DbExecutor,
   input: { now: Date; limit: number },
@@ -219,6 +220,7 @@ export async function listDuePayoutRequests(
       and(
         eq(payoutRequest.status, "queued"),
         isNull(payoutRequest.uncertainAt),
+        isNull(payoutRequest.reviewReason),
         or(isNull(payoutRequest.sendAfter), lte(payoutRequest.sendAfter, input.now)),
         or(isNull(payoutRequest.nextAttemptAt), lte(payoutRequest.nextAttemptAt, input.now)),
       ),
