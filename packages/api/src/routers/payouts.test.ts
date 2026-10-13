@@ -657,9 +657,12 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     );
   });
 
-  it("refuses to approve a payout too small to cover PayPal's fee", async () => {
-    const { teamId, memberId, admin, member, paypal } = await payoutTeam();
+  it("refuses to approve a payout that became too small to cover PayPal's fee after it was requested", async () => {
+    // The 2% international estimate leaves $1.17 of $1.20; once the member's account reads as US, the flat $0.25
+    // fee leaves $0.95, below PayPal's minimum.
+    const { teamId, memberId, admin, member, paypal } = await payoutTeam(null);
     const { id } = await member.payouts.request({ ...TEAM, amount: "1.20" });
+    await confirmedDestination(memberId, "US");
 
     await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject({
       code: "BAD_REQUEST",
@@ -949,6 +952,34 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(team.paypal.requests).toEqual([]);
   });
 
+  it("lets an admin reject an approved request held before sending, releasing the whole amount", async () => {
+    const { teamId, memberId, admin, member, paypal } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    await savePayoutDestination(db, memberId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null, paypalCountry: "US" }, null);
+    await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "queued" });
+
+    await expect(admin.payouts.reject({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "rejected" });
+    await expect(admin.payouts.reject({ ...TEAM, requestId: id })).rejects.toMatchObject({
+      message: "This payout request was already decided.",
+    });
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 85_000, reserved: 0, paidOut: 0 });
+    expect(await payoutReferences(teamId)).toEqual([`payout_released:${id}`, `payout_requested:${id}`]);
+    expect(paypal.requests).toEqual([]);
+  });
+
+  it("refuses to reject an approved request whose send PayPal may already hold", async () => {
+    const { teamId, memberId, admin, member } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    await updatePayoutRequest(db, id, { status: "queued", uncertainAt: new Date() });
+
+    await expect(admin.payouts.reject({ ...TEAM, requestId: id })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "PayPal may already have this payout. Retry it to find out.",
+    });
+    expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 35_000, reserved: 50_000 });
+    expect(await payoutReferences(teamId)).toEqual([`payout_requested:${id}`]);
+  });
+
   it("refuses requests the member cannot make, and approvals from anyone but an admin", async () => {
     const { organizationId, teamId, memberId, member, paypal, services } = await payoutTeam();
     const caller = (userId: string) => callerFor(userId, services).payouts;
@@ -975,6 +1006,11 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       message: "A solo seller has no payouts to send.",
     });
 
+    // Between two US accounts PayPal's $0.25 fee would leave $0.95, below PayPal's minimum.
+    await expect(member.payouts.request({ ...TEAM, amount: "1.20" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "This payout is too small to cover PayPal's fee.",
+    });
     await expect(member.payouts.request({ ...TEAM, amount: "850.01" })).rejects.toMatchObject({
       message: "You can request up to 850.00.",
     });

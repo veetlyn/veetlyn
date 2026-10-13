@@ -150,16 +150,22 @@ function postingFor(request: PayoutRequestRow) {
 type SendAmounts = { feeEstimateMinor: number; sentMinor: number };
 
 // PayPal's fee comes off the payout, estimated from the team's and the member's PayPal countries.
-async function sendAmountsFor(db: DbExecutor, request: PayoutRequestRow): Promise<SendAmounts> {
-  const senderCountry = await getTeamPayPalCountry(db, request.teamId);
-  const destination = await getPayoutDestination(db, request.userId);
+async function estimateSendAmounts(
+  db: DbExecutor,
+  payout: { teamId: string; currency: PayoutRequestRow["currency"]; amountMinor: number; receiverCountry: string | null },
+): Promise<SendAmounts> {
   const feeEstimateMinor = estimatePayoutFeeMinor({
-    currency: request.currency,
-    amountMinor: request.amountMinor,
-    senderCountry,
-    receiverCountry: destination?.paypalCountry ?? null,
+    currency: payout.currency,
+    amountMinor: payout.amountMinor,
+    senderCountry: await getTeamPayPalCountry(db, payout.teamId),
+    receiverCountry: payout.receiverCountry,
   });
-  return { feeEstimateMinor, sentMinor: request.amountMinor - feeEstimateMinor };
+  return { feeEstimateMinor, sentMinor: payout.amountMinor - feeEstimateMinor };
+}
+
+async function sendAmountsFor(db: DbExecutor, request: PayoutRequestRow): Promise<SendAmounts> {
+  const destination = await getPayoutDestination(db, request.userId);
+  return estimateSendAmounts(db, { ...request, receiverCountry: destination?.paypalCountry ?? null });
 }
 
 // A claimed send always stored both (the table's check keeps them together).
@@ -222,6 +228,15 @@ export async function requestPayout(
     const availableMinor = await ledger.balance(ledgerAccounts.owedAvailable(userId), currency);
     const problem = payoutAmountProblem({ amountMinor, availableMinor });
     if (problem) throw new TRPCError({ code: "BAD_REQUEST", message: problem });
+    // Approving re-checks this with the countries known then; refusing here keeps an unpayable request off the queue.
+    const { sentMinor } = await estimateSendAmounts(tx, {
+      teamId: team.id,
+      currency,
+      amountMinor,
+      receiverCountry: destination.paypalCountry,
+    });
+    const tooSmall = payoutSentProblem(sentMinor);
+    if (tooSmall) throw new TRPCError({ code: "BAD_REQUEST", message: tooSmall });
     await ledger.post([payoutRequestedTransfer(postingFor(inserted))]);
     return inserted;
   });
@@ -238,7 +253,11 @@ export async function rejectPayoutRequest(
 ): Promise<PayoutRequestView> {
   const row = await db.transaction(async (tx) => {
     const request = await lockTeamRequest(tx, input.teamId, input.requestId);
-    if (request.status !== "requested") throw alreadyDecided();
+    // A queued request was held before PayPal made any payout, unless an earlier send went unconfirmed.
+    if (request.status === "queued" && request.uncertainAt !== null) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "PayPal may already have this payout. Retry it to find out." });
+    }
+    if (request.status !== "requested" && request.status !== "queued") throw alreadyDecided();
     const updated = await updatePayoutRequest(tx, request.id, {
       status: "rejected",
       decidedByUserId: input.deciderId,

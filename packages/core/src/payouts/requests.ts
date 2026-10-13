@@ -1,6 +1,6 @@
 import { assertAmount } from "../money/money";
 
-// requested → rejected | queued; queued → sending → sent | queued | failed; sent → succeeded | failed.
+// requested → rejected | queued; queued → rejected | sending; sending → sent | queued | failed; sent → succeeded | failed.
 export const PAYOUT_REQUEST_STATUSES = [
   "requested",
   "rejected",
