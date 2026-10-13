@@ -29,4 +29,6 @@ DROP INDEX "payout_request_open_idx";--> statement-breakpoint
 CREATE UNIQUE INDEX "payout_request_open_idx" ON "payout_request" ("team_id","user_id") WHERE status in ('requested', 'queued', 'sending', 'sent');--> statement-breakpoint
 ALTER TABLE "payout_request" ADD CONSTRAINT "payout_request_paypal_batch_id_key" UNIQUE("paypal_batch_id");--> statement-breakpoint
 ALTER TABLE "team_payout_credentials" ADD CONSTRAINT "team_payout_credentials_team_id_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "team"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "payout_request" DROP CONSTRAINT "payout_request_status_check", ADD CONSTRAINT "payout_request_status_check" CHECK ("status" in ('requested', 'rejected', 'queued', 'sending', 'sent', 'succeeded', 'failed'));
+ALTER TABLE "payout_request" DROP CONSTRAINT "payout_request_status_check";--> statement-breakpoint
+UPDATE "payout_request" SET "status" = 'succeeded' WHERE "status" = 'paid';--> statement-breakpoint
+ALTER TABLE "payout_request" ADD CONSTRAINT "payout_request_status_check" CHECK ("status" in ('requested', 'rejected', 'queued', 'sending', 'sent', 'succeeded', 'failed'));
