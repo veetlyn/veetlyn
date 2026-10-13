@@ -1,0 +1,23 @@
+packages/api/src/routers/payouts.test.ts
+  s_825dbc23a3635f::t_c0904d31eef23e 1552-1564
+packages/api/src/use-cases/payouts.ts
+  s_825dbc23a3635f::t_fba075a062b085 34,360-362,380-386
+packages/db/src/repositories/payout-requests.ts
+  s_825dbc23a3635f::t_21f1729f73c1df 1-17,247-284,287-290,345-350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a0a5dfa515b579f73b2ac96a2db5dd570df6254",
+  "prompts": {},
+  "sessions": {
+    "s_825dbc23a3635f": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "070393e9-657a-47fd-bc06-4115d4c6dce7",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
