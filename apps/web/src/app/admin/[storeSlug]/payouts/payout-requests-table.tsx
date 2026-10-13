@@ -58,7 +58,9 @@ function RequestRow({
       <td className="space-y-1 px-4 py-3">
         <p>{payoutStatusLabel(request)}</p>
         {sentMinor !== null ? (
-          <p className="text-muted-foreground">Sends {formatMinor(sentMinor, request.currency)}</p>
+          <p className="text-muted-foreground">
+            {request.status === "succeeded" ? "Sent" : "Sends"} {formatMinor(sentMinor, request.currency)}
+          </p>
         ) : null}
         {fee ? (
           <p className="text-muted-foreground">

@@ -101,3 +101,17 @@ export function payoutNetMinor(input: {
   const sentMinor = input.amountMinor - feeEstimateMinor;
   return { feeEstimateMinor, netMinor: Math.max(0, sentMinor), tooSmall: payoutSentProblem(sentMinor) };
 }
+
+// Better Auth returns from Log in with PayPal to errorCallbackURL with its error code appended as a second `error`.
+export function payPalConnectProblem(error: string | string[] | undefined): string | null {
+  if (error === undefined) return null;
+  const codes = Array.isArray(error) ? error : [error];
+  if (codes.includes("account_already_linked_to_different_user")) {
+    return "This PayPal account is already connected to another Payleor account. Log out of PayPal, then log in with a different PayPal account.";
+  }
+  // Better Auth's state cookie lasts 5 minutes; a slower PayPal sign-in comes back without it.
+  if (codes.includes("state_mismatch")) {
+    return "The PayPal sign-in took too long. Try again and finish within 5 minutes.";
+  }
+  return "PayPal did not confirm the connection. Try again.";
+}

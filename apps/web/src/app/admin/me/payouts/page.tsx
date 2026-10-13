@@ -1,3 +1,4 @@
+import { payPalConnectProblem } from "@/lib/payouts";
 import { requireSession } from "@/lib/server-api";
 
 import PayoutsSetup from "./payouts-setup";
@@ -7,9 +8,11 @@ import PayoutsSetup from "./payouts-setup";
 export default async function PayoutsSetupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ connect?: string; adult?: string; error?: string }>;
+  searchParams: Promise<{ connect?: string; adult?: string; error?: string | string[] }>;
 }) {
   await requireSession();
   const { connect, adult, error } = await searchParams;
-  return <PayoutsSetup connect={connect === "1"} confirmAdult={adult === "1"} paypalError={Boolean(error)} />;
+  return (
+    <PayoutsSetup connect={connect === "1"} confirmAdult={adult === "1"} paypalProblem={payPalConnectProblem(error)} />
+  );
 }
