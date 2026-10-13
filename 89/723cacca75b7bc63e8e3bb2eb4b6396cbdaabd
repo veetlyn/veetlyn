@@ -1,0 +1,25 @@
+packages/core/src/payouts/rules.test.ts
+  s_506497fa46be4a::t_a6e78238c65a9a 1-87
+packages/core/src/payouts/requests.ts
+  s_506497fa46be4a::t_1e96fc69d94e56 19
+packages/core/src/index.ts
+  s_506497fa46be4a::t_8c26798b8253d3 46
+packages/core/src/payouts/rules.ts
+  s_506497fa46be4a::t_e97a21af5ee5b8 1-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "89723cacca75b7bc63e8e3bb2eb4b6396cbdaabd",
+  "prompts": {},
+  "sessions": {
+    "s_506497fa46be4a": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "fb807de7-7c4d-47df-b253-3eb9b9ca58ab",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
