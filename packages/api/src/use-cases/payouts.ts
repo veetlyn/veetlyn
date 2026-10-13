@@ -3,6 +3,7 @@ import {
   decidePayout,
   estimatePayoutFeeMinor,
   ledgerAccounts,
+  MAX_PAYOUT_MINOR,
   parseMajorAmount,
   payoutAmountProblem,
   payoutBatchOutcome,
@@ -383,7 +384,7 @@ export async function requestPayout(
 
 // The payout of a completed project past its hold: the member's earnings from it, capped at what they have available
 // now (an earlier request may have taken some) less their earnings from projects still inside the hold, which are
-// not this project's to pay. Null when nothing is created: the member cannot be paid yet, nothing is left, or the
+// not this project's to pay, and at PayPal's per-item maximum; the member requests any rest themselves. Null when nothing is created: the member cannot be paid yet, nothing is left, or the
 // amount is under the team minimum or too small to cover PayPal's fee.
 export async function createProjectPayout(
   deps: RequestPayoutDeps,
@@ -408,7 +409,7 @@ export async function createProjectPayout(
       currency: project.currency,
       completedAfter: holdEndsBefore(rules, now),
     });
-    const amountMinor = Math.min(project.earningsMinor, availableMinor - onHoldMinor);
+    const amountMinor = Math.min(project.earningsMinor, availableMinor - onHoldMinor, MAX_PAYOUT_MINOR);
     if (amountMinor <= 0) return null;
     const { sentMinor } = await estimateSendAmounts(tx, {
       teamId: team.id,

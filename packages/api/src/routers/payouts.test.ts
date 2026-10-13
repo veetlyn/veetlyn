@@ -464,8 +464,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     debug_id: "d422",
   };
 
-  // A completed $1,000 project with a 15% team cut: $850 owed to the freelancer, $150 team revenue.
-  async function earn(teamId: string, freelancerId: string): Promise<string> {
+  // A completed $1,000 project (unless `finalPriceMinor` says otherwise) with a 15% team cut: $850 owed to the
+  // freelancer, $150 team revenue.
+  async function earn(teamId: string, freelancerId: string, finalPriceMinor = 100_000): Promise<string> {
     const projectId = await seedProject(db, { teamId, status: "completed" });
     await db.update(project).set({ assignedFreelancerId: freelancerId }).where(eq(project.id, projectId));
     await db.transaction((tx) =>
@@ -474,10 +475,10 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
           currency: "USD",
           projectId,
           paymentId: crypto.randomUUID(),
-          quotePartMinor: 100_000,
+          quotePartMinor: finalPriceMinor,
           managementFeeMinor: 0,
         }),
-        completionTransfer({ currency: "USD", projectId, freelancerId, finalPriceMinor: 100_000, teamCutBps: 1_500 }),
+        completionTransfer({ currency: "USD", projectId, freelancerId, finalPriceMinor, teamCutBps: 1_500 }),
       ]),
     );
     return projectId;
@@ -1582,6 +1583,17 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       await createProjectPayouts({ db, payouts: services.payouts }, { now: later(completed, 3 * DAY) });
 
       expect((await projectPayouts(admin)).map((payout) => payout.amountMinor)).toEqual(amounts);
+    });
+
+    it("caps a project payout at PayPal's per-item maximum", async () => {
+      const { teamId, memberId, admin, services } = await payoutTeam();
+      await admin.payouts.saveRules(PROJECT_RULES);
+      // $30,000 less the 15% team cut leaves $25,500, over PayPal's $20,000 maximum.
+      const large = await earn(teamId, memberId, 3_000_000);
+
+      await createProjectPayouts({ db, payouts: services.payouts }, { now: later(await completionOf(large), 3 * DAY) });
+
+      expect((await projectPayouts(admin)).map((payout) => payout.amountMinor)).toEqual([2_000_000]);
     });
 
     it("never pays an older project out of a newer project's earnings still inside the hold", async () => {
