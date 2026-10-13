@@ -37,7 +37,8 @@ export async function savePayoutRules(db: DbExecutor, teamId: string, rules: Pay
     await tx
       .insert(teamPayoutRules)
       .values({ teamId, ...settings })
-      .onConflictDoUpdate({ target: teamPayoutRules.teamId, set: settings });
+      // $onUpdate only fires on db.update(), so the upsert sets the timestamp itself.
+      .onConflictDoUpdate({ target: teamPayoutRules.teamId, set: { ...settings, updatedAt: new Date() } });
     await tx.delete(teamPayoutTrustedMember).where(eq(teamPayoutTrustedMember.teamId, teamId));
     const userIds = [...new Set(trustedMemberIds)];
     if (userIds.length > 0) {

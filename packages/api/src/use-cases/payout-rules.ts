@@ -34,7 +34,13 @@ async function teamFacts(db: Database, team: PayoutRulesTeam): Promise<TeamFacts
 }
 
 function view(rules: PayoutRules, facts: TeamFacts): PayoutRulesView {
-  return { ...rules, trustedMemberIds: [...rules.trustedMemberIds], currency: facts.currency, adminCount: facts.adminCount };
+  // A trusted member who left the team drops off the list shown and saved.
+  return {
+    ...rules,
+    trustedMemberIds: rules.trustedMemberIds.filter((id) => facts.memberIds.has(id)),
+    currency: facts.currency,
+    adminCount: facts.adminCount,
+  };
 }
 
 function badRequest(message: string): TRPCError {
@@ -82,12 +88,18 @@ export async function saveTeamPayoutRules(
   },
 ): Promise<PayoutRulesView> {
   const [before, facts] = await Promise.all([getPayoutRules(db, input.team.id), teamFacts(db, input.team)]);
-  const trustedMemberIds = [...new Set(input.rules.trustedMemberIds)];
-  if (trustedMemberIds.some((id) => !facts.memberIds.has(id))) throw badRequest("Trusted members must be on the team.");
-  if (trustedMemberIds.includes(input.userId) && !before.trustedMemberIds.includes(input.userId)) {
+  const wanted = [...new Set(input.rules.trustedMemberIds)];
+  // Only ids being added must be current members; stored ids of members who left are dropped silently.
+  const added = wanted.filter((id) => !before.trustedMemberIds.includes(id));
+  if (added.some((id) => !facts.memberIds.has(id))) throw badRequest("Trusted members must be on the team.");
+  if (added.includes(input.userId)) {
     throw badRequest("Another admin has to add you to the trusted list.");
   }
-  const rules: PayoutRules = { ...input.rules, preset: "custom", trustedMemberIds };
+  const rules: PayoutRules = {
+    ...input.rules,
+    preset: "custom",
+    trustedMemberIds: wanted.filter((id) => facts.memberIds.has(id)),
+  };
   return store(db, { team: input.team, before, rules, facts, now: input.now ?? new Date() });
 }
 
@@ -96,6 +108,9 @@ export async function applyPayoutRulesPreset(
   input: { team: PayoutRulesTeam; preset: Exclude<PayoutRulePreset, "custom">; now?: Date },
 ): Promise<PayoutRulesView> {
   const [before, facts] = await Promise.all([getPayoutRules(db, input.team.id), teamFacts(db, input.team)]);
-  const rules: PayoutRules = { ...presetRules(input.preset), trustedMemberIds: before.trustedMemberIds };
+  const rules: PayoutRules = {
+    ...presetRules(input.preset),
+    trustedMemberIds: before.trustedMemberIds.filter((id) => facts.memberIds.has(id)),
+  };
   return store(db, { team: input.team, before, rules, facts, now: input.now ?? new Date() });
 }

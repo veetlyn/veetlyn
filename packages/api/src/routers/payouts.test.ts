@@ -16,6 +16,7 @@ import { deletePayoutDestination, savePayoutDestination } from "@jendal-workspac
 import { getTeamPayPalCountry, markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
 import { payoutConnectAttempt, payoutRequest } from "@jendal-workspace/db/schema/payouts";
+import { servicesTeamMember } from "@jendal-workspace/db/schema/services-teams";
 import {
   createTestDb,
   hasTestDatabase,
@@ -29,7 +30,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { createPayPalClient, type FetchLike } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PayoutServices, PayPalServices } from "../context";
@@ -1248,6 +1249,19 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       await secondAdmin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [adminId] });
       await admin.payouts.saveRules({ ...CUSTOM_RULES, holdDays: 3, trustedMemberIds: [adminId] });
       expect(await admin.payouts.rules(TEAM)).toMatchObject({ holdDays: 3, trustedMemberIds: [adminId], adminCount: 2 });
+    });
+
+    it("drops a trusted member who left the team instead of blocking later saves", async () => {
+      const { teamId, memberId, admin } = await rulesTeam();
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [memberId] });
+      await db
+        .delete(servicesTeamMember)
+        .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, memberId)));
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ trustedMemberIds: [] });
+
+      // The form still sends the stale id; the save succeeds and the stored list drops it.
+      await admin.payouts.saveRules({ ...CUSTOM_RULES, holdDays: 3, trustedMemberIds: [memberId] });
+      expect(await admin.payouts.rules(TEAM)).toMatchObject({ holdDays: 3, trustedMemberIds: [] });
     });
 
     it("lets only admins read or change the rules", async () => {
