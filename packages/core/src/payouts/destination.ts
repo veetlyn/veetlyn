@@ -1,4 +1,5 @@
-export type PayoutDestinationDraft = { paypalPayerId: string; paypalEmail: string | null };
+// paypalCountry is the account's ISO country code, which sets PayPal's payout fee; null when PayPal did not share it.
+export type PayoutDestinationDraft = { paypalPayerId: string; paypalEmail: string | null; paypalCountry: string | null };
 
 export type PayPalEmailEntry = { value?: string; primary?: boolean; confirmed?: boolean };
 
@@ -12,10 +13,13 @@ export type PayPalUserInfo = {
   emails?: PayPalEmailEntry[];
   // Formats like "18-24" or "65+"; PayPal documents it only as a string, and the sandbox never sends it.
   age_range?: string;
+  // Shared only when the app asks for the Address field.
+  address?: { country?: string };
 };
 
 // PAYPAL_ID payouts take "the encrypted PayPal account number" (e.g. G83JXTJ5EHCQ2, Fact 14).
 const PAYER_ID_PATTERN = /^[0-9A-Z]{13}$/;
+const COUNTRY_PATTERN = /^[A-Z]{2}$/;
 
 function verifiedEmail(info: PayPalUserInfo): string | null {
   if (info.email !== undefined) return info.email_verified === true ? info.email : null;
@@ -34,7 +38,12 @@ export function payoutDestinationFromUserInfo(
   if (userInfo === null) return null;
   if (userInfo.user_id !== paypalAccountId) return null;
   if (userInfo.payer_id === undefined || !PAYER_ID_PATTERN.test(userInfo.payer_id)) return null;
-  return { paypalPayerId: userInfo.payer_id, paypalEmail: verifiedEmail(userInfo) };
+  const country = userInfo.address?.country;
+  return {
+    paypalPayerId: userInfo.payer_id,
+    paypalEmail: verifiedEmail(userInfo),
+    paypalCountry: country !== undefined && COUNTRY_PATTERN.test(country) ? country : null,
+  };
 }
 
 export type PayoutAge = { kind: "adult" } | { kind: "minor" } | { kind: "unknown" };

@@ -14,7 +14,7 @@ describe.skipIf(!hasTestDatabase)("payout requests repository", () => {
   it("allows one open request per member and team, and a new one once the first is rejected", async () => {
     const { teamId } = await seedServicesTeamWithAdmin(db);
     const userId = await seedUser(db, "Ada");
-    const draft = { teamId, userId, currency: "USD" as const, amountMinor: 2_500, receiverPayerId: "G83JXTJ5EHCQ2", receiverEmail: "ada@example.com" };
+    const draft = { teamId, userId, currency: "USD" as const, amountMinor: 2_500, receiverPayerId: "G83JXTJ5EHCQ2" };
 
     const first = await insertPayoutRequest(db, { ...draft, id: crypto.randomUUID() });
     expect(first?.status).toBe("requested");
@@ -51,6 +51,7 @@ describe.skipIf(!hasTestDatabase)("payout requests repository", () => {
         availableMinor: 0,
         reservedMinor: 0,
         paidOutMinor: 700,
+        teamPayPalCountry: null,
       },
       {
         teamId: studio.teamId,
@@ -60,6 +61,7 @@ describe.skipIf(!hasTestDatabase)("payout requests repository", () => {
         availableMinor: 5_000,
         reservedMinor: 1_000,
         paidOutMinor: 0,
+        teamPayPalCountry: null,
       },
     ]);
   });

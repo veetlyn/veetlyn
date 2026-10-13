@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_PAYOUT_MINOR } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -10,7 +11,8 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
-import { formatMinor, minorToPriceInput } from "@/lib/money";
+import { formatMinor, minorToPriceInput, parsePriceInput } from "@/lib/money";
+import { payoutNetMinor } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
 type TeamEarnings = inferRouterOutputs<AppRouter>["payouts"]["mine"]["earnings"][number];
@@ -34,9 +36,19 @@ function TeamEarningsCard({
     }),
   );
 
-  const value = amount ?? minorToPriceInput(earnings.availableMinor);
+  const value = amount ?? minorToPriceInput(Math.min(earnings.availableMinor, MAX_PAYOUT_MINOR));
   const inputId = `payout-amount-${earnings.teamId}-${earnings.currency}`;
   const disabled = earnings.availableMinor === 0 || earnings.reservedMinor > 0 || requestBlockedReason !== null;
+  const amountMinor = parsePriceInput(value);
+  const net =
+    amountMinor !== null && amountMinor > 0
+      ? payoutNetMinor({
+          amountMinor,
+          currency: earnings.currency,
+          senderCountry: earnings.senderCountry,
+          receiverCountry: earnings.receiverCountry,
+        })
+      : null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,9 +82,14 @@ function TeamEarningsCard({
             {request.isPending ? "Requesting…" : "Request payout"}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          The team pays you in PayPal. PayPal takes its fee when the payment arrives.
-        </p>
+        {net === null ? null : net.tooSmall ? (
+          <p className="text-sm text-muted-foreground">{net.tooSmall}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            You'll receive about {formatMinor(net.netMinor, earnings.currency)} after PayPal's fee of about{" "}
+            {formatMinor(net.feeEstimateMinor, earnings.currency)}.
+          </p>
+        )}
         {earnings.reservedMinor > 0 ? (
           <p className="text-sm text-muted-foreground">A payout is already in progress for this team.</p>
         ) : null}
@@ -86,7 +103,7 @@ function TeamEarningsCard({
         ) : null}
         {request.isSuccess ? (
           <p className="text-sm text-emerald-700 dark:text-emerald-400">
-            Payout requested. {earnings.teamName} pays you in PayPal.
+            Payout requested. An admin of {earnings.teamName} reviews it.
           </p>
         ) : null}
       </form>

@@ -72,6 +72,8 @@ export const team = pgTable(
       .default("draft")
       .notNull(),
     paypalMerchantId: text("paypal_merchant_id").unique(),
+    // The connected PayPal account's ISO country code, from PayPal's merchant integration; it sets payout fees.
+    paypalCountry: text("paypal_country"),
     supportEmail: text("support_email"),
     memberCount: integer("member_count").default(0).notNull(),
     createdAt: timestamp("created_at").notNull(),

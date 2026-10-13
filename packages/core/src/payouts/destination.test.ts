@@ -15,7 +15,17 @@ describe("payoutDestinationFromUserInfo", () => {
         email: "ada@example.com",
         email_verified: true,
       }),
-    ).toEqual({ paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: "ada@example.com" });
+    ).toEqual({ paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: "ada@example.com", paypalCountry: null });
+  });
+
+  it.each([
+    { country: "SN", paypalCountry: "SN" },
+    { country: "sn", paypalCountry: null },
+    { country: "SEN", paypalCountry: null },
+    { country: undefined, paypalCountry: null },
+  ])("reads the account's country $country as $paypalCountry", ({ country, paypalCountry }) => {
+    const userInfo = { user_id: USER_ID, payer_id: "G83JXTJ5EHCQ2", address: { country } };
+    expect(payoutDestinationFromUserInfo(USER_ID, userInfo)?.paypalCountry).toBe(paypalCountry);
   });
 
   it("reads the email from the emails list, keeping only a confirmed address", () => {
@@ -26,6 +36,7 @@ describe("payoutDestinationFromUserInfo", () => {
     expect(payoutDestinationFromUserInfo(USER_ID, { user_id: USER_ID, payer_id: "G83JXTJ5EHCQ2", emails })).toEqual({
       paypalPayerId: "G83JXTJ5EHCQ2",
       paypalEmail: "ada@example.com",
+      paypalCountry: null,
     });
     expect(
       payoutDestinationFromUserInfo(USER_ID, {
@@ -33,7 +44,7 @@ describe("payoutDestinationFromUserInfo", () => {
         payer_id: "G83JXTJ5EHCQ2",
         emails: [{ value: "ada@example.com", primary: true, confirmed: false }],
       }),
-    ).toEqual({ paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: null });
+    ).toEqual({ paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: null, paypalCountry: null });
   });
 
   it("drops an email PayPal did not verify, or did not say it verified", () => {

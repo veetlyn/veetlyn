@@ -45,7 +45,7 @@ describe("paypalAuthorizationEndpoint", () => {
     expect(sandbox.origin + sandbox.pathname).toBe("https://www.sandbox.paypal.com/signin/authorize");
     expect(live.origin + live.pathname).toBe("https://www.paypal.com/signin/authorize");
     expect(sandbox.searchParams.get("scope")).toBe(
-      "openid profile email https://uri.paypal.com/services/paypalattributes",
+      "openid profile email address https://uri.paypal.com/services/paypalattributes",
     );
   });
 });

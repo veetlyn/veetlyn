@@ -31,32 +31,34 @@ describe.skipIf(!hasTestDatabase)("payout destination repository", () => {
 
     await expect(getPayoutDestination(db, userId)).resolves.toBeNull();
     await expect(
-      savePayoutDestination(db, userId, { paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: "ada@example.com" }, null),
+      savePayoutDestination(db, userId, { paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: "ada@example.com", paypalCountry: "SN" }, null),
     ).resolves.toEqual({
       paypalPayerId: "G83JXTJ5EHCQ2",
       paypalEmail: "ada@example.com",
       verifiedAt: expect.any(Date),
       ageConfirmedAt: null,
       ageSource: null,
+      paypalCountry: "SN",
     });
 
-    await savePayoutDestination(db, userId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null }, null);
+    await savePayoutDestination(db, userId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null, paypalCountry: null }, null);
     await expect(getPayoutDestination(db, userId)).resolves.toMatchObject({
       paypalPayerId: "WDJJHEBZ4X2LY",
       paypalEmail: null,
+      paypalCountry: null,
     });
   });
 
   it("keeps an earlier age confirmation when a later save brings no age", async () => {
     const userId = await seedUser(db, "Ada");
     const confirmedAt = new Date("2026-10-01T12:00:00Z");
-    await savePayoutDestination(db, userId, { paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: null }, {
+    await savePayoutDestination(db, userId, { paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: null, paypalCountry: null }, {
       confirmedAt,
       source: "paypal",
     });
 
     await expect(
-      savePayoutDestination(db, userId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null }, null),
+      savePayoutDestination(db, userId, { paypalPayerId: "WDJJHEBZ4X2LY", paypalEmail: null, paypalCountry: null }, null),
     ).resolves.toMatchObject({ paypalPayerId: "WDJJHEBZ4X2LY", ageConfirmedAt: confirmedAt, ageSource: "paypal" });
   });
 });

@@ -288,7 +288,7 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
     expect(changed).toEqual([]);
   });
 
-  it("connects the team when PayPal confirms payments and email", async () => {
+  it("connects the team and keeps its PayPal country when PayPal confirms payments and email", async () => {
     const { userId, organizationId } = await seedOrganization(db);
     const store = await seedStore(db, { organizationId, slug: "acme" });
     const integration = {
@@ -297,6 +297,7 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
       payments_receivable: true,
       primary_email_confirmed: true,
       primary_email: "seller@example.com",
+      country: "SN",
       oauth_integrations: [
         {
           integration_type: "OAUTH_THIRD_PARTY",
@@ -329,8 +330,11 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
       primaryEmailConfirmed: true,
     });
 
-    const [teamRow] = await db.select({ paypalMerchantId: team.paypalMerchantId }).from(team).where(eq(team.id, store.id));
-    expect(teamRow?.paypalMerchantId).toBe("SELLER1");
+    const [teamRow] = await db
+      .select({ paypalMerchantId: team.paypalMerchantId, paypalCountry: team.paypalCountry })
+      .from(team)
+      .where(eq(team.id, store.id));
+    expect(teamRow).toEqual({ paypalMerchantId: "SELLER1", paypalCountry: "SN" });
     expect(changed).toEqual([{ id: store.id, slug: "acme" }]);
     const row = await findPayPalOnboarding(db, store.id);
     expect(row).toMatchObject({

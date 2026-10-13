@@ -1,4 +1,5 @@
-const PAYPAL_LOGIN_SCOPES = "openid profile email https://uri.paypal.com/services/paypalattributes";
+// `address` brings the member's country, which the payout fee estimate needs.
+const PAYPAL_LOGIN_SCOPES = "openid profile email address https://uri.paypal.com/services/paypalattributes";
 
 // PayPal's authorize page fails without a scope, but Better Auth's PayPal provider sends none and
 // ignores `scope`. It keeps query parameters already present on `authorizationEndpoint`.

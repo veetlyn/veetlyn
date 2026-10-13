@@ -40,6 +40,7 @@ export const errorBodySchema = z.looseObject({
   details: lenientArray(
     z.object({ field: optionalText, value: optionalText, issue: optionalText, description: optionalText }),
   ),
+  links: lenientArray(z.looseObject({ href: z.string(), rel: optionalText, method: optionalText })),
 });
 
 export const moneySchema = z.object({ currency_code: z.string(), value: z.string() });
@@ -113,6 +114,12 @@ export const partnerReferralSchema = z.looseObject({
   links: z.array(z.looseObject({ href: z.string(), rel: z.string(), method: z.string().optional() })),
 });
 
+export const sellerCredentialsSchema = z.looseObject({
+  client_id: z.string().min(1),
+  client_secret: z.string().min(1),
+  payer_id: z.string().min(1),
+});
+
 // Field list from the live doc's sample responses (Fact 5).
 export const merchantIntegrationSchema = z.looseObject({
   merchant_id: optionalText,
@@ -121,6 +128,7 @@ export const merchantIntegrationSchema = z.looseObject({
   primary_email: optionalText,
   primary_email_confirmed: optionalFlag,
   legal_name: optionalText,
+  country: optionalText,
   products: lenientArray(z.looseObject({ name: z.string().catch(""), status: optionalText, vetting_status: optionalText })),
   capabilities: lenientArray(z.looseObject({ name: z.string().catch(""), status: optionalText })),
   oauth_integrations: lenientArray(
@@ -143,6 +151,39 @@ export const merchantIntegrationSchema = z.looseObject({
 export const merchantIntegrationRefSchema = z
   .looseObject({ merchant_id: optionalText, tracking_id: optionalText })
   .catch({ merchant_id: undefined, tracking_id: undefined });
+
+// Payouts money is { value, currency }, unlike the { currency_code, value } of the other APIs.
+export const payoutMoneySchema = z.object({ value: z.string(), currency: z.string() });
+
+// Statuses stay plain strings: PayPal adds new ones, and callers read an unknown status as still pending.
+const payoutBatchHeaderSchema = z.looseObject({ payout_batch_id: z.string(), batch_status: z.string() });
+
+export const payoutBatchCreatedSchema = z.looseObject({ batch_header: payoutBatchHeaderSchema });
+
+// An unreadable fee reads as absent so the item, and its status, are still read.
+export const payoutBatchSchema = z.looseObject({
+  batch_header: payoutBatchHeaderSchema,
+  items: lenientArray(
+    z.looseObject({
+      payout_item_id: z.string(),
+      transaction_status: optionalText,
+      payout_item_fee: payoutMoneySchema.optional().catch(undefined),
+      payout_item: z.looseObject({ sender_item_id: optionalText }).optional().catch(undefined),
+      errors: z.looseObject({ name: z.string(), message: z.string().catch("") }).optional().catch(undefined),
+    }),
+  ),
+});
+
+export const balancesSchema = z.looseObject({
+  account_id: optionalText,
+  balances: lenientArray(
+    z.looseObject({
+      currency: z.string(),
+      total_balance: moneySchema,
+      available_balance: readableMoney,
+    }),
+  ),
+});
 
 export const webhookVerificationSchema = z.looseObject({ verification_status: optionalText });
 

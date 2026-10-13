@@ -214,17 +214,31 @@ export function payoutRequestedTransfer(input: PayoutPosting): LedgerTransferDra
   });
 }
 
-export function payoutSucceededTransfer(input: PayoutPosting): LedgerTransferDraft {
+// What PayPal delivered: the requested amount less the fee estimate kept back when it was sent.
+export function payoutSucceededTransfer(input: Omit<PayoutPosting, "amountMinor"> & { sentMinor: number }): LedgerTransferDraft {
   return transferFromMoves({
     kind: "payout_succeeded",
     reference: `payout_succeeded:${input.payoutRequestId}`,
     projectId: null,
     currency: input.currency,
-    moves: [{ from: a.owedReserved(input.freelancerId), to: a.paidOut(input.freelancerId), amountMinor: input.amountMinor }],
+    moves: [{ from: a.owedReserved(input.freelancerId), to: a.paidOut(input.freelancerId), amountMinor: input.sentMinor }],
   });
 }
 
-// Payout request rejected: the reserved earnings become available again.
+// PayPal's payout fee leaves the team's balance (payout_fees); the member's share of it, up to the estimate kept
+// back from the payout, comes from their reserved earnings to the team. Null when there is nothing to recover.
+export function payoutFeeRecoveredTransfer(input: PayoutPosting): LedgerTransferDraft | null {
+  if (input.amountMinor === 0) return null;
+  return transferFromMoves({
+    kind: "payout_fee_recovered",
+    reference: `payout_fee_recovered:${input.payoutRequestId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [{ from: a.owedReserved(input.freelancerId), to: a.teamRevenue, amountMinor: input.amountMinor }],
+  });
+}
+
+// Payout failed, returned, blocked or rejected: the reserved earnings become available again.
 export function payoutReleasedTransfer(input: PayoutPosting): LedgerTransferDraft {
   return transferFromMoves({
     kind: "payout_released",
@@ -234,6 +248,22 @@ export function payoutReleasedTransfer(input: PayoutPosting): LedgerTransferDraf
     moves: [
       { from: a.owedReserved(input.freelancerId), to: a.owedAvailable(input.freelancerId), amountMinor: input.amountMinor },
     ],
+  });
+}
+
+// The team bears PayPal's fee on a successful payout item. Null when PayPal charged nothing.
+export function payoutFeesTransfer(input: {
+  currency: MoneyCurrency;
+  payoutRequestId: string;
+  feeMinor: number;
+}): LedgerTransferDraft | null {
+  if (input.feeMinor === 0) return null;
+  return transferFromMoves({
+    kind: "payout_fees",
+    reference: `payout_fees:${input.payoutRequestId}`,
+    projectId: null,
+    currency: input.currency,
+    moves: [{ from: a.teamRevenue, to: a.paypalFees, amountMinor: input.feeMinor }],
   });
 }
 

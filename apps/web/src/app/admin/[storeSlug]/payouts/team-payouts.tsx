@@ -8,6 +8,7 @@ import Loader from "@/components/loader";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { trpc } from "@/utils/trpc";
 
+import { PayoutCredentialsCard } from "./payout-credentials-card";
 import { PayoutRequestsTable } from "./payout-requests-table";
 
 export default function TeamPayouts({ teamSlug }: { teamSlug: string }) {
@@ -41,7 +42,7 @@ export default function TeamPayouts({ teamSlug }: { teamSlug: string }) {
         </p>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">Pay members in PayPal, then mark the request paid here.</p>
+          <PayoutCredentialsCard teamSlug={team.slug} />
           <PayoutRequestsTable teamSlug={team.slug} />
         </>
       )}

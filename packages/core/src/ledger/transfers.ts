@@ -11,6 +11,8 @@ export const LEDGER_TRANSFER_KINDS = [
   "payout_requested",
   "payout_succeeded",
   "payout_released",
+  "payout_fees",
+  "payout_fee_recovered",
   "penalty_after_completion",
   "chargeback",
   "order_paid",

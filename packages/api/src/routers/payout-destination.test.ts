@@ -71,7 +71,7 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("asks PayPal for the linked account's payer ID, saves it and reads it back", async () => {
+  it("asks PayPal for the linked account's payer ID and country, saves them and reads them back", async () => {
     const userId = await seedUser(db, "Bea");
     await linkPayPal(userId);
     const calls = stubUserInfo({
@@ -79,6 +79,7 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
       payer_id: PAYER_ID,
       email: "bea@example.com",
       email_verified: true,
+      address: { country: "SN", postal_code: "12500" },
     });
 
     const saved = await caller(userId).payoutDestination.connect();
@@ -96,6 +97,7 @@ describe.skipIf(!hasTestDatabase)("payoutDestination", () => {
       },
     ]);
     await expect(caller(userId).payoutDestination.get()).resolves.toMatchObject({ paypalPayerId: PAYER_ID });
+    await expect(getPayoutDestination(db, userId)).resolves.toMatchObject({ paypalCountry: "SN" });
   });
 
   it("fails clearly without a linked PayPal account, without calling PayPal", async () => {
