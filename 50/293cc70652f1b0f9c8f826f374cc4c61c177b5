@@ -1,0 +1,25 @@
+apps/web/src/app/admin/[storeSlug]/payouts/payout-requests-table.tsx
+  s_f4d28995b496d9::t_b8c510c2d13300 94
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/quote-calculator.tsx
+  s_f4d28995b496d9::t_78080783302dec 101
+apps/web/src/lib/payouts.test.ts
+  s_f4d28995b496d9::t_6fa04baed09a1a 16-29
+apps/web/src/lib/payouts.ts
+  s_f4d28995b496d9::t_91fdd9d0df4b07 41-43,47-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "50293cc70652f1b0f9c8f826f374cc4c61c177b5",
+  "prompts": {},
+  "sessions": {
+    "s_f4d28995b496d9": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "88c85dda-c422-404c-a226-b0df610fb20a",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
