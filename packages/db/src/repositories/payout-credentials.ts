@@ -37,7 +37,7 @@ export async function markPayoutConnectAttemptUsed(tx: DbExecutor, id: string): 
 export type TeamPayoutCredentialsRow = typeof teamPayoutCredentials.$inferSelect;
 export type TeamPayoutCredentialsInput = Pick<
   typeof teamPayoutCredentials.$inferInsert,
-  "teamId" | "clientId" | "secretCiphertext" | "secretIv" | "keyId" | "paypalAccountId" | "verifiedAt"
+  "teamId" | "clientId" | "secretCiphertext" | "secretIv" | "keyId" | "paypalAccountId" | "verifiedAt" | "canReadBalance"
 >;
 
 export async function getTeamPayoutCredentials(db: DbExecutor, teamId: string): Promise<TeamPayoutCredentialsRow | null> {

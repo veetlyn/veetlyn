@@ -1,6 +1,7 @@
 import { assertAmount } from "../money/money";
 
-// requested → rejected | queued; queued → rejected | sending; sending → sent | queued | failed; sent → succeeded | failed.
+// requested → rejected | queued; queued → rejected | sending | exported; sending → sent | queued | failed;
+// sent → succeeded | failed; exported (in a Payouts Web CSV) → succeeded | failed (results import) | queued (cancel).
 export const PAYOUT_REQUEST_STATUSES = [
   "requested",
   "rejected",
@@ -9,14 +10,15 @@ export const PAYOUT_REQUEST_STATUSES = [
   "sent",
   "succeeded",
   "failed",
+  "exported",
 ] as const;
 
 export type PayoutRequestStatus = (typeof PAYOUT_REQUEST_STATUSES)[number];
 
 // A member has at most one open request per team.
-export const OPEN_PAYOUT_REQUEST_STATUSES = ["requested", "queued", "sending", "sent"] as const satisfies readonly PayoutRequestStatus[];
+export const OPEN_PAYOUT_REQUEST_STATUSES = ["requested", "queued", "sending", "sent", "exported"] as const satisfies readonly PayoutRequestStatus[];
 
-const MIN_PAYOUT_MINOR = 100;
+export const MIN_PAYOUT_MINOR = 100;
 // PayPal's per-item maximum for Payouts.
 export const MAX_PAYOUT_MINOR = 2_000_000;
 

@@ -7,6 +7,7 @@ import { createOrders } from "./orders";
 import { createPartnerReferrals } from "./partner-referrals";
 import { createPayments } from "./payments";
 import { createPayouts } from "./payouts";
+import { createReporting } from "./reporting";
 import { tokenResponseSchema } from "./schemas";
 import { createSellerCredentials } from "./seller-credentials";
 import { createMemoryTokenCache, type PayPalToken, type PayPalTokenCache } from "./token";
@@ -63,6 +64,7 @@ export interface PayPalClient {
   orders: ReturnType<typeof createOrders>;
   payments: ReturnType<typeof createPayments>;
   payouts: ReturnType<typeof createPayouts>;
+  reporting: ReturnType<typeof createReporting>;
   // Fetches a fresh token and returns the scopes PayPal granted it, such as https://uri.paypal.com/payments/payouts.
   grantedScopes(): Promise<string[]>;
   sellerCredentials: ReturnType<typeof createSellerCredentials>;
@@ -205,6 +207,7 @@ export function createPayPalClient(config: PayPalClientConfig): PayPalClient {
     orders: createOrders(request),
     payments: createPayments(request),
     payouts: createPayouts(request),
+    reporting: createReporting(request),
     grantedScopes,
     sellerCredentials: createSellerCredentials({
       baseUrl,

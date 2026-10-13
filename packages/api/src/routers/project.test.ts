@@ -13,6 +13,7 @@ import {
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
+import { savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { setProjectRefundStatus, upsertRefundPart } from "@jendal-workspace/db/repositories/project-refunds";
 import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
@@ -211,20 +212,30 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     ]);
   });
 
-  it("tells the project page whether the seller is solo", async () => {
+  it("tells the project page whether the seller is solo and what the quote calculator needs", async () => {
     const { userId, organizationId } = await seedOrganization(db);
     await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
-    await seedServicesTeam(db, { organizationId, slug: "studio" });
+    const studioTeam = await seedServicesTeam(db, { organizationId, slug: "studio" });
+    await db.update(teamTable).set({ paypalCountry: "US" }).where(eq(teamTable.id, studioTeam.id));
+    await savePayoutDestination(db, userId, { paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: null, paypalCountry: "FR" }, null);
     const caller = callerFor(userId);
 
     const solo = await caller.project.create({ teamSlug: "solo", title: "Solo site", clientEmail: "c@example.com" });
     const studio = await caller.project.create({ teamSlug: "studio", title: "Team site", clientEmail: "c@example.com" });
+    await caller.project.assign({ teamSlug: "studio", projectId: studio.projectId, freelancerId: userId });
 
     await expect(caller.project.get({ teamSlug: "solo", projectId: solo.projectId })).resolves.toMatchObject({
       solo: true,
+      quoteCalculator: { platformFeeBps: 200, senderCountry: null, receiverCountry: null },
     });
     await expect(caller.project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
       solo: false,
+      quoteCalculator: { platformFeeBps: 100, senderCountry: "US", receiverCountry: "FR" },
+    });
+    // Only admins and the payee see the payee's country.
+    const manager = await seedServicesTeamMember(db, { organizationId, teamId: studioTeam.id, role: "manager" });
+    await expect(callerFor(manager).project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
+      quoteCalculator: { senderCountry: "US", receiverCountry: null },
     });
   });
 

@@ -1,27 +1,61 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  approvalState,
   memberPayoutFeeMinor,
   payPalConnectProblem,
   payoutActions,
   payoutFeeLine,
   payoutNetMinor,
   payoutSentMinor,
+  waitingLine,
 } from "./payouts";
 
 describe("payoutActions", () => {
   it.each([
-    ["requested", false, ["approve", "reject"]],
-    ["queued", false, ["reject", "retry"]],
-    ["queued", true, ["retry"]],
-    ["sending", false, []],
-    ["sending", true, ["retry"]],
-    ["sent", false, ["refresh"]],
-    ["succeeded", false, []],
-    ["failed", false, []],
-    ["rejected", false, []],
-  ] as const)("%s (uncertain: %s)", (status, uncertain, actions) => {
-    expect(payoutActions({ status, uncertain })).toEqual(actions);
+    ["requested", false, true, ["approve", "reject"]],
+    ["queued", false, true, ["reject", "retry"]],
+    ["queued", true, true, ["retry"]],
+    ["queued", false, false, ["reject"]],
+    ["queued", true, false, []],
+    ["sending", false, true, []],
+    ["sending", true, true, ["retry"]],
+    ["sent", false, true, ["refresh"]],
+    ["succeeded", false, true, []],
+    ["failed", false, true, []],
+    ["rejected", false, true, []],
+    ["exported", false, false, ["cancel_export"]],
+  ] as const)("%s (uncertain: %s, automatic payouts: %s)", (status, uncertain, automaticPayoutsOn, actions) => {
+    expect(payoutActions({ status, uncertain }, automaticPayoutsOn)).toEqual(actions);
+  });
+});
+
+describe("waitingLine", () => {
+  const NOW = new Date("2026-10-14T10:00:00Z");
+
+  it.each([
+    ["a future payday", "queued", "2026-10-16T00:00:00.000Z", null, "Goes on payday, October 16, 2026"],
+    ["a future next try", "queued", null, "2026-10-14T10:15:00.000Z", "Next try Oct 14, 2026, 10:15 AM"],
+    ["a payday and a next try already passed", "queued", "2026-10-14T00:00:00.000Z", "2026-10-14T09:45:00.000Z", null],
+    ["a payout no longer queued", "sent", "2026-10-16T00:00:00.000Z", null, null],
+  ] as const)("%s", (_name, status, sendAfter, nextAttemptAt, line) => {
+    expect(waitingLine({ status, sendAfter, nextAttemptAt }, NOW, "UTC")).toBe(line);
+  });
+});
+
+describe("approvalState", () => {
+  const WAITING = "Waiting for a second admin";
+  const ADD_ADMIN = "Add a second admin or lower the second-approver amount.";
+
+  it.each([
+    ["one approval needed", "requested", 0, 1, 2, { progress: null, note: null }],
+    ["two needed, none given", "requested", 0, 2, 2, { progress: "0 of 2 approvals", note: null }],
+    ["one of two given", "requested", 1, 1, 1, { progress: "1 of 2 approvals", note: WAITING }],
+    ["the only admin left already approved", "requested", 1, 1, 0, { progress: "1 of 2 approvals", note: ADD_ADMIN }],
+    ["an admin's own payout needing both of two admins", "requested", 0, 2, 1, { progress: "0 of 2 approvals", note: ADD_ADMIN }],
+    ["already approved", "queued", 2, 0, 0, { progress: null, note: null }],
+  ] as const)("%s", (_name, status, approvals, approvalsNeeded, eligibleApprovers, state) => {
+    expect(approvalState({ status, approvals, approvalsNeeded, eligibleApprovers })).toEqual(state);
   });
 });
 
@@ -37,6 +71,7 @@ describe("payoutFeeLine", () => {
     ["succeeded", null, 25, ESTIMATE],
     ["failed", null, 25, null],
     ["rejected", null, 25, null],
+    ["exported", null, 25, ESTIMATE],
   ] as const)("%s with fee %s and estimate %s shows %o", (status, feeMinor, feeEstimateMinor, line) => {
     expect(payoutFeeLine({ status, feeMinor, feeEstimateMinor })).toEqual(line);
   });
@@ -60,6 +95,7 @@ describe("payoutSentMinor", () => {
     ["sending", 975],
     ["sent", 975],
     ["succeeded", 975],
+    ["exported", 975],
     ["queued", null],
     ["failed", null],
     ["rejected", null],

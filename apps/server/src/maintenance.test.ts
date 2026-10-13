@@ -37,6 +37,24 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     };
   }
 
+  // Each payout sweep notes its name in `ran` when it runs.
+  function payoutSweeps(ran: string[]) {
+    return {
+      createProjectPayouts: vi.fn(async () => {
+        ran.push("createProjectPayouts");
+        return { created: 1 };
+      }),
+      sendPayouts: vi.fn(async () => {
+        ran.push("sendPayouts");
+        return { sent: 2, held: 1 };
+      }),
+      settlePayouts: vi.fn(async () => {
+        ran.push("settlePayouts");
+        return { checked: 3, settled: 2 };
+      }),
+    };
+  }
+
   async function seedEvent(id: string, receivedAt: Date) {
     await db.insert(paypalWebhookEvent).values({
       id,
@@ -96,7 +114,8 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     const { leftover, attached, recent, abandonedOrder, recentOrder } = await seedEverything();
     const info = vi.spyOn(log, "info");
     const error = vi.spyOn(log, "error");
-    const d = deps({ settlePayouts: vi.fn(async () => ({ checked: 3, settled: 2 })) });
+    const ran: string[] = [];
+    const d = deps(payoutSweeps(ran));
 
     const report = await runMaintenance(d);
 
@@ -106,10 +125,13 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       requestLimitsDeleted: 1,
       uploadsDeleted: 1,
       ordersDeleted: 1,
+      projectPayoutsCreated: 1,
+      payoutsSent: 2,
       payoutsChecked: 3,
       payoutsSettled: 2,
       errors: [],
     });
+    expect(ran).toEqual(["createProjectPayouts", "sendPayouts", "settlePayouts"]);
     expect(d.enqueueWebhookEvents).toHaveBeenCalledExactlyOnceWith(["WH-stale"]);
     expect(await findWebhookEvent(db, "WH-stuck")).toMatchObject({
       status: "failed",
@@ -136,6 +158,8 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(info).toHaveBeenCalledWith({ action: "maintenance.requestLimits", maintenance: { deleted: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.uploads", maintenance: { deleted: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.orders", maintenance: { deleted: 1 } });
+    expect(info).toHaveBeenCalledWith({ action: "maintenance.projectPayouts", maintenance: { created: 1 } });
+    expect(info).toHaveBeenCalledWith({ action: "maintenance.payoutSends", maintenance: { sent: 2, held: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.payouts", maintenance: { checked: 3, settled: 2 } });
   });
 
@@ -169,17 +193,24 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     });
   });
 
-  it("records a failed payouts sweep in the report", async () => {
+  it.each([
+    { sweep: "projectPayouts", dep: "createProjectPayouts", others: ["sendPayouts", "settlePayouts"] },
+    { sweep: "payoutSends", dep: "sendPayouts", others: ["createProjectPayouts", "settlePayouts"] },
+    { sweep: "payouts", dep: "settlePayouts", others: ["createProjectPayouts", "sendPayouts"] },
+  ] as const)("records a failed $sweep sweep in the report and still runs the other payout sweeps", async (row) => {
     const error = vi.spyOn(log, "error");
+    const ran: string[] = [];
     const d = deps({
-      settlePayouts: vi.fn(async () => {
+      ...payoutSweeps(ran),
+      [row.dep]: vi.fn(async () => {
         throw new TypeError("Database unavailable");
       }),
     });
 
-    expect(await runMaintenance(d)).toMatchObject({ payoutsChecked: 0, errors: ["payouts"] });
+    expect(await runMaintenance(d)).toMatchObject({ errors: [row.sweep] });
+    expect(ran).toEqual(row.others);
     expect(error).toHaveBeenCalledWith({
-      action: "maintenance.payouts",
+      action: `maintenance.${row.sweep}`,
       error: { name: "TypeError", note: "TypeError: Database unavailable" },
     });
   });

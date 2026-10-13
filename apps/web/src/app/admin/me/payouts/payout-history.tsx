@@ -31,7 +31,12 @@ export function PayoutHistory() {
                   </span>
                   <span className="text-muted-foreground">{MEMBER_STATUS_LABELS[request.status]}</span>
                 </div>
-                <p className="text-muted-foreground">Requested {new Date(request.createdAt).toLocaleDateString()}</p>
+                {request.source === "project" && request.projectTitle ? (
+                  <p className="text-muted-foreground">For {request.projectTitle}</p>
+                ) : null}
+                <p className="text-muted-foreground">
+                  {request.source === "project" ? "Created" : "Requested"} {new Date(request.createdAt).toLocaleDateString()}
+                </p>
                 {sentMinor !== null ? (
                   <p className="text-muted-foreground">Sent {formatMinor(sentMinor, request.currency)}</p>
                 ) : null}

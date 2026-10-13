@@ -30,8 +30,9 @@ import type { PayoutServices, PayPalServices } from "../context";
 import { PAYPAL_URL_MAX_LENGTH, payPalCountry } from "../paypal/onboarding";
 import { payPalErrorLog } from "./paypal-amounts";
 
-// accountId is null for credentials saved before PayPal reported which account they belong to.
-export type PayoutCredentialsView = { accountId: string | null; verifiedAt: string };
+// accountId is null for credentials saved before PayPal reported which account they belong to. canReadBalance is
+// false for credentials whose token lacks the reporting scope, such as those saved before Payleor asked for it.
+export type PayoutCredentialsView = { accountId: string | null; verifiedAt: string; canReadBalance: boolean };
 
 type PayoutTeam = Pick<ServicesTeamRecord, "id" | "slug" | "paypalMerchantId">;
 
@@ -40,6 +41,7 @@ const SELLER_NONCE_BYTES = 64;
 const CONNECTION_UNCONFIRMED = "PayPal did not confirm the connection. Try again.";
 const CONNECT_EXPIRED = "This PayPal connection expired. Turn on automatic payouts again.";
 const PAYOUTS_SCOPE = "https://uri.paypal.com/payments/payouts";
+const REPORTING_SCOPE = "https://uri.paypal.com/services/reporting/search/read";
 
 export function requirePayoutServices(payouts: PayoutServices | undefined): PayoutServices {
   if (!payouts) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Payouts are not set up on this server." });
@@ -56,7 +58,7 @@ export function credentialsMatchTeam(
 }
 
 function toView(row: TeamPayoutCredentialsRow): PayoutCredentialsView {
-  return { accountId: row.paypalAccountId, verifiedAt: row.verifiedAt.toISOString() };
+  return { accountId: row.paypalAccountId, verifiedAt: row.verifiedAt.toISOString(), canReadBalance: row.canReadBalance };
 }
 
 export async function getPayoutCredentialsView(db: DbExecutor, teamId: string): Promise<PayoutCredentialsView | null> {
@@ -169,7 +171,7 @@ async function sellerCredentialsFor(
   }
 }
 
-async function requirePayoutsScope(client: PayPalClient, teamId: string): Promise<void> {
+async function requirePayoutsScope(client: PayPalClient, teamId: string): Promise<string[]> {
   let scopes: string[];
   try {
     scopes = await client.grantedScopes();
@@ -186,6 +188,7 @@ async function requirePayoutsScope(client: PayPalClient, teamId: string): Promis
       message: "PayPal has not turned on Payouts for this PayPal account. Ask PayPal to turn it on, then try again.",
     });
   }
+  return scopes;
 }
 
 // Teams connected before Payleor kept the PayPal country get it here. Payout fees fall back to the international
@@ -208,8 +211,8 @@ function otherAccount(merchantId: string): TRPCError {
 }
 
 // PayPal shares the team's own REST credentials after consent. They are kept only when they belong to the PayPal
-// account connected to the team and their token carries the payouts scope. Balances are not read: PayPal does not
-// grant first-party credentials the reporting scope. PayPal's calls happen before any lock is taken.
+// account connected to the team and their token carries the payouts scope. Their balance can be read only when the
+// token also carries the reporting scope. PayPal's calls happen before any lock is taken.
 export async function completePayoutConnect(
   deps: { db: Database; payouts: PayoutServices; paypal: PayPalServices },
   input: { team: PayoutTeam; userId: string; attemptId: string; authCode: string; sharedId: string },
@@ -223,7 +226,7 @@ export async function completePayoutConnect(
   const credentials = await sellerCredentialsFor(paypal, attempt, input);
   if (credentials.payerId !== merchantId) throw otherAccount(merchantId);
   const client = payouts.clientFor({ teamId: team.id, clientId: credentials.clientId, clientSecret: credentials.clientSecret });
-  await requirePayoutsScope(client, team.id);
+  const scopes = await requirePayoutsScope(client, team.id);
 
   const sealed = await sealSecret(payouts.secretKey, payouts.keyId, credentials.clientSecret, team.id);
   const row = await writeUnlessSendingElsewhere(
@@ -241,6 +244,7 @@ export async function completePayoutConnect(
         keyId: sealed.keyId,
         paypalAccountId: merchantId,
         verifiedAt: new Date(),
+        canReadBalance: scopes.includes(REPORTING_SCOPE),
       });
       await markPayoutConnectAttemptUsed(tx, attempt.id);
       return saved;

@@ -114,6 +114,54 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
 
   const saved = credentials.data ?? null;
 
+  // The same PayPal consent turns automatic payouts on and reconnects them with more permissions.
+  function connectFlow(label: string) {
+    return (
+      <>
+        {start.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {start.error.message}
+          </p>
+        ) : null}
+        {complete.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {complete.error.message}
+          </p>
+        ) : null}
+        {linkProblem ? (
+          <p role="alert" className="text-sm text-destructive">
+            PayPal sent a link this page cannot use. Try again.
+          </p>
+        ) : null}
+        {connect === null ? (
+          <Button type="button" disabled={start.isPending} onClick={handleTurnOn}>
+            {start.isPending ? "Connecting…" : label}
+          </Button>
+        ) : (
+          <div className="space-y-2">
+            <a
+              ref={onboardAnchorRef}
+              id="paypal-onboard-link"
+              data-paypal-button="true"
+              data-paypal-onboard-complete="onPayPalConnected"
+              href={connect.miniBrowserHref}
+              target="PPFrame"
+              className={buttonVariants()}
+            >
+              Continue in PayPal
+            </a>
+            <p className="text-sm text-muted-foreground">
+              PayPal opens in a small secure window and shares this team's payout access with Payleor.
+            </p>
+            {complete.isPending ? (
+              <p className="text-sm text-muted-foreground">Checking the connection with PayPal…</p>
+            ) : null}
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <section aria-labelledby="automatic-payouts-heading" className="space-y-3 border p-4">
       <h2 id="automatic-payouts-heading" className="font-medium">
@@ -134,6 +182,12 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
             </p>
             <p className="text-muted-foreground">Verified {new Date(saved.verifiedAt).toLocaleDateString()}.</p>
           </div>
+          {saved.canReadBalance ? null : (
+            <div className="space-y-3">
+              <p className="text-sm">Reconnect so Payleor can read your PayPal balance.</p>
+              {connectFlow("Reconnect")}
+            </div>
+          )}
           <div className="flex gap-2">
             <Button
               type="button"
@@ -158,46 +212,7 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
           <p className="text-sm text-muted-foreground">
             Payleor sends members' payouts from this team's PayPal balance. PayPal's fee comes off each payout.
           </p>
-          {start.error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {start.error.message}
-            </p>
-          ) : null}
-          {complete.error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {complete.error.message}
-            </p>
-          ) : null}
-          {linkProblem ? (
-            <p role="alert" className="text-sm text-destructive">
-              PayPal sent a link this page cannot use. Try again.
-            </p>
-          ) : null}
-          {connect === null ? (
-            <Button type="button" disabled={start.isPending} onClick={handleTurnOn}>
-              {start.isPending ? "Connecting…" : "Turn on automatic payouts"}
-            </Button>
-          ) : (
-            <div className="space-y-2">
-              <a
-                ref={onboardAnchorRef}
-                id="paypal-onboard-link"
-                data-paypal-button="true"
-                data-paypal-onboard-complete="onPayPalConnected"
-                href={connect.miniBrowserHref}
-                target="PPFrame"
-                className={buttonVariants()}
-              >
-                Continue in PayPal
-              </a>
-              <p className="text-sm text-muted-foreground">
-                PayPal opens in a small secure window and shares this team's payout access with Payleor.
-              </p>
-              {complete.isPending ? (
-                <p className="text-sm text-muted-foreground">Checking the connection with PayPal…</p>
-              ) : null}
-            </div>
-          )}
+          {connectFlow("Turn on automatic payouts")}
         </div>
       )}
       <ConfirmDialog

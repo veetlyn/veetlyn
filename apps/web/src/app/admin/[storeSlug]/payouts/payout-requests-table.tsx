@@ -2,19 +2,64 @@
 
 import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRef } from "react";
+import { toast } from "sonner";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
-import { payoutActions, payoutFeeLine, payoutSentMinor, payoutStatusLabel } from "@/lib/payouts";
+import {
+  approvalState,
+  payoutActions,
+  payoutFeeLine,
+  payoutSentMinor,
+  payoutStatusLabel,
+  waitingLine,
+} from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
 import { ConfirmDialog } from "./confirm-dialog";
 
-type TeamPayoutRequest = inferRouterOutputs<AppRouter>["payouts"]["list"][number];
+type TeamPayouts = inferRouterOutputs<AppRouter>["payouts"]["list"];
+type TeamPayoutRequest = TeamPayouts["payouts"][number];
+
+// What approving does next: wait for another admin, wait for an export (no automatic payouts), or send.
+function approveDialogCopy(request: TeamPayoutRequest, amount: string, automaticPayoutsOn: boolean) {
+  if (request.approvalsNeeded > 1) {
+    return {
+      title: `Approve ${amount} for ${request.memberName}?`,
+      body: "A second admin has to approve it too before it is sent.",
+      confirmLabel: "Approve",
+    };
+  }
+  if (!automaticPayoutsOn) {
+    return {
+      title: `Approve ${amount} for ${request.memberName}?`,
+      body: "It waits for export or for automatic payouts.",
+      confirmLabel: "Approve",
+    };
+  }
+  return {
+    title: `Send ${amount} to ${request.memberName}?`,
+    body: "PayPal sends it from your PayPal account, on payday if the team has one.",
+    confirmLabel: `Send ${amount}`,
+  };
+}
+
+function PayoutSource({ teamSlug, request }: { teamSlug: string; request: TeamPayoutRequest }) {
+  if (request.source === "member") return <>Request</>;
+  const title = request.projectTitle ?? "Project";
+  return request.projectId ? (
+    <Link href={`/${teamSlug}/projects/${request.projectId}`} className="underline underline-offset-4">
+      {title}
+    </Link>
+  ) : (
+    <>{title}</>
+  );
+}
 
 function RequestRow({
   teamSlug,
@@ -27,20 +72,32 @@ function RequestRow({
 }) {
   const queryClient = useQueryClient();
   const approveDialogRef = useRef<HTMLDialogElement>(null);
+  const cancelExportDialogRef = useRef<HTMLDialogElement>(null);
   // onSettled: a failed send still changes the request (held, or left unconfirmed), so the row must reload either way.
   const invalidate = () => queryClient.invalidateQueries({ queryKey: trpc.payouts.list.queryKey({ teamSlug }) });
-  const approve = useMutation(trpc.payouts.approve.mutationOptions({ onSettled: invalidate }));
+  const approve = useMutation(
+    trpc.payouts.approve.mutationOptions({
+      onSuccess: (result) => {
+        if (result.approvalsNeeded > 0) toast.success("Approved. Waiting for a second admin.");
+      },
+      onSettled: invalidate,
+    }),
+  );
   const reject = useMutation(trpc.payouts.reject.mutationOptions({ onSettled: invalidate }));
   const retry = useMutation(trpc.payouts.retry.mutationOptions({ onSettled: invalidate }));
   const refresh = useMutation(trpc.payouts.refresh.mutationOptions({ onSettled: invalidate }));
+  const cancelExport = useMutation(trpc.payouts.cancelExport.mutationOptions({ onSettled: invalidate }));
 
-  const mutations = [approve, reject, retry, refresh];
+  const mutations = [approve, reject, retry, refresh, cancelExport];
   const pending = mutations.some((mutation) => mutation.isPending);
   const error = mutations.find((mutation) => mutation.error)?.error ?? null;
-  const actions = payoutActions(request);
+  const actions = payoutActions(request, automaticPayoutsOn);
   const amount = formatMinor(request.amountMinor, request.currency);
   const fee = payoutFeeLine(request);
   const sentMinor = payoutSentMinor(request);
+  const waiting = waitingLine(request, new Date());
+  const approval = approvalState(request);
+  const dialog = approveDialogCopy(request, amount, automaticPayoutsOn);
   const input = { teamSlug, requestId: request.id };
 
   function resetErrors() {
@@ -52,6 +109,9 @@ function RequestRow({
       <td className="px-4 py-3">
         <p className="font-medium">{request.memberName}</p>
         <p className="text-muted-foreground">{request.memberEmail}</p>
+      </td>
+      <td className="px-4 py-3">
+        <PayoutSource teamSlug={teamSlug} request={request} />
       </td>
       <td className="px-4 py-3 whitespace-nowrap">{amount}</td>
       <td className="px-4 py-3 whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString()}</td>
@@ -68,6 +128,12 @@ function RequestRow({
           </p>
         ) : null}
         {request.failureMessage ? <p className="text-destructive">{request.failureMessage}</p> : null}
+        {waiting ? <p className="text-muted-foreground">{waiting}</p> : null}
+        {approval.progress ? <p className="text-muted-foreground">{approval.progress}</p> : null}
+        {approval.note ? <p className="text-muted-foreground">{approval.note}</p> : null}
+        {(request.status === "exported" || request.status === "queued") && request.reviewReason ? (
+          <p className="text-destructive">{request.reviewReason}</p>
+        ) : null}
         {request.reviewReason ? (
           <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
             Needs review
@@ -85,13 +151,13 @@ function RequestRow({
             <Button
               type="button"
               size="sm"
-              disabled={pending || !automaticPayoutsOn}
+              disabled={pending}
               onClick={() => {
                 resetErrors();
                 approveDialogRef.current?.showModal();
               }}
             >
-              {approve.isPending ? "Sending…" : "Approve"}
+              {approve.isPending ? "Approving…" : "Approve"}
             </Button>
           ) : null}
           {actions.includes("reject") ? (
@@ -135,26 +201,111 @@ function RequestRow({
               {refresh.isPending ? "Checking…" : "Refresh"}
             </Button>
           ) : null}
+          {actions.includes("cancel_export") ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                resetErrors();
+                cancelExportDialogRef.current?.showModal();
+              }}
+            >
+              {cancelExport.isPending ? "Cancelling…" : "Cancel export"}
+            </Button>
+          ) : null}
         </div>
-        {!automaticPayoutsOn && actions.includes("approve") ? (
-          <p className="mt-1 text-right text-muted-foreground">Turn on automatic payouts to pay requests.</p>
-        ) : null}
         <ConfirmDialog
           dialogRef={approveDialogRef}
           id={`approve-dialog-${request.id}`}
-          title={`Send ${amount} to ${request.memberName}?`}
-          body="PayPal sends it from your PayPal account."
-          confirmLabel={`Send ${amount}`}
+          title={dialog.title}
+          body={dialog.body}
+          confirmLabel={dialog.confirmLabel}
           onConfirm={() => approve.mutate(input)}
+        />
+        <ConfirmDialog
+          dialogRef={cancelExportDialogRef}
+          id={`cancel-export-dialog-${request.id}`}
+          title={`Cancel the export of ${amount} for ${request.memberName}?`}
+          body="Only cancel if you did not send this file in PayPal. If PayPal already paid it, importing PayPal's log still settles it."
+          confirmLabel="Cancel export"
+          onConfirm={() => cancelExport.mutate(input)}
         />
       </td>
     </tr>
   );
 }
 
+function WaitingForMembers({ waiting }: { waiting: TeamPayouts["waitingForDestination"] }) {
+  if (waiting.length === 0) return null;
+  return (
+    <section aria-labelledby="waiting-members-heading" className="space-y-2">
+      <h3 id="waiting-members-heading" className="text-sm font-medium">
+        Waiting for members
+      </h3>
+      <ul className="space-y-1 text-sm text-muted-foreground">
+        {waiting.map((item) => (
+          <li key={item.projectId}>
+            Waiting for {item.memberName} to connect PayPal: {item.title} ({formatMinor(item.earningsMinor, item.currency)})
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RequestsList({ teamSlug, data, automaticPayoutsOn }: { teamSlug: string; data: TeamPayouts; automaticPayoutsOn: boolean }) {
+  if (data.payouts.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No payout requests yet. Members ask for a payout of their earnings from their own Payouts page.
+      </p>
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <table className="w-full text-sm">
+        <thead className="border-b text-left text-muted-foreground">
+          <tr>
+            <th scope="col" className="px-4 py-2 font-normal">
+              Member
+            </th>
+            <th scope="col" className="px-4 py-2 font-normal">
+              From
+            </th>
+            <th scope="col" className="px-4 py-2 font-normal">
+              Amount
+            </th>
+            <th scope="col" className="px-4 py-2 font-normal">
+              Requested
+            </th>
+            <th scope="col" className="px-4 py-2 font-normal">
+              Status
+            </th>
+            <th scope="col" className="px-4 py-2 font-normal">
+              <span className="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {data.payouts.map((request) => (
+            <RequestRow
+              key={request.id}
+              teamSlug={teamSlug}
+              request={request}
+              automaticPayoutsOn={automaticPayoutsOn}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
   const requests = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
-  // Approve sends through the team's saved credentials, so it stays off until automatic payouts are on.
+  // Without automatic payouts an approved payout waits for an export, so the approve dialog says so.
   const credentials = useQuery({
     ...trpc.payouts.credentials.queryOptions({ teamSlug }),
     retry: false,
@@ -173,39 +324,11 @@ export function PayoutRequestsTable({ teamSlug }: { teamSlug: string }) {
         <p role="alert" className="text-sm text-destructive">
           {requests.error.message}
         </p>
-      ) : requests.data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No payout requests yet. Members ask for a payout of their earnings from their own Payouts page.
-        </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="border-b text-left text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-2 font-normal">
-                  Member
-                </th>
-                <th scope="col" className="px-4 py-2 font-normal">
-                  Amount
-                </th>
-                <th scope="col" className="px-4 py-2 font-normal">
-                  Requested
-                </th>
-                <th scope="col" className="px-4 py-2 font-normal">
-                  Status
-                </th>
-                <th scope="col" className="px-4 py-2 font-normal">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {requests.data.map((request) => (
-                <RequestRow key={request.id} teamSlug={teamSlug} request={request} automaticPayoutsOn={automaticPayoutsOn} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <RequestsList teamSlug={teamSlug} data={requests.data} automaticPayoutsOn={automaticPayoutsOn} />
+          <WaitingForMembers waiting={requests.data.waitingForDestination} />
+        </>
       )}
     </section>
   );

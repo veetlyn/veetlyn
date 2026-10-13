@@ -15,6 +15,7 @@ const STATUS_LABELS = {
   succeeded: "Paid",
   failed: "Failed",
   rejected: "Rejected",
+  exported: "Sent through PayPal Payouts Web",
 } satisfies Record<PayoutRequestStatus, string>;
 
 export function payoutStatusLabel(request: PayoutState): string {
@@ -31,27 +32,69 @@ export const MEMBER_STATUS_LABELS = {
   succeeded: "Paid",
   failed: "Failed",
   rejected: "Rejected",
+  exported: "Approved, being sent",
 } satisfies Record<PayoutRequestStatus, string>;
 
-export type PayoutAction = "approve" | "reject" | "retry" | "refresh";
+export type PayoutAction = "approve" | "reject" | "retry" | "refresh" | "cancel_export";
 
 // A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once, and cannot be
-// rejected. A `sending` request that is not uncertain has a PayPal call in flight and must be left alone.
-export function payoutActions(request: PayoutState): readonly PayoutAction[] {
+// rejected. A `sending` request that is not uncertain has a PayPal call in flight and must be left alone. Without
+// automatic payouts a queued payout waits for an export, so there is nothing to retry.
+export function payoutActions(request: PayoutState, automaticPayoutsOn: boolean): readonly PayoutAction[] {
   switch (request.status) {
     case "requested":
       return ["approve", "reject"];
-    case "queued":
-      return request.uncertain ? ["retry"] : ["reject", "retry"];
+    case "queued": {
+      const retry: PayoutAction[] = automaticPayoutsOn ? ["retry"] : [];
+      return request.uncertain ? retry : ["reject", ...retry];
+    }
     case "sending":
       return request.uncertain ? ["retry"] : [];
     case "sent":
       return ["refresh"];
+    case "exported":
+      return ["cancel_export"];
     case "succeeded":
     case "failed":
     case "rejected":
       return [];
   }
+}
+
+const PAYDAY_DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" });
+
+type WaitingPayout = { status: PayoutRequestStatus; sendAfter: string | null; nextAttemptAt: string | null };
+
+// Paydays are UTC calendar days, as the server decides them; the next try shows in the admin's own time zone
+// unless one is given.
+export function waitingLine(request: WaitingPayout, now: Date, timeZone?: string): string | null {
+  if (request.status !== "queued") return null;
+  if (request.sendAfter !== null && Date.parse(request.sendAfter) > now.getTime()) {
+    return `Goes on payday, ${PAYDAY_DATE.format(new Date(request.sendAfter))}`;
+  }
+  if (request.nextAttemptAt !== null && Date.parse(request.nextAttemptAt) > now.getTime()) {
+    const time = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone });
+    return `Next try ${time.format(new Date(request.nextAttemptAt))}`;
+  }
+  return null;
+}
+
+export type ApprovalState = { progress: string | null; note: string | null };
+
+// eligibleApprovers are the admins who can still approve: an admin cannot approve their own payout or approve twice.
+export function approvalState(request: {
+  status: PayoutRequestStatus;
+  approvals: number;
+  approvalsNeeded: number;
+  eligibleApprovers: number;
+}): ApprovalState {
+  if (request.status !== "requested" || request.approvalsNeeded === 0) return { progress: null, note: null };
+  const required = request.approvals + request.approvalsNeeded;
+  const progress = required > 1 ? `${request.approvals} of ${required} approvals` : null;
+  if (request.approvalsNeeded > request.eligibleApprovers) {
+    return { progress, note: "Add a second admin or lower the second-approver amount." };
+  }
+  return { progress, note: request.approvals > 0 ? "Waiting for a second admin" : null };
 }
 
 type PayoutAmounts = {
@@ -67,6 +110,7 @@ export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor
   switch (request.status) {
     case "sending":
     case "sent":
+    case "exported":
       return estimate;
     case "succeeded":
       return request.feeMinor === null ? estimate : { label: "PayPal's fee", feeMinor: request.feeMinor };
@@ -80,7 +124,11 @@ export function payoutFeeLine(request: PayoutAmounts): { label: string; feeMinor
 
 // The amount a send claimed stays on the request after it goes back to the queue or fails, when nothing was sent.
 export function payoutSentMinor(request: { status: PayoutRequestStatus; sentMinor: number | null }): number | null {
-  const sent = request.status === "sending" || request.status === "sent" || request.status === "succeeded";
+  const sent =
+    request.status === "sending" ||
+    request.status === "sent" ||
+    request.status === "exported" ||
+    request.status === "succeeded";
   return sent ? request.sentMinor : null;
 }
 

@@ -25,12 +25,21 @@ export type MaintenanceDeps = {
   db: Database;
   enqueueWebhookEvents: (eventIds: string[]) => Promise<void>;
   files: Pick<FileStore, "delete">;
-  // Absent when payouts are not set up on this server; the payouts sweep is then skipped.
+  createProjectPayouts?: () => Promise<{ created: number }>;
+  // Absent when payouts are not set up on this server; the send and settle sweeps are then skipped.
+  sendPayouts?: () => Promise<{ sent: number; held: number }>;
   settlePayouts?: () => Promise<{ checked: number; settled: number }>;
   now?: () => Date;
 };
 
-export type MaintenanceSweep = "webhooks" | "requestLimits" | "uploads" | "orders" | "payouts";
+export type MaintenanceSweep =
+  | "webhooks"
+  | "requestLimits"
+  | "uploads"
+  | "orders"
+  | "projectPayouts"
+  | "payoutSends"
+  | "payouts";
 
 export type MaintenanceReport = {
   webhookEventsRequeued: number;
@@ -38,6 +47,8 @@ export type MaintenanceReport = {
   requestLimitsDeleted: number;
   uploadsDeleted: number;
   ordersDeleted: number;
+  projectPayoutsCreated: number;
+  payoutsSent: number;
   payoutsChecked: number;
   payoutsSettled: number;
   errors: MaintenanceSweep[];
@@ -52,6 +63,8 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     requestLimitsDeleted: 0,
     uploadsDeleted: 0,
     ordersDeleted: 0,
+    projectPayoutsCreated: 0,
+    payoutsSent: 0,
     payoutsChecked: 0,
     payoutsSettled: 0,
     errors: [],
@@ -118,7 +131,24 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     return { deleted: report.ordersDeleted };
   });
 
-  const settlePayouts = deps.settlePayouts;
+  // New project payouts go out with the sends of the same run; settling checks payouts sent before.
+  const { createProjectPayouts, sendPayouts, settlePayouts } = deps;
+  if (createProjectPayouts) {
+    await sweep("projectPayouts", async () => {
+      const { created } = await createProjectPayouts();
+      report.projectPayoutsCreated = created;
+      return { created };
+    });
+  }
+
+  if (sendPayouts) {
+    await sweep("payoutSends", async () => {
+      const { sent, held } = await sendPayouts();
+      report.payoutsSent = sent;
+      return { sent, held };
+    });
+  }
+
   if (settlePayouts) {
     await sweep("payouts", async () => {
       const { checked, settled } = await settlePayouts();

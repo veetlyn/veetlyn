@@ -1,5 +1,6 @@
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
+import { createProjectPayouts, sendDuePayouts } from "@jendal-workspace/api/use-cases/payout-sweeps";
 import { processPayPalWebhookEvent } from "@jendal-workspace/api/use-cases/paypal-webhooks";
 import type { TenantEnvironment } from "@jendal-workspace/core";
 import {
@@ -135,6 +136,9 @@ export default {
         enqueueWebhookEvents: (eventIds) =>
           ENV.PAYPAL_WEBHOOKS.sendBatch(eventIds.map((eventId) => ({ body: { eventId } }))).then(() => undefined),
         files: createFileStore(),
+        // Project payouts are created even without payout services; approved ones then wait.
+        createProjectPayouts: () => createProjectPayouts({ db, payouts }, { now: new Date() }),
+        sendPayouts: payouts ? () => sendDuePayouts({ db, payouts }, { now: new Date() }) : undefined,
         settlePayouts: payouts ? () => settleSentPayouts({ db, payouts }) : undefined,
       });
     } finally {

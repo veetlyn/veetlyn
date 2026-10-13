@@ -33,10 +33,12 @@ import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
+import { minorToPriceInput } from "@/lib/money";
 import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
 
+import { QuoteCalculator } from "./quote-calculator";
 import { RefundSection } from "./refund-section";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
@@ -207,8 +209,20 @@ export default function ProjectDetail({
     );
   }
 
-  const { project, quotes, amendments, payments, deliveries, refund, clientPath, role, quotingMode, solo, viewerId } =
-    detail.data;
+  const {
+    project,
+    quotes,
+    amendments,
+    payments,
+    deliveries,
+    refund,
+    clientPath,
+    role,
+    quotingMode,
+    solo,
+    viewerId,
+    quoteCalculator,
+  } = detail.data;
   const currency = project.currency;
   const currentQuote = quotes.find((q) => q.status === "accepted");
   const pendingAmendment = amendments.find((a) => a.status === "pending");
@@ -375,6 +389,22 @@ export default function ProjectDetail({
             ) : (
               <p className="text-sm text-destructive">Each line needs a description and an amount above zero.</p>
             )}
+            {/* A solo seller keeps the whole price, so there is no member share to work out. */}
+            {!solo ? (
+              <QuoteCalculator
+                rates={{
+                  currency,
+                  teamCutBps: project.teamCutBps,
+                  managementFeeBps: project.managementFeeBps,
+                  ...quoteCalculator,
+                }}
+                onUseQuote={
+                  quoteRows.length === 1
+                    ? (quoteMinor) => setQuoteRows((rows) => rows.map((row) => ({ ...row, amount: minorToPriceInput(quoteMinor) })))
+                    : null
+                }
+              />
+            ) : null}
             {/* Without this, Send quote stays disabled with no reason given (for example, nobody assigned yet). */}
             {!author.ok ? <p className="text-sm text-muted-foreground">{quoteAuthorRefusalMessage(author.reason)}</p> : null}
             {addQuote.error ? <p className="text-sm text-destructive">{addQuote.error.message}</p> : null}

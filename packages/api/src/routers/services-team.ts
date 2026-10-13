@@ -135,12 +135,11 @@ export const servicesTeamRouter = router({
         teamCutBps: z.number().int().min(0).max(MAX_RATE_BPS),
         managementFeeBps: z.number().int().min(0).max(MAX_RATE_BPS),
         quotingMode: z.enum(["open", "assigned", "team"]),
-        payoutMode: z.enum(["manual", "rules", "automatic"]),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_settings", "Only an admin can change the team settings.");
-      const { currency, teamCutBps, managementFeeBps, quotingMode, payoutMode } = input;
+      const { currency, teamCutBps, managementFeeBps, quotingMode } = input;
       const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
       if (settings?.solo && (teamCutBps !== SOLO_TEAM_CUT_BPS || managementFeeBps !== SOLO_MANAGEMENT_FEE_BPS)) {
         throw new TRPCError({
@@ -153,7 +152,6 @@ export const servicesTeamRouter = router({
         teamCutBps,
         managementFeeBps,
         quotingMode,
-        payoutMode,
       });
       return { ...saved, settingsSavedAt: isoOrNull(saved.settingsSavedAt) };
     }),
