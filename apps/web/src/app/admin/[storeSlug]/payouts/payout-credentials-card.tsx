@@ -219,7 +219,7 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
         dialogRef={offDialogRef}
         id="turn-off-payouts-dialog"
         title="Turn off automatic payouts?"
-        body="Members' payout requests wait until you turn them on again."
+        body="Approved payouts then wait until you export them for PayPal Payouts Web or turn automatic payouts on again."
         confirmLabel="Turn off"
         onConfirm={() => remove.mutate({ teamSlug })}
       />

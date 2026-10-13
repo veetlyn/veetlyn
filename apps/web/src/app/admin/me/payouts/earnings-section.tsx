@@ -1,6 +1,6 @@
 "use client";
 
-import { MAX_PAYOUT_MINOR } from "@jendal-workspace/core";
+import { MAX_PAYOUT_MINOR, OPEN_PAYOUT_REQUEST_STATUSES, type PayoutRequestStatus } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -15,13 +15,29 @@ import { formatMinor, minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { payoutNetMinor } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
-type TeamEarnings = inferRouterOutputs<AppRouter>["payouts"]["mine"]["earnings"][number];
+type MemberPayouts = inferRouterOutputs<AppRouter>["payouts"]["mine"];
+type TeamEarnings = MemberPayouts["earnings"][number];
+
+const OPEN_STATUSES: readonly PayoutRequestStatus[] = OPEN_PAYOUT_REQUEST_STATUSES;
+
+// Project payouts reserve money too, but only the member's own open request blocks another one.
+function hasOwnOpenRequest(requests: MemberPayouts["requests"], earnings: TeamEarnings): boolean {
+  return requests.some(
+    (request) =>
+      request.source === "member" &&
+      request.teamSlug === earnings.teamSlug &&
+      request.currency === earnings.currency &&
+      OPEN_STATUSES.includes(request.status),
+  );
+}
 
 function TeamEarningsCard({
   earnings,
+  ownRequestOpen,
   requestBlockedReason,
 }: {
   earnings: TeamEarnings;
+  ownRequestOpen: boolean;
   requestBlockedReason: string | null;
 }) {
   const queryClient = useQueryClient();
@@ -38,7 +54,7 @@ function TeamEarningsCard({
 
   const value = amount ?? minorToPriceInput(Math.min(earnings.availableMinor, MAX_PAYOUT_MINOR));
   const inputId = `payout-amount-${earnings.teamId}-${earnings.currency}`;
-  const disabled = earnings.availableMinor === 0 || earnings.reservedMinor > 0 || requestBlockedReason !== null;
+  const disabled = earnings.availableMinor === 0 || ownRequestOpen || requestBlockedReason !== null;
   const amountMinor = parsePriceInput(value);
   const net =
     amountMinor !== null && amountMinor > 0
@@ -90,8 +106,8 @@ function TeamEarningsCard({
             {formatMinor(net.feeEstimateMinor, earnings.currency)}.
           </p>
         )}
-        {earnings.reservedMinor > 0 ? (
-          <p className="text-sm text-muted-foreground">A payout is already in progress for this team.</p>
+        {ownRequestOpen ? (
+          <p className="text-sm text-muted-foreground">Your payout request for this team is still in progress.</p>
         ) : null}
         {earnings.availableMinor > 0 && requestBlockedReason ? (
           <p className="text-sm text-muted-foreground">{requestBlockedReason}</p>
@@ -103,7 +119,9 @@ function TeamEarningsCard({
         ) : null}
         {request.isSuccess ? (
           <p className="text-sm text-emerald-700 dark:text-emerald-400">
-            Payout requested. An admin of {earnings.teamName} reviews it.
+            {request.data.status === "requested"
+              ? `Payout requested. An admin of ${earnings.teamName} reviews it.`
+              : "Payout approved. It is on its way to your PayPal account."}
           </p>
         ) : null}
       </form>
@@ -135,6 +153,7 @@ export function EarningsSection({ requestBlockedReason }: { requestBlockedReason
             <TeamEarningsCard
               key={`${earnings.teamId}-${earnings.currency}`}
               earnings={earnings}
+              ownRequestOpen={hasOwnOpenRequest(mine.data.requests, earnings)}
               requestBlockedReason={requestBlockedReason}
             />
           ))}

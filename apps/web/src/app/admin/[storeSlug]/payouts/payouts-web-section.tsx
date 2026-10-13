@@ -68,9 +68,8 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
   if (!requests.data || credentials.data !== null) return null;
 
   const now = new Date();
+  // Stays visible with nothing to export: settling the last exported payout must not hide the import result.
   const approved = requests.data.payouts.filter((request) => exportable(request, now));
-  const hasExported = requests.data.payouts.some((request) => request.status === "exported");
-  if (approved.length === 0 && !hasExported) return null;
 
   const selectedIds = approved.filter((request) => !unchecked.has(request.id)).map((request) => request.id);
 
@@ -137,11 +136,13 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
             {exportCsv.isPending ? "Exporting…" : "Export for PayPal Payouts Web"}
           </Button>
         </form>
-      ) : null}
+      ) : (
+        <p className="text-sm text-muted-foreground">No approved payouts to export.</p>
+      )}
       <ol className="list-decimal space-y-1 pl-5 text-sm">
-        <li>In PayPal, open Business Tools &gt; Make Payments &gt; Payouts.</li>
+        <li>In PayPal, open Pay &amp; Get Paid &gt; Payouts.</li>
         <li>Upload this file and send the payout.</li>
-        <li>When it shows Processed, open it under Activity and choose Download (CSV).</li>
+        <li>When it shows Processed, open it under Activity and choose Download &gt; Download (CSV).</li>
       </ol>
       <div className="space-y-2">
         <Label htmlFor="payouts-web-log">Import PayPal's CSV log</Label>
