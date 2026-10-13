@@ -99,7 +99,10 @@ describe("partnerReferrals.create", () => {
             rest_api_integration: {
               integration_method: "PAYPAL",
               integration_type: "FIRST_PARTY",
-              first_party_details: { features: ["PAYMENT", "REFUND", "PAYOUTS"], seller_nonce: "nonce-1" },
+              first_party_details: {
+                features: ["PAYMENT", "REFUND", "PAYOUTS", "ADVANCED_TRANSACTIONS_SEARCH", "PAYPAL_BALANCE"],
+                seller_nonce: "nonce-1",
+              },
             },
           },
         },

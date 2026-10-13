@@ -46,6 +46,7 @@ const ACTION_URL = "https://www.sandbox.paypal.com/bizsignup/entry?token=REF-1";
 const CREDENTIALS_PATH = `/v1/customer/partners/${PARTNER_ID}/merchant-integrations/credentials/`;
 
 const PAYOUTS_SCOPE = "https://uri.paypal.com/payments/payouts";
+const REPORTING_SCOPE = "https://uri.paypal.com/services/reporting/search/read";
 const PARTNER_APP_AUTH = `Basic ${btoa("partner-client-id:partner-secret")}`;
 
 function teamTokenAnswer(scope = `https://uri.paypal.com/services/payments/refund ${PAYOUTS_SCOPE} openid`): Response {
@@ -64,7 +65,21 @@ type TeamPayPalAnswers = {
   teamToken?: () => Response;
   payout?: () => Response;
   batch?: () => Response;
+  balances?: () => Response;
 };
+
+function balancesAnswer(): Response {
+  return jsonResponse(200, {
+    account_id: MERCHANT_ID,
+    balances: [
+      {
+        currency: "USD",
+        total_balance: { currency_code: "USD", value: "5000.00" },
+        available_balance: { currency_code: "USD", value: "5000.00" },
+      },
+    ],
+  });
+}
 
 // A fake PayPal API for the partner app (first-party referral, the seller's authorization code and credentials) and
 // for the team's own REST app (token, payouts).
@@ -88,6 +103,7 @@ function fakeTeamPayPal(answers: TeamPayPalAnswers = {}) {
     }
     if (path === "/v1/payments/payouts" && answers.payout) return answers.payout();
     if (path.startsWith("/v1/payments/payouts/") && answers.batch) return answers.batch();
+    if (request.method === "GET" && path === "/v1/reporting/balances") return answers.balances?.() ?? balancesAnswer();
     return jsonResponse(500, { name: "UNEXPECTED_CALL", debug_id: "d500" });
   });
 }
@@ -175,7 +191,10 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     expect(referralDetails(paypal.requests)).toEqual({
       integration_method: "PAYPAL",
       integration_type: "FIRST_PARTY",
-      first_party_details: { features: ["PAYMENT", "REFUND", "PAYOUTS"], seller_nonce: attempt?.sellerNonce },
+      first_party_details: {
+        features: ["PAYMENT", "REFUND", "PAYOUTS", "ADVANCED_TRANSACTIONS_SEARCH", "PAYPAL_BALANCE"],
+        seller_nonce: attempt?.sellerNonce,
+      },
     });
     const referral = paypal.requests.find((r) => pathOf(r) === "/v2/customer/partner-referrals");
     expect(JSON.parse(referral?.body ?? "").partner_config_override).toEqual({
@@ -192,7 +211,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
     const saved = await admin.payouts.connectComplete({ ...TEAM, attemptId, authCode: AUTH_CODE, sharedId: SHARED_ID });
 
-    const view = { accountId: MERCHANT_ID, verifiedAt: expect.any(String) };
+    const view = { accountId: MERCHANT_ID, verifiedAt: expect.any(String), canReadBalance: false };
     expect(saved).toEqual(view);
     await expect(admin.payouts.credentials(TEAM)).resolves.toEqual(view);
     const [attempt] = await db.select().from(payoutConnectAttempt).where(eq(payoutConnectAttempt.id, attemptId));
@@ -212,6 +231,19 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(admin.servicesTeam.get(TEAM)).resolves.toMatchObject({ payoutCredentialsSaved: true });
     // Teams connected before Payleor kept the PayPal country get it now; it sets PayPal's payout fee.
     await expect(getTeamPayPalCountry(db, teamId)).resolves.toBe("US");
+  });
+
+  it.each([
+    { case: "carries the reporting scope", scope: `${PAYOUTS_SCOPE} ${REPORTING_SCOPE} openid`, canReadBalance: true },
+    { case: "lacks the reporting scope", scope: `${PAYOUTS_SCOPE} openid`, canReadBalance: false },
+  ])("connects and records whether the balance can be read when the token $case", async ({ scope, canReadBalance }) => {
+    const { userId, teamId } = await connectedTeam();
+    const admin = callerFor(userId, await makePayouts(fakeTeamPayPal({ teamToken: () => teamTokenAnswer(scope) }).fetch));
+
+    await expect(turnOnAutomaticPayouts(admin)).resolves.toMatchObject({ canReadBalance });
+
+    await expect(admin.payouts.credentials(TEAM)).resolves.toMatchObject({ accountId: MERCHANT_ID, canReadBalance });
+    await expect(getTeamPayoutCredentials(db, teamId)).resolves.toMatchObject({ canReadBalance });
   });
 
   const CONNECT_EXPIRED = { code: "BAD_REQUEST", message: "This PayPal connection expired. Turn on automatic payouts again." };

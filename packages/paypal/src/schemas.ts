@@ -176,6 +176,17 @@ export const payoutBatchSchema = z.looseObject({
   ),
 });
 
+export const balancesSchema = z.looseObject({
+  account_id: optionalText,
+  balances: lenientArray(
+    z.looseObject({
+      currency: z.string(),
+      total_balance: moneySchema,
+      available_balance: readableMoney,
+    }),
+  ),
+});
+
 export const webhookVerificationSchema = z.looseObject({ verification_status: optionalText });
 
 // Webhook fields are read leniently: an empty or non-string id reads as unknown (null).

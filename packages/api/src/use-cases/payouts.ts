@@ -668,6 +668,26 @@ export async function settlePayout(deps: PayoutDeps, request: PayoutRequestRow):
   });
 }
 
+// The team's available PayPal balance in `currency`, or null when it cannot be read: no credentials, credentials of
+// another account or without the reporting scope, or PayPal refusing or failing. An overdrawn balance reads 0.
+export async function readTeamBalanceMinor(
+  deps: PayoutDeps,
+  team: Pick<PayoutTeam, "id" | "paypalMerchantId">,
+  currency: PayoutRequestRow["currency"],
+): Promise<number | null> {
+  const credentials = await getTeamPayoutCredentials(deps.db, team.id);
+  if (!credentials?.canReadBalance || !credentialsMatchTeam(credentials, team)) return null;
+  try {
+    const client = await payoutClientFromCredentials(deps.payouts, credentials);
+    const { balances } = await client.reporting.balances(currency);
+    const balance = balances.find((entry) => entry.currency === currency);
+    return Math.max(0, balance?.availableMinor ?? 0);
+  } catch (cause) {
+    log.warn({ action: "payout.balance", team: { id: team.id }, error: payPalErrorLog(cause) });
+    return null;
+  }
+}
+
 export async function refreshPayout(
   deps: PayoutDeps,
   input: { teamId: string; requestId: string },

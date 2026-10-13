@@ -25,8 +25,15 @@ export type CreatePartnerReferralInput = {
 };
 
 // What a team grants when it turns on automatic payouts. PayPal shares the team's own REST credentials for these
-// (first-party onboarding); PAYOUTS is refused for third-party integrations.
-export const FIRST_PARTY_REFERRAL_FEATURES = ["PAYMENT", "REFUND", "PAYOUTS"] as const;
+// (first-party onboarding); PAYOUTS is refused for third-party integrations. ADVANCED_TRANSACTIONS_SEARCH and
+// PAYPAL_BALANCE give those credentials the reporting scope, which reads the team's balance.
+export const FIRST_PARTY_REFERRAL_FEATURES = [
+  "PAYMENT",
+  "REFUND",
+  "PAYOUTS",
+  "ADVANCED_TRANSACTIONS_SEARCH",
+  "PAYPAL_BALANCE",
+] as const;
 
 export type CreateFirstPartyReferralInput = {
   requestId: string;
