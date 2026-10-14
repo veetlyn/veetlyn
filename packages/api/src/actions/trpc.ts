@@ -21,15 +21,17 @@ type Procedure<Kind extends "action" | "query", Input, Result> = Kind extends "q
   ? TRPCQueryProcedure<{ input: Input; output: Result; meta: object }>
   : TRPCMutationProcedure<{ input: Input; output: Result; meta: object }>;
 
-// An empty object schema infers Record<string, never>, which would turn the slug into never.
+// Covers an empty object schema (project.list, the only such case today): it infers Record<string, never>, which
+// would turn the slug into never.
 type TeamInput<Raw> = string extends keyof Raw ? { teamSlug: string } : { teamSlug: string } & Raw;
 
 type ClientInput<Raw> = Omit<Raw, "projectId"> & { token: string };
 
 type TeamContext = Context & { session: { user: { id: string } }; servicesTeam: { id: string } };
 
-// What the implementations see: each overload carries the definition's real types, and every input here is an
-// object that may name a project.
+// What the implementations see. Each overload's real types are honest: the runtime branch follows the literal
+// `kind` the overload reads, and the chained input parsers merge to the input it declares (checked in
+// routers/project-types.test.ts). Every input here is an object that may name a project.
 type Loose = { projectId?: string };
 type LooseDefinition = ActionDefinition<Loose, unknown, Loose>;
 

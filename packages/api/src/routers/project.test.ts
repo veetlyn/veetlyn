@@ -432,7 +432,6 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("answers a valid link to a missing project like a forged one", async () => {
-    await seedServicesTeamWithAdmin(db);
     const token = await clientToken(crypto.randomUUID());
     const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
     await expect(callerFor(null).project.clientGet({ token })).rejects.toMatchObject(notValid);
@@ -1120,6 +1119,19 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect((await caller.project.refundClient({ teamSlug: "team", projectId })).status).toBe("completed");
         expect(refundCalls().map((r) => r.url.split("/").at(-2))).toEqual(["CAPTURE2", "CAPTURE1"]);
         expect(await balanceOf("client_refunds")).toBe(0);
+      });
+
+      // The server's error log (apps/server trpc-error-log) reads PayPal's debug id from the error's cause.
+      it("keeps PayPal's error as the cause of a refused refund, for the error log", async () => {
+        const { userId, projectId } = await overpaidProject();
+        const { paypal } = fakePayPalRefunds(() =>
+          jsonResponse(422, { name: "UNPROCESSABLE_ENTITY", message: "The refund was refused.", debug_id: "d422" }),
+        );
+
+        await expect(callerFor(userId, undefined, paypal).project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_GATEWAY",
+          cause: { status: 422, name: "UNPROCESSABLE_ENTITY", debugId: "d422" },
+        });
       });
 
       it("shows PayPal's refusal of a part, fails the parts not sent after it, and sends both on the retry", async () => {
