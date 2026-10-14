@@ -41,7 +41,7 @@ export const quoteCreate = defineAction({
 export const quoteAccept = defineAction({
   name: "quote.accept",
   kind: "action",
-  summary: "Accept the project's proposed quote as its client, which opens the deposit payment in minor units.",
+  summary: "Accept the project's proposed quote as its client, which opens the deposit payment and returns its id and amount in minor units.",
   input: quoteIdInput,
   output: z.object({ paymentId: z.uuid(), amountMinor: z.int() }),
   scope: (input) => ({ projectId: input.projectId }),
@@ -52,7 +52,7 @@ export const quoteAccept = defineAction({
 export const amendmentPropose = defineAction({
   name: "amendment.propose",
   kind: "action",
-  summary: `Propose a change to the accepted quote: up to ${MAX_QUOTE_ITEMS} items to add, up to ${MAX_QUOTE_ITEMS} items to remove, and a note.`,
+  summary: `Propose a change to the accepted quote: up to ${MAX_QUOTE_ITEMS} items to add, up to ${MAX_QUOTE_ITEMS} items to remove, and a note of up to 2000 characters.`,
   input: proposeAmendmentInput,
   output: z.object({ amendmentId: z.uuid() }),
   scope: (input) => ({ projectId: input.projectId }),

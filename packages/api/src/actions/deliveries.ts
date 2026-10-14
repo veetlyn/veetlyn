@@ -1,3 +1,4 @@
+import { formatBytes, MAX_FILE_BYTES } from "@jendal-workspace/core";
 import { z } from "zod";
 
 import { teamDeliveryFileUrl } from "../use-cases/project-views";
@@ -31,7 +32,7 @@ export const requestChangesInput = deliveryIdInput.extend({ note: z.string().max
 export const deliveryUploadStart = defineAction({
   name: "delivery.upload_start",
   kind: "action",
-  summary: "Get a 15-minute upload link for a delivery file of up to 100 MB; at most 20 uploads per 10 minutes.",
+  summary: `Get a 15-minute upload link for a delivery file of up to ${formatBytes(MAX_FILE_BYTES)}; at most 20 uploads per 10 minutes.`,
   input: uploadStartInput,
   output: z.object({ uploadId: z.uuid(), url: z.url(), headers: z.record(z.string(), z.string()) }),
   scope: (input) => ({ projectId: input.projectId }),
@@ -42,7 +43,8 @@ export const deliveryUploadStart = defineAction({
 export const deliverySubmit = defineAction({
   name: "delivery.submit",
   kind: "action",
-  summary: "Submit the work to the client: a note of up to 5000 characters, a link of up to 2000, and optionally an uploaded file.",
+  summary:
+    "Submit the work to the client: at least one of a note of up to 5000 characters, an https link of up to 2000, or an uploaded file.",
   input: submitDeliveryInput,
   output: z.object({ deliveryId: z.uuid() }),
   scope: (input) => ({ projectId: input.projectId }),
