@@ -210,6 +210,31 @@ export function createSpikeMcpRoute(deps: Omit<SpikeDeps, "userId">, authUrl: st
     deps.auth,
     async (request, claims) => {
       const userId = claims.sub ?? "";
+      const rpc = await request
+        .clone()
+        .json()
+        .catch(() => null);
+      const rpcInfo = z
+        .object({
+          method: z.string().optional(),
+          params: z
+            .object({ protocolVersion: z.string().optional(), clientInfo: z.unknown(), capabilities: z.unknown(), name: z.string().optional() })
+            .partial()
+            .optional(),
+        })
+        .safeParse(rpc);
+      const params = rpcInfo.success ? rpcInfo.data.params : undefined;
+      console.log("SPIKE_RPC", {
+        ...{
+          method: rpcInfo.success ? (rpcInfo.data.method ?? "") : "unparsed",
+          versionHeader: request.headers.get("mcp-protocol-version") ?? "",
+          agent: request.headers.get("user-agent") ?? "",
+          initVersion: params?.protocolVersion ?? "",
+          toolName: params?.name ?? "",
+          clientInfo: params?.clientInfo ? JSON.stringify(params.clientInfo) : "",
+          capabilities: params?.capabilities ? JSON.stringify(params.capabilities).slice(0, 800) : "",
+        },
+      });
       deps.log.set({ mcp: { userId, clientId: claims.azp ?? claims.client_id } });
       const handler = createMcpHandler(() => buildServer({ ...deps, userId }), { legacy: "stateless" });
       // The response streams while tools run; buffer it so the per-request database client, closed once the
