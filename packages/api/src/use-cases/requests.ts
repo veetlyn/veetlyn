@@ -117,7 +117,7 @@ export async function requestQuote(
 // never touch the limit budget; the per-email limit lives in requestQuote, after validation.
 export async function createQuoteRequest(
   deps: { db: Database; auth: LinkSecretSource; email?: EmailServices },
-  request: { ip: string | undefined },
+  request: { ip: string | null },
   input: QuoteRequestInput & { website: string },
 ): Promise<{ ok: true }> {
   const { db } = deps;
