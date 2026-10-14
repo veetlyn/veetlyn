@@ -153,7 +153,7 @@ export async function perform<Input, Result, Raw>(
     return result;
   } catch (thrown) {
     const error = toActionError(thrown);
-    await writeLog(req, definition, scope, error.code, error.message, started);
+    await writeLog(req, definition, scope, error.code, error.logMessage ?? error.message, started);
     throw error;
   }
 }

@@ -1164,7 +1164,13 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           code: "BAD_GATEWAY",
           message: `PayPal did not refund the client: ${refusal}`,
         });
-        const failed = (await caller.project.get({ teamSlug: "team", projectId })).refund;
+        // The admin reads PayPal's words; the action log keeps only Payleor's.
+        const logged = await db
+          .select({ outcome: actionLog.outcome, message: actionLog.message })
+          .from(actionLog)
+          .where(eq(actionLog.action, "project.refund_client"));
+        expect(logged).toEqual([{ outcome: "unavailable", message: "PayPal did not refund the client." }]);
+        const failed =(await caller.project.get({ teamSlug: "team", projectId })).refund;
         expect(failed).toMatchObject({
           status: "failed",
           parts: [
