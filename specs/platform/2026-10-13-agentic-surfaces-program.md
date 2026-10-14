@@ -74,6 +74,7 @@ Each run is about two days of subagent work with review, merge and walkthrough. 
 - **Reputation:** clients and sellers rate each other in stars after a completed project; the client's review of the work is public. Ratings count only on paid, completed projects.
 - **Profiles:** clients see a seller's profile with ratings, reviews and portfolio.
 - **Discord:** a request has a channel or thread for the client and the team's freelancers; accepting a freelancer's quote opens a private project channel with that freelancer; messages sync between the two.
+- **Every surface:** the conversations design (`2026-10-14-conversations-design.md`) puts these spaces in core (a request space for staff and the team's eligible freelancers, a project space for the client and staff that the accepted freelancer joins) and shows them on the web, in the plugin, by email, through the API and in Discord.
 
 **After the hackathon:** a single-tenant self-host mode in the same AGPL codebase; listing the plugin in the ChatGPT and Claude directories; the Commerce checkout protocols (§6); Slack ops; Discord amendments, payouts, `/ask` and archiving; the payout fixes in the backlog; full books (journal, statements, reconciliation, reserve); billing; moving use cases to domain errors; cases and disputes.
 
