@@ -24,7 +24,7 @@ import { z } from "zod";
 import { type ConfirmationAction, issueConfirmation, verifyConfirmation } from "./confirmation";
 import { WIDGET_CSP_DOMAINS, WIDGET_HTML } from "./widget";
 
-const WIDGET_URI = "ui://payleor/app-v3";
+const WIDGET_URI = "ui://payleor/app-v4";
 
 const SERVER_INSTRUCTIONS = `Payleor is where clients hire freelancers, studios and AI sellers for paid work, and pay with PayPal. Use these tools when the user wants work done for them (design, development, writing, video, marketing) or asks about a Payleor project.
 Flow: search_offerings -> agree on the brief with the user -> request_quote -> the seller answers with a quote -> get_project shows it -> the user accepts and pays with the card's buttons -> the seller delivers -> the user accepts the delivery or asks for changes (request_changes) -> the user pays the balance.
@@ -119,7 +119,7 @@ function nextStep(view: ClientView, seller: string): { text: string; actions: st
     case "quoting":
       return proposed
         ? { text: "Review the quote. Press Accept quote to go ahead; the deposit is due next.", actions: ["accept_quote", "open"] }
-        : { text: `Waiting for ${seller} to send a quote. Check again later with get_project.`, actions: ["open"] };
+        : { text: `Waiting for ${seller} to send a quote.`, actions: ["open"] };
     case "awaiting_deposit":
     case "awaiting_balance":
       return payable
@@ -132,7 +132,7 @@ function nextStep(view: ClientView, seller: string): { text: string; actions: st
       return payable
         ? { text: `Pay the top-up of ${money(payable.amountMinor, project.currency)} so the extra work can start.`, actions: ["pay", "open"] }
         : {
-            text: `${seller} is working on it${accepted ? `; delivery is planned within ${accepted.deliveryDays} days of the deposit` : ""}. Check again later with get_project.`,
+            text: `${seller} is working on it${accepted ? `; delivery is planned within ${accepted.deliveryDays} days of the deposit` : ""}.`,
             actions: ["open"],
           };
     case "delivered":
@@ -209,7 +209,7 @@ async function projectResult(deps: Deps, who: Identity, projectId: string, lead?
     lead,
     `${project.title} with ${row.seller}: ${projectStatusLabel(project.status)}.`,
     quote ? `Quote v${quote.version} (${quote.status}): ${money(quote.amountMinor, project.currency)}, ${quote.deliveryDays} days.` : null,
-    delivery ? `Latest delivery: ${delivery.status}.` : null,
+    delivery ? `Latest delivery (id ${delivery.id}): ${delivery.status}.` : null,
     `Next step: ${step.text}`,
     step.actions.some((a) => a === "accept_quote" || a === "accept_delivery" || a === "pay")
       ? "The user does this with the buttons in the card above."
@@ -297,7 +297,7 @@ function buildServer(deps: Deps): McpServer {
     {
       title: "Request a quote",
       description:
-        "Use this when the user has chosen an offering and agreed to send a request. Sends the brief to the seller, who replies with a quote; Payleor emails the user a private link to the project. Confirm the brief and the answers to the seller's questions with the user before calling.",
+        "Use this when the user has chosen an offering and agreed to send a request. Sends the brief to the seller, who replies with a quote; Payleor emails the user a private link to the project. Confirm the brief and the answers to the seller's questions with the user before calling. Clients cannot attach or upload files on Payleor: put links to existing files (current logo, brand guide, references) in the brief, and never promise a place to share files.",
       inputSchema: {
         offeringId: z.string().describe("The id from search_offerings"),
         brief: z.string().min(10).max(5000).describe("What the user wants, in their words: goal, style, deliverables, deadline, budget"),
@@ -323,7 +323,7 @@ function buildServer(deps: Deps): McpServer {
         const latest = (await listClientProjects(deps.db, who.email)).find((p) => p.title === offering.name);
         deps.log.set({ mcp: { tool: "request_quote", offeringId, projectId: latest?.id } });
         if (!latest) return textResult(`Request sent to ${offering.seller}.`, { view: "notice", text: "Request sent." });
-        return projectResult(deps, who, latest.id, `Request sent to ${offering.seller}. They will reply with a quote.`);
+        return projectResult(deps, who, latest.id, `Request sent to ${offering.seller}. They will reply with a quote. Payleor emailed the user a private link to the project page, which shows the quote, payments and deliveries; it has no file upload or messages.`);
       }),
   );
 

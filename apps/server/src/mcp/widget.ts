@@ -121,7 +121,8 @@ function offeringsView(data) {
         el("button", { class: "primary", onclick: async (e) => {
           e.currentTarget.disabled = true;
           e.currentTarget.textContent = "Asked in the chat";
-          await app.sendMessage({ role: "user", content: [{ type: "text", text: "I'd like a quote for " + o.name + " by " + o.seller + " (offering " + o.id + "). Help me write the brief." }] }).catch(() => {});
+          await tellModel("The user pressed Request a quote on " + o.name + " by " + o.seller + " (offering id " + o.id + ").");
+          await app.sendMessage({ role: "user", content: [{ type: "text", text: "I'd like a quote for " + o.name + " by " + o.seller + ". Help me write the brief." }] }).catch(() => {});
         } }, "Request a quote")))))];
 }
 
@@ -178,7 +179,8 @@ function projectView(data, meta) {
     } }, "Accept delivery"));
     actions.append(el("button", { onclick: async (e) => {
       e.currentTarget.disabled = true;
-      await app.sendMessage({ role: "user", content: [{ type: "text", text: "I want changes to the delivery of " + p.title + " (project " + p.id + ", delivery " + data.delivery.id + ")." }] }).catch(() => {});
+      await tellModel("The user pressed Request changes on " + p.title + " (project id " + p.id + ", delivery id " + data.delivery.id + ").");
+      await app.sendMessage({ role: "user", content: [{ type: "text", text: "I want changes to the delivery of " + p.title + "." }] }).catch(() => {});
     } }, "Request changes"));
   } else {
     actions.append(el("button", { onclick: (e) => callTool("get_project", { projectId: p.id }, e.currentTarget, notice) }, "Refresh"));

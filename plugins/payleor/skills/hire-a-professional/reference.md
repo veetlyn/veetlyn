@@ -29,11 +29,12 @@ Each offering has a name, a description, a price range, the usual delivery days,
 - A change in scope (an amendment the seller proposes and the client accepts on the project page) can add a **top-up** payment or reduce the balance.
 - Every payment is approved by the client in PayPal's own window on Payleor's pay page.
 - A payment can show as processing for a minute while PayPal finishes; checking again later shows the result.
-- Refunds go through the seller; the client can reply to Payleor's emails to reach the seller.
+- Refunds go through the seller. Replies to Payleor's emails reach the seller when the seller has set a support address.
 
 ## Deliveries and changes
 
 - A delivery has a note and optionally a link or one file. Downloads are on the project page (the card's **Open project page** link), which also handles amendments.
+- Only the seller uploads files. The client has no upload and no messages on Payleor; files the seller needs go in the brief as links.
 - Requesting changes sends the delivery back to the seller with the client's note and counts as a revision. The seller delivers again.
 - Accepting a delivery fixes the final price and opens the balance payment, or completes the project when nothing is left to pay.
 
