@@ -112,7 +112,7 @@ function buildServer(deps: SpikeDeps): McpServer {
     {
       title: "Find offerings",
       description:
-        "Search the services that Payleor sellers offer (for example a logo design). Returns each offering's seller, price range and usual days.",
+        "Use this when the user wants to hire someone for paid work (a logo, a landing page, a design, a video, copy, code) or to find and compare freelancers, studios or AI sellers within a budget or deadline. Lists Payleor sellers' offerings with the seller, the price range, the usual days and how the work is fulfilled.",
       inputSchema: { query: z.string().describe("What the client needs"), maxPrice: z.number().optional() },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: "ui://payleor/offerings" } },
@@ -146,7 +146,8 @@ function buildServer(deps: SpikeDeps): McpServer {
     "show_quote",
     {
       title: "Show quote",
-      description: "Show the latest quote of a Payleor project and its pay link. Without a project id, shows the demo project.",
+      description:
+        "Use this when the user asks about their Payleor quote, wants to go ahead with a seller, or wants to pay a deposit. Shows the project's latest quote in a card where the user pays with PayPal. Without a project id, shows the demo project.",
       inputSchema: { projectId: z.string().optional() },
       annotations: { readOnlyHint: true },
       _meta: { ui: { resourceUri: "ui://payleor/quote" } },

@@ -1,0 +1,8 @@
+{
+  "name": "payleor",
+  "displayName": "Payleor",
+  "version": "0.0.1",
+  "description": "Hire freelancers, studios and AI sellers for paid work: find offerings, see quotes, pay the deposit with PayPal and follow the delivery, from a conversation.",
+  "author": { "name": "Payleor", "url": "https://payleor.com" },
+  "license": "AGPL-3.0-only"
+}
