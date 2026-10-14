@@ -25,6 +25,7 @@ import {
   listProjectQuotes,
 } from "@jendal-workspace/db/repositories/projects";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
+import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { payment, project } from "@jendal-workspace/db/schema/projects";
@@ -428,6 +429,45 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     await expect(callerFor(null).project.clientAcceptQuote({ token: "nope", quoteId: crypto.randomUUID() })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
+  });
+
+  it("answers a valid link to a missing project like a forged one", async () => {
+    await seedServicesTeamWithAdmin(db);
+    const token = await clientToken(crypto.randomUUID());
+    const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
+    await expect(callerFor(null).project.clientGet({ token })).rejects.toMatchObject(notValid);
+    await expect(callerFor(null).project.clientAcceptQuote({ token, quoteId: crypto.randomUUID() })).rejects.toMatchObject(
+      notValid,
+    );
+  });
+
+  it("logs the client's acceptance from the web, and not the team's page views", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({
+      teamSlug: "team",
+      projectId,
+      items: ITEMS,
+      deliveryDays: 14,
+    });
+    const before = (await db.select({ id: actionLog.id }).from(actionLog)).map((row) => row.id);
+
+    await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+
+    const added = (await db.select().from(actionLog)).filter((row) => !before.includes(row.id));
+    expect(added).toEqual([
+      expect.objectContaining({
+        action: "quote.accept",
+        surface: "web",
+        projectId,
+        actorKind: "client_link",
+        actorId: null,
+        outcome: "ok",
+      }),
+    ]);
   });
 
   it("assigns the freelancer the quote names when the client accepts (open and team modes)", async () => {
