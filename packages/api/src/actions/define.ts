@@ -15,11 +15,11 @@ export type AgentPolicy = "free" | "confirm" | "never";
 
 export type ScopeRequest = { projectId?: string; teamId?: string };
 
-export type ActionDefinition<Input, Result> = {
+export type ActionDefinition<Input, Result, Raw = Input> = {
   name: string;
   kind: "action" | "query";
   summary: string;
-  input: z.ZodType<Input>;
+  input: z.ZodType<Input, Raw>;
   // Wire format (dates as ISO strings); null only for web-only queries.
   output: z.ZodType | null;
   surfaces?: readonly Surface[];
@@ -32,10 +32,12 @@ export type ActionDefinition<Input, Result> = {
   ) => Promise<Result>;
 };
 
-export function defineAction<Input, Result>(definition: ActionDefinition<Input, Result>): ActionDefinition<Input, Result> {
+export function defineAction<Input, Result, Raw>(
+  definition: ActionDefinition<Input, Result, Raw>,
+): ActionDefinition<Input, Result, Raw> {
   return definition;
 }
 
-export function agentPolicyOf(definition: Pick<ActionDefinition<never, never>, "kind" | "agent">): AgentPolicy {
+export function agentPolicyOf(definition: Pick<ActionDefinition<never, never, never>, "kind" | "agent">): AgentPolicy {
   return definition.agent ?? (definition.kind === "query" ? "free" : "confirm");
 }

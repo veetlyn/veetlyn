@@ -22,7 +22,7 @@ import { defineAction, type Grant } from "./define";
 import { ActionError } from "./errors";
 import { perform, type ActionDeps } from "./perform";
 
-const projectInput = z.object({ projectId: z.string().min(1) });
+const projectInput = z.object({ projectId: z.uuid() });
 
 function projectAction(name: string, kind: "action" | "query", allow: Grant[]) {
   return defineAction({
@@ -52,6 +52,17 @@ function unscopedAction(name: string, allow: Grant[]) {
     run: async () => ({ done: true }),
   });
 }
+
+const teamAction = defineAction({
+  name: "test.team_action",
+  kind: "action",
+  summary: "Team action",
+  input: z.object({ teamId: z.uuid() }),
+  output: null,
+  scope: (input) => ({ teamId: input.teamId }),
+  allow: [{ grant: "member" }],
+  run: async ({ scope }) => ({ teamId: scope.teamId }),
+});
 
 const publicAction = unscopedAction("test.public_action", [{ grant: "anyone" }]);
 const memberAction = unscopedAction("test.member_action", [{ grant: "member" }]);
@@ -139,6 +150,17 @@ describe.skipIf(!hasTestDatabase)("perform", () => {
     ).rejects.toMatchObject({ code: "not_found", message: "Project not found." });
   });
 
+  it("refuses a team action whose input names another team than the adapter's", async () => {
+    const { organizationId, teamId, freelancerId } = await seedTeamProject();
+    const otherTeam = await seedServicesTeam(db, { organizationId, slug: "other" });
+
+    await expect(
+      perform(call({ kind: "user", userId: freelancerId }, "api", { team: { id: otherTeam.id } }), teamAction, {
+        teamId,
+      }),
+    ).rejects.toMatchObject({ code: "not_found", message: "Team not found." });
+  });
+
   it("lets a client link act on its own project only", async () => {
     const { teamId, projectId } = await seedTeamProject();
     const otherProjectId = await seedProject(db, { teamId, title: "Other" });
@@ -161,8 +183,8 @@ describe.skipIf(!hasTestDatabase)("perform", () => {
 
   it("refuses an agent whatever the grant and logs who it acted for", async () => {
     const { freelancerId, projectId } = await seedTeamProject();
-    const onBehalfOf: Actor = { kind: "user", userId: freelancerId };
-    const agent: Actor = { kind: "agent", agentId: "agent-1", onBehalfOf };
+    const agent: Actor = { kind: "agent", agentId: "agent-1", onBehalfOf: { kind: "user", userId: freelancerId } };
+    const onBehalfOf = { kind: "user", id: freelancerId };
 
     const refused = { code: "forbidden", message: "Agents cannot do this yet." };
     await expect(perform(call(agent), publicAction, {})).rejects.toMatchObject(refused);
@@ -197,7 +219,7 @@ describe.skipIf(!hasTestDatabase)("perform", () => {
     const { freelancerId } = await seedTeamProject();
 
     await expect(
-      perform(call({ kind: "user", userId: freelancerId }), teamQuery, { projectId: 42 }),
+      perform(call({ kind: "user", userId: freelancerId }), teamQuery, { projectId: "not-a-uuid" }),
     ).rejects.toMatchObject({ code: "invalid", details: { projectId: [expect.any(String)] } });
   });
 
