@@ -9,7 +9,7 @@ import { z } from "zod";
 import { linkSecret, signClientLink } from "../client-links";
 import { refundClient } from "../use-cases/client-refunds";
 import { getClientProjectView, getTeamProjectView, listVisibleProjects } from "../use-cases/project-views";
-import { assignFreelancer, startProject } from "../use-cases/projects";
+import { assignFreelancer, MAX_TITLE, MIN_TITLE, startProject } from "../use-cases/projects";
 import { defineAction } from "./define";
 import { teamActorOf } from "./team-actor";
 
@@ -30,7 +30,7 @@ export const projectStart = defineAction({
   name: "project.start",
   kind: "action",
   summary:
-    "Start a project for a client: a title of 3 to 120 characters, an optional brief, the client's email or Discord id, and optionally the offering it comes from.",
+    `Start a project for a client: a title of ${MIN_TITLE} to ${MAX_TITLE} characters, an optional brief, the client's email or Discord id, and optionally the offering it comes from.`,
   input: startProjectInput,
   output: z.object({ projectId: z.uuid(), clientPath: z.string() }),
   scope: () => ({}),

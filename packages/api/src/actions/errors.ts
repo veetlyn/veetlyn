@@ -79,7 +79,7 @@ export function toActionError(cause: unknown): ActionError {
   if (cause instanceof TRPCError) {
     const code = fromTRPCCode(cause.code);
     const message = code === "internal" ? GENERIC_INTERNAL : cause.message;
-    return new ActionError(code, message, { trpcCode: cause.code, cause, expose: code !== "internal" });
+    return new ActionError(code, message, { trpcCode: cause.code, cause });
   }
   if (cause instanceof ProjectConflictError) return new ActionError("conflict", cause.message, { cause });
   return new ActionError("internal", GENERIC_INTERNAL, { cause });

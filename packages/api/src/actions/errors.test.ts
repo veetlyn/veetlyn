@@ -47,10 +47,11 @@ describe("toActionError", () => {
 });
 
 describe("toTRPCError", () => {
-  it("returns the tRPC code the use case threw", () => {
-    const error = toTRPCError(toActionError(new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" })));
-    expect(error.code).toBe("UNAUTHORIZED");
-    expect(error.message).toBe("Authentication required");
+  it("returns the tRPC code the use case threw rather than the one its action code maps to", () => {
+    const message = "PayPal declined this payment method. Choose another way to pay.";
+    const error = toTRPCError(toActionError(new TRPCError({ code: "UNPROCESSABLE_CONTENT", message })));
+    expect(error.code).toBe("UNPROCESSABLE_CONTENT");
+    expect(error.message).toBe(message);
   });
 
   it("maps codes that did not come from tRPC", () => {
