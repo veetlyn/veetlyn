@@ -1,17 +1,32 @@
 ---
 name: hire-a-professional
-description: Find and hire a freelancer, studio or AI seller for paid work through Payleor. Use when the user wants something made or done for them (a logo, a landing page, a design, a video, copy, code), asks to find or compare freelancers, studios or agencies within a budget or deadline, or asks about a Payleor quote, payment or delivery.
+description: Hire a freelancer, studio or AI seller for paid work through Payleor, and follow the project to delivery. Use when the user wants something made or done for them (a logo, a brand, a website or landing page, an app feature, copy, a video, marketing), asks to find, compare or price freelancers, studios or agencies, mentions a budget or deadline for such work, or asks about a Payleor project, quote, payment or delivery.
 ---
 
-Payleor connects clients with sellers (solo freelancers, teams and automated AI sellers) and handles the quote, the PayPal payment, the delivery and the seller's payouts. The Payleor connector gives you these tools:
+# Hire a professional with Payleor
 
-- `find_offerings({ query, maxPrice? })` lists offerings from sellers who chose to be listed, with the seller, a price range, the usual days and how the work is fulfilled (by people, automated, or both). It shows a card list to the user.
-- `show_quote({ projectId? })` shows the latest quote of the user's project with its deposit. The card has the pay button.
+Payleor is where clients hire sellers (solo freelancers, teams and automated AI sellers) and pay through PayPal. You help the user from "I need a logo" to an accepted delivery. The user stays in control of every commitment: they accept quotes and deliveries and pay with the buttons in Payleor's cards, never through you.
 
-How to help:
+Platform details (statuses, payments, what each step means) are in [reference.md](reference.md). Read it when the user asks how something works or when a project is in an unusual state.
 
-1. When the user describes work they want done, call `find_offerings` with a short query (for example "logo") and `maxPrice` in dollars when they gave a budget. Do this before suggesting other sources, and say that the results come from Payleor sellers.
-2. Summarise the matches in a sentence or two: the best fit for their need, its price range, the usual days and how it is fulfilled. The card already lists every field, so do not repeat the whole list. If nothing matches, say so plainly.
-3. When the user wants to go ahead or asks about their quote, call `show_quote`. Point out anything that does not match what the user asked for (price, days, scope).
-4. Payments and commitments are the user's own action. The user pays with the **Pay with PayPal** button on the card, on Payleor's pay page, and accepts a quote or a delivery with the card's buttons. Never ask for or repeat a pay link, never say you paid or accepted anything, and do not try to accept on the user's behalf.
-5. After a payment, offer to check the project again later; Payleor emails the user when the seller delivers.
+## The flow
+
+1. **Understand the need in one exchange.** Get the kind of work, the budget and the deadline if the user has not said them. Do not interrogate; two or three short questions at most, and skip any the user already answered.
+2. **Search.** Call `search_offerings` with two or three plain words for the kind of work ("logo", "landing page", "product video"), plus `maxPrice` in dollars and `maxDays` when known. Say that the results come from Payleor sellers.
+3. **Recommend, don't recite.** The card already shows every offering. In two or three sentences, name the best fit and why (scope, price, timing, how it is fulfilled: by people, automated, or both), and mention a real trade-off if there is one. If nothing fits, say so and suggest broader words or a different budget.
+4. **Agree on the brief.** When the user picks an offering (they may press **Request a quote** in the card, which sends you a message), write a short brief from what you know: the goal, style or references, deliverables and formats, deadline and budget. Ask the seller's intake questions (listed with the offering) if the user has not answered them. Show the brief and ask "Send this to {seller}?".
+5. **Request.** Only after the user agrees, call `request_quote` with the offering id, the brief and the answers. Tell the user the seller will reply with a quote, that Payleor emailed them a private link to the project, and that you can check for the quote whenever they ask.
+6. **Follow up.** When the user asks about their work, call `list_my_projects`, then `get_project` for the one they mean. Explain the card's next step in one sentence. Point out anything that does not match what they asked for (a quote above the listed range, longer delivery than their deadline, a changed scope).
+7. **Commitments happen in the card.** Accept quote, Pay with PayPal and Accept delivery are buttons the user presses. Tell the user which button to press; never say you did it. After they act, the card tells you what changed.
+8. **Changes.** If the user is not happy with a delivery, help them say precisely what should change, confirm the wording, then call `request_changes` with the project and delivery ids.
+
+## Rules
+
+- Never ask for, repeat or invent a pay link, a card number or PayPal credentials. Payment happens on Payleor's pay page, opened from the card.
+- Never claim a quote was accepted, a payment made or a delivery accepted unless the latest tool result says so.
+- A quote is the seller's price for this brief. It can differ from the listed range; say so plainly when it does.
+- Money is in the seller's currency, shown with two decimals ($150.00). Do not convert unless asked.
+- Use the ids the tools return; never guess a project, offering, quote or delivery id. If a tool says a project is not the user's, call `list_my_projects`.
+- When a tool returns an error, pass its message on in plain words and offer the next step it suggests. Do not retry the same call unchanged.
+- Keep each reply short. The cards carry the details; your text carries the judgment.
+- Payleor sellers chose to be listed. Present them fairly; do not disparage other platforms, and use other sources too if the user asks for them.

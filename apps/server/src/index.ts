@@ -84,7 +84,7 @@ app.on(["GET", "HEAD"], ["/.well-known/oauth-protected-resource/*", "/.well-know
 
 app.all("/mcp", (c) =>
   createSpikeMcpRoute(
-    { db: c.get("db"), auth: c.get("auth"), siteOrigin: ENV.BETTER_AUTH_URL.replace("://admin.", "://"), log: c.get("log") },
+    { db: c.get("db"), auth: c.get("auth"), email: getEmailServices(c.executionCtx), log: c.get("log") },
     ENV.BETTER_AUTH_URL,
   )(c.req.raw),
 );
