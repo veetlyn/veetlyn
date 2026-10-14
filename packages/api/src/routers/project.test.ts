@@ -38,6 +38,7 @@ import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } fr
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { projectList } from "../actions/projects";
 import { signClientLink, verifyClientLink } from "../client-links";
 import type { Context, EmailServices, PayPalServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
@@ -349,6 +350,16 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(detail.project.id).toBe(projectId);
     expect(detail.clientPath).toBe(`/c/${await clientToken(projectId)}`);
     expect(detail.quotes).toEqual([]);
+  });
+
+  it("lists projects in the shape the project.list output schema describes once on the wire", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    await createProject(userId);
+
+    const list = await callerFor(userId).project.list({ teamSlug: "team" });
+
+    expect(list).toHaveLength(1);
+    expect(projectList.output?.safeParse(JSON.parse(JSON.stringify(list))).success).toBe(true);
   });
 
   it("shows a web request's client name and answers in the project detail", async () => {

@@ -150,10 +150,7 @@ export async function createQuoteRequest(
     });
   } catch (error) {
     await emailServices.onError?.(error, { kind: "quote-request", to: input.email.trim().toLowerCase() });
-    throw new ActionError("internal", "We could not send the email. Try again in a moment.", {
-      expose: true,
-      trpcCode: "INTERNAL_SERVER_ERROR",
-    });
+    throw new ActionError("internal", "We could not send the email. Try again in a moment.", { expose: true });
   }
   if (supportEmail) {
     const notice = quoteRequestNoticeEmail({

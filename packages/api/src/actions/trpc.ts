@@ -21,8 +21,7 @@ type Procedure<Kind extends "action" | "query", Input, Result> = Kind extends "q
   ? TRPCQueryProcedure<{ input: Input; output: Result; meta: object }>
   : TRPCMutationProcedure<{ input: Input; output: Result; meta: object }>;
 
-// Covers an empty object schema (project.list, the only such case today): it infers Record<string, never>, which
-// would turn the slug into never.
+// Covers an empty object schema: it infers Record<string, never>, which would turn the slug into never.
 type TeamInput<Raw> = string extends keyof Raw ? { teamSlug: string } : { teamSlug: string } & Raw;
 
 type ClientInput<Raw> = Omit<Raw, "projectId"> & { token: string };
@@ -51,7 +50,7 @@ function requestOf(ctx: Context) {
   return { requestId: crypto.randomUUID(), ip: ctx.headers.get("cf-connecting-ip")?.trim() || null };
 }
 
-async function run<Input, Result, Raw>(
+async function performOnWeb<Input, Result, Raw>(
   ctx: Context,
   actor: Actor,
   definition: ActionDefinition<Input, Result, Raw>,
@@ -73,7 +72,7 @@ export function teamProcedureFor<Schema extends z.ZodType, Result, Kind extends 
 export function teamProcedureFor(definition: LooseDefinition) {
   const procedure = servicesTeamProcedure.input(definition.input);
   const resolve = ({ ctx, input }: { ctx: TeamContext; input: Loose }) =>
-    run(ctx, { kind: "user", userId: ctx.session.user.id }, definition, input, ctx.servicesTeam);
+    performOnWeb(ctx, { kind: "user", userId: ctx.session.user.id }, definition, input, ctx.servicesTeam);
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
 }
 
@@ -99,7 +98,7 @@ export function clientProcedureFor(
     // The rest holds the definition's other fields, which the omitted schema typed loosely.
     const { token: link, ...rest } = input;
     const projectId = await projectIdFromToken(ctx, link);
-    return run(ctx, { kind: "client_link", token: { projectId } }, definition, { ...rest, projectId });
+    return performOnWeb(ctx, { kind: "client_link", token: { projectId } }, definition, { ...rest, projectId });
   };
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
 }
@@ -110,6 +109,6 @@ export function publicProcedureFor<Schema extends z.ZodType, Result, Kind extend
 export function publicProcedureFor(definition: LooseDefinition) {
   const procedure = publicProcedure.input(definition.input);
   const resolve = ({ ctx, input }: { ctx: Context; input: Loose }) =>
-    run(ctx, { kind: "anonymous" }, definition, input);
+    performOnWeb(ctx, { kind: "anonymous" }, definition, input);
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
 }

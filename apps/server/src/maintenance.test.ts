@@ -171,7 +171,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       insertActionLog(db, {
         requestId,
         createdAt: minutesAgo(days * DAY_MINUTES),
-        action: "project.quote.send",
+        action: "quote.create",
         surface: "web",
         actorKind: "user",
         actorId: "user-1",

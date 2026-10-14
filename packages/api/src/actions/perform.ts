@@ -8,7 +8,7 @@ import type { LinkSecretSource } from "../client-links";
 import type { EmailServices, PayPalServices } from "../context";
 import type { Actor, RequestMeta, Surface } from "./actors";
 import type { ActionDefinition, Grant, ScopeRequest } from "./define";
-import { ActionError, toActionError } from "./errors";
+import { ActionError, type ActionErrorCode, toActionError } from "./errors";
 
 export type ActionDeps = {
   db: Database;
@@ -94,7 +94,7 @@ async function writeLog(
   req: PerformRequest,
   definition: Pick<ActionDefinition<never, never, never>, "name" | "kind">,
   scope: Scope,
-  outcome: string,
+  outcome: "ok" | ActionErrorCode,
   message: string | null,
   started: number,
 ): Promise<void> {
@@ -141,7 +141,7 @@ export async function perform<Input, Result, Raw>(
         const key = issue.path.map(String).join(".") || "input";
         (details[key] ??= []).push(issue.message);
       }
-      throw new ActionError("invalid", "Check the highlighted fields.", { details, trpcCode: "BAD_REQUEST" });
+      throw new ActionError("invalid", "Check the highlighted fields.", { details });
     }
     scope = await loadScope(req, definition.scope(parsed.data));
     if (!definition.allow.some((grant) => passes(grant, req.actor, scope))) throw refusal(req.actor, scope);

@@ -200,12 +200,11 @@ describe.skipIf(!hasTestDatabase)("perform", () => {
     const rejection = perform(call({ kind: "anonymous" }), throwing, {});
 
     await expect(rejection).rejects.toBeInstanceOf(ActionError);
-    await expect(rejection).rejects.toMatchObject({ code: "unavailable", message: "PayPal did not answer." });
     const [row] = await logRows();
     expect(row).toMatchObject({ action: "test.throws", outcome: "unavailable", message: "PayPal did not answer." });
   });
 
-  it("logs queries from every surface except the web app", async () => {
+  it("logs a query from the API but not from the web app", async () => {
     const { freelancerId, projectId } = await seedTeamProject();
     const actor: Actor = { kind: "user", userId: freelancerId };
 

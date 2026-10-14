@@ -4,10 +4,15 @@ import { z } from "zod";
 import { teamDeliveryFileUrl } from "../use-cases/project-views";
 import {
   acceptDelivery,
+  DOWNLOAD_URL_SECONDS,
   deliveryFileUrl,
+  MAX_DELIVERY_LINK,
+  MAX_DELIVERY_NOTE,
   requestChanges,
   startDeliveryUpload,
   submitDelivery,
+  UPLOAD_LIMIT,
+  UPLOAD_URL_SECONDS,
 } from "../use-cases/projects";
 import { defineAction } from "./define";
 import { projectIdInput } from "./projects";
@@ -32,7 +37,7 @@ export const requestChangesInput = deliveryIdInput.extend({ note: z.string().max
 export const deliveryUploadStart = defineAction({
   name: "delivery.upload_start",
   kind: "action",
-  summary: `Get a 15-minute upload link for a delivery file of up to ${formatBytes(MAX_FILE_BYTES)}; at most 20 uploads per 10 minutes.`,
+  summary: `Get a ${UPLOAD_URL_SECONDS / 60}-minute upload link for a delivery file of up to ${formatBytes(MAX_FILE_BYTES)}; at most ${UPLOAD_LIMIT.max} uploads per ${UPLOAD_LIMIT.windowMs / 60_000} minutes.`,
   input: uploadStartInput,
   output: z.object({ uploadId: z.uuid(), url: z.url(), headers: z.record(z.string(), z.string()) }),
   scope: (input) => ({ projectId: input.projectId }),
@@ -44,7 +49,7 @@ export const deliverySubmit = defineAction({
   name: "delivery.submit",
   kind: "action",
   summary:
-    "Submit the work to the client: at least one of a note of up to 5000 characters, an https link of up to 2000, or an uploaded file.",
+    `Submit the work to the client: at least one of a note of up to ${MAX_DELIVERY_NOTE} characters, an https link of up to ${MAX_DELIVERY_LINK}, or an uploaded file.`,
   input: submitDeliveryInput,
   output: z.object({ deliveryId: z.uuid() }),
   scope: (input) => ({ projectId: input.projectId }),
@@ -55,7 +60,7 @@ export const deliverySubmit = defineAction({
 export const deliveryRequestChanges = defineAction({
   name: "delivery.request_changes",
   kind: "action",
-  summary: "Send the delivery back as the client with a note of up to 5000 characters saying what should change.",
+  summary: `Send the delivery back as the client with a note of up to ${MAX_DELIVERY_NOTE} characters saying what should change.`,
   input: requestChangesInput,
   output: z.null(),
   scope: (input) => ({ projectId: input.projectId }),
@@ -77,7 +82,7 @@ export const deliveryAccept = defineAction({
 export const deliveryFile = defineAction({
   name: "delivery.file_url",
   kind: "query",
-  summary: "Get a download link for a delivery's file that lasts 5 minutes, for the team or the project's client.",
+  summary: `Get a download link for a delivery's file that lasts ${DOWNLOAD_URL_SECONDS / 60} minutes, for the team or the project's client.`,
   input: deliveryIdInput,
   output: z.object({ url: z.url() }),
   scope: (input) => ({ projectId: input.projectId }),
