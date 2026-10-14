@@ -1,6 +1,8 @@
 import { findFileUpload, insertFileUpload } from "@jendal-workspace/db/repositories/files";
 import { findOrderById } from "@jendal-workspace/db/repositories/orders";
 import { findWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
+import { insertActionLog } from "@jendal-workspace/db/repositories/action-log";
+import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { requestLimit } from "@jendal-workspace/db/schema/limits";
 import { paypalWebhookEvent } from "@jendal-workspace/db/schema/paypal-webhooks";
 import {
@@ -123,6 +125,7 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       webhookEventsRequeued: 1,
       webhookEventsFailed: 1,
       requestLimitsDeleted: 1,
+      actionLogDeleted: 0,
       uploadsDeleted: 1,
       ordersDeleted: 1,
       projectPayoutsCreated: 1,
@@ -161,6 +164,28 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(info).toHaveBeenCalledWith({ action: "maintenance.projectPayouts", maintenance: { created: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.payoutSends", maintenance: { sent: 2, held: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.payouts", maintenance: { checked: 3, settled: 2 } });
+  });
+
+  it("deletes action log rows older than 180 days", async () => {
+    const logRow = (requestId: string, days: number) =>
+      insertActionLog(db, {
+        requestId,
+        createdAt: minutesAgo(days * DAY_MINUTES),
+        action: "quote.create",
+        surface: "web",
+        actorKind: "user",
+        actorId: "user-1",
+        outcome: "ok",
+        durationMs: 12,
+      });
+    await logRow("expired", 181);
+    await logRow("kept", 179);
+
+    const report = await runMaintenance(deps());
+
+    expect(report).toMatchObject({ actionLogDeleted: 1, errors: [] });
+    const rows = await db.select({ requestId: actionLog.requestId }).from(actionLog);
+    expect(rows.map((row) => row.requestId)).toEqual(["kept"]);
   });
 
   it("does not enqueue when no event is stale", async () => {

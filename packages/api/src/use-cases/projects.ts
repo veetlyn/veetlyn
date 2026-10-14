@@ -105,7 +105,8 @@ async function requireTeamMember(tx: Transaction, teamId: string, userId: string
   if (!(await servicesTeamRoleFor(tx, teamId, userId))) fail("BAD_REQUEST", "That person is not a member of this team.");
 }
 
-const MAX_TITLE = 120;
+export const MIN_TITLE = 3;
+export const MAX_TITLE = 120;
 const MAX_DELIVERY_DAYS = 365;
 
 // Services spec §5.2 step 1: a manager starts a project with the client's email and/or Discord user.
@@ -123,8 +124,8 @@ export async function startProject(
 ): Promise<{ projectId: string }> {
   if (!canStartProject(actor.role)) fail("FORBIDDEN", "Only admins and managers start projects.");
   const title = input.title.trim();
-  if (title.length < 3 || title.length > MAX_TITLE) {
-    fail("BAD_REQUEST", `Give the project a title of 3 to ${MAX_TITLE} characters.`);
+  if (title.length < MIN_TITLE || title.length > MAX_TITLE) {
+    fail("BAD_REQUEST", `Give the project a title of ${MIN_TITLE} to ${MAX_TITLE} characters.`);
   }
   const clientEmail = input.clientEmail?.trim().toLowerCase() || null;
   if (clientEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clientEmail)) {
@@ -475,8 +476,8 @@ export async function declineAmendment(db: Database, input: { projectId: string;
   });
 }
 
-const MAX_DELIVERY_NOTE = 5_000;
-const MAX_DELIVERY_LINK = 2_000;
+export const MAX_DELIVERY_NOTE = 5_000;
+export const MAX_DELIVERY_LINK = 2_000;
 
 function deliveryInput(input: { note: string; link: string; fileUploadId?: string }) {
   const note = input.note.trim();
@@ -498,9 +499,9 @@ function deliveryInput(input: { note: string; link: string; fileUploadId?: strin
 
 const SUBMIT_DELIVERY_REFUSAL = "Only the assigned freelancer or a manager can deliver.";
 const FILE_UNUSABLE = "This file cannot be used for this delivery.";
-const UPLOAD_URL_SECONDS = 900;
-const DOWNLOAD_URL_SECONDS = 300;
-const UPLOAD_LIMIT = { max: 20, windowMs: 600_000 };
+export const UPLOAD_URL_SECONDS = 900;
+export const DOWNLOAD_URL_SECONDS = 300;
+export const UPLOAD_LIMIT = { max: 20, windowMs: 600_000 };
 
 // Sellers design §5.1: the browser uploads the delivery file straight to the bucket with a presigned PUT;
 // the row records what was announced so the delivery can check the object against it.

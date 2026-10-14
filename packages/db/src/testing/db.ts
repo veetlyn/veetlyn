@@ -20,7 +20,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "outbox", "paypal_webhook_event", "download_grant", "orders", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "project_refund_part", "project_refund", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_approval", "payout_request", "team_payout_trusted_member", "team_payout_rules", "payout_connect_attempt", "team_payout_credentials", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "action_log", "outbox", "paypal_webhook_event", "download_grant", "orders", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "project_refund_part", "project_refund", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_approval", "payout_request", "team_payout_trusted_member", "team_payout_rules", "payout_connect_attempt", "team_payout_credentials", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }

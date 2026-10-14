@@ -1,4 +1,5 @@
 import type { CatalogServices } from "@jendal-workspace/api/catalog/service";
+import { databaseErrorFields } from "@jendal-workspace/api/use-cases/payments";
 import type { EmailServices, PayoutServices, PayPalServices } from "@jendal-workspace/api/context";
 import { createAuth as createConfiguredAuth } from "@jendal-workspace/auth";
 import { createChannel3Client } from "@jendal-workspace/channel3";
@@ -86,6 +87,11 @@ async function loadPayoutServices(): Promise<PayoutServices | undefined> {
   }
   const environment: TenantEnvironment = ENV.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
   return createPayoutServices({ secretKey, environment, tokenKv: ENV.STORE_CACHE });
+}
+
+// Postgres messages can quote the row's values (the caller's IP), so only the error's name and code are logged.
+export function logActionLogError(cause: unknown): void {
+  log.error({ action: "action_log.insert", error: databaseErrorFields(cause) });
 }
 
 // A change to team.paypal_merchant_id or team.status must drop the cached storefront lookups (cacheKeyFor in
