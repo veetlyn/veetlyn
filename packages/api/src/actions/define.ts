@@ -32,6 +32,9 @@ export type ActionDefinition<Input, Result, Raw = Input> = {
   ) => Promise<Result>;
 };
 
+// The shape every definition shares, for lists of definitions with different inputs and results.
+export type AnyActionDefinition = Omit<ActionDefinition<never, unknown, unknown>, "input"> & { input: z.ZodType };
+
 export function defineAction<Input, Result, Raw>(
   definition: ActionDefinition<Input, Result, Raw>,
 ): ActionDefinition<Input, Result, Raw> {
