@@ -45,7 +45,7 @@ export const projectStart = defineAction({
 export const projectAssign = defineAction({
   name: "project.assign",
   kind: "action",
-  summary: "Assign a team member as the project's freelancer before it is quoted; admins and managers only.",
+  summary: "Assign a team member as the project's freelancer before it is quoted; admins and managers only, not for solo sellers.",
   input: assignInput,
   output: z.null(),
   scope: (input) => ({ projectId: input.projectId }),
