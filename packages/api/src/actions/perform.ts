@@ -3,7 +3,6 @@ import type { Database } from "@jendal-workspace/db";
 import { insertActionLog } from "@jendal-workspace/db/repositories/action-log";
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
-import type { z } from "zod";
 
 import type { LinkSecretSource } from "../client-links";
 import type { EmailServices, PayPalServices } from "../context";
@@ -36,6 +35,9 @@ const NOT_FOUND_PROJECT = "Project not found.";
 
 async function loadScope(req: PerformRequest, scopeRequest: ScopeRequest): Promise<Scope> {
   let project: ProjectRow | null = null;
+  if (scopeRequest.teamId && req.team && scopeRequest.teamId !== req.team.id) {
+    throw new ActionError("not_found", "Team not found.");
+  }
   let teamId = scopeRequest.teamId ?? req.team?.id ?? null;
   if (scopeRequest.projectId) {
     project = await findProjectById(req.deps.db, scopeRequest.projectId);
@@ -86,9 +88,9 @@ function actorId(actor: Actor): string | null {
   }
 }
 
-async function writeLog<Input, Result>(
+async function writeLog(
   req: PerformRequest,
-  definition: ActionDefinition<Input, Result>,
+  definition: Pick<ActionDefinition<never, never, never>, "name" | "kind">,
   scope: Scope,
   outcome: string,
   message: string | null,
@@ -104,22 +106,26 @@ async function writeLog<Input, Result>(
       projectId: scope.project?.id ?? null,
       actorKind: req.actor.kind,
       actorId: actorId(req.actor),
-      onBehalfOf: req.actor.kind === "agent" ? req.actor.onBehalfOf : null,
+      onBehalfOf:
+        req.actor.kind === "agent" ? { kind: req.actor.onBehalfOf.kind, id: actorId(req.actor.onBehalfOf) } : null,
       ip: req.request.ip,
       outcome,
       message,
       durationMs: Date.now() - started,
     });
   } catch (cause) {
-    req.deps.onLogError?.(cause);
+    try {
+      req.deps.onLogError?.(cause);
+    } catch {
+      // A failing error reporter must not fail an action that already ran.
+    }
   }
 }
 
-export async function perform<Input, Result>(
+export async function perform<Input, Result, Raw>(
   req: PerformRequest,
-  definition: ActionDefinition<Input, Result>,
-  // Untrusted: whatever the definition's schema accepts, decoded below.
-  rawInput: z.input<ActionDefinition<Input, Result>["input"]>,
+  definition: ActionDefinition<Input, Result, Raw>,
+  rawInput: Raw,
 ): Promise<Result> {
   const started = Date.now();
   let scope: Scope = { teamId: req.team?.id ?? null, project: null, role: null };
