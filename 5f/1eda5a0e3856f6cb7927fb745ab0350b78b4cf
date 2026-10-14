@@ -1,0 +1,30 @@
+specs/platform/2026-10-14-conversations-design.md
+  s_d8d0f67a017e70::t_958debe2fea485 1-75,77-132
+  s_d8d0f67a017e70::t_5c8938111db615 76
+specs/BACKLOG.md
+  s_d8d0f67a017e70::t_603133cb87bfbf 24
+specs/PROGRESS.md
+  s_d8d0f67a017e70::t_4030bd27cf8881 108
+specs/README.md
+  s_d8d0f67a017e70::t_f564ae82e333ea 57
+specs/platform/2026-10-13-agentic-surfaces-program.md
+  s_d8d0f67a017e70::t_fdd1171f433cde 77
+specs/platform/2026-10-13-discord-ticket-flow-design.md
+  s_d8d0f67a017e70::t_dc9ad350ffdd1e 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5f1eda5a0e3856f6cb7927fb745ab0350b78b4cf",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
