@@ -85,6 +85,16 @@ export function toActionError(cause: unknown): ActionError {
   return new ActionError("internal", GENERIC_INTERNAL, { cause });
 }
 
+// The server's error log reads the cause, so it gets what the action threw (a PayPal error with its debug id,
+// a database error) rather than the wrappers around it.
+function thrownBy(error: ActionError): Error {
+  let thrown: Error = error;
+  while ((thrown instanceof ActionError || thrown instanceof TRPCError) && thrown.cause instanceof Error) {
+    thrown = thrown.cause;
+  }
+  return thrown;
+}
+
 export function toTRPCError(error: ActionError): TRPCError {
-  return new TRPCError({ code: error.trpcCode ?? TO_TRPC[error.code], message: error.message, cause: error });
+  return new TRPCError({ code: error.trpcCode ?? TO_TRPC[error.code], message: error.message, cause: thrownBy(error) });
 }
