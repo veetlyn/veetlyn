@@ -161,7 +161,7 @@ export const projectRouter = router({
     }),
 
   requestQuote: publicProcedure.input(requestQuoteInput).mutation(async ({ ctx, input }) => {
-    const ip = ctx.headers.get("cf-connecting-ip")?.trim();
+    const ip = ctx.headers.get("cf-connecting-ip")?.trim() || null;
     try {
       return await createQuoteRequest({ db: ctx.db, auth: ctx.auth, email: ctx.email }, { ip }, input);
     } catch (cause) {
