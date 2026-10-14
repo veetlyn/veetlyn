@@ -24,7 +24,7 @@ import { z } from "zod";
 import { type ConfirmationAction, issueConfirmation, verifyConfirmation } from "./confirmation";
 import { WIDGET_CSP_DOMAINS, WIDGET_HTML } from "./widget";
 
-const WIDGET_URI = "ui://payleor/app-v4";
+const WIDGET_URI = "ui://payleor/app-v5";
 
 const SERVER_INSTRUCTIONS = `Payleor is where clients hire freelancers, studios and AI sellers for paid work, and pay with PayPal. Use these tools when the user wants work done for them (design, development, writing, video, marketing) or asks about a Payleor project.
 Flow: search_offerings -> agree on the brief with the user -> request_quote -> the seller answers with a quote -> get_project shows it -> the user accepts and pays with the card's buttons -> the seller delivers -> the user accepts the delivery or asks for changes (request_changes) -> the user pays the balance.
@@ -44,6 +44,11 @@ class ToolRefusal extends Error {}
 
 const money = (minor: number, currency: string) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(minor / 100);
+
+function briefStart(brief: string) {
+  const flat = brief.replace(/\s+/g, " ").trim();
+  return flat.length > 70 ? `${flat.slice(0, 69).trimEnd()}…` : flat;
+}
 
 const daysLabel = (min: number, max: number) => (min === max ? `${min} days` : `${min}–${max} days`);
 
@@ -345,11 +350,25 @@ function buildServer(deps: Deps): McpServer {
         const visible = [];
         for (const row of rows) {
           if (await isMemberOfTeamWorkspace(deps.db, { teamId: row.teamId, userId: who.userId })) continue;
-          visible.push({ id: row.id, title: row.title, seller: row.seller, status: row.status, statusLabel: projectStatusLabel(row.status) });
+          visible.push({
+            id: row.id,
+            title: row.title,
+            seller: row.seller,
+            status: row.status,
+            statusLabel: projectStatusLabel(row.status),
+            requested: row.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+            briefStart: briefStart(row.brief),
+          });
         }
         deps.log.set({ mcp: { tool: "list_my_projects", count: visible.length } });
         const text = visible.length
-          ? [`${visible.length} project${visible.length === 1 ? "" : "s"}:`, ...visible.map((p) => `- ${p.title} with ${p.seller} (id ${p.id}): ${p.statusLabel}`), "Call get_project for details and the next step."].join("\n")
+          ? [
+              `${visible.length} project${visible.length === 1 ? "" : "s"}, newest activity first, in the card's order:`,
+              ...visible.map(
+                (p, i) => `${i + 1}. ${p.title} with ${p.seller} (id ${p.id}), requested ${p.requested}: ${p.statusLabel}.${p.briefStart ? ` Brief: "${p.briefStart}"` : ""}`,
+              ),
+              "Call get_project for details and the next step. When two projects share a title, tell them apart by the brief or the status.",
+            ].join("\n")
           : "The user has no Payleor projects yet. Offer to search offerings.";
         return textResult(text, { view: "projects", projects: visible });
       }),

@@ -86,6 +86,7 @@ export async function listClientProjects(db: Database, clientEmail: string) {
       status: project.status,
       currency: project.currency,
       createdAt: project.createdAt,
+      brief: project.brief,
       seller: team.name,
     })
     .from(project)

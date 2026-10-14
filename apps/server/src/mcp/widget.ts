@@ -132,7 +132,8 @@ function projectsView(data) {
     const notice = el("div", { class: "notice" });
     return el("article", { class: "card" },
       el("div", { class: "row" }, el("div", { class: "title" }, p.title), statusBadge(p.status, p.statusLabel)),
-      el("div", { class: "muted" }, "with " + p.seller),
+      el("div", { class: "muted" }, "with " + p.seller + " · requested " + p.requested),
+      p.briefStart ? el("p", { class: "desc" }, p.briefStart) : null,
       el("div", { class: "actions" },
         el("button", { onclick: (e) => callTool("get_project", { projectId: p.id }, e.currentTarget, notice) }, "Open")),
       notice);
@@ -149,6 +150,15 @@ async function openExternal(url) {
   if (window.openai?.openExternal) { window.openai.openExternal({ href: url }); return true; }
   const result = await app.openLink({ url }).catch(() => ({ isError: true }));
   return !result?.isError;
+}
+
+// The model only sees results of its own calls; a refresh from the card would otherwise leave it on the old status.
+async function refreshProject(p, button, notice) {
+  const result = await callTool("get_project", { projectId: p.id }, button, notice);
+  const next = result?.structuredContent;
+  if (next?.project && next.project.status !== p.status) {
+    tellModel("The user refreshed the Payleor card: " + p.title + " is now " + next.project.statusLabel + ". " + next.nextStep);
+  }
 }
 
 function projectView(data, meta) {
@@ -171,7 +181,7 @@ function projectView(data, meta) {
       notice.textContent = "PayPal checkout opened in a new tab. After paying, press Check payment.";
       tellModel("The user opened Payleor's pay page for the " + data.payment.kind + " of " + money(data.payment.amountMinor, p.currency) + " on " + p.title + ".");
     } }, "Pay " + money(data.payment.amountMinor, p.currency) + " with PayPal"));
-    actions.append(el("button", { onclick: (e) => callTool("get_project", { projectId: p.id }, e.currentTarget, notice) }, "Check payment"));
+    actions.append(el("button", { onclick: (e) => refreshProject(p, e.currentTarget, notice) }, "Check payment"));
   } else if (has("accept_delivery") && data.delivery) {
     actions.append(el("button", { class: "primary", onclick: async (e) => {
       const result = await callTool("accept_delivery", { projectId: p.id, deliveryId: data.delivery.id, confirmation: confirmations.accept_delivery ?? "" }, e.currentTarget, notice);
@@ -183,7 +193,7 @@ function projectView(data, meta) {
       await app.sendMessage({ role: "user", content: [{ type: "text", text: "I want changes to the delivery of " + p.title + "." }] }).catch(() => {});
     } }, "Request changes"));
   } else {
-    actions.append(el("button", { onclick: (e) => callTool("get_project", { projectId: p.id }, e.currentTarget, notice) }, "Refresh"));
+    actions.append(el("button", { onclick: (e) => refreshProject(p, e.currentTarget, notice) }, "Refresh"));
   }
   if (links.projectUrl) actions.append(el("button", { class: "link", onclick: () => openExternal(links.projectUrl) }, "Open project page"));
 
