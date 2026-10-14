@@ -13,5 +13,6 @@ export * from "./files";
 export * from "./orders";
 export * from "./ledger";
 export * from "./outbox";
+export * from "./action-log";
 export * from "./payouts";
 export * from "./limits";

@@ -1,6 +1,7 @@
 import { databaseErrorFields } from "@jendal-workspace/api/use-cases/payments";
 import type { FileStore } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { deleteActionLogBefore } from "@jendal-workspace/db/repositories/action-log";
 import { sweepUnattachedUploads } from "@jendal-workspace/db/repositories/files";
 import { deleteAbandonedOrders } from "@jendal-workspace/db/repositories/orders";
 import { failStuckWebhookEvents, listStaleWebhookEvents } from "@jendal-workspace/db/repositories/paypal-webhooks";
@@ -13,6 +14,8 @@ export const STALE_WEBHOOK_MS = 15 * 60_000;
 export const STUCK_WEBHOOK_MS = 3 * 24 * 3_600_000;
 export const WEBHOOK_BATCH = 100;
 export const REQUEST_LIMIT_MAX_AGE_MS = 24 * 3_600_000;
+// PayPal's dispute window is 180 days.
+export const ACTION_LOG_RETENTION_MS = 180 * 86_400_000;
 export const UPLOAD_MAX_AGE_MS = 24 * 3_600_000;
 export const UPLOAD_BATCH = 500;
 // A capture whose reply was lost is settled only by its webhook, which can arrive until the stuck-event cutoff.
@@ -35,6 +38,7 @@ export type MaintenanceDeps = {
 export type MaintenanceSweep =
   | "webhooks"
   | "requestLimits"
+  | "actionLog"
   | "uploads"
   | "orders"
   | "projectPayouts"
@@ -45,6 +49,7 @@ export type MaintenanceReport = {
   webhookEventsRequeued: number;
   webhookEventsFailed: number;
   requestLimitsDeleted: number;
+  actionLogDeleted: number;
   uploadsDeleted: number;
   ordersDeleted: number;
   projectPayoutsCreated: number;
@@ -61,6 +66,7 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     webhookEventsRequeued: 0,
     webhookEventsFailed: 0,
     requestLimitsDeleted: 0,
+    actionLogDeleted: 0,
     uploadsDeleted: 0,
     ordersDeleted: 0,
     projectPayoutsCreated: 0,
@@ -112,6 +118,11 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
       windowStartedBefore: now - REQUEST_LIMIT_MAX_AGE_MS,
     });
     return { deleted: report.requestLimitsDeleted };
+  });
+
+  await sweep("actionLog", async () => {
+    report.actionLogDeleted = await deleteActionLogBefore(deps.db, new Date(now - ACTION_LOG_RETENTION_MS));
+    return { deleted: report.actionLogDeleted };
   });
 
   await sweep("uploads", async () => {
