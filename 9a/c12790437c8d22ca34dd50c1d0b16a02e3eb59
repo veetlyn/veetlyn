@@ -1,0 +1,97 @@
+specs/platform/plans/evidence/s-connector-ux-guidelines.md
+  s_834213c9a50b65::t_51e08b1e3087fb 1-184
+specs/platform/2026-10-13-agentic-surfaces-program.md
+  s_d8d0f67a017e70::t_90563c4b8c55b2 90
+  s_d8d0f67a017e70::t_1d5dee52e11fbc 23
+  s_d8d0f67a017e70::t_2cd752cd71dbf0 66,68-74
+  s_d8d0f67a017e70::t_19b8bc3c7d3b6d 24
+  s_d8d0f67a017e70::t_36b12a505d4fbc 76
+  s_d8d0f67a017e70::t_e26db19bd256b8 3
+  s_d8d0f67a017e70::t_2b0487efb3c018 26
+  s_d8d0f67a017e70::t_590f2902e22668 57
+  s_d8d0f67a017e70::t_a5926a28992cb7 58
+  s_d8d0f67a017e70::t_9692a2be0e3b63 59
+  s_d8d0f67a017e70::t_cc1badda7b21c4 64
+  s_d8d0f67a017e70::t_b30afb03161339 61-62
+  s_d8d0f67a017e70::t_c9399c756ea953 75
+specs/README.md
+  s_d8d0f67a017e70::t_d6cb63154f7905 56
+  s_d8d0f67a017e70::t_fa8a8eae910f24 52
+specs/platform/2026-10-14-plugin-spike-facts.md
+  s_d8d0f67a017e70::t_35f864b86b7886 1-29,43-73,80-84,92-94,100-115,117,122-124,195-196,222-224
+  s_d8d0f67a017e70::t_033887fcbdaef3 30-37
+  s_d8d0f67a017e70::t_88d8ac421b2226 179-180
+  s_d8d0f67a017e70::t_98a4baeb65a26d 187,190,193-194
+  s_d8d0f67a017e70::t_fa503a1f6fe08f 191-192
+  s_d8d0f67a017e70::t_4b5bb8abfd4f8f 226-234
+  s_d8d0f67a017e70::t_770e45462e70a8 85-91
+  s_d8d0f67a017e70::t_5a6363122bf213 125-141,143-147,188-189
+  s_d8d0f67a017e70::t_28b55f84cbe9e3 116
+  s_d8d0f67a017e70::t_4e8c1b885308f6 95-99
+  s_d8d0f67a017e70::t_1caf1eed9b3ffe 142
+  s_d8d0f67a017e70::t_60a963612f1848 148-171,173,186
+  s_d8d0f67a017e70::t_fe81ee1af6962c 39-42
+  s_d8d0f67a017e70::t_d3ad98c0e7b1f3 175-178,181
+  s_d8d0f67a017e70::t_88a8cca3a0c50c 118,121
+  s_d8d0f67a017e70::t_dd4a60bc5ac47c 38
+  s_d8d0f67a017e70::t_f3a0672f0471c4 174,182-185
+  s_d8d0f67a017e70::t_b08397399be7de 197-221,225
+  s_d8d0f67a017e70::t_d1471c50e27b27 74-79
+  s_d8d0f67a017e70::t_d5e0e6f31670d3 119-120
+  s_d8d0f67a017e70::t_f54a2308069c76 172
+specs/hackathon/README.md
+  s_d8d0f67a017e70::t_1e6e016574aeee 115
+specs/PROGRESS.md
+  s_d8d0f67a017e70::t_03a8703dca8c8c 34-36,38-39
+  s_d8d0f67a017e70::t_28c7a0cc564294 7
+  s_d8d0f67a017e70::t_3f09368c090d40 30-31
+  s_d8d0f67a017e70::t_027d10f600bc3e 107
+  s_d8d0f67a017e70::t_16c4b6cce1ea5a 108
+  s_d8d0f67a017e70::t_2abdef13560c05 9-19
+  s_d8d0f67a017e70::t_8fe582f497659b 109-110
+  s_d8d0f67a017e70::t_77f3d7392389c1 26,43
+specs/platform/2026-10-13-discord-ticket-flow-design.md
+  s_d8d0f67a017e70::t_f07d16da806382 3
+specs/platform/plans/evidence/s-spike-sources.md
+  s_1f8add595d315b::t_358c060fadb21a 1-180
+specs/BACKLOG.md
+  s_d8d0f67a017e70::t_d7d05535a56090 23
+  s_d8d0f67a017e70::t_ea643f3b8f6ca0 25-28
+  s_d8d0f67a017e70::t_e1bc53bc42102f 24
+  s_d8d0f67a017e70::t_adcfb6148d69cc 21
+  s_d8d0f67a017e70::t_f87cf5eb08e5c3 30-31
+  s_d8d0f67a017e70::t_e2b2303a187791 29
+  s_d8d0f67a017e70::t_a8acc5ef78be99 5,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9ac12790437c8d22ca34dd50c1d0b16a02e3eb59",
+  "prompts": {},
+  "sessions": {
+    "s_1f8add595d315b": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53da4221-288d-461b-96f9-8ceefda75e81",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_834213c9a50b65": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "5d0eeee2-ccb7-412e-8bd7-0caf1fa51e9b",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
