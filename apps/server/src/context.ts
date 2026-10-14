@@ -10,6 +10,7 @@ import {
   getPayoutServices,
   getPayPalServices,
   invalidateStoreLookup,
+  logActionLogError,
 } from "./services";
 
 // Stateless adapters over the ENV bindings, so one instance per isolate is enough.
@@ -36,5 +37,6 @@ export async function createContext(
     onTeamStatusChanged: invalidateStoreLookup,
     email: getEmailServices(executionCtx),
     payouts: await getPayoutServices(),
+    onActionLogError: logActionLogError,
   };
 }

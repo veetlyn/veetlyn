@@ -1854,7 +1854,9 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     // Bo's $100.00, each with PayPal's $0.25 fee estimated between two US accounts.
     async function exportTeam() {
       const team = await payoutTeam();
-      const { organizationId, teamId, admin, member, services } = team;
+      const { organizationId, teamId, adminId, member, services } = team;
+      // On the export's clock: an approval on the real clock would set a payday after the export.
+      const admin = callerFor(adminId, services, atWednesday);
       await admin.payouts.removeCredentials(TEAM);
       const boId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Bo" });
       await savePayoutDestination(

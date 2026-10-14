@@ -32,6 +32,7 @@ import type { PayPalRefund } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
+import { ActionError } from "../actions/errors";
 import type { PayPalServices } from "../context";
 import { applyCompletedPaymentRefund } from "./payment-refunds";
 import { isPayPalRequestInProgress, isSettledPayPalRefusal, payPalRefusalMessage } from "./paypal-amounts";
@@ -252,9 +253,10 @@ async function issuePart(
   } catch (recordError) {
     log.error({ action: "project.refund_record", part: { id: part.id }, error: { name: errorName(recordError) } });
   }
-  throw new TRPCError({
-    code: "BAD_GATEWAY",
-    message: outcome.kind === "refused" ? `PayPal did not refund the client: ${message}` : UNCERTAIN_MESSAGE,
+  const refused = outcome.kind === "refused";
+  throw new ActionError("unavailable", refused ? `PayPal did not refund the client: ${message}` : UNCERTAIN_MESSAGE, {
+    trpcCode: "BAD_GATEWAY",
+    logMessage: refused ? "PayPal did not refund the client." : undefined,
     cause: outcome.cause ?? undefined,
   });
 }

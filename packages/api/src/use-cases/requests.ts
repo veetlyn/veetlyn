@@ -11,8 +11,13 @@ import { findServicesOffering } from "@jendal-workspace/db/repositories/services
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { project } from "@jendal-workspace/db/schema/projects";
+import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspace/email";
+import { TRPCError } from "@trpc/server";
 import { eq, sql } from "drizzle-orm";
 
+import { ActionError } from "../actions/errors";
+import { type LinkSecretSource, linkSecret, signClientLink } from "../client-links";
+import type { EmailServices } from "../context";
 import { fail, runProjectTransaction } from "./projects";
 
 export type QuoteRequestInput = {
@@ -105,4 +110,64 @@ export async function requestQuote(
     return { projectId: row.id };
   });
   return { ...result, teamName: team.name, serviceName, supportEmail: contact?.supportEmail ?? null };
+}
+
+// The public quote request form (sellers design §4.2): no account, a honeypot, and per-IP and
+// per-email limits before a project row and the two emails. The honeypot check runs first so bots
+// never touch the limit budget; the per-email limit lives in requestQuote, after validation.
+export async function createQuoteRequest(
+  deps: { db: Database; auth: LinkSecretSource; email?: EmailServices },
+  request: { ip: string | null },
+  input: QuoteRequestInput & { website: string },
+): Promise<{ ok: true }> {
+  const { db } = deps;
+  if (input.website.trim() !== "") return { ok: true as const };
+  if (request.ip) {
+    const allowed = await hitRequestLimit(db, { key: `quote-request:ip:${request.ip}`, windowMs: HOUR_MS, max: 20 });
+    if (!allowed) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Wait a little and try again." });
+    }
+  }
+  const emailServices = deps.email;
+  if (!emailServices) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Requests are not available right now." });
+  }
+
+  const { projectId, teamName, serviceName, supportEmail } = await requestQuote(db, input);
+  const token = await signClientLink(linkSecret(deps.auth), projectId);
+  const clientUrl = `${emailServices.siteOrigin}/c/${token}`;
+  const linkContent = quoteRequestLinkEmail({ clientName: input.name.trim(), teamName, url: clientUrl });
+  // The client's mail proves the address, so its failure is the request's failure. The caller gets a
+  // generic message; the provider's error text stays server-side.
+  try {
+    await emailServices.mailer.send({
+      sender: "invoices",
+      onBehalfOf: teamName,
+      replyTo: supportEmail ?? undefined,
+      tag: "quote-request",
+      to: input.email.trim().toLowerCase(),
+      ...linkContent,
+    });
+  } catch (error) {
+    await emailServices.onError?.(error, { kind: "quote-request", to: input.email.trim().toLowerCase() });
+    throw new ActionError("internal", "We could not send the email. Try again in a moment.", { expose: true });
+  }
+  if (supportEmail) {
+    const notice = quoteRequestNoticeEmail({
+      teamName,
+      clientName: input.name.trim(),
+      clientEmail: input.email.trim().toLowerCase(),
+      serviceName,
+      description: input.description.trim(),
+      // Trimmed, as stored on the project.
+      answers: input.answers.map(({ question, answer }) => ({ question: question.trim(), answer: answer.trim() })),
+      url: `${emailServices.adminOrigin}/${input.slug}/projects/${projectId}`,
+    });
+    const send = emailServices.mailer
+      .send({ sender: "invoices", onBehalfOf: teamName, tag: "quote-request-notice", to: supportEmail, ...notice })
+      .catch((cause: unknown) => emailServices.onError?.(cause, { kind: "quote-request-notice", to: supportEmail }));
+    if (emailServices.waitUntil) emailServices.waitUntil(send);
+    else await send;
+  }
+  return { ok: true as const };
 }

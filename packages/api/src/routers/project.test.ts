@@ -25,6 +25,7 @@ import {
   listProjectQuotes,
 } from "@jendal-workspace/db/repositories/projects";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
+import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { payment, project } from "@jendal-workspace/db/schema/projects";
@@ -37,6 +38,7 @@ import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } fr
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { projectList } from "../actions/projects";
 import { signClientLink, verifyClientLink } from "../client-links";
 import type { Context, EmailServices, PayPalServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
@@ -350,6 +352,16 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(detail.quotes).toEqual([]);
   });
 
+  it("lists projects in the shape the project.list output schema describes once on the wire", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    await createProject(userId);
+
+    const list = await callerFor(userId).project.list({ teamSlug: "team" });
+
+    expect(list).toHaveLength(1);
+    expect(projectList.output?.safeParse(JSON.parse(JSON.stringify(list))).success).toBe(true);
+  });
+
   it("shows a web request's client name and answers in the project detail", async () => {
     const { userId, teamId } = await seedServicesTeamWithAdmin(db);
     const projectId = await seedProject(db, {
@@ -428,6 +440,44 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     await expect(callerFor(null).project.clientAcceptQuote({ token: "nope", quoteId: crypto.randomUUID() })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
+  });
+
+  it("answers a valid link to a missing project like a forged one", async () => {
+    const token = await clientToken(crypto.randomUUID());
+    const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
+    await expect(callerFor(null).project.clientGet({ token })).rejects.toMatchObject(notValid);
+    await expect(callerFor(null).project.clientAcceptQuote({ token, quoteId: crypto.randomUUID() })).rejects.toMatchObject(
+      notValid,
+    );
+  });
+
+  it("logs the client's acceptance from the web, and not the team's page views", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({
+      teamSlug: "team",
+      projectId,
+      items: ITEMS,
+      deliveryDays: 14,
+    });
+    const before = (await db.select({ id: actionLog.id }).from(actionLog)).map((row) => row.id);
+
+    await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+
+    const added = (await db.select().from(actionLog)).filter((row) => !before.includes(row.id));
+    expect(added).toEqual([
+      expect.objectContaining({
+        action: "quote.accept",
+        surface: "web",
+        projectId,
+        actorKind: "client_link",
+        actorId: null,
+        outcome: "ok",
+      }),
+    ]);
   });
 
   it("assigns the freelancer the quote names when the client accepts (open and team modes)", async () => {
@@ -1082,6 +1132,19 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect(await balanceOf("client_refunds")).toBe(0);
       });
 
+      // The server's error log (apps/server trpc-error-log) reads PayPal's debug id from the error's cause.
+      it("keeps PayPal's error as the cause of a refused refund, for the error log", async () => {
+        const { userId, projectId } = await overpaidProject();
+        const { paypal } = fakePayPalRefunds(() =>
+          jsonResponse(422, { name: "UNPROCESSABLE_ENTITY", message: "The refund was refused.", debug_id: "d422" }),
+        );
+
+        await expect(callerFor(userId, undefined, paypal).project.refundClient({ teamSlug: "team", projectId })).rejects.toMatchObject({
+          code: "BAD_GATEWAY",
+          cause: { status: 422, name: "UNPROCESSABLE_ENTITY", debugId: "d422" },
+        });
+      });
+
       it("shows PayPal's refusal of a part, fails the parts not sent after it, and sends both on the retry", async () => {
         const { userId, projectId, token, depositId, topUpId } = await overpaidProject();
         const refused = {
@@ -1101,7 +1164,13 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           code: "BAD_GATEWAY",
           message: `PayPal did not refund the client: ${refusal}`,
         });
-        const failed = (await caller.project.get({ teamSlug: "team", projectId })).refund;
+        // The admin reads PayPal's words; the action log keeps only Payleor's.
+        const logged = await db
+          .select({ outcome: actionLog.outcome, message: actionLog.message })
+          .from(actionLog)
+          .where(eq(actionLog.action, "project.refund_client"));
+        expect(logged).toEqual([{ outcome: "unavailable", message: "PayPal did not refund the client." }]);
+        const failed =(await caller.project.get({ teamSlug: "team", projectId })).refund;
         expect(failed).toMatchObject({
           status: "failed",
           parts: [
