@@ -20,11 +20,19 @@ export class ActionError extends Error {
   readonly details?: Record<string, string[]>;
   readonly trpcCode?: TRPCCode;
   readonly expose: boolean;
+  // What the action log keeps when the message quotes an upstream service, whose words never go in the log.
+  readonly logMessage?: string;
 
   constructor(
     code: ActionErrorCode,
     message: string,
-    options: { details?: Record<string, string[]>; trpcCode?: TRPCCode; expose?: boolean; cause?: unknown } = {},
+    options: {
+      details?: Record<string, string[]>;
+      trpcCode?: TRPCCode;
+      expose?: boolean;
+      logMessage?: string;
+      cause?: unknown;
+    } = {},
   ) {
     super(message, { cause: options.cause });
     this.name = "ActionError";
@@ -32,6 +40,7 @@ export class ActionError extends Error {
     this.details = options.details;
     this.trpcCode = options.trpcCode;
     this.expose = options.expose ?? code !== "internal";
+    this.logMessage = options.logMessage;
   }
 }
 
