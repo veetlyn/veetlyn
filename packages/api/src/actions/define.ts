@@ -35,9 +35,11 @@ export type ActionDefinition<Input, Result, Raw = Input> = {
 // The shape every definition shares, for lists of definitions with different inputs and results.
 export type AnyActionDefinition = Omit<ActionDefinition<never, unknown, unknown>, "input"> & { input: z.ZodType };
 
-export function defineAction<Input, Result, Raw>(
-  definition: ActionDefinition<Input, Result, Raw>,
-): ActionDefinition<Input, Result, Raw> {
+// Keeps the schema's own type and the literal kind, so an adapter can reshape the input and pick a query or a
+// mutation at the type level.
+export function defineAction<Schema extends z.ZodType, Result, Kind extends ActionDefinition<never, never>["kind"]>(
+  definition: ActionDefinition<z.output<Schema>, Result, z.input<Schema>> & { input: Schema; kind: Kind },
+): ActionDefinition<z.output<Schema>, Result, z.input<Schema>> & { input: Schema; kind: Kind } {
   return definition;
 }
 

@@ -41,6 +41,8 @@ async function loadScope(req: PerformRequest, scopeRequest: ScopeRequest): Promi
   let teamId = scopeRequest.teamId ?? req.team?.id ?? null;
   if (scopeRequest.projectId) {
     project = await findProjectById(req.deps.db, scopeRequest.projectId);
+    // A link holder learns only that the link does not work, as for a forged one.
+    if (!project && req.actor.kind === "client_link") throw new ActionError("not_found", "This link is not valid.");
     if (!project || (teamId && project.teamId !== teamId)) throw new ActionError("not_found", NOT_FOUND_PROJECT);
     teamId = project.teamId;
   }
