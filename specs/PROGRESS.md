@@ -4,34 +4,43 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 ## Now
 
-- **Date:** 2026-10-13. Last code merge on main: `2f2cb35` (R5b-1). Check `git log` for the latest docs commits.
+- **Date:** 2026-10-14. Last code merge on main: `4a27fb6` (A1, PR #1). Check `git log` for the latest docs commits.
 - **Goal:** the demo video and the sandbox app live at `payleor.com` / `payleor.app`, submitted before Nov 12, 2026, 12:00 pm PST. **Code finished by Oct 31** (AI tooling ends around Nov 1); Nov 1–12 is fixes, README, Devpost and the video.
-- **Step:** the A1 plan ([`platform/plans/2026-10-14-a1-action-registry.md`](platform/plans/2026-10-14-a1-action-registry.md)) and the spike plan ([`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md)) are written.
-- **Next:** build A1 (subagents, own worktree and test database) and run the spike on Mouhamed's machine, in parallel (Oct 14–15).
-- **Waiting on Mouhamed:** for the spike, connecting the connector in Claude (account `contact@mdbm.ovh`) and a ChatGPT account that can add a custom connector (check whether developer mode needs a paid plan); for run E, three Discord accounts and the test server.
+- **Step:**
+  - A1 is merged (`4a27fb6`, PR #1).
+  - The plugin spike is running on Mouhamed's machine. Facts so far are in [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md).
+  - Claude and ChatGPT both connect through CIMD, render the MCP Apps widgets and let a widget call an app-only tool. Claude's pay button opened the pay page, and the deposit was captured.
+- **Next:**
+  - Close the spike: the last checks, the facts note, the plan's Outcome, the spike tables.
+  - Then design run C from the facts note: plugin with skills, request and status tools, and the confirmation nonce.
+  - Then A2.
+- **Waiting on Mouhamed:**
+  - For the spike: ChatGPT's pay button, Claude refusing to accept on its own, and the Claude plugin upload test.
+  - For run E: three Discord accounts and the test server.
 - **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.
 
 ## Run board
 
 ### Hackathon program (current)
 
-From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-agentic-surfaces-program.md) §4. Each run: design → plan → build → merge → walkthrough → outcome recorded. Cut order if a run slips: AI seller, Discord client buttons, webhooks, AG Studio agent.
+From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-agentic-surfaces-program.md) §4. Each run: design → plan → build → merge → walkthrough → outcome recorded. Cut order if a run slips: AI seller, Discord client buttons, the Discord request-thread sync, the portfolio, webhooks, AG Studio agent (program §4; the two new steps to confirm).
 
 | Dates | Run | Scope | Design | Plan | Status |
 |---|---|---|---|---|---|
-| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | Plan written; runs on Mouhamed's machine (tunnel) |
-| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | Plan written; ready to build |
+| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | In progress on branch `spike-plugin` (not for merging). Claude and ChatGPT both go for sign-in, widgets and app-only tools ([facts](platform/2026-10-14-plugin-spike-facts.md)) |
+| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | Merged as `4a27fb6` (PR #1) |
 | Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | not written | Design approved |
 | Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | Not started |
-| Oct 20–23 | C | Client's AI plugin: offering search (opt-in listing), request, status, widgets with widget-only accept, pay page, client OAuth | after the spike | | Not started |
-| Oct 24–25 | B | Delivery pipeline with email and webhooks, API keys, AI seller endpoints, payout events, fulfilment type | not written | | Not started |
-| Oct 26–27 | E | Discord minimum: channel for any project, card, notices, `/deliver`, client buttons, draft confirmation | [source design](platform/2026-10-13-discord-ticket-flow-design.md) (revise to the minimum first) | | Not started |
+| Oct 20–23 | C | Client's AI plugin: offering search (opt-in listing), request, status, widgets with widget-only accept, pay page, client OAuth; sellers decline with a reason or ask questions the client answers | after the spike | | Not started |
+| Oct 24–25 | B | Delivery pipeline with email and webhooks, API keys, AI seller endpoints, payout events, fulfilment type, 48-hour response deadline | not written | | Not started |
+| Oct 26–27 | E | Discord: request thread with the team's freelancers synced with the private project channel, channel for any project, card, notices, `/deliver`, client buttons, draft confirmation | [source design](platform/2026-10-13-discord-ticket-flow-design.md) (revise to program §4 first) | | Not started |
 | Oct 28–29 | D | Intake agent proposals; AG Studio team analytics with the copilot (agent-toolkit) | not written | | Not started |
-| Oct 30 | AI seller | Separate Worker on the public API (optional, first to cut) | not written | | Not started |
+| Oct 30 | P | Two-way ratings, public reviews, seller profile with portfolio, ratings in the plugin | not written | | Not started |
+| Oct 30 (if time) | AI seller | Separate Worker on the public API (optional, first to cut) | not written | | Not started |
 | Oct 31 | Freeze | Full demo walkthrough on the deployed hosts | | | |
 | Nov 1–12 | Submission | Fixes, seed data, AG Studio key (Nov 1), README, Devpost, public repo with licence, video | | | |
 
-After the hackathon: Slack ops, the rest of Discord, payout fixes, full books, billing, domain errors, cases.
+After the hackathon: Slack ops, the inactivity rule, plugin directory listings, the Commerce checkout protocols, the rest of Discord, payout fixes, full books, billing, domain errors, cases.
 
 ### Done before the program
 
@@ -94,6 +103,10 @@ The agent tooling named in plans (writing-plans, subagent-driven-development, ex
   - Discord (needed from run E): the Discord application and its test server are not documented yet; Mouhamed provides three accounts (admin, freelancer, client) before run E.
 
 ## Decisions log (latest first)
+
+- 2026-10-14: Mouhamed added marketplace rules to the hackathon build (program §4.1): sellers decline a request with a reason or ask the client questions (run C); a 48-hour response deadline with a reminder and expiry (run B; the inactivity rule after the hackathon); two-way star ratings, public client reviews and seller profiles with ratings and portfolio (new run P, Oct 30, before the optional AI seller); in Discord, a request channel or thread where the client talks with the team's freelancers, synced with the private project channel opened for the freelancer whose quote is accepted (run E). The cut order gains the request-thread sync and the portfolio (proposed, to confirm).
+- 2026-10-14: Agentic commerce stays on the services story: an AI assistant runs the whole hire, a person approves every payment in PayPal, the payout rules pay the team, and AI sellers sell on the public API (program §6). No ChatGPT Instant Checkout (ACP, Braintree Agent Ready), UCP or Store Sync before the submission: they are for physical goods from a catalog, partner-only, and need early access we do not have. ChatGPT's "physical goods only" commerce rule targets selling inside ChatGPT; service marketplaces with checkout on their own site are published (Airtasker, Fiverr), so Payleor's pay page fits it.
+- 2026-10-14: Open source model: the repository goes public for the submission under **AGPL-3.0**, with the same multi-tenant codebase the hosted Payleor runs (the Documenso and Twenty model). The hackathon requires the public repository to hold all the source of the demoed project (`hackathon/rules.md`), and the demo is multi-tenant. A single-tenant self-host mode (one team or freelancer, the team's own PayPal REST app, no partner fees, no cross-seller directory) comes after the hackathon in the same codebase. Compared first: Gumroad (MIT, same app), Discourse (GPL-2.0), Mattermost (open core), Cal.com (now a separate MIT community fork), Chatwoot (MIT plus an enterprise folder), Documenso (AGPL-3.0), Twenty (AGPL plus commercial files).
 
 - 2026-10-13: Mouhamed approved the A1/A2 design and the spike scope. The spike uses his Claude account (`contact@mdbm.ovh`).
 - 2026-10-13: After four independent reviews: code finished by Oct 31; run A split into A1 (registry) and A2 (client contacts) with the review fixes; a plugin spike in parallel with A1; the first deploy to our domains moves to run H (Oct 18–19); runs C, B, E, D in that order with minimum scopes; Slack after the hackathon; the AG Grid sponsor prize (AG Studio analytics in run D) alongside the grand prize and the Agentic Commerce and PayPal + AI honorable mentions; a member of a project's team is never its client; personal pitch documents kept out of git.

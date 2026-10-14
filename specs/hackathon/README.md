@@ -112,7 +112,7 @@ Pick one sponsor prize to aim for. Only one sponsor prize can be won.
 
 The resources page links the Agent Toolkit and MCP quickstarts directly; see [`resources.md`](resources.md#ai-and-agent-development).
 
-**Early-access risk.** Store Sync, the Cart API, and Agent Ready are early access (see `refs/README.md` §6). Confirm on Discord or at <https://docs.paypal.ai/> that hackathon sandbox accounts can use them before you depend on them. Have a fallback that uses the Orders v2 API and agent-toolkit.
+**Early-access risk.** Store Sync, the Cart API, and Agent Ready are early access (see `refs/README.md` §6). Confirm on Discord or at <https://docs.paypal.ai/> that hackathon sandbox accounts can use them before you depend on them. Have a fallback that uses the Orders v2 API and agent-toolkit. Decided 2026-10-14: the submission does not use them; the agentic commerce story is the service hire through the Payleor plugin ([program §6](../platform/2026-10-13-agentic-surfaces-program.md)).
 
 **Human in the loop.** An agent must get explicit buyer confirmation before any capture or refund. This follows `refs/AGENTS.md`, and it also makes a good moment to show in the demo video.
 
