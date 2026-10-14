@@ -1,0 +1,20 @@
+specs/platform/plans/2026-10-14-s-plugin-walkthrough.md
+  s_d8d0f67a017e70::t_ef6eb95ddd1156 27-28
+  s_d8d0f67a017e70::t_c204fa31bcc1d4 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "76c2358642f1e31e9afc3ced0050cff4ed67e964",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
