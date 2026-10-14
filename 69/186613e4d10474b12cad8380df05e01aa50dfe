@@ -1,0 +1,72 @@
+apps/web/src/app/admin/oauth/consent/page.tsx
+  s_d8d0f67a017e70::t_c6c4843150d5b3 1-15,17-19
+  s_d8d0f67a017e70::t_7befdecdf82cb3 16
+packages/db/src/schema/oauth.ts
+  s_d8d0f67a017e70::t_a541a575bf656e 1-184
+  s_d8d0f67a017e70::t_e2de8a41de579d 185
+packages/db/src/schema/index.ts
+  s_d8d0f67a017e70::t_c3253162430207 3
+packages/auth/src/index.ts
+  s_d8d0f67a017e70::t_f531a01837de8c 181-193
+  s_d8d0f67a017e70::t_62c40ff30cac12 86-107
+  s_d8d0f67a017e70::t_4de7f99e168d5d 14-15,18
+apps/web/src/lib/host-routing.ts
+  s_d8d0f67a017e70::t_111626d7732168 3-9
+apps/server/src/mcp/spike.ts
+  s_d8d0f67a017e70::t_7ca4f21926cd4c 158-163
+  s_d8d0f67a017e70::t_14e5b55ba69d06 214
+  s_d8d0f67a017e70::t_ff9549c52e5467 1-3,5-121,125-155,157,164-213,220-223
+  s_d8d0f67a017e70::t_46bfacfdb884f8 215-219
+  s_d8d0f67a017e70::t_478e411c306340 4
+  s_d8d0f67a017e70::t_7a748799bb430d 122-124
+  s_d8d0f67a017e70::t_448f3607bd6b10 156
+apps/web/src/lib/auth-client.ts
+  s_d8d0f67a017e70::t_feb534c6d3a484 1,7-10
+packages/db/src/repositories/mcp-spike.ts
+  s_d8d0f67a017e70::t_c1b8b4e22431f8 1-52
+apps/server/src/index.ts
+  s_d8d0f67a017e70::t_a566be0e703076 22
+  s_d8d0f67a017e70::t_63b12b9070b33f 80-91
+apps/web/src/app/admin/oauth/consent/consent-form.tsx
+  s_d8d0f67a017e70::t_3866244ba696f0 11-13,16-23
+  s_d8d0f67a017e70::t_03b34c35d69315 4
+  s_d8d0f67a017e70::t_b0154ee8931f30 9
+  s_d8d0f67a017e70::t_c2dd17f9123dd3 1-3,5-8,10,14-15,24-63
+apps/web/src/components/auth/sign-in-form.tsx
+  s_d8d0f67a017e70::t_8ed2c03e95f64f 14-15
+  s_d8d0f67a017e70::t_280d16bf04e621 6
+  s_d8d0f67a017e70::t_d19e9b924ff193 16
+  s_d8d0f67a017e70::t_43f1ce1fb13623 31-36
+packages/auth/package.json
+  s_d8d0f67a017e70::t_1ada7c0e4b2279 12,14-15
+packages/db/src/migrations/20261014123711_spike_mcp_oauth/migration.sql
+  s_d8d0f67a017e70::t_5976d25259502f 1-157
+packages/db/src/migrations/20261014123711_spike_mcp_oauth/snapshot.json
+  s_d8d0f67a017e70::t_3374ff0b2eb37e 1-11479
+packages/db/src/migrations/20261014125010_spike_mcp_oauth_jsonb/migration.sql
+  s_d8d0f67a017e70::t_3b2d6c91e5b215 1-17
+packages/db/src/migrations/20261014125010_spike_mcp_oauth_jsonb/snapshot.json
+  s_d8d0f67a017e70::t_7299cbaf3911b4 1-11479
+apps/server/package.json
+  s_d8d0f67a017e70::t_984f0b9a743588 13,22-23
+apps/web/package.json
+  s_d8d0f67a017e70::t_df93b3ff9055bc 12
+pnpm-lock.yaml
+  s_d8d0f67a017e70::t_26823604a49ead 108-110,135-140,184-186,247,345-347,351-356,459,803-810,845-851,868-876,1715-1740,1751-1754,6117,6360-6366,6393-6403,6414-6423,7093-7117,7140-7144,8277
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "69186613e4d10474b12cad8380df05e01aa50dfe",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
