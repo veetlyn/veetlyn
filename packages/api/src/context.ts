@@ -60,4 +60,6 @@ export type Context = {
   payouts?: PayoutServices;
   // The clock payout decisions read (paydays); tests fix it. Absent means the system clock.
   now?: () => Date;
+  // Called when an action ran but its action_log row could not be written. Absent in tests.
+  onActionLogError?: (cause: unknown) => void;
 };

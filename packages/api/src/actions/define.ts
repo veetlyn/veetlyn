@@ -1,11 +1,10 @@
-import type { ServicesTeamAction } from "@jendal-workspace/core";
 import type { z } from "zod";
 
 import type { Actor, RequestMeta, Surface } from "./actors";
 import type { ActionDeps, Scope } from "./perform";
 
 export type Grant =
-  | { grant: "member"; permission?: ServicesTeamAction; message?: string }
+  | { grant: "member" }
   | { grant: "client" }
   | { grant: "signed_in" }
   | { grant: "anyone" }

@@ -36,7 +36,15 @@ type Loose = { projectId?: string };
 type LooseDefinition = ActionDefinition<Loose, unknown, Loose>;
 
 function depsOf(ctx: Context): ActionDeps {
-  return { db: ctx.db, files: ctx.files, auth: ctx.auth, paypal: ctx.paypal, email: ctx.email, now: ctx.now };
+  return {
+    db: ctx.db,
+    files: ctx.files,
+    auth: ctx.auth,
+    paypal: ctx.paypal,
+    email: ctx.email,
+    now: ctx.now,
+    onLogError: ctx.onActionLogError,
+  };
 }
 
 function requestOf(ctx: Context) {
