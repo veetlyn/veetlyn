@@ -10,6 +10,7 @@
     "env:generate": "varlock codegen"
   },
   "dependencies": {
+    "@better-auth/mcp": "1.7.7",
     "@hono/trpc-server": "^0.4.2",
     "@jendal-workspace/api": "workspace:*",
     "@jendal-workspace/auth": "workspace:*",
@@ -18,6 +19,8 @@
     "@jendal-workspace/db": "workspace:*",
     "@jendal-workspace/email": "workspace:*",
     "@jendal-workspace/paypal": "workspace:*",
+    "@modelcontextprotocol/ext-apps": "2.0.3",
+    "@modelcontextprotocol/server": "2.3.1",
     "@trpc/server": "catalog:",
     "aws4fetch": "^1.0.20",
     "better-auth": "catalog:",

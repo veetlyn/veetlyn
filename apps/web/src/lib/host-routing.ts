@@ -1,6 +1,12 @@
 import { type HostDomains, parseRequestTarget } from "@jendal-workspace/core";
 
-const API_PATH_PREFIXES = ["/api/", "/trpc/"];
+// OAuth discovery for the issuer at {admin}/api/auth inserts the issuer path after the well-known name (RFC 8414).
+const API_PATH_PREFIXES = [
+  "/api/",
+  "/trpc/",
+  "/.well-known/oauth-authorization-server",
+  "/.well-known/openid-configuration",
+];
 
 export function shouldForwardToApi(url: URL): boolean {
   return API_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));

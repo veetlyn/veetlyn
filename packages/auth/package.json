@@ -9,7 +9,10 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/cimd": "1.7.7",
     "@better-auth/drizzle-adapter": "1.7.7",
+    "@better-auth/mcp": "1.7.7",
+    "@better-auth/oauth-provider": "1.7.7",
     "@jendal-workspace/core": "workspace:*",
     "@jendal-workspace/db": "workspace:*",
     "@jendal-workspace/email": "workspace:*",

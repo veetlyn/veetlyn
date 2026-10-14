@@ -3,12 +3,16 @@
 import { Button } from "@jendal-workspace/ui/components/button";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage, isEmailNotVerified, verifyEmailPath } from "@/lib/auth-flow";
 
 import TermsNotice from "./terms-notice";
 import TextField from "./text-field";
+
+// The continuation URL is relative to the admin host (the consent page) or absolute (the authorize endpoint).
+const oauthContinuation = z.object({ redirect: z.literal(true), url: z.string().min(1) });
 
 export default function SignInForm({ siteOrigin }: { siteOrigin: string }) {
   const router = useRouter();
@@ -24,6 +28,12 @@ export default function SignInForm({ siteOrigin }: { siteOrigin: string }) {
     // No callbackURL: the client would redirect to it on success (Fact 14).
     const result = await authClient.signIn.email({ email, password: String(data.get("password") ?? "") });
     if (!result.error) {
+      // An OAuth sign-in (an AI client connecting) continues at the authorization endpoint.
+      const continuation = oauthContinuation.safeParse(result.data);
+      if (continuation.success) {
+        window.location.assign(continuation.data.url);
+        return;
+      }
       router.replace("/");
       return;
     }

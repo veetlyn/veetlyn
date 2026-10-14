@@ -19,6 +19,7 @@ import { createContext } from "./context";
 import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
+import { createSpikeMcpRoute } from "./mcp/spike";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
@@ -75,6 +76,18 @@ app.use(
 );
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw));
+
+// OAuth discovery: the MCP plugin answers these from the Better Auth handler on any host.
+app.on(["GET", "HEAD"], ["/.well-known/oauth-protected-resource/*", "/.well-known/oauth-protected-resource", "/.well-known/oauth-authorization-server/*", "/.well-known/openid-configuration/*"], (c) =>
+  c.get("auth").handler(c.req.raw),
+);
+
+app.all("/mcp", (c) =>
+  createSpikeMcpRoute(
+    { db: c.get("db"), auth: c.get("auth"), siteOrigin: ENV.BETTER_AUTH_URL.replace("://admin.", "://"), log: c.get("log") },
+    ENV.BETTER_AUTH_URL,
+  )(c.req.raw),
+);
 
 app.use("/trpc/*", (c, next) =>
   trpcServer({
