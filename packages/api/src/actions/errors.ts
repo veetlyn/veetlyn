@@ -48,6 +48,7 @@ function fromTRPCCode(code: TRPCCode): ActionErrorCode {
     case "CONFLICT":
       return "conflict";
     case "PRECONDITION_FAILED":
+    case "UNPROCESSABLE_CONTENT":
       return "precondition_failed";
     case "TOO_MANY_REQUESTS":
       return "rate_limited";
