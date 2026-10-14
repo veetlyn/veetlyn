@@ -53,17 +53,17 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 
 | Step | Claude | ChatGPT | Notes |
 |---|---|---|---|
-| A1 | | | |
-| A2 | | | |
-| A3 | | | |
-| A4 | | | |
-| A5 | | | |
-| A6 | | | |
-| A7 | | | |
-| A8 | | | |
-| A9 | | | |
-| A10 | | | |
-| A11 | | | |
+| A1 | pass (20:53) | | Skill loaded, search unprompted; fixes in `ad55768` |
+| A2 | pass (20:53) | | |
+| A3 | pass (20:53) | | |
+| A4 | pass (20:53) | | Project `00fbf3ae` created (re-created 23:08 after cleanup) |
+| A5 | pass (23:08, Droid) | | Assigned to Walk Through, quote $150 / 4 days |
+| A6 | pass (23:15) | | One clean row after the duplicate cleanup |
+| A7 | pass (23:15–23:25) | | No model-side `accept_quote` call in the server log; Claude pointed to the button |
+| A8 | pass (23:25) | | Quote accepted from the card |
+| A9 | pass (23:26) | | $90 deposit captured |
+| A10 | pass (23:27) | | Check payment; card switched to In progress |
+| A11 | pass (23:3x, Droid) | | Delivery a5b046f0 submitted: "First version attached" |
 | A12 | | | |
 | A13 | | | |
 | A14 | | | |
