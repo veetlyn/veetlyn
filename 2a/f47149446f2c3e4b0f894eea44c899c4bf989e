@@ -1,0 +1,21 @@
+apps/server/src/mcp/spike.ts
+  s_d8d0f67a017e70::t_3d28c8e33ce6ab 227-228
+  s_d8d0f67a017e70::t_16c5c4796b4d50 217-226,229-235
+  s_d8d0f67a017e70::t_23cf97ae81344f 213-216,236-237
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2af47149446f2c3e4b0f894eea44c899c4bf989e",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "claude-opus-5-5-fast"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
