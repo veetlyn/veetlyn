@@ -14,7 +14,7 @@
         "shortDescription": "Hire freelancers and pay with PayPal",
         "defaultPrompt": ["How does Payleor work?"]
       },
-      "onboardingSkill": "hire-a-professional"
+      "onboardingSkill": "./skills/hire-a-professional/SKILL.md"
     }
   }
 }
