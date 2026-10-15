@@ -60,7 +60,7 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 | A3 | pass (20:53) | | |
 | A4 | pass (20:53) | pass (05:06) | Project `00fbf3ae` created (re-created 23:08 after cleanup); ChatGPT created `eee58c5b` (Landing page design, personal-brand brief) from the uploaded plugin |
 | A5 | pass (23:08, Droid) | pass (05:1x, Droid) | Assigned to Walk Through, quote $150 / 4 days; ChatGPT project: assigned to Walk Through, quote `77813f7a` $600 / 5 days (in `assigned` mode only the assigned freelancer can quote) |
-| A6 | pass (23:15) | pass (05:15) | One clean row after the duplicate cleanup; ChatGPT called `get_project` straight away, no `list_my_projects` in the log |
+| A6 | pass (23:15) | pass (05:15) | One clean row after the duplicate cleanup; ChatGPT listed projects (05:15:24) then opened the project |
 | A7 | pass (23:15–23:25) | pass (05:15–05:16) | No model-side `accept_quote` attempt in the server log for either client; both pointed to the button |
 | A8 | pass (23:25) | pass (05:16) | Quote accepted from the card in both |
 | A9 | pass (23:26) | pass (05:18) | $90 deposit captured; ChatGPT: $360 deposit captured (buyer 2) |
@@ -74,4 +74,4 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 | A17 | pass (01:36) | | $75 balance captured |
 | A18 | pass (01:37) | | Check payment; card showed Completed |
 | A19 | pass (01:37) | | `get_project` on the foreign id refused: "No project with this id belongs to you" |
-| A1 without @Payleor | n/a | inconclusive (05:20) | "Any news?" in a fresh chat got a correct answer with **no tool call** in the server log: ChatGPT answered from cross-chat memory. Discovery needs a prompt memory cannot answer (fresh search). |
+| A1 without @Payleor | n/a | pass (05:27) | Unprompted "find me someone to design business cards": ChatGPT called `search_offerings` ("business card design") and showed Payleor's Walk Crew, next to a local business search listing 3 people in Dakar. (Earlier "any news?" at 05:20 was answered from cross-chat memory with no call — discovery tests need fresh-data prompts.) |

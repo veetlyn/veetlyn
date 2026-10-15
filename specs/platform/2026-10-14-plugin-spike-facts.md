@@ -187,7 +187,7 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
   - The full chain worked: `request_quote` (05:06), quote viewed, `accept_quote` from the card (05:16), Pay in a new tab (ORDER.APPROVED 05:18:34, $360 deposit CAPTURE.COMPLETED 05:18:48), Check payment → In progress. No model-side accept attempt in the log.
   - ChatGPT called `get_project` directly instead of listing projects first.
   - Mouhamed's take: ChatGPT's card interface renders better than Claude's.
-  - Unprompted test inconclusive: "any news?" in a fresh chat (no @Payleor) got a correct answer with **no tool call** — ChatGPT answered from cross-chat memory. Discovery prompts must ask for something memory cannot know (a fresh search).
+  - Unprompted discovery works in ChatGPT with the uploaded plugin: "find me someone to design business cards" in a fresh chat (no @-mention) called `search_offerings` (05:27) and ChatGPT blended Payleor's Walk Crew with a local business search (3 people in Dakar). Caveat: memory answers first when it can — "any news?" at 05:20 got a correct answer with no tool call. Discovery tests need prompts memory cannot answer.
 - **Agentic commerce in the clients:**
   - ChatGPT's Instant Checkout (ACP, with Stripe; PayPal through Braintree "Agent Ready") is "available only to select marketplace partners", for physical goods.
   - OpenAI's "Get Quote" spec for local services is a partner-only beta: a fixed `request_service` tool, opened in a modal from a business card fed by a business feed with addresses.
