@@ -231,11 +231,9 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
 
 ## Go or no-go
 
-- **Claude: go** (provisional, pending the model-refusal check). Sign-in through CIMD works, both widgets render, the pay page opens from a widget button and the payment was captured, and the widget calls the app-only tool.
-- **ChatGPT: go for widgets and app-only tools.** Evidence: [`plans/evidence/s-spike-chatgpt-session.png`](plans/evidence/s-spike-chatgpt-session.png), from 2026-10-14.
-  - It registered through CIMD with `private_key_jwt`, ran on protocol 2026-07-28, and rendered both widgets ("Payleor offerings" and "Your quote" with its two buttons).
-  - **Accept (test)** called the app-only tool from the widget: the server logged `accept_quote_spike` for project `42c6962f…` at 16:48:20, and the widget showed `accept_quote_spike answered: {"ok":true}`.
-  - The pay page from ChatGPT's widget: (to fill in).
+- **Claude: go.** Sign-in through CIMD works, both widgets render, the pay page opens from a widget button and payments were captured (deposit and balance, walkthrough A9/A17), and the widget calls the app-only tool. The model-refusal check passed: asked to accept a quote itself, Claude pointed to the button and made no `accept_quote` call (walkthrough A7, log checked 23:15–23:25).
+- **ChatGPT: go.** Sign-in through CIMD (`private_key_jwt`), widgets render, the pay page opens from the widget's Pay button in a new tab and payments were captured ($360 deposit 05:18, $300 balance 11:30, walkthrough A9/A17), and the widget calls the app-only tool (Accept (test) at 16:48 on 2026-10-14; `accept_quote`/`accept_delivery` from the card on 2026-10-15). The full walkthrough passed (A1–A19, 2026-10-15) with the plugin uploaded as a zip, including unprompted discovery (05:27).
+  - First-session evidence: [`plans/evidence/s-spike-chatgpt-session.png`](plans/evidence/s-spike-chatgpt-session.png), from 2026-10-14.
 - **ChatGPT's behavior, in Mouhamed's words "lost":**
   - It mixed Fiverr's published app results with Payleor's, and drew its own cards for the $150 "Logo refresh" offering, including a "Request the $150 quote" button.
   - It then said that Payleor's project creation and quote requests "aren't exposed in connected tools". It searched `find_offerings` again with the whole brief as the query (16:49:24), and ended with a written brief for the user to submit by hand.

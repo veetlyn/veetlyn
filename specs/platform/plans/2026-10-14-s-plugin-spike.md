@@ -89,4 +89,11 @@
 
 ## Outcome
 
-(Filled in after the spike.)
+**Go for both clients.** Claude and ChatGPT signed in through CIMD, rendered the widgets, opened the pay page from a widget button, captured sandbox payments and called the app-only commit tools. Facts: [`../2026-10-14-plugin-spike-facts.md`](../2026-10-14-plugin-spike-facts.md); the full client flow passed end to end in both ([walkthrough](2026-10-14-s-plugin-walkthrough.md): Claude A1–A19 on 2026-10-14, ChatGPT A1–A19 plus unprompted discovery on 2026-10-15).
+
+- The spike outgrew its plan: the connector was rebuilt (v2) on the clients' UX guidelines and shipped as a real plugin (`plugins/payleor/`) with the `hire-a-professional` skill — uploaded as a zip to both clients, installed from a personal marketplace in the ChatGPT desktop app.
+- Plugin packaging answered question 8 beyond the plan: one folder serves both clients (Claude reads `.claude-plugin/` + `.mcp.json`, ChatGPT reads `plugin.json` + `mcp.json`), and ChatGPT's zip upload rejects a bare skill name in `onboardingSkill` (it wants the SKILL.md path) with a generic error.
+- ChatGPT answered a fresh-chat "any news?" from cross-chat memory with no tool call: unprompted-discovery tests need prompts memory cannot answer.
+- The spike tables (`jwks`, `oauth_resource`, `oauth_client_assertion`, `request_limit`, …) stay in the dev database: run C's connector reuses the same Better Auth provider.
+- The branch `spike-plugin` holds the code, not for merging; run C rebuilds it on the action registry (run A1) and contacts (run A2).
+- Follow-ups recorded: sellers ask questions and decline with a reason, the 48-hour quote deadline, ratings and profiles (program §4.1, runs B, C, E, P), the mall (run M), the conversations design ([`../2026-10-14-conversations-design.md`](../2026-10-14-conversations-design.md), approved).

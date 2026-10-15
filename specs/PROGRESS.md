@@ -4,18 +4,15 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 ## Now
 
-- **Date:** 2026-10-14. Last code merge on main: `4a27fb6` (A1, PR #1). Check `git log` for the latest docs commits.
+- **Date:** 2026-10-15. Last code merge on main: `4a27fb6` (A1, PR #1). Check `git log` for the latest docs commits.
 - **Goal:** the demo video and the sandbox app live at `payleor.com` / `payleor.app`, submitted before Nov 12, 2026, 12:00 pm PST. **Code finished by Oct 31** (AI tooling ends around Nov 1); Nov 1–12 is fixes, README, Devpost and the video.
 - **Step:**
   - A1 is merged (`4a27fb6`, PR #1).
-  - The plugin spike is running on Mouhamed's machine. Facts so far are in [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md).
-  - Claude and ChatGPT both connect through CIMD, render the MCP Apps widgets and let a widget call an app-only tool. Claude's pay button opened the pay page, and the deposit was captured.
+  - **Spike S is closed: go for both clients.** The full hire flow passed end to end in Claude (walkthrough A1–A19, 2026-10-14) and ChatGPT (A1–A19 plus unprompted discovery, 2026-10-15) with the plugin uploaded as a zip. Facts: [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md); plan Outcome: [`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md).
 - **Next:**
-  - Close the spike: the last checks, the facts note, the plan's Outcome, the spike tables.
-  - Then design run C from the facts note and the conversations design: plugin with skills, request and status tools, the confirmation nonce, the request and project spaces.
+  - Design run C from the facts note and the approved conversations design: plugin with skills, request and status tools, the confirmation nonce, the request and project conversation spaces, decline with a reason, seller questions.
   - Then A2.
 - **Waiting on Mouhamed:**
-  - For the spike: ChatGPT's pay button, Claude refusing to accept on its own, and the Claude plugin upload test.
   - For run E: three Discord accounts and the test server.
 - **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.
 
@@ -27,7 +24,7 @@ From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-age
 
 | Dates | Run | Scope | Design | Plan | Status |
 |---|---|---|---|---|---|
-| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | In progress on branch `spike-plugin` (not for merging). Claude and ChatGPT both go for sign-in, widgets and app-only tools ([facts](platform/2026-10-14-plugin-spike-facts.md)) |
+| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | **Done, go for both clients.** Full walkthrough passed in Claude and ChatGPT (A1–A19 each, plus ChatGPT unprompted discovery); plugin uploaded as a zip to both. Code stays on branch `spike-plugin` (not for merging); [facts](platform/2026-10-14-plugin-spike-facts.md) |
 | Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | Merged as `4a27fb6` (PR #1) |
 | Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | not written | Design approved |
 | Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | Not started |

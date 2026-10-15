@@ -70,8 +70,8 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 | A13 | pass (01:29–01:32) | pass (08:16) | |
 | A14 | pass (01:32) | pass (08:16) | `request_changes` ran; card back to In progress (delivery `changes_requested` in DB) |
 | A15 | pass (01:3x, Droid) | pass (08:1x, Droid) | Delivery df852c7a submitted: "Bigger wheat, warmer brown"; ChatGPT project: delivery ce76de29, "Second version: bigger headline, tighter hero" |
-| A16 | pass (01:35) | | `accept_delivery` from the card; Awaiting balance |
-| A17 | pass (01:36) | | $75 balance captured |
-| A18 | pass (01:37) | | Check payment; card showed Completed |
-| A19 | pass (01:37) | | `get_project` on the foreign id refused: "No project with this id belongs to you" |
+| A16 | pass (01:35) | pass (11:29) | `accept_delivery` from the card in both |
+| A17 | pass (01:36) | pass (11:30) | $75 balance captured; ChatGPT: $300 balance captured (fee is entirely on the deposit; client paid $660 total) |
+| A18 | pass (01:37) | pass (11:30) | Check payment; card showed Completed (`completed` in DB) |
+| A19 | pass (01:37) | pass (11:3x) | Foreign id refused; in ChatGPT with **no tool call** — it knew the id was not among the listed projects |
 | A1 without @Payleor | n/a | pass (05:27) | Unprompted "find me someone to design business cards": ChatGPT called `search_offerings` ("business card design") and showed Payleor's Walk Crew, next to a local business search listing 3 people in Dakar. (Earlier "any news?" at 05:20 was answered from cross-chat memory with no call — discovery tests need fresh-data prompts.) |
