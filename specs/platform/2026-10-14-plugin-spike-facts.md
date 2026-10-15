@@ -132,16 +132,19 @@ ChatGPT: (to fill in).
   - Published apps can be surfaced through in-conversation discovery, which uses conversation context, brand mentions, tool metadata and linking state (developers.openai.com/apps-sdk/concepts/user-interaction).
   - Public distribution is now by plugins (apps, skills, or both) in ChatGPT and Codex, after review.
   - Model-readable text must not tell the model to prefer our app over others (submission guidelines).
+  - ChatGPT plugins use the portable Agent Plugins format: root `plugin.json` with `$schema: https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`, skills discovered from `skills/`, and `mcp.json` where each server declares `type: "streamable-http"` (not a renamed `.mcp.json`). OpenAI presentation (`displayName`, `defaultPrompt`) goes under `extensions.com.openai.interface`. Our `plugins/payleor/` already matches this format.
+  - Local install is by marketplace file, not upload: `$REPO_ROOT/.agents/plugins/marketplace.json` (repo) or `~/.agents/plugins/marketplace.json` (personal), with the plugin folder at e.g. `~/.codex/plugins/payleor` and `source.path` relative to the marketplace root; then restart the **desktop app** and install from the local source in the Plugins Directory. On the web, chatgpt.com/plugins → Add custom MCP server → "Create as a plugin" wraps the registered connector (tools only, no skills).
+  - `@plugin-creator` (ChatGPT Work mode) / `$plugin-creator` (Codex) scaffolds the older `.codex-plugin/plugin.json` compatibility layout and can wire a registered connector (`plugin_asdk_app...` id) into a plugin; the portable layout is the documented way forward.
 - **Claude docs:**
   - A plugin bundles skills, MCP connectors and commands. "A connector alone leaves Claude to work out your workflow from tool names. The skill is where you put the sequence, the defaults, and what good output looks like." (claude.com/docs/plugins/build).
   - People add a plugin from Customize → Plugins: upload a zip, add a Git repository as a marketplace (`marketplace.json`), or install from the directory (reviewed, paid plans).
   - The skill's `description` decides when Claude loads it.
 - **Spike follow-up (`spike-plugin`):**
-  - `plugins/payleor/` holds a Claude plugin: `.claude-plugin/plugin.json`, `.mcp.json` pointing at `https://api.payleor.com/mcp`, the skill `skills/hire-a-professional/SKILL.md` and a README.
+  - `plugins/payleor/` holds a Claude plugin: `.claude-plugin/plugin.json`, `.mcp.json` pointing at `https://api.payleor.com/mcp`, the skill `skills/hire-a-professional/SKILL.md` and a README. The same folder is a valid ChatGPT portable plugin: root `plugin.json` (0.2.0, with `extensions.com.openai.interface` and `onboardingSkill`) and `mcp.json` with `type: "streamable-http"`. Installed on Mouhamed's machine at `~/.codex/plugins/payleor` with a personal marketplace at `~/.agents/plugins/marketplace.json`.
   - The tool descriptions now use OpenAI's "Use this when…" wording.
   - Whether Claude then uses Payleor without being told: **yes**. With the v2 plugin uploaded, "find me a logo refresh under $350" (no mention of Payleor) loaded the skill and called `search_offerings` (2026-10-14, 20:53; screenshot [`s-connector-v2-claude-plugin.png`](plans/evidence/s-connector-v2-claude-plugin.png)). See "Claude plugin test" under Connector v2.
 - **For run C and the submission:**
-  - Ship Payleor as a plugin: a Claude plugin in the public repository, which judges add as a marketplace with `owner/repo`, and a ChatGPT plugin.
+  - Ship Payleor as a plugin: one `plugins/payleor/` folder serves both clients (Claude reads `.claude-plugin/` + `.mcp.json`, ChatGPT and Codex read `plugin.json` + `mcp.json`). Judges add it to Claude as a marketplace with `owner/repo`, and to ChatGPT desktop or Codex with `codex plugin marketplace add owner/repo`.
   - Write a golden prompt set and measure how often each client calls Payleor unprompted.
   - Directory listings (both clients) need review, so they cannot be counted on before judging; the testing instructions use the marketplace or upload for Claude and developer mode with an @-mention for ChatGPT.
 
