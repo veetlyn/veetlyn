@@ -65,7 +65,7 @@ Each run is about two days of subagent work with review, merge and walkthrough. 
 | Oct 31 | **Freeze** | Full walkthrough of the demo on the deployed hosts; features end |
 | Nov 1–12 | **Submission** | Fixes only; demo seed data; AG Studio trial key (requested Nov 1 so it covers judging, Dec 1–15); README, Devpost text, tools list, testing access; the repository made public under AGPL-3.0 (decided 2026-10-14, `../PROGRESS.md`); the video |
 
-**Cut order** if a run slips: the AI seller, then the Discord client buttons (the team side stays), then the request-thread sync in Discord (the private project channel stays), then the portfolio (ratings and reviews stay), then the mall's multi-store order (one store per checkout stays), then webhooks, then the AG Studio agent (the analytics page stays). Proposed on 2026-10-14 when the marketplace rules were added; Mouhamed to confirm.
+**Cut order** if a run slips: the AI seller, then the Discord client buttons (the team side stays), then the request-thread sync in Discord (the private project channel stays), then the portfolio (ratings and reviews stay), then the mall's multi-store order (one store per checkout stays), then webhooks, then the AG Studio agent (the analytics page stays). Proposed on 2026-10-14 when the marketplace rules were added; confirmed by Mouhamed on 2026-10-15.
 
 ### 4.1 Marketplace rules (Mouhamed, 2026-10-14)
 
