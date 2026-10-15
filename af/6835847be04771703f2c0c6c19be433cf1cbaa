@@ -1,0 +1,28 @@
+specs/platform/plans/2026-10-14-s-plugin-walkthrough.md
+  s_d8d0f67a017e70::t_7f7b0caba4a5e0 73-76
+specs/platform/2026-10-14-plugin-spike-facts.md
+  s_d8d0f67a017e70::t_255312d7b06fcd 234-236
+specs/platform/plans/2026-10-14-s-plugin-spike.md
+  s_d8d0f67a017e70::t_720c4581373212 92-99
+specs/BACKLOG.md
+  s_d8d0f67a017e70::t_7792849493ab97 17
+specs/PROGRESS.md
+  s_d8d0f67a017e70::t_09b05cb9e0edee 27
+  s_d8d0f67a017e70::t_ee98584a8d7048 7,11,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "af6835847be04771703f2c0c6c19be433cf1cbaa",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
