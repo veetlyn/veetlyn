@@ -47,7 +47,7 @@ Run A1 to A19 again in ChatGPT, with two changes:
 - Start each new chat's first message with `@Payleor ` (an unpublished connector runs only when mentioned). Also run A1 once **without** `@Payleor` and record whether ChatGPT uses Payleor or another app (it used Fiverr before).
 - The seller steps create a fresh project: in A5 pick the project created by ChatGPT's A4.
 
-Setup: on the web, refresh the Payleor connector at chatgpt.com/plugins (7 tools). Optionally, in the ChatGPT **desktop app**, the full plugin (tools and the skill) is installed from the personal marketplace: `~/.agents/plugins/marketplace.json` points at `~/.codex/plugins/payleor`; restart the app and install Payleor from the local source in the Plugins Directory. If both are installed, prefer the plugin and note which one handled each step.
+Setup: the plugin is uploaded to ChatGPT on the web (Plugins → Upload, zip with files at the root; needed `onboardingSkill` as a SKILL.md path). Connect it as the spike client. If the upload misbehaves, refresh the Payleor connector at chatgpt.com/plugins (7 tools) or use the desktop app's personal marketplace (`~/.agents/plugins/marketplace.json` → `~/.codex/plugins/payleor`). If several Payleor entries are connected, note which one handled each step.
 
 Record every difference from Claude: whether **Request a quote** sends the message, whether the pay button opens a new tab (`openExternal`), whether **Check payment** updates what ChatGPT says, and any "Unhandled Script Error" or blank card (write down the time, Droid checks the server log).
 
