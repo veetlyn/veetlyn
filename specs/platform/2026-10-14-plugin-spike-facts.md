@@ -183,6 +183,11 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
   - Second session (21:22–21:24): "check if i received quotes for my logo refresh" listed both Logo refresh projects and opened them. Mouhamed pressed Pay on the $90 deposit, paid in the new tab and pressed Check payment; the same card switched to In progress (webhooks at 21:24:10). Pay through `ui/open-link` and refresh-after-pay work in Claude ([`s-connector-v2-claude-paid.png`](plans/evidence/s-connector-v2-claude-paid.png)).
   - Problems, fixed in `2361420`: Claude's reply still said to pay the deposit, because a refresh from the card does not reach the model (a status change on refresh now calls `updateModelContext`); the two projects had the same title and no other detail (rows now show the request date and the start of the brief, and the text gives the card's order). Widget URI now `app-v5`.
   - Claude's short progress lines appeared in French (the account's language) while the replies were in English: host behaviour, nothing for us.
+- **ChatGPT plugin test** (Mouhamed, 2026-10-15 05:06–05:20, plugin uploaded as a zip on the web, project `eee58c5b`):
+  - The full chain worked: `request_quote` (05:06), quote viewed, `accept_quote` from the card (05:16), Pay in a new tab (ORDER.APPROVED 05:18:34, $360 deposit CAPTURE.COMPLETED 05:18:48), Check payment → In progress. No model-side accept attempt in the log.
+  - ChatGPT called `get_project` directly instead of listing projects first.
+  - Mouhamed's take: ChatGPT's card interface renders better than Claude's.
+  - Unprompted test inconclusive: "any news?" in a fresh chat (no @Payleor) got a correct answer with **no tool call** — ChatGPT answered from cross-chat memory. Discovery prompts must ask for something memory cannot know (a fresh search).
 - **Agentic commerce in the clients:**
   - ChatGPT's Instant Checkout (ACP, with Stripe; PayPal through Braintree "Agent Ready") is "available only to select marketplace partners", for physical goods.
   - OpenAI's "Get Quote" spec for local services is a partner-only beta: a fixed `request_service` tool, opened in a modal from a business card fed by a business feed with addresses.
