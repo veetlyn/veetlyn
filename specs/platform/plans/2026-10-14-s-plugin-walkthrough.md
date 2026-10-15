@@ -64,10 +64,10 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 | A9 | pass (23:26) | | $90 deposit captured |
 | A10 | pass (23:27) | | Check payment; card switched to In progress |
 | A11 | pass (23:3x, Droid) | | Delivery a5b046f0 submitted: "First version attached" |
-| A12 | | | |
-| A13 | | | |
-| A14 | | | |
-| A15 | | | |
+| A12 | pass (01:29) | | Card showed Delivered with the note |
+| A13 | pass (01:29–01:32) | | |
+| A14 | pass (01:32) | | `request_changes` ran; card back to In progress |
+| A15 | pass (01:3x, Droid) | | Delivery df852c7a submitted: "Bigger wheat, warmer brown" |
 | A16 | | | |
 | A17 | | | |
 | A18 | | | |
