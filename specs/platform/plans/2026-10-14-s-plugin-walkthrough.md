@@ -65,11 +65,11 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 | A8 | pass (23:25) | pass (05:16) | Quote accepted from the card in both |
 | A9 | pass (23:26) | pass (05:18) | $90 deposit captured; ChatGPT: $360 deposit captured (buyer 2) |
 | A10 | pass (23:27) | pass (05:18–05:19) | Check payment; card switched to In progress (project `in_progress` in DB) |
-| A11 | pass (23:3x, Droid) | | Delivery a5b046f0 submitted: "First version attached" |
-| A12 | pass (01:29) | | Card showed Delivered with the note |
-| A13 | pass (01:29–01:32) | | |
-| A14 | pass (01:32) | | `request_changes` ran; card back to In progress |
-| A15 | pass (01:3x, Droid) | | Delivery df852c7a submitted: "Bigger wheat, warmer brown" |
+| A11 | pass (23:3x, Droid) | pass (05:4x, Droid) | Delivery a5b046f0 submitted: "First version attached"; ChatGPT project: delivery 1ff6b714, same note |
+| A12 | pass (01:29) | pass (08:1x) | Card showed Delivered with the note |
+| A13 | pass (01:29–01:32) | pass (08:16) | |
+| A14 | pass (01:32) | pass (08:16) | `request_changes` ran; card back to In progress (delivery `changes_requested` in DB) |
+| A15 | pass (01:3x, Droid) | pass (08:1x, Droid) | Delivery df852c7a submitted: "Bigger wheat, warmer brown"; ChatGPT project: delivery ce76de29, "Second version: bigger headline, tighter hero" |
 | A16 | pass (01:35) | | `accept_delivery` from the card; Awaiting balance |
 | A17 | pass (01:36) | | $75 balance captured |
 | A18 | pass (01:37) | | Check payment; card showed Completed |
