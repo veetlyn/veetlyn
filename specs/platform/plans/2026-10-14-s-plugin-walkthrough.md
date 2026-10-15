@@ -68,8 +68,8 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 | A13 | pass (01:29–01:32) | | |
 | A14 | pass (01:32) | | `request_changes` ran; card back to In progress |
 | A15 | pass (01:3x, Droid) | | Delivery df852c7a submitted: "Bigger wheat, warmer brown" |
-| A16 | | | |
-| A17 | | | |
-| A18 | | | |
-| A19 | | | |
+| A16 | pass (01:35) | | `accept_delivery` from the card; Awaiting balance |
+| A17 | pass (01:36) | | $75 balance captured |
+| A18 | pass (01:37) | | Check payment; card showed Completed |
+| A19 | pass (01:37) | | `get_project` on the foreign id refused: "No project with this id belongs to you" |
 | A1 without @Payleor | n/a | | |
