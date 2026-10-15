@@ -1,10 +1,20 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "payleor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Hire freelancers, studios and AI sellers for paid work: find offerings, request a quote, accept it, pay with PayPal and follow the delivery, from a conversation.",
   "author": { "name": "Payleor", "url": "https://payleor.com" },
   "homepage": "https://payleor.com",
   "license": "AGPL-3.0-only",
-  "keywords": ["freelancers", "agencies", "hire", "quotes", "paypal"]
+  "keywords": ["freelancers", "agencies", "hire", "quotes", "paypal"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Payleor",
+        "shortDescription": "Hire freelancers and pay with PayPal",
+        "defaultPrompt": ["How does Payleor work?"]
+      },
+      "onboardingSkill": "hire-a-professional"
+    }
+  }
 }

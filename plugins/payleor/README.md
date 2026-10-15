@@ -11,6 +11,27 @@ Payleor is the money flow and the trust around paid work. With this plugin your 
 ## Install
 
 - **Claude:** Customize → Plugins → Add → Upload plugin (this folder zipped), or add the repository as a marketplace. Then connect the Payleor connector from the plugin's Connectors tab.
-- **ChatGPT:** add `https://api.payleor.com/mcp` at chatgpt.com/plugins as a custom MCP server and create a plugin from it, or install this folder from a local marketplace in the ChatGPT desktop app.
+- **ChatGPT on the web:** add `https://api.payleor.com/mcp` at chatgpt.com/plugins as a custom MCP server; "Create as a plugin" wraps the connector (tools only, no skill).
+- **ChatGPT desktop app:** install this folder from a personal marketplace to get the tools and the skill:
+  1. Copy this folder to `~/.codex/plugins/payleor`.
+  2. Create `~/.agents/plugins/marketplace.json`:
+
+     ```json
+     {
+       "name": "personal",
+       "plugins": [
+         {
+           "name": "payleor",
+           "source": { "source": "local", "path": "./.codex/plugins/payleor" },
+           "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+           "category": "Productivity",
+           "interface": { "displayName": "Payleor" }
+         }
+       ]
+     }
+     ```
+
+  3. Restart the desktop app, open the Plugins Directory, choose the personal source and install Payleor. Sign in with your Payleor account when it asks.
+  4. After changing the plugin, refresh the copy in `~/.codex/plugins/payleor` and restart the app again.
 
 Everything runs in the PayPal sandbox during the hackathon.
