@@ -58,8 +58,8 @@ Record every difference from Claude: whether **Request a quote** sends the messa
 | A1 | pass (20:53) | | Skill loaded, search unprompted; fixes in `ad55768` |
 | A2 | pass (20:53) | | |
 | A3 | pass (20:53) | | |
-| A4 | pass (20:53) | | Project `00fbf3ae` created (re-created 23:08 after cleanup) |
-| A5 | pass (23:08, Droid) | | Assigned to Walk Through, quote $150 / 4 days |
+| A4 | pass (20:53) | pass (05:06) | Project `00fbf3ae` created (re-created 23:08 after cleanup); ChatGPT created `eee58c5b` (Landing page design, personal-brand brief) from the uploaded plugin |
+| A5 | pass (23:08, Droid) | pass (05:1x, Droid) | Assigned to Walk Through, quote $150 / 4 days; ChatGPT project: assigned to Walk Through, quote `77813f7a` $600 / 5 days (in `assigned` mode only the assigned freelancer can quote) |
 | A6 | pass (23:15) | | One clean row after the duplicate cleanup |
 | A7 | pass (23:15–23:25) | | No model-side `accept_quote` call in the server log; Claude pointed to the button |
 | A8 | pass (23:25) | | Quote accepted from the card |
