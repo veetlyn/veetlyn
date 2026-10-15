@@ -1,0 +1,28 @@
+specs/PROGRESS.md
+  s_2f463c64952183::t_ffd8de968358a3 31
+  s_2f463c64952183::t_d2f26ab94e0541 13-14
+specs/README.md
+  s_2f463c64952183::t_2523b5426cb163 59-60
+specs/platform/2026-10-13-agentic-surfaces-program.md
+  s_2f463c64952183::t_42a6eaa0f5f858 58
+specs/platform/2026-10-15-c-plugin-design.md
+  s_2f463c64952183::t_e7c9d89e590e7c 1-118
+specs/platform/plans/2026-10-15-c-plugin.md
+  s_2f463c64952183::t_2150157a96f567 1-310
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f41c961ddb04dc1c2cb05d7c9bf4a00e1975a8c6",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
