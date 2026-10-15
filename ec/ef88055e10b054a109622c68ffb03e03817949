@@ -1,0 +1,22 @@
+specs/platform/plans/2026-10-14-s-plugin-walkthrough.md
+  s_d8d0f67a017e70::t_0b03483bfb1f18 63
+  s_d8d0f67a017e70::t_8cd0e1828afaf9 77
+specs/platform/2026-10-14-plugin-spike-facts.md
+  s_d8d0f67a017e70::t_3f2c5896088b27 190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ecef88055e10b054a109622c68ffb03e03817949",
+  "prompts": {},
+  "sessions": {
+    "s_d8d0f67a017e70": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "84eb30c4-7ab5-4913-a056-75b1624f54cd",
+        "model": "kimi-k3"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
