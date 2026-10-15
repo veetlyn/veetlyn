@@ -10,8 +10,8 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
   - A1 is merged (`4a27fb6`, PR #1).
   - **Spike S is closed: go for both clients.** The full hire flow passed end to end in Claude (walkthrough A1–A19, 2026-10-14) and ChatGPT (A1–A19 plus unprompted discovery, 2026-10-15) with the plugin uploaded as a zip. Facts: [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md); plan Outcome: [`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md).
 - **Next:**
-  - Design run C from the facts note and the approved conversations design: plugin with skills, request and status tools, the confirmation nonce, the request and project conversation spaces, decline with a reason, seller questions.
-  - Then A2.
+  - Run C is designed and planned: [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/plans/2026-10-15-c-plugin.md`](platform/plans/2026-10-15-c-plugin.md). Settled: default-listed with per-offering and per-department opt-out; conversation audience per quoting mode; client and pay pages move to `{team}.payleor.app`; minimal client home on payleor.com; MCP stays on `api.payleor.com/mcp` for the hackathon.
+  - Then A2 (design approved, plan not written), then H, then C (Oct 20–23).
 - **Waiting on Mouhamed:**
   - For run E: three Discord accounts and the test server.
 - **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.
@@ -28,7 +28,7 @@ From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-age
 | Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | Merged as `4a27fb6` (PR #1) |
 | Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | not written | Design approved |
 | Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | Not started |
-| Oct 20–23 | C | Client's AI plugin: offering search (opt-in listing), request, status, widgets with widget-only accept, pay page, client OAuth; sellers decline with a reason or ask questions the client answers | after the spike | | Not started |
+| Oct 20–23 | C | Client's AI plugin on `api.payleor.com/mcp`: offering search (default-listed, opt-out), request, competing quotes with per-freelancer slides, widget-only accept, pay page, client OAuth on A2 contacts; conversations (questions, answers, decline with a reason, shortlist) on every surface; client and pay pages on `{team}.payleor.app`; client home on payleor.com | [design](platform/2026-10-15-c-plugin-design.md) | [plan](platform/plans/2026-10-15-c-plugin.md) | Design and plan written, awaiting review |
 | Oct 24–25 | B | Delivery pipeline with email and webhooks, API keys, AI seller endpoints, payout events, fulfilment type, 48-hour response deadline | not written | | Not started |
 | Oct 24–27 (parallel with B and E) | M | The mall: product search across stores, server-side cart, cart card, checkout on Payleor (one PayPal order across stores), flat shipping, stock, tracking | not written | | Not started |
 | Oct 26–27 | E | Discord: request thread with the team's freelancers synced with the private project channel, channel for any project, card, notices, `/deliver`, client buttons, draft confirmation | [source design](platform/2026-10-13-discord-ticket-flow-design.md) (revise to program §4 first) | | Not started |
