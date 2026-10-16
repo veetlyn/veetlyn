@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "f7999229-dde4-4f40-ab73-8d37664530cc",
+  "id": "50a802f3-3e7a-4545-80ce-0a3fb6b35d7f",
   "prevIds": [
     "0875adf9-7aec-44f9-a7ef-1696b176e9b9"
   ],
@@ -9816,13 +9816,6 @@
       "entityType": "checks",
       "schema": "public",
       "table": "payment"
-    },
-    {
-      "value": "client_email is not null or client_discord_id is not null",
-      "name": "project_client_check",
-      "entityType": "checks",
-      "schema": "public",
-      "table": "project"
     },
     {
       "value": "amount_minor > 0",

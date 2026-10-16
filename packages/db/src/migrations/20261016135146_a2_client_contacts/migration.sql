@@ -28,6 +28,7 @@ CREATE TABLE "project_client" (
 	CONSTRAINT "project_client_pkey" PRIMARY KEY("project_id","contact_id")
 );
 --> statement-breakpoint
+ALTER TABLE "project" DROP CONSTRAINT "project_client_check";--> statement-breakpoint
 CREATE INDEX "client_contact_teamId_idx" ON "client_contact" ("team_id");--> statement-breakpoint
 CREATE INDEX "client_identity_contact_idx" ON "client_identity" ("contact_id");--> statement-breakpoint
 CREATE INDEX "client_identity_lookup_idx" ON "client_identity" ("team_id","kind","value");--> statement-breakpoint

@@ -155,8 +155,6 @@ export async function startProject(
         teamId: actor.teamId,
         title,
         brief: input.brief?.trim() ?? "",
-        clientEmail,
-        clientDiscordId,
         channelId: input.channelId?.trim() || null,
         offeringId,
         source: "admin",
