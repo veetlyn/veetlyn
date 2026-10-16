@@ -41,6 +41,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | Document | Status |
 |---|---|
 | [Agentic surfaces program](platform/2026-10-13-agentic-surfaces-program.md) | Approved 2026-10-13; the current program |
+| [Agentic dash design](platform/2026-10-16-agentic-dash-design.md) | Sections approved 2026-10-16; written document awaiting review. Proposes to replace the program's runs after A2 |
 | [Action catalog design](platform/2026-10-13-action-catalog-design.md) | Approved; A1 built, A2 planned |
 | [Conversations design](platform/2026-10-14-conversations-design.md) | Approved; built across runs C, B and E |
 | [Run C design](platform/2026-10-15-c-plugin-design.md) | Approved 2026-10-15 |
