@@ -4,6 +4,7 @@ import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
   attachContact,
   bumpLinkVersion,
+  contactAccountIds,
   contactWithIdentities,
   detachContact,
   findClientContactForUser,
@@ -33,11 +34,21 @@ export type ClientHolder = { token: string; userId?: string } | { projectId: str
 
 export type ClientResolution =
   | { ok: true; actor: Actor; contactId: string }
-  | { ok: false; reason: "invalid_link" | "not_a_client" | "team_member" };
+  | { ok: false; reason: "invalid_link" | "not_a_client" }
+  | { ok: false; reason: "team_member"; projectId: string };
 
 // Who is the client of a project (action catalog design §5.4): never a member of its team, whatever link or
 // email they hold; otherwise the holder of a valid link, or a signed-in user who is an attached contact
 // through a user identity or a verified email.
+const TEAM_MEMBER = Symbol("team member");
+
+async function namesTeamMember(tx: DbExecutor, teamId: string, contactId: string): Promise<boolean> {
+  for (const userId of await contactAccountIds(tx, contactId)) {
+    if ((await servicesTeamRoleFor(tx, teamId, userId)) !== null) return true;
+  }
+  return false;
+}
+
 export async function resolveClient(db: Database, secret: string, holder: ClientHolder): Promise<ClientResolution> {
   const claim = "token" in holder ? await verifyClientLink(secret, holder.token) : null;
   if ("token" in holder && !claim) return { ok: false, reason: "invalid_link" };
@@ -45,13 +56,18 @@ export async function resolveClient(db: Database, secret: string, holder: Client
   const project = projectId ? await findProjectById(db, projectId) : null;
   if (!project) return { ok: false, reason: claim ? "invalid_link" : "not_a_client" };
   if (holder.userId && (await servicesTeamRoleFor(db, project.teamId, holder.userId)) !== null) {
-    return { ok: false, reason: "team_member" };
+    return { ok: false, reason: "team_member", projectId: project.id };
   }
   if (claim) {
+    // The client page runs on the site host, where the dashboard's session never arrives: a member holding a link
+    // looks signed out, so a contact naming a member's account is refused before anything is verified.
     const contactId = await db.transaction(async (tx) => {
       const linked = await findLinkedContact(tx, claim);
-      return linked ? verifyContactEmail(tx, linked) : null;
+      if (!linked) return null;
+      if (await namesTeamMember(tx, project.teamId, linked.contactId)) return TEAM_MEMBER;
+      return verifyContactEmail(tx, linked);
     });
+    if (contactId === TEAM_MEMBER) return { ok: false, reason: "team_member", projectId: project.id };
     if (!contactId) return { ok: false, reason: "invalid_link" };
     return { ok: true, contactId, actor: { kind: "client_link", token: { projectId: project.id, contactId } } };
   }

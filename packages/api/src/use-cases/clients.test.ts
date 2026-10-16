@@ -180,6 +180,7 @@ describe.skipIf(!hasTestDatabase)("the client rule", () => {
     await expect(resolveClient(db, SECRET, { token, userId: freelancer })).resolves.toEqual({
       ok: false,
       reason: "team_member",
+      projectId,
     });
     // A member opening the link proves nothing about the client's address.
     expect((await db.select().from(clientIdentity)).every((i) => i.verifiedAt === null)).toBe(true);
@@ -195,6 +196,38 @@ describe.skipIf(!hasTestDatabase)("the client rule", () => {
     await expect(resolveClient(db, SECRET, { projectId, userId: manager })).resolves.toEqual({
       ok: false,
       reason: "team_member",
+      projectId,
+    });
+  });
+
+  // The client page runs on the site host, where the dashboard's session cookie never arrives, so the link holder
+  // looks signed out: the contact's own addresses decide.
+  it("refuses a link whose contact has a team member's address, without a session", async () => {
+    const { organizationId, teamId, projectId } = await setup();
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const [account] = await db.select({ email: user.email }).from(user).where(eq(user.id, freelancer));
+    const contactId = await seedClientContact(db, { teamId, identities: [{ kind: "email", value: account!.email }], projectId });
+    await emailedTo(projectId, contactId, account!.email);
+    const token = await signClientLink(SECRET, { projectId, contactId, version: 1 });
+
+    await expect(resolveClient(db, SECRET, { token })).resolves.toEqual({
+      ok: false,
+      reason: "team_member",
+      projectId,
+    });
+    expect(await identitiesOf(contactId)).toEqual({ [`email:${account!.email}`]: false });
+
+    // A link sent before contacts acts for the primary, which is refused the same way.
+    const legacyProject = await seedProject(db, { teamId, title: "Before contacts", linkVersion: 0 });
+    const primary = await primaryContactFor(db, legacyProject);
+    await db
+      .update(clientIdentity)
+      .set({ value: account!.email })
+      .where(eq(clientIdentity.contactId, primary!.contactId));
+    await expect(resolveClient(db, SECRET, { token: await signLegacyClientLink(SECRET, legacyProject) })).resolves.toEqual({
+      ok: false,
+      reason: "team_member",
+      projectId: legacyProject,
     });
   });
 
