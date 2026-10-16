@@ -1,0 +1,39 @@
+package.json
+  s_ec180faf4f9b2e::t_ef21f3bfd7f743 18
+specs/platform/plans/2026-10-15-c-plugin.md
+  s_ec180faf4f9b2e::t_766a873dd91126 269,305
+specs/README.md
+  s_ec180faf4f9b2e::t_766a873dd91126 23
+tools/story-board.mjs
+  s_ec180faf4f9b2e::t_ae020acac8bbb0 1-55,57,63-129
+  s_ec180faf4f9b2e::t_0a268815a7b640 56,58-62
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_766a873dd91126 71,74
+.github/workflows/ci.yml
+  s_ec180faf4f9b2e::t_766a873dd91126 42
+specs/stories/README.md
+  s_ec180faf4f9b2e::t_766a873dd91126 5-6,55,72,78
+specs/stories/BOARD.md
+  s_ec180faf4f9b2e::t_ef21f3bfd7f743 1-16,19,21-23,30-32,35-37,51-53,59-61,66-68,76-78,82-84,88-90,92-94,96-99
+  s_ec180faf4f9b2e::t_0275c6ca480487 24-29,33-34,38-50,54-58,62-65,69-75,79-81,85-87,91,95,100-128
+  s_ec180faf4f9b2e::t_b04be69942abf5 17-18,20
+specs/stories/09-agentic.md
+  s_ec180faf4f9b2e::t_b04be69942abf5 132,136-137,199-270,322-376,448-459,496-528
+  s_ec180faf4f9b2e::t_cd75f64f242bdb 529
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8e2341c7d5a3cacf4107cc090f5e3ddaee2309a0",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
