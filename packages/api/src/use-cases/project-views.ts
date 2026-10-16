@@ -129,6 +129,7 @@ export async function getClientPreview(
 ) {
   const { row } = await requireVisibleProject(deps.db, viewer, projectId);
   const view = await getClientProjectView(deps, row.id);
+  // Pay links stay with the client: the preview only says a payment can be paid (`payable`).
   return { ...view, payments: view.payments.map((p) => ({ ...p, payPath: null })) };
 }
 
@@ -158,6 +159,7 @@ export async function getClientProjectView(deps: { db: Database; auth: LinkSecre
   const secret = linkSecret(deps.auth);
   const paymentViews = await Promise.all(
     payments.map(async (p) => ({
+      payable: p.status === "pending" || p.status === "failed",
       id: p.id,
       kind: p.kind,
       status: p.status,

@@ -391,7 +391,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     const preview = await callerFor(userId).project.clientPreview({ teamSlug: "team", projectId });
 
     expect(preview.project).toMatchObject({ id: projectId, title: "Website redesign" });
-    expect(preview.payments).toEqual([expect.objectContaining({ kind: "deposit", payPath: null })]);
+    expect(preview.payments).toEqual([expect.objectContaining({ kind: "deposit", payable: true, payPath: null })]);
     const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
     await expect(callerFor(outsider.userId).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
       code: "NOT_FOUND",
