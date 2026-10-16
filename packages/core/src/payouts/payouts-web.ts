@@ -19,8 +19,12 @@ export type PayoutsWebRow = {
   note: string;
 };
 
+// A spreadsheet runs a cell starting with one of these as a formula; the note carries the team's name.
+const FORMULA_START = /^[=+\-@\t\r]/;
+
 function csvCell(value: string): string {
-  return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+  const safe = FORMULA_START.test(value) ? `'${value}` : value;
+  return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
 }
 
 // Upload rows, no header: receiver, amount, currency, Customer ID, note, recipient type.

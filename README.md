@@ -94,20 +94,11 @@ Run standalone Node/Bun tools that use Varlock from the owning app directory so 
 - Target: web on Cloudflare + server on Cloudflare
 - Configure provider accounts: `cd packages/infra && pnpm exec alchemy profile edit`
 - Dev: pnpm run dev
-- Deploy: pnpm run deploy
-- Destroy: pnpm run destroy
+- Deploy: `pnpm deploy:staging`, `pnpm deploy:production`
 
 `alchemy profile edit` stores the selected Axiom, Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
 
-Deploys are staged and default to a personal `dev_<username>` stage. For production, run the deploy with an explicit stage from `packages/infra`:
-
-```bash
-cd packages/infra && pnpm exec alchemy deploy --stage production
-```
-
-### Production origins
-
-- Required after the first deploy: set `CORS_ORIGIN` in `apps/server/.env` to the exact deployed web origin, such as `https://app.example.com`, then deploy the server again.
+Two stages are deployed, with hosts fixed in `packages/infra/deploy-hosts.ts`: `production` (`payleor.com`, `dash.payleor.com`, `api.payleor.com`, `*.payleor.app`) and `staging` (the same hosts under `staging.`). Production deploys from GitHub Actions on every push to main once CI passes (`.github/workflows/deploy.yml`); staging deploys by hand from the Actions tab ("Deploy", choose the branch and `staging`). From a machine with the deploy settings in `packages/infra/.env`, run `pnpm deploy:staging` or `pnpm deploy:production`. There is no CORS setting: the web Worker reaches the api Worker through a service binding.
 
 ## Project Structure
 
