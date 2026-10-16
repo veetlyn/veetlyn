@@ -4,14 +4,14 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 ## Now
 
-- **Date:** 2026-10-15. Last code merge on main: `4a27fb6` (A1, PR #1). Check `git log` for the latest docs commits.
+- **Date:** 2026-10-16. Last code merge on main: `4a27fb6` (A1, PR #1). Check `git log` for the latest docs commits.
 - **Goal:** the demo video and the sandbox app live at `payleor.com` / `payleor.app`, submitted before Nov 12, 2026, 12:00 pm PST. **Code finished by Oct 31** (AI tooling ends around Nov 1); Nov 1–12 is fixes, README, Devpost and the video.
 - **Step:**
   - A1 is merged (`4a27fb6`, PR #1).
   - **Spike S is closed: go for both clients.** The full hire flow passed end to end in Claude (walkthrough A1–A19, 2026-10-14) and ChatGPT (A1–A19 plus unprompted discovery, 2026-10-15) with the plugin uploaded as a zip. Facts: [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md); plan Outcome: [`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md).
 - **Next:**
   - Run C is designed and planned: [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/plans/2026-10-15-c-plugin.md`](platform/plans/2026-10-15-c-plugin.md). Settled: default-listed with per-offering and per-department opt-out; conversation audience per quoting mode; client and pay pages move to `{team}.payleor.app`; minimal client home on payleor.com; MCP stays on `api.payleor.com/mcp` for the hackathon.
-  - Then A2 (planned: [`platform/plans/2026-10-15-a2-client-contacts.md`](platform/plans/2026-10-15-a2-client-contacts.md)), then H, then C (Oct 20–23).
+  - **Build A2 next** (planned: [`platform/plans/2026-10-15-a2-client-contacts.md`](platform/plans/2026-10-15-a2-client-contacts.md), stories AGT-01–06), then H, then C (Oct 20–23).
 - **Waiting on Mouhamed:**
   - For run E: three Discord accounts and the test server.
 - **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.
@@ -22,21 +22,21 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-agentic-surfaces-program.md) §4. Each run: design → plan → build → merge → walkthrough → outcome recorded. Cut order if a run slips: AI seller, Discord client buttons, the Discord request-thread sync, the portfolio, the mall's multi-store order, webhooks, AG Studio agent (program §4; the three new steps to confirm).
 
-| Dates | Run | Scope | Design | Plan | Status |
-|---|---|---|---|---|---|
-| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | **Done, go for both clients.** Full walkthrough passed in Claude and ChatGPT (A1–A19 each, plus ChatGPT unprompted discovery); plugin uploaded as a zip to both. Code stays on branch `spike-plugin` (not for merging); [facts](platform/2026-10-14-plugin-spike-facts.md) |
-| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | **Done.** Merged as `4a27fb6` (PR #1); walked through with spike S in Claude and ChatGPT (A1–A19, client in the plugin, seller in the admin) |
-| Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | [plan](platform/plans/2026-10-15-a2-client-contacts.md) | Planned |
-| Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | Not started |
-| Oct 20–23 | C | Client's AI plugin on `api.payleor.com/mcp`: offering search (default-listed, opt-out), request, competing quotes with per-freelancer slides, widget-only accept, pay page, client OAuth on A2 contacts; conversations (questions, answers, decline with a reason, shortlist) on every surface; client and pay pages on `{team}.payleor.app`; client home on payleor.com | [design](platform/2026-10-15-c-plugin-design.md) | [plan](platform/plans/2026-10-15-c-plugin.md) | Design and plan written, awaiting review |
-| Oct 24–25 | B | Delivery pipeline with email and webhooks, API keys, AI seller endpoints, payout events, fulfilment type, 48-hour response deadline | not written | | Not started |
-| Oct 24–27 (parallel with B and E) | M | The mall: product search across stores, server-side cart, cart card, checkout on Payleor (one PayPal order across stores), flat shipping, stock, tracking | not written | | Not started |
-| Oct 26–27 | E | Discord: request thread with the team's freelancers synced with the private project channel, channel for any project, card, notices, `/deliver`, client buttons, draft confirmation | [source design](platform/2026-10-13-discord-ticket-flow-design.md) (revise to program §4 first) | | Not started |
-| Oct 28–29 | D | Intake agent proposals; AG Studio team analytics with the copilot (agent-toolkit) | not written | | Not started |
-| Oct 30 | P | Two-way ratings, public reviews, seller profile with portfolio, ratings in the plugin | not written | | Not started |
-| Oct 30 (if time) | AI seller | Separate Worker on the public API (optional, first to cut) | not written | | Not started |
-| Oct 31 | Freeze | Full demo walkthrough on the deployed hosts | | | |
-| Nov 1–12 | Submission | Fixes, seed data, AG Studio key (Nov 1), README, Devpost, public repo with licence, video | | | |
+| Dates | Run | Scope | Design | Plan | Stories | Status |
+|---|---|---|---|---|---|---|
+| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | Own script: [walkthrough](platform/plans/2026-10-14-s-plugin-walkthrough.md) A1–A19 | **Done, go for both clients.** Full walkthrough passed in Claude and ChatGPT (A1–A19 each, plus ChatGPT unprompted discovery); plugin uploaded as a zip to both. Code stays on branch `spike-plugin` (not for merging); [facts](platform/2026-10-14-plugin-spike-facts.md) |
+| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | None new; the whole book unchanged (via spike S) | **Done.** Merged as `4a27fb6` (PR #1); walked through with spike S in Claude and ChatGPT (A1–A19, client in the plugin, seller in the admin) |
+| Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | [plan](platform/plans/2026-10-15-a2-client-contacts.md) | AGT-01–06 (Task 11) | Planned |
+| Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | AGT-07, AGT-08; then the whole book on the deployed hosts | Not started |
+| Oct 20–23 | C | Client's AI plugin on `api.payleor.com/mcp`: offering search (default-listed, opt-out), request, competing quotes with per-freelancer slides, widget-only accept, pay page, client OAuth on A2 contacts; conversations (questions, answers, decline with a reason, shortlist) on every surface; client and pay pages on `{team}.payleor.app`; client home on payleor.com | [design](platform/2026-10-15-c-plugin-design.md) | [plan](platform/plans/2026-10-15-c-plugin.md) | AGT-09–15, AGT-31–36 (Task 17) | Design and plan written, awaiting review |
+| Oct 24–25 | B | Delivery pipeline with email and webhooks, API keys, AI seller endpoints, payout events, fulfilment type, 48-hour response deadline | not written | | AGT-16–19, AGT-37 | Not started |
+| Oct 24–27 (parallel with B and E) | M | The mall: product search across stores, server-side cart, cart card, checkout on Payleor (one PayPal order across stores), flat shipping, stock, tracking | not written | | AGT-38–41 | Not started |
+| Oct 26–27 | E | Discord: request thread with the team's freelancers synced with the private project channel, channel for any project, card, notices, `/deliver`, client buttons, draft confirmation | [source design](platform/2026-10-13-discord-ticket-flow-design.md) (revise to program §4 first) | | AGT-20–25, AGT-42 | Not started |
+| Oct 28–29 | D | Intake agent proposals; AG Studio team analytics with the copilot (agent-toolkit) | not written | | AGT-26–28 | Not started |
+| Oct 30 | P | Two-way ratings, public reviews, seller profile with portfolio, ratings in the plugin | not written | | AGT-43–45 | Not started |
+| Oct 30 (if time) | AI seller | Separate Worker on the public API (optional, first to cut) | not written | | AGT-29 | Not started |
+| Oct 31 | Freeze | Full demo walkthrough on the deployed hosts | | | AGT-30 | |
+| Nov 1–12 | Submission | Fixes, seed data, AG Studio key (Nov 1), README, Devpost, public repo with licence, video | | |  | |
 
 After the hackathon: Slack ops, the inactivity rule, plugin directory listings, the Commerce checkout protocols, the rest of Discord, payout fixes, full books, billing, domain errors, cases.
 
@@ -67,8 +67,8 @@ The sellers design §11 ([`platform/2026-10-07-sellers-minimal-flow-design.md`](
 ## How a run works
 
 1. **Design.** Brainstorm with Mouhamed (one question at a time, approaches with a recommendation, design sections approved one by one). Write the design in `platform/` with a date prefix, add it to the context index (`README.md`, Live documents), update **Now**. Mouhamed reviews the written design before planning.
-2. **Plan.** Write the plan in `platform/plans/`: base commit, branch, worktree, test database, facts with file and line references, tasks with checkboxes, a final controller task (review, merge, walkthrough), and an empty Outcome section.
-3. **Build.** One branch and worktree per run (for A1: branch `a1-action-registry`, worktree `worktrees/a1-action-registry`), its own test database (`jendal_test_a1`; see Environment for the commands). One worker per task; the controller reviews each task and the whole branch. Checks per task: `npx vitest run <paths>`, `pnpm check-types`, `pnpm lint`. Conventional Commits ending with `Co-authored-by: factory-droid[bot] <138933559+factory-droid[bot]@users.noreply.github.com>`. Never push.
+2. **Plan.** Write the plan in `platform/plans/`: base commit, branch, worktree, test database, facts with file and line references, tasks with checkboxes, a final controller task (review, merge, walkthrough) naming the story IDs it walks, and an empty Outcome section. Put the plan link and that task in the run's row here (Plan, Stories) and in the run's section of `stories/09-agentic.md`.
+3. **Build.** When the build starts, set the run's stories to `In progress (<run>)`. One branch and worktree per run (for A1: branch `a1-action-registry`, worktree `worktrees/a1-action-registry`), its own test database (`jendal_test_a1`; see Environment for the commands). One worker per task; the controller reviews each task and the whole branch. Checks per task: `npx vitest run <paths>`, `pnpm check-types`, `pnpm lint`. Conventional Commits ending with `Co-authored-by: factory-droid[bot] <138933559+factory-droid[bot]@users.noreply.github.com>`. Never push.
 4. **Merge.** `git merge --no-ff` into main, `pnpm install`, `pnpm db:migrate:dev` (check the dev data before and after), restart the dev stack.
 5. **Walkthrough.** Run the plan's stories from [`stories/`](stories/README.md) in the PayPal sandbox with a browser agent (Playwright, Chrome DevTools or Claude in Chrome): over the tunnel before run H, on the deployed hosts after it. Mouhamed does the [human] steps (paying in the PayPal popup, Payouts Web uploads, plugin connectors, Discord accounts). Fixes found go in a follow-up branch.
 6. **Record.** Fill the plan's Outcome, set the design's status, update the stories' statuses (and add stories for new features), move finished backlog rows to [`archive/backlog-done.md`](archive/backlog-done.md) and add new findings to Open, update the run board, **Now** and the context index. Remove the worktree, branch and test database. A run is not marked done on the board until its plan's Outcome is filled in.

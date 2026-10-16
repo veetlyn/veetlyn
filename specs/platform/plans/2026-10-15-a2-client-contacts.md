@@ -289,7 +289,7 @@ await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${teamId + ":" + emai
 
 **Files:** this plan's Outcome; story statuses in `specs/stories/`.
 
-- [ ] **Step 1:** on the dev stack over the tunnel: a full request → quote → payment → delivery → payout on the web (the R-flow walkthrough), an old (pre-A2) project's emailed link still opens its client page, a freelancer signed in to the team cannot act through that client page, and the Clients section adds, emails, reissues (old link dies) and removes.
+- [ ] **Step 1:** stories AGT-01–AGT-06, on the dev stack over the tunnel: a full request → quote → payment → delivery → payout on the web (the R-flow walkthrough), an old (pre-A2) project's emailed link still opens its client page, a freelancer signed in to the team cannot act through that client page, and the Clients section adds, emails, reissues (old link dies) and removes.
 - [ ] **Step 2:** record the results here, update story statuses and `PROGRESS.md`, then open the PR.
 
 ## Outcome

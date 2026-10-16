@@ -1,6 +1,6 @@
 # Agentic surfaces (AGT)
 
-Planned stories for the agentic surfaces program (`../platform/2026-10-13-agentic-surfaces-program.md`) and the action registry and client contacts design (`../platform/2026-10-13-action-catalog-design.md`). Each run's walkthrough checks its stories here; the run's plan may sharpen a story (exact texts, pages) when it builds it, and then quotes UI text from the code. Run A1 changes nothing a person can see, so its proof is the existing story book passing unchanged.
+Planned stories for the agentic surfaces program (`../platform/2026-10-13-agentic-surfaces-program.md`) and the action registry and client contacts design (`../platform/2026-10-13-action-catalog-design.md`). Each run's section names its plan and the task that walks its stories (the run board in `../PROGRESS.md` has the same mapping); each run's walkthrough checks its stories here; the run's plan may sharpen a story (exact texts, pages) when it builds it, and then quotes UI text from the code. Run A1 changes nothing a person can see, so its proof is the existing story book passing unchanged.
 
 Security rules every story here assumes (program §3.4):
 
@@ -11,6 +11,8 @@ Security rules every story here assumes (program §3.4):
 - Every payment needs the payer's PayPal approval on the pay page.
 
 ## A2: client contacts
+
+Plan: [`2026-10-15-a2-client-contacts.md`](../platform/plans/2026-10-15-a2-client-contacts.md), walked in Task 11.
 
 ### AGT-01: The team manages a project's clients in a Clients section
 
@@ -86,6 +88,8 @@ Security rules every story here assumes (program §3.4):
 
 ## H: hosts and first deploy
 
+Plan: not written. Its walkthrough also runs the whole book on the deployed hosts.
+
 ### AGT-07: The platform runs on the deployed sandbox hosts
 
 - **Actor:** team admin, client · **Surface:** web (`{site}`, `{dash}`, `{seller}`) · **Delivered by:** H · **Status:** Planned (H)
@@ -114,6 +118,8 @@ Security rules every story here assumes (program §3.4):
 
 ## C: client's AI plugin
 
+Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task 12 sharpens these stories, Task 17 walks them.
+
 ### AGT-09: A client connects the Payleor plugin in Claude and ChatGPT
 
 - **Actor:** client · **Surface:** Claude, ChatGPT · **Delivered by:** C · **Status:** Planned (C)
@@ -129,11 +135,12 @@ Security rules every story here assumes (program §3.4):
 ### AGT-10: The client's AI searches listed offerings
 
 - **Actor:** client · **Surface:** Claude or ChatGPT · **Delivered by:** C · **Status:** Planned (C)
-- **Preconditions:** AGT-09; walk-crew has opted in to listing and has active services; another published team has not opted in.
+- **Preconditions:** AGT-09; walk-crew has active offerings, listed by default; another published team has unlisted one offering and one department ("List in AI assistants" off).
 - **Steps:**
   1. [human] Ask the AI to find someone to design a logo for a bakery under $400 in 5 days.
 - **Expected:**
-  - The results come only from sellers who chose to be listed, with the offering, price range, usual days and seller; draft, suspended and unlisted sellers never appear.
+  - The results come only from active, listed offerings of active teams, with the offering, price range, usual days and seller.
+  - Another seller's unlisted offering never appears, nor any offering in an unlisted department; draft and suspended sellers never appear.
   - Once run B adds the fulfilment type, each result says whether people, automation or both fulfil it (AGT-19).
 - **Edge cases:** none.
 
@@ -195,7 +202,81 @@ Security rules every story here assumes (program §3.4):
   - The team's project page shows no change.
 - **Edge cases:** none.
 
+### AGT-31: The team asks the client a question and the client answers
+
+- **Actor:** freelancer, client · **Surface:** web (`{dash}`, client page on `{seller}`), Claude or ChatGPT · **Delivered by:** C · **Status:** Planned (C)
+- **Preconditions:** AGT-11, a request to walk-crew in `open` mode.
+- **Steps:**
+  1. As an eligible freelancer, ask the client a question on the request.
+  2. [human] Answer it in the AI client's project card.
+  3. Ask a second question; answer it on the client page at `{seller}/c/{token}`.
+- **Expected:**
+  - Each question shows the asking freelancer; each answer appears under its question on the team's request, in the plugin card and on the client page.
+  - The client never reads the request space itself: their answers arrive in it as "Client".
+- **Edge cases:** a team member holding the client link cannot answer as the client (AGT-04).
+
+### AGT-32: Contact details are hidden until a quote is accepted
+
+- **Actor:** freelancer, client · **Surface:** web, Claude or ChatGPT · **Delivered by:** C · **Status:** Planned (C)
+- **Preconditions:** AGT-31.
+- **Steps:**
+  1. Before any quote is accepted, post a message with an email address, a phone number, a WhatsApp link and a file link, as the freelancer and as the client.
+  2. Accept a quote (AGT-12), then post the same message again.
+- **Expected:**
+  - Before acceptance, the email, phone number and messaging link read "[hidden until a quote is accepted]" on every surface; the file link stays.
+  - After acceptance, messages show as written.
+  - DB check (developer): the message keeps the original body for admins.
+- **Edge cases:** none.
+
+### AGT-33: The seller declines a request with a reason
+
+- **Actor:** team admin, client · **Surface:** web (`{dash}`), Claude or ChatGPT, client page · **Delivered by:** C · **Status:** Planned (C)
+- **Preconditions:** a new request to walk-crew from the AI (AGT-11).
+- **Steps:**
+  1. As staff, decline the request; try once without a reason, then give one.
+  2. [human] Ask the AI client about the request.
+- **Expected:**
+  - Declining needs a reason; the project shows as declined with it on `{dash}`.
+  - The plugin card and the client page show the request declined, with the reason.
+- **Edge cases:** a freelancer cannot decline; a declined request cannot be quoted.
+
+### AGT-34: The client compares competing quotes from one team
+
+- **Actor:** freelancers, client · **Surface:** Claude or ChatGPT, client page · **Delivered by:** C · **Status:** Planned (C)
+- **Preconditions:** walk-crew in `open` mode with two or more freelancers in the offering's department; a new request from the AI (AGT-11).
+- **Steps:**
+  1. Two freelancers each send a quote on the request.
+  2. [human] Ask the AI to show the quotes, then accept one with its widget button.
+- **Expected:**
+  - The card shows one slide per freelancer, each with that freelancer's quote and questions; the client page groups them the same way.
+  - Accepting one makes it the project's quote; the request space closes to the other freelancers, and the winner joins the project space with the request history.
+- **Edge cases:** in `team` mode freelancers discuss but only staff quote; a staff shortlist replaces the department rule.
+
+### AGT-35: The client sees all their projects on payleor.com
+
+- **Actor:** client · **Surface:** web (`{site}`) · **Delivered by:** C · **Status:** Planned (C)
+- **Preconditions:** the client account from AGT-09 holds projects with two teams.
+- **Steps:**
+  1. Sign in on `{site}` as the client and open the client home.
+- **Expected:**
+  - The page lists each project with its title, team and status, each linking to that team's client page on `{seller}`.
+- **Edge cases:** a project of a team the person belongs to is not listed as theirs (a team member is never the client).
+
+### AGT-36: Client and pay pages live on the team's own site
+
+- **Actor:** client · **Surface:** web (`{seller}`) · **Delivered by:** C · **Status:** Planned (C)
+- **Preconditions:** a walk-crew project with a client link and a pay link.
+- **Steps:**
+  1. Open the client link and the pay link from the client email.
+  2. Open the same token paths on another team's subdomain, and an old client link on the site host.
+- **Expected:**
+  - The pages open on `walk-crew.payleor.app` (`/c/{token}`, `/pay/{token}`).
+  - On another team's subdomain they are not found; the old site URL redirects to the team's site.
+- **Edge cases:** none.
+
 ## B: delivery and API
+
+Plan: not written.
 
 ### AGT-16: Client notices go to the client's home surface
 
@@ -246,7 +327,66 @@ Security rules every story here assumes (program §3.4):
   - The seller page and the plugin results show the fulfilment type on each offering.
 - **Edge cases:** none.
 
+### AGT-37: A request the seller does not act on within 48 hours expires
+
+- **Actor:** team admin, client · **Surface:** web, email, Claude or ChatGPT · **Delivered by:** B · **Status:** Planned (B)
+- **Preconditions:** a new request to walk-crew; the deadline shortened for the walkthrough, or a request backdated (DB check (developer)).
+- **Steps:**
+  1. Leave the request without a quote, question or decline past the reminder time, then past the deadline.
+- **Expected:**
+  - The team gets a reminder before the deadline.
+  - At the deadline the request shows as expired on `{dash}`, the client page and the plugin card, and the client is told by email.
+- **Edge cases:** a question or a decline counts as acting; an expired request cannot be quoted.
+
+## M: the mall
+
+Plan: not written.
+
+### AGT-38: The client's AI finds products across stores
+
+- **Actor:** client · **Surface:** Claude or ChatGPT · **Delivered by:** M · **Status:** Planned (M)
+- **Preconditions:** AGT-09; two published stores with listed physical and digital products, one with variants and limited stock.
+- **Steps:**
+  1. [human] Ask the AI for a product both stores sell, then for one product's details.
+- **Expected:**
+  - Results come from both stores, each with store, price and stock; the details show variants and stock.
+- **Edge cases:** draft and out-of-stock products are marked or left out as the run's plan settles.
+
+### AGT-39: The client fills one cart across stores
+
+- **Actor:** client · **Surface:** Claude or ChatGPT · **Delivered by:** M · **Status:** Planned (M)
+- **Preconditions:** AGT-38.
+- **Steps:**
+  1. [human] Ask the AI to add a product from each store, then to show the cart.
+- **Expected:**
+  - The cart card lists the items by store with prices, shipping and the total; the cart is kept on Payleor for the signed-in client.
+- **Edge cases:** adding more than the stock is refused.
+
+### AGT-40: One PayPal checkout pays every store in the cart
+
+- **Actor:** client · **Surface:** Claude or ChatGPT, web (checkout on `payleor.app`) · **Delivered by:** M · **Status:** Planned (M)
+- **Preconditions:** AGT-39.
+- **Steps:**
+  1. [human] Press **Checkout** on the cart card; on Payleor's checkout, approve in the PayPal popup and give the shipping address there.
+- **Expected:**
+  - One PayPal order pays each store as its own payee, with each store's flat shipping and Payleor's fee.
+  - Stock is reserved at checkout; each store sees its order.
+- **Edge cases:** an item sold out since it was added is refused before payment. Cut order: one store per checkout if the multi-store order slips.
+
+### AGT-41: A store ships an order with a tracking number
+
+- **Actor:** store admin, client · **Surface:** web (`{dash}`) · **Delivered by:** M · **Status:** Planned (M)
+- **Preconditions:** AGT-40.
+- **Steps:**
+  1. As the store admin, open the physical order and mark it shipped with a carrier and tracking number.
+- **Expected:**
+  - The order shows as shipped with the tracking number; the client sees it on their order.
+  - DB check (developer): the tracking is sent to PayPal's tracking API for the capture.
+- **Edge cases:** digital orders need no shipping.
+
 ## E: Discord
+
+Plan: not written; design: [`2026-10-13-discord-ticket-flow-design.md`](../platform/2026-10-13-discord-ticket-flow-design.md), to revise first.
 
 ### AGT-20: The S2 Discord features work on a real server
 
@@ -317,7 +457,21 @@ Security rules every story here assumes (program §3.4):
   - A Discord user who lacks the quoting grant cannot confirm it.
 - **Edge cases:** the agent itself never confirms.
 
+### AGT-42: The client and the team's freelancers talk in a Discord request thread
+
+- **Actor:** client, freelancers · **Surface:** Discord, web · **Delivered by:** E · **Status:** Planned (E)
+- **Preconditions:** AGT-20; a request from a client on the team's Discord server.
+- **Steps:**
+  1. [human] Post in the request's channel or thread as the client and as an eligible freelancer.
+  2. Accept one freelancer's quote.
+- **Expected:**
+  - Messages in the thread and on the web request stay in sync, with the same audience and masking as AGT-31 and AGT-32.
+  - Acceptance opens a private project channel with that freelancer (AGT-21), and the project's messages sync there.
+- **Edge cases:** cut order: the request-thread sync goes before the private project channel.
+
 ## D: agents and analytics
+
+Plan: not written.
 
 ### AGT-26: The intake agent drafts a quote a person confirms
 
@@ -353,7 +507,45 @@ Security rules every story here assumes (program §3.4):
   - It can read but cannot move money or confirm anything.
 - **Edge cases:** this agent is cut before the analytics page if run D slips.
 
+## P: reputation and profiles
+
+Plan: not written.
+
+### AGT-43: Client and seller rate each other after a completed project
+
+- **Actor:** client, team admin · **Surface:** web (client page, `{dash}`), Claude or ChatGPT · **Delivered by:** P · **Status:** Planned (P)
+- **Preconditions:** a paid, completed walk-crew project (DEL stories).
+- **Steps:**
+  1. [human] As the client, rate the seller in stars and write a review.
+  2. As the team admin, rate the client.
+- **Expected:**
+  - Both ratings are saved; the client's review is public on the seller's profile.
+- **Edge cases:** a project that is unpaid, cancelled or not completed cannot be rated.
+
+### AGT-44: The seller page shows a profile with ratings, reviews and portfolio
+
+- **Actor:** team admin, visitor · **Surface:** web (`{dash}`, `{seller}`) · **Delivered by:** P · **Status:** Planned (P)
+- **Preconditions:** AGT-43.
+- **Steps:**
+  1. As the team admin, add a portfolio item.
+  2. Open the seller page as a visitor.
+- **Expected:**
+  - The seller page shows the average rating, the public reviews and the portfolio.
+- **Edge cases:** cut order: the portfolio goes before ratings and reviews.
+
+### AGT-45: Offering cards in the AI show the seller's rating
+
+- **Actor:** client · **Surface:** Claude or ChatGPT · **Delivered by:** P · **Status:** Planned (P)
+- **Preconditions:** AGT-43, AGT-10.
+- **Steps:**
+  1. [human] Search for an offering of walk-crew in the AI.
+- **Expected:**
+  - The offering card shows the seller's star rating and number of reviews.
+- **Edge cases:** a seller with no ratings shows none, not zero stars.
+
 ## Optional: the AI seller
+
+Plan: not written.
 
 ### AGT-29: An AI seller quotes and delivers at once through the public API
 
@@ -368,6 +560,8 @@ Security rules every story here assumes (program §3.4):
 - **Edge cases:** first in the cut order.
 
 ## Freeze: the demo
+
+Oct 31, on the deployed hosts.
 
 ### AGT-30: The demo runs end to end on the deployed hosts
 

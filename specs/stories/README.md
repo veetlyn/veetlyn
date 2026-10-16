@@ -50,7 +50,7 @@ Each area file holds stories in this shape:
 ```
 
 - **ID:** area prefix and number, never reused.
-- **Status:** `Built` (merged, walked through once in dev), `Built (not walked through)` (merged and covered by tests, never exercised in a walkthrough; edge cases inside a Built story are flagged the same way), `Verified <date> on <host> at <commit>` (last passing check), `Failing <date>: <backlog row>`, or `Planned (<run>)` for stories a run of the program will deliver.
+- **Status:** `Built` (merged, walked through once in dev), `Built (not walked through)` (merged and covered by tests, never exercised in a walkthrough; edge cases inside a Built story are flagged the same way), `Verified <date> on <host> at <commit>` (last passing check), `Failing <date>: <backlog row>`, `In progress (<run>)` while the named run builds it, or `Planned (<run>)` for stories a run of the program will deliver.
 - **[human]** marks a step an agent must not do: logging in to PayPal and approving a payment, uploading a Payouts Web file, connecting the plugin in Claude or ChatGPT, anything on a real Discord account.
 - **Expected** lists observable results: page text, emails, links, states. Quote UI text only as it appears in the code. Results no page shows (ledger postings, fees, webhook handling) are marked "DB check (developer)".
 - Stories may depend on earlier stories (named by ID) for their preconditions.
@@ -67,7 +67,7 @@ Each area file holds stories in this shape:
 | [`06-store.md`](06-store.md) | `STO` | Digital products, store switch, checkout, orders, downloads, refunds revoking access |
 | [`07-payouts.md`](07-payouts.md) | `OUT` | Payout destination, automatic payouts connection, requests, approvals, payout rules, sweeps, Payouts Web export and import |
 | [`08-discord.md`](08-discord.md) | `DIS` | Discord sign-in and account link, server link, `/payleor link`, `/payouts setup` (built in S2, never checked on a real server) |
-| [`09-agentic.md`](09-agentic.md) | `AGT` | Planned stories of the agentic surfaces program: the AI plugin, Discord channels, agents, analytics, API and webhooks, the AI seller |
+| [`09-agentic.md`](09-agentic.md) | `AGT` | Stories of the agentic surfaces program, by run: client contacts, hosts, the AI plugin and conversations, delivery and API, the mall, Discord, agents and analytics, ratings and profiles, the AI seller, the demo |
 
 ## Running stories
 

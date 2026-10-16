@@ -20,6 +20,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | Open gaps and which run owns them | [`BACKLOG.md`](BACKLOG.md) |
 | The goal, the runs to Oct 31, the cut order, the marketplace rules, the demo, the deliverables | [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-agentic-surfaces-program.md) |
 | What the app does today and how to check it (walkthroughs) | [`stories/README.md`](stories/README.md), then the area file |
+| Which stories a run delivers, and the plan task that walks them | [`PROGRESS.md`](PROGRESS.md) run board (Stories column), then the run's section in [`stories/09-agentic.md`](stories/09-agentic.md) |
 | Anything PayPal | [`references/AGENTS.md`](references/AGENTS.md) (rules, story template), [`references/README.md`](references/README.md) (the reference clones in `refs/`), [`platform/2026-10-07-r1-paypal-facts.md`](platform/2026-10-07-r1-paypal-facts.md) (orders, fees, webhooks, SDK v6, sandbox) |
 | Architecture, tenancy, hosts, data model, logging, testing | [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md). The MCP endpoint is `api.payleor.com/mcp`; older `mcp.` hosts in it are superseded |
 | Sign-in, accounts, OAuth for stores and MCP clients | [`platform/2026-10-06-auth-federation-design.md`](platform/2026-10-06-auth-federation-design.md) |
