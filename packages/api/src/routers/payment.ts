@@ -6,7 +6,6 @@ import { z } from "zod";
 import { linkSecret, verifyPayLink } from "../client-links";
 import type { Context, PayPalServices } from "../context";
 import { publicProcedure, router } from "../index";
-import { primaryClientPath } from "../use-cases/clients";
 import { capturePayment, getPayPage, startPayment, unconfirmedCapture } from "../use-cases/payments";
 
 const tokenInput = z.object({ token: z.string().min(1).max(200) });
@@ -39,8 +38,8 @@ async function limitPayment(ctx: Context, action: "start" | "capture", paymentId
 export const paymentRouter = router({
   payGet: publicProcedure.input(tokenInput).query(async ({ ctx, input }) => {
     const paymentId = await paymentIdFromToken(ctx.auth, input.token);
-    const page = await getPayPage({ db: ctx.db, paypal: ctx.paypal }, paymentId);
-    return { ...page, clientPath: await primaryClientPath(ctx.db, linkSecret(ctx.auth), page.project.id) };
+    // A pay link is often forwarded (to an accountant, say), so it never leads to the client's powers.
+    return getPayPage({ db: ctx.db, paypal: ctx.paypal }, paymentId);
   }),
 
   payStart: publicProcedure.input(tokenInput).mutation(async ({ ctx, input }) => {
