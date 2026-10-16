@@ -1787,8 +1787,6 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         source: "web",
         title: "Landing page",
         brief: "I need a landing page for my shop.",
-        clientEmail: "jo@x.com",
-        clientName: "Jo",
         requestAnswers: [{ question: "Colors?", answer: "Blue" }],
         currency: "USD",
         managementFeeBps: 1_000,

@@ -89,8 +89,6 @@ export async function requestQuote(
         teamId: team.id,
         title: serviceName,
         brief: input.description.trim(),
-        clientEmail: email,
-        clientName: input.name.trim(),
         requestAnswers: input.answers.map(({ question, answer }) => ({
           question: question.trim(),
           answer: answer.trim(),

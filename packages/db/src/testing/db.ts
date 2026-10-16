@@ -265,8 +265,6 @@ export async function seedProject(
     .values({
       teamId: input.teamId,
       title: input.title ?? "Website",
-      clientEmail: input.clientEmail ?? "client@example.com",
-      clientName: input.clientName,
       status: input.status,
       source: input.source,
       requestAnswers: input.requestAnswers,
