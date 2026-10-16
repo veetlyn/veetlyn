@@ -38,9 +38,21 @@ describe("routeForHost", () => {
     expect(route("https://www.payleor.app/pricing")).toEqual({ kind: "pass" });
   });
 
-  it("rewrites the admin host into /admin", () => {
-    expect(route("https://admin.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/admin" });
-    expect(route("https://admin.payleor.app/acme/orders")).toEqual({ kind: "rewrite", pathname: "/admin/acme/orders" });
+  it("rewrites the dash host into the dashboard tree", () => {
+    expect(route("https://dash.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/admin" });
+    expect(route("https://dash.payleor.app/acme/orders")).toEqual({ kind: "rewrite", pathname: "/admin/acme/orders" });
+  });
+
+  // Links in emails sent before the rename point at admin.
+  it("redirects the old admin host to the dash host, keeping the path and query", () => {
+    expect(route("https://admin.payleor.app/acme/orders?tab=open")).toEqual({
+      kind: "redirect",
+      location: "https://dash.payleor.app/acme/orders?tab=open",
+    });
+    expect(route("http://admin.localhost:3001/login", { platformDomain: "localhost", storeDomain: "localhost" })).toEqual({
+      kind: "redirect",
+      location: "http://dash.localhost:3001/login",
+    });
   });
 
   it("rewrites store subdomains into /store", () => {
@@ -64,7 +76,7 @@ describe("routeForHost", () => {
   });
 
   it("blocks direct requests for the internal route trees on every host", () => {
-    for (const href of ["https://payleor.app/admin", "https://acme.payleor.app/store/x", "https://admin.payleor.app/admin"]) {
+    for (const href of ["https://payleor.app/admin", "https://acme.payleor.app/store/x", "https://dash.payleor.app/admin"]) {
       expect(route(href)).toEqual({ kind: "not-found" });
     }
   });

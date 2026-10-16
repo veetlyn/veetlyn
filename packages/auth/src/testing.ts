@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { type Auth, type AuthConfig, type AuthEmailKind, createAuth } from "./index";
 
 export const TEST_AUTH_CONFIG: AuthConfig = {
-  BETTER_AUTH_URL: "http://admin.localhost:3001",
+  BETTER_AUTH_URL: "http://dash.localhost:3001",
   BETTER_AUTH_SECRET: "test-secret-that-is-at-least-32-characters",
   PAYPAL_CLIENT_ID: "sandbox-client-id",
   PAYPAL_CLIENT_SECRET: "sandbox-client-secret",
