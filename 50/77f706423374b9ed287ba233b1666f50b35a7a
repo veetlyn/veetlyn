@@ -1,0 +1,29 @@
+packages/infra/alchemy.run.ts
+  s_ec180faf4f9b2e::t_be731f559ddb0a 100
+apps/server/src/index.ts
+  s_ec180faf4f9b2e::t_be731f559ddb0a 41
+apps/web/src/app/admin/page.tsx
+  s_ec180faf4f9b2e::t_be731f559ddb0a 21
+apps/server/.env.schema
+  s_ec180faf4f9b2e::t_be731f559ddb0a 33-36
+apps/web/src/app/admin/new/services-team/page.tsx
+  s_ec180faf4f9b2e::t_29eafdbb7ecd8b 1-2,18-24
+apps/web/src/lib/auth-flow.ts
+  s_ec180faf4f9b2e::t_be731f559ddb0a 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5077f706423374b9ed287ba233b1666f50b35a7a",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
