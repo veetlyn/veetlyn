@@ -1,0 +1,30 @@
+apps/web/src/lib/sandbox-banner.test.ts
+  s_ec180faf4f9b2e::t_f0179e5f69f22e 6,28-30
+  s_ec180faf4f9b2e::t_7a8ae9c5051604 31-32
+apps/web/src/components/sandbox-checkout-help.tsx
+  s_ec180faf4f9b2e::t_162a04dfa077f6 1-31
+apps/web/src/components/sandbox-banner.tsx
+  s_ec180faf4f9b2e::t_162a04dfa077f6 6-8
+apps/web/src/app/(site)/pay/[token]/page.tsx
+  s_ec180faf4f9b2e::t_162a04dfa077f6 1-2,7-14
+apps/web/src/app/store/buy/[productId]/page.tsx
+  s_ec180faf4f9b2e::t_162a04dfa077f6 5,30
+apps/web/src/lib/sandbox-banner.ts
+  s_ec180faf4f9b2e::t_162a04dfa077f6 4,21-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a11aa941ab7d255a26d443c9b5c453abaee6a258",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
