@@ -28,7 +28,7 @@ export function ClientsSection({
   projectId: string;
   contacts: Contact[];
   role: ServicesTeamRole;
-  onChange: () => Promise<unknown>;
+  onChange: () => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");

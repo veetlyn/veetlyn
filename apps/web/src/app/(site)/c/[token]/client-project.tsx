@@ -47,7 +47,9 @@ export default function ClientProject({ token }: { token: string }) {
           acceptAmendment: (amendmentId) => acceptAmendment.mutate({ token, amendmentId }),
           declineAmendment: (amendmentId) => declineAmendment.mutate({ token, amendmentId }),
           acceptDelivery: (deliveryId) => acceptDelivery.mutate({ token, deliveryId }),
-          requestChanges: (deliveryId, note) => requestChanges.mutateAsync({ token, deliveryId, note }),
+          requestChanges: async (deliveryId, note) => {
+            await requestChanges.mutateAsync({ token, deliveryId, note });
+          },
           resetDelivery: () => {
             acceptDelivery.reset();
             requestChanges.reset();
