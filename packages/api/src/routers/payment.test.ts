@@ -308,7 +308,17 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
   }
 
   describe("payment router", () => {
-    it("shows the pay page with the SDK settings and a way back to the project", async () => {
+    it("never hands a client link to a pay link holder", async () => {
+      const { token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi();
+
+      const page = await callerFor(null, makePayPal(fetch)).payment.payGet({ token });
+
+      expect(page).not.toHaveProperty("clientPath");
+      expect(JSON.stringify(page)).not.toContain("/c/");
+    });
+
+    it("shows the pay page with the SDK settings", async () => {
       const { projectId, paymentId, token } = await connectedDeposit();
       const { fetch } = fakePayPalApi();
 
@@ -331,7 +341,6 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
           environment: "sandbox",
           merchantId: "SELLER1",
         },
-        clientPath: `/c/${await clientTokenFor(db, SECRET, projectId)}`,
       });
       await expect(callerFor(null).payment.payGet({ token: `${paymentId}.bad` })).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
