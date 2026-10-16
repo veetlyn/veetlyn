@@ -26,6 +26,7 @@ import {
 } from "@jendal-workspace/db/repositories/projects";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
+import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { payment, project } from "@jendal-workspace/db/schema/projects";
@@ -39,7 +40,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { projectList } from "../actions/projects";
-import { verifyClientLink } from "../client-links";
+import { signClientLink, verifyClientLink } from "../client-links";
 import { clientTokenFor } from "../testing/client-links";
 import type { Context, EmailServices, PayPalServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
@@ -1749,8 +1750,21 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         teamCutBps: 1_500,
         createdById: null,
       });
+      const projectId = rows[0]!.id;
+      const [contact] = await db.select().from(clientContact);
+      expect(contact).toMatchObject({ teamId: team.id, name: "Jo" });
+      expect(await db.select().from(clientIdentity)).toEqual([
+        expect.objectContaining({ contactId: contact!.id, kind: "email", value: "jo@x.com", source: "request", verifiedAt: null }),
+      ]);
+      expect(await db.select().from(projectClient)).toEqual([
+        expect.objectContaining({ projectId, contactId: contact!.id, isPrimary: true, linkVersion: 1 }),
+      ]);
       expect(await db.select().from(outbox)).toEqual([
-        expect.objectContaining({ type: "project.created", projectId: rows[0]!.id }),
+        expect.objectContaining({
+          type: "project.created",
+          projectId,
+          data: { projectId, title: "Landing page", contactIds: [contact!.id], clientName: "Jo", channelId: null },
+        }),
       ]);
 
       expect(mailer.sent).toHaveLength(2);
@@ -1765,7 +1779,37 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
       const match = /https:\/\/payleor\.test\/c\/(\S+)/.exec(toClient!.text);
       expect(match).toBeTruthy();
-      expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toBe(rows[0]!.id);
+      expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toEqual({
+        projectId,
+        contactId: contact!.id,
+        version: 1,
+      });
+    });
+
+    it("gives a request carrying a verified client's email its own contact, with no hold on that client's projects", async () => {
+      const { team, offeringId } = await setupSeller();
+      const clientProject = await seedProject(db, { teamId: team.id, clientEmail: "jo@x.com" });
+      await db.update(clientIdentity).set({ verifiedAt: new Date() });
+      const [verified] = await db.select().from(projectClient).where(eq(projectClient.projectId, clientProject));
+      const { caller, mailer } = requestCaller();
+
+      await caller.project.requestQuote(validRequest({ offeringId }));
+
+      const requested = (await db.select().from(project)).find((p) => p.id !== clientProject)!;
+      const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, requested.id));
+      expect(attached!.contactId).not.toBe(verified!.contactId);
+      const token = /https:\/\/payleor\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
+      expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, token)).toMatchObject({
+        projectId: requested.id,
+        contactId: attached!.contactId,
+      });
+      // Even a correctly signed link for the requester's contact opens nothing on the client's project.
+      const theirs = await signClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, {
+        projectId: clientProject,
+        contactId: attached!.contactId,
+        version: 1,
+      });
+      await expect(callerFor(null).project.clientGet({ token: theirs })).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
 
     it("pretends success for a filled honeypot without writing anything", async () => {
