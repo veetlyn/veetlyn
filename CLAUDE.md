@@ -9,6 +9,8 @@ Payleor is the money flow and the trust around paid work: freelancers, teams and
 3. [`specs/platform/2026-10-13-agentic-surfaces-program.md`](specs/platform/2026-10-13-agentic-surfaces-program.md): the program, the demo and the hackathon deliverables.
 4. The current run's design and plan (linked from `PROGRESS.md`), and [`specs/stories/`](specs/stories/README.md) for what the app must do.
 
+For anything else, [`specs/README.md`](specs/README.md) is the context index: what to read for each kind of work. Never read the whole `specs/` folder or send a helper agent to; `specs/archive/` is history, opened only through a link.
+
 Settled decisions are in the designs and the decisions log; do not reopen them without Mouhamed.
 
 ## Workflow
