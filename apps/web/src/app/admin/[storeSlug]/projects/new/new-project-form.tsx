@@ -18,6 +18,7 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   const [title, setTitle] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientDiscordId, setClientDiscordId] = useState("");
+  const [clientName, setClientName] = useState("");
   const [brief, setBrief] = useState("");
   const [offeringId, setOfferingId] = useState("");
 
@@ -25,7 +26,7 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
 
   const create = useMutation(
     trpc.project.create.mutationOptions({
-      // The detail page the redirect lands on shows the client link with a copy button.
+      // The detail page the redirect lands on emails the client their link.
       onSuccess: ({ projectId }) => router.push(`/${teamSlug}/projects/${projectId}`),
     }),
   );
@@ -36,7 +37,16 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
-    create.mutate({ teamSlug, title, brief, clientEmail, clientDiscordId, channelId: "", offeringId: offeringId || undefined });
+    create.mutate({
+      teamSlug,
+      title,
+      brief,
+      clientEmail,
+      clientDiscordId,
+      clientName,
+      channelId: "",
+      offeringId: offeringId || undefined,
+    });
   }
 
   return (
@@ -73,6 +83,10 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
               ))}
           </select>
           <p className="text-xs text-muted-foreground">Optional. It tells you later what the client asked for.</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="client-name">Client name</Label>
+          <Input id="client-name" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Optional" maxLength={200} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="client-email">Client email</Label>
