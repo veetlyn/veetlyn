@@ -1,8 +1,16 @@
-import { and, eq, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { OPEN_PROJECT_STATUSES } from "@jendal-workspace/core";
+import { and, countDistinct, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
-import { clientContact, clientIdentity, projectClient } from "../schema/contacts";
+import {
+  type ClientIdentityKind,
+  type ClientIdentitySource,
+  clientContact,
+  clientIdentity,
+  projectClient,
+} from "../schema/contacts";
+import { project } from "../schema/projects";
 
 export type LinkedContact = { projectId: string; contactId: string; teamId: string };
 
@@ -28,6 +36,93 @@ export async function findLinkedContact(
   return row ?? null;
 }
 
+// Matches the team's contact by email, else by Discord id, or creates one; the identities it lacks are added
+// unverified. A request from the public form never joins a contact whose matching identity is verified: the
+// requester has proved nothing, so they get a contact of their own (merged later if the address proves out).
+export async function matchOrCreateContact(
+  tx: Transaction,
+  input: {
+    teamId: string;
+    email: string | null;
+    discordId: string | null;
+    name: string;
+    source: ClientIdentitySource;
+  },
+): Promise<string> {
+  const email = input.email?.trim().toLowerCase() || null;
+  const discordId = input.discordId?.trim() || null;
+  if (!email && !discordId) throw new Error("A contact needs an email or a Discord id");
+  if (email) await lockClientIdentity(tx, { teamId: input.teamId, key: email });
+  if (discordId) await lockClientIdentity(tx, { teamId: input.teamId, key: `discord:${discordId}` });
+  const match = async (kind: ClientIdentityKind, value: string) => {
+    const [row] = await tx
+      .select({ contactId: clientIdentity.contactId })
+      .from(clientIdentity)
+      .where(
+        and(
+          eq(clientIdentity.teamId, input.teamId),
+          eq(clientIdentity.kind, kind),
+          eq(clientIdentity.value, value),
+          input.source === "request" ? isNull(clientIdentity.verifiedAt) : undefined,
+        ),
+      )
+      .orderBy(sql`${clientIdentity.verifiedAt} is null`)
+      .limit(1);
+    return row?.contactId ?? null;
+  };
+  let contactId = (email && (await match("email", email))) || (discordId && (await match("discord", discordId))) || null;
+  if (!contactId) {
+    const [created] = await tx
+      .insert(clientContact)
+      .values({ teamId: input.teamId, name: input.name })
+      .returning({ id: clientContact.id });
+    if (!created) throw new Error("Insert into client_contact returned no row");
+    contactId = created.id;
+  }
+  const held = await tx
+    .select({ kind: clientIdentity.kind, value: clientIdentity.value })
+    .from(clientIdentity)
+    .where(eq(clientIdentity.contactId, contactId));
+  const wanted: [ClientIdentityKind, string | null][] = [
+    ["email", email],
+    ["discord", discordId],
+  ];
+  for (const [kind, value] of wanted) {
+    if (!value || held.some((h) => h.kind === kind && h.value === value)) continue;
+    await tx.insert(clientIdentity).values({ contactId, teamId: input.teamId, kind, value, source: input.source });
+  }
+  return contactId;
+}
+
+export async function attachContact(
+  tx: DbExecutor,
+  input: { projectId: string; contactId: string; isPrimary: boolean; addedById: string | null },
+): Promise<void> {
+  await tx.insert(projectClient).values(input);
+}
+
+// The "three open requests per email per team" limit (sellers design §4.2), through the projects' contacts.
+export async function countOpenRequestsForEmail(
+  tx: DbExecutor,
+  input: { teamId: string; email: string },
+): Promise<number> {
+  const [row] = await tx
+    .select({ count: countDistinct(project.id) })
+    .from(project)
+    .innerJoin(projectClient, eq(projectClient.projectId, project.id))
+    .innerJoin(clientIdentity, eq(clientIdentity.contactId, projectClient.contactId))
+    .where(
+      and(
+        eq(project.teamId, input.teamId),
+        eq(project.source, "web"),
+        inArray(project.status, OPEN_PROJECT_STATUSES),
+        eq(clientIdentity.kind, "email"),
+        eq(clientIdentity.value, input.email),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
 const MAX_MERGE_HOPS = 8;
 
 // A merged contact's links speak for the contact it was merged into.
@@ -45,9 +140,10 @@ async function survivingContactId(tx: DbExecutor, contactId: string): Promise<st
   return current;
 }
 
-// Serialises everything that matches, creates or verifies a contact by this email in this team.
-export async function lockContactEmail(tx: DbExecutor, input: { teamId: string; email: string }): Promise<void> {
-  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${input.teamId} || ':' || ${input.email}))`);
+// Serialises everything that matches, creates or verifies a contact by this email (or `discord:{id}`) in
+// this team. The request form takes the same lock, so its open-request count cannot race either.
+export async function lockClientIdentity(tx: DbExecutor, input: { teamId: string; key: string }): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${input.teamId} || ':' || ${input.key}))`);
 }
 
 // Opening a link emailed to the contact proves its email addresses (design §5.2). When another contact of the
@@ -69,7 +165,7 @@ export async function verifyContactEmail(
       ),
     );
   for (const identity of unverified) {
-    await lockContactEmail(tx, { teamId: contact.teamId, email: identity.value });
+    await lockClientIdentity(tx, { teamId: contact.teamId, key: identity.value });
     const [holder] = await tx
       .select({ contactId: clientIdentity.contactId })
       .from(clientIdentity)

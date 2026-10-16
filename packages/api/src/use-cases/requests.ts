@@ -5,7 +5,12 @@ import {
   type QuoteRequestAnswer,
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
-import { countOpenWebRequests } from "@jendal-workspace/db/repositories/projects";
+import {
+  attachContact,
+  countOpenRequestsForEmail,
+  lockClientIdentity,
+  matchOrCreateContact,
+} from "@jendal-workspace/db/repositories/contacts";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
@@ -13,7 +18,7 @@ import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { project } from "@jendal-workspace/db/schema/projects";
 import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspace/email";
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { ActionError } from "../actions/errors";
 import { type LinkSecretSource, linkSecret } from "../client-links";
@@ -70,8 +75,8 @@ export async function requestQuote(
 
   const result = await runProjectTransaction(db, async (tx, uow) => {
     // Serialises requests per (team, email) so two at once cannot both pass the open-request count.
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${team.id} || ':' || ${email}))`);
-    const open = await countOpenWebRequests(tx, { teamId: team.id, clientEmail: email });
+    await lockClientIdentity(tx, { teamId: team.id, key: email });
+    const open = await countOpenRequestsForEmail(tx, { teamId: team.id, email });
     if (open >= QUOTE_REQUEST_LIMITS.openPerEmailPerTeam) {
       fail(
         "BAD_REQUEST",
@@ -98,13 +103,22 @@ export async function requestQuote(
       })
       .returning();
     if (!row) throw new Error("Insert into project returned no row");
+    const clientName = input.name.trim();
+    const contactId = await matchOrCreateContact(tx, {
+      teamId: team.id,
+      email,
+      discordId: null,
+      name: clientName,
+      source: "request",
+    });
+    await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: null });
     await uow.apply({
       project: row,
       set: {},
       events: [
         {
           type: "project.created",
-          data: { projectId: row.id, title: row.title, clientEmail: email, clientDiscordId: null, channelId: null },
+          data: { projectId: row.id, title: row.title, contactIds: [contactId], clientName, channelId: null },
         },
       ],
     });
