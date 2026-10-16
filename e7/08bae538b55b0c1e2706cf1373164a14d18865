@@ -1,0 +1,49 @@
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/clients-section.tsx
+  s_ec180faf4f9b2e::t_e4c51c035fd166 1-200
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_ec180faf4f9b2e::t_66342d3c925fe3 5,27,41-61
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/page.tsx
+  s_ec180faf4f9b2e::t_0de7aa8707378f 1,8
+apps/web/src/app/admin/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_ec180faf4f9b2e::t_699abdf27d9eec 591
+  s_ec180faf4f9b2e::t_83cb3a9d3eb38a 293
+  s_ec180faf4f9b2e::t_9d4d393f004300 207
+  s_ec180faf4f9b2e::t_14d9867d981073 135
+  s_ec180faf4f9b2e::t_9e7f9f79b864e3 41
+  s_ec180faf4f9b2e::t_595f3350729252 220-221
+  s_ec180faf4f9b2e::t_361c4f25728400 285
+  s_ec180faf4f9b2e::t_ec0ec7cd006be7 310
+  s_ec180faf4f9b2e::t_2cbd2c7063b983 311
+packages/api/src/use-cases/project-views.ts
+  s_ec180faf4f9b2e::t_de819f2b63a6ea 132
+  s_ec180faf4f9b2e::t_9b05d8d087c02a 162
+apps/web/src/components/client-project-view.tsx
+  s_ec180faf4f9b2e::t_38aa87c74960c5 54-59
+  s_ec180faf4f9b2e::t_3641a4df7d6624 1-53,60-283
+apps/web/src/app/admin/[storeSlug]/projects/new/new-project-form.tsx
+  s_ec180faf4f9b2e::t_03136f30089e51 29
+  s_ec180faf4f9b2e::t_f70e712ebd69c2 21
+  s_ec180faf4f9b2e::t_dc2f4927d2993e 40-49
+  s_ec180faf4f9b2e::t_4784e490eb6c2c 88-90
+  s_ec180faf4f9b2e::t_ed03b4bf56b113 87
+apps/web/src/app/admin/[storeSlug]/projects/projects-list.tsx
+  s_ec180faf4f9b2e::t_d541ef3d727d48 46
+packages/api/src/routers/project.test.ts
+  s_ec180faf4f9b2e::t_1049854fba8e99 394
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e708bae538b55b0c1e2706cf1373164a14d18865",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
