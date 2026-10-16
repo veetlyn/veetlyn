@@ -6,8 +6,6 @@ import {
 } from "@jendal-workspace/core";
 import { z } from "zod";
 
-import { linkSecret } from "../client-links";
-import { primaryClientPath } from "../use-cases/clients";
 import { refundClient } from "../use-cases/client-refunds";
 import { getClientProjectView, getTeamProjectView, listVisibleProjects } from "../use-cases/project-views";
 import { assignFreelancer, MAX_TITLE, MIN_TITLE, startProject } from "../use-cases/projects";
@@ -34,13 +32,10 @@ export const projectStart = defineAction({
   summary:
     `Start a project for a client: a title of ${MIN_TITLE} to ${MAX_TITLE} characters, an optional brief, the client's email or Discord id, and optionally the offering it comes from.`,
   input: startProjectInput,
-  output: z.object({ projectId: z.uuid(), clientPath: z.string() }),
+  output: z.object({ projectId: z.uuid() }),
   scope: () => ({}),
   allow: [{ grant: "member" }],
-  run: async (context, input) => {
-    const { projectId } = await startProject(context.deps.db, teamActorOf(context), input);
-    return { projectId, clientPath: await primaryClientPath(context.deps.db, linkSecret(context.deps.auth), projectId) };
-  },
+  run: (context, input) => startProject(context.deps.db, teamActorOf(context), input),
 });
 
 export const projectAssign = defineAction({
@@ -85,7 +80,7 @@ export const projectRefundClient = defineAction({
 export const projectList = defineAction({
   name: "project.list",
   kind: "query",
-  summary: "List the team's projects the caller may see, with each one's status, currency and client contact.",
+  summary: "List the team's projects the caller may see, with each one's status, currency and primary client's name.",
   input: z.object({}),
   output: z.array(
     z.object({
@@ -93,8 +88,7 @@ export const projectList = defineAction({
       title: z.string(),
       status: z.enum(PROJECT_STATUSES),
       currency: z.enum(CURRENCIES),
-      clientEmail: z.string().nullable(),
-      clientDiscordId: z.string().nullable(),
+      clientName: z.string().nullable(),
       createdAt: z.iso.datetime(),
     }),
   ),
@@ -106,7 +100,7 @@ export const projectList = defineAction({
 export const projectGet = defineAction({
   name: "project.get",
   kind: "query",
-  summary: "Show one project to its team: quotes, amendments, payments, deliveries, the refund and the client link.",
+  summary: "Show one project to its team: its clients, quotes, amendments, payments, deliveries and the refund.",
   input: projectIdInput,
   output: null,
   surfaces: ["web"],

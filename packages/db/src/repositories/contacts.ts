@@ -1,5 +1,5 @@
 import { OPEN_PROJECT_STATUSES } from "@jendal-workspace/core";
-import { and, asc, countDistinct, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, countDistinct, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
@@ -187,6 +187,59 @@ export async function recordLinkEmail(
   if (!row) throw new Error("The contact is not on the project");
   const linkEmail = row.linkEmailedAt === null || row.linkEmail === input.email ? input.email : null;
   await tx.update(projectClient).set({ linkEmail, linkEmailedAt: new Date() }).where(where);
+}
+
+export type ProjectContactView = {
+  id: string;
+  name: string;
+  isPrimary: boolean;
+  identities: { kind: ClientIdentityKind; value: string; verified: boolean }[];
+};
+
+// The primary contact first, then in the order they were added.
+export async function listProjectContacts(tx: DbExecutor, projectId: string): Promise<ProjectContactView[]> {
+  const rows = await tx
+    .select({
+      id: clientContact.id,
+      name: clientContact.name,
+      isPrimary: projectClient.isPrimary,
+      kind: clientIdentity.kind,
+      value: clientIdentity.value,
+      verifiedAt: clientIdentity.verifiedAt,
+    })
+    .from(projectClient)
+    .innerJoin(clientContact, eq(clientContact.id, projectClient.contactId))
+    .leftJoin(clientIdentity, eq(clientIdentity.contactId, clientContact.id))
+    .where(eq(projectClient.projectId, projectId))
+    .orderBy(
+      desc(projectClient.isPrimary),
+      asc(projectClient.addedAt),
+      asc(clientContact.id),
+      asc(clientIdentity.kind),
+      asc(clientIdentity.value),
+    );
+  const contacts = new Map<string, ProjectContactView>();
+  for (const row of rows) {
+    let contact = contacts.get(row.id);
+    if (!contact) {
+      contact = { id: row.id, name: row.name, isPrimary: row.isPrimary, identities: [] };
+      contacts.set(row.id, contact);
+    }
+    if (row.kind && row.value !== null) {
+      contact.identities.push({ kind: row.kind, value: row.value, verified: row.verifiedAt !== null });
+    }
+  }
+  return [...contacts.values()];
+}
+
+// Each of the team's projects' primary contact name, by project id.
+export async function primaryContactNames(tx: DbExecutor, teamId: string): Promise<Map<string, string>> {
+  const rows = await tx
+    .select({ projectId: projectClient.projectId, name: clientContact.name })
+    .from(projectClient)
+    .innerJoin(clientContact, eq(clientContact.id, projectClient.contactId))
+    .where(and(eq(clientContact.teamId, teamId), eq(projectClient.isPrimary, true)));
+  return new Map(rows.map((r) => [r.projectId, r.name]));
 }
 
 export async function contactWithIdentities(
