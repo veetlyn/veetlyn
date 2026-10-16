@@ -18,7 +18,7 @@ export default async function AdminHome() {
   const organizations = (await listMyWorkspaces()).filter(
     (o) => o.stores.length + o.servicesTeams.length > 0,
   );
-  if (organizations.length === 0) redirect("/new");
+  if (organizations.length === 0) redirect("/new/services-team");
   const urlParts = await getStoreUrlParts();
 
   return (
