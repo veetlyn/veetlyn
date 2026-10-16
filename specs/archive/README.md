@@ -1,10 +1,36 @@
 # Archive
 
-Finished and superseded documents, kept for history: the runs merged before the agentic surfaces program and the designs and research they built on. Each archived design starts with an **Archived** line saying what replaced it. The live documents and the reading order are in [`../README.md`](../README.md).
+Finished and superseded documents, kept for history: every run whose Outcome is recorded (with its walkthrough evidence), the designs that are built or superseded, the research they built on, and closed backlog rows. Each archived design starts with an **Archived** line saying what replaced it. The live documents and the reading order are in [`../README.md`](../README.md).
 
 Read a file here only when a live document links to it or you need the history of a built feature. The code and the [stories](../stories/README.md) describe current behaviour; where an archived document and a live one disagree, the live one wins.
 
-Walkthrough evidence (screenshots, CSV logs, source notes) stays in [`../platform/plans/evidence/`](../platform/plans/evidence/).
+Walkthrough evidence (screenshots, CSV logs, source notes) is in [`platform/plans/evidence/`](platform/plans/evidence/); what it showed is recorded in each plan's Outcome and in the facts notes.
+
+## Runs merged before the program
+
+Moved from the run board in [`../PROGRESS.md`](../PROGRESS.md) on 2026-10-16.
+
+Merged into main with `--no-ff`; each plan's Outcome records reviews and walkthroughs.
+
+| Run | What | Merge |
+|---|---|---|
+| W1-A | Foundations and tenancy ([plan](platform/plans/2026-10-03-w1a-foundations-tenancy.md)) | `ae50e45` |
+| W1-D | Public site, auth, onboarding, legal pages ([plan](platform/plans/2026-10-05-w1d-public-site-auth-onboarding.md)) | `a8e5260` |
+| S1–S5 | Services teams, Discord (S2), PayPal onboarding, ledger and projects, commerce catalog ([plans](#plans)) | `6e79775`, `8c53d23`, `6baf62c`, `eb3b570`, `8929e40` |
+| E1–E7 | Email senders, dev tunnel, auth forms, error logs, PayPal card copy, quote refusal hint | `0e84725` … `908e709` |
+| R0 | Services skip shipment tracking ([plan](platform/plans/2026-10-07-r0-services-paypal-features.md)) | `50b821a` |
+| R1a, R1b, R1c | Server payments, pay page, PayPal webhooks and fees | `17a6499`, `a46bcf2`, `e2fcebf` |
+| R2, R2b | Deliveries and completion, delivery files | `722e1e3`, `2aac26f` |
+| R3a, R3b, R3c | Seller setup and catalog, seller page and publishing, quote request form | `444c1f4`, `29b6188`, `8d51ff2` |
+| R4a, R4b | Digital products, checkout and orders | `2df314e`, `60bed6c` |
+| B1, B2, B3 | Maintenance batches and payout prerequisites | `46cb788`, `eed3537`, `0060728` |
+| L1 | Lint cleanup (anti-slop to zero) | `ae192c0` |
+| R5a, R5a-2 | Team payouts with pasted credentials, then manual payouts: both superseded | `f70b191`, `0458169` |
+| R5c | Automatic payouts through PayPal first-party onboarding | `b437e78`, `0f0f58a`, `abc93b0` |
+| R5b-1 | Payout rules, project payouts, Payouts Web CSV, quote calculator ([plan](platform/plans/2026-10-13-r5b1-payout-rules.md)) | `a4cf6a8`, `2f2cb35` |
+| Audits 1, 2, 4, 5, 6, 7 | Test audits between runs (audit 3 was never merged; audit 7 changed nothing, see the decisions log of 2026-10-16) | `0db4f5c`, `124e052`, `6224a59`, `2922048`, `94e8050`; audit 7 none |
+
+The sellers design §11 ([`platform/2026-10-07-sellers-minimal-flow-design.md`](platform/2026-10-07-sellers-minimal-flow-design.md)) has the detailed history of runs 0–5.
 
 ## Plans
 
@@ -40,6 +66,9 @@ Merge commits are also on the run board's "Done before the program" table in [`.
 | [`platform/plans/2026-10-12-r5a2-manual-payouts.md`](platform/plans/2026-10-12-r5a2-manual-payouts.md) | Run 5a-2 (2026-10-12): team credentials were too much setup friction, so the owner pays members in PayPal (goods and services; PayPal's receiving fee comes off what the member gets) and marks the request paid with the amount received and an optional transaction id. Payleor withholds nothing; checkout fees stay with the team. Removes the credentials, the secret box, the Payouts API client, the settle sweep and `PAYOUT_CREDENTIALS_KEY`. Merged as `0458169`, then superseded by R5c (owners would not leave Payleor to pay) |
 | [`platform/plans/2026-10-12-r5c-automatic-payouts.md`](platform/plans/2026-10-12-r5c-automatic-payouts.md) | Run 5c (2026-10-12): a team turns on automatic payouts with one PayPal consent (first-party onboarding shares the team's REST credentials; proven in the sandbox with a $1 payout), and Payleor sends payouts with the R5a engine. PayPal's payout fee is estimated at send, comes off the member's payout and is corrected at settle. Without it, requests wait. Done 2026-10-13, merged as `b437e78`, `0f0f58a` (first-party credentials cannot read balances: connect checks the payouts scope, sends rely on PayPal's insufficient-funds refusal) and `abc93b0` (clearer Log in with PayPal errors). Walked through in the sandbox: $25 sent $24.50, PayPal's fee $0.49, ledger balanced |
 | [`platform/plans/2026-10-13-r5b1-payout-rules.md`](platform/plans/2026-10-13-r5b1-payout-rules.md) | Run 5b-1 plan (2026-10-13): Task 0 captures PayPal's Payouts Web log in the sandbox; then core rules and decision, checkout fee and quote calculator, schema and migration (payout mode carried into the rules), the balance client and first-party features, the rules API, rule-aware requests and approvals, the project and send sweeps on the cron, the Payouts Web CSV export and import, the web pages, and the controller's review, merge and walkthrough. Done 2026-10-13: merged as `a4cf6a8` and `2f2cb35`; the Outcome records the review fixes, the sandbox walkthrough and the fixes it found |
+| [`platform/plans/2026-10-14-a1-action-registry.md`](platform/plans/2026-10-14-a1-action-registry.md) | Run A1 plan (2026-10-14): `ActionError` and actors, the `action_log` with a 180-day cleanup, `perform`, router logic moved into use cases, the registry and its test, tRPC adapters. Merged as `4a27fb6` (PR #1); walked through with spike S |
+| [`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md) | Spike S plan (2026-10-14): Better Auth as an MCP OAuth provider, an `/mcp` endpoint with tools and widgets over the tunnel, Claude then ChatGPT; closed with a go for both. Branch `spike-plugin`, not merged; findings in [`../platform/2026-10-14-plugin-spike-facts.md`](../platform/2026-10-14-plugin-spike-facts.md) |
+| [`platform/plans/2026-10-14-s-plugin-walkthrough.md`](platform/plans/2026-10-14-s-plugin-walkthrough.md) | Spike S walkthrough (2026-10-14): the whole client flow A1–A19 in Claude then ChatGPT, with the human and seller steps marked and the results table |
 
 ## Designs and research
 

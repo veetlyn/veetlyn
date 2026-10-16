@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript (pnpm, turbo), tRPC 11, zod 4.5 (`z.toJSONSchema`), Drizzle on Postgres, Vitest with a real test database.
 
-**Spec:** [`../2026-10-13-action-catalog-design.md`](../2026-10-13-action-catalog-design.md) §4 (A1). Program: [`../2026-10-13-agentic-surfaces-program.md`](../2026-10-13-agentic-surfaces-program.md) §4.
+**Spec:** [`../2026-10-13-action-catalog-design.md`](../../../platform/2026-10-13-action-catalog-design.md) §4 (A1). Program: [`../2026-10-13-agentic-surfaces-program.md`](../../../platform/2026-10-13-agentic-surfaces-program.md) §4.
 
 **Base:** main at `45988e4` (or later docs-only commits). Branch `a1-action-registry`, worktree `worktrees/a1-action-registry`, own test database `jendal_test_a1` (`docker exec jendal-pg createdb -U postgres jendal_test_a1`; copy `.env.test.local` into the worktree and point `TEST_DATABASE_URL` at it). Every worker uses only that database, never the dev database, and never pushes to main.
 

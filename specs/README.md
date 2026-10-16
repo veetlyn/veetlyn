@@ -25,7 +25,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | Architecture, tenancy, hosts, data model, logging, testing | [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md). The MCP endpoint is `api.payleor.com/mcp`; older `mcp.` hosts in it are superseded |
 | Sign-in, accounts, OAuth for stores and MCP clients | [`platform/2026-10-06-auth-federation-design.md`](platform/2026-10-06-auth-federation-design.md) |
 | The action registry (`perform`, grants, actors, action log) and client contacts | [`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md) (§4 A1, §5 A2) |
-| The Claude and ChatGPT plugin: MCP, OAuth, widgets, packaging | [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md), [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md) |
+| The Claude and ChatGPT plugin: MCP, OAuth, widgets, packaging | [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md), [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/2026-10-14-connector-ux-guidelines.md`](platform/2026-10-14-connector-ux-guidelines.md) |
 | Conversations between clients, staff and freelancers | [`platform/2026-10-14-conversations-design.md`](platform/2026-10-14-conversations-design.md) |
 | Discord (run E) | [`platform/2026-10-13-discord-ticket-flow-design.md`](platform/2026-10-13-discord-ticket-flow-design.md) (revise to program §4 first) |
 | Seller plans, fees and billing | [`platform/2026-10-07-seller-pricing-proposal.md`](platform/2026-10-07-seller-pricing-proposal.md) |
@@ -36,7 +36,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 
 ## Live documents
 
-`platform/` holds the program, the designs that runs still build on, and facts notes; `platform/plans/` holds the program's plans. When a run is recorded, its plan stays here until the program ends.
+`platform/` holds the program, the designs that runs still build on, and facts notes; `platform/plans/` holds only the plans of runs still to build or being built.
 
 | Document | Status |
 |---|---|
@@ -51,18 +51,17 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Seller pricing](platform/2026-10-07-seller-pricing-proposal.md) | Approved 2026-10-07 |
 | [Sponsor integrations](platform/2026-10-05-sponsor-integrations-design.md) | Approved; AG Grid in run D |
 | [PayPal facts](platform/2026-10-07-r1-paypal-facts.md) | Reference |
-| [Spike S plan](platform/plans/2026-10-14-s-plugin-spike.md), [walkthrough](platform/plans/2026-10-14-s-plugin-walkthrough.md) | Done |
-| [A1 plan](platform/plans/2026-10-14-a1-action-registry.md) | Done, merged as `4a27fb6` |
+| [Connector UX guidelines](platform/2026-10-14-connector-ux-guidelines.md) | Reference: 38 rules for the plugin's tools and widgets, from Claude, OpenAI and the MCP Apps spec |
 | [A2 plan](platform/plans/2026-10-15-a2-client-contacts.md) | Planned |
 | [Run C plan](platform/plans/2026-10-15-c-plugin.md) | Planned |
 
-Walkthrough evidence (screenshots, CSV logs, source notes) is in [`platform/plans/evidence/`](platform/plans/evidence/).
+Finished plans (S, A1 and earlier) and their walkthrough evidence are in [`archive/`](archive/README.md); what each run found is in its plan's Outcome.
 
 ## Keeping this index useful
 
 - A new design or plan gets a row in **Live documents** in the same commit (and a line in **What to read for what** if it answers a new kind of question).
 - When a design is built or superseded and no run builds on it, move it to `archive/platform/` with an **Archived** line under its title, move its row to [`archive/README.md`](archive/README.md), and fix the links (`grep -rn '<file name>' specs CLAUDE.md`).
-- A run is not done on the run board until its plan's Outcome is filled in.
+- A run is not done on the run board until its plan's Outcome is filled in. Then move the plan and its evidence to `archive/platform/plans/`, its row to [`archive/README.md`](archive/README.md), and fix the links. A plan in `platform/plans/` is always work still to do.
 - New user stories go in [`stories/`](stories/README.md), not here.
 
 ## Working notes for agents

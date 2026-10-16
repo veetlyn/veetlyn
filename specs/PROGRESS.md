@@ -8,7 +8,7 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 - **Goal:** the demo video and the sandbox app live at `payleor.com` / `payleor.app`, submitted before Nov 12, 2026, 12:00 pm PST. **Code finished by Oct 31** (AI tooling ends around Nov 1); Nov 1–12 is fixes, README, Devpost and the video.
 - **Step:**
   - A1 is merged (`4a27fb6`, PR #1).
-  - **Spike S is closed: go for both clients.** The full hire flow passed end to end in Claude (walkthrough A1–A19, 2026-10-14) and ChatGPT (A1–A19 plus unprompted discovery, 2026-10-15) with the plugin uploaded as a zip. Facts: [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md); plan Outcome: [`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md).
+  - **Spike S is closed: go for both clients.** The full hire flow passed end to end in Claude (walkthrough A1–A19, 2026-10-14) and ChatGPT (A1–A19 plus unprompted discovery, 2026-10-15) with the plugin uploaded as a zip. Facts: [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md); plan Outcome: [`platform/plans/2026-10-14-s-plugin-spike.md`](archive/platform/plans/2026-10-14-s-plugin-spike.md).
 - **Next:**
   - Run C is designed and planned: [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/plans/2026-10-15-c-plugin.md`](platform/plans/2026-10-15-c-plugin.md). Settled: default-listed with per-offering and per-department opt-out; conversation audience per quoting mode; client and pay pages move to `{team}.payleor.app`; minimal client home on payleor.com; MCP stays on `api.payleor.com/mcp` for the hackathon.
   - **Build A2 next** (planned: [`platform/plans/2026-10-15-a2-client-contacts.md`](platform/plans/2026-10-15-a2-client-contacts.md), stories AGT-01–06), then H, then C (Oct 20–23).
@@ -24,8 +24,8 @@ From [`platform/2026-10-13-agentic-surfaces-program.md`](platform/2026-10-13-age
 
 | Dates | Run | Scope | Design | Plan | Stories | Status |
 |---|---|---|---|---|---|---|
-| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](platform/plans/2026-10-14-s-plugin-spike.md) | Own script: [walkthrough](platform/plans/2026-10-14-s-plugin-walkthrough.md) A1–A19 | **Done, go for both clients.** Full walkthrough passed in Claude and ChatGPT (A1–A19 each, plus ChatGPT unprompted discovery); plugin uploaded as a zip to both. Code stays on branch `spike-plugin` (not for merging); [facts](platform/2026-10-14-plugin-spike-facts.md) |
-| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](platform/plans/2026-10-14-a1-action-registry.md) | None new; the whole book unchanged (via spike S) | **Done.** Merged as `4a27fb6` (PR #1); walked through with spike S in Claude and ChatGPT (A1–A19, client in the plugin, seller in the admin) |
+| Oct 14–15 | S | Plugin spike: MCP server, Better Auth OAuth, one widget in Claude and ChatGPT, pay link | program §4 | [plan](archive/platform/plans/2026-10-14-s-plugin-spike.md) | Own script: [walkthrough](archive/platform/plans/2026-10-14-s-plugin-walkthrough.md) A1–A19 | **Done, go for both clients.** Full walkthrough passed in Claude and ChatGPT (A1–A19 each, plus ChatGPT unprompted discovery); plugin uploaded as a zip to both. Code stays on branch `spike-plugin` (not for merging); [facts](platform/2026-10-14-plugin-spike-facts.md) |
+| Oct 14–15 | A1 | Action registry, `perform`, actors, errors, action log | [design](platform/2026-10-13-action-catalog-design.md) §4 | [plan](archive/platform/plans/2026-10-14-a1-action-registry.md) | None new; the whole book unchanged (via spike S) | **Done.** Merged as `4a27fb6` (PR #1); walked through with spike S in Claude and ChatGPT (A1–A19, client in the plugin, seller in the admin) |
 | Oct 16–17 | A2 | Client contacts, verified identities, revocable client links, safe migration | [design](platform/2026-10-13-action-catalog-design.md) §5 | [plan](platform/plans/2026-10-15-a2-client-contacts.md) | AGT-01–06 (Task 11) | Planned |
 | Oct 18–19 | H | `dash.` rename, first deploy to our domains (sandbox), partner app renamed to Payleor | not written | | AGT-07, AGT-08; then the whole book on the deployed hosts | Not started |
 | Oct 20–23 | C | Client's AI plugin on `api.payleor.com/mcp`: offering search (default-listed, opt-out), request, competing quotes with per-freelancer slides, widget-only accept, pay page, client OAuth on A2 contacts; conversations (questions, answers, decline with a reason, shortlist) on every surface; client and pay pages on `{team}.payleor.app`; client home on payleor.com | [design](platform/2026-10-15-c-plugin-design.md) | [plan](platform/plans/2026-10-15-c-plugin.md) | AGT-09–15, AGT-31–36 (Task 17) | Design and plan written, awaiting review |
@@ -42,27 +42,7 @@ After the hackathon: Slack ops, the inactivity rule, plugin directory listings, 
 
 ### Done before the program
 
-Merged into main with `--no-ff`; each plan's Outcome records reviews and walkthroughs.
-
-| Run | What | Merge |
-|---|---|---|
-| W1-A | Foundations and tenancy ([plan](archive/platform/plans/2026-10-03-w1a-foundations-tenancy.md)) | `ae50e45` |
-| W1-D | Public site, auth, onboarding, legal pages ([plan](archive/platform/plans/2026-10-05-w1d-public-site-auth-onboarding.md)) | `a8e5260` |
-| S1–S5 | Services teams, Discord (S2), PayPal onboarding, ledger and projects, commerce catalog ([plans](archive/README.md#plans)) | `6e79775`, `8c53d23`, `6baf62c`, `eb3b570`, `8929e40` |
-| E1–E7 | Email senders, dev tunnel, auth forms, error logs, PayPal card copy, quote refusal hint | `0e84725` … `908e709` |
-| R0 | Services skip shipment tracking ([plan](archive/platform/plans/2026-10-07-r0-services-paypal-features.md)) | `50b821a` |
-| R1a, R1b, R1c | Server payments, pay page, PayPal webhooks and fees | `17a6499`, `a46bcf2`, `e2fcebf` |
-| R2, R2b | Deliveries and completion, delivery files | `722e1e3`, `2aac26f` |
-| R3a, R3b, R3c | Seller setup and catalog, seller page and publishing, quote request form | `444c1f4`, `29b6188`, `8d51ff2` |
-| R4a, R4b | Digital products, checkout and orders | `2df314e`, `60bed6c` |
-| B1, B2, B3 | Maintenance batches and payout prerequisites | `46cb788`, `eed3537`, `0060728` |
-| L1 | Lint cleanup (anti-slop to zero) | `ae192c0` |
-| R5a, R5a-2 | Team payouts with pasted credentials, then manual payouts: both superseded | `f70b191`, `0458169` |
-| R5c | Automatic payouts through PayPal first-party onboarding | `b437e78`, `0f0f58a`, `abc93b0` |
-| R5b-1 | Payout rules, project payouts, Payouts Web CSV, quote calculator ([plan](archive/platform/plans/2026-10-13-r5b1-payout-rules.md)) | `a4cf6a8`, `2f2cb35` |
-| Audits 1, 2, 4, 5, 6, 7 | Test audits between runs (audit 3 was never merged; audit 7 changed nothing, see the decisions log of 2026-10-16) | `0db4f5c`, `124e052`, `6224a59`, `2922048`, `94e8050`; audit 7 none |
-
-The sellers design §11 ([`platform/2026-10-07-sellers-minimal-flow-design.md`](archive/platform/2026-10-07-sellers-minimal-flow-design.md)) has the detailed history of runs 0–5.
+Runs W1 to R5b-1 and audits 1 to 6, with their merge commits: [`archive/README.md`](archive/README.md#runs-merged-before-the-program).
 
 ## How a run works
 
@@ -71,7 +51,7 @@ The sellers design §11 ([`platform/2026-10-07-sellers-minimal-flow-design.md`](
 3. **Build.** When the build starts, set the run's stories to `In progress (<run>)`. One branch and worktree per run (for A1: branch `a1-action-registry`, worktree `worktrees/a1-action-registry`), its own test database (`jendal_test_a1`; see Environment for the commands). One worker per task; the controller reviews each task and the whole branch. Checks per task: `npx vitest run <paths>`, `pnpm check-types`, `pnpm lint`. Conventional Commits ending with `Co-authored-by: factory-droid[bot] <138933559+factory-droid[bot]@users.noreply.github.com>`. Never push.
 4. **Merge.** `git merge --no-ff` into main, `pnpm install`, `pnpm db:migrate:dev` (check the dev data before and after), restart the dev stack.
 5. **Walkthrough.** Run the plan's stories from [`stories/`](stories/README.md) in the PayPal sandbox with a browser agent (Playwright, Chrome DevTools or Claude in Chrome): over the tunnel before run H, on the deployed hosts after it. Mouhamed does the [human] steps (paying in the PayPal popup, Payouts Web uploads, plugin connectors, Discord accounts). Fixes found go in a follow-up branch.
-6. **Record.** Fill the plan's Outcome, set the design's status, update the stories' statuses (and add stories for new features), move finished backlog rows to [`archive/backlog-done.md`](archive/backlog-done.md) and add new findings to Open, update the run board, **Now** and the context index. Remove the worktree, branch and test database. A run is not marked done on the board until its plan's Outcome is filled in.
+6. **Record.** Fill the plan's Outcome, set the design's status, update the stories' statuses (and add stories for new features), move finished backlog rows to [`archive/backlog-done.md`](archive/backlog-done.md) and add new findings to Open, update the run board, **Now** and the context index. Remove the worktree, branch and test database. A run is not marked done on the board until its plan's Outcome is filled in; then move the plan and its evidence to `archive/platform/plans/` (see the README's "Keeping this index useful").
 
 Spec and plan edits are committed on main (`docs(specs): …`), not on feature branches.
 

@@ -1,6 +1,6 @@
 # Spike S walkthrough: the whole client flow in Claude and ChatGPT
 
-**Date:** 2026-10-14. **For:** Claude in Chrome (or a person), on Mouhamed's machine over the tunnel, against the spike connector (branch `spike-plugin`, widget `ui://payleor/app-v5`). The run C versions of these checks are stories AGT-09 to AGT-15 in [`../../stories/09-agentic.md`](../../stories/09-agentic.md).
+**Date:** 2026-10-14. **For:** Claude in Chrome (or a person), on Mouhamed's machine over the tunnel, against the spike connector (branch `spike-plugin`, widget `ui://payleor/app-v5`). The run C versions of these checks are stories AGT-09 to AGT-15 in [`../../stories/09-agentic.md`](../../../stories/09-agentic.md).
 
 ## Rules for the agent
 

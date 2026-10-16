@@ -1,6 +1,6 @@
 # Plugin spike: facts for run C
 
-**Date:** 2026-10-14. **Status:** final. The spike closed on 2026-10-15 with a go for both clients: the full walkthrough (A1–A19) passed in Claude and in ChatGPT. **Plan:** [`plans/2026-10-14-s-plugin-spike.md`](plans/2026-10-14-s-plugin-spike.md). **Branch:** `spike-plugin` (throwaway, not merged). **Sources:** [`plans/evidence/s-spike-sources.md`](plans/evidence/s-spike-sources.md), with every vendor fact and the URL it was read from.
+**Date:** 2026-10-14. **Status:** final. The spike closed on 2026-10-15 with a go for both clients: the full walkthrough (A1–A19) passed in Claude and in ChatGPT. **Plan:** [`plans/2026-10-14-s-plugin-spike.md`](../archive/platform/plans/2026-10-14-s-plugin-spike.md). **Branch:** `spike-plugin` (throwaway, not merged). **Sources:** [`plans/evidence/s-spike-sources.md`](../archive/platform/plans/evidence/s-spike-sources.md), with every vendor fact and the URL it was read from.
 
 ## What was built
 
@@ -71,7 +71,7 @@ The authorization server can live on a different host from the MCP resource.
 
 ### 5. Widgets
 
-**Claude renders both widgets inline.** Evidence: [`plans/evidence/s-spike-claude-widgets.png`](plans/evidence/s-spike-claude-widgets.png), showing claude.ai on 2026-10-14 with Opus 5.5.
+**Claude renders both widgets inline.** Evidence: [`plans/evidence/s-spike-claude-widgets.png`](../archive/platform/plans/evidence/s-spike-claude-widgets.png), showing claude.ai on 2026-10-14 with Opus 5.5.
 
 - **Tool list:** after connecting, Claude listed three tools, two marked interactive and one app-only. So it reads `_meta.ui.resourceUri` and `_meta.ui.visibility`.
 - **Bridge:** the widgets loaded `App` from unpkg under `_meta.ui.csp.resourceDomains`, received the tool result through `ontoolresult`, and rendered the cards with system fonts.
@@ -143,7 +143,7 @@ ChatGPT: (to fill in).
 - **Spike follow-up (`spike-plugin`):**
   - `plugins/payleor/` holds a Claude plugin: `.claude-plugin/plugin.json`, `.mcp.json` pointing at `https://api.payleor.com/mcp`, the skill `skills/hire-a-professional/SKILL.md` and a README. The same folder is a valid ChatGPT portable plugin: root `plugin.json` (0.2.0, with `extensions.com.openai.interface` and `onboardingSkill`) and `mcp.json` with `type: "streamable-http"`. Installed on Mouhamed's machine at `~/.codex/plugins/payleor` with a personal marketplace at `~/.agents/plugins/marketplace.json`.
   - The tool descriptions now use OpenAI's "Use this when…" wording.
-  - Whether Claude then uses Payleor without being told: **yes**. With the v2 plugin uploaded, "find me a logo refresh under $350" (no mention of Payleor) loaded the skill and called `search_offerings` (2026-10-14, 20:53; screenshot [`s-connector-v2-claude-plugin.png`](plans/evidence/s-connector-v2-claude-plugin.png)). See "Claude plugin test" under Connector v2.
+  - Whether Claude then uses Payleor without being told: **yes**. With the v2 plugin uploaded, "find me a logo refresh under $350" (no mention of Payleor) loaded the skill and called `search_offerings` (2026-10-14, 20:53; screenshot [`s-connector-v2-claude-plugin.png`](../archive/platform/plans/evidence/s-connector-v2-claude-plugin.png)). See "Claude plugin test" under Connector v2.
 - **For run C and the submission:**
   - Ship Payleor as a plugin: one `plugins/payleor/` folder serves both clients (Claude reads `.claude-plugin/` + `.mcp.json`, ChatGPT and Codex read `plugin.json` + `mcp.json`). Judges add it to Claude as a marketplace with `owner/repo`, and to ChatGPT desktop or Codex with `codex plugin marketplace add owner/repo`.
   - Write a golden prompt set and measure how often each client calls Payleor unprompted.
@@ -151,7 +151,7 @@ ChatGPT: (to fill in).
 
 ## Connector v2 (spike, 2026-10-14 evening)
 
-After the first sessions, the connector was rebuilt along the clients' guidance ([`plans/evidence/s-connector-ux-guidelines.md`](plans/evidence/s-connector-ux-guidelines.md), 38 rules from Claude's MCP Apps design guidelines, OpenAI's Apps SDK and plugin docs, the MCP Apps spec and Anthropic's guide to writing tools for agents).
+After the first sessions, the connector was rebuilt along the clients' guidance ([`plans/evidence/s-connector-ux-guidelines.md`](2026-10-14-connector-ux-guidelines.md), 38 rules from Claude's MCP Apps design guidelines, OpenAI's Apps SDK and plugin docs, the MCP Apps spec and Anthropic's guide to writing tools for agents).
 
 - **Tools:**
   - `search_offerings` (query, budget, deadline).
@@ -167,7 +167,7 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
   - Colors, fonts and radii come from the host's style variables (`applyDocumentTheme`, `applyHostStyleVariables`, `applyHostFonts`) with fallbacks, on a transparent background. Loading shows a skeleton.
   - After a widget action, `updateModelContext` tells the model what the user did.
   - The pay button uses `window.openai.openExternal` when present, else `ui/open-link`.
-  - Screenshots from a test host: [`s-connector-v2-offerings-light.png`](plans/evidence/s-connector-v2-offerings-light.png), [`s-connector-v2-deposit-dark.png`](plans/evidence/s-connector-v2-deposit-dark.png), [`s-connector-v2-delivered-light.png`](plans/evidence/s-connector-v2-delivered-light.png).
+  - Screenshots from a test host: [`s-connector-v2-offerings-light.png`](../archive/platform/plans/evidence/s-connector-v2-offerings-light.png), [`s-connector-v2-deposit-dark.png`](../archive/platform/plans/evidence/s-connector-v2-deposit-dark.png), [`s-connector-v2-delivered-light.png`](../archive/platform/plans/evidence/s-connector-v2-delivered-light.png).
 - **Plugin** (`plugins/payleor/` on the branch, zipped as `payleor-plugin.zip`):
   - The Claude manifest (`.claude-plugin/plugin.json`, `.mcp.json`) and the portable agent-plugins manifest (`plugin.json`, `mcp.json`), which ChatGPT reads.
   - The skill `hire-a-professional`: when to use Payleor, the eight-step flow, the rules. Its `reference.md` covers roles, offerings, statuses, payments (the deposit is half the quote plus any management fee), deliveries and emails.
@@ -180,7 +180,7 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
   - Unprompted "find me a logo refresh under $350": the skill loaded, the carousel rendered (one card, Walk Crew's $150 Logo refresh), and Claude recommended it in a few sentences.
   - The card's Request a quote button sent the follow-up message; Claude asked three brief questions, filled the rest from its memory of the user's company, showed the brief and asked "Shall I send this to Walk Crew?" before calling `request_quote`. The project card (Quoting, Refresh, Open project page) rendered after the call, and the client email went out.
   - Problems, fixed on the branch in `ad55768`: Claude told the user to share the current logo files on the project page, which has no client upload (the tool and skill now say to put file links in the brief); the button's message showed the raw offering id; the card's status text said "Check again later with get_project". Ids now go through `updateModelContext`, and the widget URI moved to `app-v4`.
-  - Second session (21:22–21:24): "check if i received quotes for my logo refresh" listed both Logo refresh projects and opened them. Mouhamed pressed Pay on the $90 deposit, paid in the new tab and pressed Check payment; the same card switched to In progress (webhooks at 21:24:10). Pay through `ui/open-link` and refresh-after-pay work in Claude ([`s-connector-v2-claude-paid.png`](plans/evidence/s-connector-v2-claude-paid.png)).
+  - Second session (21:22–21:24): "check if i received quotes for my logo refresh" listed both Logo refresh projects and opened them. Mouhamed pressed Pay on the $90 deposit, paid in the new tab and pressed Check payment; the same card switched to In progress (webhooks at 21:24:10). Pay through `ui/open-link` and refresh-after-pay work in Claude ([`s-connector-v2-claude-paid.png`](../archive/platform/plans/evidence/s-connector-v2-claude-paid.png)).
   - Problems, fixed in `2361420`: Claude's reply still said to pay the deposit, because a refresh from the card does not reach the model (a status change on refresh now calls `updateModelContext`); the two projects had the same title and no other detail (rows now show the request date and the start of the brief, and the text gives the card's order). Widget URI now `app-v5`.
   - Claude's short progress lines appeared in French (the account's language) while the replies were in English: host behaviour, nothing for us.
 - **ChatGPT plugin test** (Mouhamed, 2026-10-15 05:06–05:20, plugin uploaded as a zip on the web, project `eee58c5b`):
@@ -233,7 +233,7 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
 
 - **Claude: go.** Sign-in through CIMD works, both widgets render, the pay page opens from a widget button and payments were captured (deposit and balance, walkthrough A9/A17), and the widget calls the app-only tool. The model-refusal check passed: asked to accept a quote itself, Claude pointed to the button and made no `accept_quote` call (walkthrough A7, log checked 23:15–23:25).
 - **ChatGPT: go.** Sign-in through CIMD (`private_key_jwt`), widgets render, the pay page opens from the widget's Pay button in a new tab and payments were captured ($360 deposit 05:18, $300 balance 11:30, walkthrough A9/A17), and the widget calls the app-only tool (Accept (test) at 16:48 on 2026-10-14; `accept_quote`/`accept_delivery` from the card on 2026-10-15). The full walkthrough passed (A1–A19, 2026-10-15) with the plugin uploaded as a zip, including unprompted discovery (05:27).
-  - First-session evidence: [`plans/evidence/s-spike-chatgpt-session.png`](plans/evidence/s-spike-chatgpt-session.png), from 2026-10-14.
+  - First-session evidence: [`plans/evidence/s-spike-chatgpt-session.png`](../archive/platform/plans/evidence/s-spike-chatgpt-session.png), from 2026-10-14.
 - **ChatGPT's behavior, in Mouhamed's words "lost":**
   - It mixed Fiverr's published app results with Payleor's, and drew its own cards for the $150 "Logo refresh" offering, including a "Request the $150 quote" button.
   - It then said that Payleor's project creation and quote requests "aren't exposed in connected tools". It searched `find_offerings` again with the whole brief as the query (16:49:24), and ended with a written brief for the user to submit by hand.
