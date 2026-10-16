@@ -1,0 +1,48 @@
+packages/db/src/repositories/contacts.ts
+  s_ec180faf4f9b2e::t_5e1502f2dc8155 2
+  s_ec180faf4f9b2e::t_8d6af7f7fa2f76 192-244
+packages/api/src/actions/projects.ts
+  s_ec180faf4f9b2e::t_53c3bc2993cf39 91
+  s_ec180faf4f9b2e::t_f2fb6de52335c5 35,38
+  s_ec180faf4f9b2e::t_567ba2699ce59b 103
+  s_ec180faf4f9b2e::t_fb6d2f1e71b4c3 83
+packages/api/src/use-cases/project-views.ts
+  s_ec180faf4f9b2e::t_64ab5ca28e487c 124-134
+  s_ec180faf4f9b2e::t_b19391d9720f65 75
+  s_ec180faf4f9b2e::t_2a2adf0eea9b67 102-103,105-106
+  s_ec180faf4f9b2e::t_0703f6b225a04f 4
+  s_ec180faf4f9b2e::t_5c002282b1d8df 55-59
+  s_ec180faf4f9b2e::t_318c62b32b21f3 92-93
+packages/api/src/actions/clients.ts
+  s_ec180faf4f9b2e::t_867ce9ea107d42 1-67
+packages/api/src/routers/project.ts
+  s_ec180faf4f9b2e::t_9a3673d908dd94 48-52
+  s_ec180faf4f9b2e::t_60a6dca6c38dc4 4-9
+  s_ec180faf4f9b2e::t_8fc8a7fa1e8d02 3
+packages/api/src/routers/project.test.ts
+  s_ec180faf4f9b2e::t_50525b6f391469 350-352,358-399
+  s_ec180faf4f9b2e::t_94968b9eea4412 425-427
+  s_ec180faf4f9b2e::t_cad1a0863919a5 110,112-113,123
+  s_ec180faf4f9b2e::t_76e2dd4ae21119 400
+packages/api/src/actions/registry.test.ts
+  s_ec180faf4f9b2e::t_fc4ba0d2a1628f 44-51
+packages/api/src/actions/registry.ts
+  s_ec180faf4f9b2e::t_bf2d2929a11adb 1-7
+  s_ec180faf4f9b2e::t_50aa044e5d1f0b 29-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf1e278ed5b9b5c14206c10022fb56e758d1d13a",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
