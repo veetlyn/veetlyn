@@ -1,5 +1,7 @@
 # Pricing research
 
+> **Archived:** Research input to the approved pricing (`../../platform/2026-10-07-seller-pricing-proposal.md`); archived 2026-10-16.
+
 Accessed 2026-10-07. Prices in USD unless noted. Part A covers freelancer tools, marketplaces, paying contractors and gaming commerce. Part B covers digital-product platforms, PayPal's fees and Payleor's running costs. Both parts come from the vendors' own pages unless a row is marked secondary.
 
 ## Part A: services, marketplaces and teams

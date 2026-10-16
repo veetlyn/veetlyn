@@ -1,6 +1,8 @@
 # Sellers: the minimal flow for freelancers and teams
 
-- **Status:** design written on 2026-10-07 from choices made in conversation (§2). Reviewed and approved on 2026-10-07. Pricing was reworked as plans with a subscription and a fee for freelancers and for teams, approved the same day in [`2026-10-07-seller-pricing-proposal.md`](2026-10-07-seller-pricing-proposal.md) (§14)
+> **Archived:** Built (runs 0–5b-1); archived 2026-10-16. §11 keeps the detailed history of runs 0–5; the program replaced its run order.
+
+- **Status:** design written on 2026-10-07 from choices made in conversation (§2). Reviewed and approved on 2026-10-07. Pricing was reworked as plans with a subscription and a fee for freelancers and for teams, approved the same day in [`2026-10-07-seller-pricing-proposal.md`](../../platform/2026-10-07-seller-pricing-proposal.md) (§14)
 - **Replaces:** the paused [`plans/2026-10-07-hackathon-one-flow.md`](plans/2026-10-07-hackathon-one-flow.md) as the build plan
 - **Takes from** [`2026-10-07-services-amendments-proposal.md`](2026-10-07-services-amendments-proposal.md): the service catalog (§4 there, reduced), the intake agent (§7 there, web only) and Payleor's role (§10 there). Hiring from ChatGPT and Claude (§6 there) moves to the next phase (§12 here)
 - **Builds on:** the services spec (projects, quotes, amendments, ledger, pay page, payouts), the platform spec (catalog, store host, PayPal client) and W1-D (auth, legal pages, store policies)
@@ -170,7 +172,7 @@ Each run is one plan executed in a fresh session; Mouhamed rests between runs.
 
 ### 11.1 Backlog from testing
 
-Moved to [`../BACKLOG.md`](../BACKLOG.md) on 2026-10-13 (open items with their owner, done items with their commit). Progress across runs is tracked in [`../PROGRESS.md`](../PROGRESS.md).
+Moved to [`../BACKLOG.md`](../../BACKLOG.md) on 2026-10-13 (open items with their owner, done items with their commit). Progress across runs is tracked in [`../PROGRESS.md`](../../PROGRESS.md).
 
 ## 12. Next phase
 
@@ -192,7 +194,7 @@ Moved to [`../BACKLOG.md`](../BACKLOG.md) on 2026-10-13 (open items with their o
 
 ## 14. Review answers (2026-10-07)
 
-1. **Pricing:** a services team is the team version of a freelancer, so each audience gets its own plans, and every plan has a subscription price and a per-payment fee, scaled for that audience. Approved in [`2026-10-07-seller-pricing-proposal.md`](2026-10-07-seller-pricing-proposal.md), which replaces the flat 0.5% + $0.10 and adds run 8 (billing) to §11.
+1. **Pricing:** a services team is the team version of a freelancer, so each audience gets its own plans, and every plan has a subscription price and a per-payment fee, scaled for that audience. Approved in [`2026-10-07-seller-pricing-proposal.md`](../../platform/2026-10-07-seller-pricing-proposal.md), which replaces the flat 0.5% + $0.10 and adds run 8 (billing) to §11.
 2. **Names:** by audience (§2).
 3. **File checks:** limits only (§2, §8).
 4. **Refunds:** in PayPal, synced by the webhook (§2, §5.3).

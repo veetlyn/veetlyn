@@ -1,11 +1,13 @@
 # Public site, auth, onboarding and legal pages
 
+> **Archived:** Built (W1-D, S1); archived 2026-10-16. The stories in `../../stories/` describe the current behaviour.
+
 - **Status:** approved on 2026-10-05
-- **Parent spec:** [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (§4 routing, §5 onboarding, §10 admin)
+- **Parent spec:** [`2026-10-03-payleor-platform-design.md`](../../platform/2026-10-03-payleor-platform-design.md) (§4 routing, §5 onboarding, §10 admin)
 - **Builds on:** the W1-A plan ([`plans/2026-10-03-w1a-foundations-tenancy.md`](plans/2026-10-03-w1a-foundations-tenancy.md)). Its plan runs after W1-A Task 16.
 - **Plan:** [`plans/2026-10-05-w1d-public-site-auth-onboarding.md`](plans/2026-10-05-w1d-public-site-auth-onboarding.md)
 - **Library sources:** `../../refs/stack/` (vinext, better-auth, email-sdk 2.0.0)
-- **Auth host (2026-10-06):** sign-in moves to `auth.payleor.com` with a session shared across `payleor.com` hosts, replacing the host-only rule in §3. See [`2026-10-06-auth-federation-design.md`](2026-10-06-auth-federation-design.md).
+- **Auth host (2026-10-06):** sign-in moves to `auth.payleor.com` with a session shared across `payleor.com` hosts, replacing the host-only rule in §3. See [`2026-10-06-auth-federation-design.md`](../../platform/2026-10-06-auth-federation-design.md).
 - **Email change (2026-10-06):** §5.2 is revised. The first SMTP account (Dynadot) rejected its credentials (`535`), so email moved to Resend. The api Worker uses `createMailer`, which tries the Resend API (`RESEND_API_KEY`), then the Brevo API (`BREVO_API_KEY`), then Brevo's SMTP relay (`smtp-relay.brevo.com:587`), using whichever are configured. The SDK falls back only on a definite "not sent", and it rejects tags for SMTP routes, so `packages/email/src/transport.ts` gives each transport its own client and tries them in turn. Brevo is a fallback only, because it always rewrites links for click tracking. `EMAIL_FROM` is replaced by a sender list in `packages/email/src/senders.ts` plus `EMAIL_DOMAIN` (`payleor.com`) and `EMAIL_REPLY_TO` (`support@payleor.com`). Account emails come from `Payleor <accounts@payleor.com>`. HTTP APIs come before SMTP because SMTP from the deployed edge is at risk: nodemailer connects to an IP and then calls `startTls` with `expectedServerHostname`, which the edge ignores, so no SNI is sent (cloudflare/workerd#6903). Locally, workerd honors it and only logs a `NOSENTRY` warning. The platform domain is now `payleor.com` and stores are on `payleor.app` (platform spec, "Domains and email").
 
 ## 1. Goal

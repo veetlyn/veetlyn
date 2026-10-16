@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Hono on Cloudflare Workers, Cloudflare Queues through Alchemy 2 (beta 80), Drizzle ORM 1.0 rc, Vitest 5, evlog.
 
-**Spec:** [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §6.1–6.4; [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §11 (run 1) and §11.1 (backlog: fees in the ledger); PayPal facts in [`../2026-10-07-r1-paypal-facts.md`](../2026-10-07-r1-paypal-facts.md) §2–4; R1a "Carried forward" and R1b "Outcome" in this folder.
+**Spec:** [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §6.1–6.4; [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §11 (run 1) and §11.1 (backlog: fees in the ledger); PayPal facts in [`../2026-10-07-r1-paypal-facts.md`](../../../platform/2026-10-07-r1-paypal-facts.md) §2–4; R1a "Carried forward" and R1b "Outcome" in this folder.
 
 **Builds on:** `main` at `a46bcf2` (R1b merged; 802 tests).
 
@@ -24,7 +24,7 @@
 
 ## Facts this plan relies on
 
-Checked on 2026-10-08 against the sandbox and the sources in [`../2026-10-07-r1-paypal-facts.md`](../2026-10-07-r1-paypal-facts.md):
+Checked on 2026-10-08 against the sandbox and the sources in [`../2026-10-07-r1-paypal-facts.md`](../../../platform/2026-10-07-r1-paypal-facts.md):
 
 1. **The sandbox partner app already has a webhook:** ID `3EJ41953HX9926248`, URL `https://api.payleor.com/webhooks/paypal`, event types `*` (all). The dev tunnel sends `api.payleor.com` straight to the api Worker (port 3000). So the route path is `/webhooks/paypal` on the api Worker, and the dev env sets `PAYPAL_WEBHOOK_ID=3EJ41953HX9926248`. Nothing changes at PayPal.
 2. **Delivery:** PayPal retries any non-2xx up to 25 times over 3 days; answer within 30 seconds. Events from the R1a and R1b deposits got 404s, so their retries reach the new route by themselves.

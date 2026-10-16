@@ -1,5 +1,7 @@
 # Payout rules (run 5b-1): design
 
+> **Archived:** Built and walked through (R5b-1, `a4cf6a8`, `2f2cb35`); archived 2026-10-16. The stories in `../../stories/07-payouts.md` describe the current behaviour.
+
 **Date:** 2026-10-13. **Status:** built and walked through in the sandbox on 2026-10-13 (merged as `a4cf6a8` and `2f2cb35`); see the plan's Outcome.
 
 **Builds on:** R5c automatic payouts (`plans/2026-10-12-r5c-automatic-payouts.md`), services spec §6.5 (payouts) and the team settings "Payout mode" and "Payout rules" rows, sellers design §5 run 5, research §4 "Team reporting and payouts".

@@ -3,7 +3,7 @@
 > **2026-10-13:** AG Grid remains the sponsor prize. For the hackathon it is built in run D of the agentic surfaces program as team analytics for services teams (money flow, payouts, agent and human work) with the team copilot as AG Studio's agent; the store analytics below are the reference for widgets, the agent setup and the trial key timing (request it Nov 1). Render is not used.
 
 - **Status:** approved on 2026-10-05
-- **Products (2026-10-06):** this spec covers the commerce product. The payouts product ([`2026-10-05-services-teams-design.md`](2026-10-05-services-teams-design.md)) adds a Render reconciliation job, AG Grid payment stats and a Postman collection for its public API (services spec §3).
+- **Products (2026-10-06):** this spec covers the commerce product. The payouts product ([`2026-10-05-services-teams-design.md`](../archive/platform/2026-10-05-services-teams-design.md)) adds a Render reconciliation job, AG Grid payment stats and a Postman collection for its public API (services spec §3).
 - **Parent spec:** [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (§9.1 agents, §10 admin, §11 data model, §14 milestones)
 - **Sponsor research:** [`../hackathon/sponsors.md`](../hackathon/sponsors.md), with the sponsor pages and the tools' documentation read on 2026-10-05
 

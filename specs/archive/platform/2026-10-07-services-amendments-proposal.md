@@ -1,17 +1,19 @@
 # Services amendments: catalog, records and hiring from AI assistants
 
+> **Archived:** Superseded by the agentic surfaces program (`../../platform/2026-10-13-agentic-surfaces-program.md`, §4 and §4.1); never approved as written. Archived 2026-10-16.
+
 - **Status:** proposal written on 2026-10-07, awaiting review. It changes no approved spec until it is approved; §13 lists the edits that approval makes
-- **Amends:** [`2026-10-05-services-teams-design.md`](2026-10-05-services-teams-design.md) (the services spec), [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (products line, §8 MCP, §9.1 agents), [`2026-10-06-auth-federation-design.md`](2026-10-06-auth-federation-design.md) (§6 MCP clients, §10 phasing)
+- **Amends:** [`2026-10-05-services-teams-design.md`](2026-10-05-services-teams-design.md) (the services spec), [`2026-10-03-payleor-platform-design.md`](../../platform/2026-10-03-payleor-platform-design.md) (products line, §8 MCP, §9.1 agents), [`2026-10-06-auth-federation-design.md`](../../platform/2026-10-06-auth-federation-design.md) (§6 MCP clients, §10 phasing)
 - **Depends on:** the auth federation spec (written, awaiting review): the auth host (A1) and its §6 authorization server for MCP clients
 - **Inputs:** the founder's voice note of 2026-10-06, restated in §3, and the decisions taken on 2026-10-07 (§2)
-- **Milestone:** PayPal AI Hackathon submission, Nov 12, 2026, 12:00 pm PST ([`../hackathon/README.md`](../hackathon/README.md))
+- **Milestone:** PayPal AI Hackathon submission, Nov 12, 2026, 12:00 pm PST ([`../hackathon/README.md`](../../hackathon/README.md))
 
 ## 1. Why the direction changes
 
 - **Demand for commissions has moved to AI assistants.** The founder reports not having worked a ticket in a long time. Studies of freelance platforms point the same way: eight months after ChatGPT, job posts for writing and coding fell 21% relative to manual work, and image generators cut image-creation posts by 17%; the jobs that remained were more complex and paid more ([Demirci, Hannane and Zhu, Management Science, 2025](https://pubsonline.informs.org/doi/10.1287/mnsc.2024.05420)). Freelancers in the most exposed jobs lost 2% of their jobs and 5.2% of their earnings, and a strong track record did not protect them ([Hui, Reshef and Zhou, Organization Science, 2024](https://pubsonline.informs.org/doi/10.1287/orsc.2023.18441)).
 - **Marketplaces followed the demand.** Upwork launched an app in ChatGPT in April 2026 and offers a Claude connector and an MCP server for agent hiring ([Upwork](https://investors.upwork.com/news-releases/news-release-details/upworks-work-marketplace-comes-chatgpt), [upwork.com/ai](https://www.upwork.com/ai/)). Thumbtack announced a ChatGPT app in October 2025 ([Thumbtack](https://press.thumbtack.com/announcements/thumbtack-partners-with-openai-to-power-home-services-in-chatgpt/)). Airtasker launched a full hiring flow in ChatGPT in August 2026 ([Airtasker](https://www.airtasker.com/us/blog/airtasker-launches-chatgpt-plugin/)). Fiverr Go (February 2025) gives freelancers an assistant trained on their client chats and a model trained on their past deliveries ([TechCrunch](https://techcrunch.com/2025/02/18/fiverr-wants-gig-workers-to-offload-some-of-their-work-to-ai/)).
 - **Payleor's difference.** A marketplace owns the client relationship. Payleor gives each team its own channel inside the assistants: the team's brand, clients and prices, PayPal paying the team and its members, and a track record backed by real payments.
-- **Hackathon fit.** The organizers' inspiration themes include "agent-to-agent negotiation and settlement" and "a scheduler that pays contractors when a job is marked complete" ([`../hackathon/resources.md`](../hackathon/resources.md)).
+- **Hackathon fit.** The organizers' inspiration themes include "agent-to-agent negotiation and settlement" and "a scheduler that pays contractors when a job is marked complete" ([`../hackathon/resources.md`](../../hackathon/resources.md)).
 
 ## 2. Decisions (2026-10-07)
 

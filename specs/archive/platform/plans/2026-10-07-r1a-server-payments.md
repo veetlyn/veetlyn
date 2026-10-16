@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Drizzle ORM 1.0 rc, tRPC 11, Hono, Vitest 5, Web Crypto, pnpm workspaces.
 
-**Spec:** [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §5.2 (steps 3–4), §5.4 (pay page), §6.1, §6.3 (deposit and top-up postings), §6.4 (applying PayPal facts); [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §7 and §11 (run 1); [`../2026-10-07-seller-pricing-proposal.md`](../2026-10-07-seller-pricing-proposal.md) §1, §4 and §6; PayPal facts in [`../2026-10-07-r1-paypal-facts.md`](../2026-10-07-r1-paypal-facts.md).
+**Spec:** [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §5.2 (steps 3–4), §5.4 (pay page), §6.1, §6.3 (deposit and top-up postings), §6.4 (applying PayPal facts); [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §7 and §11 (run 1); [`../2026-10-07-seller-pricing-proposal.md`](../../../platform/2026-10-07-seller-pricing-proposal.md) §1, §4 and §6; PayPal facts in [`../2026-10-07-r1-paypal-facts.md`](../../../platform/2026-10-07-r1-paypal-facts.md).
 
 **Builds on:** `main` at `50b821a` (R0 merged; 741 tests).
 
@@ -24,7 +24,7 @@
 
 ## Facts this plan relies on
 
-From [`../2026-10-07-r1-paypal-facts.md`](../2026-10-07-r1-paypal-facts.md), checked on 2026-10-07:
+From [`../2026-10-07-r1-paypal-facts.md`](../../../platform/2026-10-07-r1-paypal-facts.md), checked on 2026-10-07:
 
 1. **Auth assertion.** Create, capture and show order for a seller send `PayPal-Auth-Assertion` and `PayPal-Partner-Attribution-Id`. The assertion is the unsigned JWT that `buildAuthAssertion` already builds; `request()` adds it when given `merchantId`.
 2. **Order body.**

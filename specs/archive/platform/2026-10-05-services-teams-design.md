@@ -1,8 +1,10 @@
 # Payleor Payouts: the services teams product
 
-- **Status:** approved on 2026-10-05 (amendments added in review, §5.5). Revised 2026-10-06: a Payleor workspace holds two products, commerce and payouts; the web app is a full surface next to the bots; pricing per product plus bundles. Revised 2026-10-07: the fee of 0.5% + 0.10 and the bundles are replaced by the freelancer and team plans in [`2026-10-07-seller-pricing-proposal.md`](2026-10-07-seller-pricing-proposal.md)
-- **Sibling product:** commerce (stores), specified in [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md). §10 lists what the two products share
-- **Milestone:** PayPal AI Hackathon submission, Nov 12, 2026, 12:00 pm PST ([`../hackathon/README.md`](../hackathon/README.md))
+> **Archived:** Built (S1–S5, runs 0–5); archived 2026-10-16. The stories in `../../stories/` describe the current behaviour; the program and later designs in `../../platform/` win where they differ.
+
+- **Status:** approved on 2026-10-05 (amendments added in review, §5.5). Revised 2026-10-06: a Payleor workspace holds two products, commerce and payouts; the web app is a full surface next to the bots; pricing per product plus bundles. Revised 2026-10-07: the fee of 0.5% + 0.10 and the bundles are replaced by the freelancer and team plans in [`2026-10-07-seller-pricing-proposal.md`](../../platform/2026-10-07-seller-pricing-proposal.md)
+- **Sibling product:** commerce (stores), specified in [`2026-10-03-payleor-platform-design.md`](../../platform/2026-10-03-payleor-platform-design.md). §10 lists what the two products share
+- **Milestone:** PayPal AI Hackathon submission, Nov 12, 2026, 12:00 pm PST ([`../hackathon/README.md`](../../hackathon/README.md))
 - **PayPal sources:** `../../refs/paypal/paypal-rest-api-specifications/openapi/` (abbreviated `specs/` below), `../../refs/paypal/AI-Toolkit/skills/paypal-best-practices/references/`
 - **Library sources:** `../../refs/stack/`
 

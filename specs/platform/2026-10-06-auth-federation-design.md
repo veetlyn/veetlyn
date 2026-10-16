@@ -1,7 +1,7 @@
 # Federated sign-in on auth.payleor.com
 
 - **Status:** design approved in conversation on 2026-10-06; written spec awaiting review
-- **Parent specs:** [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (§4 hosts, §8 MCP, "Domains and email"), [`2026-10-04-public-site-auth-onboarding-design.md`](2026-10-04-public-site-auth-onboarding-design.md) (§5 auth), [`2026-10-05-services-teams-design.md`](2026-10-05-services-teams-design.md) (client pages)
+- **Parent specs:** [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (§4 hosts, §8 MCP, "Domains and email"), [`2026-10-04-public-site-auth-onboarding-design.md`](../archive/platform/2026-10-04-public-site-auth-onboarding-design.md) (§5 auth), [`2026-10-05-services-teams-design.md`](../archive/platform/2026-10-05-services-teams-design.md) (client pages)
 - **Replaces:** the W1-D rule "sign-in stays on the admin host so the auth cookies stay host-only" (W1-D spec §3)
 - **Library:** Better Auth 1.7.7 (`refs/stack/better-auth`), packages `better-auth`, `@better-auth/oauth-provider`, `@better-auth/mcp`, `cimd`
 

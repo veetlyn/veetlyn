@@ -8,7 +8,7 @@
 
 **Tech Stack:** Better Auth 1.7.7 (`@better-auth/mcp`, `@better-auth/cimd`, the JWT plugin), MCP TypeScript SDK v2 (`@modelcontextprotocol/server`), MCP Apps (`@modelcontextprotocol/ext-apps`), Hono on the api Worker, the dev tunnel (`api.payleor.com` → port 3000, `admin.payleor.com` → port 3001).
 
-**Program:** [`../2026-10-13-agentic-surfaces-program.md`](../2026-10-13-agentic-surfaces-program.md) §3.4 (widget-only commitments), §4 (spike), §5 (demo). Research: [`../research.md`](../research.md) §2 (MCP Apps; Claude pays through a hand-off to a PayPal approval URL).
+**Program:** [`../2026-10-13-agentic-surfaces-program.md`](../2026-10-13-agentic-surfaces-program.md) §3.4 (widget-only commitments), §4 (spike), §5 (demo). Research: [`../research.md`](../../archive/platform/research.md) §2 (MCP Apps; Claude pays through a hand-off to a PayPal approval URL).
 
 **Base:** main at `45988e4` or later. Branch `spike-plugin`, worktree `worktrees/spike-plugin`. It uses the dev database (it adds only Better Auth plugin tables, migrated with `pnpm db:migrate:dev`; record them so they can be dropped) and the tunnel, so **it runs on Mouhamed's machine, not in a cloud session**. Timebox: Oct 14–15.
 

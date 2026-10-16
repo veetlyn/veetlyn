@@ -10,7 +10,7 @@
 
 **Tech Stack:** `fetch` (workerd and undici), Drizzle ORM 1.0.0-rc.4, tRPC 11.19.0, Hono 4.13.12, Better Auth 1.7.7 (teams), React 19, TanStack Query 5, Vitest 5, varlock, Alchemy 2.0.0-beta.80 with Effect 4 `Config`.
 
-**Spec:** [`../2026-10-03-payleor-platform-design.md`](../2026-10-03-payleor-platform-design.md) §5 (PayPal onboarding), §6.3 (PayPal client) and the decisions rows "PayPal connection" and "PayPal client"; [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §4.3 (PayPal account) and §10 (partner onboarding shared by both products); [`../research.md`](../research.md) R§4 and R§12.3.
+**Spec:** [`../2026-10-03-payleor-platform-design.md`](../../../platform/2026-10-03-payleor-platform-design.md) §5 (PayPal onboarding), §6.3 (PayPal client) and the decisions rows "PayPal connection" and "PayPal client"; [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §4.3 (PayPal account) and §10 (partner onboarding shared by both products); [`../research.md`](../research.md) R§4 and R§12.3.
 
 **Builds on:** W1-D merged into `main` (branch `w1d-public-site-auth`): tRPC context with `auth` and `headers`, `storeProcedure`, the store dashboard, `packages/email` as the package template, the KV store cache. Delivers contract §4.4 of [`2026-10-06-parallel-execution.md`](2026-10-06-parallel-execution.md).
 

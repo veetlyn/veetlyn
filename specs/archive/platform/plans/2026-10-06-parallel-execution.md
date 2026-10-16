@@ -1,7 +1,7 @@
 # Parallel execution: workstreams, contracts and git rules
 
 - **Date:** 2026-10-06
-- **Specs:** [`../2026-10-03-payleor-platform-design.md`](../2026-10-03-payleor-platform-design.md) (commerce), [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) (payouts; §12 is the combined schedule)
+- **Specs:** [`../2026-10-03-payleor-platform-design.md`](../../../platform/2026-10-03-payleor-platform-design.md) (commerce), [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) (payouts; §12 is the combined schedule)
 - **Repository:** `/home/mouhamed/dev/repos/jendal/jendal-workspace` (main worktree). Other worktrees live in `/home/mouhamed/dev/repos/jendal/worktrees/<name>`
 
 ## 1. Git rules

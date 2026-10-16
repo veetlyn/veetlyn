@@ -1,3 +1,5 @@
+> **Archived:** Research input, archived 2026-10-16.
+
 **Cloudflare’s last two weeks (roughly Sept 18–Oct 2, 2026) were dominated by Birthday Week announcements** (tied to their Sept 27, 2010 launch anniversary). The volume was high, with a clear focus on **AI agents**, open-source tooling, developer experience, edge infrastructure upgrades, and security/post-quantum readiness. Primary sources: @Cloudflare, @CloudflareDev, and @CFchangelog.
 
 ### Major Open-Source Releases

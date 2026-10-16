@@ -1,8 +1,8 @@
 # Pricing for freelancers, teams and shops
 
 - **Status:** approved as proposed on 2026-10-07
-- **Asked for in:** the sellers design review ([`2026-10-07-sellers-minimal-flow-design.md`](2026-10-07-sellers-minimal-flow-design.md) §14): every plan has a subscription and a per-payment fee, with plans scaled separately for freelancers and for teams
-- **Based on:** [`2026-10-07-pricing-research.md`](2026-10-07-pricing-research.md) (vendor pages, accessed 2026-10-07). "Research A§1" means Part A, section 1
+- **Asked for in:** the sellers design review ([`2026-10-07-sellers-minimal-flow-design.md`](../archive/platform/2026-10-07-sellers-minimal-flow-design.md) §14): every plan has a subscription and a per-payment fee, with plans scaled separately for freelancers and for teams
+- **Based on:** [`2026-10-07-pricing-research.md`](../archive/platform/2026-10-07-pricing-research.md) (vendor pages, accessed 2026-10-07). "Research A§1" means Part A, section 1
 - **Replaces:** the services spec's fee of 0.5% + 0.10 per client payment and its bundles (services spec goal 7 and §13). Shop plans stay as in platform spec §6.7
 
 ## 1. The plans

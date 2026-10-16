@@ -1,6 +1,6 @@
 # Plugin spike: facts for run C
 
-**Date:** 2026-10-14. **Status:** draft. Claude results are partly filled in, and ChatGPT is not tried yet. **Plan:** [`plans/2026-10-14-s-plugin-spike.md`](plans/2026-10-14-s-plugin-spike.md). **Branch:** `spike-plugin` (throwaway, not merged). **Sources:** [`plans/evidence/s-spike-sources.md`](plans/evidence/s-spike-sources.md), with every vendor fact and the URL it was read from.
+**Date:** 2026-10-14. **Status:** final. The spike closed on 2026-10-15 with a go for both clients: the full walkthrough (A1–A19) passed in Claude and in ChatGPT. **Plan:** [`plans/2026-10-14-s-plugin-spike.md`](plans/2026-10-14-s-plugin-spike.md). **Branch:** `spike-plugin` (throwaway, not merged). **Sources:** [`plans/evidence/s-spike-sources.md`](plans/evidence/s-spike-sources.md), with every vendor fact and the URL it was read from.
 
 ## What was built
 
@@ -191,7 +191,7 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
 - **Agentic commerce in the clients:**
   - ChatGPT's Instant Checkout (ACP, with Stripe; PayPal through Braintree "Agent Ready") is "available only to select marketplace partners", for physical goods.
   - OpenAI's "Get Quote" spec for local services is a partner-only beta: a fixed `request_service` tool, opened in a modal from a business card fed by a business feed with addresses.
-  - Neither is open to Payleor before judging. Payleor's agentic commerce story is the full service hire by an agent with a person approving every payment in PayPal, plus AI sellers on the public API (program §1, §5). ACP, UCP and Store Sync belong to the dormant Commerce product ([`research.md`](research.md) §3).
+  - Neither is open to Payleor before judging. Payleor's agentic commerce story is the full service hire by an agent with a person approving every payment in PayPal, plus AI sellers on the public API (program §1, §5). ACP, UCP and Store Sync belong to the dormant Commerce product ([`research.md`](../archive/platform/research.md) §3).
 
 ## Run C scope notes
 

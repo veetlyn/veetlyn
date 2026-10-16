@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Drizzle ORM 1.0 rc (Postgres), tRPC 11, Zod 4, TanStack Query 5, vinext (the Next.js API on Vite), Vitest 5.
 
-**Design:** [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §3 (sellers), §4.1 (catalog), §9 (data model), §11 run 3, §11.1 (solo quoting, pricing copy). Pricing: [`../2026-10-07-seller-pricing-proposal.md`](../2026-10-07-seller-pricing-proposal.md) §1 (Solo $9/mo, 2% fee).
+**Design:** [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §3 (sellers), §4.1 (catalog), §9 (data model), §11 run 3, §11.1 (solo quoting, pricing copy). Pricing: [`../2026-10-07-seller-pricing-proposal.md`](../../../platform/2026-10-07-seller-pricing-proposal.md) §1 (Solo $9/mo, 2% fee).
 
 **Decisions (2026-10-08, from Mouhamed):**
 - **Run 3 is split.** This plan is 3a (setup and catalog, all of it in the admin). Run 3b follows with the seller page at `{slug}.payleor.app`, the publish action, draft visibility and the request form with its emails and limits.

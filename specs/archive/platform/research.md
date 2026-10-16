@@ -1,11 +1,13 @@
 # Platform research digest
 
+> **Archived:** Research digest from the first week; archived 2026-10-16. Vendor facts used since then live in the facts notes in `../../platform/`.
+
 This digest collects the facts that shape the design of a multi-tenant, headless, agentic commerce platform on PayPal. The platform has three surfaces: a web app (storefront and admin), a ChatGPT plugin, and a Claude plugin.
 
 - **Compiled:** 2026-10-03, from three kinds of source:
-  - the hackathon pages (see [`../hackathon/`](../hackathon/README.md))
+  - the hackathon pages (see [`../hackathon/`](../../hackathon/README.md))
   - every resource those pages link to
-  - the local clones in `refs/`, via [`references/README.md`](../references/README.md)
+  - the local clones in `refs/`, via [`references/README.md`](../../references/README.md)
 - **When sources disagree,** follow the source order in `refs/AGENTS.md`: live docs first, then the specs, then library source, then ruleshub, then AI-Toolkit. Known conflicts are listed in [§10](#10-conflicts-between-sources).
 - **Reference shortcuts:**
   - `E/` means `refs/ruleshub/paypal-checkout/enterprise-checkout/`
