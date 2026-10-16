@@ -322,4 +322,16 @@ Built Tasks 1 to 10 on branch `a2-client-contacts` (Claude Code, 2026-10-16). Ta
 
 ## Outcome
 
-(Filled in after the walkthrough.)
+Walked by Claude Code on 2026-10-16, on the dev stack over the tunnel (branch before merge, `admin.payleor.com` / `payleor.com` / `walk-crew.payleor.app`).
+
+- **Migration and backfill:** `pnpm db:migrate:dev`, then the backfill on the dev database: 12 projects moved, 6 contacts created, no conflicts.
+- **AGT-01 passes.** The Clients section lists each contact, with each email marked verified or not; the page has no client link. Second Client (`mdbm-agent+client2@agentmail.to`) was added unverified. Removing the primary made Second Client primary, and the last contact has no Remove button. The projects list shows each project's primary contact name.
+- **AGT-02 passes.** "Email link" sent Second Client their own link. Opening it signed out showed the client page and marked the email Verified. After "Reissue link" (with a confirmation), the old link shows "This link is not valid" and the new one from the new email works.
+- **AGT-03 passes.** "Preview as client" shows the client view with "Pay with PayPal" disabled and no client link anywhere in the page.
+- **AGT-04 failed, then fixed (`4b39838`).** Signed in as the walk-crew admin, I opened a client link emailed to the admin's own address and pressed "Accept quote": the quote was accepted. The client page runs on `payleor.com`, where the dashboard's host-only session cookie never arrives, so the member looked signed out and the §5.4 check (which needed a session) never ran. Resolution now refuses a link whose contact names a team member's account (by user identity, or by an email equal to a member's account email, verified or not) before verifying anything. The refusal goes to the action log, and the page shows "This link is for the client" with "Team members act from the project page." Re-walked: the admin's links (the new one and a pre-A2 one) are refused; other clients' links still work. Tests: `use-cases/clients.test.ts` "refuses a link whose contact has a team member's address, without a session" and `routers/project.test.ts` "logs a team member's refused client action", both seen failing before the fix.
+- **AGT-05 passes.** An anonymous request on `walk-crew.payleor.app/request` with Second Client's verified email created a new contact "Not Second Client" with an unverified email; the link went only to that address; the verified contact is untouched.
+- **AGT-06 passes, as amended by finding 1.** A link emailed on Oct 15 (before A2) opens its client page and acts for the primary contact; it verifies no email (the team emails a new link to verify).
+- **Pay page:** reached from the client page it shows "Back to your project"; opened directly it does not, and the PayPal buttons load.
+- **Not walked here:** paying the deposit and the rest of the R-flow (delivery, payout). The sandbox PayPal login is Mouhamed's step; the deposit on "Something else" (`dc2ab7ca`, $120) is ready to pay.
+
+Data the walk left on dev: "Something else" (`5f0fc392`) has a quote accepted by the admin-as-client before the fix (awaiting deposit); a request from "Not Second Client".
