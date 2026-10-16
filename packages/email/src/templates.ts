@@ -70,6 +70,22 @@ export function quoteRequestLinkEmail(input: { clientName: string; teamName: str
   });
 }
 
+export function clientLinkEmail(input: {
+  clientName: string;
+  teamName: string;
+  projectTitle: string;
+  url: string;
+}): EmailContent {
+  return render({
+    subject: `Your project with ${input.teamName}`,
+    name: input.clientName,
+    intro: `${input.teamName} sent you the link to your page for "${input.projectTitle}". Follow the work, and accept or discuss quotes and deliveries, there:`,
+    action: "Open your page",
+    url: input.url,
+    outro: "Keep this link; it is the way back to your page. Links sent to you before for this project may no longer work.",
+  });
+}
+
 export function quoteRequestNoticeEmail(input: {
   teamName: string;
   clientName: string;

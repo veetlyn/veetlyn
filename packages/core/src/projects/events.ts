@@ -5,6 +5,7 @@ export const OUTBOX_EVENT_TYPES = [
   "project.client_added",
   "project.client_removed",
   "project.client_link_reissued",
+  "project.client_link_sent",
   "quote.created",
   "quote.accepted",
   "amendment.proposed",

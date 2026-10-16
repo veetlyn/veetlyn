@@ -21,6 +21,7 @@ export const startProjectInput = z.object({
   brief: z.string().max(5000).default(""),
   clientEmail: z.string().max(200).default(""),
   clientDiscordId: z.string().max(64).default(""),
+  clientName: z.string().max(200).default(""),
   channelId: z.string().max(64).default(""),
   offeringId: z.string().min(1).optional(),
 });
