@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  type AnyPgColumn,
   boolean,
   index,
   integer,
@@ -31,8 +30,6 @@ export const clientContact = pgTable(
       .notNull()
       .references(() => team.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
-    // Set when the contact was merged into another: links sent to it keep resolving to the survivor.
-    mergedIntoId: text("merged_into_id").references((): AnyPgColumn => clientContact.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("client_contact_teamId_idx").on(t.teamId)],
@@ -79,6 +76,11 @@ export const projectClient = pgTable(
     isPrimary: boolean("is_primary").notNull().default(false),
     // Client links carry this version; bumping it revokes them. Links issued before contacts existed count as 0.
     linkVersion: integer("link_version").notNull().default(1),
+    // The address the server emailed this version's link to. Only that address is proved when the link is
+    // opened: a link the team could have seen (one sent before contacts existed, or never emailed) proves none.
+    linkEmail: text("link_email"),
+    // Contacts merged into this one whose links for this project, at this version, still open it.
+    linkAliases: text("link_aliases").array().notNull().default(sql`'{}'::text[]`),
     addedById: text("added_by_id").references(() => user.id, { onDelete: "set null" }),
     addedAt: timestamp("added_at").notNull().defaultNow(),
   },

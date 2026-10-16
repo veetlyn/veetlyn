@@ -1,6 +1,6 @@
 import { primaryContactFor } from "@jendal-workspace/db/repositories/contacts";
 import { user } from "@jendal-workspace/db/schema/auth";
-import { clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
+import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import {
   createTestDb,
   hasTestDatabase,
@@ -91,8 +91,22 @@ describe.skipIf(!hasTestDatabase)("the client rule", () => {
     const projectId = await seedProject(db, { teamId });
     const primary = await primaryContactFor(db, projectId);
     if (!primary) throw new Error("missing primary contact");
+    await emailedTo(projectId, primary.contactId, "client@example.com");
     const token = await signClientLink(SECRET, { projectId, contactId: primary.contactId, version: 1 });
     return { organizationId, teamId, projectId, contactId: primary.contactId, token };
+  }
+
+  // What sending the link by email records.
+  async function emailedTo(projectId: string, contactId: string, linkEmail: string) {
+    await db
+      .update(projectClient)
+      .set({ linkEmail })
+      .where(and(eq(projectClient.projectId, projectId), eq(projectClient.contactId, contactId)));
+  }
+
+  async function identitiesOf(contactId: string) {
+    const rows = await db.select().from(clientIdentity).where(eq(clientIdentity.contactId, contactId));
+    return Object.fromEntries(rows.map((i) => [`${i.kind}:${i.value}`, i.verifiedAt !== null]));
   }
 
   async function userWithEmail(email: string, verified = true) {
@@ -184,37 +198,90 @@ describe.skipIf(!hasTestDatabase)("the client rule", () => {
     });
   });
 
-  it("verifies the contact's email when its link is opened", async () => {
-    const { contactId, token } = await setup();
+  it("verifies only the address the opened link was emailed to", async () => {
+    const { teamId, projectId, contactId, token } = await setup();
+    await db.insert(clientIdentity).values({ contactId, teamId, kind: "email", value: "other@example.com", source: "typed" });
+
     await resolveClient(db, SECRET, { token });
-    expect(await db.select().from(clientIdentity).where(eq(clientIdentity.contactId, contactId))).toEqual([
-      expect.objectContaining({ kind: "email", value: "client@example.com", source: "typed", verifiedAt: expect.any(Date) }),
-    ]);
+
+    expect(await identitiesOf(contactId)).toEqual({ "email:client@example.com": true, "email:other@example.com": false });
+    const [row] = await db.select().from(clientIdentity).where(eq(clientIdentity.value, "client@example.com"));
+    expect(row).toMatchObject({ source: "typed" });
+    expect(projectId).toBeTruthy();
   });
 
-  it("merges the contact into the one already holding its email verified, and its links keep working", async () => {
+  it("verifies nothing through a link that was never emailed, or one sent before contacts", async () => {
+    const { teamId } = await seedServicesTeamWithAdmin(db);
+    const shown = await seedProject(db, { teamId, title: "Shown to the team" });
+    const shownContact = (await primaryContactFor(db, shown))!.contactId;
+    const legacy = await seedProject(db, { teamId, title: "Migrated", clientEmail: "old@example.com", linkVersion: 0 });
+    const legacyContact = (await primaryContactFor(db, legacy))!.contactId;
+    // Even if the address was recorded, a legacy link was visible to the team and proves nothing.
+    await emailedTo(legacy, legacyContact, "old@example.com");
+
+    const shownToken = await signClientLink(SECRET, { projectId: shown, contactId: shownContact, version: 1 });
+    await expect(resolveClient(db, SECRET, { token: shownToken })).resolves.toMatchObject({ ok: true });
+    await expect(resolveClient(db, SECRET, { token: await signLegacyClientLink(SECRET, legacy) })).resolves.toMatchObject({
+      ok: true,
+    });
+
+    expect((await db.select().from(clientIdentity)).every((i) => i.verifiedAt === null)).toBe(true);
+  });
+
+  it("merges into the contact already holding the proved address verified, and the link keeps working", async () => {
     const { teamId } = await seedServicesTeamWithAdmin(db);
     const knownProject = await seedProject(db, { teamId, title: "Known" });
     const known = (await primaryContactFor(db, knownProject))!.contactId;
     await db.update(clientIdentity).set({ verifiedAt: new Date() }).where(eq(clientIdentity.contactId, known));
     const newProject = await seedProject(db, { teamId, title: "New" });
     const fresh = (await primaryContactFor(db, newProject))!.contactId;
+    await emailedTo(newProject, fresh, "client@example.com");
     await db.insert(clientIdentity).values({ contactId: fresh, teamId, kind: "discord", value: "D1", source: "typed" });
     const token = await signClientLink(SECRET, { projectId: newProject, contactId: fresh, version: 1 });
 
     await expect(resolveClient(db, SECRET, { token })).resolves.toMatchObject({ ok: true, contactId: known });
 
     expect(await primaryContactFor(db, newProject)).toMatchObject({ contactId: known, linkVersion: 1 });
-    const identities = await db.select().from(clientIdentity).where(eq(clientIdentity.teamId, teamId));
-    expect(identities.map((i) => [i.contactId === known, i.kind, i.value, i.verifiedAt !== null])).toEqual(
-      expect.arrayContaining([
-        [true, "email", "client@example.com", true],
-        [true, "discord", "D1", false],
-      ]),
-    );
-    expect(identities).toHaveLength(2);
-    expect(await db.select().from(projectClient).where(eq(projectClient.contactId, fresh))).toEqual([]);
+    expect(await identitiesOf(known)).toEqual({ "email:client@example.com": true, "discord:D1": false });
+    expect(await db.select().from(clientContact).where(eq(clientContact.id, fresh))).toEqual([]);
     await expect(resolveClient(db, SECRET, { token })).resolves.toMatchObject({ ok: true, contactId: known });
+    // The merged link opens its own project only, not the projects of the contact it joined.
+    const elsewhere = await signClientLink(SECRET, { projectId: knownProject, contactId: fresh, version: 1 });
+    await expect(resolveClient(db, SECRET, { token: elsewhere })).resolves.toMatchObject({ ok: false });
+  });
+
+  it("never merges through an address the opened link did not prove", async () => {
+    const { teamId } = await seedServicesTeamWithAdmin(db);
+    await seedClientContact(db, { teamId, identities: [{ kind: "email", value: "victim@example.com", verified: true }] });
+    const projectId = await seedProject(db, { teamId, clientEmail: "attacker@example.com" });
+    const contactId = (await primaryContactFor(db, projectId))!.contactId;
+    await db.insert(clientIdentity).values({ contactId, teamId, kind: "email", value: "victim@example.com", source: "typed" });
+    await emailedTo(projectId, contactId, "attacker@example.com");
+    const token = await signClientLink(SECRET, { projectId, contactId, version: 1 });
+
+    await expect(resolveClient(db, SECRET, { token })).resolves.toMatchObject({ ok: true, contactId });
+    expect(await identitiesOf(contactId)).toEqual({ "email:attacker@example.com": true, "email:victim@example.com": false });
+  });
+
+  it("keeps a removed contact's links dead after it is merged into a contact still on the project", async () => {
+    const { teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const survivor = (await primaryContactFor(db, projectId))!.contactId;
+    await db.update(clientIdentity).set({ verifiedAt: new Date() }).where(eq(clientIdentity.contactId, survivor));
+    const removed = await seedClientContact(db, {
+      teamId,
+      identities: [{ kind: "email", value: "client@example.com" }],
+      projectId,
+    });
+    const removedToken = await signClientLink(SECRET, { projectId, contactId: removed, version: 1 });
+    await db.delete(projectClient).where(and(eq(projectClient.projectId, projectId), eq(projectClient.contactId, removed)));
+    // The removed contact proves its address on another project and merges into the survivor.
+    const otherProject = await seedProject(db, { teamId, title: "Other", clientEmail: "someone@example.com" });
+    await db.insert(projectClient).values({ projectId: otherProject, contactId: removed, linkEmail: "client@example.com" });
+    const otherToken = await signClientLink(SECRET, { projectId: otherProject, contactId: removed, version: 1 });
+    await expect(resolveClient(db, SECRET, { token: otherToken })).resolves.toMatchObject({ ok: true, contactId: survivor });
+
+    await expect(resolveClient(db, SECRET, { token: removedToken })).resolves.toEqual({ ok: false, reason: "invalid_link" });
   });
 
   it("refuses a stranger with no link and no identity", async () => {
