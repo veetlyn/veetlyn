@@ -1,0 +1,37 @@
+packages/api/src/actions/perform.ts
+  s_ec180faf4f9b2e::t_6d680415f6f97b 127-137
+packages/api/src/use-cases/clients.ts
+  s_ec180faf4f9b2e::t_6d680415f6f97b 37-38,59,70
+  s_ec180faf4f9b2e::t_e6bc0fe79a4a89 62-63,66-68
+  s_ec180faf4f9b2e::t_daa4ba0dd7af71 7,43-51
+packages/db/src/repositories/contacts.ts
+  s_ec180faf4f9b2e::t_a7b85c5b2ad6a6 390-406
+packages/api/src/use-cases/clients.test.ts
+  s_ec180faf4f9b2e::t_b3e9441555b8ce 183,199-200,213-217,230
+  s_ec180faf4f9b2e::t_71d93ddcc80e94 225
+  s_ec180faf4f9b2e::t_94b689d3cfeca0 203-212,218-224,226-229
+  s_ec180faf4f9b2e::t_80fa10192c1443 201-202
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_ec180faf4f9b2e::t_f2a756110d0f7e 32-39
+packages/api/src/actions/trpc.ts
+  s_ec180faf4f9b2e::t_b9b7df1f4b06fc 13,82-91,96-99,117
+packages/api/src/routers/project.test.ts
+  s_ec180faf4f9b2e::t_37f9e20606eb1f 504-513,515-524
+  s_ec180faf4f9b2e::t_7d9a80f8568142 514
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b3983870ddf9a8559adfe77035fa96cd185c6f3",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
