@@ -2,6 +2,7 @@ CREATE TABLE "client_contact" (
 	"id" text PRIMARY KEY,
 	"team_id" text NOT NULL,
 	"name" text NOT NULL,
+	"merged_into_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -32,6 +33,7 @@ CREATE UNIQUE INDEX "client_identity_verified_unique" ON "client_identity" ("tea
 CREATE INDEX "project_client_contact_idx" ON "project_client" ("contact_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "project_client_primary_idx" ON "project_client" ("project_id") WHERE is_primary;--> statement-breakpoint
 ALTER TABLE "client_contact" ADD CONSTRAINT "client_contact_team_id_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "team"("id") ON DELETE RESTRICT;--> statement-breakpoint
+ALTER TABLE "client_contact" ADD CONSTRAINT "client_contact_merged_into_id_client_contact_id_fkey" FOREIGN KEY ("merged_into_id") REFERENCES "client_contact"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "client_identity" ADD CONSTRAINT "client_identity_contact_id_client_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "client_contact"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "client_identity" ADD CONSTRAINT "client_identity_team_id_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "team"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "project_client" ADD CONSTRAINT "project_client_project_id_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "project"("id") ON DELETE CASCADE;--> statement-breakpoint
