@@ -8,7 +8,7 @@
 
 **Tech Stack:** Drizzle ORM 1.0.0-rc.4 (check constraints, unique indexes, transactions), tRPC 11.19 with `@trpc/tanstack-react-query`, Hono 4.13, zod 4.6, Cloudflare R2 and KV through Alchemy 2.0.0-beta.80 (Effect 4 `Config`), Channel3 REST API v1 (`https://api.trychannel3.com`), vinext 1.0.1, React 19, Tailwind 4, Vitest 5.
 
-**Spec:** [`../2026-10-03-payleor-platform-design.md`](../../../platform/2026-10-03-payleor-platform-design.md) §4.4, §4.7, §6.1 (product flags), §10 (admin catalog row), §11 (catalog tables), §14 and the combined schedule in [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §12 (Oct 6–12 commerce row: "catalog admin with Channel3"); [`../2026-10-05-sponsor-integrations-design.md`](../../../platform/2026-10-05-sponsor-integrations-design.md) §3 (Channel3), §8 (Channel3 tests).
+**Spec:** [`../2026-10-03-payleor-platform-design.md`](../2026-10-03-payleor-platform-design.md) §4.4, §4.7, §6.1 (product flags), §10 (admin catalog row), §11 (catalog tables), §14 and the combined schedule in [`../2026-10-05-services-teams-design.md`](../2026-10-05-services-teams-design.md) §12 (Oct 6–12 commerce row: "catalog admin with Channel3"); [`../2026-10-05-sponsor-integrations-design.md`](../../../platform/2026-10-05-sponsor-integrations-design.md) §3 (Channel3), §8 (Channel3 tests).
 
 **Builds on:** W1-D (branch `w1d-public-site-auth`, merged into `main` before this workstream's first task: `storeProcedure`, tRPC context with `auth` and `headers`, `packages/auth/src/testing.ts`, the store dashboard at `app/admin/[storeSlug]/`, web helpers in `apps/web/src/lib/`, the KV store cache pattern in `apps/server/src/tenant/`).
 

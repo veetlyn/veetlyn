@@ -74,6 +74,7 @@ Merge commits are also on the run board's "Done before the program" table in [`.
 
 | Path | Contents |
 |---|---|
+| [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md) | The first platform design (2026-10-03): a commerce-only product with AI checkout protocols, a dispute agent, Braintree and per-store dashboards. Replaced on 2026-10-16 by `../platform/2026-10-16-architecture.md` |
 | [`platform/2026-10-02-cloudflare-birthday-week.md`](platform/2026-10-02-cloudflare-birthday-week.md) | Summary of Cloudflare's Birthday Week 2026 announcements, the input to research §12 |
 | [`platform/2026-10-04-public-site-auth-onboarding-design.md`](platform/2026-10-04-public-site-auth-onboarding-design.md) | Landing page and live pricing, sandbox banner, sign-in and email flows, store onboarding and setup checklist, platform legal pages and store policies |
 | [`platform/2026-10-05-services-teams-design.md`](platform/2026-10-05-services-teams-design.md) | Services teams design (2026-10-05, approved, revised 2026-10-06 and 2026-10-07): the Payleor workspace with commerce and payouts, services teams, quoting modes, the ledger and money rules, Discord. Built in S1–S5 |

@@ -22,7 +22,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | What the app does today and how to check it (walkthroughs) | [`stories/README.md`](stories/README.md), then the area file |
 | Which stories a run delivers, and the plan task that walks them | [`PROGRESS.md`](PROGRESS.md) run board (Stories column), then the run's section in [`stories/09-agentic.md`](stories/09-agentic.md) |
 | Anything PayPal | [`references/AGENTS.md`](references/AGENTS.md) (rules, story template), [`references/README.md`](references/README.md) (the reference clones in `refs/`), [`platform/2026-10-07-r1-paypal-facts.md`](platform/2026-10-07-r1-paypal-facts.md) (orders, fees, webhooks, SDK v6, sandbox) |
-| Architecture, tenancy, hosts, data model, logging, testing | [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md). The MCP endpoint is `api.payleor.com/mcp`; older `mcp.` hosts in it are superseded |
+| Architecture: hosts, Workers and bindings, packages, tenancy, PayPal and money, surfaces, background jobs, testing | [`platform/2026-10-16-architecture.md`](platform/2026-10-16-architecture.md) |
 | Sign-in, accounts, OAuth for stores and MCP clients | [`platform/2026-10-06-auth-federation-design.md`](platform/2026-10-06-auth-federation-design.md) |
 | The action registry (`perform`, grants, actors, action log) and client contacts | [`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md) (§4 A1, §5 A2) |
 | The Claude and ChatGPT plugin: MCP, OAuth, widgets, packaging | [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md), [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/2026-10-14-connector-ux-guidelines.md`](platform/2026-10-14-connector-ux-guidelines.md) |
@@ -46,8 +46,8 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Run C design](platform/2026-10-15-c-plugin-design.md) | Approved 2026-10-15 |
 | [Discord ticket flow design](platform/2026-10-13-discord-ticket-flow-design.md) | Source for run E, to revise first |
 | [Plugin spike facts](platform/2026-10-14-plugin-spike-facts.md) | Final; go for Claude and ChatGPT |
-| [Platform design](platform/2026-10-03-payleor-platform-design.md) | Approved 2026-10-03; the architecture reference |
-| [Auth federation design](platform/2026-10-06-auth-federation-design.md) | Approved in conversation 2026-10-06 |
+| [Architecture](platform/2026-10-16-architecture.md) | Reference, from the code at `4a27fb6`; update it with any change that makes it wrong |
+| [Auth federation design](platform/2026-10-06-auth-federation-design.md) | Approved 2026-10-06, not built; partly changed by run C (see its status) |
 | [Seller pricing](platform/2026-10-07-seller-pricing-proposal.md) | Approved 2026-10-07 |
 | [Sponsor integrations](platform/2026-10-05-sponsor-integrations-design.md) | Approved; AG Grid in run D |
 | [PayPal facts](platform/2026-10-07-r1-paypal-facts.md) | Reference |

@@ -1,16 +1,18 @@
 # Payleor platform design
 
+> **Archived:** replaced on 2026-10-16 by the architecture reference (`../../platform/2026-10-16-architecture.md`), written from the code; its §10 lists what of this plan was dropped or deferred. Section references in older documents ("platform design §8.1") point here.
+
 - **Status:** approved on 2026-10-03. Revised the same day: vinext replaces OpenNext; stores are Better Auth teams with one dashboard per store; dependencies move to their latest releases
-- **Products (2026-10-06):** a Payleor workspace holds two products: agentic commerce (stores, this spec) and payouts for services teams ([`2026-10-05-services-teams-design.md`](../archive/platform/2026-10-05-services-teams-design.md)). Both are in the hackathon scope. Each product has its own plan and fees, plus bundles, which revises §6.7 (services spec §3 and §13). The combined schedule in services spec §12 replaces §13 here, and services spec §10 lists what the products share.
+- **Products (2026-10-06):** a Payleor workspace holds two products: agentic commerce (stores, this spec) and payouts for services teams ([`2026-10-05-services-teams-design.md`](2026-10-05-services-teams-design.md)). Both are in the hackathon scope. Each product has its own plan and fees, plus bundles, which revises §6.7 (services spec §3 and §13). The combined schedule in services spec §12 replaces §13 here, and services spec §10 lists what the products share.
 - **Domains and email (2026-10-06):** `PLATFORM_DOMAIN` is `payleor.com` (site, `admin.`, `api.`, `mcp.`) and `STORE_DOMAIN` is `payleor.app` (`{slug}.payleor.app`). This replaces `payleor.app` as the platform domain and `payleor.site` as the store domain in §4.2; host examples that read `*.payleor.app` for the admin, api or MCP now read `*.payleor.com`. Email goes out through Resend (free tier, which also receives mail for `payleor.com`), with Brevo's API and then its SMTP relay as fallbacks. Cloudflare Email Service replaces both later. Brevo stays a fallback only because it always rewrites HTML links for click tracking and adds an open pixel. Senders are purpose-specific addresses on `payleor.com`: `accounts@` (sign-in, verification, reset, invites), `stores@` ("{Store} via Payleor", to buyers), `invoices@` ("{Team} via Payleor", to services clients), `payouts@`, `disputes@` and `billing@`. Replies go to `support@payleor.com` unless a message sets its own Reply-To. Resend receives incoming mail on `payleor.com`; Cloudflare Email Routing was set up and then removed on 2026-10-06. `payleor.app` sends and receives no mail (SPF `-all`, DMARC `p=reject`, null MX).
 - **Library sources:** reference clones pinned to the release we use live in `../../refs/stack/` (§2.2)
 - **Product:** a multi-tenant, headless, agentic commerce SaaS on PayPal, running on Cloudflare
 - **Name:** Payleor (renamed from Jendal on 2026-10-04, after Jendal turned out to clash with existing commerce products). Code identifiers (`@jendal-workspace/*` packages, `jendal-*` service, database and tunnel names, `JENDAL_LOCAL_STAGE`) and the `jendal/` and `jendal-workspace/` folders keep the old name until after the hackathon
-- **Milestone:** PayPal AI Hackathon submission, Nov 12, 2026, 12:00 pm PST ([`../hackathon/README.md`](../hackathon/README.md))
-- **Background facts and sources:** [`research.md`](../archive/platform/research.md). Section references such as "R§4" point to it.
+- **Milestone:** PayPal AI Hackathon submission, Nov 12, 2026, 12:00 pm PST ([`../hackathon/README.md`](../../hackathon/README.md))
+- **Background facts and sources:** [`research.md`](research.md). Section references such as "R§4" point to it.
 - **Detailed specs:**
-  - [`2026-10-04-public-site-auth-onboarding-design.md`](../archive/platform/2026-10-04-public-site-auth-onboarding-design.md) (landing page, pricing, sandbox banner, auth, onboarding, legal pages)
-  - [`2026-10-05-sponsor-integrations-design.md`](2026-10-05-sponsor-integrations-design.md) (AG Studio analytics, Channel3 catalog tools, Render bulk import)
+  - [`2026-10-04-public-site-auth-onboarding-design.md`](2026-10-04-public-site-auth-onboarding-design.md) (landing page, pricing, sandbox banner, auth, onboarding, legal pages)
+  - [`2026-10-05-sponsor-integrations-design.md`](../../platform/2026-10-05-sponsor-integrations-design.md) (AG Studio analytics, Channel3 catalog tools, Render bulk import)
 
 ## 1. Goals and non-goals
 
@@ -59,7 +61,7 @@
 | Async processing | Cloudflare Queues |
 | Logging | **evlog** ([evlog.dev](https://www.evlog.dev/)): one wide event per request, job or agent turn, with structured errors (§12.1) |
 | Admin scope by Nov 12 | Onboarding and store settings, catalog, orders (fulfillment, tracking, refunds), disputes console with the dispute agent, store analytics |
-| Hackathon sponsor tools | **AG Studio** for store analytics with the Admin agent (the sponsor prize we compete for), **Channel3** for catalog tools on the merchant side, **Render Workflows** for bulk catalog import ([sponsor spec](2026-10-05-sponsor-integrations-design.md)) |
+| Hackathon sponsor tools | **AG Studio** for store analytics with the Admin agent (the sponsor prize we compete for), **Channel3** for catalog tools on the merchant side, **Render Workflows** for bulk catalog import ([sponsor spec](../../platform/2026-10-05-sponsor-integrations-design.md)) |
 
 ### 2.1 Scaffold
 
@@ -361,7 +363,7 @@ Without a valid proof, the call fails with `ConsentRequired`. This holds for eve
 
 ### 6.7 Billing (Payleor plans)
 
-**Update (2026-10-07):** freelancers and teams get their own plans ([`2026-10-07-seller-pricing-proposal.md`](2026-10-07-seller-pricing-proposal.md)); the shop plans below are unchanged. Subscriptions run on a second Payleor PayPal business account, because PayPal's multiparty docs say the partner account that receives platform fees cannot hold a balance or sell. The setup script creates 18 PayPal plans (three audiences, three tiers, two intervals).
+**Update (2026-10-07):** freelancers and teams get their own plans ([`2026-10-07-seller-pricing-proposal.md`](../../platform/2026-10-07-seller-pricing-proposal.md)); the shop plans below are unchanged. Subscriptions run on a second Payleor PayPal business account, because PayPal's multiparty docs say the partner account that receives platform fees cannot hold a balance or sell. The setup script creates 18 PayPal plans (three audiences, three tiers, two intervals).
 
 Payleor follows Shopify's pricing model: a plan per store, cheaper when paid yearly, plus a per-order fee that drops on higher plans. Every Payleor order goes through PayPal, so the fee always applies (Shopify charges it whenever a store uses a third-party payment provider).
 

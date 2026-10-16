@@ -1,7 +1,8 @@
 # Federated sign-in on auth.payleor.com
 
-- **Status:** design approved in conversation on 2026-10-06; written spec awaiting review
-- **Parent specs:** [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (§4 hosts, §8 MCP, "Domains and email"), [`2026-10-04-public-site-auth-onboarding-design.md`](../archive/platform/2026-10-04-public-site-auth-onboarding-design.md) (§5 auth), [`2026-10-05-services-teams-design.md`](../archive/platform/2026-10-05-services-teams-design.md) (client pages)
+- **Status:** design approved in conversation on 2026-10-06; written spec awaiting review. **Not built** (no `auth` host in `PlatformApp` on 2026-10-16).
+- **Changed by later approved designs (2026-10-16 note):** the run C design ([`2026-10-15-c-plugin-design.md`](2026-10-15-c-plugin-design.md) §1, §3) puts the OAuth issuer for the plugin on the dash host (`dash.payleor.com` after run H), not `auth.payleor.com`; the MCP endpoint is `api.payleor.com/mcp`, not `mcp.payleor.com/mcp` (§6 here); its tools and grants come from the action registry, replacing the scopes in §6; client sign-in on team sites is after the hackathon. Still the target: one account per person (§2), signed client links that need no account, and the sign-in methods (§7).
+- **Parent specs:** [`2026-10-03-payleor-platform-design.md`](../archive/platform/2026-10-03-payleor-platform-design.md) (§4 hosts, §8 MCP, "Domains and email"), [`2026-10-04-public-site-auth-onboarding-design.md`](../archive/platform/2026-10-04-public-site-auth-onboarding-design.md) (§5 auth), [`2026-10-05-services-teams-design.md`](../archive/platform/2026-10-05-services-teams-design.md) (client pages)
 - **Replaces:** the W1-D rule "sign-in stays on the admin host so the auth cookies stay host-only" (W1-D spec §3)
 - **Library:** Better Auth 1.7.7 (`refs/stack/better-auth`), packages `better-auth`, `@better-auth/oauth-provider`, `@better-auth/mcp`, `cimd`
 

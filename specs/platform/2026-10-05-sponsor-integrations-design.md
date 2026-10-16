@@ -4,7 +4,7 @@
 
 - **Status:** approved on 2026-10-05
 - **Products (2026-10-06):** this spec covers the commerce product. The payouts product ([`2026-10-05-services-teams-design.md`](../archive/platform/2026-10-05-services-teams-design.md)) adds a Render reconciliation job, AG Grid payment stats and a Postman collection for its public API (services spec §3).
-- **Parent spec:** [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (§9.1 agents, §10 admin, §11 data model, §14 milestones)
+- **Parent spec:** [`2026-10-03-payleor-platform-design.md`](../archive/platform/2026-10-03-payleor-platform-design.md) (§9.1 agents, §10 admin, §11 data model, §14 milestones)
 - **Sponsor research:** [`../hackathon/sponsors.md`](../hackathon/sponsors.md), with the sponsor pages and the tools' documentation read on 2026-10-05
 
 ## 1. Goal and prize strategy

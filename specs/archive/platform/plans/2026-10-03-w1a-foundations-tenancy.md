@@ -8,7 +8,7 @@
 
 **Tech Stack:** pnpm 10 workspaces, Turborepo, TypeScript 6, Vitest 5, vinext 1.0.1 on Vite 8, React 19, Hono 4.13, tRPC 11.19, Better Auth 1.7.7 (organization plugin with teams, PayPal sign-in), Drizzle ORM 1.0.0-rc.4 with Postgres.js, Aiven for PostgreSQL, Cloudflare Workers, KV, Hyperdrive, Alchemy 2.0.0-beta.80, Effect 4, varlock, evlog 2.30.
 
-**Spec:** [`../2026-10-03-payleor-platform-design.md`](../../../platform/2026-10-03-payleor-platform-design.md): §2.1, §2.2, §3, §4 (all), §11, §12.1.
+**Spec:** [`../2026-10-03-payleor-platform-design.md`](../2026-10-03-payleor-platform-design.md): §2.1, §2.2, §3, §4 (all), §11, §12.1.
 
 **Out of scope (later plans):**
 - W1-B: the PayPal REST client and partner onboarding. It also invalidates the KV cache when `status` or `paypalMerchantId` change.

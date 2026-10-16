@@ -3,7 +3,7 @@
 > **Archived:** Superseded by the agentic surfaces program (`../../platform/2026-10-13-agentic-surfaces-program.md`, §4 and §4.1); never approved as written. Archived 2026-10-16.
 
 - **Status:** proposal written on 2026-10-07, awaiting review. It changes no approved spec until it is approved; §13 lists the edits that approval makes
-- **Amends:** [`2026-10-05-services-teams-design.md`](2026-10-05-services-teams-design.md) (the services spec), [`2026-10-03-payleor-platform-design.md`](../../platform/2026-10-03-payleor-platform-design.md) (products line, §8 MCP, §9.1 agents), [`2026-10-06-auth-federation-design.md`](../../platform/2026-10-06-auth-federation-design.md) (§6 MCP clients, §10 phasing)
+- **Amends:** [`2026-10-05-services-teams-design.md`](2026-10-05-services-teams-design.md) (the services spec), [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (products line, §8 MCP, §9.1 agents), [`2026-10-06-auth-federation-design.md`](../../platform/2026-10-06-auth-federation-design.md) (§6 MCP clients, §10 phasing)
 - **Depends on:** the auth federation spec (written, awaiting review): the auth host (A1) and its §6 authorization server for MCP clients
 - **Inputs:** the founder's voice note of 2026-10-06, restated in §3, and the decisions taken on 2026-10-07 (§2)
 - **Milestone:** PayPal AI Hackathon submission, Nov 12, 2026, 12:00 pm PST ([`../hackathon/README.md`](../../hackathon/README.md))

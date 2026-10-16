@@ -3,7 +3,7 @@
 > **Archived:** Built (W1-D, S1); archived 2026-10-16. The stories in `../../stories/` describe the current behaviour.
 
 - **Status:** approved on 2026-10-05
-- **Parent spec:** [`2026-10-03-payleor-platform-design.md`](../../platform/2026-10-03-payleor-platform-design.md) (§4 routing, §5 onboarding, §10 admin)
+- **Parent spec:** [`2026-10-03-payleor-platform-design.md`](2026-10-03-payleor-platform-design.md) (§4 routing, §5 onboarding, §10 admin)
 - **Builds on:** the W1-A plan ([`plans/2026-10-03-w1a-foundations-tenancy.md`](plans/2026-10-03-w1a-foundations-tenancy.md)). Its plan runs after W1-A Task 16.
 - **Plan:** [`plans/2026-10-05-w1d-public-site-auth-onboarding.md`](plans/2026-10-05-w1d-public-site-auth-onboarding.md)
 - **Library sources:** `../../refs/stack/` (vinext, better-auth, email-sdk 2.0.0)

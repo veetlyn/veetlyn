@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Drizzle ORM, tRPC 11, Vitest, pnpm workspaces.
 
-**Spec:** [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §11, run 0; [`../2026-10-03-payleor-platform-design.md`](../../../platform/2026-10-03-payleor-platform-design.md) §5 step 1 (the feature list).
+**Spec:** [`../2026-10-07-sellers-minimal-flow-design.md`](../2026-10-07-sellers-minimal-flow-design.md) §11, run 0; [`../2026-10-03-payleor-platform-design.md`](../2026-10-03-payleor-platform-design.md) §5 step 1 (the feature list).
 
 **Builds on:** `main` at `908e709` (E7 merged; 736 tests).
 
