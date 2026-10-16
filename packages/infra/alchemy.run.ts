@@ -5,19 +5,25 @@ import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 import "varlock/auto-load";
 
+import { deployedHosts, parseDeployedStage, storeSlugsFrom } from "./deploy-hosts.ts";
 import { localPorts, parseLocalStage, stageUrls, tunnelSettings } from "./dev-hosts.ts";
 
 // Optional public settings; the web app treats "" as not set.
 const optionalString = (name: string) => Config.String(name).pipe(Config.withDefault(""));
 
-// Set only by the `dev` and `dev:preprod` scripts, so deployed stages keep their env values.
+// JENDAL_LOCAL_STAGE is set by the `dev` and `dev:preprod` scripts, JENDAL_DEPLOY_STAGE by the deploy scripts.
 const localStage = parseLocalStage(process.env.JENDAL_LOCAL_STAGE);
+const deployStage = parseDeployedStage(process.env.JENDAL_DEPLOY_STAGE);
+if (!localStage && !deployStage) {
+  throw new Error("Run a local stage (pnpm dev) or deploy with pnpm deploy:staging or pnpm deploy:production.");
+}
 const ports = localPorts(localStage ?? "dev");
 const localUrls = localStage ? stageUrls(localStage, tunnelSettings(process.env)) : undefined;
-const platformDomain = localUrls ? localUrls.platformDomain : Config.String("PLATFORM_DOMAIN");
-const storeDomain = localUrls
-  ? localUrls.storeDomain
-  : Config.NonEmptyString("STORE_DOMAIN").pipe(Config.orElse(() => Config.String("PLATFORM_DOMAIN")));
+const hosts = deployStage ? deployedHosts(deployStage, storeSlugsFrom(process.env.STAGING_STORE_SLUGS)) : undefined;
+// The empty fallbacks are unreachable after the check above.
+const platformDomain = localUrls ? localUrls.platformDomain : (hosts?.platformDomain ?? "");
+const storeDomain = localUrls ? localUrls.storeDomain : (hosts?.storeDomain ?? "");
+const dashOrigin = localUrls ? localUrls.dash : (hosts?.dashOrigin ?? "");
 
 function postgresOrigin(connectionUri: string) {
   const url = new URL(connectionUri);
@@ -56,9 +62,7 @@ export const PayPalWebhookQueue = Cloudflare.Queues.Queue("PayPalWebhooks");
 export const ProductImages = Cloudflare.R2.Bucket("ProductImages");
 
 // The platform site and the dashboard (apps/web/src/lib/platform-url.ts).
-const platformOrigins = localUrls
-  ? [localUrls.platform, localUrls.dash]
-  : Config.String("PLATFORM_DOMAIN").pipe(Config.map((domain) => [`https://${domain}`, `https://dash.${domain}`]));
+const platformOrigins = localUrls ? [localUrls.platform, localUrls.dash] : (hosts?.fileOrigins ?? []);
 
 // Private files (delivery files now, digital products later). Browsers upload and download them through
 // presigned URLs, so the bucket allows PUT and GET from our hosts. alchemy dev's local S3 endpoint ignores CORS.
@@ -85,13 +89,14 @@ export const server = Cloudflare.Worker("server", {
     flags: ["nodejs_compat"],
   },
   observability,
+  domain: hosts?.api.domain,
   // Runs the maintenance sweeps in apps/server/src/maintenance.ts.
   crons: ["*/10 * * * *"],
   env: {
     HYPERDRIVE: Database,
     STORE_CACHE: StoreCache,
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL: localUrls ? localUrls.dash : Config.String("BETTER_AUTH_URL"),
+    BETTER_AUTH_URL: dashOrigin,
     PLATFORM_DOMAIN: platformDomain,
     STORE_DOMAIN: storeDomain,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
@@ -133,8 +138,11 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
     include: ["**/*", "../../packages/core/src/**", "../../packages/ui/src/**"],
   },
   observability,
+  domain: hosts?.web.domain,
+  routes: hosts?.web.routes,
   env: {
     SERVER: server,
+    PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
     PLATFORM_DOMAIN: platformDomain,
     STORE_DOMAIN: storeDomain,
     SANDBOX_BUYER_EMAIL: optionalString("SANDBOX_BUYER_EMAIL"),
@@ -167,6 +175,17 @@ export default Alchemy.Stack(
       scriptName: serverWorker.workerName,
       settings: { batchSize: 10, maxRetries: 10, maxWaitTimeMs: 1000, retryDelay: 30 },
     });
+    if (deployStage === "production") {
+      // Seller sites: the web Worker's *.payleor.app route needs a proxied record to receive requests.
+      yield* Cloudflare.DNS.Record("StoreWildcard", {
+        zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
+        name: "*.payleor.app",
+        type: "AAAA",
+        content: "100::",
+        proxied: true,
+        comment: "Seller sites, served by the web Worker's route",
+      });
+    }
     const web = yield* Web;
 
     return {
