@@ -1,6 +1,7 @@
 export const SANDBOX_NOTICE = "Sandbox: payments use PayPal test accounts. No real money moves.";
 
 export type SandboxSettings = {
+  PAYPAL_ENVIRONMENT?: string;
   SANDBOX_BUYER_EMAIL?: string;
   SANDBOX_BUYER_PASSWORD?: string;
   SANDBOX_CARD_NUMBER?: string;
@@ -17,7 +18,12 @@ export type SandboxBannerContent =
       card: { number: string; expiry: string; cvv: string };
     };
 
-export function sandboxBannerContent(variant: "default" | "checkout", settings: SandboxSettings): SandboxBannerContent {
+export function sandboxBannerContent(
+  variant: "default" | "checkout",
+  settings: SandboxSettings,
+): SandboxBannerContent | null {
+  // The notice says no real money moves; on a live deployment that would be false.
+  if (settings.PAYPAL_ENVIRONMENT !== "sandbox") return null;
   const email = settings.SANDBOX_BUYER_EMAIL;
   const password = settings.SANDBOX_BUYER_PASSWORD;
   const number = settings.SANDBOX_CARD_NUMBER;
