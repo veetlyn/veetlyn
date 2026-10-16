@@ -1,5 +1,15 @@
 import { sql } from "drizzle-orm";
-import { boolean, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  type AnyPgColumn,
+  boolean,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { team } from "./organization";
@@ -21,6 +31,8 @@ export const clientContact = pgTable(
       .notNull()
       .references(() => team.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
+    // Set when the contact was merged into another: links sent to it keep resolving to the survivor.
+    mergedIntoId: text("merged_into_id").references((): AnyPgColumn => clientContact.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("client_contact_teamId_idx").on(t.teamId)],

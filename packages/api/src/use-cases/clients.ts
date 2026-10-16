@@ -4,6 +4,7 @@ import {
   findClientContactForUser,
   findLinkedContact,
   primaryContactFor,
+  verifyContactEmail,
 } from "@jendal-workspace/db/repositories/contacts";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -30,10 +31,12 @@ export async function resolveClient(db: Database, secret: string, holder: Client
     return { ok: false, reason: "team_member" };
   }
   if (claim) {
-    const linked = await findLinkedContact(db, claim);
-    if (!linked) return { ok: false, reason: "invalid_link" };
-    const token = { projectId: linked.projectId, contactId: linked.contactId };
-    return { ok: true, contactId: linked.contactId, actor: { kind: "client_link", token } };
+    const contactId = await db.transaction(async (tx) => {
+      const linked = await findLinkedContact(tx, claim);
+      return linked ? verifyContactEmail(tx, linked) : null;
+    });
+    if (!contactId) return { ok: false, reason: "invalid_link" };
+    return { ok: true, contactId, actor: { kind: "client_link", token: { projectId: project.id, contactId } } };
   }
   if (!holder.userId) return { ok: false, reason: "not_a_client" };
   const contactId = await findClientContactForUser(db, { projectId: project.id, userId: holder.userId });

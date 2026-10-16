@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "2a1833e0-2a98-4adc-aee8-ffcff3e3d12f",
+  "id": "3e3fbef7-9f1e-457b-a397-169e107a52b7",
   "prevIds": [
     "0875adf9-7aec-44f9-a7ef-1696b176e9b9"
   ],
@@ -6028,6 +6028,19 @@
       "table": "client_contact"
     },
     {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "merged_into_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "client_contact"
+    },
+    {
       "type": "timestamp",
       "typeSchema": null,
       "notNull": true,
@@ -8838,6 +8851,23 @@
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "client_contact_team_id_team_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "client_contact"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "merged_into_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "client_contact",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "client_contact_merged_into_id_client_contact_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "client_contact"
