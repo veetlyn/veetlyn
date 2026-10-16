@@ -1,0 +1,24 @@
+packages/db/src/repositories/unit-of-work.ts
+  s_ec180faf4f9b2e::t_bab485cceedf1e 39-41,63-69,77-95
+  s_ec180faf4f9b2e::t_452646a9934b6a 96
+packages/core/src/projects/events.ts
+  s_ec180faf4f9b2e::t_2314e2311e6b3e 5-7
+packages/db/src/repositories/unit-of-work.test.ts
+  s_ec180faf4f9b2e::t_747d52e067ccd5 95-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "58553e85317623d02211af0adc56e88cbcf543ec",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
