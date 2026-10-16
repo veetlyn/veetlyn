@@ -9,6 +9,7 @@ import {
   grantState,
   type GrantState,
   hashToken,
+  sameHash,
   maskEmail,
   newToken,
   orderCustomId,
@@ -483,7 +484,7 @@ async function captureAndApply(
 
 export async function verifyCheckout(db: Database, input: { paypalOrderId: string; secret: string }): Promise<OrderRow> {
   const row = await findOrderByPayPalOrderId(db, input.paypalOrderId);
-  if (!row || (await hashToken(input.secret)) !== row.checkoutSecretHash) throw invalidCheckout();
+  if (!row || !sameHash(await hashToken(input.secret), row.checkoutSecretHash)) throw invalidCheckout();
   return row;
 }
 
