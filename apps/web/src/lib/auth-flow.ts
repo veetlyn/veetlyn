@@ -1,5 +1,5 @@
 // Sign-up and "Send a new link" return here after verification. Sign-in must not pass it (Fact 14).
-export const VERIFIED_EMAIL_REDIRECT = "/new";
+export const VERIFIED_EMAIL_REDIRECT = "/new/services-team";
 export const RESET_PASSWORD_PATH = "/reset-password";
 export const TOO_MANY_ATTEMPTS = "Too many attempts. Try again in a few minutes.";
 

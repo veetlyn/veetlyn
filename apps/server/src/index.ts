@@ -38,7 +38,7 @@ import { tenantMiddleware } from "./tenant/middleware";
 import { trpcErrorContext } from "./trpc-error-log";
 
 initLogger({
-  env: { service: "jendal-api" },
+  env: { service: "jendal-api", environment: ENV.DEPLOY_STAGE },
 });
 
 const environment: TenantEnvironment = ENV.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";

@@ -97,6 +97,7 @@ export const server = Cloudflare.Worker("server", {
     STORE_CACHE: StoreCache,
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: dashOrigin,
+    DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PLATFORM_DOMAIN: platformDomain,
     STORE_DOMAIN: storeDomain,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
