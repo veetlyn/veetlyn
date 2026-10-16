@@ -30,7 +30,8 @@ import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } fr
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { signClientLink, signPayLink } from "../client-links";
+import { signPayLink } from "../client-links";
+import { clientTokenFor } from "../testing/client-links";
 import type { PayPalServices } from "../context";
 import { appRouter } from "../routers/index";
 import { makeSession } from "../testing";
@@ -161,7 +162,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       deliveryDays: 14,
     });
     const { paymentId } = await callerFor(null).project.clientAcceptQuote({
-      token: await signClientLink(SECRET, projectId),
+      token: await clientTokenFor(db, SECRET, projectId),
       quoteId,
     });
     await markTeamPayPalMerchant(db, { teamId, merchantId: "SELLER1" });
@@ -440,7 +441,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
 
     async function acceptDelivery(projectId: string, freelancer: string) {
       const { deliveryId } = await callerFor(freelancer).project.deliver({ teamSlug: "team", projectId, note: "Here it is" });
-      return callerFor(null).project.clientAcceptDelivery({ token: await signClientLink(SECRET, projectId), deliveryId });
+      return callerFor(null).project.clientAcceptDelivery({ token: await clientTokenFor(db, SECRET, projectId), deliveryId });
     }
 
     // The balance is paid on another PayPal order, applied as the pay page would.
@@ -472,7 +473,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         add: [],
         removeItemIds: [build.id],
       });
-      await callerFor(null).project.clientAcceptAmendment({ token: await signClientLink(SECRET, projectId), amendmentId });
+      await callerFor(null).project.clientAcceptAmendment({ token: await clientTokenFor(db, SECRET, projectId), amendmentId });
       return acceptDelivery(projectId, freelancer);
     }
 

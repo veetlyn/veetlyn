@@ -14,7 +14,8 @@ import {
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 
-import { type LinkSecretSource, linkSecret, signClientLink, signPayLink } from "../client-links";
+import { type LinkSecretSource, linkSecret, signPayLink } from "../client-links";
+import { primaryClientPath } from "./clients";
 import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { deliveryFileUrl, type ProjectActor } from "./projects";
 
@@ -95,7 +96,7 @@ export async function getTeamProjectView(
     getTeamPayPalCountry(db, viewer.teamId),
     payeeId && seesPayee ? getPayoutDestination(db, payeeId) : null,
   ]);
-  const clientToken = await signClientLink(linkSecret(deps.auth), row.id);
+  const clientPath = await primaryClientPath(db, linkSecret(deps.auth), row.id);
   return {
     project: row,
     quotes,
@@ -103,7 +104,7 @@ export async function getTeamProjectView(
     payments,
     deliveries: await withDeliveryFiles(db, deliveries),
     refund,
-    clientPath: `/c/${clientToken}`,
+    clientPath,
     role: viewer.role,
     quotingMode: settings?.quotingMode ?? "assigned",
     solo: settings?.solo ?? false,

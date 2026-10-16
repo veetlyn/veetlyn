@@ -2,11 +2,12 @@ import type { TRPCMutationProcedure, TRPCQueryProcedure } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { linkSecret, verifyClientLink } from "../client-links";
+import { linkSecret } from "../client-links";
 import type { Context } from "../context";
 import { publicProcedure } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
-import type { Actor } from "./actors";
+import { resolveClientLink } from "../use-cases/clients";
+import type { Actor, ClientLinkToken } from "./actors";
 import type { ActionDefinition } from "./define";
 import { ActionError, toTRPCError } from "./errors";
 import { type ActionDeps, perform } from "./perform";
@@ -78,10 +79,10 @@ export function teamProcedureFor(definition: LooseDefinition) {
 
 const token = z.string().min(1);
 
-async function projectIdFromToken(ctx: Context, link: string): Promise<string> {
-  const projectId = await verifyClientLink(linkSecret(ctx.auth), link);
-  if (!projectId) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-  return projectId;
+async function contactFromToken(ctx: Context, link: string): Promise<ClientLinkToken> {
+  const linked = await resolveClientLink(ctx.db, linkSecret(ctx.auth), link);
+  if (!linked) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
+  return { projectId: linked.projectId, contactId: linked.contactId };
 }
 
 // The client sends the link it holds instead of the project id the link names.
@@ -97,8 +98,8 @@ export function clientProcedureFor(
   const resolve = async ({ ctx, input }: { ctx: Context; input: { token: string } }) => {
     // The rest holds the definition's other fields, which the omitted schema typed loosely.
     const { token: link, ...rest } = input;
-    const projectId = await projectIdFromToken(ctx, link);
-    return performOnWeb(ctx, { kind: "client_link", token: { projectId } }, definition, { ...rest, projectId });
+    const linked = await contactFromToken(ctx, link);
+    return performOnWeb(ctx, { kind: "client_link", token: linked }, definition, { ...rest, projectId: linked.projectId });
   };
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
 }

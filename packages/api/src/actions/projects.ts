@@ -6,7 +6,8 @@ import {
 } from "@jendal-workspace/core";
 import { z } from "zod";
 
-import { linkSecret, signClientLink } from "../client-links";
+import { linkSecret } from "../client-links";
+import { primaryClientPath } from "../use-cases/clients";
 import { refundClient } from "../use-cases/client-refunds";
 import { getClientProjectView, getTeamProjectView, listVisibleProjects } from "../use-cases/project-views";
 import { assignFreelancer, MAX_TITLE, MIN_TITLE, startProject } from "../use-cases/projects";
@@ -37,8 +38,7 @@ export const projectStart = defineAction({
   allow: [{ grant: "member" }],
   run: async (context, input) => {
     const { projectId } = await startProject(context.deps.db, teamActorOf(context), input);
-    const clientToken = await signClientLink(linkSecret(context.deps.auth), projectId);
-    return { projectId, clientPath: `/c/${clientToken}` };
+    return { projectId, clientPath: await primaryClientPath(context.deps.db, linkSecret(context.deps.auth), projectId) };
   },
 });
 

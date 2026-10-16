@@ -39,7 +39,8 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { projectList } from "../actions/projects";
-import { signClientLink, verifyClientLink } from "../client-links";
+import { verifyClientLink } from "../client-links";
+import { clientTokenFor } from "../testing/client-links";
 import type { Context, EmailServices, PayPalServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact } from "../use-cases/payments";
@@ -78,8 +79,8 @@ const ITEMS = [
   { description: "Build", amountMinor: 60_000, extraDays: 0 },
 ];
 
-async function clientToken(projectId: string): Promise<string> {
-  return signClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, projectId);
+function clientToken(db: Parameters<typeof clientTokenFor>[0], projectId: string): Promise<string> {
+  return clientTokenFor(db, TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, projectId);
 }
 
 describe.skipIf(!hasTestDatabase)("project router", () => {
@@ -118,7 +119,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       managementFeeBps: 1_000,
       teamCutBps: 1_500,
     });
-    expect(clientPath).toBe(`/c/${await clientToken(projectId)}`);
+    expect(clientPath).toBe(`/c/${await clientToken(db, projectId)}`);
     expect(await db.select().from(outbox)).toEqual([
       expect.objectContaining({ type: "project.created", projectId, sequence: 1 }),
     ]);
@@ -290,7 +291,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBeNull();
 
     const { quoteId } = await caller.project.addQuote({ teamSlug: "solo", projectId, items: ITEMS, deliveryDays: 14 });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
     expect(await findProjectById(db, projectId)).toMatchObject({ status: "awaiting_deposit", assignedFreelancerId: userId });
   });
 
@@ -348,7 +349,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(list).toEqual([expect.objectContaining({ id: projectId, title: "Website redesign", status: "quoting" })]);
     const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
     expect(detail.project.id).toBe(projectId);
-    expect(detail.clientPath).toBe(`/c/${await clientToken(projectId)}`);
+    expect(detail.clientPath).toBe(`/c/${await clientToken(db, projectId)}`);
     expect(detail.quotes).toEqual([]);
   });
 
@@ -399,7 +400,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       deliveryDays: 14,
     });
 
-    const token = await clientToken(projectId);
+    const token = await clientToken(db, projectId);
     const result = await callerFor(null).project.clientAcceptQuote({ token, quoteId });
     expect(result).toEqual({ paymentId: expect.any(String), amountMinor: 60_000 });
 
@@ -443,7 +444,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("answers a valid link to a missing project like a forged one", async () => {
-    const token = await clientToken(crypto.randomUUID());
+    const token = await clientToken(db, crypto.randomUUID());
     const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
     await expect(callerFor(null).project.clientGet({ token })).rejects.toMatchObject(notValid);
     await expect(callerFor(null).project.clientAcceptQuote({ token, quoteId: crypto.randomUUID() })).rejects.toMatchObject(
@@ -465,7 +466,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     const before = (await db.select({ id: actionLog.id }).from(actionLog)).map((row) => row.id);
 
     await callerFor(userId).project.get({ teamSlug: "team", projectId });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
 
     const added = (await db.select().from(actionLog)).filter((row) => !before.includes(row.id));
     expect(added).toEqual([
@@ -488,7 +489,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
     const { projectId } = await createProject(userId);
     const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 7 });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
     expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBe(freelancer);
 
     // Team mode: the freelancer the staff member named.
@@ -501,7 +502,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       deliveryDays: 7,
       freelancerId: freelancer,
     });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(second), quoteId: staffQuote });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, second), quoteId: staffQuote });
     expect((await findProjectById(db, second))?.assignedFreelancerId).toBe(freelancer);
   });
   it("rolls everything back when the client accepts a quote on a project that changed underneath", async () => {
@@ -515,11 +516,11 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       items: ITEMS,
       deliveryDays: 7,
     });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
 
     // Accepting again is refused by the state machine and changes nothing.
     await expect(
-      callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId }),
+      callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     const payments = await db.select().from(payment).where(eq(payment.projectId, projectId));
     expect(payments).toHaveLength(1);
@@ -537,7 +538,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       items,
       deliveryDays: 14,
     });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
     // The deposit capture is S6's; here the payment_captured posting moves the project along.
     const [deposit] = await db.select().from(payment).where(eq(payment.projectId, projectId));
     await runInTransaction(db, async (tx, uow) => {
@@ -573,7 +574,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       removeItemIds: [],
     });
 
-    const token = await clientToken(projectId);
+    const token = await clientToken(db, projectId);
     const result = await callerFor(null).project.clientAcceptAmendment({ token, amendmentId });
     expect(result).toEqual({ quoteVersion: 2, topUpPaymentId: expect.any(String) });
 
@@ -614,7 +615,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       add: [],
       removeItemIds: [designItem.id],
     });
-    const result = await callerFor(null).project.clientAcceptAmendment({ token: await clientToken(projectId), amendmentId });
+    const result = await callerFor(null).project.clientAcceptAmendment({ token: await clientToken(db, projectId), amendmentId });
     expect(result).toEqual({ quoteVersion: 2, topUpPaymentId: null });
 
     const versions = await listProjectQuotes(db, projectId);
@@ -651,7 +652,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       message: "An amendment is waiting for the client's answer.",
     });
 
-    const token = await clientToken(projectId);
+    const token = await clientToken(db, projectId);
     const page = await callerFor(null).project.clientGet({ token });
     const pending = page.amendments.find((a) => a.status === "pending");
     if (!pending) throw new Error("no pending amendment");
@@ -668,7 +669,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const { projectId } = await createProject(userId);
       await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
       const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
-      const token = await clientToken(projectId);
+      const token = await clientToken(db, projectId);
       const { paymentId } = await callerFor(null).project.clientAcceptQuote({ token, quoteId });
       await db.update(payment).set({ paypalOrderId: "ORDER1" }).where(eq(payment.id, paymentId));
       const result = await applyCaptureFact(db, {
@@ -1389,7 +1390,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         items: ITEMS,
         deliveryDays: 14,
       });
-      const otherToken = await clientToken(otherId);
+      const otherToken = await clientToken(db, otherId);
       await callerFor(null).project.clientAcceptQuote({ token: otherToken, quoteId });
 
       const notWaiting = { code: "BAD_REQUEST", message: "This delivery is not waiting for an answer." };
@@ -1622,7 +1623,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
         const noFile = { code: "BAD_REQUEST", message: "This delivery has no file." };
         const { projectId: otherId } = await createProject(first.userId);
-        const otherToken = await clientToken(otherId);
+        const otherToken = await clientToken(db, otherId);
         await expect(
           callerFor(null, files).project.clientDeliveryFileUrl({ token: otherToken, deliveryId }),
         ).rejects.toMatchObject(noFile);
