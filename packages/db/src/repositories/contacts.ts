@@ -1,5 +1,5 @@
 import { OPEN_PROJECT_STATUSES } from "@jendal-workspace/core";
-import { and, countDistinct, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, countDistinct, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
@@ -129,7 +129,85 @@ export async function attachContact(
     linkEmail?: string | null;
   },
 ): Promise<void> {
-  await tx.insert(projectClient).values(input);
+  await tx.insert(projectClient).values({ ...input, linkEmailedAt: input.linkEmail ? new Date() : null });
+}
+
+export type ProjectClientRow = typeof projectClient.$inferSelect;
+
+// Locks the project's client rows; every change to who the clients are, and every link resolution, takes it.
+export async function lockProjectClients(tx: Transaction, projectId: string): Promise<ProjectClientRow[]> {
+  return tx
+    .select()
+    .from(projectClient)
+    .where(eq(projectClient.projectId, projectId))
+    .orderBy(asc(projectClient.addedAt), asc(projectClient.contactId))
+    .for("update");
+}
+
+export async function detachContact(
+  tx: Transaction,
+  input: { projectId: string; contactId: string; newPrimaryId: string | null },
+): Promise<void> {
+  await tx
+    .delete(projectClient)
+    .where(and(eq(projectClient.projectId, input.projectId), eq(projectClient.contactId, input.contactId)));
+  if (input.newPrimaryId) {
+    await tx
+      .update(projectClient)
+      .set({ isPrimary: true })
+      .where(and(eq(projectClient.projectId, input.projectId), eq(projectClient.contactId, input.newPrimaryId)));
+  }
+}
+
+// A new link version revokes every link sent before, including those of contacts merged into this one.
+export async function bumpLinkVersion(
+  tx: Transaction,
+  input: { projectId: string; contactId: string },
+): Promise<number> {
+  const [row] = await tx
+    .update(projectClient)
+    .set({ linkVersion: sql`${projectClient.linkVersion} + 1`, linkEmail: null, linkEmailedAt: null, linkAliases: [] })
+    .where(and(eq(projectClient.projectId, input.projectId), eq(projectClient.contactId, input.contactId)))
+    .returning({ linkVersion: projectClient.linkVersion });
+  if (!row) throw new Error("The contact is not on the project");
+  return row.linkVersion;
+}
+
+// Records where this link version was emailed. A version sent to two different addresses proves neither.
+export async function recordLinkEmail(
+  tx: Transaction,
+  input: { projectId: string; contactId: string; email: string },
+): Promise<void> {
+  const where = and(eq(projectClient.projectId, input.projectId), eq(projectClient.contactId, input.contactId));
+  const [row] = await tx
+    .select({ linkEmail: projectClient.linkEmail, linkEmailedAt: projectClient.linkEmailedAt })
+    .from(projectClient)
+    .where(where)
+    .limit(1);
+  if (!row) throw new Error("The contact is not on the project");
+  const linkEmail = row.linkEmailedAt === null || row.linkEmail === input.email ? input.email : null;
+  await tx.update(projectClient).set({ linkEmail, linkEmailedAt: new Date() }).where(where);
+}
+
+export async function contactWithIdentities(
+  tx: DbExecutor,
+  input: { teamId: string; contactId: string },
+): Promise<{ id: string; name: string; identities: { kind: ClientIdentityKind; value: string; verified: boolean }[] } | null> {
+  const [contact] = await tx
+    .select({ id: clientContact.id, name: clientContact.name })
+    .from(clientContact)
+    .where(and(eq(clientContact.id, input.contactId), eq(clientContact.teamId, input.teamId)))
+    .limit(1);
+  if (!contact) return null;
+  const identities = await tx
+    .select({ kind: clientIdentity.kind, value: clientIdentity.value, verifiedAt: clientIdentity.verifiedAt })
+    .from(clientIdentity)
+    .where(eq(clientIdentity.contactId, contact.id))
+    .orderBy(sql`${clientIdentity.verifiedAt} is null`, asc(clientIdentity.kind), asc(clientIdentity.value));
+  return {
+    ...contact,
+    identities: identities.map((i) => ({ kind: i.kind, value: i.value, verified: i.verifiedAt !== null })),
+  };
 }
 
 // The "three open requests per email per team" limit (sellers design §4.2), through the projects' contacts.

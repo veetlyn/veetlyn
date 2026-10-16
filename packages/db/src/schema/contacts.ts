@@ -79,6 +79,9 @@ export const projectClient = pgTable(
     // The address the server emailed this version's link to. Only that address is proved when the link is
     // opened: a link the team could have seen (one sent before contacts existed, or never emailed) proves none.
     linkEmail: text("link_email"),
+    // When this version was last emailed; null while it never was. A version sent to two different addresses
+    // keeps the time and loses the address.
+    linkEmailedAt: timestamp("link_emailed_at"),
     // Contacts merged into this one whose links for this project, at this version, still open it.
     linkAliases: text("link_aliases").array().notNull().default(sql`'{}'::text[]`),
     addedById: text("added_by_id").references(() => user.id, { onDelete: "set null" }),

@@ -21,6 +21,7 @@ CREATE TABLE "project_client" (
 	"is_primary" boolean DEFAULT false NOT NULL,
 	"link_version" integer DEFAULT 1 NOT NULL,
 	"link_email" text,
+	"link_emailed_at" timestamp,
 	"link_aliases" text[] DEFAULT '{}'::text[] NOT NULL,
 	"added_by_id" text,
 	"added_at" timestamp DEFAULT now() NOT NULL,

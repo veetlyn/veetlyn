@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "00724951-ba55-4a08-aa07-d3774d6c4e3c",
+  "id": "f7999229-dde4-4f40-ab73-8d37664530cc",
   "prevIds": [
     "0875adf9-7aec-44f9-a7ef-1696b176e9b9"
   ],
@@ -6192,6 +6192,19 @@
       "generated": null,
       "identity": null,
       "name": "link_email",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "project_client"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "link_emailed_at",
       "entityType": "columns",
       "schema": "public",
       "table": "project_client"

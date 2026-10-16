@@ -30,6 +30,7 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
+import { attachContact, matchOrCreateContact } from "@jendal-workspace/db/repositories/contacts";
 import {
   findProjectById,
   getCurrentQuote,
@@ -105,6 +106,11 @@ async function requireTeamMember(tx: Transaction, teamId: string, userId: string
   if (!(await servicesTeamRoleFor(tx, teamId, userId))) fail("BAD_REQUEST", "That person is not a member of this team.");
 }
 
+// The name given, else the email's local part, else "Client" (design §5.6).
+export function contactName(name: string | undefined, email: string | null): string {
+  return name?.trim() || email?.split("@")[0] || "Client";
+}
+
 export const MIN_TITLE = 3;
 export const MAX_TITLE = 120;
 const MAX_DELIVERY_DAYS = 365;
@@ -118,6 +124,7 @@ export async function startProject(
     brief?: string;
     clientEmail?: string;
     clientDiscordId?: string;
+    clientName?: string;
     channelId?: string;
     offeringId?: string | null;
   },
@@ -160,13 +167,22 @@ export async function startProject(
       })
       .returning();
     if (!row) throw new Error("Insert into project returned no row");
+    const clientName = contactName(input.clientName, clientEmail);
+    const contactId = await matchOrCreateContact(tx, {
+      teamId: actor.teamId,
+      email: clientEmail,
+      discordId: clientDiscordId,
+      name: clientName,
+      source: "typed",
+    });
+    await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: actor.actorId });
     await uow.apply({
       project: row,
       set: {},
       events: [
         {
           type: "project.created",
-          data: { projectId: row.id, title, clientEmail, clientDiscordId, channelId: row.channelId },
+          data: { projectId: row.id, title, contactIds: [contactId], clientName, channelId: row.channelId },
         },
       ],
     });
