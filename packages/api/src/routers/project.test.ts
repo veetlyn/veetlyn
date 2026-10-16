@@ -1757,7 +1757,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect.objectContaining({ contactId: contact!.id, kind: "email", value: "jo@x.com", source: "request", verifiedAt: null }),
       ]);
       expect(await db.select().from(projectClient)).toEqual([
-        expect.objectContaining({ projectId, contactId: contact!.id, isPrimary: true, linkVersion: 1 }),
+        expect.objectContaining({ projectId, contactId: contact!.id, isPrimary: true, linkVersion: 1, linkEmail: "jo@x.com" }),
       ]);
       expect(await db.select().from(outbox)).toEqual([
         expect.objectContaining({

@@ -111,7 +111,8 @@ export async function requestQuote(
       name: clientName,
       source: "request",
     });
-    await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: null });
+    // The link is emailed to this address right after the transaction.
+    await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: null, linkEmail: email });
     await uow.apply({
       project: row,
       set: {},

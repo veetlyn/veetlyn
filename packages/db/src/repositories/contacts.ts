@@ -12,28 +12,52 @@ import {
 } from "../schema/contacts";
 import { project } from "../schema/projects";
 
-export type LinkedContact = { projectId: string; contactId: string; teamId: string };
+export type LinkedContact = {
+  projectId: string;
+  contactId: string;
+  teamId: string;
+  // The address this link was emailed to, when the link names its contact (legacy links prove nothing).
+  provedEmail: string | null;
+};
 
-// A client link is valid while its contact is attached to the project at the same link version. A link
-// without a contact stands for the primary contact.
+// A client link is valid while its contact (or a contact merged into the one now attached) is attached to the
+// project at the same link version; a link without a contact stands for the primary contact. The row is locked
+// so a reissue or a removal cannot interleave with the resolution and the verification that follows it.
 export async function findLinkedContact(
-  tx: DbExecutor,
+  tx: Transaction,
   claim: { projectId: string; contactId: string | null; version: number },
 ): Promise<LinkedContact | null> {
-  const contactId = claim.contactId === null ? null : await survivingContactId(tx, claim.contactId);
   const [row] = await tx
-    .select({ projectId: projectClient.projectId, contactId: projectClient.contactId, teamId: clientContact.teamId })
+    .select({
+      projectId: projectClient.projectId,
+      contactId: projectClient.contactId,
+      teamId: clientContact.teamId,
+      linkEmail: projectClient.linkEmail,
+    })
     .from(projectClient)
     .innerJoin(clientContact, eq(clientContact.id, projectClient.contactId))
+    .innerJoin(project, and(eq(project.id, projectClient.projectId), eq(project.teamId, clientContact.teamId)))
     .where(
       and(
         eq(projectClient.projectId, claim.projectId),
-        contactId === null ? eq(projectClient.isPrimary, true) : eq(projectClient.contactId, contactId),
+        claim.contactId === null
+          ? eq(projectClient.isPrimary, true)
+          : or(
+              eq(projectClient.contactId, claim.contactId),
+              sql`${claim.contactId} = any(${projectClient.linkAliases})`,
+            ),
         eq(projectClient.linkVersion, claim.version),
       ),
     )
-    .limit(1);
-  return row ?? null;
+    .limit(1)
+    .for("update", { of: projectClient });
+  if (!row) return null;
+  return {
+    projectId: row.projectId,
+    contactId: row.contactId,
+    teamId: row.teamId,
+    provedEmail: claim.contactId === null ? null : row.linkEmail,
+  };
 }
 
 // Matches the team's contact by email, else by Discord id, or creates one; the identities it lacks are added
@@ -96,7 +120,14 @@ export async function matchOrCreateContact(
 
 export async function attachContact(
   tx: DbExecutor,
-  input: { projectId: string; contactId: string; isPrimary: boolean; addedById: string | null },
+  input: {
+    projectId: string;
+    contactId: string;
+    isPrimary: boolean;
+    addedById: string | null;
+    // Set when the server emails this contact's link as part of attaching it.
+    linkEmail?: string | null;
+  },
 ): Promise<void> {
   await tx.insert(projectClient).values(input);
 }
@@ -117,27 +148,10 @@ export async function countOpenRequestsForEmail(
         eq(project.source, "web"),
         inArray(project.status, OPEN_PROJECT_STATUSES),
         eq(clientIdentity.kind, "email"),
-        eq(clientIdentity.value, input.email),
+        eq(clientIdentity.value, input.email.trim().toLowerCase()),
       ),
     );
   return row?.count ?? 0;
-}
-
-const MAX_MERGE_HOPS = 8;
-
-// A merged contact's links speak for the contact it was merged into.
-async function survivingContactId(tx: DbExecutor, contactId: string): Promise<string> {
-  let current = contactId;
-  for (let hop = 0; hop < MAX_MERGE_HOPS; hop += 1) {
-    const [row] = await tx
-      .select({ mergedIntoId: clientContact.mergedIntoId })
-      .from(clientContact)
-      .where(eq(clientContact.id, current))
-      .limit(1);
-    if (!row?.mergedIntoId) return current;
-    current = row.mergedIntoId;
-  }
-  return current;
 }
 
 // Serialises everything that matches, creates or verifies a contact by this email (or `discord:{id}`) in
@@ -146,52 +160,65 @@ export async function lockClientIdentity(tx: DbExecutor, input: { teamId: string
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${input.teamId} || ':' || ${input.key}))`);
 }
 
-// Opening a link emailed to the contact proves its email addresses (design §5.2). When another contact of the
-// team already holds one of them verified, this contact is the same client: it merges into that one, which
-// is returned.
-export async function verifyContactEmail(
-  tx: Transaction,
-  contact: { contactId: string; teamId: string },
-  now: Date = new Date(),
-): Promise<string> {
-  const unverified = await tx
-    .select({ id: clientIdentity.id, value: clientIdentity.value })
+// Opening a link proves the one address the server emailed it to (design §5.2), and nothing else: not the
+// contact's other addresses, and nothing at all for a link the team could have seen. When another contact of
+// the team already holds that address verified, this contact is the same client and merges into that one,
+// which is returned.
+export async function verifyContactEmail(tx: Transaction, linked: LinkedContact, now: Date = new Date()): Promise<string> {
+  if (!linked.provedEmail) return linked.contactId;
+  const email = linked.provedEmail;
+  await lockClientIdentity(tx, { teamId: linked.teamId, key: email });
+  const [own] = await tx
+    .select({ id: clientIdentity.id, verifiedAt: clientIdentity.verifiedAt })
     .from(clientIdentity)
     .where(
       and(
-        eq(clientIdentity.contactId, contact.contactId),
+        eq(clientIdentity.contactId, linked.contactId),
         eq(clientIdentity.kind, "email"),
-        isNull(clientIdentity.verifiedAt),
+        eq(clientIdentity.value, email),
       ),
-    );
-  for (const identity of unverified) {
-    await lockClientIdentity(tx, { teamId: contact.teamId, key: identity.value });
-    const [holder] = await tx
-      .select({ contactId: clientIdentity.contactId })
-      .from(clientIdentity)
-      .where(
-        and(
-          eq(clientIdentity.teamId, contact.teamId),
-          eq(clientIdentity.kind, "email"),
-          eq(clientIdentity.value, identity.value),
-          isNotNull(clientIdentity.verifiedAt),
-          ne(clientIdentity.contactId, contact.contactId),
-        ),
-      )
-      .limit(1);
-    if (holder) {
-      await mergeContacts(tx, { fromId: contact.contactId, intoId: holder.contactId });
-      return holder.contactId;
-    }
-    await tx.update(clientIdentity).set({ verifiedAt: now }).where(eq(clientIdentity.id, identity.id));
+    )
+    .limit(1);
+  if (!own || own.verifiedAt) return linked.contactId;
+  const [holder] = await tx
+    .select({ contactId: clientIdentity.contactId })
+    .from(clientIdentity)
+    .where(
+      and(
+        eq(clientIdentity.teamId, linked.teamId),
+        eq(clientIdentity.kind, "email"),
+        eq(clientIdentity.value, email),
+        isNotNull(clientIdentity.verifiedAt),
+        ne(clientIdentity.contactId, linked.contactId),
+      ),
+    )
+    .limit(1);
+  if (holder) {
+    await mergeContacts(tx, { teamId: linked.teamId, fromId: linked.contactId, intoId: holder.contactId });
+    return holder.contactId;
   }
-  return contact.contactId;
+  await tx.update(clientIdentity).set({ verifiedAt: now }).where(eq(clientIdentity.id, own.id));
+  return linked.contactId;
 }
 
-// Moves the contact's projects and identities onto another contact of the same team and leaves an alias
-// behind, so links already sent keep working.
-export async function mergeContacts(tx: Transaction, input: { fromId: string; intoId: string }): Promise<void> {
+// Moves a contact's projects and identities onto another contact of the same team, then deletes it. A moved
+// project row remembers the merged contact, so links it was sent keep opening that project at that version;
+// where the survivor was already on the project, the merged contact's links for it simply stop working.
+async function mergeContacts(tx: Transaction, input: { teamId: string; fromId: string; intoId: string }): Promise<void> {
   const { fromId, intoId } = input;
+  const [from, into] = await Promise.all(
+    [fromId, intoId].map((id) =>
+      tx
+        .select({ teamId: clientContact.teamId })
+        .from(clientContact)
+        .where(eq(clientContact.id, id))
+        .limit(1)
+        .then((rows) => rows[0]),
+    ),
+  );
+  if (from?.teamId !== input.teamId || into?.teamId !== input.teamId) {
+    throw new Error("Contacts merge only within one team");
+  }
   const rows = await tx.select().from(projectClient).where(eq(projectClient.contactId, fromId));
   for (const row of rows) {
     const [existing] = await tx
@@ -199,16 +226,15 @@ export async function mergeContacts(tx: Transaction, input: { fromId: string; in
       .from(projectClient)
       .where(and(eq(projectClient.projectId, row.projectId), eq(projectClient.contactId, intoId)))
       .limit(1);
+    const fromRow = and(eq(projectClient.projectId, row.projectId), eq(projectClient.contactId, fromId));
     if (!existing) {
       await tx
         .update(projectClient)
-        .set({ contactId: intoId })
-        .where(and(eq(projectClient.projectId, row.projectId), eq(projectClient.contactId, fromId)));
+        .set({ contactId: intoId, linkAliases: [...row.linkAliases, fromId] })
+        .where(fromRow);
       continue;
     }
-    await tx
-      .delete(projectClient)
-      .where(and(eq(projectClient.projectId, row.projectId), eq(projectClient.contactId, fromId)));
+    await tx.delete(projectClient).where(fromRow);
     if (row.isPrimary) {
       await tx
         .update(projectClient)
@@ -227,7 +253,7 @@ export async function mergeContacts(tx: Transaction, input: { fromId: string; in
       ? tx.delete(clientIdentity).where(eq(clientIdentity.id, identity.id))
       : tx.update(clientIdentity).set({ contactId: intoId }).where(eq(clientIdentity.id, identity.id)));
   }
-  await tx.update(clientContact).set({ mergedIntoId: intoId }).where(eq(clientContact.id, fromId));
+  await tx.delete(clientContact).where(eq(clientContact.id, fromId));
 }
 
 // The attached contact a signed-in user is: through a user identity, or through a verified email identity
