@@ -43,6 +43,12 @@ No critical or high vulnerabilities were found. The money paths, webhook verific
 - `packages/api/src/use-cases/orders.ts:486` — `verifyCheckout` compares token hashes with `!==` (non-constant-time). Impractical to exploit with 256-bit secrets; use a timing-safe compare for hygiene.
 - `README.md` still tells deployers to set `CORS_ORIGIN`, which exists nowhere in code — the service-binding design makes CORS moot. Remove the line so nobody "fixes" it by adding permissive CORS.
 
+### A6. [Medium] A pay link yields a client link — found by a commit review, 2026-10-16
+
+**Evidence:** `packages/api/src/routers/payment.ts:42` — `payGet`, a public query keyed by the pay link, signs a fresh client link for the payment's project and returns it as `clientPath`. Anyone holding a pay link (often forwarded, for instance to whoever pays) gets the client page's full powers: accepting quotes and deliveries. The A2 plan (Task 3) would keep this and sign a current v2 link there, so a leaked pay link would keep producing valid client links after a reissue, defeating A2's revocation.
+
+**Remediation:** `payGet` returns no client token; the pay page links back to the project only when it was opened from the client page. Sent to the A2 build as a change to its Task 3.
+
 ## B. Findings on the `spike-plugin` branch (input for run C)
 
 ### B1. [Medium] Consent screen trusts an attacker-chosen client name — SBD-05
@@ -89,7 +95,7 @@ No critical or high vulnerabilities were found. The money paths, webhook verific
 
 ## Priority order
 
-Owners use the runs of the [agentic dash design](2026-10-16-agentic-dash-design.md) §10: the plugin port is run L (formerly part of run C).
+A6 is fixed in A2. Owners use the runs of the [agentic dash design](2026-10-16-agentic-dash-design.md) §10: the plugin port is run L (formerly part of run C).
 
 1. **B1** consent screen shows the redirect host, or DCR off (above) — L, in the OAuth port
 2. **B2** widget v2 frames seller strings as data — L; the same rule applies to briefs and messages given to the intake agent (design §8)

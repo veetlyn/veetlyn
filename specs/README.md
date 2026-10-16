@@ -56,6 +56,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Connector UX guidelines](platform/2026-10-14-connector-ux-guidelines.md) | Reference: 38 rules for the plugin's tools and widgets, from Claude, OpenAI and the MCP Apps spec |
 | [A2 plan](platform/plans/2026-10-15-a2-client-contacts.md) | Planned |
 | [Run C plan](platform/plans/2026-10-15-c-plugin.md) | Planned |
+| [H plan](platform/plans/2026-10-16-h-hosts-and-deploy.md) | Planned 2026-10-16 |
 | [Security audit](platform/2026-10-16-security-audit.md) | Review 2026-10-16; findings open, none critical |
 
 Finished plans (S, A1 and earlier) and their walkthrough evidence are in [`archive/`](archive/README.md); what each run found is in its plan's Outcome.
