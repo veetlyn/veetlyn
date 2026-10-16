@@ -23,6 +23,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | Which stories a run delivers, and the plan task that walks them | [`PROGRESS.md`](PROGRESS.md) run board (Stories column), then the run's section in [`stories/09-agentic.md`](stories/09-agentic.md) |
 | Anything PayPal | [`references/AGENTS.md`](references/AGENTS.md) (rules, story template), [`references/README.md`](references/README.md) (the reference clones in `refs/`), [`platform/2026-10-07-r1-paypal-facts.md`](platform/2026-10-07-r1-paypal-facts.md) (orders, fees, webhooks, SDK v6, sandbox) |
 | Architecture: hosts, Workers and bindings, packages, tenancy, PayPal and money, surfaces, background jobs, testing | [`platform/2026-10-16-architecture.md`](platform/2026-10-16-architecture.md) |
+| Security: audit findings and their priority, and the controls that passed | [`platform/2026-10-16-security-audit.md`](platform/2026-10-16-security-audit.md) |
 | Sign-in, accounts, OAuth for stores and MCP clients | [`platform/2026-10-06-auth-federation-design.md`](platform/2026-10-06-auth-federation-design.md) |
 | The action registry (`perform`, grants, actors, action log) and client contacts | [`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md) (§4 A1, §5 A2) |
 | The Claude and ChatGPT plugin: MCP, OAuth, widgets, packaging | [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md), [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/2026-10-14-connector-ux-guidelines.md`](platform/2026-10-14-connector-ux-guidelines.md) |
@@ -55,6 +56,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Connector UX guidelines](platform/2026-10-14-connector-ux-guidelines.md) | Reference: 38 rules for the plugin's tools and widgets, from Claude, OpenAI and the MCP Apps spec |
 | [A2 plan](platform/plans/2026-10-15-a2-client-contacts.md) | Planned |
 | [Run C plan](platform/plans/2026-10-15-c-plugin.md) | Planned |
+| [Security audit](platform/2026-10-16-security-audit.md) | Review 2026-10-16; findings open, none critical |
 
 Finished plans (S, A1 and earlier) and their walkthrough evidence are in [`archive/`](archive/README.md); what each run found is in its plan's Outcome.
 
