@@ -1,6 +1,7 @@
 import { canSeeProject, type FileStore, sellerPlanFor } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { listDeliveryFiles } from "@jendal-workspace/db/repositories/files";
+import { listProjectContacts, primaryContactNames } from "@jendal-workspace/db/repositories/contacts";
 import { getPayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { getTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import {
@@ -15,7 +16,6 @@ import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/servi
 import { TRPCError } from "@trpc/server";
 
 import { type LinkSecretSource, linkSecret, signPayLink } from "../client-links";
-import { primaryClientPath } from "./clients";
 import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { deliveryFileUrl, type ProjectActor } from "./projects";
 
@@ -52,8 +52,11 @@ async function withDeliveryFiles<T extends { id: string }>(
 }
 
 export async function listVisibleProjects(db: Database, viewer: ProjectActor) {
-  const settings = await getServicesTeamSettings(db, viewer.teamId);
-  const rows = await listTeamProjects(db, viewer.teamId);
+  const [settings, rows, clientNames] = await Promise.all([
+    getServicesTeamSettings(db, viewer.teamId),
+    listTeamProjects(db, viewer.teamId),
+    primaryContactNames(db, viewer.teamId),
+  ]);
   return rows
     .filter((row) =>
       canSeeProject({
@@ -69,8 +72,7 @@ export async function listVisibleProjects(db: Database, viewer: ProjectActor) {
       title: row.title,
       status: row.status,
       currency: row.currency,
-      clientEmail: row.clientEmail,
-      clientDiscordId: row.clientDiscordId,
+      clientName: clientNames.get(row.id) ?? null,
       createdAt: row.createdAt,
     }));
 }
@@ -87,7 +89,8 @@ export async function getTeamProjectView(
   // international estimate.
   const payeeId = row.assignedFreelancerId ?? (viewer.role === "freelancer" ? viewer.actorId : null);
   const seesPayee = viewer.role === "admin" || payeeId === viewer.actorId;
-  const [quotes, amendments, payments, deliveries, refund, senderCountry, payee] = await Promise.all([
+  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee] = await Promise.all([
+    listProjectContacts(db, row.id),
     listProjectQuotes(db, row.id),
     listProjectAmendments(db, row.id),
     listProjectPayments(db, row.id),
@@ -96,15 +99,16 @@ export async function getTeamProjectView(
     getTeamPayPalCountry(db, viewer.teamId),
     payeeId && seesPayee ? getPayoutDestination(db, payeeId) : null,
   ]);
-  const clientPath = await primaryClientPath(db, linkSecret(deps.auth), row.id);
+  // The legacy client columns stay server-side: the contacts say who the client is.
+  const { clientEmail: _email, clientName: _name, clientDiscordId: _discord, ...project } = row;
   return {
-    project: row,
+    project,
+    contacts,
     quotes,
     amendments,
     payments,
     deliveries: await withDeliveryFiles(db, deliveries),
     refund,
-    clientPath,
     role: viewer.role,
     quotingMode: settings?.quotingMode ?? "assigned",
     solo: settings?.solo ?? false,
@@ -115,6 +119,17 @@ export async function getTeamProjectView(
       receiverCountry: payee?.paypalCountry ?? null,
     },
   };
+}
+
+// "Preview as client" (design §5.3): what the client page shows, read-only, with no link to act through.
+export async function getClientPreview(
+  deps: { db: Database; auth: LinkSecretSource },
+  viewer: ProjectActor,
+  projectId: string,
+) {
+  const { row } = await requireVisibleProject(deps.db, viewer, projectId);
+  const view = await getClientProjectView(deps, row.id);
+  return { ...view, payments: view.payments.map((p) => ({ ...p, payPath: null })) };
 }
 
 export async function teamDeliveryFileUrl(

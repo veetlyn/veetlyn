@@ -107,20 +107,20 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     return caller.project.create({ teamSlug: "team", title: "Website redesign", clientEmail: "client@example.com" });
   }
 
-  it("starts a project with a project.created outbox event and a signed client link", async () => {
+  it("starts a project with a project.created outbox event and hands the team no client link", async () => {
     const { userId } = await seedServicesTeamWithAdmin(db);
-    const { projectId, clientPath } = await createProject(userId);
+    const started = await createProject(userId);
+    const { projectId } = started;
 
     const row = await findProjectById(db, projectId);
     expect(row).toMatchObject({
       title: "Website redesign",
       status: "quoting",
-      clientEmail: "client@example.com",
       currency: "USD",
       managementFeeBps: 1_000,
       teamCutBps: 1_500,
     });
-    expect(clientPath).toBe(`/c/${await clientToken(db, projectId)}`);
+    expect(started).toEqual({ projectId });
     expect(await db.select().from(outbox)).toEqual([
       expect.objectContaining({ type: "project.created", projectId, sequence: 1 }),
     ]);
@@ -347,11 +347,55 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
 
     const list = await callerFor(userId).project.list({ teamSlug: "team" });
-    expect(list).toEqual([expect.objectContaining({ id: projectId, title: "Website redesign", status: "quoting" })]);
+    expect(list).toEqual([
+      { id: projectId, title: "Website redesign", status: "quoting", currency: "USD", clientName: "client", createdAt: expect.any(Date) },
+    ]);
     const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
     expect(detail.project.id).toBe(projectId);
-    expect(detail.clientPath).toBe(`/c/${await clientToken(db, projectId)}`);
     expect(detail.quotes).toEqual([]);
+  });
+
+  it("shows the team its project's contacts, and never a client link", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await createProject(userId);
+    const { contactId } = await callerFor(userId).project.clientAdd({
+      teamSlug: "team",
+      projectId,
+      email: "second@example.com",
+      name: "Second",
+    });
+
+    const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+
+    expect(detail.contacts).toEqual([
+      {
+        id: expect.any(String),
+        name: "client",
+        isPrimary: true,
+        identities: [{ kind: "email", value: "client@example.com", verified: false }],
+      },
+      { id: contactId, name: "Second", isPrimary: false, identities: [{ kind: "email", value: "second@example.com", verified: false }] },
+    ]);
+    expect(JSON.stringify(detail)).not.toContain("/c/");
+    expect(detail.project).not.toHaveProperty("clientEmail");
+  });
+
+  it("previews the client page for the team without a link, and without pay links", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
+
+    const preview = await callerFor(userId).project.clientPreview({ teamSlug: "team", projectId });
+
+    expect(preview.project).toMatchObject({ id: projectId, title: "Website redesign" });
+    expect(preview.payments).toEqual([expect.objectContaining({ kind: "deposit", payPath: null })]);
+    const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+    await expect(callerFor(outsider.userId).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 
   it("lists projects in the shape the project.list output schema describes once on the wire", async () => {
@@ -378,10 +422,11 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
 
     const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    expect(detail.contacts).toEqual([
+      expect.objectContaining({ name: "Web Client", identities: [{ kind: "email", value: "web@example.com", verified: false }] }),
+    ]);
     expect(detail.project).toMatchObject({
       source: "web",
-      clientName: "Web Client",
-      clientEmail: "web@example.com",
       requestAnswers: [
         { question: "Budget?", answer: "Around $1k" },
         { question: "Deadline?", answer: "Next month,\nif possible" },
