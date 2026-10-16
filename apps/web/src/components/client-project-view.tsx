@@ -21,7 +21,7 @@ export type ClientProjectActions = {
   acceptAmendment: (amendmentId: string) => void;
   declineAmendment: (amendmentId: string) => void;
   acceptDelivery: (deliveryId: string) => void;
-  requestChanges: (deliveryId: string, note: string) => Promise<unknown>;
+  requestChanges: (deliveryId: string, note: string) => Promise<void>;
   resetDelivery: () => void;
   quoteBusy: boolean;
   amendmentBusy: boolean;
