@@ -55,10 +55,10 @@ export const PayPalWebhookQueue = Cloudflare.Queues.Queue("PayPalWebhooks");
 
 export const ProductImages = Cloudflare.R2.Bucket("ProductImages");
 
-// The platform site and the admin app (apps/web/src/lib/platform-url.ts).
+// The platform site and the dashboard (apps/web/src/lib/platform-url.ts).
 const platformOrigins = localUrls
-  ? [localUrls.platform, localUrls.admin]
-  : Config.String("PLATFORM_DOMAIN").pipe(Config.map((domain) => [`https://${domain}`, `https://admin.${domain}`]));
+  ? [localUrls.platform, localUrls.dash]
+  : Config.String("PLATFORM_DOMAIN").pipe(Config.map((domain) => [`https://${domain}`, `https://dash.${domain}`]));
 
 // Private files (delivery files now, digital products later). Browsers upload and download them through
 // presigned URLs, so the bucket allows PUT and GET from our hosts. alchemy dev's local S3 endpoint ignores CORS.
@@ -91,7 +91,7 @@ export const server = Cloudflare.Worker("server", {
     HYPERDRIVE: Database,
     STORE_CACHE: StoreCache,
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL: localUrls ? localUrls.admin : Config.String("BETTER_AUTH_URL"),
+    BETTER_AUTH_URL: localUrls ? localUrls.dash : Config.String("BETTER_AUTH_URL"),
     PLATFORM_DOMAIN: platformDomain,
     STORE_DOMAIN: storeDomain,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),

@@ -12,7 +12,7 @@ export default async function NewServicesTeamPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         A seller is a team of one or a team of many. You can rename it later; its address cannot be changed.
       </p>
-      <CreateServicesTeamForm adminOrigin={origins.admin} />
+      <CreateServicesTeamForm adminOrigin={origins.dash} />
     </main>
   );
 }

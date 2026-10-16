@@ -4,3 +4,8 @@ export function storeOriginFor(input: { storeDomain: string; adminOrigin: string
   const port = local ? new URL(input.adminOrigin).port : "";
   return (slug) => `${local ? "http" : "https"}://${slug}.${input.storeDomain}${port ? `:${port}` : ""}`;
 }
+
+// The site lives on the platform domain itself; the dash origin is the same host under the dash label.
+export function siteOriginFor(dashOrigin: string): string {
+  return dashOrigin.replace("://dash.", "://");
+}

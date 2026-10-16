@@ -1,7 +1,7 @@
 import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import Link from "next/link";
 
-export default function SiteHeader({ adminOrigin }: { adminOrigin: string }) {
+export default function SiteHeader({ dashOrigin }: { dashOrigin: string }) {
   return (
     <header className="border-b">
       <div className="container mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
@@ -15,10 +15,10 @@ export default function SiteHeader({ adminOrigin }: { adminOrigin: string }) {
           <a href="/#pricing" className="underline-offset-4 hover:underline">
             Pricing
           </a>
-          <a href={`${adminOrigin}/login`} className="underline-offset-4 hover:underline">
+          <a href={`${dashOrigin}/login`} className="underline-offset-4 hover:underline">
             Log in
           </a>
-          <a href={`${adminOrigin}/signup`} className={buttonVariants({ size: "sm" })}>
+          <a href={`${dashOrigin}/signup`} className={buttonVariants({ size: "sm" })}>
             Get started
           </a>
         </nav>

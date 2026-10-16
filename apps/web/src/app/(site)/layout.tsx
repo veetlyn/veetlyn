@@ -3,10 +3,10 @@ import SiteHeader from "@/components/site/site-header";
 import { getPlatformOrigins } from "@/lib/server-api";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const { admin } = await getPlatformOrigins();
+  const { dash } = await getPlatformOrigins();
   return (
     <>
-      <SiteHeader adminOrigin={admin} />
+      <SiteHeader dashOrigin={dash} />
       <div className="flex-1">{children}</div>
       <SiteFooter />
     </>
