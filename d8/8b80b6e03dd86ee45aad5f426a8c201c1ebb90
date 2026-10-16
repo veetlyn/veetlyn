@@ -1,0 +1,37 @@
+packages/db/src/migrations/20261016135146_a2_client_contacts/migration.sql
+  s_ec180faf4f9b2e::t_88474e3891b053 1-43
+packages/db/src/repositories/projects.ts
+  s_ec180faf4f9b2e::t_88474e3891b053 7
+packages/db/src/migrations/20261016135146_a2_client_contacts/snapshot.json
+  s_ec180faf4f9b2e::t_88474e3891b053 1-9976
+packages/db/src/repositories/projects.test.ts
+  s_ec180faf4f9b2e::t_d9b1d5fb0ddf3d 12
+packages/db/src/schema/projects.ts
+  s_ec180faf4f9b2e::t_8f7130a3cefef8 42-43
+  s_ec180faf4f9b2e::t_3149b60f2c9be1 67
+packages/api/src/migrations/backfill-contacts.ts
+  s_ec180faf4f9b2e::t_167650baf055c5 2-9,12-89
+  s_ec180faf4f9b2e::t_f58327e82d5b0b 10-11
+  s_ec180faf4f9b2e::t_c9d1450dcacb30 1
+  s_ec180faf4f9b2e::t_68c768ad23d92a 90-114
+packages/api/src/migrations/backfill-contacts.test.ts
+  s_ec180faf4f9b2e::t_06032923255e9b 1-113
+scripts/a2-backfill-contacts.ts
+  s_ec180faf4f9b2e::t_65ae9782609e78 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d88b80b6e03dd86ee45aad5f426a8c201c1ebb90",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
