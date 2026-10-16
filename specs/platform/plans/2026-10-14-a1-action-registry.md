@@ -694,4 +694,8 @@ async function run<I, R>(ctx: Context, actor: Actor, definition: ActionDefinitio
 
 ## Outcome
 
-(Filled in after the run.)
+Merged 2026-10-14 12:06 UTC as PR #1, merge commit `4a27fb6`.
+
+- **Review:** two-stage review on the PR; the fixes it produced are the branch's tail commits — `3237f65` (original error kept for the tRPC error log), `b2189d4` (action-log failures reported, unchecked grant fields dropped), `5bed46c` (registry tests export inputs in input mode, dates round-trip), `4541f75` (PayPal's refusal text stays out of the action log), `e4d5dd7` (test-audit and anti-slop pass), `99cc6d6` (export clock fix).
+- **Regression proof:** the plan's "stories run unchanged" walkthrough ran as the spike S walkthrough on branch `spike-plugin`, whose merge base with main is exactly `4a27fb6` — the full client flow A1–A19 passed over the tunnel in Claude (2026-10-14) and in ChatGPT (2026-10-15). Results and commit refs: [`2026-10-14-s-plugin-walkthrough.md`](2026-10-14-s-plugin-walkthrough.md). Caveat: the spike exercises the business flow through the use cases and client actions, not the admin web pages; no recorded web click-through exists for A1, so the web adapters' proof is the suite plus the review. Story files were not individually re-marked; the spike's results table carries the dated evidence.
+- **Cleanup:** the local branch and worktree are gone and no `jendal_test_a1` database remains; the merged remote branch `origin/a1-action-registry` is still on GitHub (deleting it is a push — left for Mouhamed's go).
