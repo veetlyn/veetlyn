@@ -1,7 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull, or } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
-import { clientContact, projectClient } from "../schema/contacts";
+import { user } from "../schema/auth";
+import { clientContact, clientIdentity, projectClient } from "../schema/contacts";
 
 export type LinkedContact = { projectId: string; contactId: string; teamId: string };
 
@@ -24,6 +25,35 @@ export async function findLinkedContact(
     )
     .limit(1);
   return row ?? null;
+}
+
+// The attached contact a signed-in user is: through a user identity, or through a verified email identity
+// equal to the user's own verified email.
+export async function findClientContactForUser(
+  tx: DbExecutor,
+  input: { projectId: string; userId: string },
+): Promise<string | null> {
+  const [account] = await tx
+    .select({ email: user.email, emailVerified: user.emailVerified })
+    .from(user)
+    .where(eq(user.id, input.userId))
+    .limit(1);
+  if (!account) return null;
+  const byUser = and(eq(clientIdentity.kind, "user"), eq(clientIdentity.value, input.userId));
+  const byEmail = account.emailVerified
+    ? and(
+        eq(clientIdentity.kind, "email"),
+        eq(clientIdentity.value, account.email.toLowerCase()),
+        isNotNull(clientIdentity.verifiedAt),
+      )
+    : undefined;
+  const [row] = await tx
+    .select({ contactId: projectClient.contactId })
+    .from(projectClient)
+    .innerJoin(clientIdentity, eq(clientIdentity.contactId, projectClient.contactId))
+    .where(and(eq(projectClient.projectId, input.projectId), byEmail ? or(byUser, byEmail) : byUser))
+    .limit(1);
+  return row?.contactId ?? null;
 }
 
 export async function primaryContactFor(

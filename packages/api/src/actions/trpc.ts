@@ -6,8 +6,8 @@ import { linkSecret } from "../client-links";
 import type { Context } from "../context";
 import { publicProcedure } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
-import { resolveClientLink } from "../use-cases/clients";
-import type { Actor, ClientLinkToken } from "./actors";
+import { resolveClient } from "../use-cases/clients";
+import type { Actor } from "./actors";
 import type { ActionDefinition } from "./define";
 import { ActionError, toTRPCError } from "./errors";
 import { type ActionDeps, perform } from "./perform";
@@ -79,10 +79,16 @@ export function teamProcedureFor(definition: LooseDefinition) {
 
 const token = z.string().min(1);
 
-async function contactFromToken(ctx: Context, link: string): Promise<ClientLinkToken> {
-  const linked = await resolveClientLink(ctx.db, linkSecret(ctx.auth), link);
-  if (!linked) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-  return { projectId: linked.projectId, contactId: linked.contactId };
+// A team member who opens a client link is refused rather than acting as the client.
+async function clientFromToken(ctx: Context, link: string): Promise<{ actor: Actor; projectId: string }> {
+  const resolved = await resolveClient(ctx.db, linkSecret(ctx.auth), { token: link, userId: ctx.session?.user.id });
+  if (resolved.ok && resolved.actor.kind === "client_link") {
+    return { actor: resolved.actor, projectId: resolved.actor.token.projectId };
+  }
+  if (!resolved.ok && resolved.reason === "team_member") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Team members act from the project page." });
+  }
+  throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
 }
 
 // The client sends the link it holds instead of the project id the link names.
@@ -98,8 +104,8 @@ export function clientProcedureFor(
   const resolve = async ({ ctx, input }: { ctx: Context; input: { token: string } }) => {
     // The rest holds the definition's other fields, which the omitted schema typed loosely.
     const { token: link, ...rest } = input;
-    const linked = await contactFromToken(ctx, link);
-    return performOnWeb(ctx, { kind: "client_link", token: linked }, definition, { ...rest, projectId: linked.projectId });
+    const { actor, projectId } = await clientFromToken(ctx, link);
+    return performOnWeb(ctx, actor, definition, { ...rest, projectId });
   };
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
 }

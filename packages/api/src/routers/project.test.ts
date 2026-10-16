@@ -443,6 +443,18 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
   });
 
+  it("refuses a signed-in team member who opens the client link", async () => {
+    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const token = await clientToken(db, projectId);
+    await expect(callerFor(freelancer).project.clientGet({ token })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "Team members act from the project page.",
+    });
+    await expect(callerFor(null).project.clientGet({ token })).resolves.toMatchObject({ project: { id: projectId } });
+  });
+
   it("answers a valid link to a missing project like a forged one", async () => {
     const token = await clientToken(db, crypto.randomUUID());
     const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
