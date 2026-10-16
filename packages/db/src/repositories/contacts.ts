@@ -387,6 +387,23 @@ async function mergeContacts(tx: Transaction, input: { teamId: string; fromId: s
   await tx.delete(clientContact).where(eq(clientContact.id, fromId));
 }
 
+// The accounts a contact names: its user identities, and the accounts whose email is one of its addresses,
+// verified or not.
+export async function contactAccountIds(tx: DbExecutor, contactId: string): Promise<string[]> {
+  const identities = await tx
+    .select({ kind: clientIdentity.kind, value: clientIdentity.value })
+    .from(clientIdentity)
+    .where(and(eq(clientIdentity.contactId, contactId), inArray(clientIdentity.kind, ["email", "user"])));
+  const userIds = identities.filter((i) => i.kind === "user").map((i) => i.value);
+  const emails = identities.filter((i) => i.kind === "email").map((i) => i.value);
+  if (emails.length === 0) return userIds;
+  const accounts = await tx
+    .select({ id: user.id })
+    .from(user)
+    .where(inArray(sql`lower(${user.email})`, emails));
+  return [...new Set([...userIds, ...accounts.map((a) => a.id)])];
+}
+
 // The attached contact a signed-in user is: through a user identity, or through a verified email identity
 // equal to the user's own verified email.
 export async function findClientContactForUser(

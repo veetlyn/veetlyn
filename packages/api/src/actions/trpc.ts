@@ -10,7 +10,7 @@ import { resolveClient } from "../use-cases/clients";
 import type { Actor } from "./actors";
 import type { ActionDefinition } from "./define";
 import { ActionError, toTRPCError } from "./errors";
-import { type ActionDeps, perform } from "./perform";
+import { type ActionDeps, logRefusal, perform } from "./perform";
 
 type Definition<Schema extends z.ZodType, Result, Kind extends "action" | "query"> = ActionDefinition<
   z.output<Schema>,
@@ -79,14 +79,24 @@ export function teamProcedureFor(definition: LooseDefinition) {
 
 const token = z.string().min(1);
 
-// A team member who opens a client link is refused rather than acting as the client.
-async function clientFromToken(ctx: Context, link: string): Promise<{ actor: Actor; projectId: string }> {
-  const resolved = await resolveClient(ctx.db, linkSecret(ctx.auth), { token: link, userId: ctx.session?.user.id });
+const TEAM_MEMBER_REFUSAL = "Team members act from the project page.";
+
+// A team member who opens a client link is refused rather than acting as the client, and the refusal is logged.
+async function clientFromToken(
+  ctx: Context,
+  definition: LooseDefinition,
+  link: string,
+): Promise<{ actor: Actor; projectId: string }> {
+  const userId = ctx.session?.user.id;
+  const resolved = await resolveClient(ctx.db, linkSecret(ctx.auth), { token: link, userId });
   if (resolved.ok && resolved.actor.kind === "client_link") {
     return { actor: resolved.actor, projectId: resolved.actor.token.projectId };
   }
   if (!resolved.ok && resolved.reason === "team_member") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Team members act from the project page." });
+    const actor: Actor = userId ? { kind: "user", userId } : { kind: "anonymous" };
+    const request = { deps: depsOf(ctx), actor, surface: "web" as const, request: requestOf(ctx) };
+    await logRefusal(request, definition, resolved.projectId, TEAM_MEMBER_REFUSAL);
+    throw new TRPCError({ code: "FORBIDDEN", message: TEAM_MEMBER_REFUSAL });
   }
   throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
 }
@@ -104,7 +114,7 @@ export function clientProcedureFor(
   const resolve = async ({ ctx, input }: { ctx: Context; input: { token: string } }) => {
     // The rest holds the definition's other fields, which the omitted schema typed loosely.
     const { token: link, ...rest } = input;
-    const { actor, projectId } = await clientFromToken(ctx, link);
+    const { actor, projectId } = await clientFromToken(ctx, definition, link);
     return performOnWeb(ctx, actor, definition, { ...rest, projectId });
   };
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);

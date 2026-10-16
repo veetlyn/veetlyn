@@ -29,6 +29,14 @@ export default function ClientProject({ token }: { token: string }) {
   if (view.isPending) return <Loader />;
   // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
   if (!view.data) {
+    if (view.error?.data?.code === "FORBIDDEN") {
+      return (
+        <main className="container mx-auto max-w-2xl space-y-4 px-4 py-16">
+          <h1 className="text-2xl font-semibold">This link is for the client</h1>
+          <p className="text-sm text-muted-foreground">{view.error.message}</p>
+        </main>
+      );
+    }
     return (
       <main className="container mx-auto max-w-2xl space-y-4 px-4 py-16">
         <h1 className="text-2xl font-semibold">This link is not valid</h1>

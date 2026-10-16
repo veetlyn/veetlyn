@@ -501,6 +501,27 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     await expect(callerFor(null).project.clientGet({ token })).resolves.toMatchObject({ project: { id: projectId } });
   });
 
+  it("logs a team member's refused client action", async () => {
+    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const token = await clientToken(db, projectId);
+    await expect(
+      callerFor(freelancer).project.clientAcceptQuote({ token, quoteId: crypto.randomUUID() }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await db.select().from(actionLog)).toEqual([
+      expect.objectContaining({
+        action: "quote.accept",
+        teamId,
+        projectId,
+        actorKind: "user",
+        actorId: freelancer,
+        outcome: "forbidden",
+        message: "Team members act from the project page.",
+      }),
+    ]);
+  });
+
   it("answers a valid link to a missing project like a forged one", async () => {
     const token = await clientToken(db, crypto.randomUUID());
     const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
