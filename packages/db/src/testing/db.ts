@@ -4,6 +4,13 @@ import { sql } from "drizzle-orm";
 import { createDb, type Database } from "../index";
 import { user } from "../schema/auth";
 import { products, productVariants } from "../schema/catalog";
+import {
+  type ClientIdentityKind,
+  type ClientIdentitySource,
+  clientContact,
+  clientIdentity,
+  projectClient,
+} from "../schema/contacts";
 import { fileUpload } from "../schema/files";
 import { orders } from "../schema/orders";
 import { member, organization, team, teamMember } from "../schema/organization";
@@ -201,6 +208,44 @@ export async function seedServicesTeamMember(
   return userId;
 }
 
+// A client contact of the team with the given identities, optionally attached to a project.
+export async function seedClientContact(
+  db: Database,
+  input: {
+    teamId: string;
+    name?: string;
+    identities?: { kind: ClientIdentityKind; value: string; verified?: boolean; source?: ClientIdentitySource }[];
+    projectId?: string;
+    isPrimary?: boolean;
+    linkVersion?: number;
+  },
+): Promise<string> {
+  const [contact] = await db
+    .insert(clientContact)
+    .values({ teamId: input.teamId, name: input.name ?? "Client" })
+    .returning({ id: clientContact.id });
+  if (!contact) throw new Error("Insert into client_contact returned no row");
+  for (const identity of input.identities ?? []) {
+    await db.insert(clientIdentity).values({
+      contactId: contact.id,
+      teamId: input.teamId,
+      kind: identity.kind,
+      value: identity.value,
+      source: identity.source ?? "typed",
+      verifiedAt: identity.verified ? new Date() : null,
+    });
+  }
+  if (input.projectId) {
+    await db.insert(projectClient).values({
+      projectId: input.projectId,
+      contactId: contact.id,
+      isPrimary: input.isPrimary ?? false,
+      linkVersion: input.linkVersion ?? 1,
+    });
+  }
+  return contact.id;
+}
+
 export async function seedProject(
   db: Database,
   input: {
@@ -211,6 +256,8 @@ export async function seedProject(
     status?: ProjectStatus;
     source?: ProjectSource;
     requestAnswers?: QuoteRequestAnswer[];
+    // The primary contact's link version; 0 is what migrated projects have.
+    linkVersion?: number;
   },
 ): Promise<string> {
   const [row] = await db
@@ -229,6 +276,14 @@ export async function seedProject(
     })
     .returning({ id: project.id });
   if (!row) throw new Error("Insert into project returned no row");
+  await seedClientContact(db, {
+    teamId: input.teamId,
+    name: input.clientName ?? "Client",
+    identities: [{ kind: "email", value: input.clientEmail ?? "client@example.com" }],
+    projectId: row.id,
+    isPrimary: true,
+    linkVersion: input.linkVersion,
+  });
   return row.id;
 }
 

@@ -164,7 +164,7 @@ describe.skipIf(!hasTestDatabase)("perform", () => {
   it("lets a client link act on its own project only", async () => {
     const { teamId, projectId } = await seedTeamProject();
     const otherProjectId = await seedProject(db, { teamId, title: "Other" });
-    const actor: Actor = { kind: "client_link", token: { projectId } };
+    const actor: Actor = { kind: "client_link", token: { projectId, contactId: "contact-1" } };
 
     await expect(perform(call(actor), clientAction, { projectId })).resolves.toEqual({ projectId, role: null });
     await expect(perform(call(actor), clientAction, { projectId: otherProjectId })).rejects.toMatchObject({
