@@ -10,5 +10,9 @@ Workflow skills for agents working on this repository (Claude Code loads them fr
 | `using-git-worktrees`, `test-driven-development`, `requesting-code-review`, `verification-before-completion`, `finishing-a-development-branch` | The steps those skills call |
 | `test-audit` | Gate for every new or changed test, and test sweeps |
 | `anti-slop` | Code, prose and design quality checks |
+| `design-system-boss` | Leads design system work: reads the app, picks a playbook, runs the skills below in order |
+| `build-design-system`, `migrate-design-system`, `token-mapping`, `component-docs`, `ui-review` | Build the system from the shipped UI, move screens onto it, map raw values to tokens, document a component, review a screen |
+| `quartz`, `lime` | Rules and source of design.how's two systems; Quartz is the base Payleor's system builds on |
+| `securebydesign` | Security checks on every design, API, auth, storage or deploy change |
 
-Origins: the planning, execution and development skills come from the open source Superpowers skill library (MIT licence); `test-audit` and `anti-slop` come from Mouhamed's skill set. Copied on 2026-10-13; where a skill names a default path (for example `docs/superpowers/specs`), `CLAUDE.md` overrides it.
+Origins: the planning, execution and development skills come from the open source Superpowers skill library (MIT licence); `test-audit`, `anti-slop` and `securebydesign` come from Mouhamed's skill set; the design system skills, `quartz` and `lime` come from design.how (`arla6ka/design.how`, MIT licence), copied on 2026-10-17. The rest were copied on 2026-10-13; where a skill names a default path (for example `docs/superpowers/specs`), `CLAUDE.md` overrides it.
