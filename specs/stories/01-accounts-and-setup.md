@@ -46,7 +46,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 ### ACC-04: Someone signs up with email and verifies the address
 
 - **Actor:** new user · **Surface:** web (`{dash}/signup`, `{dash}/verify-email`), email · **Delivered by:** W1-D (`a8e5260`) · **Status:** Built
-- **Preconditions:** an email address nobody has used on Payleor (an AgentMail plus address, for example `mdbm-agent+acc04@agentmail.to`).
+- **Preconditions:** an email address nobody has used on Payleor (an AgentMail plus address, for example `tester+acc04@example.com`).
 - **Steps:**
   1. Open `{dash}/signup`. Fill "Your name", "Email" and a "Password" of at least 10 characters, then **Create account**.
   2. Open the email "Verify your email for Payleor" and click **Verify email**.
@@ -167,7 +167,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Expected:**
   - Before: "Not connected" and "Connect PayPal to accept payments."
   - After PayPal returns to `{dash}/<slug>`: "Connected" and "Payments are paid out to PayPal account <merchant ID>."; the "PayPal" detail row shows the merchant ID; the checklist step "Connect PayPal" is done.
-  - `walk-crew` is already connected to the PayPal seller (merchant `TR4W3HLBT75MG`).
+  - `walk-crew` is already connected to the PayPal seller (merchant `SELLER3MERCHANTID`).
 - **Edge cases:** leaving PayPal before the end shows "Connection in progress" with "Continue PayPal setup" and "Start over"; an account PayPal has not cleared shows "PayPal needs attention" with the reason; the card is hidden for team admins who are not workspace owners or admins.
 
 ### ACC-13: An admin sets the team's currency, rates and quoting mode

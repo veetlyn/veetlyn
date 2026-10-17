@@ -161,7 +161,7 @@ Follow the existing patterns: server page guards like `settings/page.tsx` (`requ
 ### Task 9: final review, merge, walkthrough (controller)
 
 - [ ] Full `npx vitest run`, `pnpm check-types`, `pnpm lint`; whole-branch review (money: every request posts once per fact, owed accounts never negative, the same `sender_batch_id` and `PayPal-Request-Id` on every retry, no refusal trusted after an unknown outcome, locks; secrets never logged or returned); merge `--no-ff`; `pnpm install`; `pnpm db:migrate:dev`; add `PAYOUT_CREDENTIALS_KEY` to the dev env; restart the dev stack.
-- [ ] Walkthrough over the tunnel in the sandbox (Mouhamed creates a sandbox REST app on walk-crew's business account `TR4W3HLBT75MG` with Payouts on, and logs in as the member in the PayPal popup):
+- [ ] Walkthrough over the tunnel in the sandbox (Mouhamed creates a sandbox REST app on walk-crew's business account `SELLER3MERCHANTID` with Payouts on, and logs in as the member in the PayPal popup):
   1. Credentials: a wrong secret is refused; the real ones save; the checklist step is done; the database holds only ciphertext.
   2. A walk-crew member with earnings (`owed:vqB1elxY3lUycHZxcxddZlXJnmEeOO7M:available`) connects a payout destination (a sandbox personal account) and confirms 18 or older.
   3. Request $10.00 → admin rejects → released; request $25.00 → admin approves → `sent` (batch id stored) → the sweep (or Refresh) settles `succeeded`; ledger `payout_requested`, `payout_succeeded`, `payout_fees` once; the member sees "Paid"; the recipient's sandbox account shows the payout.

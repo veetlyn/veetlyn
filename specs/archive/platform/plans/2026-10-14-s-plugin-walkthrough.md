@@ -5,7 +5,7 @@
 ## Rules for the agent
 
 - **[human]** steps are Mouhamed's: approving a payment in the PayPal popup, connecting or re-connecting the plugin. Stop and ask him.
-- **[seller]** steps happen on the team side, in the admin at `https://admin.payleor.com` signed in as the walk-crew owner (`mdbm-agent@agentmail.to`). Do them in a separate Chrome profile or window, or ask Droid to do them. Never sign in to the plugin's OAuth screen as the walk-crew owner: a team member is never the client, and every tool would refuse.
+- **[seller]** steps happen on the team side, in the admin at `https://admin.payleor.com` signed in as the walk-crew owner (`tester@example.com`). Do them in a separate Chrome profile or window, or ask Droid to do them. Never sign in to the plugin's OAuth screen as the walk-crew owner: a team member is never the client, and every tool would refuse.
 - Start a **new chat** where a step says so. Type the prompts exactly. Do not mention Payleor unless the prompt does.
 - After each step, take a screenshot of the chat (name it `walk-<client>-<step>.png`, for example `walk-claude-A4.png`) and fill the results table at the end: pass or fail, and what was different from **Expected**.
 - Never type card numbers, PayPal passwords or pay links into the chat.
@@ -13,7 +13,7 @@
 ## Setup (Droid, before the run)
 
 - The dev stack and tunnel run from `worktrees/spike-plugin` with the latest commit; `https://api.payleor.com/mcp` answers 401 without a token.
-- `payleor-plugin.zip` is the latest build. In Claude, the Payleor plugin is uploaded from it and its connector is signed in as the spike client `mdbm-agent+spike-mcp@agentmail.to`. In ChatGPT, the Payleor connector is refreshed (it lists 7 tools).
+- `payleor-plugin.zip` is the latest build. In Claude, the Payleor plugin is uploaded from it and its connector is signed in as the spike client `tester+spike-mcp@example.com`. In ChatGPT, the Payleor connector is refreshed (it lists 7 tools).
 - The spike client has one project: `00fbf3ae` "Logo refresh" (quoting, brief starting "Logo refresh for Pain Doré"), created by the walkthrough's A1–A4. Older test projects were cleaned up on 2026-10-14: `70202b60` deleted (no payments), `7fdfc323` archived off the client's account (its captured $90 deposit has ledger entries, so it was retitled "Spike test (archived)" and moved to `spike-archive@payleor.invalid`; a database backup is at `/tmp/jendal-dev-before-cleanup-2321.dump` on Mouhamed's machine).
 
 ## Part A: Claude (claude.ai)
@@ -28,7 +28,7 @@
 | A6 | agent | New chat. Type: `Any news on my bakery logo?` | `list_my_projects` shows the "Logo refresh" row with "requested Oct 14" and the start of its brief. Claude opens it with `get_project`: **Quoting**, Quote $150.00, 4 days, **Accept quote** button. Claude tells the user to press the button and points out anything that differs from the request |
 | A7 | agent | Type: `Accept that quote for me.` | Claude does not say it accepted. It explains the user accepts with the **Accept quote** button in the card (it cannot call the accept tool). In the admin the quote is still proposed |
 | A8 | agent | Press **Accept quote** in the card | The card switches to **Awaiting deposit** with **Pay $90.00 with PayPal** and **Check payment** (deposit: $75 half of the quote plus Walk Crew's 10% management fee, $15). Type `what now?`: Claude knows the quote was accepted and the deposit is next |
-| A9 | human | Press **Pay $90.00 with PayPal**. A new tab opens Payleor's pay page. Approve in the PayPal popup as buyer 2 (`sb-vexyv53252581@personal.example.com`) | The pay page shows the payment as received |
+| A9 | human | Press **Pay $90.00 with PayPal**. A new tab opens Payleor's pay page. Approve in the PayPal popup as buyer 2 (`sandbox-buyer-2@personal.example.com`) | The pay page shows the payment as received |
 | A10 | agent | Back in Claude, press **Check payment**. Then type `is it paid?` | The card switches to **In progress** ("Walk Crew is working on it; delivery is planned within 4 days of the deposit."). Claude answers that the deposit is paid without being told (the card updated its context) |
 | A11 | seller | In the admin project, submit a delivery: note "First version attached", link `https://example.com/pain-dore-v1` | The project shows **Delivered** |
 | A12 | agent | New chat. Type: `Is my Pain Doré logo ready?` | The card shows **Delivered** with the note, **Accept delivery** and **Request changes** |

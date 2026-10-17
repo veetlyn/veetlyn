@@ -128,10 +128,10 @@ Deviations from the plan:
 
 Walkthrough on 2026-10-11 over the tunnel. Everything passed:
 1. **Solo seller.** The form refuses `walk-crew` ("This team address is already taken."). Two direct `servicesTeam.create` calls with that slug answered 409 and Walk Through's `member` rows stayed at 1. Creating "Walk B2" (`walk-b2-solo`) put it in a new workspace whose only member is Walk Through; walk-crew's workspace (with `dev-merchant@example.com`) does not hold it.
-2. **Quote request limits.** Five too-short requests from `walk-crew@agentmail.to` answered "Describe what you need in at least a sentence."; the valid request after them succeeded.
+2. **Quote request limits.** Five too-short requests from `walk-crew@example.com` answered "Describe what you need in at least a sentence."; the valid request after them succeeded.
 3. **Published product edit.** Men's Tree Runner (walk-store) published at $98.00; setting all 10 variants to 0 and saving showed "Set a price above zero before publishing." and the stored prices stayed 9800. Unpublished again afterwards.
 4. **Order links.** The walk-crew order link on `walk-crew-solo` returns 404 (a draft store, so the middleware stops it first); `order.get` with slug `walk-crew-solo` answers 404 "This link is not valid.", and with `walk-crew` the page shows the refunded order. The order and buy pages carry `<meta name="robots" content="noindex, nofollow">`; the seller page carries none. An invalid token shows "This link is not valid. Check the link in your email." with no toast.
 5. **Commerce home.** With walk-store briefly set to active, its home showed "This store is getting ready." and the server log had two `/api/store` calls (middleware, then layout and page sharing one) and no `/api/store/page`. Set back to draft.
 6. **Order sweep.** Two seeded pending orders, 5 and 3 days old: the 11:50 cron run logged `maintenance.orders` deleted 1 and removed the 5-day-old one. The other was then deleted by hand.
 
-walk-b2-solo stays as a draft solo seller in its own workspace. The quote request from `walk-crew@agentmail.to` stays on walk-crew.
+walk-b2-solo stays as a draft solo seller in its own workspace. The quote request from `walk-crew@example.com` stays on walk-crew.

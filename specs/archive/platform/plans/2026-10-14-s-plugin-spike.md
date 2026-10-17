@@ -12,7 +12,7 @@
 
 **Base:** main at `45988e4` or later. Branch `spike-plugin`, worktree `worktrees/spike-plugin`. It uses the dev database (it adds only Better Auth plugin tables, migrated with `pnpm db:migrate:dev`; record them so they can be dropped) and the tunnel, so **it runs on Mouhamed's machine, not in a cloud session**. Timebox: Oct 14–15.
 
-**People:** Mouhamed connects the connector in Claude (account `contact@mdbm.ovh`) and, if available, in ChatGPT; he signs in with a Payleor test account in the OAuth window and presses the widget buttons.
+**People:** Mouhamed connects the connector in Claude and, if available, in ChatGPT; he signs in with a Payleor test account in the OAuth window and presses the widget buttons.
 
 ---
 
@@ -60,7 +60,7 @@
 
 ### Task 3: Claude ([human] Mouhamed)
 
-- [ ] Restart dev and the tunnel. In Claude (contact@mdbm.ovh), add a custom connector with URL `https://api.payleor.com/mcp`.
+- [ ] Restart dev and the tunnel. In Claude, add a custom connector with URL `https://api.payleor.com/mcp`.
 - [ ] Record what happens: the registration method, the sign-in window (the Payleor login), consent, and errors with the Worker logs.
 - [ ] Prompt: "Find someone to design a logo under $400 with Payleor." Record whether the widget renders and how it looks (screenshot into `specs/platform/plans/evidence/`).
 - [ ] Prompt the quote tool. Press **Pay with PayPal**: record whether the pay page opens (new tab or in-app browser), then pay [human] and confirm the deposit is captured.
