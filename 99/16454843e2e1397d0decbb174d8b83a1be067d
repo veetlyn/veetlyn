@@ -1,0 +1,67 @@
+specs/stories/README.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 22-23,26
+specs/archive/platform/plans/2026-10-12-b3-payout-prerequisites.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 139
+specs/archive/platform/plans/2026-10-09-r4a-digital-products.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 1060
+specs/archive/platform/plans/2026-10-14-s-plugin-walkthrough.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 8,16,31
+specs/archive/platform/plans/2026-10-07-r1a-server-payments.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 1912
+specs/platform/plans/2026-10-16-h-hosts-and-deploy.md
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 503-504
+specs/archive/platform/plans/2026-10-12-r5c-automatic-payouts.md
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 112-113
+specs/archive/platform/plans/2026-10-11-b2-maintenance.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 131,137
+specs/archive/platform/plans/evidence/r5b1-payouts-web-log-walkthrough.csv
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 21
+specs/stories/01-accounts-and-setup.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 49,170
+specs/archive/platform/plans/evidence/r5b1-payouts-web-log.csv
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 21
+specs/archive/platform/2026-10-07-sellers-minimal-flow-design.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 166
+specs/archive/platform/plans/2026-10-12-r5a-team-payouts.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 164
+specs/archive/platform/plans/2026-10-14-s-plugin-spike.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 15,63
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 76
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 68,77,92
+specs/archive/platform/plans/2026-10-08-r3b-seller-page-and-publishing.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 839
+specs/archive/platform/plans/2026-10-13-r5b1-payout-rules.md
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 55-56,63,597,659
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 653
+specs/platform/plans/2026-10-15-a2-client-contacts.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 328
+specs/stories/03-requests-and-quotes.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 24,49
+specs/archive/platform/plans/2026-10-10-r4b-checkout-orders.md
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 802,842
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 799,801,839,841
+specs/archive/platform/research.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 170
+specs/archive/platform/plans/2026-10-08-r3c-quote-request-form.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 559,562-564,578,580
+specs/stories/06-store.md
+  s_ec180faf4f9b2e::t_f790d1c588f9ea 7,92,120
+  s_ec180faf4f9b2e::t_e6ec5374cd236b 135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9916454843e2e1397d0decbb174d8b83a1be067d",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
