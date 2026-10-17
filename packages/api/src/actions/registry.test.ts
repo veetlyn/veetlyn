@@ -41,4 +41,12 @@ describe("action registry", () => {
     for (const name of committing) expect(agentPolicyOf(find(name)), name).not.toBe("free");
     expect(agentPolicyOf(find("project.refund_client"))).toBe("never");
   });
+
+  it("lets only team members change a project's clients, an agent only with a confirmation", () => {
+    for (const name of ["project.client.add", "project.client.remove", "project.client_link.email", "project.client_link.reissue"]) {
+      expect(find(name).allow, name).toEqual([{ grant: "member" }]);
+      expect(agentPolicyOf(find(name)), name).toBe("confirm");
+    }
+    expect(find("project.client_preview")).toMatchObject({ kind: "query", allow: [{ grant: "member" }], surfaces: ["web"] });
+  });
 });

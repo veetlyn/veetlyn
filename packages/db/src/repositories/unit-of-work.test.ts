@@ -92,6 +92,43 @@ describe.skipIf(!hasTestDatabase)("project unit of work", () => {
     expect(await db.select().from(outbox)).toHaveLength(0);
   });
 
+  it("appends events without bumping the version, so a concurrent change read earlier still applies", async () => {
+    const { teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const before = await findProjectById(db, projectId);
+    if (!before) throw new Error("missing project");
+
+    await runInTransaction(db, async (_tx, uow) => {
+      await uow.apply({ project: before, set: {}, events: [{ type: "project.created", data: {} }] });
+    });
+    const read = await findProjectById(db, projectId);
+    if (!read) throw new Error("missing project");
+
+    await runInTransaction(db, async (_tx, uow) => {
+      await uow.appendEvents(read, [{ type: "project.client_added", data: { contactId: "c1" } }]);
+    });
+    await runInTransaction(db, async (_tx, uow) => {
+      await uow.apply({ project: read, set: { status: "awaiting_deposit" }, events: [{ type: "quote.accepted", data: {} }] });
+    });
+
+    expect(await findProjectById(db, projectId)).toMatchObject({ status: "awaiting_deposit", version: 2 });
+    const events = (await db.select().from(outbox)).sort((a, b) => a.sequence - b.sequence);
+    expect(events.map((e) => [e.type, e.sequence])).toEqual([
+      ["project.created", 1],
+      ["project.client_added", 2],
+      ["quote.accepted", 3],
+    ]);
+  });
+
+  it("refuses to append events to a project that does not exist", async () => {
+    const { teamId } = await seedServicesTeamWithAdmin(db);
+    await expect(
+      runInTransaction(db, async (_tx, uow) => {
+        await uow.appendEvents({ id: "missing", teamId }, [{ type: "project.client_added", data: {} }]);
+      }),
+    ).rejects.toBeInstanceOf(ProjectStateError);
+  });
+
   it("requires at least one applied change", async () => {
     const { teamId } = await seedServicesTeamWithAdmin(db);
     await seedProject(db, { teamId });

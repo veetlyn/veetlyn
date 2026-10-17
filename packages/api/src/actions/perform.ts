@@ -124,6 +124,17 @@ async function writeLog(
   }
 }
 
+// A refusal decided before the action runs (a team member holding a client link) is logged like one decided in it.
+export async function logRefusal(
+  req: PerformRequest,
+  definition: Pick<ActionDefinition<never, never, never>, "name" | "kind">,
+  projectId: string,
+  message: string,
+): Promise<void> {
+  const project = (await findProjectById(req.deps.db, projectId)) ?? null;
+  await writeLog(req, definition, { teamId: project?.teamId ?? null, project, role: null }, "forbidden", message, Date.now());
+}
+
 export async function perform<Input, Result, Raw>(
   req: PerformRequest,
   definition: ActionDefinition<Input, Result, Raw>,

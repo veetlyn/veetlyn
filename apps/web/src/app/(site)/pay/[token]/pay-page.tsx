@@ -2,10 +2,10 @@
 
 import { formatMoney, money } from "@jendal-workspace/core";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Loader from "@/components/loader";
-import { type PayPageState, payPageState, paymentKindLabel } from "@/lib/pay-page";
+import { clientPageReferrer, type PayPageState, payPageState, paymentKindLabel } from "@/lib/pay-page";
 import { trpc } from "@/utils/trpc";
 
 import PayPalCheckout from "./paypal-checkout";
@@ -22,6 +22,12 @@ export default function PayPage({ token }: { token: string }) {
   });
   const statusRef = useRef<HTMLParagraphElement>(null);
   const previousView = useRef<PayPageState["view"] | null>(null);
+  const [backTo, setBackTo] = useState<string | null>(null);
+
+  // The referrer exists only in the browser.
+  useEffect(() => {
+    setBackTo(clientPageReferrer(document.referrer, window.location.origin));
+  }, []);
 
   const data = view.data;
   const state = data
@@ -53,7 +59,7 @@ export default function PayPage({ token }: { token: string }) {
     );
   }
 
-  const { payment, project, team, paypal, clientPath } = data;
+  const { payment, project, team, paypal } = data;
   const currency = payment.currency;
 
   return (
@@ -85,9 +91,11 @@ export default function PayPage({ token }: { token: string }) {
         </p>
       )}
 
-      <a href={clientPath} className="text-sm underline underline-offset-4">
-        Back to the project
-      </a>
+      {backTo ? (
+        <a href={backTo} className="text-sm underline underline-offset-4">
+          Back to your project
+        </a>
+      ) : null}
     </main>
   );
 }

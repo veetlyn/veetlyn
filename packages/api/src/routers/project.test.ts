@@ -26,6 +26,7 @@ import {
 } from "@jendal-workspace/db/repositories/projects";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
+import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { payment, project } from "@jendal-workspace/db/schema/projects";
@@ -40,6 +41,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { projectList } from "../actions/projects";
 import { signClientLink, verifyClientLink } from "../client-links";
+import { clientTokenFor } from "../testing/client-links";
 import type { Context, EmailServices, PayPalServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact } from "../use-cases/payments";
@@ -78,8 +80,8 @@ const ITEMS = [
   { description: "Build", amountMinor: 60_000, extraDays: 0 },
 ];
 
-async function clientToken(projectId: string): Promise<string> {
-  return signClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, projectId);
+function clientToken(db: Parameters<typeof clientTokenFor>[0], projectId: string): Promise<string> {
+  return clientTokenFor(db, TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, projectId);
 }
 
 describe.skipIf(!hasTestDatabase)("project router", () => {
@@ -105,20 +107,20 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     return caller.project.create({ teamSlug: "team", title: "Website redesign", clientEmail: "client@example.com" });
   }
 
-  it("starts a project with a project.created outbox event and a signed client link", async () => {
+  it("starts a project with a project.created outbox event and hands the team no client link", async () => {
     const { userId } = await seedServicesTeamWithAdmin(db);
-    const { projectId, clientPath } = await createProject(userId);
+    const started = await createProject(userId);
+    const { projectId } = started;
 
     const row = await findProjectById(db, projectId);
     expect(row).toMatchObject({
       title: "Website redesign",
       status: "quoting",
-      clientEmail: "client@example.com",
       currency: "USD",
       managementFeeBps: 1_000,
       teamCutBps: 1_500,
     });
-    expect(clientPath).toBe(`/c/${await clientToken(projectId)}`);
+    expect(started).toEqual({ projectId });
     expect(await db.select().from(outbox)).toEqual([
       expect.objectContaining({ type: "project.created", projectId, sequence: 1 }),
     ]);
@@ -290,7 +292,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBeNull();
 
     const { quoteId } = await caller.project.addQuote({ teamSlug: "solo", projectId, items: ITEMS, deliveryDays: 14 });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
     expect(await findProjectById(db, projectId)).toMatchObject({ status: "awaiting_deposit", assignedFreelancerId: userId });
   });
 
@@ -345,11 +347,55 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
 
     const list = await callerFor(userId).project.list({ teamSlug: "team" });
-    expect(list).toEqual([expect.objectContaining({ id: projectId, title: "Website redesign", status: "quoting" })]);
+    expect(list).toEqual([
+      { id: projectId, title: "Website redesign", status: "quoting", currency: "USD", clientName: "client", createdAt: expect.any(Date) },
+    ]);
     const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
     expect(detail.project.id).toBe(projectId);
-    expect(detail.clientPath).toBe(`/c/${await clientToken(projectId)}`);
     expect(detail.quotes).toEqual([]);
+  });
+
+  it("shows the team its project's contacts, and never a client link", async () => {
+    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { projectId } = await createProject(userId);
+    const { contactId } = await callerFor(userId).project.clientAdd({
+      teamSlug: "team",
+      projectId,
+      email: "second@example.com",
+      name: "Second",
+    });
+
+    const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+
+    expect(detail.contacts).toEqual([
+      {
+        id: expect.any(String),
+        name: "client",
+        isPrimary: true,
+        identities: [{ kind: "email", value: "client@example.com", verified: false }],
+      },
+      { id: contactId, name: "Second", isPrimary: false, identities: [{ kind: "email", value: "second@example.com", verified: false }] },
+    ]);
+    expect(JSON.stringify(detail)).not.toContain("/c/");
+    expect(detail.project).not.toHaveProperty("clientEmail");
+  });
+
+  it("previews the client page for the team without a link, and without pay links", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
+
+    const preview = await callerFor(userId).project.clientPreview({ teamSlug: "team", projectId });
+
+    expect(preview.project).toMatchObject({ id: projectId, title: "Website redesign" });
+    expect(preview.payments).toEqual([expect.objectContaining({ kind: "deposit", payable: true, payPath: null })]);
+    const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+    await expect(callerFor(outsider.userId).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 
   it("lists projects in the shape the project.list output schema describes once on the wire", async () => {
@@ -376,10 +422,11 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
 
     const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    expect(detail.contacts).toEqual([
+      expect.objectContaining({ name: "Web Client", identities: [{ kind: "email", value: "web@example.com", verified: false }] }),
+    ]);
     expect(detail.project).toMatchObject({
       source: "web",
-      clientName: "Web Client",
-      clientEmail: "web@example.com",
       requestAnswers: [
         { question: "Budget?", answer: "Around $1k" },
         { question: "Deadline?", answer: "Next month,\nif possible" },
@@ -399,7 +446,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       deliveryDays: 14,
     });
 
-    const token = await clientToken(projectId);
+    const token = await clientToken(db, projectId);
     const result = await callerFor(null).project.clientAcceptQuote({ token, quoteId });
     expect(result).toEqual({ paymentId: expect.any(String), amountMinor: 60_000 });
 
@@ -442,8 +489,41 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
   });
 
+  it("refuses a signed-in team member who opens the client link", async () => {
+    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const token = await clientToken(db, projectId);
+    await expect(callerFor(freelancer).project.clientGet({ token })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "Team members act from the project page.",
+    });
+    await expect(callerFor(null).project.clientGet({ token })).resolves.toMatchObject({ project: { id: projectId } });
+  });
+
+  it("logs a team member's refused client action", async () => {
+    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const token = await clientToken(db, projectId);
+    await expect(
+      callerFor(freelancer).project.clientAcceptQuote({ token, quoteId: crypto.randomUUID() }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await db.select().from(actionLog)).toEqual([
+      expect.objectContaining({
+        action: "quote.accept",
+        teamId,
+        projectId,
+        actorKind: "user",
+        actorId: freelancer,
+        outcome: "forbidden",
+        message: "Team members act from the project page.",
+      }),
+    ]);
+  });
+
   it("answers a valid link to a missing project like a forged one", async () => {
-    const token = await clientToken(crypto.randomUUID());
+    const token = await clientToken(db, crypto.randomUUID());
     const notValid = { code: "NOT_FOUND", message: "This link is not valid." };
     await expect(callerFor(null).project.clientGet({ token })).rejects.toMatchObject(notValid);
     await expect(callerFor(null).project.clientAcceptQuote({ token, quoteId: crypto.randomUUID() })).rejects.toMatchObject(
@@ -465,7 +545,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     const before = (await db.select({ id: actionLog.id }).from(actionLog)).map((row) => row.id);
 
     await callerFor(userId).project.get({ teamSlug: "team", projectId });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
 
     const added = (await db.select().from(actionLog)).filter((row) => !before.includes(row.id));
     expect(added).toEqual([
@@ -488,7 +568,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
     const { projectId } = await createProject(userId);
     const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 7 });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
     expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBe(freelancer);
 
     // Team mode: the freelancer the staff member named.
@@ -501,7 +581,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       deliveryDays: 7,
       freelancerId: freelancer,
     });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(second), quoteId: staffQuote });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, second), quoteId: staffQuote });
     expect((await findProjectById(db, second))?.assignedFreelancerId).toBe(freelancer);
   });
   it("rolls everything back when the client accepts a quote on a project that changed underneath", async () => {
@@ -515,11 +595,11 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       items: ITEMS,
       deliveryDays: 7,
     });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
 
     // Accepting again is refused by the state machine and changes nothing.
     await expect(
-      callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId }),
+      callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     const payments = await db.select().from(payment).where(eq(payment.projectId, projectId));
     expect(payments).toHaveLength(1);
@@ -537,7 +617,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       items,
       deliveryDays: 14,
     });
-    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(projectId), quoteId });
+    await callerFor(null).project.clientAcceptQuote({ token: await clientToken(db, projectId), quoteId });
     // The deposit capture is S6's; here the payment_captured posting moves the project along.
     const [deposit] = await db.select().from(payment).where(eq(payment.projectId, projectId));
     await runInTransaction(db, async (tx, uow) => {
@@ -573,7 +653,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       removeItemIds: [],
     });
 
-    const token = await clientToken(projectId);
+    const token = await clientToken(db, projectId);
     const result = await callerFor(null).project.clientAcceptAmendment({ token, amendmentId });
     expect(result).toEqual({ quoteVersion: 2, topUpPaymentId: expect.any(String) });
 
@@ -614,7 +694,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       add: [],
       removeItemIds: [designItem.id],
     });
-    const result = await callerFor(null).project.clientAcceptAmendment({ token: await clientToken(projectId), amendmentId });
+    const result = await callerFor(null).project.clientAcceptAmendment({ token: await clientToken(db, projectId), amendmentId });
     expect(result).toEqual({ quoteVersion: 2, topUpPaymentId: null });
 
     const versions = await listProjectQuotes(db, projectId);
@@ -651,7 +731,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       message: "An amendment is waiting for the client's answer.",
     });
 
-    const token = await clientToken(projectId);
+    const token = await clientToken(db, projectId);
     const page = await callerFor(null).project.clientGet({ token });
     const pending = page.amendments.find((a) => a.status === "pending");
     if (!pending) throw new Error("no pending amendment");
@@ -668,7 +748,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const { projectId } = await createProject(userId);
       await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
       const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
-      const token = await clientToken(projectId);
+      const token = await clientToken(db, projectId);
       const { paymentId } = await callerFor(null).project.clientAcceptQuote({ token, quoteId });
       await db.update(payment).set({ paypalOrderId: "ORDER1" }).where(eq(payment.id, paymentId));
       const result = await applyCaptureFact(db, {
@@ -1389,7 +1469,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         items: ITEMS,
         deliveryDays: 14,
       });
-      const otherToken = await clientToken(otherId);
+      const otherToken = await clientToken(db, otherId);
       await callerFor(null).project.clientAcceptQuote({ token: otherToken, quoteId });
 
       const notWaiting = { code: "BAD_REQUEST", message: "This delivery is not waiting for an answer." };
@@ -1622,7 +1702,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
         const noFile = { code: "BAD_REQUEST", message: "This delivery has no file." };
         const { projectId: otherId } = await createProject(first.userId);
-        const otherToken = await clientToken(otherId);
+        const otherToken = await clientToken(db, otherId);
         await expect(
           callerFor(null, files).project.clientDeliveryFileUrl({ token: otherToken, deliveryId }),
         ).rejects.toMatchObject(noFile);
@@ -1728,16 +1808,27 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         source: "web",
         title: "Landing page",
         brief: "I need a landing page for my shop.",
-        clientEmail: "jo@x.com",
-        clientName: "Jo",
         requestAnswers: [{ question: "Colors?", answer: "Blue" }],
         currency: "USD",
         managementFeeBps: 1_000,
         teamCutBps: 1_500,
         createdById: null,
       });
+      const projectId = rows[0]!.id;
+      const [contact] = await db.select().from(clientContact);
+      expect(contact).toMatchObject({ teamId: team.id, name: "Jo" });
+      expect(await db.select().from(clientIdentity)).toEqual([
+        expect.objectContaining({ contactId: contact!.id, kind: "email", value: "jo@x.com", source: "request", verifiedAt: null }),
+      ]);
+      expect(await db.select().from(projectClient)).toEqual([
+        expect.objectContaining({ projectId, contactId: contact!.id, isPrimary: true, linkVersion: 1, linkEmail: "jo@x.com" }),
+      ]);
       expect(await db.select().from(outbox)).toEqual([
-        expect.objectContaining({ type: "project.created", projectId: rows[0]!.id }),
+        expect.objectContaining({
+          type: "project.created",
+          projectId,
+          data: { projectId, title: "Landing page", contactIds: [contact!.id], clientName: "Jo", channelId: null },
+        }),
       ]);
 
       expect(mailer.sent).toHaveLength(2);
@@ -1752,7 +1843,37 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
       const match = /https:\/\/payleor\.test\/c\/(\S+)/.exec(toClient!.text);
       expect(match).toBeTruthy();
-      expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toBe(rows[0]!.id);
+      expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toEqual({
+        projectId,
+        contactId: contact!.id,
+        version: 1,
+      });
+    });
+
+    it("gives a request carrying a verified client's email its own contact, with no hold on that client's projects", async () => {
+      const { team, offeringId } = await setupSeller();
+      const clientProject = await seedProject(db, { teamId: team.id, clientEmail: "jo@x.com" });
+      await db.update(clientIdentity).set({ verifiedAt: new Date() });
+      const [verified] = await db.select().from(projectClient).where(eq(projectClient.projectId, clientProject));
+      const { caller, mailer } = requestCaller();
+
+      await caller.project.requestQuote(validRequest({ offeringId }));
+
+      const requested = (await db.select().from(project)).find((p) => p.id !== clientProject)!;
+      const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, requested.id));
+      expect(attached!.contactId).not.toBe(verified!.contactId);
+      const token = /https:\/\/payleor\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
+      expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, token)).toMatchObject({
+        projectId: requested.id,
+        contactId: attached!.contactId,
+      });
+      // Even a correctly signed link for the requester's contact opens nothing on the client's project.
+      const theirs = await signClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, {
+        projectId: clientProject,
+        contactId: attached!.contactId,
+        version: 1,
+      });
+      await expect(callerFor(null).project.clientGet({ token: theirs })).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
 
     it("pretends success for a filled honeypot without writing anything", async () => {
