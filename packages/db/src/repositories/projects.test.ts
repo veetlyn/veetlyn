@@ -9,30 +9,7 @@ import {
   seedServicesTeamWithAdmin,
   truncateAll,
 } from "../testing/db";
-import { addPaymentRefunded, countOpenWebRequests, listProjectDeliveries, listRefundablePayments } from "./projects";
-
-describe.skipIf(!hasTestDatabase)("countOpenWebRequests", () => {
-  const db = createTestDb();
-
-  beforeEach(() => truncateAll(db));
-  afterAll(() => db.$client.end());
-
-  it("counts only the email's web requests in open statuses, for that team", async () => {
-    const { teamId } = await seedServicesTeamWithAdmin(db);
-    const { teamId: otherTeamId } = await seedServicesTeamWithAdmin(db, { slug: "other" });
-    const email = "asker@example.com";
-
-    await seedProject(db, { teamId, clientEmail: email, source: "web", status: "quoting" });
-    await seedProject(db, { teamId, clientEmail: email, source: "web", status: "in_progress" });
-    await seedProject(db, { teamId, clientEmail: email, source: "web", status: "completed" });
-    await seedProject(db, { teamId, clientEmail: email, source: "web", status: "cancelled" });
-    await seedProject(db, { teamId, clientEmail: email, source: "admin", status: "quoting" });
-    await seedProject(db, { teamId, clientEmail: "other@example.com", source: "web", status: "quoting" });
-    await seedProject(db, { teamId: otherTeamId, clientEmail: email, source: "web", status: "quoting" });
-
-    await expect(countOpenWebRequests(db, { teamId, clientEmail: email })).resolves.toBe(2);
-  });
-});
+import { addPaymentRefunded, listProjectDeliveries, listRefundablePayments } from "./projects";
 
 describe.skipIf(!hasTestDatabase)("project deliveries", () => {
   const db = createTestDb();

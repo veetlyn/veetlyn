@@ -19,7 +19,8 @@ import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } fr
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { signClientLink, signPayLink, verifyPayLink } from "../client-links";
+import { signPayLink, verifyPayLink } from "../client-links";
+import { clientTokenFor } from "../testing/client-links";
 import type { PayPalServices } from "../context";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
@@ -131,7 +132,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       deliveryDays: 14,
     });
     const { paymentId } = await callerFor(null).project.clientAcceptQuote({
-      token: await signClientLink(SECRET, projectId),
+      token: await clientTokenFor(db, SECRET, projectId),
       quoteId,
     });
     return { userId, teamId, projectId, paymentId };
@@ -307,7 +308,17 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
   }
 
   describe("payment router", () => {
-    it("shows the pay page with the SDK settings and a way back to the project", async () => {
+    it("never hands a client link to a pay link holder", async () => {
+      const { token } = await connectedDeposit();
+      const { fetch } = fakePayPalApi();
+
+      const page = await callerFor(null, makePayPal(fetch)).payment.payGet({ token });
+
+      expect(page).not.toHaveProperty("clientPath");
+      expect(JSON.stringify(page)).not.toContain("/c/");
+    });
+
+    it("shows the pay page with the SDK settings", async () => {
       const { projectId, paymentId, token } = await connectedDeposit();
       const { fetch } = fakePayPalApi();
 
@@ -330,7 +341,6 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
           environment: "sandbox",
           merchantId: "SELLER1",
         },
-        clientPath: `/c/${await signClientLink(SECRET, projectId)}`,
       });
       await expect(callerFor(null).payment.payGet({ token: `${paymentId}.bad` })).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
@@ -414,7 +424,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       });
       const { quoteId } = await caller.project.addQuote({ teamSlug: "solo", projectId, items: ITEMS, deliveryDays: 14 });
       const { paymentId } = await callerFor(null).project.clientAcceptQuote({
-        token: await signClientLink(SECRET, projectId),
+        token: await clientTokenFor(db, SECRET, projectId),
         quoteId,
       });
       await markTeamPayPalMerchant(db, { teamId: soloTeamId, merchantId: "SELLER1" });
@@ -638,7 +648,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         projectId: seeded.projectId,
         note: "Here it is",
       });
-      const clientToken = await signClientLink(SECRET, seeded.projectId);
+      const clientToken = await clientTokenFor(db, SECRET, seeded.projectId);
       const { balancePaymentId } = await callerFor(null).project.clientAcceptDelivery({ token: clientToken, deliveryId });
       if (!balancePaymentId) throw new Error("no balance payment");
       return {
@@ -732,7 +742,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
   it("gives the client page a pay path for a payment that can be paid, and none once it is paid", async () => {
     const { projectId, paymentId, token } = await connectedDeposit();
-    const clientToken = await signClientLink(SECRET, projectId);
+    const clientToken = await clientTokenFor(db, SECRET, projectId);
 
     const before = await callerFor(null).project.clientGet({ token: clientToken });
     const payPath = before.payments[0]?.payPath ?? "";

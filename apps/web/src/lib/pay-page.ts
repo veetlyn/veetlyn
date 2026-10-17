@@ -49,3 +49,17 @@ export function captureOutcomeProblem(outcome: CaptureOutcome): string | null {
 export function sdkEnvironment(environment: "sandbox" | "live"): "sandbox" | "production" {
   return environment === "live" ? "production" : "sandbox";
 }
+
+// The pay page links back only to the client page the visitor came from on this site; it never makes a client
+// link of its own, since a pay link may be forwarded to someone who is not the client.
+export function clientPageReferrer(referrer: string, origin: string): string | null {
+  if (!referrer) return null;
+  let url: URL;
+  try {
+    url = new URL(referrer);
+  } catch {
+    return null;
+  }
+  if (url.origin !== origin || !url.pathname.startsWith("/c/")) return null;
+  return url.pathname;
+}
