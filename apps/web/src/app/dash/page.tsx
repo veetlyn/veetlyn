@@ -13,7 +13,7 @@ const STATUS_LABEL = new Map([
   ["suspended", "Suspended"],
 ]);
 
-export default async function AdminHome() {
+export default async function DashHome() {
   await requireSession();
   const organizations = (await listMyWorkspaces()).filter(
     (o) => o.stores.length + o.servicesTeams.length > 0,

@@ -47,7 +47,7 @@ function makePayPal(answer: VerifyAnswer) {
       sleep: () => Promise.resolve(),
     }),
     partnerId: "PARTNER42",
-    returnUrl: "http://admin.localhost:3001/api/paypal/onboarding/return",
+    returnUrl: "http://dash.localhost:3001/api/paypal/onboarding/return",
     sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
   };
   return { paypal, requests };

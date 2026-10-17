@@ -31,7 +31,7 @@ describe.skipIf(!hasTestDatabase)("project contacts", () => {
     const email: EmailServices = {
       mailer,
       siteOrigin: "https://payleor.test",
-      adminOrigin: "https://admin.payleor.test",
+      dashOrigin: "https://dash.payleor.test",
       storeOrigin: (slug) => `https://${slug}.payleor.test`,
     };
     return { deps: { db, auth: { options: { secret: SECRET } }, email }, mailer };
