@@ -11,7 +11,8 @@
     "tunnel:setup": "node scripts/tunnel.ts setup",
     "deploy:staging": "JENDAL_DEPLOY_STAGE=staging varlock run -- alchemy deploy --stage staging --yes",
     "deploy:production": "JENDAL_DEPLOY_STAGE=production varlock run -- alchemy deploy --stage production --yes",
-    "destroy:staging": "JENDAL_DEPLOY_STAGE=staging varlock run -- alchemy destroy --stage staging --yes"
+    "destroy:staging": "JENDAL_DEPLOY_STAGE=staging varlock run -- alchemy destroy --stage staging --yes",
+    "github-env": "bash scripts/github-env.sh"
   },
   "dependencies": {
     "zod": "catalog:"
