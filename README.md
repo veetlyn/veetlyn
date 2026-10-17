@@ -94,20 +94,15 @@ Run standalone Node/Bun tools that use Varlock from the owning app directory so 
 - Target: web on Cloudflare + server on Cloudflare
 - Configure provider accounts: `cd packages/infra && pnpm exec alchemy profile edit`
 - Dev: pnpm run dev
-- Deploy: pnpm run deploy
-- Destroy: pnpm run destroy
+- Deploy: `pnpm deploy:staging`, `pnpm deploy:production`
 
 `alchemy profile edit` stores the selected Axiom, Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
 
-Deploys are staged and default to a personal `dev_<username>` stage. For production, run the deploy with an explicit stage from `packages/infra`:
+Two stages are deployed, with hosts fixed in `packages/infra/deploy-hosts.ts`: `production` (`payleor.com`, `dash.payleor.com`, `api.payleor.com`, `*.payleor.app`) and `staging` (the same hosts under `staging.`). Production deploys from GitHub Actions on every push to main once CI passes (`.github/workflows/deploy.yml`); staging deploys by hand from the Actions tab ("Deploy", choose the branch and `staging`). From a machine with the deploy settings in `packages/infra/.env`, run `pnpm deploy:staging` or `pnpm deploy:production`. There is no CORS setting: the web Worker reaches the api Worker through a service binding.
 
-```bash
-cd packages/infra && pnpm exec alchemy deploy --stage production
-```
+No deploy value lives in the repository. Each stage reads its settings from env files that git ignores: `packages/infra/.env` and `apps/server/.env` for what the stages share, and `packages/infra/.env.<stage>.local` for what each stage owns (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `ALCHEMY_PASSWORD`, `PAYPAL_WEBHOOK_ID`). The `.env.schema` files name and document every value. `pnpm -F @jendal-workspace/infra github-env <stage>` copies a stage's values into the GitHub environment of the same name, for the secrets and variables `deploy.yml` reads; it prints names only.
 
-### Production origins
-
-- Required after the first deploy: set `CORS_ORIGIN` in `apps/server/.env` to the exact deployed web origin, such as `https://app.example.com`, then deploy the server again.
+Deploys authenticate with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; an `alchemy profile` OAuth login cannot create the R2 access token the server's file uploads use. The token is an account token with, on the account: Workers Scripts, Workers R2 Storage, Workers KV Storage, Queues, Hyperdrive and Account API Tokens (Edit), Account Settings (Read); on the `payleor.com` and `payleor.app` zones: DNS, Workers Routes and Dynamic URL Redirects (Edit), Zone (Read).
 
 ## Project Structure
 

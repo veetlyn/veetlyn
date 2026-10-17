@@ -14,6 +14,7 @@ describe("parseRequestTarget with one domain for platform and stores", () => {
 
   it.each([
     ["www.payleor.app", "www"],
+    ["dash.payleor.app", "dash"],
     ["admin.payleor.app", "admin"],
     ["api.payleor.app", "api"],
     ["mcp.payleor.app", "mcp"],
@@ -82,6 +83,7 @@ describe("parseRequestTarget with a separate store domain", () => {
 
   it("keeps the platform apps on the platform domain", () => {
     expect(parseSplit("payleor.app")).toEqual({ kind: "platform", app: "www" });
+    expect(parseSplit("dash.payleor.app")).toEqual({ kind: "platform", app: "dash" });
     expect(parseSplit("admin.payleor.app")).toEqual({ kind: "platform", app: "admin" });
   });
 

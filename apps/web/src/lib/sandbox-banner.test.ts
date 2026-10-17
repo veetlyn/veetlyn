@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { SANDBOX_NOTICE, sandboxBannerContent } from "./sandbox-banner";
 
 const all = {
+  PAYPAL_ENVIRONMENT: "sandbox",
   SANDBOX_BUYER_EMAIL: "buyer@example.com",
   SANDBOX_BUYER_PASSWORD: "buyer-password",
   SANDBOX_CARD_NUMBER: "4111111111111111",
@@ -22,6 +23,11 @@ describe("sandboxBannerContent", () => {
       buyer: { email: "buyer@example.com", password: "buyer-password" },
       card: { number: "4111111111111111", expiry: "12/2030", cvv: "123" },
     });
+  });
+
+  it("shows nothing outside the PayPal sandbox", () => {
+    expect(sandboxBannerContent("default", { ...all, PAYPAL_ENVIRONMENT: "live" })).toBeNull();
+    expect(sandboxBannerContent("checkout", { ...all, PAYPAL_ENVIRONMENT: "live" })).toBeNull();
   });
 
   it("falls back to the notice when any checkout value is missing", () => {

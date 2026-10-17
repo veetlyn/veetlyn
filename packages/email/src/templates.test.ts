@@ -5,7 +5,7 @@ import {
   passwordResetEmail,
   quoteRequestLinkEmail, quoteRequestNoticeEmail, verificationEmail } from "./templates";
 
-const url = "https://admin.payleor.app/api/auth/verify-email?token=abc&callbackURL=%2Fnew";
+const url = "https://dash.payleor.app/api/auth/verify-email?token=abc&callbackURL=%2Fnew";
 
 describe("verificationEmail", () => {
   it("links to the verification URL in both parts", () => {
@@ -14,7 +14,7 @@ describe("verificationEmail", () => {
     expect(email.subject).toBe("Verify your email for Payleor");
     expect(email.text).toContain(url);
     expect(email.text).toContain("expires in 1 hour");
-    expect(email.html).toContain('href="https://admin.payleor.app/api/auth/verify-email?token=abc&amp;callbackURL=%2Fnew"');
+    expect(email.html).toContain('href="https://dash.payleor.app/api/auth/verify-email?token=abc&amp;callbackURL=%2Fnew"');
   });
 
   it("escapes the name in the HTML part", () => {
@@ -27,7 +27,7 @@ describe("verificationEmail", () => {
 
 describe("passwordResetEmail", () => {
   it("links to the reset URL and says what happens if it was not requested", () => {
-    const resetUrl = "https://admin.payleor.app/api/auth/reset-password/tok?callbackURL=%2Freset-password";
+    const resetUrl = "https://dash.payleor.app/api/auth/reset-password/tok?callbackURL=%2Freset-password";
     const email = passwordResetEmail({ name: "Ada", url: resetUrl });
 
     expect(email.subject).toBe("Reset your Payleor password");
@@ -57,7 +57,7 @@ describe("quoteRequestNoticeEmail", () => {
       serviceName: "Logo refresh",
       description: "A new logo",
       answers: [{ question: "Colors?", answer: "Blue" }],
-      url: "https://admin.payleor.com/walk-crew/projects/p1",
+      url: "https://dash.payleor.com/walk-crew/projects/p1",
     });
 
     expect(email.subject).toBe("New request from Jo <b>");

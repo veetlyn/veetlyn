@@ -13,6 +13,8 @@ export function proxy(request: NextRequest) {
       return NextResponse.next();
     case "not-found":
       return new NextResponse("Not found", { status: 404 });
+    case "redirect":
+      return NextResponse.redirect(route.location, 301);
     case "rewrite":
       return NextResponse.rewrite(new URL(`${route.pathname}${request.nextUrl.search}`, request.url));
   }

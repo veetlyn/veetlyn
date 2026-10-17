@@ -8,11 +8,11 @@ describe("storeUrlParts", () => {
   });
 
   it("uses http and keeps the dev port on localhost", () => {
-    expect(storeUrlParts("localhost", "admin.localhost:3001")).toEqual({ prefix: "http://", suffix: ".localhost:3001" });
+    expect(storeUrlParts("localhost", "dash.localhost:3001")).toEqual({ prefix: "http://", suffix: ".localhost:3001" });
   });
 
   it("drops the request port when the store domain is public", () => {
-    expect(storeUrlParts("payleor.site", "admin.payleor.app:8443")).toEqual({ prefix: "https://", suffix: ".payleor.site" });
+    expect(storeUrlParts("payleor.site", "dash.payleor.app:8443")).toEqual({ prefix: "https://", suffix: ".payleor.site" });
   });
 });
 

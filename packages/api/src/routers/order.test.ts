@@ -49,7 +49,7 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
         ? {
             mailer,
             siteOrigin: "https://payleor.test",
-            adminOrigin: "https://admin.payleor.test",
+            dashOrigin: "https://dash.payleor.test",
             storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
           }
         : undefined,
