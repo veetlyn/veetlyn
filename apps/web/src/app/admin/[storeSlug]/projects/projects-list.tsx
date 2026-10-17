@@ -43,7 +43,7 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
               <Link href={`/${teamSlug}/projects/${project.id}`} className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-muted/50">
                 <div>
                   <p className="font-medium">{project.title}</p>
-                  <p className="text-sm text-muted-foreground">{project.clientEmail ?? project.clientDiscordId ?? "No client contact"}</p>
+                  <p className="text-sm text-muted-foreground">{project.clientName ?? "No client"}</p>
                 </div>
                 <span className="text-sm text-muted-foreground">{projectStatusLabel(project.status)}</span>
               </Link>

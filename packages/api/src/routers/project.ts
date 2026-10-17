@@ -1,6 +1,13 @@
 import { listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 
 import {
+  projectClientAdd,
+  projectClientLinkEmail,
+  projectClientLinkReissue,
+  projectClientPreview,
+  projectClientRemove,
+} from "../actions/clients";
+import {
   deliveryAccept,
   deliveryFile,
   deliveryRequestChanges,
@@ -38,6 +45,11 @@ export const projectRouter = router({
   deliver: teamProcedureFor(deliverySubmit),
   refundClient: teamProcedureFor(projectRefundClient),
   deliveryFileUrl: teamProcedureFor(deliveryFile),
+  clientAdd: teamProcedureFor(projectClientAdd),
+  clientRemove: teamProcedureFor(projectClientRemove),
+  clientLinkEmail: teamProcedureFor(projectClientLinkEmail),
+  clientLinkReissue: teamProcedureFor(projectClientLinkReissue),
+  clientPreview: teamProcedureFor(projectClientPreview),
 
   requestQuote: publicProcedureFor(createRequest),
 

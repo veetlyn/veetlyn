@@ -38,6 +38,7 @@ import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/pr
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
 
+import { ClientsSection } from "./clients-section";
 import { QuoteCalculator } from "./quote-calculator";
 import { RefundSection } from "./refund-section";
 
@@ -131,15 +132,7 @@ function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; curre
   );
 }
 
-export default function ProjectDetail({
-  teamSlug,
-  projectId,
-  siteOrigin,
-}: {
-  teamSlug: string;
-  projectId: string;
-  siteOrigin: string;
-}) {
+export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: string; projectId: string }) {
   const queryClient = useQueryClient();
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ teamSlug, projectId }),
@@ -211,12 +204,12 @@ export default function ProjectDetail({
 
   const {
     project,
+    contacts,
     quotes,
     amendments,
     payments,
     deliveries,
     refund,
-    clientPath,
     role,
     quotingMode,
     solo,
@@ -224,6 +217,8 @@ export default function ProjectDetail({
     quoteCalculator,
   } = detail.data;
   const currency = project.currency;
+  const primary = contacts.find((c) => c.isPrimary);
+  const primaryEmail = primary?.identities.find((i) => i.kind === "email")?.value;
   const currentQuote = quotes.find((q) => q.status === "accepted");
   const pendingAmendment = amendments.find((a) => a.status === "pending");
   const days = Number(deliveryDays);
@@ -287,7 +282,7 @@ export default function ProjectDetail({
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
         <p className="text-sm text-muted-foreground">
-          {projectStatusLabel(project.status)} · {project.clientEmail ?? project.clientDiscordId ?? "No client contact"}
+          {projectStatusLabel(project.status)} · {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
         {project.source === "web" ? (
@@ -295,7 +290,7 @@ export default function ProjectDetail({
             <h2 className="text-lg font-semibold">Request</h2>
             <p className="text-sm">
               Requested by{" "}
-              {project.clientName ? `${project.clientName} <${project.clientEmail}>` : (project.clientEmail ?? "unknown")}
+              {primary ? (primaryEmail ? `${primary.name} <${primaryEmail}>` : primary.name) : "unknown"}
             </p>
             {project.requestAnswers.length > 0 ? (
               <dl className="space-y-2">
@@ -310,14 +305,9 @@ export default function ProjectDetail({
           </section>
         ) : null}
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
-        <p className="text-sm">
-          Client link:{" "}
-          <a href={`${siteOrigin}${clientPath}`} className="underline underline-offset-4 break-all">
-            {siteOrigin}
-            {clientPath}
-          </a>
-        </p>
       </div>
+
+      <ClientsSection teamSlug={teamSlug} projectId={projectId} contacts={contacts} role={role} onChange={refresh} />
 
       {!solo && canAssignFreelancer(role) && project.status === "quoting" ? (
         <section className="space-y-3">
@@ -598,7 +588,7 @@ export default function ProjectDetail({
           refund={refund}
           payments={payments}
           role={role}
-          clientName={project.clientName ?? project.clientEmail ?? "the client"}
+          clientName={primary?.name ?? "the client"}
           onRefunded={refresh}
         />
       ) : null}

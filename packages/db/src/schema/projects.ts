@@ -39,8 +39,9 @@ export const project = pgTable(
     status: text("status", { enum: PROJECT_STATUSES }).notNull().default("quoting"),
     // Compare-and-set token: every change bumps it (services spec §6.1).
     version: integer("version").notNull().default(0),
+    // Legacy client columns: client contacts replaced them. Nothing writes them; only the contact backfill reads
+    // them, and a later migration drops them once the backfill has run everywhere.
     clientEmail: text("client_email"),
-    // Who asked, from the seller-page request form (sellers design §4.2); null for admin-started projects.
     clientName: text("client_name"),
     // The intake answers as {question, answer} pairs, in the order the questions were shown.
     requestAnswers: jsonb("request_answers").$type<QuoteRequestAnswer[]>().notNull().default(sql`'[]'::jsonb`),
@@ -63,10 +64,7 @@ export const project = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [
-    index("project_teamId_idx").on(t.teamId),
-    check("project_client_check", sql`client_email is not null or client_discord_id is not null`),
-  ],
+  (t) => [index("project_teamId_idx").on(t.teamId)],
 );
 
 export const quote = pgTable(

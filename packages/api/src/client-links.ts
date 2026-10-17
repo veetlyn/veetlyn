@@ -1,10 +1,12 @@
-// Signed links. `/c/{token}` names one project (services spec §5.2); `/pay/{token}` names one payment and
-// carries no amount (§5.4). Both prove the bearer followed a link the team sent. The keys are derived from
+// Signed links. `/c/{token}` names one project and one of its client contacts at a link version (action
+// catalog design §5.3); `/pay/{token}` names one payment and carries no amount (services spec §5.4). Both prove the bearer followed a link the team sent. The keys are derived from
 // the Better Auth secret, so no new secret is needed, and each label separates its domain: a client token
 // is never a pay token, and neither is ever a session token.
 const encoder = new TextEncoder();
 
-const CLIENT_LINK_LABEL = "payleor client link v1";
+// Links sent before client contacts existed name only the project; they still verify under their own key.
+const LEGACY_CLIENT_LINK_LABEL = "payleor client link v1";
+const CLIENT_LINK_LABEL = "payleor client link v2";
 const PAY_LINK_LABEL = "payleor pay link v1";
 
 async function linkKey(secret: string, label: string): Promise<CryptoKey> {
@@ -49,12 +51,33 @@ async function verifyLink(secret: string, label: string, token: string): Promise
   return ok ? id : null;
 }
 
-export function signClientLink(secret: string, projectId: string): Promise<string> {
-  return signLink(secret, CLIENT_LINK_LABEL, projectId);
+export type ClientLinkTarget = { projectId: string; contactId: string; version: number };
+
+// A legacy link carries no contact: it stands for the project's primary contact at version 0.
+export type VerifiedClientLink = { projectId: string; contactId: string | null; version: number };
+
+const SEGMENT = /^[A-Za-z0-9-]+$/;
+const VERSION = /^(0|[1-9][0-9]{0,8})$/;
+
+export function signClientLink(secret: string, target: ClientLinkTarget): Promise<string> {
+  return signLink(secret, CLIENT_LINK_LABEL, `${target.projectId}.${target.contactId}.${target.version}`);
 }
 
-export function verifyClientLink(secret: string, token: string): Promise<string | null> {
-  return verifyLink(secret, CLIENT_LINK_LABEL, token);
+export function signLegacyClientLink(secret: string, projectId: string): Promise<string> {
+  return signLink(secret, LEGACY_CLIENT_LINK_LABEL, projectId);
+}
+
+export async function verifyClientLink(secret: string, token: string): Promise<VerifiedClientLink | null> {
+  const segments = token.split(".");
+  if (segments.length === 2) {
+    const projectId = await verifyLink(secret, LEGACY_CLIENT_LINK_LABEL, token);
+    return projectId ? { projectId, contactId: null, version: 0 } : null;
+  }
+  const [projectId, contactId, version] = segments;
+  if (segments.length !== 4 || !projectId || !contactId || !version) return null;
+  if (!SEGMENT.test(projectId) || !SEGMENT.test(contactId) || !VERSION.test(version)) return null;
+  if (!(await verifyLink(secret, CLIENT_LINK_LABEL, token))) return null;
+  return { projectId, contactId, version: Number(version) };
 }
 
 export function signPayLink(secret: string, paymentId: string): Promise<string> {

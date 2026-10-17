@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { captureOutcomeProblem, type PayPageInput, payPageState, paymentKindLabel, sdkEnvironment } from "./pay-page";
+import { captureOutcomeProblem, clientPageReferrer, type PayPageInput, payPageState, paymentKindLabel, sdkEnvironment } from "./pay-page";
 
 const base: PayPageInput = { kind: "deposit", status: "pending", processing: false, paypalReady: true };
 
@@ -49,5 +49,20 @@ describe("labels", () => {
   it("maps Payleor's PayPal environment to the SDK's", () => {
     expect(sdkEnvironment("sandbox")).toBe("sandbox");
     expect(sdkEnvironment("live")).toBe("production");
+  });
+});
+
+describe("clientPageReferrer", () => {
+  const origin = "https://payleor.test";
+
+  it("links back to the client page the visitor came from on this site", () => {
+    expect(clientPageReferrer("https://payleor.test/c/p.c.1.sig?x=1", origin)).toBe("/c/p.c.1.sig");
+  });
+
+  it("offers no way back from another site, another page, or no referrer", () => {
+    expect(clientPageReferrer("https://evil.test/c/p.c.1.sig", origin)).toBeNull();
+    expect(clientPageReferrer("https://payleor.test/pay/abc", origin)).toBeNull();
+    expect(clientPageReferrer("", origin)).toBeNull();
+    expect(clientPageReferrer("not a url", origin)).toBeNull();
   });
 });

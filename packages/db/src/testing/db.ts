@@ -4,6 +4,13 @@ import { sql } from "drizzle-orm";
 import { createDb, type Database } from "../index";
 import { user } from "../schema/auth";
 import { products, productVariants } from "../schema/catalog";
+import {
+  type ClientIdentityKind,
+  type ClientIdentitySource,
+  clientContact,
+  clientIdentity,
+  projectClient,
+} from "../schema/contacts";
 import { fileUpload } from "../schema/files";
 import { orders } from "../schema/orders";
 import { member, organization, team, teamMember } from "../schema/organization";
@@ -20,7 +27,7 @@ export function createTestDb(): Database {
 export async function truncateAll(db: Database): Promise<void> {
   await db.execute(
     sql.raw(
-      'truncate table "action_log", "outbox", "paypal_webhook_event", "download_grant", "orders", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "project_refund_part", "project_refund", "payment", "amendment", "quote_item", "quote", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_approval", "payout_request", "team_payout_trusted_member", "team_payout_rules", "payout_connect_attempt", "team_payout_credentials", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
+      'truncate table "action_log", "outbox", "paypal_webhook_event", "download_grant", "orders", "ledger_balance", "ledger_entry", "ledger_transfer", "delivery", "file_upload", "project_refund_part", "project_refund", "payment", "amendment", "quote_item", "quote", "project_client", "client_identity", "client_contact", "project", "paypal_onboarding", "product_images", "product_variants", "products", "rate_limit", "request_limit", "services_offering", "services_department", "services_team_settings", "services_team_member", "discord_link_code", "payout_approval", "payout_request", "team_payout_trusted_member", "team_payout_rules", "payout_connect_attempt", "team_payout_credentials", "payout_destination", "store_domains", "team_member", "team", "invitation", "member", "organization", "session", "account", "verification", "user" restart identity cascade',
     ),
   );
 }
@@ -201,6 +208,44 @@ export async function seedServicesTeamMember(
   return userId;
 }
 
+// A client contact of the team with the given identities, optionally attached to a project.
+export async function seedClientContact(
+  db: Database,
+  input: {
+    teamId: string;
+    name?: string;
+    identities?: { kind: ClientIdentityKind; value: string; verified?: boolean; source?: ClientIdentitySource }[];
+    projectId?: string;
+    isPrimary?: boolean;
+    linkVersion?: number;
+  },
+): Promise<string> {
+  const [contact] = await db
+    .insert(clientContact)
+    .values({ teamId: input.teamId, name: input.name ?? "Client" })
+    .returning({ id: clientContact.id });
+  if (!contact) throw new Error("Insert into client_contact returned no row");
+  for (const identity of input.identities ?? []) {
+    await db.insert(clientIdentity).values({
+      contactId: contact.id,
+      teamId: input.teamId,
+      kind: identity.kind,
+      value: identity.value,
+      source: identity.source ?? "typed",
+      verifiedAt: identity.verified ? new Date() : null,
+    });
+  }
+  if (input.projectId) {
+    await db.insert(projectClient).values({
+      projectId: input.projectId,
+      contactId: contact.id,
+      isPrimary: input.isPrimary ?? false,
+      linkVersion: input.linkVersion ?? 1,
+    });
+  }
+  return contact.id;
+}
+
 export async function seedProject(
   db: Database,
   input: {
@@ -211,6 +256,8 @@ export async function seedProject(
     status?: ProjectStatus;
     source?: ProjectSource;
     requestAnswers?: QuoteRequestAnswer[];
+    // The primary contact's link version; 0 is what migrated projects have.
+    linkVersion?: number;
   },
 ): Promise<string> {
   const [row] = await db
@@ -218,8 +265,6 @@ export async function seedProject(
     .values({
       teamId: input.teamId,
       title: input.title ?? "Website",
-      clientEmail: input.clientEmail ?? "client@example.com",
-      clientName: input.clientName,
       status: input.status,
       source: input.source,
       requestAnswers: input.requestAnswers,
@@ -229,6 +274,14 @@ export async function seedProject(
     })
     .returning({ id: project.id });
   if (!row) throw new Error("Insert into project returned no row");
+  await seedClientContact(db, {
+    teamId: input.teamId,
+    name: input.clientName ?? "Client",
+    identities: [{ kind: "email", value: input.clientEmail ?? "client@example.com" }],
+    projectId: row.id,
+    isPrimary: true,
+    linkVersion: input.linkVersion,
+  });
   return row.id;
 }
 
