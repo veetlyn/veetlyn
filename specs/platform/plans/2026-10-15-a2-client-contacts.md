@@ -292,6 +292,46 @@ await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${teamId + ":" + emai
 - [ ] **Step 1:** stories AGT-01–AGT-06, on the dev stack over the tunnel: a full request → quote → payment → delivery → payout on the web (the R-flow walkthrough), an old (pre-A2) project's emailed link still opens its client page, a freelancer signed in to the team cannot act through that client page, and the Clients section adds, emails, reissues (old link dies) and removes.
 - [ ] **Step 2:** record the results here, update story statuses and `PROGRESS.md`, then open the PR.
 
+## Build notes
+
+Built Tasks 1 to 10 on branch `a2-client-contacts` (Claude Code, 2026-10-16). Task 11 is pending on Mouhamed's machine.
+
+**Deviations from the plan**
+
+- **Security review 2026-10-16: a pay link no longer mints a client link.** `payment.payGet` returned `clientPath`, so anyone holding a (forwarded) pay link got the client's powers, and after a reissue an old pay link would keep minting valid links. `clientPath` is gone from `payGet` and the pay page; the page shows "Back to your project" only when `document.referrer` is a same-origin `/c/` URL (`clientPageReferrer` in `apps/web/src/lib/pay-page.ts`). Test: `routers/payment.test.ts` "never hands a client link to a pay link holder".
+- **Security review 2026-10-16: verification and revocation in `contacts.ts`.** Findings and fixes, each with a test in `use-cases/clients.test.ts`:
+  1. *Identity-verification bypass.* Opening any valid link verified every unverified email of the contact and could merge it into another contact. Now a link proves only the address the server emailed that link version to (`project_client.link_email`, set by the request form, "Email link" and "Reissue"). Links never emailed (the team could have seen them), legacy v1 links (shown in the old team view and pay page) and versions emailed to two different addresses (`link_emailed_at` kept, address cleared) prove nothing. A merge happens only through that proved address, and a team member is refused before any verification (design §5.4).
+  2. *Link-revocation bypass.* The first version of the merge kept the merged contact as an alias at contact level (`merged_into_id`), so a contact removed from a project, later merged into a contact still on that project, had its old links working again. Merged contacts are now deleted; a moved `project_client` row keeps the merged contact id in `link_aliases` for that project and version only; a reissue clears the aliases and the address. Resolution locks the `project_client` row (`for update`) and checks the contact belongs to the project's team.
+  3. *Rest of `contacts.ts`.* Match-or-create, verification and the open-request count share one advisory lock per (team, email) and (team, `discord:{id}`); emails are lowercased once at match-or-create, in the count and in the user lookup; every contact lookup is scoped to the team or the project's team. A race test covers match-or-create.
+- **Design §5.6 said opening an old link verifies the primary's email.** Superseded by finding 1: old links keep working (v1 resolves to the primary at `link_version` 0) but verify nothing; the team emails a new link to verify.
+- **`resolveClientLink` lives in the api, not `db/repositories/contacts.ts`**: the db package cannot verify signatures. The db side is `findLinkedContact(tx, claim)`; the api's `resolveClient` (the §5.4 rule) verifies, resolves and verifies the email in one transaction.
+- **`request.create` never joins an anonymous request to a contact whose matching email is verified** (abuse case §5.8); it reuses an unverified one or creates one. `project.start` and `project.client.add` (typed by the team) reuse any.
+- **Extra events:** `project.client_link_reissued` and `project.client_link_sent` (contact id and version, never the address), both appended without a version bump.
+- **All four client actions require admin or manager** in the use case ("Only admins and managers change a project's clients."), not only add.
+- **`project.start` no longer returns `clientPath`**; the new-project form gained a client name field.
+- **Preview as client** renders the real client page component (`components/client-project-view.tsx`, extracted from `client-project.tsx`) with every action disabled; pay links are stripped (`payPath: null`) and a new `payable` flag drives the disabled "Pay" button.
+- **The client columns are not dropped yet.** drizzle applies all pending migrations in one transaction, so a drop migration merged with the backfill script between would drop the columns on the dev database before the script could run. Instead the one A2 migration (`20261016135146_a2_client_contacts`) adds the tables and drops `project_client_check`; nothing writes or returns the columns; only `backfillLegacyProjects` reads them. A follow-up migration drops `client_email`, `client_name` and `client_discord_id` once the backfill has run on dev (and on any deployed database).
+- **Migrations were not applied to the dev database** and the backfill script was not run anywhere (instructions); the test database was migrated by the test setup.
+- Commit trailer `Co-Authored-By: Claude Opus 5.5` (instructions), not the factory-droid line.
+
+**For the walkthrough (Task 11)**
+
+1. After merging: `pnpm db:migrate:dev`, then `DATABASE_URL=<dev> bun scripts/a2-backfill-contacts.ts` and read the summary (conflicts listed).
+2. AGT-01–06 as planned: an old project's emailed link opens its client page; a signed-in freelancer gets "Team members act from the project page." on that link; the Clients section adds, emails, reissues (old link dies) and removes; Preview as client shows the page with disabled buttons; the pay page shows "Back to your project" only when reached from the client page.
+3. Then write the follow-up migration that drops the three columns.
+
 ## Outcome
 
-(Filled in after the walkthrough.)
+Walked by Claude Code on 2026-10-16, on the dev stack over the tunnel (branch before merge, `admin.payleor.com` / `payleor.com` / `walk-crew.payleor.app`).
+
+- **Migration and backfill:** `pnpm db:migrate:dev`, then the backfill on the dev database: 12 projects moved, 6 contacts created, no conflicts.
+- **AGT-01 passes.** The Clients section lists each contact, with each email marked verified or not; the page has no client link. Second Client (`mdbm-agent+client2@agentmail.to`) was added unverified. Removing the primary made Second Client primary, and the last contact has no Remove button. The projects list shows each project's primary contact name.
+- **AGT-02 passes.** "Email link" sent Second Client their own link. Opening it signed out showed the client page and marked the email Verified. After "Reissue link" (with a confirmation), the old link shows "This link is not valid" and the new one from the new email works.
+- **AGT-03 passes.** "Preview as client" shows the client view with "Pay with PayPal" disabled and no client link anywhere in the page.
+- **AGT-04 failed, then fixed (`4b39838`).** Signed in as the walk-crew admin, I opened a client link emailed to the admin's own address and pressed "Accept quote": the quote was accepted. The client page runs on `payleor.com`, where the dashboard's host-only session cookie never arrives, so the member looked signed out and the §5.4 check (which needed a session) never ran. Resolution now refuses a link whose contact names a team member's account (by user identity, or by an email equal to a member's account email, verified or not) before verifying anything. The refusal goes to the action log, and the page shows "This link is for the client" with "Team members act from the project page." Re-walked: the admin's links (the new one and a pre-A2 one) are refused; other clients' links still work. Tests: `use-cases/clients.test.ts` "refuses a link whose contact has a team member's address, without a session" and `routers/project.test.ts` "logs a team member's refused client action", both seen failing before the fix.
+- **AGT-05 passes.** An anonymous request on `walk-crew.payleor.app/request` with Second Client's verified email created a new contact "Not Second Client" with an unverified email; the link went only to that address; the verified contact is untouched.
+- **AGT-06 passes, as amended by finding 1.** A link emailed on Oct 15 (before A2) opens its client page and acts for the primary contact; it verifies no email (the team emails a new link to verify).
+- **Pay page:** reached from the client page it shows "Back to your project"; opened directly it does not, and the PayPal buttons load.
+- **R-flow money path (`dc2ab7ca`), pass:** Mouhamed paid the $120 deposit (50% of the quote plus the 10% management fee) as sandbox buyer 2 from the client page; the team submitted a delivery and the client accepted it through the link; the $100 balance was paid the same way and the project closed as `completed`. Both payments are `captured` with PayPal capture ids, platform and PayPal fees recorded. The captures land in the seller's PayPal account directly, so no separate payout step runs for a single-seller project.
+
+Data the walk left on dev: "Something else" (`5f0fc392`) has a quote accepted by the admin-as-client before the fix (awaiting deposit); a request from "Not Second Client".

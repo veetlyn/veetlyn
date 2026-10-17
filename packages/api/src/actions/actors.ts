@@ -1,6 +1,6 @@
 export type Surface = "web" | "api" | "mcp" | "discord" | "slack" | "cron" | "webhook";
 
-export type ClientLinkToken = { projectId: string };
+export type ClientLinkToken = { projectId: string; contactId: string };
 
 export type Actor =
   | { kind: "user"; userId: string }
