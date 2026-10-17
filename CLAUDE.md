@@ -22,6 +22,8 @@ The skills in `.claude/skills/` carry the process:
 - **subagent-driven-development** (or **executing-plans**) to build it task by task, with **using-git-worktrees**, **test-driven-development**, **requesting-code-review**, **verification-before-completion** and **finishing-a-development-branch**.
 - **test-audit** whenever tests are written, changed or reviewed: each test names a credible regression, sits at the strongest boundary (router or use case with the real database, PayPal faked at `fetch`), and does not duplicate another.
 - **anti-slop** for code and prose quality, next to `pnpm lint`.
+- **design-system-boss** steers all UI and brand work, with Quartz as the base system; it runs `build-design-system`, `migrate-design-system`, `token-mapping`, `component-docs` and `ui-review`.
+- **securebydesign** for any change to an API, auth, storage, payments or a deploy.
 
 One branch and worktree per run, its own test database. Open a pull request; Mouhamed merges once CI is green and the walkthrough passed. Spec, plan, story and backlog edits are part of the work: record the outcome, story statuses and backlog changes as `PROGRESS.md` "How a run works" says.
 
