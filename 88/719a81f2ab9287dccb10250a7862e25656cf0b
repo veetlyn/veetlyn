@@ -1,0 +1,23 @@
+README.md
+  s_ec180faf4f9b2e::t_ab4904be128ba2 103-106
+packages/infra/scripts/github-env.sh
+  s_ec180faf4f9b2e::t_40ada9c7056813 1-40
+packages/infra/package.json
+  s_ec180faf4f9b2e::t_7a739fc1453401 14-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88719a81f2ab9287dccb10250a7862e25656cf0b",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
