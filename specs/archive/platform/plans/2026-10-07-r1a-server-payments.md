@@ -1909,7 +1909,7 @@ The Task 6 review found that "every start creates a fresh order" let a second or
 
 ## Sandbox walkthrough (2026-10-07)
 
-End to end on the dev stack with the PayPal sandbox: Walk Crew (services team) connected PayPal (merchant `TR4W3HLBT75MG`), a $300 quote was sent and accepted, `payStart` created order `18F87843UD7854704`, a sandbox buyer approved $180 on PayPal checkout, and `payCapture` returned `captured` (capture `5K696237F8772480U`).
+End to end on the dev stack with the PayPal sandbox: Walk Crew (services team) connected PayPal (merchant `SELLER3MERCHANTID`), a $300 quote was sent and accepted, `payStart` created order `18F87843UD7854704`, a sandbox buyer approved $180 on PayPal checkout, and `payCapture` returned `captured` (capture `5K696237F8772480U`).
 
 Checked in the dev database: payment `captured`, `platform_fee_minor` 180 (1% of $180), version 2; project `in_progress`; one balanced `payment_captured` transfer (clearing −18000, team revenue +3000, client held +15000); outbox `payment.captured`. A second `payCapture` returned `captured` with no new transfer; a second `payStart` returned CONFLICT "already paid". The client page shows the deposit as captured.
 

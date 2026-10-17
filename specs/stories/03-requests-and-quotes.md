@@ -21,7 +21,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 ### QUO-02: A client sends a quote request
 
 - **Actor:** client · **Surface:** web (`{seller}/request`) · **Delivered by:** R3c (`8d51ff2`) · **Status:** Built
-- **Preconditions:** QUO-01's form; a client address the tester reads (for example `mdbm-agent+client1@agentmail.to`) with fewer than 3 open requests to `walk-crew`.
+- **Preconditions:** QUO-01's form; a client address the tester reads (for example `tester+client1@example.com`) with fewer than 3 open requests to `walk-crew`.
 - **Steps:**
   1. Fill the description (a sentence), the answers, "Walk Client" as name and the client address, then **Send request**.
 - **Expected:**
@@ -46,7 +46,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 ### QUO-04: The team is told about the request
 
 - **Actor:** team admin · **Surface:** email, web (`{dash}/walk-crew/projects/<id>`) · **Delivered by:** R3c (`8d51ff2`) · **Status:** Built
-- **Preconditions:** QUO-02 done. The notice goes to the team's support email (`walk-crew@agentmail.to`), which the usual AgentMail key cannot read; in R3c it was checked by pointing the support email at a readable inbox for one request.
+- **Preconditions:** QUO-02 done. The notice goes to the team's support email (`walk-crew@example.com`), which the usual AgentMail key cannot read; in R3c it was checked by pointing the support email at a readable inbox for one request.
 - **Steps:**
   1. Open the email "New request from Walk Client" at the support address.
   2. Click **Open the project** and sign in as a team admin.

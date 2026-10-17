@@ -18,4 +18,4 @@ Note:
 "Blocked Amount: $0,00 USD in 0 payments"
 
 Transaction ID,Recipient,Recipient Name,Unique Identifier,Amount,Fee,Total,Status,Reason Code,Custom Note,Message
-0N1309609K054603L,AWVNN2ZZ6ZWT4,,PLTEST000001,"$1,00 USD","$0,02 USD","$1,02 USD",Completed,,Payleor test,
+0N1309609K054603L,BUYER1PAYERID,,PLTEST000001,"$1,00 USD","$0,02 USD","$1,02 USD",Completed,,Payleor test,

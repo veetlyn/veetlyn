@@ -4,7 +4,7 @@ Digital products, the store switch, checkout, orders, downloads, and refunds rev
 
 Shared facts for these stories:
 
-- `{seller}` is `walk-crew`'s seller page (`https://walk-crew.payleor.app` today) unless a story names another slug. `walk-crew` is published, has PayPal connected, and its support email is `walk-crew@agentmail.to`.
+- `{seller}` is `walk-crew`'s seller page (`https://walk-crew.payleor.app` today) unless a story names another slug. `walk-crew` is published, has PayPal connected, and its support email is `walk-crew@example.com`.
 - Store pages in the admin are under `{dash}/walk-crew` (dashboard), `/products` and `/orders`.
 - In dev, file uploads go to a local S3 endpoint, so the browser must allow local network access for the admin host.
 - Pay the PayPal popup from a browser profile that is not signed in to PayPal as the sandbox seller.
@@ -89,7 +89,7 @@ Shared facts for these stories:
 - **Actor:** buyer · **Surface:** web (checkout page, order page) · **Delivered by:** R4b (`60bed6c`) · **Status:** Built
 - **Preconditions:** STO-06.
 - **Steps:**
-  1. Enter a readable email (for example `mdbm-agent+buyer1@agentmail.to`) and click the PayPal button.
+  1. Enter a readable email (for example `tester+buyer1@example.com`) and click the PayPal button.
   2. [human] Log in as the PayPal buyer in the popup and approve.
 - **Expected:**
   - The page shows "Confirming your payment…", then opens `{seller}/orders/<token>`.
@@ -117,7 +117,7 @@ Shared facts for these stories:
   1. Open the buyer's inbox (AgentMail).
   2. Open the email's **Download** link.
 - **Expected:**
-  - The email comes from "Walk Crew via Payleor" `<stores@payleor.com>`, reply-to `walk-crew@agentmail.to`, subject "Your download: Icon pack".
+  - The email comes from "Walk Crew via Payleor" `<stores@payleor.com>`, reply-to `walk-crew@example.com`, subject "Your download: Icon pack".
   - It says "Thanks for your purchase from Walk Crew. Download Icon pack from your order page:" and "The link works for 7 days and 5 downloads. After that, open it and ask for a new link; it comes to this address."
   - The link opens `{seller}/orders/<token>` with its own token and 5 downloads left.
 - **Edge cases:** known gap (backlog): if this email fails while the webhook applies the capture, a buyer who closed the checkout has no link.
@@ -132,7 +132,7 @@ Shared facts for these stories:
   3. Open the new email's link.
 - **Expected:**
   - The page shows "This link has no downloads left. Ask for a new one and we'll email it to you." and no **Download** button.
-  - The button shows "Sending…", then "We sent a new link to m•@agentmail.to." (first letter and domain of the order's email).
+  - The button shows "Sending…", then "We sent a new link to t•@example.com." (first letter and domain of the order's email).
   - A second "Your download: Icon pack" email arrives; its link shows 5 downloads left.
   - The new link goes only to the order's email, never to the page.
 - **Edge cases (not walked through):** a fourth new link within an hour is refused with "Too many new links for this order. Try again in an hour."

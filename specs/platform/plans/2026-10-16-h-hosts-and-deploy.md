@@ -500,8 +500,8 @@ export default async function PayRoute({ params }: { params: Promise<{ token: st
   it("keeps a note that starts like a formula from running in a spreadsheet", () => {
     expect(payoutsWebCsv([{ ...row, note: '=HYPERLINK("http://x")' }, { ...row, note: "+1-2" }])).toBe(
       [
-        `AWVNN2ZZ6ZWT4,24.50,USD,PL7K2M9Q4XR1AB,"'=HYPERLINK(""http://x"")",PAYPAL`,
-        "AWVNN2ZZ6ZWT4,24.50,USD,PL7K2M9Q4XR1AB,'+1-2,PAYPAL",
+        `BUYER1PAYERID,24.50,USD,PL7K2M9Q4XR1AB,"'=HYPERLINK(""http://x"")",PAYPAL`,
+        "BUYER1PAYERID,24.50,USD,PL7K2M9Q4XR1AB,'+1-2,PAYPAL",
       ].join("\r\n"),
     );
   });

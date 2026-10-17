@@ -19,11 +19,11 @@ Stories name roles, never passwords. Where to find each login: `../PROGRESS.md` 
 
 | Role | Who |
 |---|---|
-| Team admin | "Walk Through", owner of team `walk-crew` (`mdbm-agent@agentmail.to`) |
-| Second and third admins | `mdbm-agent+admin2@agentmail.to`, `mdbm-agent+admin3@agentmail.to` (admins of `walk-crew`) |
+| Team admin | "Walk Through", owner of team `walk-crew` (`tester@example.com`) |
+| Second and third admins | `tester+admin2@example.com`, `tester+admin3@example.com` (admins of `walk-crew`) |
 | Freelancer | A `walk-crew` member with the freelancer role (Walk Through also acts as the assigned member and payee) |
 | Solo seller | `walk-b2-solo` (draft solo seller; `walk-crew-solo` became a team in R3a), or a new one from ACC-08 |
-| Client | Any email the tester reads (an AgentMail plus address such as `mdbm-agent+client1@agentmail.to`) |
+| Client | Any email the tester reads (an AgentMail plus address such as `tester+client1@example.com`) |
 | PayPal buyer | Sandbox buyer 2 (`SANDBOX_BUYER_2_*`) pays project and store payments |
 | PayPal seller | Sandbox seller 3 (`SANDBOX_SELLER_3_*`), the merchant behind `walk-crew` |
 | Member payout destination | Sandbox buyer 1 (`SANDBOX_BUYER_1_*`) |

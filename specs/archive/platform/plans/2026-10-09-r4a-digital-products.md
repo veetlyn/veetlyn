@@ -1057,7 +1057,7 @@ export default async function StorefrontHome() {
 
 - [ ] **Step 3: Merge** — apply the migration to the dev database (`pnpm db:migrate:dev` from the main worktree), merge into `main` with `--no-ff` and a message file, `pnpm install`, restart the dev stack (kill the dev PIDs found with `ss -tlnp`, `rm -rf apps/web/node_modules/.vite`, `pnpm dev` with fireAndForget; the tunnel keeps running).
 
-- [ ] **Step 4: Walkthrough** (over the tunnel, signed in as Walk Through; walk-crew is published with two services, PayPal connected, support email walk-crew@agentmail.to):
+- [ ] **Step 4: Walkthrough** (over the tunnel, signed in as Walk Through; walk-crew is published with two services, PayPal connected, support email walk-crew@example.com):
   1. walk-crew dashboard: no Products nav yet; the Store card offers "Turn on the store". Click it → Products nav appears.
   2. Products → Add product: "Icon pack", description, price 19 → Save lands on the edit page. Publish now → "Add the file buyers download before publishing."
   3. Upload a small allowed file (a `.zip` made on the spot) — progress shows, then the file name appears. Publish → Published.
