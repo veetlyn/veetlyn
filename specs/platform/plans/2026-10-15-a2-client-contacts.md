@@ -332,6 +332,6 @@ Walked by Claude Code on 2026-10-16, on the dev stack over the tunnel (branch be
 - **AGT-05 passes.** An anonymous request on `walk-crew.payleor.app/request` with Second Client's verified email created a new contact "Not Second Client" with an unverified email; the link went only to that address; the verified contact is untouched.
 - **AGT-06 passes, as amended by finding 1.** A link emailed on Oct 15 (before A2) opens its client page and acts for the primary contact; it verifies no email (the team emails a new link to verify).
 - **Pay page:** reached from the client page it shows "Back to your project"; opened directly it does not, and the PayPal buttons load.
-- **Not walked here:** paying the deposit and the rest of the R-flow (delivery, payout). The sandbox PayPal login is Mouhamed's step; the deposit on "Something else" (`dc2ab7ca`, $120) is ready to pay.
+- **R-flow money path (`dc2ab7ca`), pass:** Mouhamed paid the $120 deposit (50% of the quote plus the 10% management fee) as sandbox buyer 2 from the client page; the team submitted a delivery and the client accepted it through the link; the $100 balance was paid the same way and the project closed as `completed`. Both payments are `captured` with PayPal capture ids, platform and PayPal fees recorded. The captures land in the seller's PayPal account directly, so no separate payout step runs for a single-seller project.
 
 Data the walk left on dev: "Something else" (`5f0fc392`) has a quote accepted by the admin-as-client before the fix (awaiting deposit); a request from "Not Second Client".
