@@ -19,9 +19,9 @@ export type PayPalServices = {
 // Transactional email outside auth (quote requests). Absent in tests that do not send email.
 export type EmailServices = {
   mailer: Mailer;
-  // Absolute origins for links in emails, e.g. https://payleor.com and https://admin.payleor.com.
+  // Absolute origins for links in emails, e.g. https://payleor.com and https://dash.payleor.com.
   siteOrigin: string;
-  adminOrigin: string;
+  dashOrigin: string;
   // Absolute origin of a team's store host, e.g. https://walk-crew.payleor.app.
   storeOrigin: (slug: string) => string;
   // Sends that may outlive the response; awaited when absent.

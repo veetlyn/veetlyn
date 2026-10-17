@@ -39,8 +39,8 @@ describe("routeForHost", () => {
   });
 
   it("rewrites the dash host into the dashboard tree", () => {
-    expect(route("https://dash.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/admin" });
-    expect(route("https://dash.payleor.app/acme/orders")).toEqual({ kind: "rewrite", pathname: "/admin/acme/orders" });
+    expect(route("https://dash.payleor.app/")).toEqual({ kind: "rewrite", pathname: "/dash" });
+    expect(route("https://dash.payleor.app/acme/orders")).toEqual({ kind: "rewrite", pathname: "/dash/acme/orders" });
   });
 
   // Links in emails sent before the rename point at admin.
@@ -76,7 +76,7 @@ describe("routeForHost", () => {
   });
 
   it("blocks direct requests for the internal route trees on every host", () => {
-    for (const href of ["https://payleor.app/admin", "https://acme.payleor.app/store/x", "https://dash.payleor.app/admin"]) {
+    for (const href of ["https://payleor.app/admin", "https://acme.payleor.app/store/x", "https://dash.payleor.app/admin", "https://dash.payleor.app/dash"]) {
       expect(route(href)).toEqual({ kind: "not-found" });
     }
   });

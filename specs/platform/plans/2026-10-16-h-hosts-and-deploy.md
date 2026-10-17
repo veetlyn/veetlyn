@@ -729,11 +729,13 @@ If Task 8's first deploy shows the Alchemy CLI needs Bun, add `oven-sh/setup-bun
 
 ### Task 11: Rename the dashboard tree and identifiers (after A2 merges)
 
+Done on `h-dash-tree`, branched from `h-hosts-deploy` instead of main because H also edits `host-routing.ts`; checked on staging 2026-10-17 (`/login` renders on the dash host, `/dash` and `/admin` paths 404, `admin.` redirects).
+
 On a short branch `h-dash-tree` from main once A2 is merged, so A2's edits to the admin pages and `requests.ts` are not in conflict.
 
-- [ ] **Step 1:** `git mv apps/web/src/app/admin apps/web/src/app/dash`; in `apps/web/src/lib/host-routing.ts` rewrite to `/dash${suffix}` and change `INTERNAL_ROUTE_TREES` to `["dash", "admin", "store"]` (keep `admin` blocked); update `host-routing.test.ts` expectations (`/dash`, `/dash/acme/orders`, the blocked-tree list adds `https://dash.payleor.app/dash`).
-- [ ] **Step 2:** Rename `adminOrigin` to `dashOrigin` everywhere: `grep -rln "adminOrigin" apps packages | xargs sed -i 's/adminOrigin/dashOrigin/g'`, then review the diff (`packages/api/src/context.ts`, `use-cases/requests.ts`, `apps/server/src/services.ts`, `store-origin.ts`, the services-team form). Replace `admin.localhost` with `dash.localhost` in tests: `grep -rln "admin\.localhost\|admin\.payleor" apps packages --include=*.ts --include=*.tsx`.
-- [ ] **Step 3:** `pnpm check-types`, `pnpm lint`, `pnpm test` (full suite: the rename touches many files). Commit `refactor(web): the dashboard tree and origins are named dash`; pull request; Mouhamed merges.
+- [x] **Step 1:** `git mv apps/web/src/app/admin apps/web/src/app/dash`; in `apps/web/src/lib/host-routing.ts` rewrite to `/dash${suffix}` and change `INTERNAL_ROUTE_TREES` to `["dash", "admin", "store"]` (keep `admin` blocked); update `host-routing.test.ts` expectations (`/dash`, `/dash/acme/orders`, the blocked-tree list adds `https://dash.payleor.app/dash`).
+- [x] **Step 2:** Rename `adminOrigin` to `dashOrigin` everywhere: `grep -rln "adminOrigin" apps packages | xargs sed -i 's/adminOrigin/dashOrigin/g'`, then review the diff (`packages/api/src/context.ts`, `use-cases/requests.ts`, `apps/server/src/services.ts`, `store-origin.ts`, the services-team form). Replace `admin.localhost` with `dash.localhost` in tests: `grep -rln "admin\.localhost\|admin\.payleor" apps packages --include=*.ts --include=*.tsx`.
+- [x] **Step 3:** `pnpm check-types`, `pnpm lint`, `pnpm test` (full suite: the rename touches many files). Commit `refactor(web): the dashboard tree and origins are named dash`; pull request; Mouhamed merges.
 
 ### Task 12: Walkthrough on production
 

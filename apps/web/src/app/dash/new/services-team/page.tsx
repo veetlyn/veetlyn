@@ -14,7 +14,7 @@ export default async function NewServicesTeamPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         A seller is a team of one or a team of many. You can rename it later; its address cannot be changed.
       </p>
-      <CreateServicesTeamForm adminOrigin={origins.dash} />
+      <CreateServicesTeamForm dashOrigin={origins.dash} />
       <p className="mt-6 text-sm text-muted-foreground">
         Selling digital products?{" "}
         <Link href="/new" className="underline underline-offset-4">
