@@ -35,12 +35,12 @@ export function createAuth(database: Database, executionCtx: ExecutionContext) {
 // A mailer per request, as in createAuth; links in emails point at the site and dash origins derived from
 // BETTER_AUTH_URL (http://dash.localhost:3001 in dev, https://dash.payleor.com in production).
 export function getEmailServices(executionCtx: { waitUntil(promise: Promise<unknown>): void }): EmailServices {
-  const adminOrigin = ENV.BETTER_AUTH_URL;
+  const dashOrigin = ENV.BETTER_AUTH_URL;
   return {
     mailer: createMailer(ENV),
-    siteOrigin: siteOriginFor(adminOrigin),
-    adminOrigin,
-    storeOrigin: storeOriginFor({ storeDomain: ENV.STORE_DOMAIN || ENV.PLATFORM_DOMAIN, adminOrigin }),
+    siteOrigin: siteOriginFor(dashOrigin),
+    dashOrigin,
+    storeOrigin: storeOriginFor({ storeDomain: ENV.STORE_DOMAIN || ENV.PLATFORM_DOMAIN, dashOrigin }),
     waitUntil: (promise) => executionCtx.waitUntil(promise),
     onError: logEmailError,
   };
