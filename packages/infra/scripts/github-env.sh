@@ -4,7 +4,8 @@
 #
 # The names come from .github/workflows/deploy.yml (`secrets.X` and `vars.X`), the values from the env files
 # varlock loads, with .env.<stage>.local on top (the stage's own database, auth secret and webhook id).
-# No value is printed: each name reports "set" or "empty, skipped".
+# No value is printed or passed as an argument: each name reports "set" or "empty, skipped". The sandbox buyer
+# login is a variable on purpose: staging shows it on checkout pages.
 set -euo pipefail
 
 stage=${1:?usage: github-env <staging|production>}
@@ -35,6 +36,6 @@ JENDAL_DEPLOY_STAGE="$stage" exec pnpm exec varlock run -- bash -c '
   for n in $VAR_NAMES; do
     v=${!n:-}
     if [ -z "$v" ]; then echo "var $n: empty, skipped"; continue; fi
-    gh variable set "$n" --env "$STAGE" -R "$REPO" --body "$v" >/dev/null && echo "var $n: set"
+    printf "%s" "$v" | gh variable set "$n" --env "$STAGE" -R "$REPO" >/dev/null && echo "var $n: set"
   done
 '
