@@ -1776,7 +1776,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         context.email = {
           mailer,
           siteOrigin: "https://payleor.test",
-          adminOrigin: "https://admin.payleor.test",
+          dashOrigin: "https://dash.payleor.test",
           storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
         };
       }
@@ -2008,7 +2008,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const email: EmailServices = {
         mailer: { send },
         siteOrigin: "https://payleor.test",
-        adminOrigin: "https://admin.payleor.test",
+        dashOrigin: "https://dash.payleor.test",
         storeOrigin: (slug) => `https://${slug}.payleor.test`,
       };
       const caller = appRouter.createCaller({

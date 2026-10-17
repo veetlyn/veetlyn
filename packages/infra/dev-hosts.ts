@@ -14,7 +14,7 @@ const PORTS = {
   preprod: { web: 3101, api: 3100 },
 } satisfies Record<LocalStage, LocalPorts>;
 
-export type StageUrls = { platformDomain: string; storeDomain: string; platform: string; admin: string };
+export type StageUrls = { platformDomain: string; storeDomain: string; platform: string; dash: string };
 export type IngressRule = { hostname: string; port: number };
 export type TunnelSettings = { domain: string; storeDomain: string; stage: LocalStage };
 
@@ -44,14 +44,14 @@ export function stageUrls(stage: LocalStage, tunnel: TunnelSettings | undefined)
       platformDomain: tunnel.domain,
       storeDomain: tunnel.storeDomain,
       platform: `https://${tunnel.domain}`,
-      admin: `https://admin.${tunnel.domain}`,
+      dash: `https://dash.${tunnel.domain}`,
     };
   }
   return {
     platformDomain: "localhost",
     storeDomain: "localhost",
     platform: `http://localhost:${PORTS[stage].web}`,
-    admin: `http://admin.localhost:${PORTS[stage].web}`,
+    dash: `http://dash.localhost:${PORTS[stage].web}`,
   };
 }
 

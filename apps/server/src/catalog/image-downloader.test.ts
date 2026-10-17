@@ -40,4 +40,21 @@ describe("createHttpImageDownloader", () => {
     const big = createHttpImageDownloader(fetchReturning(200, new ArrayBuffer(MAX_IMAGE_BYTES + 1)));
     expect(await big.download("https://example.com/big.jpg")).toBeNull();
   });
+
+  it("stops reading a body larger than the image limit", async () => {
+    let pulled = 0;
+    const chunk = new Uint8Array(64 * 1024);
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += chunk.byteLength;
+        controller.enqueue(chunk);
+      },
+    });
+    const downloader = createHttpImageDownloader(
+      async () => new Response(body, { headers: { "content-type": "image/png" } }),
+    );
+
+    expect(await downloader.download("https://cdn.example.com/huge.png")).toBeNull();
+    expect(pulled).toBeLessThanOrEqual(MAX_IMAGE_BYTES + chunk.byteLength * 2);
+  });
 });

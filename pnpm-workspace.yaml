@@ -6,6 +6,11 @@ allowBuilds:
   sharp: true
   msgpackr-extract: true
   workerd: true
+# seroval comes in through better-auth > solid-js (unused here); 1.5.x has GHSA-jp82-f5mq-hwhp and a critical
+# fromJSON advisory.
+overrides:
+  seroval: 1.6.3
+  seroval-plugins: 1.6.3
 catalog:
   zod: ^4.5.4
   typescript: ^6.0.3

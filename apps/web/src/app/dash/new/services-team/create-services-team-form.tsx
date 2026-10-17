@@ -19,7 +19,7 @@ const TONE_CLASS = {
   problem: "text-destructive",
 } as const;
 
-export default function CreateServicesTeamForm({ adminOrigin }: { adminOrigin: string }) {
+export default function CreateServicesTeamForm({ dashOrigin }: { dashOrigin: string }) {
   const router = useRouter();
   const [solo, setSolo] = useState(true);
   const [name, setName] = useState("");
@@ -40,7 +40,7 @@ export default function CreateServicesTeamForm({ adminOrigin }: { adminOrigin: s
   const settled = debouncedSlug === slug && !check.isFetching;
   const status = create.error
     ? { tone: "problem" as const, text: create.error.message }
-    : slugStatus(slug, settled ? check.data : undefined, (s) => `${adminOrigin}/${s}`, "services");
+    : slugStatus(slug, settled ? check.data : undefined, (s) => `${dashOrigin}/${s}`, "services");
   const canSubmit = name.trim().length >= 2 && status?.tone === "available" && !create.isPending;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -106,7 +106,7 @@ export default function CreateServicesTeamForm({ adminOrigin }: { adminOrigin: s
         <Label htmlFor="team-slug">Address</Label>
         <InputGroup>
           <InputGroupAddon>
-            <InputGroupText>{adminOrigin}/</InputGroupText>
+            <InputGroupText>{dashOrigin}/</InputGroupText>
           </InputGroupAddon>
           <InputGroupInput
             id="team-slug"

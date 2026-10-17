@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import SandboxCheckoutHelp from "@/components/sandbox-checkout-help";
 import { formatMinor } from "@/lib/money";
 import { fetchSellerPage } from "@/lib/server-api";
 
@@ -26,6 +27,7 @@ export default async function BuyPage({ params }: { params: Promise<{ productId:
         <p className="text-lg font-medium">{formatMinor(product.priceMinor, page.currency)}</p>
       </div>
       <CheckoutForm slug={page.slug} productId={product.id} currency={page.currency} />
+      <SandboxCheckoutHelp />
     </main>
   );
 }

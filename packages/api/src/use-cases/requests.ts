@@ -174,7 +174,7 @@ export async function createQuoteRequest(
       description: input.description.trim(),
       // Trimmed, as stored on the project.
       answers: input.answers.map(({ question, answer }) => ({ question: question.trim(), answer: answer.trim() })),
-      url: `${emailServices.adminOrigin}/${input.slug}/projects/${projectId}`,
+      url: `${emailServices.dashOrigin}/${input.slug}/projects/${projectId}`,
     });
     const send = emailServices.mailer
       .send({ sender: "invoices", onBehalfOf: teamName, tag: "quote-request-notice", to: supportEmail, ...notice })

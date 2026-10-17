@@ -1,6 +1,6 @@
 import { validateStoreSlug } from "./slug";
 
-export type PlatformApp = "www" | "admin" | "api" | "mcp";
+export type PlatformApp = "www" | "dash" | "admin" | "api" | "mcp";
 
 export type RequestTarget =
   | { kind: "platform"; app: PlatformApp }
@@ -10,9 +10,11 @@ export type RequestTarget =
 
 export type HostDomains = { platformDomain: string; storeDomain: string };
 
-// A Map, not an object literal, so labels such as "constructor" never match inherited properties.
+// A Map, not an object literal, so labels such as "constructor" never match inherited properties. "admin" is the
+// dashboard's old host; the web app redirects it to "dash".
 const PLATFORM_APPS = new Map<string, PlatformApp>([
   ["www", "www"],
+  ["dash", "dash"],
   ["admin", "admin"],
   ["api", "api"],
   ["mcp", "mcp"],

@@ -20,7 +20,7 @@ import {
   handleDiscordInteraction,
 } from "./interactions";
 
-const config = { applicationId: "application-1", webBaseUrl: "https://admin.payleor.test" };
+const config = { applicationId: "application-1", webBaseUrl: "https://dash.payleor.test" };
 
 function linkInteraction(discordId: string, permissions: string, code: string) {
   return {
@@ -88,7 +88,7 @@ describe.skipIf(!hasTestDatabase)("handleDiscordInteraction", () => {
         type: 4,
         data: {
           flags: 64,
-          content: "Set up your PayPal payout destination on Payleor: https://admin.payleor.test/me/payouts",
+          content: "Set up your PayPal payout destination on Payleor: https://dash.payleor.test/me/payouts",
         },
       },
     });

@@ -73,8 +73,8 @@ const PRINCIPLES = [
 ];
 
 export default async function LandingPage() {
-  const [{ admin }, urlParts] = await Promise.all([getPlatformOrigins(), getStoreUrlParts()]);
-  const signupUrl = `${admin}/signup`;
+  const [{ dash }, urlParts] = await Promise.all([getPlatformOrigins(), getStoreUrlParts()]);
+  const signupUrl = `${dash}/signup`;
   const demoUrl = env.DEMO_STORE_SLUG ? storeUrl(env.DEMO_STORE_SLUG, urlParts) : null;
 
   return (

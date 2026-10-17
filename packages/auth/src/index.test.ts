@@ -381,7 +381,7 @@ describe.skipIf(!hasTestDatabase)("Log in with PayPal", () => {
     expect(url.searchParams.get("scope")).toBe(
       "openid profile email address https://uri.paypal.com/services/paypalattributes",
     );
-    expect(url.searchParams.get("redirect_uri")).toBe("http://admin.localhost:3001/api/auth/callback/paypal");
+    expect(url.searchParams.get("redirect_uri")).toBe("http://dash.localhost:3001/api/auth/callback/paypal");
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
   });
 
