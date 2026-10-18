@@ -94,11 +94,8 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   }
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 py-10">
-      <Link href={`/${team.data.team.slug}`} className="text-sm text-muted-foreground">
-        {team.data.team.name}
-      </Link>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">Members</h1>
+    <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-7 md:py-8">
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">Members</h1>
 
       {solo ? (
         <div className="mt-6 grid gap-2 border border-dashed p-6">

@@ -138,12 +138,12 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   }
 
   return (
-    <main className="container mx-auto max-w-lg px-4 py-10">
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{solo ? "Settings" : "Team settings"}</h1>
+    <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-7 md:py-8">
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">{solo ? "Settings" : "Team settings"}</h1>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
       ) : null}
-      <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+      <form onSubmit={handleSubmit} className="mt-6 panel grid gap-6 p-6">
         <div className="space-y-2">
           <Label htmlFor="bio">About you</Label>
           <Textarea

@@ -13,7 +13,6 @@ import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
@@ -545,9 +544,6 @@ export default function PayoutRules({ teamSlug, viewerId }: { teamSlug: string; 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${team.slug}/payouts`} className="text-sm text-muted-foreground">
-          Payouts
-        </Link>
         <h1 className="font-[family-name:var(--font-display)] text-3xl">Payout rules</h1>
         <p className="text-sm text-muted-foreground">How this team approves and sends its members' payouts.</p>
       </div>
