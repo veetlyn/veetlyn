@@ -24,12 +24,12 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
   const url = storeUrl(store.data.slug, urlParts);
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
         <Link href="/" className="text-sm text-muted-foreground">
           All stores
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{store.data.name}</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">{store.data.name}</h1>
       </div>
       <SetupChecklist
         steps={setupSteps(
@@ -40,7 +40,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
       />
       <PublishCard teamSlug={storeSlug} publicUrl={url} />
       <PayPalConnectCard teamId={store.data.id} />
-      <section className="grid gap-2 border p-4">
+      <section className="grid gap-2 panel p-4">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="font-medium">Products</h2>
           <Link href={`/${storeSlug}/products`} className="text-sm underline underline-offset-4">

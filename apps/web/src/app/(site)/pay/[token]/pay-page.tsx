@@ -53,7 +53,7 @@ export default function PayPage({ token }: { token: string }) {
   if (!data || !state) {
     return (
       <main className="container mx-auto max-w-lg space-y-4 px-4 py-16">
-        <h1 className="text-2xl font-semibold">This link is not valid</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">This link is not valid</h1>
         <p className="text-sm text-muted-foreground">Ask the team to send you the payment link again.</p>
       </main>
     );
@@ -62,37 +62,58 @@ export default function PayPage({ token }: { token: string }) {
   const { payment, project, team, paypal } = data;
   const currency = payment.currency;
 
+  const paid = state.view === "paid";
+
   return (
-    <main className="container mx-auto max-w-lg space-y-6 px-4 py-10">
-      <div className="space-y-1">
-        <p className="text-sm text-muted-foreground">{team.name}</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
-        <p className="text-sm text-muted-foreground">{paymentKindLabel(payment.kind)}</p>
+    <main className="mx-auto grid w-full max-w-md gap-5 px-4 py-10 md:py-16">
+      <div className="tray">
+        <div className="panel grid gap-5 p-6">
+          <div className="grid gap-1">
+            <p className="text-sm text-muted-foreground">{team.name}</p>
+            <h1 className="font-[family-name:var(--font-display)] text-2xl">{project.title}</h1>
+            <p className="text-sm text-muted-foreground">{paymentKindLabel(payment.kind)}</p>
+          </div>
+          <p className="font-tabular text-4xl font-semibold tracking-tight">{formatMoney(money(currency, payment.amountMinor))}</p>
+          <ul className="grid gap-2 border-t pt-4 text-sm">
+            {payment.lines.map((line, index) => (
+              <li key={index} className="flex justify-between gap-4">
+                <span className="text-muted-foreground">{line.label}</span>
+                <span className="font-tabular">{formatMoney(money(currency, line.amountMinor))}</span>
+              </li>
+            ))}
+            <li className="flex justify-between gap-4 border-t pt-2 font-semibold">
+              <span>Total</span>
+              <span className="font-tabular">{formatMoney(money(currency, payment.amountMinor))}</span>
+            </li>
+          </ul>
+          {state.view === "pay" && paypal ? (
+            <PayPalCheckout token={token} currency={payment.currency} paypal={paypal} />
+          ) : (
+            <p
+              ref={statusRef}
+              tabIndex={-1}
+              role="status"
+              className={
+                paid
+                  ? "flex items-center gap-2 rounded-lg bg-brand-wash px-3 py-2.5 text-sm font-semibold text-foreground"
+                  : "text-sm text-muted-foreground"
+              }
+            >
+              {paid ? (
+                <span aria-hidden="true" className="grid size-5 place-items-center rounded-md bg-brand text-xs text-[#0d0d10]">
+                  ✓
+                </span>
+              ) : null}
+              {state.view === "pay" ? null : state.message}
+            </p>
+          )}
+        </div>
       </div>
-
-      <ul className="space-y-1 rounded-lg border p-4 text-sm">
-        {payment.lines.map((line, index) => (
-          <li key={index} className="flex justify-between gap-4">
-            <span>{line.label}</span>
-            <span className="tabular-nums">{formatMoney(money(currency, line.amountMinor))}</span>
-          </li>
-        ))}
-        <li className="flex justify-between gap-4 border-t pt-2 font-medium">
-          <span>Total</span>
-          <span className="tabular-nums">{formatMoney(money(currency, payment.amountMinor))}</span>
-        </li>
-      </ul>
-
-      {state.view === "pay" && paypal ? (
-        <PayPalCheckout token={token} currency={payment.currency} paypal={paypal} />
-      ) : (
-        <p ref={statusRef} tabIndex={-1} role="status" className={state.view === "paid" ? "font-medium" : "text-sm text-muted-foreground"}>
-          {state.view === "pay" ? null : state.message}
-        </p>
-      )}
-
+      <p className="text-center text-xs text-muted-foreground">
+        You pay {team.name} through PayPal. Your card and bank details stay with PayPal.
+      </p>
       {backTo ? (
-        <a href={backTo} className="text-sm underline underline-offset-4">
+        <a href={backTo} className="justify-self-center text-sm underline decoration-border underline-offset-4 hover:decoration-foreground">
           Back to your project
         </a>
       ) : null}

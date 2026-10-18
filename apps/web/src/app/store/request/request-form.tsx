@@ -60,7 +60,7 @@ export default function RequestForm({
   if (done) {
     return (
       <main className="container mx-auto max-w-3xl space-y-3 px-4 py-10">
-        <h1 className="text-2xl font-semibold tracking-tight">Request sent</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">Request sent</h1>
         <p className="text-sm text-muted-foreground">
           We emailed {email} a link to your page. It is how you follow the request and answer the team.
         </p>
@@ -71,7 +71,7 @@ export default function RequestForm({
   return (
     <main className="container mx-auto max-w-3xl px-4 py-10">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Request a quote from {page.name}</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">Request a quote from {page.name}</h1>
         {offering ? (
           <p className="text-sm text-muted-foreground">
             Usually {priceLabel(offering, page.currency)} · {daysLabel(offering)}

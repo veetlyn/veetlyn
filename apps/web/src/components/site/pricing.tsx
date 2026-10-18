@@ -30,7 +30,7 @@ export default function Pricing({ signupUrl }: { signupUrl: string }) {
       </div>
       <ul className="grid gap-6 md:grid-cols-3">
         {PLANS.map((plan) => (
-          <li key={plan.id} className="flex flex-col border p-6">
+          <li key={plan.id} className="flex flex-col panel p-6">
             <h4 className="text-lg font-semibold">{plan.name}</h4>
             <p className="mt-4">
               <span className="text-4xl font-semibold tabular-nums">{formatPlanPrice(plan.priceCents[billing])}</span>

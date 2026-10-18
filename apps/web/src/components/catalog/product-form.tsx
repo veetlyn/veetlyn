@@ -185,7 +185,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
   return (
     <form onSubmit={handleSubmit} className="grid gap-8">
       {!productId && (
-        <section aria-labelledby="import-heading" className="grid gap-3 border p-4">
+        <section aria-labelledby="import-heading" className="grid gap-3 panel p-4">
           <h2 id="import-heading" className="font-medium">
             Start from a link or a photo
           </h2>
@@ -217,7 +217,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
           {matches.length > 0 && (
             <ul className="grid gap-2 sm:grid-cols-2">
               {matches.map((match) => (
-                <li key={match.productId} className="flex items-center gap-3 border p-2">
+                <li key={match.productId} className="flex items-center gap-3 panel p-2">
                   {match.imageUrl && <img src={match.imageUrl} alt="" className="size-12 object-cover" />}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{match.title}</p>
@@ -270,7 +270,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
           Variants
         </h2>
         {form.variants.map((variant, index) => (
-          <div key={index} className="grid gap-2 border p-3 sm:grid-cols-[1fr_1fr_7rem_7rem_auto] sm:items-end">
+          <div key={index} className="grid gap-2 panel p-3 sm:grid-cols-[1fr_1fr_7rem_7rem_auto] sm:items-end">
             <div className="grid gap-1">
               <Label htmlFor={`variant-options-${index}`}>Options</Label>
               <Input

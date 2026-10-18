@@ -8,7 +8,7 @@ export default async function NewStorePage() {
 
   return (
     <main className="container mx-auto max-w-lg px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Create your store</h1>
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">Create your store</h1>
       <p className="mt-1 text-sm text-muted-foreground">You can rename the store later. Its address cannot be changed.</p>
       <CreateStoreForm urlParts={urlParts} />
     </main>

@@ -72,7 +72,7 @@ function TeamEarningsCard({
   }
 
   return (
-    <li className="space-y-3 border p-4">
+    <li className="space-y-3 panel p-4">
       <h3 className="font-medium">{earnings.teamName}</h3>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
         <dt className="text-muted-foreground">Available</dt>
@@ -118,7 +118,7 @@ function TeamEarningsCard({
           </p>
         ) : null}
         {request.isSuccess ? (
-          <p className="text-sm text-emerald-700 dark:text-emerald-400">
+          <p className="text-sm font-medium text-brand-text">
             {request.data.status === "requested"
               ? `Payout requested. An admin of ${earnings.teamName} reviews it.`
               : "Payout approved. It is on its way to your PayPal account."}

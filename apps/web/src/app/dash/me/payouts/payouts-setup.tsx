@@ -65,13 +65,13 @@ export default function PayoutsSetup({
 
   return (
     <main className="container mx-auto max-w-2xl space-y-6 px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Payouts</h1>
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">Payouts</h1>
       {paypalProblem ? (
         <p role="alert" className="border border-destructive p-3 text-sm text-destructive">
           {paypalProblem}
         </p>
       ) : null}
-      <section aria-labelledby="destination-heading" className="space-y-3 border p-4">
+      <section aria-labelledby="destination-heading" className="space-y-3 panel p-4">
         <h2 id="destination-heading" className="font-medium">
           Your PayPal payout destination
         </h2>
@@ -126,7 +126,7 @@ export default function PayoutsSetup({
               </p>
             ) : null}
             {save.isSuccess ? (
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">PayPal destination saved.</p>
+              <p className="text-sm font-medium text-brand-text">PayPal destination saved.</p>
             ) : null}
             <label className="flex items-center gap-2 text-sm">
               <Checkbox

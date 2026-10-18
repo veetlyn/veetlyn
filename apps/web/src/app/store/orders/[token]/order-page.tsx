@@ -58,7 +58,7 @@ export default function OrderPage({ token, slug }: { token: string; slug: string
     <main className="container mx-auto max-w-xl space-y-8 px-4 py-10">
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">Order from {team.name}</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{details.productTitle}</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">{details.productTitle}</h1>
         <p className="text-lg font-medium">{formatMinor(details.amountMinor, details.currency)}</p>
         {details.paidAt ? (
           <p className="text-sm text-muted-foreground">Paid {new Date(details.paidAt).toLocaleDateString()}</p>

@@ -56,7 +56,7 @@ export function RefundSection({
       {refund.parts.length > 0 ? (
         <ul className="space-y-2 text-sm">
           {refund.parts.map((part) => (
-            <li key={part.paymentId} className="rounded-lg border p-3">
+            <li key={part.paymentId} className="panel p-3">
               <div className="flex items-center justify-between gap-4">
                 <span className="capitalize">
                   {kindOf.get(part.paymentId) ?? "Payment"} · {formatMinor(part.amountMinor, refund.currency)}

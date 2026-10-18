@@ -137,7 +137,7 @@ function RequestRow({
           <p className="text-destructive">{request.reviewReason}</p>
         ) : null}
         {request.reviewReason ? (
-          <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <span className="inline-block rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
             Needs review
           </span>
         ) : null}

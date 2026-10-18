@@ -2,7 +2,6 @@
 
 import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 
 import Loader from "@/components/loader";
@@ -26,17 +25,14 @@ export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings } = result.data;
+  const { role, settings } = result.data;
   const linkedGuildId = settings?.discordGuildId ?? null;
 
   return (
     <main className="container mx-auto max-w-lg space-y-6 px-4 py-10">
-      <Link href={`/${team.slug}`} className="text-sm text-muted-foreground">
-        {team.name}
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">Link Discord</h1>
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">Link Discord</h1>
       {linkedGuildId ? (
-        <section aria-labelledby="linked-heading" className="space-y-2 border p-4">
+        <section aria-labelledby="linked-heading" className="space-y-2 panel p-4">
           <h2 id="linked-heading" className="font-medium">
             Your team is linked
           </h2>
@@ -48,7 +44,7 @@ export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
       ) : role !== "admin" ? (
         <p className="text-sm text-muted-foreground">Only an admin can link the Discord server.</p>
       ) : (
-        <section aria-labelledby="create-code-heading" className="space-y-3 border p-4">
+        <section aria-labelledby="create-code-heading" className="space-y-3 panel p-4">
           <h2 id="create-code-heading" className="font-medium">
             Create a link code
           </h2>

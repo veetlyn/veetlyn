@@ -9,7 +9,7 @@ export default function SandboxCheckoutHelp() {
   return (
     <section
       aria-label="Sandbox test payment details"
-      className="mx-auto w-full max-w-xl rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-50"
+      className="mx-auto w-full max-w-xl rounded-xl bg-tray p-4 text-sm text-foreground shadow-[inset_0_0_0_1px_var(--border)]"
     >
       <p className="font-medium">Pay with a sandbox test account</p>
       <dl className="mt-2 grid gap-1 text-xs">

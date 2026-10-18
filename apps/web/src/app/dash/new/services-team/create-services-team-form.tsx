@@ -15,7 +15,7 @@ import { trpc } from "@/utils/trpc";
 
 const TONE_CLASS = {
   pending: "text-muted-foreground",
-  available: "text-emerald-700 dark:text-emerald-400",
+  available: "text-brand-text",
   problem: "text-destructive",
 } as const;
 
@@ -53,7 +53,7 @@ export default function CreateServicesTeamForm({ dashOrigin }: { dashOrigin: str
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Who is selling?</legend>
         <div className="grid gap-2">
-          <label className="flex items-start gap-3 border p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
+          <label className="flex items-start gap-3 panel p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
             <input
               type="radio"
               name="seller-kind"
@@ -69,7 +69,7 @@ export default function CreateServicesTeamForm({ dashOrigin }: { dashOrigin: str
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 border p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
+          <label className="flex items-start gap-3 panel p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
             <input
               type="radio"
               name="seller-kind"

@@ -54,7 +54,7 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
         {detail.error.data?.code === "FORBIDDEN" ? (
           <p role="alert">{detail.error.message}</p>
         ) : (
-          <h1 className="text-2xl font-semibold">Product not found</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl">Product not found</h1>
         )}
         <Link href={`/${teamSlug}/products`} className="underline">
           Back to products
@@ -74,7 +74,7 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
           <Link href={`/${teamSlug}/products`} className="text-sm text-muted-foreground">
             Products
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">{product.title}</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl">{product.title}</h1>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{published ? "Published" : "Draft"}</span>
@@ -254,7 +254,7 @@ function FileSection({ teamSlug, productId, fileName }: { teamSlug: string; prod
   const problem = pickedProblem ?? upload.error?.message ?? null;
 
   return (
-    <section className="grid gap-2 border p-4">
+    <section className="grid gap-2 panel p-4">
       <h2 className="font-medium">File buyers download</h2>
       {fileName ? <p className="text-sm">{fileName}</p> : <p className="text-sm text-muted-foreground">No file yet.</p>}
       <Label htmlFor="digital-file" className="sr-only">

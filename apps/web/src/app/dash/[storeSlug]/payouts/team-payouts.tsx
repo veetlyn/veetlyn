@@ -22,12 +22,9 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
   const solo = settings?.solo ?? false;
 
   return (
-    <main className="container mx-auto max-w-4xl space-y-6 px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${team.slug}`} className="text-sm text-muted-foreground">
-          Team dashboard
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Payouts</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">Payouts</h1>
       </div>
       {solo ? (
         <p className="text-sm text-muted-foreground">

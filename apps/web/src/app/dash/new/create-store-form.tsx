@@ -16,7 +16,7 @@ import { trpc } from "@/utils/trpc";
 
 const TONE_CLASS = {
   pending: "text-muted-foreground",
-  available: "text-emerald-700 dark:text-emerald-400",
+  available: "text-brand-text",
   problem: "text-destructive",
 } as const;
 

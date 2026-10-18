@@ -109,7 +109,7 @@ export default async function LandingPage() {
           </h2>
           <ul className="mt-8 grid gap-6 md:grid-cols-2">
             {PRODUCTS.map((product) => (
-              <li key={product.id} aria-labelledby={`${product.id}-heading`} className="flex flex-col border p-6">
+              <li key={product.id} aria-labelledby={`${product.id}-heading`} className="flex flex-col panel p-6">
                 <product.icon aria-hidden className="size-5" />
                 <p className="mt-4 text-sm font-medium text-muted-foreground">{product.name}</p>
                 <h3 id={`${product.id}-heading`} className="text-xl font-semibold">

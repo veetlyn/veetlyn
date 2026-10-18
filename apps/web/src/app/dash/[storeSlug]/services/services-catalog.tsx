@@ -166,13 +166,10 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="flex items-baseline justify-between gap-4">
         <div className="space-y-1">
-          <Link href={`/${teamSlug}`} className="text-sm text-muted-foreground">
-            {team.data.team.name}
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Services</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl">Services</h1>
         </div>
         {isAdmin ? (
           <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>

@@ -40,13 +40,15 @@ function OfferingCard({
   Heading: "h3" | "h4";
 }) {
   return (
-    <article className="border p-4 grid gap-2">
-      <Heading className="font-medium">{offering.name}</Heading>
+    <article className="panel grid content-start gap-3 p-5">
+      <Heading className="text-base font-semibold">{offering.name}</Heading>
       {offering.description ? (
-        <p className="whitespace-pre-line">{offering.description}</p>
+        <p className="text-sm whitespace-pre-line text-muted-foreground">{offering.description}</p>
       ) : null}
-      <p className="text-sm text-muted-foreground">
-        Usually {priceLabel(offering, page.currency)} · {daysLabel(offering)}
+      <p className="text-sm">
+        <span className="text-muted-foreground">Usually </span>
+        <span className="font-tabular font-semibold">{priceLabel(offering, page.currency)}</span>
+        <span className="text-muted-foreground"> · {daysLabel(offering)}</span>
       </p>
       <a
         href={`${page.pageBase}/request?offering=${offering.id}`}
@@ -73,14 +75,26 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
   );
 
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-10 space-y-10">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">{page.name}</h1>
-        {page.bio ? <p className="text-muted-foreground whitespace-pre-line">{page.bio}</p> : null}
+    <main className="mx-auto w-full max-w-5xl space-y-12 px-4 py-10 md:py-14">
+      <header className="grid gap-4">
+        <span className="grid size-14 place-items-center rounded-2xl main-surface font-tabular text-lg font-bold uppercase">
+          {page.name
+            .split(/\s+/)
+            .map((word) => word[0] ?? "")
+            .join("")
+            .slice(0, 2)}
+        </span>
+        <h1 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl">{page.name}</h1>
+        {page.bio ? <p className="max-w-2xl text-lg whitespace-pre-line text-muted-foreground">{page.bio}</p> : null}
+        {page.product === "services" ? (
+          <a href={`${page.pageBase}/request`} className={buttonVariants({ size: "lg", className: "justify-self-start" })}>
+            Request a quote
+          </a>
+        ) : null}
       </header>
       {page.product === "services" ? (
         <section aria-labelledby="services-heading" className="space-y-6">
-          <h2 id="services-heading" className="text-xl font-semibold">
+          <h2 id="services-heading" className="font-[family-name:var(--font-display)] text-2xl">
             Services
           </h2>
           {page.offerings.length === 0 ? (
@@ -98,14 +112,16 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
             <>
               {groups.map(({ department, offerings }) => (
                 <div key={department.id} className="space-y-3">
-                  <h3 className="text-lg font-medium">{department.name}</h3>
-                  {offerings.map((offering) => (
-                    <OfferingCard key={offering.id} page={page} offering={offering} Heading="h4" />
-                  ))}
+                  <h3 className="text-sm font-medium text-muted-foreground">{department.name}</h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {offerings.map((offering) => (
+                      <OfferingCard key={offering.id} page={page} offering={offering} Heading="h4" />
+                    ))}
+                  </div>
                 </div>
               ))}
               {ungrouped.length > 0 ? (
-                <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   {ungrouped.map((offering) => (
                     <OfferingCard key={offering.id} page={page} offering={offering} Heading="h3" />
                   ))}
@@ -123,15 +139,15 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
       ) : null}
       {page.products.length > 0 ? (
         <section aria-labelledby="store-heading" className="space-y-6">
-          <h2 id="store-heading" className="text-xl font-semibold">
+          <h2 id="store-heading" className="font-[family-name:var(--font-display)] text-2xl">
             Store
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {page.products.map((product) => (
-              <article key={product.id} className="border p-4 grid gap-2">
-                <h3 className="font-medium">{product.title}</h3>
-                {product.description ? <p className="whitespace-pre-line">{product.description}</p> : null}
-                <p className="text-sm text-muted-foreground">{formatMinor(product.priceMinor, page.currency)}</p>
+              <article key={product.id} className="panel grid content-start gap-3 p-5">
+                <h3 className="text-base font-semibold">{product.title}</h3>
+                {product.description ? <p className="text-sm whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
+                <p className="font-tabular text-lg font-semibold">{formatMinor(product.priceMinor, page.currency)}</p>
                 <a
                   href={`${page.pageBase}/buy/${product.id}`}
                   aria-label={`Buy ${product.title}`}
