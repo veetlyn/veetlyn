@@ -1,0 +1,49 @@
+packages/ui/src/components/attachment.tsx
+  s_ec180faf4f9b2e::t_1d914e63f9dd5a 9,16,51
+packages/ui/src/components/card.tsx
+  s_ec180faf4f9b2e::t_3bb7993a715fac 14,27,52,78
+  s_ec180faf4f9b2e::t_1374f054138725 40
+packages/ui/src/components/bubble.tsx
+  s_ec180faf4f9b2e::t_1d914e63f9dd5a 33,70,84
+packages/ui/src/components/tooltip.tsx
+  s_ec180faf4f9b2e::t_1d914e63f9dd5a 40,46
+packages/ui/src/components/input.tsx
+  s_ec180faf4f9b2e::t_3bb7993a715fac 11
+packages/ui/src/components/textarea.tsx
+  s_ec180faf4f9b2e::t_3bb7993a715fac 9
+packages/ui/src/components/badge.tsx
+  s_ec180faf4f9b2e::t_1be42077d83cf1 1-27
+packages/ui/src/lib/button-variants.ts
+  s_ec180faf4f9b2e::t_3bb7993a715fac 5,9-14,17-24
+packages/ui/src/components/label.tsx
+  s_ec180faf4f9b2e::t_3bb7993a715fac 11
+packages/ui/src/components/checkbox.tsx
+  s_ec180faf4f9b2e::t_3bb7993a715fac 12
+packages/ui/src/components/skeleton.tsx
+  s_ec180faf4f9b2e::t_3bb7993a715fac 7
+packages/ui/src/components/input-group.tsx
+  s_ec180faf4f9b2e::t_1d914e63f9dd5a 30,75-78,124,137
+  s_ec180faf4f9b2e::t_dccdbafb561bff 16
+packages/ui/src/styles/globals.css
+  s_ec180faf4f9b2e::t_40f9679d908ba2 9-10,12-57,61-101,105-108,126-130,154-183,190,195-201
+packages/ui/src/components/empty.tsx
+  s_ec180faf4f9b2e::t_3bb7993a715fac 9,33,61
+packages/ui/src/components/dropdown-menu.tsx
+  s_ec180faf4f9b2e::t_1d914e63f9dd5a 41,66,87,112,135,161,197,230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7bceb1140df8b080c3884af00747f836c155052e",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
