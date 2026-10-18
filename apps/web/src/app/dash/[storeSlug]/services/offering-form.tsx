@@ -87,15 +87,15 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   if (team.isError) return <TeamNotFound />;
   if (catalog.isError) {
     return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
         <p role="alert">The services couldn't be loaded.</p>
       </main>
     );
   }
   if (offeringId && !offering) {
     return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <h1 className="text-2xl font-semibold">Service not found</h1>
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">Service not found</h1>
         <p className="text-sm text-muted-foreground">This service is not in your team.</p>
         <Link href={`/${teamSlug}/services`} className="underline">
           Back to services
@@ -166,12 +166,12 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   }
 
   return (
-    <main className="container mx-auto max-w-xl px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
         <Link href={`/${teamSlug}/services`} className="text-sm text-muted-foreground">
           Services
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{offeringId ? "Edit service" : "Add a service"}</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">{offeringId ? "Edit service" : "Add a service"}</h1>
       </div>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can manage the services.</p>

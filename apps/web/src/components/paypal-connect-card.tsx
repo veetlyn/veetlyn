@@ -9,7 +9,7 @@ import { trpc } from "@/utils/trpc";
 
 const TONE_CLASS = {
   muted: "text-muted-foreground",
-  success: "text-emerald-700 dark:text-emerald-400",
+  success: "text-brand-text",
   problem: "text-destructive",
 } as const;
 

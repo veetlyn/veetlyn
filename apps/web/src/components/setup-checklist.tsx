@@ -34,7 +34,7 @@ export default function SetupChecklist({
   title?: string;
 }) {
   return (
-    <section aria-labelledby="setup-heading" className="border p-4">
+    <section aria-labelledby="setup-heading" className="panel p-4">
       <div className="flex items-baseline justify-between gap-4">
         <h2 id="setup-heading" className="font-medium">
           {title}
@@ -47,7 +47,7 @@ export default function SetupChecklist({
         {steps.map((step) => (
           <li key={step.id} className="flex items-center gap-2 text-sm">
             {step.done ? (
-              <CircleCheck aria-hidden className="size-4 text-emerald-600" />
+              <CircleCheck aria-hidden className="size-4 text-brand" />
             ) : (
               <Circle aria-hidden className="size-4 text-muted-foreground" />
             )}

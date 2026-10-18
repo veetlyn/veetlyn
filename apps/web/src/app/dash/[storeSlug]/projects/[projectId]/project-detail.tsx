@@ -16,6 +16,7 @@ import {
   type MoneyCurrency,
   type QuoteItemDraft,
 } from "@jendal-workspace/core";
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
@@ -32,11 +33,14 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { paymentRefundLabel } from "@/lib/client-refund";
+import { AMENDMENT_STATUS_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { minorToPriceInput } from "@/lib/money";
 import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
+
+import { ProjectProgress } from "@/components/project-progress";
 
 import { ClientsSection } from "./clients-section";
 import { QuoteCalculator } from "./quote-calculator";
@@ -109,12 +113,12 @@ function ItemRowsEditor({ rows, onChange }: { rows: ItemRow[]; onChange: (rows: 
 
 function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; currency: MoneyCurrency }) {
   return (
-    <div className="rounded-lg border p-4">
+    <div className="panel p-4">
       <div className="flex items-center justify-between">
         <p className="font-medium">
           Quote v{quote.version} · {formatMoney(money(currency, quote.amountMinor))}
         </p>
-        <span className="text-sm text-muted-foreground">{quote.status}</span>
+        <Badge tone={quote.status === "accepted" ? "good" : "neutral"}>{QUOTE_STATUS_LABELS[quote.status]}</Badge>
       </div>
       <ul className="mt-2 space-y-1 text-sm">
         {quote.items.map((item) => (
@@ -193,8 +197,8 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
   // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
   if (!detail.data) {
     return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <h1 className="text-2xl font-semibold">Project not found</h1>
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">Project not found</h1>
         <Link href={`/${teamSlug}/projects`} className="underline">
           Back to projects
         </Link>
@@ -275,14 +279,14 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
   }
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-8 px-4 py-6">
-      <div className="space-y-1">
-        <Link href={`/${teamSlug}/projects`} className="text-sm text-muted-foreground">
-          Projects
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {projectStatusLabel(project.status)} · {primary?.name ?? "No client"}
+    <main className="mx-auto grid w-full max-w-6xl gap-x-8 gap-y-6 px-4 py-6 md:px-7 md:py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+      <div className="space-y-2 lg:col-span-2">
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">{project.title}</h1>
+        <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <Badge tone={project.status === "completed" ? "good" : project.status === "cancelled" ? "neutral" : "brand"}>
+            {projectStatusLabel(project.status)}
+          </Badge>
+          {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
         {project.source === "web" ? (
@@ -304,9 +308,10 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
             ) : null}
           </section>
         ) : null}
-        {project.brief ? <p className="text-sm">{project.brief}</p> : null}
+        {project.brief ? <p className="max-w-3xl text-sm">{project.brief}</p> : null}
       </div>
 
+      <div className="grid min-w-0 gap-8">
       <ClientsSection teamSlug={teamSlug} projectId={projectId} contacts={contacts} role={role} onChange={refresh} />
 
       {!solo && canAssignFreelancer(role) && project.status === "quoting" ? (
@@ -317,7 +322,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
               <Label htmlFor="assign-freelancer">Freelancer</Label>
               <select
                 id="assign-freelancer"
-                className="h-9 rounded-md border bg-background px-3 text-sm"
+                className="h-10 rounded-lg border border-input bg-card px-3 text-sm well"
                 value={freelancerId}
                 onChange={(e) => setFreelancerId(e.target.value)}
               >
@@ -344,7 +349,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           <QuoteCard key={quote.id} quote={quote} currency={currency} />
         ))}
         {project.status === "quoting" && (role !== "freelancer" || quotingMode !== "team") ? (
-          <form onSubmit={handleQuote} className="space-y-3 rounded-lg border p-4">
+          <form onSubmit={handleQuote} className="space-y-3 panel p-4">
             <h3 className="font-medium">New quote</h3>
             <ItemRowsEditor rows={quoteRows} onChange={setQuoteRows} />
             <div className="flex items-end gap-2">
@@ -357,7 +362,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
                   <Label htmlFor="quote-freelancer">Freelancer</Label>
                   <select
                     id="quote-freelancer"
-                    className="h-9 rounded-md border bg-background px-3 text-sm"
+                    className="h-10 rounded-lg border border-input bg-card px-3 text-sm well"
                     value={quoteFreelancerId}
                     onChange={(e) => setQuoteFreelancerId(e.target.value)}
                   >
@@ -406,13 +411,13 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
         <h2 className="text-lg font-semibold">Amendments</h2>
         {amendments.length === 0 ? <p className="text-sm text-muted-foreground">No amendments.</p> : null}
         {amendments.map((amendment) => (
-          <div key={amendment.id} className="rounded-lg border p-4 text-sm">
+          <div key={amendment.id} className="panel p-4 text-sm">
             <div className="flex items-center justify-between">
               <p className="font-medium">
                 {amendment.deltaMinor > 0 ? "+" : ""}
                 {formatMoney(money(currency, amendment.deltaMinor))} → {formatMoney(money(currency, amendment.newAmountMinor))}
               </p>
-              <span className="text-muted-foreground">{amendment.status}</span>
+              <Badge tone={amendment.status === "accepted" ? "good" : "neutral"}>{AMENDMENT_STATUS_LABELS[amendment.status] ?? amendment.status}</Badge>
             </div>
             {amendment.note ? <p className="mt-1">{amendment.note}</p> : null}
           </div>
@@ -421,7 +426,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
         !pendingAmendment &&
         canProposeAmendment({ role, actorId: viewerId, assignedFreelancerId: project.assignedFreelancerId }) &&
         currentQuote ? (
-          <form onSubmit={handleAmend} className="space-y-3 rounded-lg border p-4">
+          <form onSubmit={handleAmend} className="space-y-3 panel p-4">
             <h3 className="font-medium">Propose an amendment</h3>
             <p className="text-sm text-muted-foreground">Remove lines from the current quote, or add new ones.</p>
             {currentQuote.items.map((item) => (
@@ -457,7 +462,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
         <h2 className="text-lg font-semibold">Deliveries</h2>
         {deliveries.length === 0 ? <p className="text-sm text-muted-foreground">No deliveries yet.</p> : null}
         {newestFirst(deliveries).map((delivery) => (
-          <div key={delivery.id} className="space-y-2 rounded-lg border p-4 text-sm">
+          <div key={delivery.id} className="space-y-2 panel p-4 text-sm">
             <div className="flex items-center justify-between">
               <p className="font-medium">Delivered {new Date(delivery.createdAt).toLocaleString()}</p>
               <span className="text-muted-foreground">{deliveryStaffStatusLabel(delivery.status)}</span>
@@ -482,7 +487,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           <p className="text-sm text-muted-foreground">Waiting for the client to accept the delivery or ask for changes.</p>
         ) : null}
         {canDeliver ? (
-          <form onSubmit={handleDeliver} className="space-y-3 rounded-lg border p-4">
+          <form onSubmit={handleDeliver} className="space-y-3 panel p-4">
             <h3 className="font-medium">Deliver</h3>
             <fieldset disabled={deliver.isPending} className="min-w-0 space-y-3">
               <div className="space-y-2">
@@ -550,20 +555,24 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
         ) : null}
       </section>
 
+      </div>
+
+      <aside className="grid min-w-0 gap-8">
+      <ProjectProgress status={project.status} />
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
         {payments.map((payment) => (
-          <div key={payment.id} className="rounded-lg border p-4 text-sm">
+          <div key={payment.id} className="panel p-4 text-sm">
             <div className="flex items-center justify-between gap-4">
               <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (
-                  <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                  <span className="inline-block rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
                     Needs review
                   </span>
                 ) : null}
-                <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? payment.status}</span>
+                <Badge tone={payment.status === "captured" ? "good" : payment.status === "failed" ? "fail" : "neutral"}>{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</Badge>
               </div>
             </div>
             <ul className="mt-2 space-y-1">
@@ -592,6 +601,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           onRefunded={refresh}
         />
       ) : null}
+      </aside>
     </main>
   );
 }

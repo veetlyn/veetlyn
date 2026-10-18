@@ -11,7 +11,7 @@ const INCLUDED = [
 
 export default function PayoutsPricing({ signupUrl }: { signupUrl: string }) {
   return (
-    <div className="grid gap-8 border p-6 md:grid-cols-2">
+    <div className="grid gap-8 panel p-6 md:grid-cols-2">
       <div>
         <p className="text-4xl font-semibold tabular-nums">0.5% + 0.10</p>
         <p className="mt-1 text-sm text-muted-foreground">

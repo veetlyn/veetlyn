@@ -26,13 +26,10 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
   if (products.isPending) return <Loader />;
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="flex items-baseline justify-between gap-4">
         <div className="space-y-1">
-          <Link href={`/${storeSlug}`} className="text-sm text-muted-foreground">
-            {storeSlug}
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl">Products</h1>
         </div>
         <Link href={`/${storeSlug}/products/new`} className={buttonVariants()}>
           Add product

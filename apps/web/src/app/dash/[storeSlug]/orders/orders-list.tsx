@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
@@ -15,12 +14,9 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
   const orders = useQuery({ ...trpc.order.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   return (
-    <main className="container mx-auto max-w-4xl space-y-6 px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${teamSlug}`} className="text-sm text-muted-foreground">
-          Team dashboard
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">Orders</h1>
       </div>
       {orders.isPending ? (
         <Loader />
@@ -49,7 +45,7 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
                     <p className="text-sm text-muted-foreground">Paid {formatDate(order.paidAt)}</p>
                   )}
                   {order.reviewReason ? (
-                    <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    <span className="inline-block rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
                       Needs review
                     </span>
                   ) : null}

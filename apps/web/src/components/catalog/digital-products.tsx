@@ -42,7 +42,7 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
           <Link href={`/${teamSlug}`} className="text-sm text-muted-foreground">
             {teamSlug}
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl">Products</h1>
         </div>
         <section className="grid gap-2 border border-dashed p-8 text-center">
           <p className="font-medium">Sell digital downloads</p>
@@ -75,7 +75,7 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
           <Link href={`/${teamSlug}`} className="text-sm text-muted-foreground">
             {teamSlug}
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl">Products</h1>
         </div>
         {role === "admin" ? (
           <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>

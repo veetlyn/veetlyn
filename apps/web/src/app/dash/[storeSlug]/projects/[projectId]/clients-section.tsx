@@ -83,7 +83,7 @@ export function ClientsSection({
         {contacts.map((contact) => {
           const hasEmail = contact.identities.some((i) => i.kind === "email");
           return (
-            <li key={contact.id} className="space-y-2 rounded-lg border p-3">
+            <li key={contact.id} className="space-y-2 panel p-3">
               <p className="font-medium">
                 {contact.name}
                 {contact.isPrimary ? <span className="ml-2 text-xs text-muted-foreground">Primary</span> : null}

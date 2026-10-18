@@ -139,9 +139,6 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
 
   return (
     <main className="container mx-auto max-w-lg px-4 py-10">
-      <Link href={`/${team.slug}`} className="text-sm text-muted-foreground">
-        {team.name}
-      </Link>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight">{solo ? "Settings" : "Team settings"}</h1>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
@@ -168,7 +165,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
               {saveBio.error.message}
             </p>
           ) : null}
-          {saveBio.isSuccess ? <p className="text-sm text-emerald-700 dark:text-emerald-400">Saved.</p> : null}
+          {saveBio.isSuccess ? <p className="text-sm font-medium text-brand-text">Saved.</p> : null}
           <Button
             type="button"
             onClick={() => saveBio.mutate({ teamSlug, bio: values.bio })}
@@ -196,7 +193,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           </select>
         </div>
         {solo ? (
-          <p className="border p-3 text-sm text-muted-foreground">
+          <p className="panel p-3 text-sm text-muted-foreground">
             You work alone, so you keep the whole price. Switch to a team to set a team cut, a management fee and
             payouts.
           </p>
@@ -232,13 +229,13 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           </>
         )}
         {save.error ? <p className="text-sm text-destructive">{save.error.message}</p> : null}
-        {save.isSuccess ? <p className="text-sm text-emerald-700 dark:text-emerald-400">Settings saved.</p> : null}
+        {save.isSuccess ? <p className="text-sm font-medium text-brand-text">Settings saved.</p> : null}
         <Button type="submit" disabled={!canSave} className="justify-self-start">
           {save.isPending ? "Saving…" : "Save settings"}
         </Button>
       </form>
       {solo && role === "admin" ? (
-        <section className="mt-10 grid gap-3 border p-4">
+        <section className="mt-10 grid gap-3 panel p-4">
           <h2 className="font-medium">Switch to a team</h2>
           <p className="text-sm text-muted-foreground">
             Your team cut becomes 15% and your management fee 10%. You can add members afterwards.
