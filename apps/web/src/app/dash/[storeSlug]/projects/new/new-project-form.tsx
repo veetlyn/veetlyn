@@ -5,7 +5,6 @@ import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
@@ -52,9 +51,6 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${teamSlug}/projects`} className="text-sm text-muted-foreground">
-          Projects
-        </Link>
         <h1 className="font-[family-name:var(--font-display)] text-3xl">New project</h1>
         <p className="text-sm text-muted-foreground">
           The client gets a private link to follow the project, accept quotes and pay. No account needed.

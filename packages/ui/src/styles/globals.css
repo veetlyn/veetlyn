@@ -195,6 +195,12 @@
   h1, h2 {
     text-wrap: balance;
   }
+  input[type="radio"],
+  input[type="checkbox"],
+  input[type="range"],
+  progress {
+    accent-color: var(--brand);
+  }
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
