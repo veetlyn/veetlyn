@@ -1,0 +1,38 @@
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_106c9fc8395572 15
+specs/stories/01-accounts-and-setup.md
+  s_ec180faf4f9b2e::t_583457e1432380 115,128,142
+  s_ec180faf4f9b2e::t_bf3fc0aeb54188 68,72
+specs/platform/2026-10-18-contextual-dash-ontology-design.md
+  s_ec180faf4f9b2e::t_0bbeb398781810 5,76,194,196-229,239,241,245,247,249,252,254,263,268,273,275,279,301,349,355,365-366
+  s_ec180faf4f9b2e::t_8faa94e9003e0e 1,11-12,16,18-21,24-26,28,35-36,42-63,65,67,69-74,78,80,82,84-88,90,92,94,96-97,100,102,104-111,113,115,117,119-125,127,129,131,133-135,137,139,141-144,146,148,150-151,153,155,157,159-193,195,240,243-244,246,248,250-251,253,256-262,264-267,269-271,274,281,283-284,286-300,302-303,308,310-311,313-321,324,329,332-346,350-354,356-364
+  s_ec180faf4f9b2e::t_0d10e3f2479d30 2,4,6-8,10,15,17,22-23,27,29-34,37-41,64,66,68,75,77,79,81,83,89,91,93,95,99,101,103,112,114,116,118,126,128,130,132,136,138,140,145,147,149,152,154,156,158,255,276,278,280,282,304-307,309,312,322-323,325-328,330-331,347-348
+  s_ec180faf4f9b2e::t_106c9fc8395572 3
+  s_ec180faf4f9b2e::t_dd239654ca5215 9,14
+  s_ec180faf4f9b2e::t_212b47ef796346 13,98,230-238,242,272,277,285
+specs/README.md
+  s_ec180faf4f9b2e::t_8faa94e9003e0e 30
+  s_ec180faf4f9b2e::t_106c9fc8395572 47
+specs/stories/03-requests-and-quotes.md
+  s_ec180faf4f9b2e::t_1179b181147faf 140,153,191
+specs/stories/04-payments.md
+  s_ec180faf4f9b2e::t_72bfb78d698e30 19,33-34,130,144
+specs/stories/05-delivery-and-completion.md
+  s_ec180faf4f9b2e::t_03327e22929de4 101-102,116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe7fe6bfb5657c9c63d13cf9849948a28ba1ef5b",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
