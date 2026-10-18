@@ -98,8 +98,8 @@ Shared facts for these stories:
 - **Steps:**
   1. On the client page, click **Accept delivery**.
 - **Expected:**
-  - The client page shows "Awaiting balance · Final price $200.00", the delivery "Accepted", and a Balance card "pending" with the line "Balance" $100.00, "Total" $100.00 and **Pay with PayPal** (the management fee was paid with the deposit).
-  - The team page shows "Awaiting balance" with "Final price $200.00", the Balance "pending" and "Waiting for the client to pay."
+  - The client page shows "Awaiting balance · Final price $200.00", the delivery "Accepted", and a Balance card "Waiting" with the line "Balance" $100.00, "Total" $100.00 and **Pay with PayPal** (the management fee was paid with the deposit).
+  - The team page shows "Awaiting balance" with "Final price $200.00", the Balance "Waiting" and "Waiting for the client to pay."
   - DB check (developer): outbox `delivery.accepted` and `payment.created` events.
 - **Edge cases (not walked through):** a pending amendment blocks acceptance ("An amendment is waiting for the client's answer."), and so does an unpaid top-up ("The top-up for the last amendment is not paid yet."); answering a delivery twice gives "This delivery is not waiting for an answer."
 
@@ -113,7 +113,7 @@ Shared facts for these stories:
 - **Expected:**
   - The pay page shows "Paid. Thank you."
   - The client page shows "Completed · Final price $200.00" and "This project is complete. Thank you."
-  - The team page shows "Completed" and the Balance "captured".
+  - The team page shows "Completed" and the Balance "Paid".
   - Walk Through's Payouts page `{dash}/me/payouts` shows walk-crew's "Available" earnings up by $170.00 ($200 minus the 15% team cut). If the team's payout rules create a payout per completed project, the amount moves to "In progress" once that payout is created (see `07-payouts.md`).
   - DB check (developer): `client_held` for the project is 0; a `completion` transfer moves 17000 to `owed:<Walk Through>:available`; team revenue up by the $30.00 team cut less the balance's fees; transfers `payment_captured`, `completion` and `payment_fees`; outbox `payment.captured` and `project.completed`.
 - **Edge cases:** a solo seller's completion books the whole price as revenue and owes no earnings. Automatic project payouts after completion are in `07-payouts.md`.

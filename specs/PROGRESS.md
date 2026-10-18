@@ -12,6 +12,7 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 - **Next:**
   - Run C is designed and planned: [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/plans/2026-10-15-c-plugin.md`](platform/plans/2026-10-15-c-plugin.md). Settled: default-listed with per-offering and per-department opt-out; conversation audience per quoting mode; client and pay pages move to `{team}.payleor.app`; minimal client home on payleor.com; MCP stays on `api.payleor.com/mcp` for the hackathon.
   - **Build A2 next** (planned: [`platform/plans/2026-10-15-a2-client-contacts.md`](platform/plans/2026-10-15-a2-client-contacts.md), stories AGT-01–06), then H, then C (Oct 20–23).
+- **Parked 2026-10-18 (Mouhamed):** the agentic dash, with its contextual dash design ([`platform/2026-10-18-contextual-dash-ontology-design.md`](platform/2026-10-18-contextual-dash-ontology-design.md)) and prototype. Focus moves to revamping the current screens and the plugin's interfaces and widgets.
 - **Waiting on Mouhamed:**
   - For run E: three Discord accounts and the test server.
 - **If Mouhamed is unavailable:** plans may be drafted and backlog items owned by the current run may be prepared, but nothing is merged into main and no design decision is changed without him.

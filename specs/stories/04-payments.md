@@ -16,7 +16,7 @@ Shared facts for these stories:
   1. Open the client page `{site}/c/<token>` (from the client email, or the "Client link:" line on the team's project page `{dash}/walk-crew/projects/<id>`).
   2. In **Payments**, click **Pay with PayPal** on the Deposit card.
 - **Expected:**
-  - The client page's Deposit card shows the status "pending", the lines "Deposit (50% of the quote)" $100.00 and "Management fee (10%)" $20.00, "Total" $120.00, and **Pay with PayPal** linking to `{site}/pay/<token>`.
+  - The client page's Deposit card shows the status "Waiting", the lines "Deposit (50% of the quote)" $100.00 and "Management fee (10%)" $20.00, "Total" $120.00, and **Pay with PayPal** linking to `{site}/pay/<token>`.
   - The pay page shows the team name, the project title, "Deposit", the same lines and "Total" $120.00, the PayPal button, and "Back to the project" linking to the client page.
   - The pay link names the payment only; the amount always comes from the server.
 - **Edge cases:** the same page labels a top-up "Top-up" (PAY-11) and a balance "Balance" (DEL-08).
@@ -30,8 +30,8 @@ Shared facts for these stories:
   2. [human] Log in as the PayPal buyer in the popup and approve.
 - **Expected:**
   - While the server captures, the page shows "Confirming your payment…", then "Paid. Thank you." with focus moved to it and no PayPal button.
-  - The client page shows the project "In progress" and the Deposit status "captured", with no pay link.
-  - The team's project page shows "In progress" and the Deposit "captured".
+  - The client page shows the project "In progress" and the Deposit status "Paid", with no pay link.
+  - The team's project page shows "In progress" and the Deposit "Paid".
   - [human] In the sandbox seller's PayPal account, the transaction lists two items ("Deposit (50% of the quote)" and "Management fee (10%)") and a "Partner Commission" of $1.20 (1%).
   - DB check (developer): the payment is `captured` with `platform_fee_minor` 120; one balanced `payment_captured` transfer (paypal_clearing −12000, team_revenue +2000, client_held +10000); an outbox `payment.captured` event; the project deadline is PayPal's capture time plus the quote's delivery days.
 - **Edge cases:** a capture event or approval event arriving later changes nothing (PAY-15).
@@ -127,7 +127,7 @@ Shared facts for these stories:
   2. [human] Approve as the PayPal buyer, then close the Payleor tab before the page confirms. (If the popup does not open, approve on PayPal's checkout page in its own tab, as in the R2 walkthrough.)
   3. After about a minute, open the client page.
 - **Expected:**
-  - The payment shows "captured" and the project has moved on (In progress after a deposit, Completed after a balance).
+  - The payment shows "Paid" and the project has moved on (In progress after a deposit, Completed after a balance).
   - Reopening the pay link shows "Paid. Thank you."
   - DB check (developer): the `CHECKOUT.ORDER.APPROVED` event is `processed / captured` (approvals wait 60 seconds so the page's own capture usually wins); the later approval and capture events end `nothing to do` and `already_applied`; the fees are recorded (PAY-12).
 
@@ -141,7 +141,7 @@ Shared facts for these stories:
 - **Expected:**
   - Before paying, the Top-up card shows "Top-up (50% of the increase)" $50.00, "Management fee (10%)" $10.00, "Total" $60.00; the pay page is labelled "Top-up".
   - While the top-up is unpaid, accepting a delivery and proposing another amendment are refused with "The top-up for the last amendment is not paid yet."
-  - After paying, the pay page shows "Paid. Thank you." and the top-up shows "captured".
+  - After paying, the pay page shows "Paid. Thank you." and the top-up shows "Paid".
   - The other half of the increase joins the balance: after delivery and acceptance, the balance is $150.00 ($300 + $30 fee − $180 paid).
 
 ### PAY-12: Fees are recorded in the ledger
