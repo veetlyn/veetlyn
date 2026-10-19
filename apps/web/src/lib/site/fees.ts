@@ -3,11 +3,26 @@ import {
   bundleQuote,
   getPlan,
   getSellerPlan,
+  formatOrderFee,
+  formatPlanPrice,
   NETWORK_FEE_BPS,
   type PlanId,
+  PLANS,
   platformFeeMinor,
+  SELLER_PLANS,
   type SellerPlanId,
 } from "@jendal-workspace/core";
+
+const allFees = [...SELLER_PLANS.map((p) => p.feeBps), ...PLANS.map((p) => p.orderFeeBps)];
+
+// The figures the site's summaries quote ("plans from $12 a month, 0.25 to 2% per payment or order"), read from
+// the plans so a price change in core changes every page.
+export const PRICE_FACTS = {
+  from: formatPlanPrice(Math.min(...SELLER_PLANS.map((p) => p.priceCents.monthly), ...PLANS.map((p) => p.priceCents.monthly))),
+  minFee: formatOrderFee(Math.min(...allFees)),
+  maxFee: formatOrderFee(Math.max(...allFees)),
+  network: formatOrderFee(NETWORK_FEE_BPS),
+} as const;
 
 export type SaleSource = "own" | "network";
 
