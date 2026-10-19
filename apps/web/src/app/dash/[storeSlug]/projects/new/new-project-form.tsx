@@ -57,7 +57,7 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
           The client gets a private link to follow the project, accept quotes and pay. No account needed.
         </p>
       </div>
-      <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+      <form onSubmit={handleSubmit} className="mt-6 grid max-w-2xl gap-6 panel p-5 md:p-6">
         <div className="space-y-2">
           <Label htmlFor="project-title">Title</Label>
           <Input id="project-title" value={title} onChange={(e) => setTitle(e.target.value)} required minLength={3} maxLength={120} autoFocus />

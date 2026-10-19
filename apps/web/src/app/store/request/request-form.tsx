@@ -71,6 +71,9 @@ export default function RequestForm({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6 md:px-7 md:py-10">
+      <a href="/" className="mb-4 inline-flex text-sm text-muted-foreground hover:text-foreground">
+        ← {page.name}
+      </a>
       <div className="space-y-1">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">Request a quote from {page.name}</h1>
         {offering ? (

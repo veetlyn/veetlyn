@@ -5,11 +5,11 @@ import { legalMdxComponents } from "@/components/legal/mdx-components";
 import { LEGAL_LAST_UPDATED } from "@/content/legal/meta";
 import Terms from "@/content/legal/terms.mdx";
 
-export const metadata: Metadata = { title: "Terms of Service · Payleor" };
+export const metadata: Metadata = { title: "Terms of service · Payleor" };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" updatedOn={LEGAL_LAST_UPDATED}>
+    <LegalPage title="Terms of service" updatedOn={LEGAL_LAST_UPDATED}>
       <Terms components={legalMdxComponents} />
     </LegalPage>
   );
