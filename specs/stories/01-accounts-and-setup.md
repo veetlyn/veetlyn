@@ -24,7 +24,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Actor:** visitor · **Surface:** web (`{site}/legal/*`) · **Delivered by:** W1-D (`a8e5260`) · **Status:** Built (not walked through)
 - **Preconditions:** none.
 - **Steps:**
-  1. On `{site}/`, use the footer links "Terms of Service", "Privacy Policy" and "Acceptable Use Policy".
+  1. On `{site}/`, use the footer links "Terms of service", "Privacy policy" and "Acceptable use policy".
 - **Expected:**
   - Each page has its title, "Last updated October 5, 2026", and ends with "This text is a template and is not legal advice."
   - The Terms name Mouhamed Bakhoum as the operator, Senegalese law and the courts of Dakar.
@@ -51,7 +51,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   1. Open `{dash}/signup`. Fill "Your name", "Email" and a "Password" of at least 10 characters, then **Create account**.
   2. Open the email "Verify your email for Payleor" and click **Verify email**.
 - **Expected:**
-  - The sign-up page is titled "Create your Payleor account" with "Free for 14 days. No setup fee." and the notice "By continuing you agree to the Terms of Service and the Acceptable Use Policy" linking to `{site}/legal/…`.
+  - The sign-up page is titled "Create your Payleor account" with "Free for 14 days. No setup fee." and the notice "By continuing you agree to the Terms of service and the Acceptable use policy" linking to `{site}/legal/…`.
   - After submit, `{dash}/verify-email` shows "Check your inbox" and "We sent a link to <address>. Open it to verify your address. The link expires in 1 hour."
   - The resend button counts down ("Send a new link in 59s" …) and then reads "Send a new link"; clicking it shows "We sent a new link." and restarts the countdown.
   - The email comes from "Payleor" `accounts@payleor.com`.
