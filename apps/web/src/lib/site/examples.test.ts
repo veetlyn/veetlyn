@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { agencyExample, freelancerExample, studioExample, walkCrewDepositMinor } from "./examples";
+import {
+  agencyExample,
+  freelancerExample,
+  studioExample,
+  walkCrewBalanceMinor,
+  walkCrewDepositMinor,
+} from "./examples";
 
 // The stories quote these figures in their copy; a fee change in core fails here and names the page to update.
 describe("the site's money stories", () => {
@@ -16,6 +22,7 @@ describe("the site's money stories", () => {
       payleorMinor: 352,
     });
     expect(walkCrewDepositMinor()).toBe(38_400);
+    expect(walkCrewBalanceMinor()).toBe(32_000);
   });
 
   it("a $45 pedicure booked through the network pays Inès, the salon, PayPal and Payleor", () => {
