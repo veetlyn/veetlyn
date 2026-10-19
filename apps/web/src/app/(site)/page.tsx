@@ -4,8 +4,8 @@ import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import { Bot, Briefcase, Check, Scale, Store, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 
-import PayoutsPricing from "@/components/site/payouts-pricing";
 import Pricing from "@/components/site/pricing";
+import ServicesPricing from "@/components/site/services-pricing";
 import { getPlatformOrigins, getStoreUrlParts } from "@/lib/server-api";
 import { storeUrl } from "@/lib/store-url";
 
@@ -180,26 +180,23 @@ export default async function LandingPage() {
             <p className="mt-2 text-muted-foreground">Each product has its own plan and fees. Pay only for what you use.</p>
           </div>
 
+          <section aria-labelledby="services-pricing-heading" className="space-y-6">
+            <h3 id="services-pricing-heading" className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
+              Payouts · for services teams
+            </h3>
+            <ServicesPricing signupUrl={signupUrl} />
+          </section>
+
           <section aria-labelledby="commerce-pricing-heading" className="space-y-6">
             <div>
-              <h3 id="commerce-pricing-heading" className="text-xl font-medium">
-                Commerce
+              <h3 id="commerce-pricing-heading" className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
+                Commerce · for stores
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 One plan per store. Pay monthly or yearly. The order fee drops as you grow.
               </p>
             </div>
             <Pricing signupUrl={signupUrl} />
-          </section>
-
-          <section aria-labelledby="payouts-pricing-heading" className="space-y-6">
-            <div>
-              <h3 id="payouts-pricing-heading" className="text-xl font-medium">
-                Payouts
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">A fee on each client payment, plus a plan.</p>
-            </div>
-            <PayoutsPricing signupUrl={signupUrl} />
           </section>
 
           <div className="space-y-2 text-center text-sm text-muted-foreground">

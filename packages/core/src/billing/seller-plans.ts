@@ -1,7 +1,7 @@
 import type { BillingInterval } from "./plans";
 
 export type SellerAudience = "freelancer" | "team";
-export type SellerPlanId = "solo" | "pro" | "premium" | "team" | "studio" | "agency";
+export type SellerPlanId = "solo" | "team" | "agency";
 
 export type SellerPlan = {
   id: SellerPlanId;
@@ -19,89 +19,50 @@ export type SellerPlan = {
   payoutAgent: boolean;
   publicApi: boolean;
   prioritySupport: boolean;
+  highlights: readonly string[];
 };
+
+// Charged once, on the first project with a client who found the seller through an AI agent.
+export const NETWORK_FEE_BPS = 500;
 
 export const SELLER_PLANS: readonly SellerPlan[] = [
   {
     id: "solo",
     name: "Solo",
     audience: "freelancer",
-    priceCents: { monthly: 900, yearly: 700 },
-    feeBps: 200,
+    priceCents: { monthly: 1900, yearly: 1600 },
+    feeBps: 100,
     members: 1,
-    storageGb: 2,
-    aiDraftsPerMonth: 20,
+    storageGb: 5,
+    aiDraftsPerMonth: 50,
     customDomain: false,
     hideBadge: false,
     payoutAgent: false,
     publicApi: false,
     prioritySupport: false,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    audience: "freelancer",
-    priceCents: { monthly: 2400, yearly: 1800 },
-    feeBps: 100,
-    members: 1,
-    storageGb: 20,
-    aiDraftsPerMonth: 100,
-    customDomain: true,
-    hideBadge: true,
-    payoutAgent: false,
-    publicApi: false,
-    prioritySupport: false,
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    audience: "freelancer",
-    priceCents: { monthly: 5900, yearly: 4500 },
-    feeBps: 50,
-    members: 1,
-    storageGb: 100,
-    aiDraftsPerMonth: 300,
-    customDomain: true,
-    hideBadge: true,
-    payoutAgent: false,
-    publicApi: false,
-    prioritySupport: true,
+    highlights: ["1 person", "Your own seller page", "Client pay pages and deliveries", "Listed in the Payleor network"],
   },
   {
     id: "team",
     name: "Team",
     audience: "team",
-    priceCents: { monthly: 3900, yearly: 2900 },
-    feeBps: 100,
-    members: 5,
+    priceCents: { monthly: 5900, yearly: 4900 },
+    feeBps: 50,
+    members: 10,
     storageGb: 50,
-    aiDraftsPerMonth: 200,
+    aiDraftsPerMonth: 300,
     customDomain: true,
     hideBadge: true,
     payoutAgent: false,
-    publicApi: false,
-    prioritySupport: false,
-  },
-  {
-    id: "studio",
-    name: "Studio",
-    audience: "team",
-    priceCents: { monthly: 9900, yearly: 7500 },
-    feeBps: 50,
-    members: 15,
-    storageGb: 200,
-    aiDraftsPerMonth: 500,
-    customDomain: true,
-    hideBadge: true,
-    payoutAgent: true,
     publicApi: true,
     prioritySupport: false,
+    highlights: ["Up to 10 members", "Member payouts by approval or by rule", "Your own domain", "Discord and the public API"],
   },
   {
     id: "agency",
     name: "Agency",
     audience: "team",
-    priceCents: { monthly: 24900, yearly: 18900 },
+    priceCents: { monthly: 19900, yearly: 16600 },
     feeBps: 25,
     members: 50,
     storageGb: 500,
@@ -111,6 +72,7 @@ export const SELLER_PLANS: readonly SellerPlan[] = [
     payoutAgent: true,
     publicApi: true,
     prioritySupport: true,
+    highlights: ["Up to 50 members", "Automatic payouts and a second approver", "Several services teams", "Priority support"],
   },
 ];
 
@@ -120,7 +82,7 @@ export function getSellerPlan(id: SellerPlanId): SellerPlan {
   return plan;
 }
 
-// Until billing ships (pricing proposal §6) the plan follows the seller's shape: a solo seller is on Solo,
+// Until billing ships the plan follows the seller's shape: a solo seller is on Solo,
 // a team on Team. Run 8 replaces this with the plan the seller subscribed to.
 export function sellerPlanFor(team: { id: string; solo?: boolean }): SellerPlan {
   return getSellerPlan(team.solo ? "solo" : "team");
