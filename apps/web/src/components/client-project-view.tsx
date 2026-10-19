@@ -14,7 +14,7 @@ import { ProjectProgress } from "@/components/project-progress";
 import { DeliveryLink } from "@/components/delivery-link";
 import { clientRefundLabel, paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
-import { AMENDMENT_STATUS_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
+import { AMENDMENT_STATUS_LABELS, CLIENT_PROJECT_TONES, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
 
 export type ClientProjectData = inferRouterOutputs<AppRouter>["project"]["clientGet"];
 
@@ -69,7 +69,7 @@ export function ClientProjectView({
       <div className="space-y-1">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">{project.title}</h1>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Badge tone={project.status === "completed" ? "good" : project.status === "cancelled" ? "neutral" : "brand"}>
+          <Badge tone={CLIENT_PROJECT_TONES[project.status]}>
             {projectStatusLabel(project.status)}
           </Badge>
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}

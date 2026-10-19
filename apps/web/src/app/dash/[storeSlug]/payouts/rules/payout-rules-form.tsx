@@ -179,7 +179,7 @@ function PresetPicker({ teamSlug, rules, onSaved }: { teamSlug: string; rules: R
           Presets
         </h2>
         {rules.preset === "custom" ? (
-          <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">Custom</span>
+          <span className="text-xs text-muted-foreground">Custom</span>
         ) : null}
       </div>
       <p className="text-sm text-muted-foreground">A preset replaces the rules below. Trusted members stay.</p>
