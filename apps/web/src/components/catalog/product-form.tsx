@@ -269,10 +269,11 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
         <h2 id="variants-heading" className="font-medium">
           Variants
         </h2>
+        <div className="panel divide-y">
         {form.variants.map((variant, index) => (
-          <div key={index} className="grid gap-2 panel p-3 sm:grid-cols-[1fr_1fr_7rem_7rem_auto] sm:items-end">
+          <div key={index} className="grid gap-2 p-3 sm:grid-cols-[1fr_1fr_7rem_7rem_auto] sm:items-end">
             <div className="grid gap-1">
-              <Label htmlFor={`variant-options-${index}`}>Options</Label>
+              <Label htmlFor={`variant-options-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>Options</Label>
               <Input
                 id={`variant-options-${index}`}
                 value={variant.options.map((option) => `${option.name}: ${option.value}`).join(" / ")}
@@ -292,7 +293,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
               />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor={`variant-sku-${index}`}>SKU</Label>
+              <Label htmlFor={`variant-sku-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>SKU</Label>
               <Input
                 id={`variant-sku-${index}`}
                 value={variant.sku}
@@ -301,7 +302,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
               />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor={`variant-price-${index}`}>Price (USD)</Label>
+              <Label htmlFor={`variant-price-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>Price (USD)</Label>
               <Input
                 id={`variant-price-${index}`}
                 value={variant.price}
@@ -312,7 +313,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
               />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor={`variant-stock-${index}`}>Stock</Label>
+              <Label htmlFor={`variant-stock-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>Stock</Label>
               <Input
                 id={`variant-stock-${index}`}
                 value={variant.stock}
@@ -332,6 +333,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
             </Button>
           </div>
         ))}
+        </div>
         <Button
           type="button"
           variant="outline"

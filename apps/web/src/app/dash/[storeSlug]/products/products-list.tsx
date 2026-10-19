@@ -3,7 +3,9 @@
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { useQuery } from "@tanstack/react-query";
+import { Package } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import DigitalProducts from "@/components/catalog/digital-products";
 import Loader from "@/components/loader";
@@ -53,11 +55,7 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
           {products.data.map((product) => (
             <li key={product.id}>
               <Link href={`/${storeSlug}/products/${product.id}`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-accent/60">
-                {product.imageKey ? (
-                  <img src={productImageUrl(product.imageKey)} alt="" className="size-12 rounded-md border object-cover" />
-                ) : (
-                  <div aria-hidden className="size-12 rounded-md border bg-muted" />
-                )}
+                <ProductThumb imageKey={product.imageKey} />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2 font-medium">
                     <span className="truncate">{product.title}</span>
@@ -83,5 +81,18 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
         </ul>
       )}
     </main>
+  );
+}
+
+// A product without a usable image shows a package icon instead of an empty or broken frame.
+function ProductThumb({ imageKey }: { imageKey: string | null }) {
+  const [broken, setBroken] = useState(false);
+  if (imageKey && !broken) {
+    return <img src={productImageUrl(imageKey)} alt="" onError={() => setBroken(true)} className="size-12 rounded-md border object-cover" />;
+  }
+  return (
+    <div aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground well">
+      <Package className="size-5" />
+    </div>
   );
 }

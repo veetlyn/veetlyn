@@ -5,11 +5,11 @@ import { legalMdxComponents } from "@/components/legal/mdx-components";
 import { LEGAL_LAST_UPDATED } from "@/content/legal/meta";
 import Privacy from "@/content/legal/privacy.mdx";
 
-export const metadata: Metadata = { title: "Privacy Policy · Payleor" };
+export const metadata: Metadata = { title: "Privacy policy · Payleor" };
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" updatedOn={LEGAL_LAST_UPDATED}>
+    <LegalPage title="Privacy policy" updatedOn={LEGAL_LAST_UPDATED}>
       <Privacy components={legalMdxComponents} />
     </LegalPage>
   );
