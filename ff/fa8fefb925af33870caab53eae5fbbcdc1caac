@@ -1,0 +1,105 @@
+specs/platform/2026-10-19-landing-b.html
+  s_ec180faf4f9b2e::t_0216b9dddd5b99 1-215
+specs/platform/2026-10-19-landing-b/agencies.html
+  s_ec180faf4f9b2e::t_024788c069e604 1-185
+specs/platform/2026-10-19-landing-b/blog.html
+  s_ec180faf4f9b2e::t_27fdfe424220b3 1-70
+specs/platform/2026-10-19-landing-b/blog/agencies-split-client-payments.html
+  s_ec180faf4f9b2e::t_c01438ea0df8ab 1-78
+specs/platform/2026-10-19-landing-b/blog/ai-shopping-left-services-out.html
+  s_ec180faf4f9b2e::t_d4f64535a20be8 1-78
+specs/platform/2026-10-19-landing-b/blog/freelancers-get-hired-from-ai.html
+  s_ec180faf4f9b2e::t_23cbe971642f12 1-78
+specs/platform/2026-10-19-landing-b/blog/get-found-on-google-and-in-ai-answers.html
+  s_ec180faf4f9b2e::t_16e92facd54f46 1-78
+specs/platform/2026-10-19-landing-b/blog/stores-sell-in-ai-carts.html
+  s_ec180faf4f9b2e::t_26ee785b9ed288 1-78
+specs/platform/2026-10-19-landing-b/blog/studios-sell-services-and-products.html
+  s_ec180faf4f9b2e::t_c1639742aab724 1-78
+specs/platform/2026-10-19-landing-b/contact.html
+  s_ec180faf4f9b2e::t_4fbc3a683ed49e 1-97
+specs/platform/2026-10-19-landing-b/discover.html
+  s_ec180faf4f9b2e::t_e089f0f01f8118 1-157
+specs/platform/2026-10-19-landing-b/freelancers.html
+  s_ec180faf4f9b2e::t_cf1dbce13f2df2 1-180
+specs/platform/2026-10-19-landing-b/index.html
+  s_ec180faf4f9b2e::t_44a3917b4750fa 1-222
+specs/platform/2026-10-19-landing-b/llms.txt
+  s_ec180faf4f9b2e::t_1c8defdfa92494 1-26
+specs/platform/2026-10-19-landing-b/network.html
+  s_ec180faf4f9b2e::t_02b7df1ec8d736 1-172
+specs/platform/2026-10-19-landing-b/pricing.html
+  s_ec180faf4f9b2e::t_250993f0234f3c 1-211
+specs/platform/2026-10-19-landing-b/robots.txt
+  s_ec180faf4f9b2e::t_6ffe463d7d0bea 1-29
+specs/platform/2026-10-19-landing-b/site.css
+  s_ec180faf4f9b2e::t_e300dc7ba80b56 1-632
+specs/platform/2026-10-19-landing-b/site.js
+  s_ec180faf4f9b2e::t_7a0a61b8fcd83a 1-235
+specs/platform/2026-10-19-landing-b/sitemap.xml
+  s_ec180faf4f9b2e::t_6b067816f28ed0 1-2
+specs/platform/2026-10-19-landing-b/src/agencies.html
+  s_ec180faf4f9b2e::t_1210016168592b 1-137
+specs/platform/2026-10-19-landing-b/src/base.css
+  s_ec180faf4f9b2e::t_067bbfa8a5240a 1-310
+specs/platform/2026-10-19-landing-b/src/blog_data.py
+  s_ec180faf4f9b2e::t_a01c67692b19d7 1-270
+specs/platform/2026-10-19-landing-b/src/build.py
+  s_ec180faf4f9b2e::t_f6b7dd7affbc33 1-485
+specs/platform/2026-10-19-landing-b/src/contact.html
+  s_ec180faf4f9b2e::t_3b8e58ff33c709 1-56
+specs/platform/2026-10-19-landing-b/src/discover.html
+  s_ec180faf4f9b2e::t_f056214177760b 1-89
+specs/platform/2026-10-19-landing-b/src/freelancers.html
+  s_ec180faf4f9b2e::t_395ba1d6e78957 1-132
+specs/platform/2026-10-19-landing-b/src/icons/paths.json
+  s_ec180faf4f9b2e::t_c2e9c4f0e9193f 1
+specs/platform/2026-10-19-landing-b/src/illus.py
+  s_ec180faf4f9b2e::t_e4ffbaf385e456 1-129
+specs/platform/2026-10-19-landing-b/src/index.html
+  s_ec180faf4f9b2e::t_274b34e8cd8a3a 1-126
+specs/platform/2026-10-19-landing-b/src/more.css
+  s_ec180faf4f9b2e::t_45abfbf4b55972 1-322
+specs/platform/2026-10-19-landing-b/src/network.html
+  s_ec180faf4f9b2e::t_b929f233f17fbc 1-124
+specs/platform/2026-10-19-landing-b/src/pricing.html
+  s_ec180faf4f9b2e::t_53daccf8aa2044 1-163
+specs/platform/2026-10-19-landing-b/src/site.js
+  s_ec180faf4f9b2e::t_9d9cfbea40ebd7 1-235
+specs/platform/2026-10-19-landing-b/src/stores.html
+  s_ec180faf4f9b2e::t_18fd3128ca9684 1-153
+specs/platform/2026-10-19-landing-b/src/studios.html
+  s_ec180faf4f9b2e::t_d27cadbe6074e2 1-65
+specs/platform/2026-10-19-landing-b/src/tiers_part.py
+  s_ec180faf4f9b2e::t_c73d54a965f188 1-37
+specs/platform/2026-10-19-landing-b/src/v6.src.html
+  s_ec180faf4f9b2e::t_bd6981cc626705 1-764
+specs/platform/2026-10-19-landing-b/src/visibility.html
+  s_ec180faf4f9b2e::t_da3bc2a656263c 1-86
+specs/platform/2026-10-19-landing-b/stores.html
+  s_ec180faf4f9b2e::t_0db87ee9fc07d0 1-201
+specs/platform/2026-10-19-landing-b/studios.html
+  s_ec180faf4f9b2e::t_7ccd14647a8101 1-208
+specs/platform/2026-10-19-landing-b/visibility.html
+  s_ec180faf4f9b2e::t_02665dd8957ad6 1-134
+specs/platform/2026-10-19-site-and-design-system-design.md
+  s_ec180faf4f9b2e::t_5155bafa6f306a 1-60
+specs/platform/plans/2026-10-19-l-site.md
+  s_ec180faf4f9b2e::t_ad9356232401aa 1-666
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fffa8fefb925af33870caab53eae5fbbcdc1caac",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
