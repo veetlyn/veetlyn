@@ -1,0 +1,142 @@
+import { formatOrderFee, getSellerPlan, NETWORK_FEE_BPS, TRIAL_DAYS } from "@jendal-workspace/core";
+
+// An answer may end with a link; structured data reads the link's words as part of the answer.
+export type Faq = { q: string; a: string; link?: { label: string; href: string } };
+
+const network = formatOrderFee(NETWORK_FEE_BPS);
+const soloFee = formatOrderFee(getSellerPlan("solo").feeBps);
+
+export const faqAnswerText = (f: Faq) => (f.link ? `${f.a} ${f.link.label}.` : f.a);
+
+export const INDEX_FAQ: readonly Faq[] = [
+  {
+    q: "Does Payleor hold my money?",
+    a: "No. Clients pay into your PayPal business account. Our fee comes out of the same payment.",
+  },
+  {
+    q: "Can an AI agent spend my money?",
+    a: "No. Every payment needs the payer's approval in PayPal. Every payout needs a person on your team or a rule you set.",
+  },
+  {
+    q: "Can I sell products and services together?",
+    a: "Yes. One workspace, one link. Run both and the cheaper plan is half price.",
+  },
+  { q: "Can an AI sell on Payleor?", a: "Yes. Connect it through our API. Buyers see that the work is automated." },
+  { q: "Can I leave with my data?", a: "Yes. Export everything at any time. The code is open source under AGPL-3.0." },
+];
+
+export const NETWORK_FAQ: readonly Faq[] = [
+  {
+    q: "Is Payleor Network in the Claude or ChatGPT directory?",
+    a: "Not yet. Clients add it by its address. Directory listings come after the platforms' review.",
+  },
+  { q: "Can the AI pay for my client?", a: "No. The client pays on Payleor and approves the payment in PayPal." },
+  {
+    q: "Do I have to be listed?",
+    a: "No. Every offering is listed by default, and you can take any of them off the network.",
+  },
+  {
+    q: "What does it cost me?",
+    a: `${network} once, on the first project with a client the network brings you. Nothing after that.`,
+  },
+];
+
+export const FREELANCER_FAQ: readonly Faq[] = [
+  { q: "Do my clients need an account?", a: "No. They get a private link and can pay as a PayPal guest." },
+  {
+    q: `When do I pay the ${network} network fee?`,
+    a: "Only on the first project with a client who found you through an AI agent. You see it before you quote.",
+  },
+  { q: "Can an AI agent send a quote for me?", a: "No. The intake agent drafts it. You send it." },
+  { q: "Can I bring my own clients?", a: `Yes. Your own clients only pay your plan's ${soloFee} fee.` },
+];
+
+export const AGENCY_FAQ: readonly Faq[] = [
+  {
+    q: "How do members get paid?",
+    a: "Each member connects their own PayPal. Their share goes out after your approval, by your rules, or on payday.",
+  },
+  {
+    q: "We work in Slack or Microsoft Teams. Can we use them?",
+    a: "Not yet. Slack comes after launch. Today, requests come from AI, Discord and your page, and notices go by email.",
+  },
+  {
+    q: "Can our own agent work with Payleor?",
+    a: "Yes, through the public API and webhooks on Team and Agency. The payer still approves every payment in PayPal.",
+  },
+  {
+    q: `We are more than ${getSellerPlan("agency").members} people.`,
+    a: "Enterprise covers larger teams, several agencies and custom fees.",
+    link: { label: "Talk to sales", href: "/contact#sales" },
+  },
+];
+
+export const STORE_FAQ: readonly Faq[] = [
+  {
+    q: "Can I bring my products from Shopify, WooCommerce or Gumroad?",
+    a: "Add them to your Payleor store. There is no import tool yet.",
+  },
+  { q: "Who collects the shipping address?", a: "PayPal, at checkout. You see it on the order." },
+  { q: "Do I need a PayPal business account?", a: "Yes. Payments go straight into it." },
+  {
+    q: "Can I sell services too?",
+    a: "Yes. Run both and the cheaper plan is half price.",
+    link: { label: "See how", href: "/studios" },
+  },
+];
+
+export const STUDIO_FAQ: readonly Faq[] = [
+  { q: "Do clients see services and products together?", a: "Yes. One page and one card in the chat show both." },
+  {
+    q: "Can a client pay for a service and a product at once?",
+    a: "Not yet. A service is paid on its pay page, products at the cart checkout.",
+  },
+  {
+    q: "Can my staff get a share of each service?",
+    a: "Yes. Your payout rules send each person their share through PayPal.",
+  },
+  { q: "Which fee applies when I run both?", a: "The lower of your two plans, on every payment and order." },
+];
+
+export const PRICING_FAQ: readonly Faq[] = [
+  {
+    q: "Do my clients pay anything to Payleor?",
+    a: "No. Clients pay the price you set, through PayPal, without an account. Your fees come out of what you receive.",
+  },
+  {
+    q: "Is there a fee on payouts to my team?",
+    a: "Payleor adds nothing. PayPal charges its own payout fee, shown before you send.",
+  },
+  {
+    q: "How do you know a client came from the network?",
+    a: "Their first request starts inside an AI agent through Payleor. The project shows it before you quote.",
+  },
+  {
+    q: "Can I leave and take my data?",
+    a: "Yes, on every plan. Export your projects, clients, payments and files at any time.",
+  },
+  {
+    q: "Is SEO included?",
+    a: "Web SEO on seller pages is coming to every plan with run V. AI visibility comes with Network membership, which opens by waitlist with manual approval.",
+  },
+  {
+    q: "Is there a free trial?",
+    a: `${TRIAL_DAYS} days on any plan, with no setup fee. You choose a plan before your first client payment.`,
+  },
+];
+
+export const VISIBILITY_FAQ: readonly Faq[] = [
+  {
+    q: "What does every plan get?",
+    a: "Web SEO on every seller page, coming with run V: structured data, a sitemap, an llms.txt, fast pages, and a listing on Discover and Payleor Network.",
+  },
+  {
+    q: "How do I get AI visibility?",
+    a: "Join the Network membership waitlist. We approve members by hand, starting with sellers who can show their reputation.",
+  },
+  {
+    q: "Will an agent change my pages on its own?",
+    a: "No. It drafts every change, and nothing ships until you approve it.",
+  },
+  { q: "Will you rank me first?", a: "No one can promise that. We report what happened, honestly." },
+];
