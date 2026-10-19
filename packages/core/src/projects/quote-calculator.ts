@@ -25,7 +25,9 @@ export type QuoteBreakdown = {
 
 const MAX_STEPS = 10_000;
 
-function breakdown(input: QuoteCalculatorInput, quoteMinor: number): QuoteBreakdown {
+// What each party ends up with when the team quotes quoteMinor: the client's payment, PayPal's and Payleor's fees,
+// what the team keeps and what the member receives after the payout fee.
+export function quoteBreakdown(input: Omit<QuoteCalculatorInput, "targetNetMinor">, quoteMinor: number): QuoteBreakdown {
   const earnings = freelancerEarningsMinor(quoteMinor, input.teamCutBps);
   const payoutFeeMinor = estimatePayoutFeeMinor({
     currency: input.currency,
@@ -62,7 +64,7 @@ export function quoteForMemberTarget(input: QuoteCalculatorInput): QuoteBreakdow
   const share = 1 - input.teamCutBps / 10_000;
   let quote = Math.max(1, Math.floor(input.targetNetMinor / share) - 2);
   for (let step = 0; step < MAX_STEPS; step += 1) {
-    const result = breakdown(input, quote);
+    const result = quoteBreakdown(input, quote);
     if (result.memberReceivesMinor >= input.targetNetMinor) return result;
     quote += 1;
   }
