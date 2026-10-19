@@ -96,7 +96,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6 [&>*]:max-w-3xl md:px-7 md:py-8">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl">Members</h1>
+      <h1 className="font-heading text-3xl">Members</h1>
 
       {solo ? (
         <div className="panel mt-6 grid gap-2 p-6">

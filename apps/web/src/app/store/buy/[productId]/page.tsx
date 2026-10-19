@@ -22,7 +22,7 @@ export default async function BuyPage({ params }: { params: Promise<{ productId:
         ← {page.name}
       </Link>
       <div className="space-y-2">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Buy {product.title}</h1>
+        <h1 className="font-heading text-3xl">Buy {product.title}</h1>
         {product.description ? <p className="whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
         <p className="font-tabular text-xl font-medium">{formatMinor(product.priceMinor, page.currency)}</p>
       </div>

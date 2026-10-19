@@ -80,7 +80,7 @@ export default async function LandingPage() {
   return (
     <main>
       <section className="mx-auto w-full max-w-5xl px-4 py-16 text-center md:px-7 sm:py-28">
-        <h1 className="mx-auto max-w-3xl font-[family-name:var(--font-display)] text-4xl text-balance sm:text-6xl">
+        <h1 className="mx-auto max-w-3xl font-heading text-4xl text-balance sm:text-[3.5rem] sm:leading-[1.05]">
           Sell products or services, and get paid through PayPal
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground text-pretty">
@@ -104,7 +104,7 @@ export default async function LandingPage() {
 
       <section id="products" aria-labelledby="products-heading" className="scroll-mt-16 border-t">
         <div className="mx-auto w-full max-w-5xl px-4 py-16 md:px-7">
-          <h2 id="products-heading" className="font-[family-name:var(--font-display)] text-2xl">
+          <h2 id="products-heading" className="font-heading text-2xl">
             Two products, one workspace
           </h2>
           <ul className="mt-8 grid gap-6 md:grid-cols-2">
@@ -137,7 +137,7 @@ export default async function LandingPage() {
 
       <section aria-labelledby="how-heading" className="border-t">
         <div className="mx-auto w-full max-w-5xl px-4 py-16 md:px-7">
-          <h2 id="how-heading" className="font-[family-name:var(--font-display)] text-2xl">
+          <h2 id="how-heading" className="font-heading text-2xl">
             How it works
           </h2>
           <ol className="mt-8 grid gap-8 md:grid-cols-3">
@@ -154,7 +154,7 @@ export default async function LandingPage() {
 
       <section aria-labelledby="principles-heading" className="border-t">
         <div className="mx-auto w-full max-w-5xl px-4 py-16 md:px-7">
-          <h2 id="principles-heading" className="font-[family-name:var(--font-display)] text-2xl">
+          <h2 id="principles-heading" className="font-heading text-2xl">
             Your money, your rules
           </h2>
           <ul className="mt-8 grid gap-8 md:grid-cols-3">
@@ -174,7 +174,7 @@ export default async function LandingPage() {
       <section id="pricing" aria-labelledby="pricing-heading" className="scroll-mt-16 border-t">
         <div className="mx-auto w-full max-w-5xl space-y-16 px-4 py-16 md:px-7">
           <div className="text-center">
-            <h2 id="pricing-heading" className="font-[family-name:var(--font-display)] text-2xl">
+            <h2 id="pricing-heading" className="font-heading text-2xl">
               Pricing
             </h2>
             <p className="mt-2 text-muted-foreground">Each product has its own plan and fees. Pay only for what you use.</p>
@@ -211,7 +211,7 @@ export default async function LandingPage() {
 
       <section className="border-t">
         <div className="mx-auto w-full max-w-5xl px-4 py-16 md:px-7 text-center">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl">Start with one product. Add the other when you need it.</h2>
+          <h2 className="font-heading text-2xl">Start with one product. Add the other when you need it.</h2>
           <p className="mt-2 text-muted-foreground">Commerce plans start with a {TRIAL_DAYS}-day free trial. No setup fee.</p>
           <a href={signupUrl} className={`${buttonVariants({ size: "lg" })} mt-6`}>
             Get started

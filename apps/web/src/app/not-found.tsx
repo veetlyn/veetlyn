@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <main className="mx-auto grid w-full max-w-md flex-1 content-center gap-4 px-4 py-16 text-center">
       <BrandMark className="mx-auto size-8 text-foreground" />
-      <h1 className="font-[family-name:var(--font-display)] text-3xl">This page does not exist</h1>
+      <h1 className="font-heading text-3xl">This page does not exist</h1>
       <p className="text-sm text-muted-foreground">
         The link may be old, or the page is not published yet. Check the address, or start again from the home page.
       </p>

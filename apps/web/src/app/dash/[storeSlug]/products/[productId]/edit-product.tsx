@@ -39,7 +39,7 @@ function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; prod
   if (detail.isError) {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Product not found</h1>
+        <h1 className="font-heading text-3xl">Product not found</h1>
         <Link href={`/${storeSlug}/products`} className="text-sm underline underline-offset-4">
           Back to products
         </Link>
@@ -88,7 +88,7 @@ function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; prod
           <Link href={`/${storeSlug}/products`} className="text-sm text-muted-foreground hover:text-foreground">
             Products
           </Link>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl">{product.title}</h1>
+          <h1 className="font-heading text-3xl">{product.title}</h1>
         </div>
         <div className="flex items-center gap-3">
           <Badge tone={product.status === "published" ? "good" : "neutral"}>

@@ -14,7 +14,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         <div className="flex items-center justify-between px-3 pt-2">
           <Link href="/" className="flex items-center gap-2">
             <BrandMark className="size-6 text-foreground" />
-            <span className="font-[family-name:var(--font-display)] text-lg">Payleor</span>
+            <span className="font-heading text-lg">Payleor</span>
           </Link>
           <ModeToggle />
         </div>

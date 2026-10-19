@@ -25,7 +25,7 @@ export default async function DashHome() {
   return (
     <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6 md:px-7 md:py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Your workspace</h1>
+        <h1 className="font-heading text-3xl">Your workspace</h1>
         <span className="flex flex-wrap gap-2">
           {organizations.some((o) => o.canCreateStores) ? (
             <Link href="/new" className={buttonVariants({ variant: "outline" })}>

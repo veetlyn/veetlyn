@@ -96,7 +96,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   if (offeringId && !offering) {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Service not found</h1>
+        <h1 className="font-heading text-3xl">Service not found</h1>
         <p className="text-sm text-muted-foreground">This service is not in your team.</p>
         <Link href={`/${teamSlug}/services`} className="text-sm underline underline-offset-4">
           Back to services
@@ -172,7 +172,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         <Link href={`/${teamSlug}/services`} className="text-sm text-muted-foreground hover:text-foreground">
           Services
         </Link>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">{offeringId ? "Edit service" : "Add a service"}</h1>
+        <h1 className="font-heading text-3xl">{offeringId ? "Edit service" : "Add a service"}</h1>
       </div>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can manage the services.</p>
