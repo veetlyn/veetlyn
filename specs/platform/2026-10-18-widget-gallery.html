@@ -75,54 +75,58 @@
     background: transparent;
     color: var(--fg);
     font: var(--w-reg) var(--f-body)/1.45 var(--font-sans, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif);
-    display: grid; gap: 8px;
+    display: grid; gap: 10px;
+    container-type: inline-size;
   }
   .w * { box-sizing: border-box; }
-  .w .card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; min-width: 0; }
-  .w .row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .w .head { font-size: var(--f-head); font-weight: var(--w-em); line-height: 1.3; }
-  .w .cap { font-size: var(--f-cap); color: var(--fg2); }
+  .w .card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; min-width: 0; }
+  @container (min-width: 480px) { .w > .card { padding: 24px 28px; } }
+  .w .row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+  .w .head { font-size: var(--f-head); font-weight: var(--w-em); line-height: 1.35; }
+  .w .cap { font-size: var(--f-cap); line-height: 1.5; color: var(--fg2); margin-top: 2px; }
   .w .muted { color: var(--fg2); }
   .w .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .w .big { font-size: var(--f-head); font-weight: var(--w-em); }
-  .w .amount { font-size: var(--f-head); font-weight: var(--w-em); line-height: 1.3; margin-top: 10px; }
-  .w .price { font-weight: var(--w-em); margin-top: 2px; }
-  .w .tag { display: inline-block; font-size: var(--f-cap); color: var(--brand-accent); margin-top: 2px; }
-  .w .gap { margin-top: 8px; }
-  .w .status { font-size: var(--f-cap); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; color: var(--fg2); }
-  .w .status.you { color: var(--brand-accent); border-color: color-mix(in srgb, var(--brand) 45%, transparent); }
-  .w .status.done { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
-  .w dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 10px 0 0; }
+  .w .amount { font-size: var(--f-head); font-weight: var(--w-em); line-height: 1.3; margin-top: 16px; }
+  .w .price { font-weight: var(--w-em); margin-top: 8px; }
+  .w .tag { font-size: var(--f-cap); color: var(--brand-accent); margin-top: 4px; min-height: 1.5em; }
+  .w .gap { margin-top: 14px; }
+  .w .status { font-size: var(--f-cap); white-space: nowrap; color: var(--fg2); }
+  .w .status.you { color: var(--brand-accent); font-weight: var(--w-em); }
+  .w .status.done { color: var(--ok); font-weight: var(--w-em); }
+  .w dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 24px; margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
   .w dt { color: var(--fg2); }
   .w dd { margin: 0; text-align: right; min-width: 0; overflow-wrap: anywhere; }
-  .w .note { margin: 10px 0 0; padding: 8px 10px; border-radius: var(--r-sm); background: var(--bg2); }
+  .w .note { margin: 16px 0 0; padding: 12px 14px; border-radius: var(--r-sm); background: var(--bg2); line-height: 1.55; }
   .w .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .w .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .w button { font: inherit; font-weight: var(--w-em); min-height: 44px; min-width: 44px; padding: 10px 16px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+  .w .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 20px; }
+  .w button { font: inherit; font-weight: var(--w-em); min-height: 44px; min-width: 44px; padding: 10px 18px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
   .w button.primary { background: var(--brand); color: var(--brand-ink); border-color: transparent; }
   .w button.quiet { border-color: transparent; background: transparent; color: var(--fg2); text-decoration: underline; text-underline-offset: 3px; font-weight: var(--w-reg); padding-inline: 8px; }
   .w button:disabled { opacity: 0.55; cursor: default; }
   .w button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-  .w .notice { font-size: var(--f-cap); color: var(--fg2); margin-top: 8px; }
+  .w .notice { font-size: var(--f-cap); color: var(--fg2); margin-top: 12px; }
   .w .notice.error { color: var(--danger); }
   .w .error-head { color: var(--danger); font-weight: var(--w-em); }
-  .w .tick { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid var(--brand-accent); color: var(--brand-accent); margin-right: 8px; vertical-align: -4px; }
-  .w .tick svg { width: 12px; height: 12px; }
-  .w .host-url { font-size: var(--f-cap); color: var(--fg2); margin-top: 6px; }
-  .w .carousel { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 82%); gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 2px; padding: 2px 2px 6px; scrollbar-width: thin; }
+  .w .tick { display: inline-grid; place-items: center; width: 20px; height: 20px; color: var(--brand-accent); margin-right: 6px; vertical-align: -4px; }
+  .w .tick svg { width: 16px; height: 16px; }
+  .w .host-url { font-size: var(--f-cap); color: var(--fg2); margin-top: 12px; }
+  .w .carousel { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 86%); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 2px; padding: 2px 2px 6px; scrollbar-width: thin; }
   .w .carousel > .card { scroll-snap-align: start; display: flex; flex-direction: column; }
   .w .carousel .grow { flex: 1; }
-  .w .dots { display: flex; justify-content: center; gap: 6px; }
+  @container (min-width: 520px) { .w .carousel { grid-auto-columns: calc((100% - 12px) / 2.15); } }
+  @container (min-width: 660px) { .w .carousel { grid-auto-columns: calc((100% - 24px) / 3); } .w .carousel:not(:has(> :nth-child(4))) + .dots { display: none; } }
+  .w .dots { display: flex; justify-content: center; gap: 6px; margin-top: 2px; }
   .w .dots span { width: 6px; height: 6px; border-radius: 999px; background: var(--line); }
   .w .dots span.on { background: var(--brand-accent); }
-  .w .items { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
+  .w .items { list-style: none; margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
   .w .items li { display: flex; justify-content: space-between; gap: 12px; color: var(--fg2); }
-  .w .sk { height: 12px; border-radius: 6px; background: var(--bg2); margin: 8px 0; animation: pulse 1.4s ease-in-out infinite; }
-  .w .sk.h { height: 16px; width: 55%; } .w .sk.s { width: 35%; } .w .sk.m { width: 70%; } .w .sk.btn { height: 44px; width: 140px; border-radius: var(--r-sm); margin-top: 12px; }
+  .w .sk { height: 12px; border-radius: 6px; background: var(--bg2); margin: 10px 0; animation: pulse 1.4s ease-in-out infinite; }
+  .w .sk.h { height: 16px; width: 55%; } .w .sk.s { width: 35%; } .w .sk.m { width: 70%; } .w .sk.btn { height: 44px; width: 140px; border-radius: var(--r-sm); margin-top: 20px; }
   @keyframes pulse { 50% { opacity: 0.55; } }
   @media (prefers-reduced-motion: reduce) { .w .sk { animation: none; } }
   .w.superseded .card { opacity: 0.6; }
-  .w .superseded-line { font-size: var(--f-cap); color: var(--fg2); padding: 0 4px; }
+  .w .superseded-line { font-size: var(--f-cap); color: var(--fg2); padding: 2px 4px 0; }
 </style>
 </head>
 <body>
@@ -140,6 +144,7 @@
       <button type="button" data-set="width" data-value="320" aria-pressed="false">320 px</button>
       <button type="button" data-set="width" data-value="400" aria-pressed="true">400 px</button>
       <button type="button" data-set="width" data-value="560" aria-pressed="false">560 px</button>
+      <button type="button" data-set="width" data-value="760" aria-pressed="false">760 px</button>
     </span>
     <span class="seg" role="group" aria-label="Style variables"><span class="seg-label">Variables</span>
       <button type="button" data-set="vars" data-value="host" aria-pressed="true">Host</button>
@@ -205,7 +210,7 @@ const ready = {
       <div class="head">${esc(o.name)}</div>
       <div class="num price">${range(o)}</div>
       <div class="cap">${esc(o.seller)} · usually ${esc(o.days)}</div>
-      <p class="muted clamp grow" style="margin:8px 0 0">${esc(o.description)}</p>
+      <p class="muted clamp grow" style="margin:14px 0 0">${esc(o.description)}</p>
       <div class="actions"><button class="primary" type="button">Request a quote</button></div>
     </article>`).join("")}</div>
     <div class="dots" aria-hidden="true">${d.offerings.map((_, i) => `<span class="${i === 0 ? "on" : ""}"></span>`).join("")}</div>`,
@@ -216,7 +221,7 @@ const ready = {
         <dt>Service</dt><dd>${esc(d.project.title)}</dd>
         <dt>To</dt><dd>${esc(d.project.seller)}</dd>
       </dl>
-      <p class="note clamp">${esc(d.project.brief)}</p>
+      <p class="note">${esc(d.project.brief)}</p>
       <p class="cap gap">${esc(d.nextStep)} The project link is in your email.</p>
       <div class="actions"><button type="button">Open project page</button></div>
     </article>`,
@@ -258,7 +263,7 @@ const ready = {
   delivery: (d) => `<article class="card">
       <div class="row"><div class="head">${esc(d.project.title)}</div>${badge(d.project)}</div>
       <div class="cap">Delivery from ${esc(d.project.seller)}</div>
-      <p class="note clamp">${esc(d.delivery.note)}</p>
+      <p class="note">${esc(d.delivery.note)}</p>
       <dl>
         <dt>File</dt><dd>${esc(d.delivery.file)}</dd>
         <dt>Quote</dt><dd class="num">${money(d.quote.amountMinor, d.project.currency)}</dd>
@@ -303,7 +308,7 @@ const errors = {
   receipt: ["Receipt not ready", "PayPal is finishing the payment. Check again in a minute.", "Check again"],
 };
 const errorCard = (k) => { const [h, msg, act] = errors[k]; return `<article class="card" role="alert">
-  <div class="error-head">${esc(h)}</div><p class="muted" style="margin:6px 0 0">${esc(msg)}</p>
+  <div class="error-head">${esc(h)}</div><p class="muted" style="margin:8px 0 0; line-height:1.55">${esc(msg)}</p>
   ${act ? `<div class="actions"><button type="button">${esc(act)}</button></div>` : ""}</article>`; };
 
 const WIDGETS = [
