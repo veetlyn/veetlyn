@@ -45,7 +45,7 @@ The services catalog (departments and services), the bio, publishing, the public
   3. Back on Services, open "Logo design", untick "Show this service on your seller page", change the price, then **Save changes**.
   4. Click **Delete** on a service and confirm.
 - **Expected:**
-  - A hidden service shows a "Hidden" badge and a **Show** button; it is missing from the New project list and from the seller page and preview.
+  - A hidden service shows the word "Hidden" in grey next to its name and a **Show** button; it is missing from the New project list and from the seller page and preview.
   - The edit is saved and the service now reads Hidden.
   - The delete dialog reads "Delete this service? Projects that used it keep their records."; the service leaves the list.
 - **Edge cases:** an unknown service id in the URL shows "Service not found" and "This service is not in your team."

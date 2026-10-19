@@ -2,22 +2,40 @@
 
 The public site, sign-up and sign-in, email verification and password reset, creating a seller (solo or team), connecting PayPal, members and roles, and team settings. Hosts, accounts and the story format are in [`README.md`](README.md). The physical-goods store flow (Commerce, "Create your store") is not covered here.
 
-### ACC-01: Visitor reads the landing page and pricing
+### ACC-01: Visitor reads the landing page
 
-- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** W1-D (`a8e5260`), copy for both products from S1 Part A; pricing footnote changed in R3a (`444c1f4`) · **Status:** Built (not walked through)
+- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** brand-ds landing (`877db9e`, `5cf4be4`, `38f907c`, `642ba0d`), replacing W1-D's page · **Status:** Built (not walked through). An agent-led version that will replace this page is drafted in [`../platform/2026-10-19-landing-b.html`](../platform/2026-10-19-landing-b.html); update this story when it ships.
 - **Preconditions:** none; not signed in.
 - **Steps:**
-  1. Open `{site}/`.
-  2. Click **See pricing**, then switch the Commerce toggle from **Monthly** to **Yearly · save about 25%**.
-  3. Click **Get started** in the header.
+  1. Open `{site}/` and wait on the hero card.
+  2. In the hero card, replace the price with `2000`.
+  3. Scroll through the page; in "Where clients find you", click **ChatGPT**; in "Nothing moves without you", open **Agents ask first**.
+  4. In the last section, change the workspace name and click **Create workspace**.
 - **Expected:**
-  - The heading reads "Sell products or services, and get paid through PayPal", with the buttons "Get started" and "See pricing".
-  - Sections "Two products, one workspace" (Commerce and Payouts cards), "How it works" (3 steps), "Your money, your rules" and "Pricing".
-  - Commerce plans: Starter $12, Grow $39 and Scale $129 per month, plus 2%, 1% and 0.5% per order, each with "Start free trial". Yearly shows $9, $29 and $99 per month with "Billed yearly at …". Below the cards: "14-day free trial. No setup fee."
-  - Payouts pricing shows "0.5% + 0.10" per client payment and "Plus a plan. Plan prices are coming soon."
-  - The last pricing line reads "PayPal's processing fees apply and are charged by PayPal; their rate varies by country."
-  - The header has "Products", "Pricing", "Log in" and "Get started"; "Get started" opens `{dash}/signup`, "Log in" opens `{dash}/login`.
-- **Edge cases:** "See the demo store" appears only when `DEMO_STORE_SLUG` is set (not seeded yet). The Payouts fee shown (0.5% + 0.10) is not what the app charges: sellers pay 2% (solo) or 1% (team) per payment.
+  - The heading reads "Quote, get paid, pay your team." with **Start a workspace** and the links "See pricing", "How the money moves" and "Log in" ("See a demo store" instead of "Log in" when `DEMO_STORE_SLUG` is set).
+  - The hero card turns through three example projects. At $640 it reads "The client pays $704, half up front" and splits it: the freelancer receives $543.75, the team keeps $131.42, PayPal's fees $25.31 and Payleor's fee, 0.5%, $3.52. After step 2 it stops turning and shows $1,699.75, $411.73, $77.52 and $11.00 (the client pays $2,200).
+  - Sections in order: "How the money moves" (a timeline: $640 quoted, $384 deposit paid with the 10% fee, $320 balance paid, $543.75 sent to Amadou), "Built for paid work" (eight tiles of the product), "Where clients find you" (Claude, ChatGPT, Your seller page, Discord, A pay link; each shows the client's message and Payleor's card), "Nothing moves without you" (five rules that open like book spines, each with its proof), "One plan, small fee" (Solo $19, Team $59 and Agency $199 a month, at 1%, 0.5% and 0.25% per client payment), "Money questions", "Start your workspace" and the name "Payleor." at full width.
+  - Step 4 opens `{dash}/signup?workspace=<name>&product=services`.
+  - The header has "How it works", "Pricing", "Log in" and "Get started"; "Pricing" opens `{site}/pricing`, "Get started" opens `{dash}/signup`, "Log in" opens `{dash}/login`.
+- **Edge cases:** sign-up does not read the `workspace` and `product` parameters yet. The page's examples (Walk Crew, Amadou, the bakery logo) are sample content. Some tiles describe features still being built (disputes, store sales through ChatGPT and Claude, Discord); the replacement page labels them "Coming soon".
+
+### ACC-01b: Visitor reads the pricing page
+
+- **Actor:** visitor · **Surface:** web (`{site}/pricing`) · **Delivered by:** brand-ds (`556922d`, bundle `88a4ad3`) · **Status:** Built (not walked through)
+- **Preconditions:** none; not signed in.
+- **Steps:**
+  1. Open `{site}/pricing`.
+  2. Under Services teams, switch **Monthly** to **Yearly, 2 months free**.
+  3. In "What you'd pay on a project", keep Team and $2,000, then change "Where the client came from" to "Found me through an AI agent (first project)".
+  4. Under Using both, pick Solo and Scale.
+- **Expected:**
+  - Services teams: "One plan. A small fee on payments. Nothing on clients you bring yourself."; plans Solo $19, Team $59 and Agency $199 a month with 1%, 0.5% and 0.25% on each client payment; after step 2, $16, $49 and $166 a month, "Billed $192 a year" and so on.
+  - The calculator shows Payleor's total $10 for your own client and $110 after step 3 ($10 payment fee and $100, 5% network fee, first project only), with "PayPal's own processing fee is separate".
+  - Optional: "AI visibility" ($29 a month) and "Self-hosted" ("Planned for 2027").
+  - Stores: Starter $12, Grow $39 and Scale $129 a month, plus 2%, 1% and 0.5% per order; yearly "save about 25%".
+  - Using both: Team and Grow show $98 struck through, "Grow at half price −$19.50", $78.50 a month, $63.50 billed yearly and a 0.5% fee. After step 4: $138.50 a month, $107 yearly, fee 0.5%.
+  - The last line reads "PayPal's processing fees apply and are charged by PayPal; their rate varies by country."
+- **Edge cases:** the 5% network fee is shown but not charged yet (it needs a project to know the client came through an AI agent). Billing is not live: the bundle and the yearly prices are not charged either, and every store is treated as Starter.
 
 ### ACC-02: Visitor reads the platform legal pages
 
@@ -51,6 +69,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   1. Open `{dash}/signup`. Fill "Your name", "Email" and a "Password" of at least 10 characters, then **Create account**.
   2. Open the email "Verify your email for Payleor" and click **Verify email**.
 - **Expected:**
+  - The sign-in pages (sign-up, log in, forgot password, reset password, verify email) fill the window without scrolling: the form on the left with the Payleor mark and the theme switch, the Payleor P drawn as contour lines on the right (hidden on phones), and no dash header.
   - The sign-up page is titled "Create your Payleor account" with "Free for 14 days. No setup fee." and the notice "By continuing you agree to the Terms of service and the Acceptable use policy" linking to `{site}/legal/…`.
   - After submit, `{dash}/verify-email` shows "Check your inbox" and "We sent a link to <address>. Open it to verify your address. The link expires in 1 hour."
   - The resend button counts down ("Send a new link in 59s" …) and then reads "Send a new link"; clicking it shows "We sent a new link." and restarts the countdown.
