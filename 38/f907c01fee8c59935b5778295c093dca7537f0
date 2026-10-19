@@ -1,0 +1,34 @@
+apps/web/src/components/landing/money-path.tsx
+  s_ec180faf4f9b2e::t_a425f892c1216f 36,49,51-52,62-63,73-74,84-85,98-105,108-135
+apps/web/src/components/landing/channels.tsx
+  s_ec180faf4f9b2e::t_62cfbe059767e1 7-61,67-84,90-96,98,104-110,112-122,126,132-145,151-156,158,167-172,175-201,203-205,210-214,217-222
+  s_ec180faf4f9b2e::t_7a7c3979528c46 215
+  s_ec180faf4f9b2e::t_a9cecd59ddf41b 208-209,216
+apps/web/src/components/landing/board.tsx
+  s_ec180faf4f9b2e::t_8834afe0df008c 32,191,238,247,283,319
+apps/web/src/components/landing/rules-deck.tsx
+  s_ec180faf4f9b2e::t_1807539af47aa2 135,140-141,145,152,157-158,160
+  s_ec180faf4f9b2e::t_e42d637223494e 5-27,33-43,49-59,65-82,88-99,105-120,124,142-144,146,148-151,153-156,159
+apps/web/src/components/landing/hero.tsx
+  s_ec180faf4f9b2e::t_8834afe0df008c 22
+apps/web/src/index.css
+  s_ec180faf4f9b2e::t_a425f892c1216f 59-77
+apps/web/src/components/landing/reveal-root.tsx
+  s_ec180faf4f9b2e::t_a425f892c1216f 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "38f907c01fee8c59935b5778295c093dca7537f0",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
