@@ -1,4 +1,5 @@
 import "./site.css";
+import Reveal from "@/components/site/reveal";
 import SiteFooter from "@/components/site/site-footer";
 import SiteHeader from "@/components/site/site-header";
 import { getPlatformOrigins } from "@/lib/server-api";
@@ -10,6 +11,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <SiteHeader dashOrigin={dash} />
       {children}
       <SiteFooter />
+      <Reveal />
     </div>
   );
 }
