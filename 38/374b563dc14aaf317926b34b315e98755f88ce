@@ -1,0 +1,119 @@
+apps/web/src/app/dash/[storeSlug]/services/services-catalog.tsx
+  s_ec180faf4f9b2e::t_04f054e38ea54b 5,43,56,130,132-135,173,184-188,191-192,206,263-264,271-272
+apps/web/src/app/dash/new/page.tsx
+  s_ec180faf4f9b2e::t_2e82b83f2409d4 10
+apps/web/src/app/dash/[storeSlug]/payouts/payout-credentials-card.tsx
+  s_ec180faf4f9b2e::t_09987c776315d8 166
+apps/web/src/app/dash/[storeSlug]/payouts/payout-requests-table.tsx
+  s_ec180faf4f9b2e::t_09987c776315d8 3,21,120-123,142,279,281,283,286,289,292,295,298
+apps/web/src/components/auth/auth-card.tsx
+  s_ec180faf4f9b2e::t_37e1577a0e4ba5 1-2,16-24,26
+apps/web/src/app/dash/[storeSlug]/products/[productId]/edit-product.tsx
+  s_ec180faf4f9b2e::t_bb6dfa474fc0d0 3,43,86,88,94,96
+apps/web/src/app/dash/new/services-team/create-services-team-form.tsx
+  s_ec180faf4f9b2e::t_2e82b83f2409d4 52,56,63,72,79
+packages/ui/src/lib/native-select.ts
+  s_ec180faf4f9b2e::t_71da288c1a69d8 1-3
+apps/web/src/app/dash/[storeSlug]/members/services-team-members.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 102,119
+  s_ec180faf4f9b2e::t_db9eb9972bae9b 3,17
+apps/web/src/app/dash/[storeSlug]/products/products-list.tsx
+  s_ec180faf4f9b2e::t_bb6dfa474fc0d0 3,31,43-44,52,55,57,59,62-67,69,73
+apps/web/src/app/dash/(auth)/layout.tsx
+  s_ec180faf4f9b2e::t_099302b61674ba 6
+apps/web/src/app/dash/[storeSlug]/payouts/team-payouts.tsx
+  s_ec180faf4f9b2e::t_09987c776315d8 26
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_ec180faf4f9b2e::t_db9eb9972bae9b 3,326,366
+apps/web/src/app/store/buy/[productId]/page.tsx
+  s_ec180faf4f9b2e::t_2a09bf78f54d8f 20,26-27
+apps/web/src/components/site/payouts-pricing.tsx
+  s_ec180faf4f9b2e::t_38780d8b68b322 14,16,28
+apps/web/src/app/(site)/pay/[token]/pay-page.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 55
+apps/web/src/app/store/buy/[productId]/checkout-form.tsx
+  s_ec180faf4f9b2e::t_2a09bf78f54d8f 67
+apps/web/src/app/dash/[storeSlug]/discord/discord-link.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 32
+apps/web/src/app/dash/page.tsx
+  s_ec180faf4f9b2e::t_be7b77b3f2590a 2,26-27,46,48,50,57,59,63,65,70,74
+apps/web/src/app/(site)/page.tsx
+  s_ec180faf4f9b2e::t_38780d8b68b322 82-83,106-107,112-115,117,124,139-140,146-147,156-157,163,165,175,177,185,197,213-214
+apps/web/src/app/dash/new/services-team/page.tsx
+  s_ec180faf4f9b2e::t_2e82b83f2409d4 12
+apps/web/src/components/services-team/team-not-found.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 5
+apps/web/src/app/dash/[storeSlug]/payouts/payouts-web-section.tsx
+  s_ec180faf4f9b2e::t_09987c776315d8 97
+apps/web/src/app/dash/[storeSlug]/settings/services-team-settings.tsx
+  s_ec180faf4f9b2e::t_db9eb9972bae9b 3,30
+apps/web/src/app/store/orders/[token]/order-page.tsx
+  s_ec180faf4f9b2e::t_2a09bf78f54d8f 12,35,45,58,62,68,80
+AGENTS.md
+  s_ec180faf4f9b2e::t_062bec04fa34d7 1-10
+apps/web/src/components/auth/invalid-reset-link.tsx
+  s_ec180faf4f9b2e::t_099302b61674ba 6
+apps/web/src/app/store/layout.tsx
+  s_ec180faf4f9b2e::t_2a09bf78f54d8f 25
+apps/web/src/lib/payouts.ts
+  s_ec180faf4f9b2e::t_96a2fd0dd6f0f0 38-49
+  s_ec180faf4f9b2e::t_09987c776315d8 50-53
+apps/web/src/app/dash/[storeSlug]/payouts/rules/payout-rules-form.tsx
+  s_ec180faf4f9b2e::t_db9eb9972bae9b 3,41
+apps/web/src/app/dash/me/payouts/earnings-section.tsx
+  s_ec180faf4f9b2e::t_96a2fd0dd6f0f0 75,77-89,93
+apps/web/src/app/store/request/request-form.tsx
+  s_ec180faf4f9b2e::t_db9eb9972bae9b 3,16
+  s_ec180faf4f9b2e::t_2a09bf78f54d8f 63,73,82
+apps/web/src/app/dash/[storeSlug]/products/new/new-product.tsx
+  s_ec180faf4f9b2e::t_bb6dfa474fc0d0 21
+apps/web/src/components/catalog/digital-products.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 40,47,72,91,98
+apps/web/src/app/dash/[storeSlug]/payouts/confirm-dialog.tsx
+  s_ec180faf4f9b2e::t_09987c776315d8 24,26,32
+apps/web/src/app/dash/[storeSlug]/services/offering-form.tsx
+  s_ec180faf4f9b2e::t_db9eb9972bae9b 3,27
+  s_ec180faf4f9b2e::t_04f054e38ea54b 101,172,180
+apps/web/src/app/dash/[storeSlug]/orders/orders-list.tsx
+  s_ec180faf4f9b2e::t_bb6dfa474fc0d0 3,19,29,31,37,40,45
+apps/web/src/app/dash/[storeSlug]/projects/new/new-project-form.tsx
+  s_ec180faf4f9b2e::t_db9eb9972bae9b 3,14
+apps/web/src/app/dash/me/payouts/payouts-setup.tsx
+  s_ec180faf4f9b2e::t_96a2fd0dd6f0f0 67,70,74
+apps/web/src/components/site/site-header.tsx
+  s_ec180faf4f9b2e::t_38780d8b68b322 4-5,8-11,13-14,17,20
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 34,41
+apps/web/src/app/dash/me/payouts/payout-history.tsx
+  s_ec180faf4f9b2e::t_96a2fd0dd6f0f0 3,7,23,28,31,33
+apps/web/src/app/dash/[storeSlug]/store-dashboard.tsx
+  s_ec180faf4f9b2e::t_bb6dfa474fc0d0 43,56
+apps/web/src/components/seller-page/store-home.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 3
+apps/web/src/app/dash/account/account-settings.tsx
+  s_ec180faf4f9b2e::t_be7b77b3f2590a 38,45
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/clients-section.tsx
+  s_ec180faf4f9b2e::t_c76de680c81a48 181
+apps/web/src/components/site/site-footer.tsx
+  s_ec180faf4f9b2e::t_38780d8b68b322 8
+apps/web/src/app/dash/new/create-store-form.tsx
+  s_ec180faf4f9b2e::t_2e82b83f2409d4 49
+apps/web/src/components/site/pricing.tsx
+  s_ec180faf4f9b2e::t_38780d8b68b322 18,25,33-34,36,46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "38374b563dc14aaf317926b34b315e98755f88ce",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
