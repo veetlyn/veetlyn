@@ -1,0 +1,108 @@
+apps/web/src/components/auth/auth-visual.tsx
+  s_ec180faf4f9b2e::t_4523bae67b8e5b 1,3-7,12-13,15-19,21,23-34,37-38
+apps/web/src/app/(site)/page.tsx
+  s_ec180faf4f9b2e::t_04ee65b0f42408 83
+  s_ec180faf4f9b2e::t_7cd7e6ea52fca7 107,140,157,177,214
+apps/web/src/components/seller-page/seller-page.tsx
+  s_ec180faf4f9b2e::t_04ee65b0f42408 80
+  s_ec180faf4f9b2e::t_1184507e578034 87,97,142
+apps/web/src/components/team-shell.tsx
+  s_ec180faf4f9b2e::t_4f6da0dc3fcb75 119
+  s_ec180faf4f9b2e::t_6f15f98c4b587f 115
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_ec180faf4f9b2e::t_d45ee676527370 35,42
+apps/web/src/app/(site)/pay/[token]/pay-page.tsx
+  s_ec180faf4f9b2e::t_04b648b97f9588 56,73
+apps/web/src/app/dash/(auth)/layout.tsx
+  s_ec180faf4f9b2e::t_b0cd9b0e3b8ad8 17
+apps/web/src/app/dash/[storeSlug]/discord/discord-link.tsx
+  s_ec180faf4f9b2e::t_b78016eb4eb942 33
+apps/web/src/app/dash/[storeSlug]/members/services-team-members.tsx
+  s_ec180faf4f9b2e::t_02997ecfef90db 99
+apps/web/src/app/dash/[storeSlug]/orders/orders-list.tsx
+  s_ec180faf4f9b2e::t_b1515ceba7b451 19
+apps/web/src/app/dash/[storeSlug]/payouts/rules/payout-rules-form.tsx
+  s_ec180faf4f9b2e::t_48bad87e356a4c 548
+apps/web/src/app/dash/[storeSlug]/payouts/team-payouts.tsx
+  s_ec180faf4f9b2e::t_54ad65592cb76d 26
+apps/web/src/app/dash/[storeSlug]/products/[productId]/edit-product.tsx
+  s_ec180faf4f9b2e::t_30b8e0475f017f 42,91
+apps/web/src/app/dash/[storeSlug]/products/new/new-product.tsx
+  s_ec180faf4f9b2e::t_8b12b140db6b1e 24
+apps/web/src/app/dash/[storeSlug]/products/products-list.tsx
+  s_ec180faf4f9b2e::t_75d8b9ba74f78a 35,46
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_ec180faf4f9b2e::t_78c36b6fa9fb92 202,285
+apps/web/src/app/dash/[storeSlug]/projects/new/new-project-form.tsx
+  s_ec180faf4f9b2e::t_d92eaad865ddec 55
+apps/web/src/app/dash/[storeSlug]/projects/projects-list.tsx
+  s_ec180faf4f9b2e::t_e12a71b6d34ebb 29,39,47
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  s_ec180faf4f9b2e::t_5f7c5221667705 72
+apps/web/src/app/dash/[storeSlug]/services/offering-form.tsx
+  s_ec180faf4f9b2e::t_ebc1d7701d6f56 99,175
+apps/web/src/app/dash/[storeSlug]/services/services-catalog.tsx
+  s_ec180faf4f9b2e::t_842a1e0153b93d 175,192
+apps/web/src/app/dash/[storeSlug]/settings/services-team-settings.tsx
+  s_ec180faf4f9b2e::t_28e1d87b0ae98f 143
+apps/web/src/app/dash/[storeSlug]/store-dashboard.tsx
+  s_ec180faf4f9b2e::t_1548e5fa9f9038 32
+apps/web/src/app/dash/account/account-settings.tsx
+  s_ec180faf4f9b2e::t_6c792b0f33c5d4 39
+apps/web/src/app/dash/me/payouts/payouts-setup.tsx
+  s_ec180faf4f9b2e::t_5f8091d127c56c 68
+apps/web/src/app/dash/new/page.tsx
+  s_ec180faf4f9b2e::t_26e647ea9b05f7 11
+apps/web/src/app/dash/new/services-team/page.tsx
+  s_ec180faf4f9b2e::t_06ed15760dd4a4 13
+apps/web/src/app/dash/page.tsx
+  s_ec180faf4f9b2e::t_f2cfdb6245eb0e 28
+apps/web/src/app/layout.tsx
+  s_ec180faf4f9b2e::t_9ba10adc93958c 8-9
+apps/web/src/app/not-found.tsx
+  s_ec180faf4f9b2e::t_76984f503270d5 8
+apps/web/src/app/store/buy/[productId]/page.tsx
+  s_ec180faf4f9b2e::t_6923af801dd8f5 25
+apps/web/src/app/store/orders/[token]/order-page.tsx
+  s_ec180faf4f9b2e::t_2b800a93babdf4 61
+apps/web/src/app/store/request/request-form.tsx
+  s_ec180faf4f9b2e::t_4ab75aafe1850d 64,78
+apps/web/src/components/auth/auth-card.tsx
+  s_ec180faf4f9b2e::t_81397f028b6185 15
+apps/web/src/components/brand-mark.tsx
+  s_ec180faf4f9b2e::t_7e9bdd84a81830 20
+apps/web/src/components/catalog/digital-product-form.tsx
+  s_ec180faf4f9b2e::t_025d1312488818 57,77
+apps/web/src/components/catalog/digital-products.tsx
+  s_ec180faf4f9b2e::t_f226f0a3e76939 45,78
+apps/web/src/components/client-project-view.tsx
+  s_ec180faf4f9b2e::t_7735c563996160 70
+apps/web/src/components/header.tsx
+  s_ec180faf4f9b2e::t_74d053e94f3984 21
+apps/web/src/components/seller-page/store-home.tsx
+  s_ec180faf4f9b2e::t_2ba6ac042a764a 4
+apps/web/src/components/services-team/team-not-found.tsx
+  s_ec180faf4f9b2e::t_bfa80a9ec653ca 6
+packages/ui/src/components/empty.tsx
+  s_ec180faf4f9b2e::t_8684e93be38aef 61
+packages/ui/src/lib/button-variants.ts
+  s_ec180faf4f9b2e::t_d670c3019b18cb 5
+packages/ui/src/styles/globals.css
+  s_ec180faf4f9b2e::t_d87b8f421185d4 11-13,35,53,62,124-127,184-185,190,207-212
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "69515ebc5d6067890a2305fb5b3aefc6ae15ef14",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
