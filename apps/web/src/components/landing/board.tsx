@@ -1,165 +1,324 @@
 import { splitFor, usd } from "./money";
 
-type Tile = {
-  name: string;
-  line: string;
-  place: string;
-  field: string;
-  element: React.ReactNode;
-};
+// The bento: eight tiles, each holding a real piece of the product at its real size, anchored under the tile's
+// caption and cropped by its edges. Sizes follow importance: the project page is the largest.
 
-// Each tile holds one real piece of the interface, enlarged through the font size of its data-ui root and cropped
-// by two of the tile's edges.
-function Close({ children, className }: { children: React.ReactNode; className: string }) {
+const s = splitFor(64_000);
+const earningsMinor = s.memberReceivesMinor + s.payoutFeeMinor;
+
+function Frag({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div data-ui aria-hidden="true" className={`pointer-events-none absolute ${className}`}>
+    <div
+      data-ui
+      className={`rounded-[12px] border border-input bg-card text-card-foreground shadow-[var(--raise)] ${className}`} /* taste-skill-ignore: the app's own fragment (data-ui) keeps its borders and shadows */
+    >
       {children}
     </div>
   );
 }
 
-export default function Board() {
-  const s = splitFor(64_000);
-  const tiles: Tile[] = [
-    {
-      name: "Every project, start to finish",
-      line: "Quotes, amendments, deliveries and the balance, in one place.",
-      place: "col-span-2 row-span-3 md:col-span-6 md:row-span-4 md:col-start-1 md:row-start-1",
-      field: "bg-field-1 text-field-1-ink",
-      element: (
-        <Close className="top-[14%] -right-[18%] w-[34em] text-[clamp(10px,1.3vw,18px)]">
-          <div className="rounded-[0.9em] border border-input bg-card p-[1.4em] text-card-foreground shadow-[var(--raise)]" /* taste-skill-ignore: the app's own fragment (data-ui) keeps its borders and shadows */>
-            <p className="text-[1.6em] font-semibold">Logo and brand kit</p>
-            <div className="mt-[1em] grid grid-cols-6 gap-[0.4em]">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <span key={i} className={`h-[0.5em] rounded-full ${i < 3 ? "bg-brand" : i === 3 ? "bg-brand/45" : "bg-border"}`} />
-              ))}
-            </div>
-            <p className="mt-[0.8em] text-[1.1em] text-muted-foreground">Now: Review</p>
-          </div>
-        </Close>
-      ),
-    },
-    {
-      name: "Payout rules",
-      line: "Approve each payout, or let a rule do it.",
-      place: "col-span-1 row-span-2 md:col-span-3 md:row-span-4 md:col-start-7 md:row-start-3",
-      field: "bg-field-3 text-field-3-ink",
-      element: (
-        <Close className="top-[10%] -left-[12%] text-[clamp(10px,1.5vw,22px)]">
-          <div className="flex items-center gap-[0.8em] rounded-[0.8em] bg-card px-[1em] py-[0.8em] text-card-foreground">
-            <span className="relative h-[1.4em] w-[2.4em] rounded-full bg-brand">
-              <span className="absolute top-[0.2em] right-[0.2em] size-[1em] rounded-full bg-white" />
+function Status({ children, tone = "brand" }: { children: React.ReactNode; tone?: "brand" | "muted" }) {
+  return (
+    <span className={`text-[13px] font-semibold ${tone === "brand" ? "text-brand-text" : "text-muted-foreground"}`}>
+      {children}
+    </span>
+  );
+}
+
+const STEPS = ["Quote", "Deposit", "Work", "Review", "Balance", "Done"] as const;
+
+function ProjectPage() {
+  return (
+    <Frag className="w-[640px] p-6">
+      <div className="flex items-baseline justify-between gap-4">
+        <div>
+          <p className="font-heading text-[24px] leading-tight">Logo and brand kit</p>
+          <p className="text-[13px] text-muted-foreground">Walk Crew, for a bakery · Amadou is on it</p>
+        </div>
+        <Status>In progress</Status>
+      </div>
+      <ol className="mt-5 grid grid-cols-6 gap-1.5">
+        {STEPS.map((step, i) => (
+          <li key={step} className="grid gap-1.5">
+            <span className={`h-1.5 rounded-full ${i < 2 ? "bg-brand" : i === 2 ? "bg-brand/45" : "bg-border"}`} />
+            <span className={`text-[13px] ${i === 2 ? "font-semibold" : "text-muted-foreground"}`}>{step}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-6 grid grid-cols-2 gap-6 text-[13px]">
+        <div className="grid content-start gap-2">
+          <p className="flex justify-between font-medium">
+            <span>Quote v1 · {usd(s.quoteMinor)}</span>
+            <Status>Accepted</Status>
+          </p>
+          <p className="flex justify-between text-muted-foreground">
+            <span>Logo, 3 directions</span>
+            <span className="font-tabular">$400.00</span>
+          </p>
+          <p className="flex justify-between text-muted-foreground">
+            <span>Colour and type sheet</span>
+            <span className="font-tabular">$240.00</span>
+          </p>
+        </div>
+        <div className="grid content-start gap-2">
+          <p className="flex justify-between">
+            <span>
+              Deposit · <span className="font-tabular">{usd(s.deposit.totalMinor)}</span>
             </span>
-            <span className="text-[1.1em] whitespace-nowrap">Auto-approve up to $100</span>
-          </div>
-        </Close>
-      ),
-    },
-    {
-      name: "Pay pages",
-      line: "Clients pay with PayPal. No account.",
-      place: "col-span-1 row-span-2 md:col-span-3 md:row-span-2 md:col-start-10 md:row-start-3",
-      field: "bg-field-2 text-field-2-ink",
-      element: (
-        <Close className="-top-[8%] -right-[6%] text-[clamp(12px,2.4vw,34px)]">
-          <span className="block bg-card px-[0.6em] py-[0.2em] font-semibold text-brand-text bowl">Paid</span>
-        </Close>
-      ),
-    },
-    {
-      name: "Member payouts",
-      line: "Each freelancer asks for their share.",
-      place: "col-span-1 row-span-2 md:col-span-3 md:row-span-2 md:col-start-10 md:row-start-5",
-      field: "bg-field-1 text-field-1-ink",
-      element: (
-        <Close className="-top-[6%] -right-[10%] text-[clamp(12px,2.6vw,38px)]">
-          <span className="font-heading font-tabular">{usd(s.memberReceivesMinor)}</span>
-        </Close>
-      ),
-    },
-    {
-      name: "A store on the side",
-      line: "Sell downloads on the web and to AI shoppers.",
-      place: "col-span-2 row-span-2 md:col-span-6 md:row-span-2 md:col-start-1 md:row-start-5",
-      field: "bg-field-2 text-field-2-ink",
-      element: (
-        <Close className="top-[16%] -right-[6%] text-[clamp(11px,1.4vw,20px)]">
-          <div className="flex items-center gap-[1.2em] rounded-[0.8em] border border-input bg-card px-[1.2em] py-[0.8em] text-card-foreground">
-            <span className="text-[1.1em] font-medium">Icon pack</span>
-            <span className="font-tabular text-[1.1em]">$19.00</span>
-            <span className="text-[1em] font-semibold text-brand-text">Paid</span>
-          </div>
-        </Close>
-      ),
-    },
-    {
-      name: "Discord",
-      line: "Quote and get paid from ticket channels.",
-      place: "col-span-1 row-span-2 md:col-span-3 md:row-span-2 md:col-start-1 md:row-start-7",
-      field: "bg-field-4 text-field-4-ink",
-      element: (
-        <Close className="top-[14%] -right-[20%] text-[clamp(11px,1.5vw,22px)]">
-          <span className="rounded-[0.5em] bg-field-3 px-[0.6em] py-[0.3em] text-field-3-ink">/payleor quote</span>
-        </Close>
-      ),
-    },
-    {
-      name: "Disputes",
-      line: "An agent drafts the reply. You approve it.",
-      place: "col-span-1 row-span-2 md:col-span-3 md:row-span-2 md:col-start-4 md:row-start-7",
-      field: "bg-field-1 text-field-1-ink",
-      element: (
-        <Close className="top-[12%] -right-[16%] text-[clamp(11px,1.5vw,22px)]">
-          <span className="flex items-center gap-[0.6em]">
-            <span className="text-muted-foreground">Reply drafted</span>
-            <span className="bg-foreground px-[0.8em] py-[0.35em] text-background bowl">Approve</span>
-          </span>
-        </Close>
-      ),
-    },
-    {
-      name: "In Claude and ChatGPT",
-      line: "Clients find you and request a quote in the chat.",
-      place: "col-span-2 row-span-2 md:col-span-6 md:row-span-2 md:col-start-7 md:row-start-7",
-      field: "bg-field-3 text-field-3-ink",
-      element: (
-        <Close className="top-[12%] -right-[4%] text-[clamp(11px,1.4vw,20px)]">
-          <div className="flex items-center gap-[1em] rounded-[0.9em] bg-card px-[1.1em] py-[0.8em] text-card-foreground">
-            <span className="grid">
-              <span className="text-[1.05em] font-semibold">Logo and brand kit</span>
-              <span className="font-tabular text-[0.95em] text-muted-foreground">$400 – $900 · 7–14 days</span>
+            <Status>Paid</Status>
+          </p>
+          <p className="flex justify-between">
+            <span>
+              Balance · <span className="font-tabular">{usd(s.quoteMinor - s.deposit.quotePartMinor)}</span>
             </span>
-            <span className="bg-brand px-[0.9em] py-[0.5em] text-[0.95em] font-semibold text-brand-foreground bowl">
+            <Status tone="muted">After delivery</Status>
+          </p>
+          <p className="flex justify-between">
+            <span>Delivery</span>
+            <span className="text-muted-foreground">Due in 6 days</span>
+          </p>
+        </div>
+      </div>
+    </Frag>
+  );
+}
+
+function PayoutRules() {
+  return (
+    <Frag className="w-[340px] p-5">
+      <p className="text-[13px] font-medium">Auto-approve</p>
+      <div className="mt-2 grid grid-cols-3 gap-1 rounded-[10px] bg-tray p-1 text-center text-[13px]">
+        <span className="py-1.5 text-muted-foreground">Off</span>
+        <span
+          className="rounded-[8px] bg-card py-1.5 font-medium shadow-[0_0_0_1px_var(--input)]" /* taste-skill-ignore: the app's own fragment (data-ui) keeps its borders and shadows */
+        >
+          Up to $100
+        </span>
+        <span className="py-1.5 text-muted-foreground">Any</span>
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3 text-[13px]">
+        <span>Pay each finished project automatically</span>
+        <span className="relative h-5 w-9 shrink-0 rounded-full bg-brand">
+          <span className="absolute top-0.5 right-0.5 size-4 rounded-full bg-card" />
+        </span>
+      </div>
+      <div className="mt-4 grid gap-2 text-[13px]">
+        <p className="flex justify-between">
+          <span className="text-muted-foreground">Payday</span>
+          <span>Tuesday, every week</span>
+        </p>
+        <p className="flex justify-between">
+          <span className="text-muted-foreground">Second admin above</span>
+          <span className="font-tabular">$1,000</span>
+        </p>
+      </div>
+    </Frag>
+  );
+}
+
+function PayPage() {
+  return (
+    <Frag className="w-[300px] p-5">
+      <p className="text-[13px] text-muted-foreground">Walk Crew</p>
+      <p className="font-heading text-[18px]">Logo and brand kit</p>
+      <p className="mt-3 font-heading font-tabular text-[36px] leading-none">{usd(s.deposit.totalMinor)}</p>
+      <div className="mt-4 grid gap-1.5 text-[13px]">
+        <p className="flex justify-between">
+          <span className="text-muted-foreground">Deposit, 50% of the quote</span>
+          <span className="font-tabular">{usd(s.deposit.quotePartMinor)}</span>
+        </p>
+        <p className="flex justify-between">
+          <span className="text-muted-foreground">Management fee, 10%</span>
+          <span className="font-tabular">{usd(s.deposit.managementFeeMinor)}</span>
+        </p>
+      </div>
+      <span className="mt-4 flex h-10 items-center justify-center bg-brand text-[13px] font-semibold text-brand-foreground bowl">
+        Pay with PayPal
+      </span>
+      <p className="mt-2 text-[13px] text-muted-foreground">No account needed.</p>
+    </Frag>
+  );
+}
+
+function Earnings() {
+  return (
+    <Frag className="w-[300px] p-5">
+      <p className="text-[13px] font-medium">Amadou's earnings</p>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[13px] text-muted-foreground">Available</p>
+          <p className="font-heading font-tabular text-[24px]">{usd(earningsMinor)}</p>
+        </div>
+        <div>
+          <p className="text-[13px] text-muted-foreground">Paid out</p>
+          <p className="font-heading font-tabular text-[24px]">$1,304.30</p>
+        </div>
+      </div>
+      <span className="mt-4 flex h-10 items-center justify-center bg-foreground text-[13px] font-medium text-background bowl">
+        Request {usd(earningsMinor)}
+      </span>
+      <p className="mt-2 text-[13px] text-muted-foreground">
+        You'll receive {usd(s.memberReceivesMinor)} after PayPal's {usd(s.payoutFeeMinor)} fee.
+      </p>
+    </Frag>
+  );
+}
+
+function DisputeDraft() {
+  return (
+    <Frag className="w-[340px] p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[13px] font-medium">Case: not as described</p>
+        <Status tone="muted">Needs your reply</Status>
+      </div>
+      <p className="mt-3 rounded-[10px] bg-tray px-3 py-2 text-[13px]">"The colours don't match the brief."</p>
+      <p className="mt-3 text-[13px] text-muted-foreground">Drafted reply</p>
+      <p className="mt-1 text-[13px] leading-relaxed">
+        Thanks for flagging this. We'll send revised colours by Friday, at no extra cost.
+      </p>
+      <div className="mt-4 flex gap-2">
+        <span className="flex h-9 items-center bg-foreground px-4 text-[13px] font-medium text-background bowl">
+          Approve and send
+        </span>
+        <span className="flex h-9 items-center px-3 text-[13px] text-muted-foreground">Edit</span>
+      </div>
+    </Frag>
+  );
+}
+
+function ChatPlugin() {
+  return (
+    <div data-ui className="w-[620px]">
+      <p className="ml-auto w-fit max-w-[360px] rounded-[16px] bg-field-3 px-4 py-2.5 text-[15px] text-field-3-ink">
+        I need a logo for my bakery, under $900.
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {[
+          ["Logo and brand kit", "$400 – $900", "7–14 days"],
+          ["Logo refresh", "$150", "1–7 days"],
+        ].map(([name, price, days]) => (
+          <Frag key={name} className="p-4">
+            <p className="text-[15px] font-semibold">{name}</p>
+            <p className="font-tabular text-[15px]">{price}</p>
+            <p className="text-[13px] text-muted-foreground">Walk Crew · usually {days}</p>
+            <span className="mt-3 inline-flex h-9 items-center bg-brand px-4 text-[13px] font-semibold text-brand-foreground bowl">
               Request a quote
             </span>
-          </div>
-        </Close>
-      ),
-    },
-  ];
+          </Frag>
+        ))}
+      </div>
+    </div>
+  );
+}
 
+function StoreOrders() {
+  const orders = [
+    ["Icon pack", "$19.00", "ChatGPT"],
+    ["Preset bundle", "$29.00", "your store"],
+    ["Font licence", "$12.00", "Claude"],
+  ] as const;
+  return (
+    <Frag className="w-[340px] p-4">
+      <ul className="grid gap-2.5 text-[13px]">
+        {orders.map(([name, price, via]) => (
+          <li key={name} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-3">
+            <span>
+              <span className="font-medium">{name}</span>
+              <span className="text-muted-foreground"> · via {via}</span>
+            </span>
+            <span className="font-tabular">{price}</span>
+            <Status>Paid</Status>
+          </li>
+        ))}
+      </ul>
+    </Frag>
+  );
+}
+
+type Tile = { name: string; line: string; place: string; field: string; frag: React.ReactNode };
+
+const TILES: Tile[] = [
+  {
+    name: "Every project, start to finish",
+    line: "Quotes, amendments, payments and deliveries on one page, for you and for your client.",
+    place: "md:col-span-2 lg:col-start-5 lg:col-span-8 lg:row-start-1 lg:row-span-4",
+    field: "bg-field-1 text-field-1-ink",
+    frag: <ProjectPage />,
+  },
+  {
+    name: "Payout rules",
+    line: "Approve each payout, or let a rule do it.",
+    place: "lg:col-start-1 lg:col-span-4 lg:row-start-3 lg:row-span-3",
+    field: "bg-field-3 text-field-3-ink",
+    frag: <PayoutRules />,
+  },
+  {
+    name: "Pay pages",
+    line: "The client pays with PayPal from a link.",
+    place: "lg:col-start-5 lg:col-span-4 lg:row-start-5 lg:row-span-3",
+    field: "bg-field-2 text-field-2-ink",
+    frag: <PayPage />,
+  },
+  {
+    name: "Every freelancer's share",
+    line: "Members see what they've earned and ask for it.",
+    place: "lg:col-start-9 lg:col-span-4 lg:row-start-5 lg:row-span-3",
+    field: "bg-field-1 text-field-1-ink",
+    frag: <Earnings />,
+  },
+  {
+    name: "Disputes, drafted",
+    line: "An agent drafts the reply. You approve it.",
+    place: "lg:col-start-1 lg:col-span-4 lg:row-start-6 lg:row-span-3",
+    field: "bg-field-2 text-field-2-ink",
+    frag: <DisputeDraft />,
+  },
+  {
+    name: "Found in Claude and ChatGPT",
+    line: "Clients ask an AI for help, find your services and request a quote in the chat.",
+    place: "md:col-span-2 lg:col-start-5 lg:col-span-8 lg:row-start-8 lg:row-span-3",
+    field: "bg-field-4 text-field-4-ink",
+    frag: <ChatPlugin />,
+  },
+  {
+    name: "A store on the side",
+    line: "Sell downloads on your page and to AI shoppers.",
+    place: "lg:col-start-1 lg:col-span-4 lg:row-start-9 lg:row-span-2",
+    field: "bg-field-1 text-field-1-ink",
+    frag: <StoreOrders />,
+  },
+];
+
+export default function Board() {
   return (
     <section aria-labelledby="board-heading" className="px-4">
-      <div className="grid grid-flow-row-dense auto-rows-[28vw] grid-cols-2 gap-1.5 md:auto-rows-[104px] md:grid-cols-12 md:gap-2">
-        <div className="col-span-2 row-span-2 bg-field-4 p-6 text-field-4-ink md:col-span-6 md:col-start-7 md:row-span-2 md:row-start-1">
-          <h2 id="board-heading" data-reveal className="font-heading text-[clamp(36px,4vw,60px)] leading-[1]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 md:grid-cols-2 lg:auto-rows-[120px] lg:grid-cols-12">
+        <div className="relative flex min-h-[260px] flex-col justify-between overflow-hidden bg-stage p-7 text-stage-ink md:col-span-2 lg:col-span-4 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0">
+          <h2 id="board-heading" data-reveal className="font-heading text-[clamp(36px,3.4vw,56px)] leading-[1]">
             Built for paid work
           </h2>
+          <p data-reveal style={{ "--i": 1 }} className="relative z-10 mt-6 max-w-[30ch] text-[17px]">
+            Everything between the first quote and the last payout, in one workspace.
+          </p>
+          <span aria-hidden="true" className="absolute -right-10 -bottom-10 size-28 bg-brand bowl" />
         </div>
-        {tiles.map((tile, i) => (
-          <div
+        {TILES.map((tile, i) => (
+          <article
             key={tile.name}
             data-reveal
-            style={{ "--i": i % 4 }}
-            className={`relative overflow-hidden ${tile.place} ${tile.field}`}
+            style={{ "--i": i % 3 }}
+            className={`group relative flex min-h-[400px] flex-col overflow-hidden lg:min-h-0 ${tile.place} ${tile.field}`}
           >
-            {tile.element}
-            <div className="absolute right-6 bottom-5 left-6">
-              <h3 className="text-[17px] font-medium">{tile.name}</h3>
-              <p className="mt-0.5 text-[15px] opacity-80">{tile.line}</p>
+            <div className="relative z-10 p-6 pb-0">
+              <h3 className="text-[17px] font-semibold">{tile.name}</h3>
+              <p className="mt-1 max-w-[46ch] text-[15px] opacity-80">{tile.line}</p>
             </div>
-          </div>
+            <div className="relative mt-5 flex-1">
+              <div className="absolute top-0 left-6 transition-[translate] duration-200 ease-out [@media(hover:hover)]:group-hover:-translate-y-1.5">
+                {tile.frag}
+              </div>
+            </div>
+          </article>
         ))}
       </div>
     </section>
