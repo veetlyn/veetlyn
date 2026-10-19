@@ -12,7 +12,7 @@ export const metadata = pageMetadata({
   path: "/visibility",
   title: "Get found on Google and in AI answers",
   description:
-    "Get found on Google and in AI answers. Web SEO is built into every Payleor page, and Network members get AI visibility run by an agent with their approval.",
+    "Get found on Google and in AI answers. Web SEO comes to every seller page with run V, and Network members will get AI visibility run by an agent with their approval.",
 });
 
 export default function VisibilityPage() {
