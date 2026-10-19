@@ -1,0 +1,38 @@
+apps/web/src/app/(site)/legal/privacy/page.tsx
+  s_ec180faf4f9b2e::t_939edf693ee285 8,12
+apps/web/src/components/auth/terms-notice.tsx
+  s_ec180faf4f9b2e::t_939edf693ee285 7,11
+apps/web/src/components/catalog/product-form.tsx
+  s_ec180faf4f9b2e::t_939edf693ee285 272,274,276,296,305,316,336
+apps/web/src/app/dash/[storeSlug]/products/products-list.tsx
+  s_ec180faf4f9b2e::t_253a06e627287e 6,8,58,86-96
+  s_ec180faf4f9b2e::t_bb4f0016b7e206 97-98
+apps/web/src/app/(site)/legal/terms/page.tsx
+  s_ec180faf4f9b2e::t_939edf693ee285 8,12
+apps/web/src/components/site/site-footer.tsx
+  s_ec180faf4f9b2e::t_939edf693ee285 11,14,17
+apps/web/src/app/dash/[storeSlug]/projects/new/new-project-form.tsx
+  s_ec180faf4f9b2e::t_253a06e627287e 60
+apps/web/src/app/not-found.tsx
+  s_ec180faf4f9b2e::t_7440baf38998d2 1-17
+apps/web/src/app/(site)/legal/acceptable-use/page.tsx
+  s_ec180faf4f9b2e::t_939edf693ee285 8,12
+apps/web/src/app/store/request/request-form.tsx
+  s_ec180faf4f9b2e::t_253a06e627287e 74-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5e00c00a89bfab263e11398d942b8b9f580a8536",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
