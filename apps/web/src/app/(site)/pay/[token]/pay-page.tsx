@@ -52,7 +52,7 @@ export default function PayPage({ token }: { token: string }) {
   // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
   if (!data || !state) {
     return (
-      <main className="container mx-auto max-w-lg space-y-4 px-4 py-16">
+      <main className="mx-auto w-full max-w-lg space-y-4 px-4 py-10 md:px-7 md:py-16">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">This link is not valid</h1>
         <p className="text-sm text-muted-foreground">Ask the team to send you the payment link again.</p>
       </main>

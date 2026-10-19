@@ -23,9 +23,7 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <div className="space-y-1">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Payouts</h1>
-      </div>
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">Payouts</h1>
       {solo ? (
         <p className="text-sm text-muted-foreground">
           Payouts are for teams. As a solo seller, clients pay you directly in your PayPal account.

@@ -72,19 +72,25 @@ function TeamEarningsCard({
   }
 
   return (
-    <li className="space-y-3 panel p-4">
+    <li className="panel space-y-4 p-5">
       <h3 className="font-medium">{earnings.teamName}</h3>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-        <dt className="text-muted-foreground">Available</dt>
-        <dd>{formatMinor(earnings.availableMinor, earnings.currency)}</dd>
-        <dt className="text-muted-foreground">In progress</dt>
-        <dd>{formatMinor(earnings.reservedMinor, earnings.currency)}</dd>
-        <dt className="text-muted-foreground">Paid out</dt>
-        <dd>{formatMinor(earnings.paidOutMinor, earnings.currency)}</dd>
+      <dl className="grid grid-cols-3 gap-3 text-sm">
+        <div className="space-y-0.5">
+          <dt className="text-muted-foreground">Available</dt>
+          <dd className="font-tabular text-base">{formatMinor(earnings.availableMinor, earnings.currency)}</dd>
+        </div>
+        <div className="space-y-0.5">
+          <dt className="text-muted-foreground">In progress</dt>
+          <dd className="font-tabular text-base">{formatMinor(earnings.reservedMinor, earnings.currency)}</dd>
+        </div>
+        <div className="space-y-0.5">
+          <dt className="text-muted-foreground">Paid out</dt>
+          <dd className="font-tabular text-base">{formatMinor(earnings.paidOutMinor, earnings.currency)}</dd>
+        </div>
       </dl>
       <form onSubmit={handleSubmit} className="space-y-2">
         <Label htmlFor={inputId}>Amount ({earnings.currency})</Label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Input
             id={inputId}
             value={value}

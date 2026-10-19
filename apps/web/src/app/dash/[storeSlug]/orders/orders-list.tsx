@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { useQuery } from "@tanstack/react-query";
 
 import Loader from "@/components/loader";
@@ -15,9 +16,7 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <div className="space-y-1">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Orders</h1>
-      </div>
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">Orders</h1>
       {orders.isPending ? (
         <Loader />
       ) : orders.isError ? (
@@ -27,27 +26,23 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
       ) : orders.data.length === 0 ? (
         <p className="text-sm text-muted-foreground">No orders yet. They show up here once a buyer pays.</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="panel divide-y overflow-hidden">
           {orders.data.map((order) => (
-            <li key={order.id} className="flex items-center justify-between gap-4 px-4 py-3">
+            <li key={order.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
               <div className="min-w-0">
                 <p className="truncate font-medium">{order.productTitle}</p>
                 <p className="truncate text-sm text-muted-foreground">{order.buyerEmail}</p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-sm font-medium">{formatMinor(order.amountMinor, order.currency)}</p>
+                <p className="font-tabular text-sm font-medium">{formatMinor(order.amountMinor, order.currency)}</p>
                 <div className="flex items-center justify-end gap-2">
                   {order.status === "refunded" ? (
-                    <span className="inline-block rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      Refunded {formatDate(order.refundedAt)}
-                    </span>
+                    <Badge>Refunded {formatDate(order.refundedAt)}</Badge>
                   ) : (
                     <p className="text-sm text-muted-foreground">Paid {formatDate(order.paidAt)}</p>
                   )}
                   {order.reviewReason ? (
-                    <span className="inline-block rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-                      Needs review
-                    </span>
+                    <Badge tone="warn">Needs review</Badge>
                   ) : null}
                 </div>
               </div>

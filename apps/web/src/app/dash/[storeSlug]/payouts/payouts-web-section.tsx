@@ -94,7 +94,7 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <section aria-labelledby="payouts-web-heading" className="space-y-4 panel p-4">
+    <section aria-labelledby="payouts-web-heading" className="panel space-y-4 p-5">
       <h2 id="payouts-web-heading" className="font-medium">
         PayPal Payouts Web
       </h2>

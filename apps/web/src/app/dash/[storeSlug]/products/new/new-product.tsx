@@ -18,7 +18,7 @@ export default function NewProduct({ storeSlug }: { storeSlug: string }) {
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${storeSlug}/products`} className="text-sm text-muted-foreground">
+        <Link href={`/${storeSlug}/products`} className="text-sm text-muted-foreground hover:text-foreground">
           Products
         </Link>
         <h1 className="font-[family-name:var(--font-display)] text-3xl">Add a product</h1>

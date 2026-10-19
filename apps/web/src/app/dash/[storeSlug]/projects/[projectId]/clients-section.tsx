@@ -178,7 +178,7 @@ export function ClientsSection({
         </p>
       ) : null}
       {previewOpen ? (
-        <div className="space-y-2 rounded-lg border border-dashed p-4">
+        <div className="well space-y-2 rounded-lg bg-tray p-4">
           <p className="text-sm text-muted-foreground">What the client sees. Nothing here can be clicked.</p>
           {preview.data ? (
             <ClientProjectView

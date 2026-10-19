@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -10,7 +11,7 @@ import { type FormEvent, useState } from "react";
 
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = "h-9 w-full rounded-md border bg-transparent px-3 text-sm";
+const SELECT_CLASS = `w-full ${nativeSelectClass}`;
 
 export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   const router = useRouter();

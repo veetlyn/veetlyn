@@ -46,7 +46,7 @@ export default function CreateStoreForm({ urlParts }: { urlParts: StoreUrlParts 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+    <form onSubmit={handleSubmit} className="panel mt-6 grid gap-6 p-5">
       <div className="space-y-2">
         <Label htmlFor="store-name">Store name</Label>
         <Input

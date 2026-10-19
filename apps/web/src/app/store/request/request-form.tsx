@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { validateQuoteRequest } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
@@ -12,7 +13,7 @@ import { daysLabel, priceLabel } from "@/lib/offering-labels";
 import type { SellerPageView } from "@/lib/server-api";
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = "h-9 w-full rounded-md border bg-transparent px-3 text-sm";
+const SELECT_CLASS = `w-full ${nativeSelectClass}`;
 
 // The quote request form on the seller page (services spec §4.2). The offering select pre-fills
 // from ?offering= when the visitor came from a service card on the seller page.
@@ -59,7 +60,7 @@ export default function RequestForm({
 
   if (done) {
     return (
-      <main className="container mx-auto max-w-3xl space-y-3 px-4 py-10">
+      <main className="mx-auto w-full max-w-2xl space-y-3 px-4 py-6 md:px-7 md:py-10">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">Request sent</h1>
         <p className="text-sm text-muted-foreground">
           We emailed {email} a link to your page. It is how you follow the request and answer the team.
@@ -69,7 +70,7 @@ export default function RequestForm({
   }
 
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto w-full max-w-2xl px-4 py-6 md:px-7 md:py-10">
       <div className="space-y-1">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">Request a quote from {page.name}</h1>
         {offering ? (
@@ -78,7 +79,7 @@ export default function RequestForm({
           </p>
         ) : null}
       </div>
-      <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+      <form onSubmit={handleSubmit} className="panel mt-6 grid gap-6 p-5 md:p-6">
         <div className="space-y-2">
           <Label htmlFor="request-offering">Service</Label>
           <select

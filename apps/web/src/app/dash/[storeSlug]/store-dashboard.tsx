@@ -40,7 +40,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
       />
       <PublishCard teamSlug={storeSlug} publicUrl={url} />
       <PayPalConnectCard teamId={store.data.id} />
-      <section className="grid gap-2 panel p-4">
+      <section className="panel grid gap-2 p-5">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="font-medium">Products</h2>
           <Link href={`/${storeSlug}/products`} className="text-sm underline underline-offset-4">
@@ -53,7 +53,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
           Start from a link or a photo with Channel3, set your prices, and publish when you're ready.
         </p>
       </section>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+      <dl className="panel grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 p-5 text-sm">
         <dt className="text-muted-foreground">Store URL</dt>
         <dd>
           <a href={url} target="_blank" rel="noreferrer" className="underline underline-offset-4">

@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -17,6 +18,7 @@ import {
   payoutFeeLine,
   payoutSentMinor,
   payoutStatusLabel,
+  payoutStatusTone,
   waitingLine,
 } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
@@ -115,10 +117,10 @@ function RequestRow({
       <td className="px-4 py-3">
         <PayoutSource teamSlug={teamSlug} request={request} />
       </td>
-      <td className="px-4 py-3 whitespace-nowrap">{amount}</td>
-      <td className="px-4 py-3 whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString()}</td>
-      <td className="space-y-1 px-4 py-3">
-        <p>{payoutStatusLabel(request)}</p>
+      <td className="px-4 py-3 font-tabular whitespace-nowrap">{amount}</td>
+      <td className="px-4 py-3 font-tabular whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString()}</td>
+      <td className="space-y-1.5 px-4 py-3">
+        <Badge tone={payoutStatusTone(request)}>{payoutStatusLabel(request)}</Badge>
         {sentMinor !== null ? (
           <p className="text-muted-foreground">
             {request.status === "succeeded" ? "Sent" : "Sends"} {formatMinor(sentMinor, request.currency)}
@@ -137,9 +139,7 @@ function RequestRow({
           <p className="text-destructive">{request.reviewReason}</p>
         ) : null}
         {request.reviewReason ? (
-          <span className="inline-block rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-            Needs review
-          </span>
+          <Badge tone="warn">Needs review</Badge>
         ) : null}
         {error ? (
           <p role="alert" className="text-destructive">
@@ -276,26 +276,26 @@ function RequestsList({
     );
   }
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="panel overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="border-b text-left text-muted-foreground">
+        <thead className="border-b bg-secondary/60 text-left text-xs text-muted-foreground">
           <tr>
-            <th scope="col" className="px-4 py-2 font-normal">
+            <th scope="col" className="px-4 py-2.5 font-medium">
               Member
             </th>
-            <th scope="col" className="px-4 py-2 font-normal">
+            <th scope="col" className="px-4 py-2.5 font-medium">
               From
             </th>
-            <th scope="col" className="px-4 py-2 font-normal">
+            <th scope="col" className="px-4 py-2.5 font-medium">
               Amount
             </th>
-            <th scope="col" className="px-4 py-2 font-normal">
+            <th scope="col" className="px-4 py-2.5 font-medium">
               Requested
             </th>
-            <th scope="col" className="px-4 py-2 font-normal">
+            <th scope="col" className="px-4 py-2.5 font-medium">
               Status
             </th>
-            <th scope="col" className="px-4 py-2 font-normal">
+            <th scope="col" className="px-4 py-2.5 font-medium">
               <span className="sr-only">Actions</span>
             </th>
           </tr>

@@ -11,9 +11,9 @@ const INCLUDED = [
 
 export default function PayoutsPricing({ signupUrl }: { signupUrl: string }) {
   return (
-    <div className="grid gap-8 panel p-6 md:grid-cols-2">
+    <div className="panel grid gap-8 p-6 md:grid-cols-2">
       <div>
-        <p className="text-4xl font-semibold tabular-nums">0.5% + 0.10</p>
+        <p className="font-tabular text-4xl font-medium">0.5% + 0.10</p>
         <p className="mt-1 text-sm text-muted-foreground">
           per client payment, in your team's currency (USD or EUR)
         </p>
@@ -25,7 +25,7 @@ export default function PayoutsPricing({ signupUrl }: { signupUrl: string }) {
       <ul className="space-y-2 text-sm">
         {INCLUDED.map((item) => (
           <li key={item} className="flex gap-2">
-            <Check aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-brand-text" />
             {item}
           </li>
         ))}
