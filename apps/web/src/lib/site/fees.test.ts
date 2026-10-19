@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bundleMonthly, saleFees } from "./fees";
+import { bundleMonthly, pricingOffers, saleFees } from "./fees";
 
 describe("saleFees", () => {
   it("charges a services plan's fee, plus 5% once when the network brought the client", () => {
@@ -37,5 +37,20 @@ describe("bundleMonthly", () => {
   it("halves the cheaper plan and keeps the lower fee", () => {
     expect(bundleMonthly("team", "grow", "monthly")).toEqual({ totalCents: 7_850, halved: "store", feeBps: 50 });
     expect(bundleMonthly("agency", "grow", "yearly")).toEqual({ totalCents: 18_050, halved: "store", feeBps: 25 });
+  });
+});
+
+describe("pricingOffers", () => {
+  it("lists every services and store plan with its monthly price and fee", () => {
+    const offers = pricingOffers();
+    expect(offers.map((o) => o.name)).toEqual(["Solo", "Team", "Agency", "Starter", "Grow", "Scale"]);
+    expect(offers[0]).toEqual({
+      "@type": "Offer",
+      name: "Solo",
+      price: "19.00",
+      priceCurrency: "USD",
+      description: "A month, 1% on each client payment",
+    });
+    expect(offers[3]?.description).toBe("A month, 2% on each order");
   });
 });
