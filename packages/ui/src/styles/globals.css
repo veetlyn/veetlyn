@@ -9,8 +9,15 @@
 @custom-variant short (@media (max-height: 800px));
 
 /* Payleor's Relief tokens on shadcn's names. Neutral greys, a graphite main button, mint as a signal (your turn,
-   done, focus) rather than a fill; warm colours only for trouble. One type family, Geist, loaded in apps/web's root
-   layout. */
+   done, focus) rather than a fill; warm colours only for trouble. Cal Sans UI for headings (served from apps/web's
+   public/fonts), Inter for text and numbers, Geist Mono for references (both loaded in apps/web's root layout). */
+@font-face {
+  font-family: "Cal Sans UI";
+  src: url("/fonts/CalSansUI-Variable.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   --background: #f6f6f7;
   --foreground: #141417;
@@ -121,9 +128,9 @@
 }
 
 @theme inline {
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --font-num: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cal Sans UI", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-num: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, Menlo, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -204,11 +211,12 @@
   background: linear-gradient(180deg, var(--main-top), var(--main-bottom));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.18), 0 0 0 1px var(--main-edge), 0 1px 2px rgb(0 0 0 / 0.2), 0 6px 14px -6px rgb(0 0 0 / 0.35);
 }
-/* Headings: one family, semibold, slightly tight. Never bold or black. */
+/* Headings: Cal Sans UI at semibold with its geometric shapes, slightly tight. Never bold or black. */
 @utility font-heading {
   font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: -0.022em;
+  font-variation-settings: "GEOM" 100;
+  letter-spacing: -0.025em;
 }
 @utility font-tabular {
   font-family: var(--font-num);
