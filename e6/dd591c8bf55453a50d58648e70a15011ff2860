@@ -1,0 +1,36 @@
+apps/web/src/app/(site)/c/[token]/client-project.tsx
+  s_ec180faf4f9b2e::t_97e366c4f8868c 19
+apps/web/src/app/dash/[storeSlug]/members/services-team-members.tsx
+  s_ec180faf4f9b2e::t_97e366c4f8868c 98
+apps/web/src/components/team-shell.tsx
+  s_ec180faf4f9b2e::t_97e366c4f8868c 72,111,130-137,147-148
+apps/web/src/app/dash/[storeSlug]/discord/discord-link.tsx
+  s_ec180faf4f9b2e::t_97e366c4f8868c 32
+apps/web/src/components/project-progress.tsx
+  s_ec180faf4f9b2e::t_97e366c4f8868c 19,44
+  s_ec180faf4f9b2e::t_dca045225ba6c1 1-2
+apps/web/src/app/(site)/pay/[token]/pay-page.tsx
+  s_ec180faf4f9b2e::t_97e366c4f8868c 21
+packages/ui/src/lib/button-variants.ts
+  s_ec180faf4f9b2e::t_97e366c4f8868c 5
+apps/web/src/app/dash/[storeSlug]/settings/services-team-settings.tsx
+  s_ec180faf4f9b2e::t_97e366c4f8868c 142
+apps/web/src/app/dash/[storeSlug]/payouts/payout-requests-table.tsx
+  s_ec180faf4f9b2e::t_558f87c94dbcb2 279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e6dd591c8bf55453a50d58648e70a15011ff2860",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
