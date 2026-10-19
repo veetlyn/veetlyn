@@ -1,0 +1,36 @@
+apps/web/src/app/(site)/page.tsx
+  s_ec180faf4f9b2e::t_1b365506a9fdbe 8,183-184,186-189,192
+  s_ec180faf4f9b2e::t_90077a8f4ebcef 185,193
+packages/api/src/routers/payment.test.ts
+  s_ec180faf4f9b2e::t_7befae0c87d91a 407,413,416,436,440,442
+apps/web/src/components/site/services-pricing.tsx
+  s_ec180faf4f9b2e::t_67ed1b8a086476 1-40,42-169,171-256
+  s_ec180faf4f9b2e::t_90077a8f4ebcef 41
+  s_ec180faf4f9b2e::t_e76ffbf75f41b3 170
+packages/core/src/billing/seller-plans.test.ts
+  s_ec180faf4f9b2e::t_7befae0c87d91a 3,6,8-10,12,17-18,25
+packages/api/src/routers/project.test.ts
+  s_ec180faf4f9b2e::t_fbda5880c7b44c 233,237
+packages/core/src/billing/seller-plans.ts
+  s_ec180faf4f9b2e::t_ca89e7c3078b7b 4,22,25-27,33-34,36-37,43,49-51,53,59,65,75,85
+packages/api/src/routers/checkout.test.ts
+  s_ec180faf4f9b2e::t_7befae0c87d91a 245,258
+apps/web/src/components/site/pricing.tsx
+  s_ec180faf4f9b2e::t_d1f6f271002103 5,33-34,36-37,45-46,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "556922d1d42ed0c61628bb34721c99e63a85b7e2",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
