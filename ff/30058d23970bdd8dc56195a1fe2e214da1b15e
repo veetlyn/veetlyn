@@ -1,0 +1,32 @@
+apps/web/src/lib/status-labels.ts
+  s_ec180faf4f9b2e::t_5140e8926889b5 1,24-44
+apps/web/src/app/dash/[storeSlug]/payouts/rules/payout-rules-form.tsx
+  s_ec180faf4f9b2e::t_0fcff09864bb78 182
+apps/web/src/components/client-project-view.tsx
+  s_ec180faf4f9b2e::t_cc1e9189c3605b 17
+  s_ec180faf4f9b2e::t_5140e8926889b5 72
+packages/ui/src/components/badge.tsx
+  s_ec180faf4f9b2e::t_0464f412702647 5,7,11-16
+apps/web/src/app/dash/[storeSlug]/projects/projects-list.tsx
+  s_ec180faf4f9b2e::t_5140e8926889b5 12,87
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_ec180faf4f9b2e::t_0fcff09864bb78 572
+  s_ec180faf4f9b2e::t_cc1e9189c3605b 37
+  s_ec180faf4f9b2e::t_5140e8926889b5 287
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ff30058d23970bdd8dc56195a1fe2e214da1b15e",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
