@@ -8,11 +8,11 @@ import Visibility from "./get-found-on-google-and-in-ai-answers.mdx";
 import Stores from "./stores-sell-in-ai-carts.mdx";
 import Studios from "./studios-sell-services-and-products.mdx";
 
-export const POST_BODIES = {
-  "ai-shopping-left-services-out": Gap,
-  "freelancers-get-hired-from-ai": Freelancers,
-  "agencies-split-client-payments": Agencies,
-  "stores-sell-in-ai-carts": Stores,
-  "studios-sell-services-and-products": Studios,
-  "get-found-on-google-and-in-ai-answers": Visibility,
-} satisfies Record<string, ComponentType<{ components?: MDXComponents }>>;
+export const POST_BODIES = new Map<string, ComponentType<{ components?: MDXComponents }>>([
+  ["ai-shopping-left-services-out", Gap],
+  ["freelancers-get-hired-from-ai", Freelancers],
+  ["agencies-split-client-payments", Agencies],
+  ["stores-sell-in-ai-carts", Stores],
+  ["studios-sell-services-and-products", Studios],
+  ["get-found-on-google-and-in-ai-answers", Visibility],
+]);
