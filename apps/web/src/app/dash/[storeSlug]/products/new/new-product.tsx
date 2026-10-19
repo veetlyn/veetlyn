@@ -21,7 +21,7 @@ export default function NewProduct({ storeSlug }: { storeSlug: string }) {
         <Link href={`/${storeSlug}/products`} className="text-sm text-muted-foreground hover:text-foreground">
           Products
         </Link>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Add a product</h1>
+        <h1 className="font-heading text-3xl">Add a product</h1>
       </div>
       {store.data.product === "services" ? <DigitalProductForm teamSlug={storeSlug} /> : <ProductForm storeSlug={storeSlug} />}
     </main>

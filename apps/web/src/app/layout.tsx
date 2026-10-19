@@ -5,9 +5,8 @@ import Providers from "@/components/providers";
 import PwaRegistration from "@/components/pwa-registration";
 import SandboxBanner from "@/components/sandbox-banner";
 
-// Payleor's type: Cal Sans for display, Google Sans Flex for text, Montserrat for numbers, IBM Plex Mono for references.
-const FONTS =
-  "https://fonts.googleapis.com/css2?family=Cal+Sans&family=Google+Sans+Flex:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Montserrat:wght@500;600;700&display=swap";
+// Payleor's type: Geist for everything, Geist Mono for references.
+const FONTS = "https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&display=swap";
 
 export const metadata: Metadata = {
   title: "Payleor",

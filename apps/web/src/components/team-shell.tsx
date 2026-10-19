@@ -112,11 +112,11 @@ export default function TeamShell({
       <aside className="hidden flex-col gap-1 border-r bg-sidebar px-3 py-4 md:flex">
         <Link href="/" className="mb-3 flex items-center gap-2 px-1.5 text-sm text-muted-foreground hover:text-foreground">
           <BrandMark className="size-5 text-foreground" />
-          <span className="font-[family-name:var(--font-display)] text-base text-foreground">Payleor</span>
+          <span className="font-heading text-base text-foreground">Payleor</span>
           <span className="sr-only">All workspaces</span>
         </Link>
         <div className="mb-3 flex items-center gap-2.5 rounded-xl px-2 py-2 raised">
-          <span className="grid size-8 place-items-center rounded-lg main-surface font-[family-name:var(--font-num)] text-xs font-bold uppercase">
+          <span className="grid size-8 place-items-center rounded-lg main-surface text-xs font-semibold uppercase">
             {initials}
           </span>
           <span className="grid min-w-0">

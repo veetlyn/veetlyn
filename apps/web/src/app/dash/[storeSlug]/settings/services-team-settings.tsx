@@ -140,7 +140,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6 [&>*]:max-w-3xl md:px-7 md:py-8">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl">{solo ? "Settings" : "Team settings"}</h1>
+      <h1 className="font-heading text-3xl">{solo ? "Settings" : "Team settings"}</h1>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
       ) : null}

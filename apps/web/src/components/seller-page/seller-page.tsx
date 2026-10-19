@@ -77,14 +77,14 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
   return (
     <main className="mx-auto w-full max-w-5xl space-y-12 px-4 py-10 md:py-14">
       <header className="grid gap-4">
-        <span className="grid size-14 place-items-center rounded-2xl main-surface font-tabular text-lg font-bold uppercase">
+        <span className="grid size-14 place-items-center rounded-2xl main-surface text-lg font-semibold uppercase">
           {page.name
             .split(/\s+/)
             .map((word) => word[0] ?? "")
             .join("")
             .slice(0, 2)}
         </span>
-        <h1 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl">{page.name}</h1>
+        <h1 className="font-heading text-4xl md:text-5xl">{page.name}</h1>
         {page.bio ? <p className="max-w-2xl text-lg whitespace-pre-line text-muted-foreground">{page.bio}</p> : null}
         {page.product === "services" ? (
           <a href={`${page.pageBase}/request`} className={buttonVariants({ size: "lg", className: "justify-self-start" })}>
@@ -94,7 +94,7 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
       </header>
       {page.product === "services" ? (
         <section aria-labelledby="services-heading" className="space-y-6">
-          <h2 id="services-heading" className="font-[family-name:var(--font-display)] text-2xl">
+          <h2 id="services-heading" className="font-heading text-2xl">
             Services
           </h2>
           {page.offerings.length === 0 ? (
@@ -139,7 +139,7 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
       ) : null}
       {page.products.length > 0 ? (
         <section aria-labelledby="store-heading" className="space-y-6">
-          <h2 id="store-heading" className="font-[family-name:var(--font-display)] text-2xl">
+          <h2 id="store-heading" className="font-heading text-2xl">
             Store
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

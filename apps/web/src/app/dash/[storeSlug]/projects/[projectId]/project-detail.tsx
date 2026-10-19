@@ -199,7 +199,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
   if (!detail.data) {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Project not found</h1>
+        <h1 className="font-heading text-3xl">Project not found</h1>
         <Link href={`/${teamSlug}/projects`} className="underline">
           Back to projects
         </Link>
@@ -282,7 +282,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-x-8 gap-y-6 px-4 py-6 md:px-7 md:py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <div className="space-y-2 lg:col-span-2">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">{project.title}</h1>
+        <h1 className="font-heading text-3xl">{project.title}</h1>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge tone={TEAM_PROJECT_TONES[project.status]}>
             {projectStatusLabel(project.status)}

@@ -36,7 +36,7 @@ export default function AccountSettings({ hasError }: { hasError: boolean }) {
 
   return (
     <main className="mx-auto w-full max-w-lg space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl">Account</h1>
+      <h1 className="font-heading text-3xl">Account</h1>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           Could not link Discord. Check that the email on your Discord account is verified, then try again.

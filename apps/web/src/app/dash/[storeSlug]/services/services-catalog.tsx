@@ -172,7 +172,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl">Services</h1>
+          <h1 className="font-heading text-3xl">Services</h1>
         </div>
         {isAdmin ? (
           <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>
@@ -189,7 +189,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
 
       {!catalog.isError && offerings.length === 0 && (
         <section className="panel grid justify-items-center gap-2 p-10 text-center">
-          <p className="font-[family-name:var(--font-display)] text-lg">No services yet</p>
+          <p className="font-heading text-lg">No services yet</p>
           <p className="text-sm text-muted-foreground">
             {isAdmin ? (
               <Link href={`/${teamSlug}/services/new`} className="underline underline-offset-4">

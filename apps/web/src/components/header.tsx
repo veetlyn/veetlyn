@@ -18,7 +18,7 @@ export default function Header() {
     <header className="flex h-14 items-center justify-between border-b px-4 md:px-7">
       <Link href="/" className="flex items-center gap-2">
         <BrandMark className="size-6 text-foreground" />
-        <span className="font-[family-name:var(--font-display)] text-lg">Payleor</span>
+        <span className="font-heading text-lg">Payleor</span>
       </Link>
       <div className="flex items-center gap-2">
         <ModeToggle />

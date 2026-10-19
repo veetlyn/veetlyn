@@ -29,7 +29,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
         <Link href="/" className="text-sm text-muted-foreground">
           All stores
         </Link>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">{store.data.name}</h1>
+        <h1 className="font-heading text-3xl">{store.data.name}</h1>
       </div>
       <SetupChecklist
         steps={setupSteps(

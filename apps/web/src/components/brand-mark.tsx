@@ -17,7 +17,7 @@ export function BrandMark({ className = "size-6" }: { className?: string }) {
 
 export function BrandLockup() {
   return (
-    <span className="inline-flex items-center gap-2 font-[family-name:var(--font-display)] text-lg">
+    <span className="inline-flex items-center gap-2 font-heading text-lg">
       <BrandMark />
       Payleor
     </span>

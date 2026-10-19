@@ -52,7 +52,7 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">New project</h1>
+        <h1 className="font-heading text-3xl">New project</h1>
         <p className="text-sm text-muted-foreground">
           The client gets a private link to follow the project, accept quotes and pay. No account needed.
         </p>
