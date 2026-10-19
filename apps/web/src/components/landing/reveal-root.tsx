@@ -21,7 +21,7 @@ export default function RevealRoot({ children }: { children: React.ReactNode }) 
       },
       { rootMargin: "0px 0px -10% 0px" },
     );
-    for (const el of root.querySelectorAll("[data-reveal]")) observer.observe(el);
+    for (const el of root.querySelectorAll("[data-reveal], [data-draw]")) observer.observe(el);
     return () => observer.disconnect();
   }, []);
 

@@ -15,18 +15,15 @@ export default function Hero({ signupUrl, loginUrl, demoUrl }: { signupUrl: stri
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center lg:px-10">
           <h1
             id="hero-heading"
-            data-reveal
             className="max-w-[13ch] font-heading text-[clamp(40px,4.6vw,80px)] leading-[0.98] text-balance"
           >
             Quote, get paid, pay your team.
           </h1>
-          <p data-reveal style={{ "--i": 1 }} className="mt-8 max-w-[36ch] text-[17px] leading-relaxed">
+          <p className="mt-8 max-w-[36ch] text-[17px] leading-relaxed">
             Payleor runs the money around client work. Your client pays through PayPal with no account to make, and
             everyone on the project gets their share.
           </p>
           <a
-            data-reveal
-            style={{ "--i": 2 }}
             href={signupUrl}
             className={`${buttonFlat} mt-10`}
           >

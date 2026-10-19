@@ -33,7 +33,7 @@ function Card({ at, children }: { at: number; children: React.ReactNode }) {
   return (
     <div
       data-ui
-      className="w-[260px] rounded-[12px] border border-input bg-card p-4 text-left text-card-foreground shadow-[var(--raise)] transition-[translate] duration-150 ease-out group-hover:-translate-y-1.5" /* taste-skill-ignore: the app's own fragment (data-ui) keeps its borders and shadows */
+      className="w-[260px] rounded-[12px] border border-input bg-card p-4 text-left text-card-foreground shadow-[var(--raise)]" /* taste-skill-ignore: the app's own fragment (data-ui) keeps its borders and shadows */
     >
       <p className="text-[15px] font-semibold">Logo and brand kit</p>
       <p className="text-[13px] text-muted-foreground">Walk Crew, for a bakery</p>
@@ -46,9 +46,10 @@ function Card({ at, children }: { at: number; children: React.ReactNode }) {
 export default function MoneyPath() {
   const s = splitFor(64_000);
   const balanceMinor = 64_000 - s.deposit.quotePartMinor;
-  const fields = [
+  const steps = [
     {
-      bg: "bg-field-1 text-field-1-ink",
+      amount: usd(s.quoteMinor),
+      label: "quoted",
       clause: "First the client accepts your quote.",
       card: (
         <Card at={0}>
@@ -58,7 +59,8 @@ export default function MoneyPath() {
       ),
     },
     {
-      bg: "bg-field-2 text-field-2-ink",
+      amount: usd(s.deposit.totalMinor),
+      label: "deposit paid, with the 10% fee",
       clause: "Then they pay half up front, with PayPal.",
       card: (
         <Card at={2}>
@@ -68,7 +70,8 @@ export default function MoneyPath() {
       ),
     },
     {
-      bg: "bg-field-3 text-field-3-ink",
+      amount: usd(balanceMinor),
+      label: "balance paid",
       clause: "Then you deliver and they sign it off.",
       card: (
         <Card at={6}>
@@ -78,7 +81,8 @@ export default function MoneyPath() {
       ),
     },
     {
-      bg: "bg-field-4 text-field-4-ink",
+      amount: usd(s.memberReceivesMinor),
+      label: "sent to Amadou",
       clause: "Then everyone is paid on Tuesday.",
       card: (
         <Card at={6}>
@@ -91,29 +95,44 @@ export default function MoneyPath() {
   ];
 
   return (
-    <section id="money" aria-labelledby="money-heading" className="grid scroll-mt-4 md:grid-cols-2 lg:grid-cols-4">
-      {fields.map((field, i) => (
-        <div
-          key={field.clause}
-          className={`group relative flex min-h-[64svh] flex-col px-5 pt-6 pb-7 md:min-h-[56svh] lg:min-h-[84svh] lg:items-center lg:px-8 ${field.bg}`}
-        >
-          {i === 0 ? (
-            <h2 id="money-heading" data-reveal className="font-heading text-[24px] leading-tight lg:absolute lg:top-7 lg:left-7">
-              How the money moves
-            </h2>
-          ) : null}
-          <div data-reveal style={{ "--i": i }} className="mt-6 lg:absolute lg:top-[38%] lg:mt-0">
-            {field.card}
-          </div>
-          <p
-            data-reveal
-            style={{ "--i": i + 1 }}
-            className="mt-auto max-w-[16ch] pt-10 font-heading text-[clamp(22px,2vw,32px)] leading-[1.1] lg:absolute lg:right-7 lg:bottom-7 lg:left-7 lg:max-w-none"
-          >
-            {field.clause}
+    <section id="money" aria-labelledby="money-heading" className="scroll-mt-4 px-4">
+      <div className="bg-field-1 px-6 py-12 text-field-1-ink lg:px-12 lg:py-16">
+        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+          <h2 id="money-heading" data-reveal className="font-heading text-[clamp(36px,4vw,64px)] leading-[1]">
+            How the money moves
+          </h2>
+          <p data-reveal style={{ "--i": 1 }} className="max-w-[44ch] text-[17px] leading-relaxed">
+            One project, from the first quote to payday. Every amount is what the app works out for a $640 logo.
           </p>
         </div>
-      ))}
+        <ol className="relative mt-14 grid grid-cols-[minmax(0,1fr)] gap-14 lg:grid-cols-4 lg:gap-8">
+          <span
+            aria-hidden="true"
+            className="absolute top-3 bottom-0 left-[11px] w-0.5 bg-border lg:top-[11px] lg:right-0 lg:bottom-auto lg:left-0 lg:h-0.5 lg:w-auto"
+          />
+          <span
+            aria-hidden="true"
+            data-draw
+            className="absolute top-3 bottom-0 left-[11px] w-0.5 bg-brand lg:top-[11px] lg:right-0 lg:bottom-auto lg:left-0 lg:h-0.5 lg:w-auto"
+          />
+          {steps.map((step, i) => (
+            <li key={step.clause} className="relative pl-12 lg:pl-0">
+              <span
+                aria-hidden="true"
+                data-reveal
+                style={{ transitionDelay: `${300 + i * 350}ms` }}
+                className="absolute top-0 left-0 size-6 bg-brand bowl"
+              />
+              <div className="lg:pt-14">
+                <p className="font-heading font-tabular text-[clamp(36px,3.6vw,56px)] leading-none">{step.amount}</p>
+                <p className="mt-2 text-[15px] opacity-80">{step.label}</p>
+                <p className="mt-6 max-w-[18ch] font-heading text-[24px] leading-[1.15]">{step.clause}</p>
+                <div className="mt-6">{step.card}</div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }

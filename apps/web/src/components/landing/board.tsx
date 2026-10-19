@@ -29,7 +29,7 @@ const STEPS = ["Quote", "Deposit", "Work", "Review", "Balance", "Done"] as const
 
 function ProjectPage() {
   return (
-    <Frag className="w-[640px] p-6">
+    <Frag className="w-[640px] p-6 lg:w-full">
       <div className="flex items-baseline justify-between gap-4">
         <div>
           <p className="font-heading text-[24px] leading-tight">Logo and brand kit</p>
@@ -188,7 +188,7 @@ function DisputeDraft() {
 
 function ChatPlugin() {
   return (
-    <div data-ui className="w-[620px]">
+    <div data-ui className="w-[620px] lg:w-full">
       <p className="ml-auto w-fit max-w-[360px] rounded-[16px] bg-field-3 px-4 py-2.5 text-[15px] text-field-3-ink">
         I need a logo for my bakery, under $900.
       </p>
@@ -235,7 +235,7 @@ function StoreOrders() {
   );
 }
 
-type Tile = { name: string; line: string; place: string; field: string; frag: React.ReactNode };
+type Tile = { name: string; line: string; place: string; field: string; frag: React.ReactNode; fill?: boolean };
 
 const TILES: Tile[] = [
   {
@@ -244,6 +244,7 @@ const TILES: Tile[] = [
     place: "md:col-span-2 lg:col-start-5 lg:col-span-8 lg:row-start-1 lg:row-span-4",
     field: "bg-field-1 text-field-1-ink",
     frag: <ProjectPage />,
+    fill: true,
   },
   {
     name: "Payout rules",
@@ -279,6 +280,7 @@ const TILES: Tile[] = [
     place: "md:col-span-2 lg:col-start-5 lg:col-span-8 lg:row-start-8 lg:row-span-3",
     field: "bg-field-4 text-field-4-ink",
     frag: <ChatPlugin />,
+    fill: true,
   },
   {
     name: "A store on the side",
@@ -314,7 +316,7 @@ export default function Board() {
               <p className="mt-1 max-w-[46ch] text-[15px] opacity-80">{tile.line}</p>
             </div>
             <div className="relative mt-5 flex-1">
-              <div className="absolute top-0 left-6 transition-[translate] duration-200 ease-out [@media(hover:hover)]:group-hover:-translate-y-1.5">
+              <div className={`absolute top-0 left-6 transition-[translate] ${tile.fill ? "lg:right-6" : ""} duration-200 ease-out [@media(hover:hover)]:group-hover:-translate-y-1.5`}>
                 {tile.frag}
               </div>
             </div>
