@@ -1,0 +1,19 @@
+specs/platform/2026-10-18-widget-gallery.html
+  s_ec180faf4f9b2e::t_9c9d8678166156 88-91,93-94,176-177,206,220,224-225,228,230,234,239-240,242-243,267,272,289-290,350-358
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "31b654772b9471e1579465b754d2c68e51ab393b",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
