@@ -624,3 +624,6 @@
 .site-root header.top { top: calc(env(safe-area-inset-top, 0px) + var(--banner-h, 0px)); }
 .site-root footer.site .legal { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 24px; font-size: 14px; }
 .site-root footer.site .legal a { display: inline; }
+/* A small label for what is planned or comes with a later release ("Planned", "Coming with run V"). */
+.site-root .soon { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 3px 10px; border-radius: 999px; font: 600 13px/1.4 var(--site-text); letter-spacing: 0; background: var(--tray); color: var(--muted-foreground); }
+.site-root .band .soon { background: var(--band-raise); color: var(--band-muted); }

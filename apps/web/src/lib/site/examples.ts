@@ -1,4 +1,5 @@
 import {
+  balanceDue,
   depositDue,
   getSellerPlan,
   quoteBreakdown,
@@ -22,6 +23,19 @@ const WALK_CREW_QUOTE_MINOR = 64_000;
 
 export const walkCrewDepositMinor = () =>
   depositDue(WALK_CREW_QUOTE_MINOR, EXAMPLE_TEAM.managementFeeBps).totalMinor;
+
+// What the client still owes once the work is delivered, after the deposit.
+export function walkCrewBalanceMinor() {
+  const deposit = depositDue(WALK_CREW_QUOTE_MINOR, EXAMPLE_TEAM.managementFeeBps);
+  return balanceDue({
+    quoteMinor: WALK_CREW_QUOTE_MINOR,
+    managementFeeBps: EXAMPLE_TEAM.managementFeeBps,
+    finalPriceMinor: WALK_CREW_QUOTE_MINOR,
+    paidQuoteMinor: deposit.quotePartMinor,
+    paidManagementFeeMinor: deposit.managementFeeMinor,
+    managementFeeCreditedMinor: 0,
+  }).dueMinor;
+}
 
 export function agencyExample() {
   const b = quoteBreakdown(EXAMPLE_TEAM, WALK_CREW_QUOTE_MINOR);
