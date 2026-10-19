@@ -85,9 +85,13 @@
   .w .muted { color: var(--fg2); }
   .w .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .w .big { font-size: var(--f-head); font-weight: var(--w-em); }
+  .w .amount { font-size: var(--f-head); font-weight: var(--w-em); line-height: 1.3; margin-top: 10px; }
+  .w .price { font-weight: var(--w-em); margin-top: 2px; }
+  .w .tag { display: inline-block; font-size: var(--f-cap); color: var(--brand-accent); margin-top: 2px; }
+  .w .gap { margin-top: 8px; }
   .w .status { font-size: var(--f-cap); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; color: var(--fg2); }
-  .w .status.go { color: var(--brand-accent); border-color: color-mix(in srgb, var(--brand) 45%, transparent); }
-  .w .status.wait { color: var(--warn); }
+  .w .status.you { color: var(--brand-accent); border-color: color-mix(in srgb, var(--brand) 45%, transparent); }
+  .w .status.done { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
   .w dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 10px 0 0; }
   .w dt { color: var(--fg2); }
   .w dd { margin: 0; text-align: right; min-width: 0; overflow-wrap: anywhere; }
@@ -169,7 +173,8 @@
 const money = (minor, currency = "USD") => new Intl.NumberFormat("en-US", { style: "currency", currency }).format(minor / 100);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const TICK = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.2 5 8.5l4.5-5"/></svg>';
-const tone = (status) => ["completed", "in_progress"].includes(status) ? "go" : ["awaiting_deposit", "awaiting_balance", "delivered"].includes(status) ? "wait" : "";
+// Mint when the next move is the client's, green when finished, neutral while someone else works.
+const tone = (status) => ["awaiting_deposit", "awaiting_balance", "delivered"].includes(status) ? "you" : status === "completed" ? "done" : "";
 const badge = (p) => `<span class="status ${tone(p.status)}">${esc(p.statusLabel)}</span>`;
 const range = (o) => o.priceMinMinor === o.priceMaxMinor ? money(o.priceMinMinor, o.currency) : `${money(o.priceMinMinor, o.currency)} – ${money(o.priceMaxMinor, o.currency)}`;
 
@@ -198,7 +203,7 @@ const ready = {
   offerings: (d) => `<div class="carousel" role="list" aria-label="Offerings">${d.offerings.map((o) => `
     <article class="card" role="listitem">
       <div class="head">${esc(o.name)}</div>
-      <div class="num">${range(o)}</div>
+      <div class="num price">${range(o)}</div>
       <div class="cap">${esc(o.seller)} · usually ${esc(o.days)}</div>
       <p class="muted clamp grow" style="margin:8px 0 0">${esc(o.description)}</p>
       <div class="actions"><button class="primary" type="button">Request a quote</button></div>
@@ -210,33 +215,32 @@ const ready = {
       <dl>
         <dt>Service</dt><dd>${esc(d.project.title)}</dd>
         <dt>To</dt><dd>${esc(d.project.seller)}</dd>
-        <dt>Status</dt><dd>${badge(d.project)}</dd>
       </dl>
       <p class="note clamp">${esc(d.project.brief)}</p>
-      <p class="cap" style="margin:8px 0 0">${esc(d.nextStep)} A private link to the project is in your email.</p>
+      <p class="cap gap">${esc(d.nextStep)} The project link is in your email.</p>
       <div class="actions"><button type="button">Open project page</button></div>
     </article>`,
 
-  quotes: (d) => `<div class="carousel" role="list" aria-label="Quotes for ${esc(d.project.title)}">${d.quotes.map(({ seller, quote }) => `
+  quotes: (d) => { const low = Math.min(...d.quotes.map((q) => q.quote.amountMinor)); const fast = Math.min(...d.quotes.map((q) => q.quote.deliveryDays));
+    return `<div class="carousel" role="list" aria-label="Quotes for ${esc(d.project.title)}">${d.quotes.map(({ seller, quote }) => `
     <article class="card" role="listitem">
       <div class="head">${esc(seller)}</div>
-      <div class="big num" style="margin-top:6px">${money(quote.amountMinor, d.project.currency)}</div>
+      <div class="amount num">${money(quote.amountMinor, d.project.currency)}</div>
       <div class="cap">Delivery in ${quote.deliveryDays} days</div>
+      <div class="tag">${[quote.amountMinor === low ? "Lowest price" : "", quote.deliveryDays === fast ? "Fastest" : ""].filter(Boolean).join(" · ") || "&nbsp;"}</div>
       <ul class="items grow">${quote.items.slice(0, 3).map((i) => `<li><span>${esc(i.description)}</span><span class="num">${money(i.amountMinor, d.project.currency)}</span></li>`).join("")}</ul>
       <div class="actions"><button class="primary" type="button">Accept quote</button></div>
     </article>`).join("")}</div>
-    <div class="dots" aria-hidden="true">${d.quotes.map((_, i) => `<span class="${i === 0 ? "on" : ""}"></span>`).join("")}</div>`,
+    <div class="dots" aria-hidden="true">${d.quotes.map((_, i) => `<span class="${i === 0 ? "on" : ""}"></span>`).join("")}</div>`; },
 
   pay: (d) => `<article class="card">
       <div class="row"><div class="head">${esc(d.project.title)}</div>${badge(d.project)}</div>
       <div class="cap">with ${esc(d.project.seller)}</div>
-      <dl>
-        <dt>Quote</dt><dd class="num">${money(d.quote.amountMinor, d.project.currency)}</dd>
-        <dt>Deposit due</dt><dd class="num big">${money(d.payment.amountMinor, d.project.currency)}</dd>
-      </dl>
+      <div class="amount num">${money(d.payment.amountMinor, d.project.currency)}</div>
+      <div class="cap">Deposit due, half of the ${money(d.quote.amountMinor, d.project.currency)} quote</div>
       <div class="actions">
-        <button class="primary" type="button">Pay ${money(d.payment.amountMinor, d.project.currency)} with PayPal</button>
-        <button type="button">Check payment</button>
+        <button class="primary" type="button">Pay with PayPal</button>
+        <button class="quiet" type="button">Check payment</button>
       </div>
       <div class="host-url">Opens payleor.com/pay in a new tab</div>
     </article>`,
@@ -246,7 +250,6 @@ const ready = {
       <div class="cap">with ${esc(d.project.seller)}</div>
       <dl>
         <dt>Quote</dt><dd class="num">${money(d.quote.amountMinor, d.project.currency)}</dd>
-        <dt>Delivery</dt><dd>within ${d.quote.deliveryDays} days</dd>
       </dl>
       <p class="note">${esc(d.nextStep)}</p>
       <div class="actions"><button type="button">Refresh</button><button class="quiet" type="button">Open project page</button></div>
@@ -261,12 +264,12 @@ const ready = {
         <dt>Quote</dt><dd class="num">${money(d.quote.amountMinor, d.project.currency)}</dd>
       </dl>
       <div class="actions"><button class="primary" type="button">Accept delivery</button><button type="button">Request changes</button></div>
-      <div class="notice">Request changes opens the chat so you can say what to change.</div>
+      <div class="notice">Changes are described in the chat.</div>
     </article>`,
 
   receipt: (d) => `<article class="card">
       <div class="head"><span class="tick">${TICK}</span>Payment received</div>
-      <div class="big num" style="margin-top:6px">${money(d.payment.amountMinor, d.project.currency)}</div>
+      <div class="amount num">${money(d.payment.amountMinor, d.project.currency)}</div>
       <dl>
         <dt>For</dt><dd>${esc(d.project.title)}, ${esc(d.payment.kind)}</dd>
         <dt>Paid to</dt><dd>${esc(d.project.seller)}</dd>
@@ -283,8 +286,8 @@ const loading = {
   offerings: () => `<div class="carousel" aria-hidden="true">${[0, 1, 2].map(() => skCard(["h", "s", "m", "", "m"])).join("")}</div>`,
   request: () => skCard(["h", "", "", "s", "m"]),
   quotes: () => `<div class="carousel" aria-hidden="true">${[0, 1].map(() => skCard(["h", "s", "m", "", ""])).join("")}</div>`,
-  pay: () => skCard(["h", "s", "", "m"]),
-  status: () => skCard(["h", "s", "", "", "m"]),
+  pay: () => skCard(["h", "s", "h", "m"]),
+  status: () => skCard(["h", "s", "", "m", "m"]),
   delivery: () => skCard(["h", "s", "m", "", ""]),
   receipt: () => skCard(["h", "s", "", "", "m"]),
 };
@@ -344,6 +347,15 @@ function apply() {
 document.querySelectorAll("[data-set]").forEach((b) => b.addEventListener("click", () => { settings[b.dataset.set] = b.dataset.value; apply(); }));
 render();
 apply();
+document.querySelectorAll(".w .carousel").forEach((c) => {
+  const dots = c.nextElementSibling?.classList.contains("dots") ? [...c.nextElementSibling.children] : [];
+  if (!dots.length) return;
+  c.addEventListener("scroll", () => {
+    const step = c.firstElementChild.getBoundingClientRect().width + 8;
+    const i = Math.min(dots.length - 1, Math.round(c.scrollLeft / step));
+    dots.forEach((d, j) => d.classList.toggle("on", i === j));
+  }, { passive: true });
+});
 </script>
 </body>
 </html>
