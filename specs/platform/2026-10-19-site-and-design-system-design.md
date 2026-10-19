@@ -1,6 +1,6 @@
 # payleor.com, rebuilt on the Landing B design system, then the dash
 
-**Date:** 2026-10-19. **Status:** proposed; the content and look were approved on the prototype by Mouhamed during the 2026-10-19 session ("I love this ds. Plan the full integration to payleor.com with all the features. Then we need the dash to follow."). **Prototype:** [`2026-10-19-landing-b.html`](2026-10-19-landing-b.html) and its folder [`2026-10-19-landing-b/`](2026-10-19-landing-b/) (published as a private artifact; the build script and sources live in the session scratchpad and are reproduced by the plan).
+**Date:** 2026-10-19. **Status:** run L built in the cloud on branch `l-site` (2026-10-19), walkthrough pending ([plan Outcome](plans/2026-10-19-l-site.md#outcome)); the content and look were approved on the prototype by Mouhamed during the 2026-10-19 session ("I love this ds. Plan the full integration to payleor.com with all the features. Then we need the dash to follow."). **Prototype:** [`2026-10-19-landing-b.html`](2026-10-19-landing-b.html) and its folder [`2026-10-19-landing-b/`](2026-10-19-landing-b/) (published as a private artifact; the build script and sources live in the session scratchpad and are reproduced by the plan).
 
 ## 1. Intent
 
