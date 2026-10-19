@@ -1,0 +1,29 @@
+apps/web/src/components/site/bundle-pricing.tsx
+  s_ec180faf4f9b2e::t_ddfddd438cbefd 1-84
+apps/web/src/app/(site)/page.tsx
+  s_ec180faf4f9b2e::t_ae188876ab0d3e 7,203-209
+packages/core/src/billing/bundles.test.ts
+  s_ec180faf4f9b2e::t_9c114a9608469d 1-32
+packages/core/src/billing/bundles.ts
+  s_ec180faf4f9b2e::t_da1abff35fccdc 1-32
+apps/web/src/components/site/services-pricing.tsx
+  s_ec180faf4f9b2e::t_2c122c6ca5edf9 209-210,212,216,220
+packages/core/src/index.ts
+  s_ec180faf4f9b2e::t_45c3eb46555359 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88a4ad39a0054eb684579d9c84b6244f3bcd8617",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
