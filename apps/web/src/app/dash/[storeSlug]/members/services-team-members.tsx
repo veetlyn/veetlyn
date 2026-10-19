@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { isServicesTeamRole, SERVICES_TEAM_ROLES, type ServicesTeamRole } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
@@ -13,7 +14,7 @@ import TeamNotFound from "@/components/services-team/team-not-found";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = "h-9 rounded-md border bg-transparent px-2 text-sm";
+const SELECT_CLASS = `${nativeSelectClass}`;
 
 type Member = {
   userId: string;
@@ -98,7 +99,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Members</h1>
 
       {solo ? (
-        <div className="mt-6 grid gap-2 border border-dashed p-6">
+        <div className="panel mt-6 grid gap-2 p-6">
           <p className="font-medium">You work alone</p>
           <p className="text-sm text-muted-foreground">
             A solo seller has no members and no payouts. Switch to a team in Settings to add people.
@@ -115,7 +116,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
         </p>
       ) : (
         <>
-          <ul className="mt-6 divide-y border">
+          <ul className="mt-6 panel divide-y overflow-hidden">
             {(members.data ?? []).map((member) => (
               <li key={member.userId} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="min-w-0">

@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import {
   ALLOWED_FILE_EXTENSIONS,
   canAssignFreelancer,
@@ -322,7 +323,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
               <Label htmlFor="assign-freelancer">Freelancer</Label>
               <select
                 id="assign-freelancer"
-                className="h-10 rounded-lg border border-input bg-card px-3 text-sm well"
+                className={nativeSelectClass}
                 value={freelancerId}
                 onChange={(e) => setFreelancerId(e.target.value)}
               >
@@ -362,7 +363,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
                   <Label htmlFor="quote-freelancer">Freelancer</Label>
                   <select
                     id="quote-freelancer"
-                    className="h-10 rounded-lg border border-input bg-card px-3 text-sm well"
+                    className={nativeSelectClass}
                     value={quoteFreelancerId}
                     onChange={(e) => setQuoteFreelancerId(e.target.value)}
                   >

@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import {
   type Currency,
   PAYDAYS,
@@ -37,7 +38,7 @@ type TeamMember = inferRouterOutputs<AppRouter>["servicesTeam"]["listMembers"][n
 const FIXED_PRESETS = ["manual", "rules", "automatic"] as const;
 type FixedPreset = (typeof FIXED_PRESETS)[number];
 
-const SELECT_CLASS = "h-9 rounded-md border bg-transparent px-3 text-sm";
+const SELECT_CLASS = `${nativeSelectClass}`;
 const CHOICE_CLASS = "flex items-center gap-2 text-sm";
 
 const SCOPE_LABELS = {

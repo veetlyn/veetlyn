@@ -163,7 +163,7 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <section aria-labelledby="automatic-payouts-heading" className="space-y-3 panel p-4">
+    <section aria-labelledby="automatic-payouts-heading" className="panel space-y-3 p-5">
       <h2 id="automatic-payouts-heading" className="font-medium">
         Automatic payouts
       </h2>

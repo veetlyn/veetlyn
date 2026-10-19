@@ -22,7 +22,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <>
       <div className="flex-1">{children}</div>
       <footer className="border-t">
-        <div className="container mx-auto flex max-w-5xl flex-col gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-6 md:px-7 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <nav aria-label="Store policies" className="flex flex-wrap gap-x-5 gap-y-2">
             {policiesFor(info.product).map((policy) => (
               <Link key={policy} href={`/policies/${policy}`} className="hover:text-foreground">

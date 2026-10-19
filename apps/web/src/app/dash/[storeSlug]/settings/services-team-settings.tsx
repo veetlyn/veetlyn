@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import {
   bpsToPercent,
   CURRENCIES,
@@ -26,7 +27,7 @@ import { QUOTING_MODE_LABELS } from "@/lib/services-team-labels";
 import { rateField } from "@/lib/services-team-settings-form";
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = "h-9 w-full rounded-md border bg-transparent px-3 text-sm";
+const SELECT_CLASS = `w-full ${nativeSelectClass}`;
 
 function RateInput({
   id,

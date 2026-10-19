@@ -64,14 +64,14 @@ export default function PayoutsSetup({
       : null;
 
   return (
-    <main className="container mx-auto max-w-2xl space-y-6 px-4 py-10">
+    <main className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Payouts</h1>
       {paypalProblem ? (
-        <p role="alert" className="border border-destructive p-3 text-sm text-destructive">
+        <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {paypalProblem}
         </p>
       ) : null}
-      <section aria-labelledby="destination-heading" className="space-y-3 panel p-4">
+      <section aria-labelledby="destination-heading" className="panel space-y-3 p-5">
         <h2 id="destination-heading" className="font-medium">
           Your PayPal payout destination
         </h2>
