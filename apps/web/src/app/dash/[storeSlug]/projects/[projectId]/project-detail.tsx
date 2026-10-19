@@ -34,7 +34,7 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { paymentRefundLabel } from "@/lib/client-refund";
-import { AMENDMENT_STATUS_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
+import { AMENDMENT_STATUS_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { minorToPriceInput } from "@/lib/money";
 import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
@@ -284,7 +284,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
       <div className="space-y-2 lg:col-span-2">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">{project.title}</h1>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Badge tone={project.status === "completed" ? "good" : project.status === "cancelled" ? "neutral" : "brand"}>
+          <Badge tone={TEAM_PROJECT_TONES[project.status]}>
             {projectStatusLabel(project.status)}
           </Badge>
           {primary?.name ?? "No client"}
@@ -569,9 +569,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
               <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (
-                  <span className="inline-block rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-                    Needs review
-                  </span>
+                  <Badge tone="warn">Needs review</Badge>
                 ) : null}
                 <Badge tone={payment.status === "captured" ? "good" : payment.status === "failed" ? "fail" : "neutral"}>{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</Badge>
               </div>

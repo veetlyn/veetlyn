@@ -2,18 +2,18 @@ import { cn } from "@jendal-workspace/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 
-// Kinds and states as words on a soft fill. Warm tones are for trouble only.
+// Kinds and states as coloured words, no fill or outline. Warm tones are for trouble only.
 const badgeVariants = cva(
-  "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium whitespace-nowrap [&_svg]:size-3",
+  "inline-flex shrink-0 items-center gap-1 text-xs font-medium whitespace-nowrap [&_svg]:size-3",
   {
     variants: {
       tone: {
-        neutral: "bg-secondary text-muted-foreground shadow-[inset_0_0_0_1px_var(--border)]",
-        brand: "bg-brand-wash text-brand-text",
-        good: "bg-brand-wash text-brand-text",
-        warn: "bg-warning/10 text-warning",
-        fail: "bg-destructive/10 text-destructive",
-        info: "bg-info-wash text-info",
+        neutral: "text-muted-foreground",
+        brand: "font-semibold text-brand-text",
+        good: "font-semibold text-brand-text",
+        warn: "font-semibold text-warning",
+        fail: "font-semibold text-destructive",
+        info: "text-info",
       },
     },
     defaultVariants: { tone: "neutral" },

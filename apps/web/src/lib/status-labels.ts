@@ -1,4 +1,4 @@
-import type { AmendmentStatus, PaymentStatus, QuoteStatus } from "@jendal-workspace/core";
+import type { AmendmentStatus, PaymentStatus, ProjectStatus, QuoteStatus } from "@jendal-workspace/core";
 
 // The words people see for record states; the enums stay as they are in core.
 export const QUOTE_STATUS_LABELS = {
@@ -21,3 +21,24 @@ export const AMENDMENT_STATUS_LABELS = {
   accepted: "Accepted",
   declined: "Declined",
 } as const satisfies Record<AmendmentStatus, string>;
+
+// Mint when the next move belongs to whoever is looking, grey while they wait on the other side.
+export const TEAM_PROJECT_TONES = {
+  quoting: "brand",
+  awaiting_deposit: "neutral",
+  in_progress: "brand",
+  delivered: "neutral",
+  awaiting_balance: "neutral",
+  completed: "good",
+  cancelled: "neutral",
+} as const satisfies Record<ProjectStatus, "brand" | "good" | "neutral">;
+
+export const CLIENT_PROJECT_TONES = {
+  quoting: "neutral",
+  awaiting_deposit: "brand",
+  in_progress: "neutral",
+  delivered: "brand",
+  awaiting_balance: "brand",
+  completed: "good",
+  cancelled: "neutral",
+} as const satisfies Record<ProjectStatus, "brand" | "good" | "neutral">;

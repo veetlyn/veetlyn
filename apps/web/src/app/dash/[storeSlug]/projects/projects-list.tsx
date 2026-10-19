@@ -9,6 +9,7 @@ import Loader from "@/components/loader";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { trpc } from "@/utils/trpc";
+import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
 
 const CLOSED = new Set(["completed", "cancelled"]);
 const FILTERS = [
@@ -83,7 +84,7 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
                       <p className="truncate font-medium">{project.title}</p>
                       <p className="truncate text-sm text-muted-foreground">{project.clientName ?? "No client"}</p>
                     </div>
-                    <Badge tone={project.status === "completed" ? "good" : CLOSED.has(project.status) ? "neutral" : "brand"}>
+                    <Badge tone={TEAM_PROJECT_TONES[project.status]}>
                       {projectStatusLabel(project.status)}
                     </Badge>
                   </Link>
