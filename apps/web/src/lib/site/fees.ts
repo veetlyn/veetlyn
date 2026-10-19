@@ -47,3 +47,18 @@ export function bundleMonthly(services: SellerPlanId, store: PlanId, interval: B
   const q = bundleQuote(getSellerPlan(services), getPlan(store), interval);
   return { totalCents: q.totalCents, halved: q.discountedProduct, feeBps: q.feeBps };
 }
+
+// Every plan as a schema.org Offer: the monthly price and the fee it charges, for the pricing page's structured data.
+export function pricingOffers() {
+  const offer = (name: string, priceCents: number, fee: string) => ({
+    "@type": "Offer" as const,
+    name,
+    price: (priceCents / 100).toFixed(2),
+    priceCurrency: "USD",
+    description: `A month, ${fee}`,
+  });
+  return [
+    ...SELLER_PLANS.map((p) => offer(p.name, p.priceCents.monthly, `${formatOrderFee(p.feeBps)} on each client payment`)),
+    ...PLANS.map((p) => offer(p.name, p.priceCents.monthly, `${formatOrderFee(p.orderFeeBps)} on each order`)),
+  ];
+}
