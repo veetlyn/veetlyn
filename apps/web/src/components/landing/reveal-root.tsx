@@ -2,8 +2,11 @@
 
 import { useEffect, useRef } from "react";
 
+const TARGETS = "[data-reveal], [data-draw]";
+
 // Marks the page for motion once it runs, then shows each [data-reveal] part as its section scrolls into view.
-// Without script nothing is hidden.
+// Parts React adds or replaces after the first run are watched too, so none can stay hidden. Without script
+// nothing is hidden.
 export default function RevealRoot({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -21,8 +24,25 @@ export default function RevealRoot({ children }: { children: React.ReactNode }) 
       },
       { rootMargin: "0px 0px -10% 0px" },
     );
-    for (const el of root.querySelectorAll("[data-reveal], [data-draw]")) observer.observe(el);
-    return () => observer.disconnect();
+    const watch = (scope: Element) => {
+      if (scope.matches(TARGETS) && !scope.hasAttribute("data-shown")) observer.observe(scope);
+      for (const el of scope.querySelectorAll(TARGETS)) {
+        if (!el.hasAttribute("data-shown")) observer.observe(el);
+      }
+    };
+    watch(root);
+    const mutations = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node instanceof Element) watch(node);
+        }
+      }
+    });
+    mutations.observe(root, { childList: true, subtree: true });
+    return () => {
+      mutations.disconnect();
+      observer.disconnect();
+    };
   }, []);
 
   return <div ref={ref}>{children}</div>;
