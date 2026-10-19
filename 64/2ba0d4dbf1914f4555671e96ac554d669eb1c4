@@ -1,0 +1,21 @@
+apps/web/src/index.css
+  s_ec180faf4f9b2e::t_69dc2f5ad2542e 16
+apps/web/src/components/landing/reveal-root.tsx
+  s_ec180faf4f9b2e::t_6e743db90e598a 5-6,8-9,27-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "642ba0d4dbf1914f4555671e96ac554d669eb1c4",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
