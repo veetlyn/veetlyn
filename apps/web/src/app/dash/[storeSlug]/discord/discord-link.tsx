@@ -29,7 +29,7 @@ export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
   const linkedGuildId = settings?.discordGuildId ?? null;
 
   return (
-    <main className="mx-auto w-full max-w-lg space-y-6 px-4 py-6 md:px-7 md:py-8">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 [&>*]:max-w-lg md:px-7 md:py-8">
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Link Discord</h1>
       {linkedGuildId ? (
         <section aria-labelledby="linked-heading" className="space-y-2 panel p-4">

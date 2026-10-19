@@ -1,3 +1,5 @@
+import { cn } from "@jendal-workspace/ui/lib/utils";
+
 const PROGRESS = [
   ["quoting", "Quote"],
   ["awaiting_deposit", "Deposit"],
@@ -14,7 +16,7 @@ export function ProjectProgress({ status, layout = "column" }: { status: string;
   const done = status === "completed";
   return (
     <section aria-label="Progress" className="panel p-4">
-      <ol className={layout === "row" ? "grid grid-cols-6 gap-1.5" : "grid gap-2.5"}>
+      <ol className={layout === "row" ? "grid grid-cols-[repeat(6,minmax(0,1fr))] gap-1.5" : "grid gap-2.5"}>
         {PROGRESS.map(([key, label], index) => {
           const state = index < at || done ? "done" : index === at ? "now" : "next";
           return (
@@ -39,7 +41,7 @@ export function ProjectProgress({ status, layout = "column" }: { status: string;
                         : "size-3 rounded-[4px] shadow-[inset_0_0_0_1.5px_var(--input)]"
                 }
               />
-              <span className={state === "now" ? "font-semibold" : "text-muted-foreground"}>{label}</span>
+              <span className={cn("truncate", state === "now" ? "font-semibold" : "text-muted-foreground")}>{label}</span>
             </li>
           );
         })}
