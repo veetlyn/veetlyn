@@ -4,6 +4,7 @@ import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import { Bot, Briefcase, Check, Scale, Store, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 
+import BundlePricing from "@/components/site/bundle-pricing";
 import Pricing from "@/components/site/pricing";
 import ServicesPricing from "@/components/site/services-pricing";
 import { getPlatformOrigins, getStoreUrlParts } from "@/lib/server-api";
@@ -199,8 +200,14 @@ export default async function LandingPage() {
             <Pricing signupUrl={signupUrl} />
           </section>
 
+          <section aria-labelledby="bundle-pricing-heading" className="space-y-6">
+            <h3 id="bundle-pricing-heading" className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
+              Using both
+            </h3>
+            <BundlePricing />
+          </section>
+
           <div className="space-y-2 text-center text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Using both? Bundles of both products are coming.</p>
             <p>PayPal's processing fees apply and are charged by PayPal; their rate varies by country.</p>
           </div>
         </div>

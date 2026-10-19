@@ -206,18 +206,18 @@ export default function ServicesPricing({ signupUrl }: { signupUrl: string }) {
             </div>
           </form>
           <div className="panel grid content-start gap-4 p-6" aria-live="polite">
-            <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2.5 text-sm">
-              <dt className="text-muted-foreground">Project price</dt>
+            <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-0 gap-y-2.5 text-sm">
+              <dt className="pr-4 text-muted-foreground">Project price</dt>
               <dd className="text-right font-tabular">{usd(amountCents)}</dd>
-              <dt className="text-muted-foreground">Payment fee</dt>
+              <dt className="pr-4 text-muted-foreground">Payment fee</dt>
               <dd className="text-right font-tabular">
                 {usd(paymentFee)} ({plan ? percent(plan.feeBps) : ""})
               </dd>
-              <dt className="text-muted-foreground">Network fee</dt>
+              <dt className="pr-4 text-muted-foreground">Network fee</dt>
               <dd className="text-right font-tabular">
                 {source === "network" ? `${usd(networkFee)} (${percent(NETWORK_FEE_BPS)}, first project only)` : "None, your own client"}
               </dd>
-              <dt className="border-t pt-3 font-semibold">Payleor's total</dt>
+              <dt className="border-t pt-3 pr-4 font-semibold">Payleor's total</dt>
               <dd className="border-t pt-3 text-right font-tabular font-semibold">{usd(paymentFee + networkFee)}</dd>
             </dl>
             <p className="text-sm text-muted-foreground">
