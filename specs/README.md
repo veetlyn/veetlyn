@@ -50,6 +50,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Run C design](platform/2026-10-15-c-plugin-design.md) | Approved 2026-10-15 |
 | [Discord ticket flow design](platform/2026-10-13-discord-ticket-flow-design.md) | Source for run E, to revise first |
 | [Plugin spike facts](platform/2026-10-14-plugin-spike-facts.md) | Final; go for Claude and ChatGPT |
+| [Widget gallery](platform/2026-10-18-widget-gallery.html) | Draft 2026-10-18: the plugin's seven client cards in light and dark, each with loading, error and superseded states, on the spike's data; open it in a browser. Reference for run C's port of the widget |
 | [Architecture](platform/2026-10-16-architecture.md) | Reference, from the code at `4a27fb6`; update it with any change that makes it wrong |
 | [Auth federation design](platform/2026-10-06-auth-federation-design.md) | Approved 2026-10-06, not built; partly changed by run C (see its status) |
 | [Seller pricing](platform/2026-10-07-seller-pricing-proposal.md) | Approved 2026-10-07 |
