@@ -230,11 +230,11 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     await expect(caller.project.get({ teamSlug: "solo", projectId: solo.projectId })).resolves.toMatchObject({
       solo: true,
-      quoteCalculator: { platformFeeBps: 200, senderCountry: null, receiverCountry: null },
+      quoteCalculator: { platformFeeBps: 100, senderCountry: null, receiverCountry: null },
     });
     await expect(caller.project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
       solo: false,
-      quoteCalculator: { platformFeeBps: 100, senderCountry: "US", receiverCountry: "FR" },
+      quoteCalculator: { platformFeeBps: 50, senderCountry: "US", receiverCountry: "FR" },
     });
     // Only admins and the payee see the payee's country.
     const manager = await seedServicesTeamMember(db, { organizationId, teamId: studioTeam.id, role: "manager" });
