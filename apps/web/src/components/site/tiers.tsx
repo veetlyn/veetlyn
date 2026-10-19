@@ -20,7 +20,7 @@ type TierCard = {
   priceCents: Record<BillingInterval, number> | null;
   fee: ReactNode;
   cta: string;
-  kind?: "pick" | "dark";
+  kind?: "pick" | "is-dark";
   btn: "btn-quiet" | "btn-ink" | "btn-mint";
   href?: string;
   // The "Everything in …, plus:" line that opens the list on the bigger plans.
@@ -132,7 +132,7 @@ const TIERS = {
       </>
     ),
     cta: "Talk to sales",
-    kind: "dark",
+    kind: "is-dark",
     btn: "btn-mint",
     href: "/contact#sales",
     plusLine: "Everything in Agency or Scale, plus:",
