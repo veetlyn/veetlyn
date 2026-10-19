@@ -16,7 +16,7 @@ export default function ClientProject({ token }: { token: string }) {
     retry: false,
     refetchInterval: (query) =>
       query.state.data && !isNotFoundError(query.state.error) && clientWaitsOnTeam(query.state.data) ? PROJECT_REFRESH_MS : false,
-    meta: { quietRefetchErrors: true },
+    meta: { silent: true },
   });
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.project.clientGet.queryOptions({ token }).queryKey });
 

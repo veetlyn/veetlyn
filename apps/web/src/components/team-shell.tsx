@@ -69,7 +69,7 @@ export default function TeamShell({
     { href: `/${slug}/projects`, label: "Projects", icon: FolderKanban, show: kind === "services" },
     { href: `/${slug}/services`, label: "Services", icon: Tag, show: kind === "services" },
     { href: `/${slug}/products`, label: "Products", icon: Package, show: storeEnabled },
-    { href: `/${slug}/orders`, label: "Orders", icon: Inbox, show: storeEnabled && admin },
+    { href: `/${slug}/orders`, label: "Orders", icon: Inbox, show: kind === "services" && storeEnabled && admin },
   ];
   const team_: NavItem[] = [
     { href: `/${slug}/payouts`, label: "Payouts", icon: ArrowUpFromLine, show: kind === "services" && !solo },
@@ -108,7 +108,7 @@ export default function TeamShell({
       ));
 
   return (
-    <div className="grid min-h-0 flex-1 md:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="hidden flex-col gap-1 border-r bg-sidebar px-3 py-4 md:flex">
         <Link href="/" className="mb-3 flex items-center gap-2 px-1.5 text-sm text-muted-foreground hover:text-foreground">
           <BrandMark className="size-5 text-foreground" />
@@ -127,10 +127,14 @@ export default function TeamShell({
         <nav aria-label="Work" className="grid gap-0.5">
           {navList(work)}
         </nav>
-        <p className="px-2.5 pt-4 pb-1.5 text-xs font-medium text-muted-foreground">Team</p>
-        <nav aria-label="Team" className="grid gap-0.5">
-          {navList(team_)}
-        </nav>
+        {team_.some((item) => item.show !== false) ? (
+          <>
+            <p className="px-2.5 pt-4 pb-1.5 text-xs font-medium text-muted-foreground">Team</p>
+            <nav aria-label="Team" className="grid gap-0.5">
+              {navList(team_)}
+            </nav>
+          </>
+        ) : null}
       </aside>
       <div className="flex min-w-0 flex-col">
         <div className="flex h-14 items-center gap-2 border-b px-4 md:px-7">
@@ -140,8 +144,8 @@ export default function TeamShell({
           </Link>
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
             {crumbs.map((crumb, i) => (
-              <span key={crumb.href} className="flex min-w-0 items-center gap-1.5">
-                {i > 0 ? <span className="text-border">/</span> : null}
+              <span key={crumb.href} className={cn("min-w-0 items-center gap-1.5", i === crumbs.length - 1 ? "flex" : "hidden md:flex")}>
+                {i > 0 ? <span className="hidden text-border md:inline">/</span> : null}
                 {i === crumbs.length - 1 ? (
                   <span className="truncate font-medium text-foreground capitalize">{crumb.label}</span>
                 ) : (

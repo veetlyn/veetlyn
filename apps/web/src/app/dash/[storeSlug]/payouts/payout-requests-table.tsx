@@ -276,7 +276,7 @@ function RequestsList({
     );
   }
   return (
-    <div className="panel overflow-x-auto">
+    <div className="panel relative overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="border-b bg-secondary/60 text-left text-xs text-muted-foreground">
           <tr>
