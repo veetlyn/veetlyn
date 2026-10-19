@@ -88,7 +88,7 @@ export function RefundSection({
         ref={dialogRef}
         aria-labelledby="refund-dialog-title"
         aria-describedby="refund-dialog-body"
-        className="m-auto max-w-md space-y-4 rounded-lg border bg-background p-6 text-foreground backdrop:bg-black/50"
+        className="m-auto w-[calc(100%-2rem)] max-w-md space-y-4 rounded-xl bg-popover p-6 text-popover-foreground shadow-[var(--float)] backdrop:bg-scrim"
       >
         <h3 id="refund-dialog-title" className="text-lg font-semibold">
           Refund {amount} to {clientName}?
