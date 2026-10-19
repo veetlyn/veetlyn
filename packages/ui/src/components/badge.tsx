@@ -13,7 +13,7 @@ const badgeVariants = cva(
         good: "bg-brand-wash text-brand-text",
         warn: "bg-warning/10 text-warning",
         fail: "bg-destructive/10 text-destructive",
-        info: "bg-[oklch(95%_0.02_250)] text-[oklch(42%_0.07_250)] dark:bg-[oklch(30%_0.04_250)] dark:text-[oklch(86%_0.05_250)]",
+        info: "bg-info-wash text-info",
       },
     },
     defaultVariants: { tone: "neutral" },

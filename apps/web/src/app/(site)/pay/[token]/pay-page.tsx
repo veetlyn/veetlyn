@@ -100,7 +100,7 @@ export default function PayPage({ token }: { token: string }) {
               }
             >
               {paid ? (
-                <span aria-hidden="true" className="grid size-5 place-items-center rounded-md bg-brand text-xs text-[#0d0d10]">
+                <span aria-hidden="true" className="grid size-5 place-items-center rounded-md bg-brand text-xs text-brand-foreground">
                   ✓
                 </span>
               ) : null}

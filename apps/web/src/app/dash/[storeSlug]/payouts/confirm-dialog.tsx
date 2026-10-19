@@ -21,7 +21,7 @@ export function ConfirmDialog({
       ref={dialogRef}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-body`}
-      className="m-auto w-[calc(100%-2rem)] max-w-md space-y-4 rounded-xl bg-popover p-6 text-popover-foreground shadow-[var(--float)] backdrop:bg-foreground/40 backdrop:backdrop-blur-[2px]"
+      className="m-auto w-[calc(100%-2rem)] max-w-md space-y-4 rounded-xl bg-popover p-6 text-popover-foreground shadow-[var(--float)] backdrop:bg-scrim"
     >
       <h3 id={`${id}-title`} className="text-lg font-medium">
         {title}

@@ -31,6 +31,10 @@
   --brand: #1fbf8f;
   --brand-text: color-mix(in oklch, var(--brand) 62%, var(--foreground));
   --brand-wash: color-mix(in oklch, var(--brand) 13%, var(--card));
+  --brand-foreground: #0d0d10;
+  --info: oklch(42% 0.07 250);
+  --info-wash: oklch(95% 0.02 250);
+  --scrim: rgb(10 10 16 / 0.45);
   --tray: #ececee;
   --surface-top: #ffffff;
   --surface-bottom: #fafafb;
@@ -40,6 +44,7 @@
   --edge-hi: rgb(255 255 255 / 0.75);
   --raise: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(16 16 24 / 0.07), 0 3px 8px -2px rgb(16 16 24 / 0.06);
   --well: inset 0 1px 2px rgb(16 16 24 / 0.07);
+  --drop: 0 1px 2px rgb(16 16 24 / 0.08);
   --float: 0 0 0 1px rgb(20 20 28 / 0.17), 0 24px 60px -20px rgb(10 10 16 / 0.4), 0 8px 20px -10px rgb(10 10 16 / 0.2);
   --chart-1: #1fbf8f;
   --chart-2: color-mix(in oklch, #1fbf8f 62%, #ffffff);
@@ -77,6 +82,9 @@
   --border: rgb(241 241 243 / 0.09);
   --input: rgb(241 241 243 / 0.16);
   --ring: color-mix(in oklch, #1fbf8f 70%, #f1f1f3);
+  --info: oklch(86% 0.05 250);
+  --info-wash: oklch(30% 0.04 250);
+  --scrim: rgb(0 0 0 / 0.6);
   --tray: #151517;
   --surface-top: #1f1f23;
   --surface-bottom: #18181b;
@@ -86,6 +94,7 @@
   --edge-hi: rgb(255 255 255 / 0.06);
   --raise: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.45), 0 3px 8px -2px rgb(0 0 0 / 0.35);
   --well: inset 0 1px 2px rgb(0 0 0 / 0.4);
+  --drop: 0 1px 2px rgb(0 0 0 / 0.45);
   --float: 0 0 0 1px rgb(241 241 243 / 0.15), 0 24px 60px -20px rgb(0 0 0 / 0.7);
   --chart-2: color-mix(in oklch, #1fbf8f 62%, #1a1a1d);
   --chart-3: color-mix(in oklch, #1fbf8f 34%, #1a1a1d);
@@ -127,6 +136,10 @@
   --color-brand: var(--brand);
   --color-brand-text: var(--brand-text);
   --color-brand-wash: var(--brand-wash);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-info: var(--info);
+  --color-info-wash: var(--info-wash);
+  --color-scrim: var(--scrim);
   --color-tray: var(--tray);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -166,7 +179,7 @@
 }
 @utility raised {
   background: linear-gradient(180deg, var(--surface-top), var(--secondary));
-  box-shadow: 0 0 0 1px var(--input), inset 0 1px 0 var(--edge-hi), 0 1px 2px rgb(16 16 24 / 0.08);
+  box-shadow: 0 0 0 1px var(--input), inset 0 1px 0 var(--edge-hi), var(--drop);
 }
 @utility well {
   box-shadow: var(--well);
