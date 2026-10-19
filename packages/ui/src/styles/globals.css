@@ -5,6 +5,8 @@
 @source "../**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
+/* Short windows (a laptop with browser chrome): screens that must fit tighten their spacing. */
+@custom-variant short (@media (max-height: 800px));
 
 /* Payleor's Relief tokens on shadcn's names. Neutral greys, a graphite main button, mint for the brand and for
    what is selected; warm colours only for trouble. Fonts load in apps/web's root layout. */
@@ -36,6 +38,11 @@
   --info-wash: oklch(95% 0.02 250);
   --scrim: rgb(10 10 16 / 0.45);
   --tray: #ececee;
+  --stage: #121215;
+  --stage-ink: #f1f1f3;
+  --stage-muted: #9a9aa3;
+  --stage-line: rgb(255 255 255 / 0.09);
+  --stage-card: #1d1d21;
   --surface-top: #ffffff;
   --surface-bottom: #fafafb;
   --main-top: #46464c;
@@ -86,6 +93,8 @@
   --info-wash: oklch(30% 0.04 250);
   --scrim: rgb(0 0 0 / 0.6);
   --tray: #151517;
+  --stage: #1a1a1e;
+  --stage-card: #25252a;
   --surface-top: #1f1f23;
   --surface-bottom: #18181b;
   --main-top: #f7f7f8;
@@ -141,6 +150,11 @@
   --color-info-wash: var(--info-wash);
   --color-scrim: var(--scrim);
   --color-tray: var(--tray);
+  --color-stage: var(--stage);
+  --color-stage-ink: var(--stage-ink);
+  --color-stage-muted: var(--stage-muted);
+  --color-stage-line: var(--stage-line);
+  --color-stage-card: var(--stage-card);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -194,6 +208,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+@keyframes drift {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -207,6 +226,11 @@
   }
   h1, h2 {
     text-wrap: balance;
+  }
+  /* A page that marks itself to fit the screen (the sign-in pages) never scrolls the window. */
+  body:has([data-screen-fit]) {
+    height: 100svh;
+    overflow: hidden;
   }
   input[type="radio"],
   input[type="checkbox"],
