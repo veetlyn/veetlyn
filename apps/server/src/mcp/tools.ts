@@ -100,7 +100,13 @@ function slidesOf(view: ClientView): Slide[] {
 }
 
 // "3 freelancers responded: «Aïcha» quoted $150.00 in 4 days; «Ben» asked «…»" (plugin design §8).
-function summaryLine(slides: readonly Slide[], currency: string): string | null {
+type Framing = { name: (value: string) => string; text: (value: string) => string };
+
+// The model reads seller and client words framed as data; the card shows people the same line plainly.
+const FOR_MODEL: Framing = { name: (value) => quoted(value, 60), text: (value) => quoted(value, 80) };
+const FOR_CARD: Framing = { name: (value) => plain(value, 60), text: (value) => `“${plain(value, 80)}”` };
+
+function summaryLine(slides: readonly Slide[], currency: string, frame: Framing): string | null {
   if (slides.length === 0) return null;
   const parts = slides.map((s) => {
     const said: string[] = [];
@@ -108,13 +114,14 @@ function summaryLine(slides: readonly Slide[], currency: string): string | null 
       said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${s.quote.deliveryDays} days`);
     }
     const open = s.questions.filter((q) => !q.answered);
-    if (open.length > 0) said.push(`asked ${quoted(open[0]?.body ?? "", 80)}`);
-    return `${quoted(s.name, 60)} ${said.join(" and ") || "is looking at it"}`;
+    if (open.length > 0) said.push(`asked ${frame.text(open[0]?.body ?? "")}`);
+    return `${frame.name(s.name)} ${said.join(" and ") || "is looking at it"}`;
   });
   return `${slides.length} freelancer${slides.length === 1 ? "" : "s"} responded: ${parts.join("; ")}.`;
 }
 
-type Step = { text: string; actions: string[] };
+// `text` tells the model what comes next; `card` says it to the person when it reads differently.
+type Step = { text: string; actions: string[]; card?: string };
 
 function nextStep(view: ClientView, seller: string, openQuestions: number): Step {
   const { project } = view;
@@ -130,14 +137,26 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
       const answer = openQuestions > 0 ? " Help the user answer the open questions with reply." : "";
       if (proposed.length > 0) {
         const which = proposed.length > 1 ? "Compare the quotes; the user accepts one" : "Review the quote; the user accepts it";
-        return { text: `${which} with its Accept quote button. The deposit is due next.${answer}`, actions: ["accept_quote", "reply", "open"] };
+        return {
+          text: `${which} with its Accept quote button. The deposit is due next.${answer}`,
+          card: `${proposed.length > 1 ? "Compare the quotes and accept the one you want" : "Accept the quote to go ahead"}; the deposit is due next.${openQuestions > 0 ? " Answer open questions in the chat." : ""}`,
+          actions: ["accept_quote", "reply", "open"],
+        };
       }
-      return { text: `Waiting for ${seller} to quote.${answer}`, actions: ["reply", "open"] };
+      return {
+        text: `Waiting for ${seller} to quote.${answer}`,
+        card: openQuestions > 0 ? "The team has questions for you; answer them in the chat." : "The team is looking at your request.",
+        actions: ["reply", "open"],
+      };
     }
     case "declined":
-      return { text: "The team declined the request. Offer to search again for someone else.", actions: ["search"] };
+      return {
+        text: "The team declined the request. Offer to search again for someone else.",
+        card: "The team declined this request.",
+        actions: ["search"],
+      };
     case "expired":
-      return { text: "Nobody answered the request in time. Offer to search again.", actions: ["search"] };
+      return { text: "Nobody answered the request in time. Offer to search again.", card: "This request expired.", actions: ["search"] };
     case "awaiting_deposit":
     case "awaiting_balance":
       return payable
@@ -253,15 +272,15 @@ export async function projectCard(
       file: delivery.file ? plain(delivery.file.name, 120) : null,
     },
     openQuestions,
-    summary: summaryLine(slides, project.currency),
-    nextStep: step.text,
+    summary: summaryLine(slides, project.currency, FOR_CARD),
+    nextStep: step.card ?? step.text,
     actions: step.actions,
   };
   const lines = [
     lead,
     `Project ${quoted(project.title)} with ${quoted(seller, 63)} (id ${project.id}): ${projectStatusLabel(project.status)}.`,
     card.declinedReason ? `The team's reason: ${quoted(card.declinedReason, 600)}` : null,
-    card.summary,
+    summaryLine(slides, project.currency, FOR_MODEL),
     ...slides.flatMap((s) =>
       s.quote
         ? [
