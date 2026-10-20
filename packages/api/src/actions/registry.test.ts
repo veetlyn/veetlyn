@@ -49,4 +49,10 @@ describe("action registry", () => {
     }
     expect(find("project.client_preview")).toMatchObject({ kind: "query", allow: [{ grant: "member" }], surfaces: ["web"] });
   });
+
+  it("leaves declining a request to a person and answering questions to the client", () => {
+    expect(agentPolicyOf(find("request.decline"))).toBe("never");
+    expect(find("request.decline").allow).toEqual([{ grant: "member" }]);
+    expect(find("conversation.answer").allow).toEqual([{ grant: "client" }]);
+  });
 });

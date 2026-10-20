@@ -74,7 +74,11 @@ export async function resolveClient(db: Database, secret: string, holder: Client
   if (!holder.userId) return { ok: false, reason: "not_a_client" };
   const contactId = await findClientContactForUser(db, { projectId: project.id, userId: holder.userId });
   if (!contactId) return { ok: false, reason: "not_a_client" };
-  return { ok: true, contactId, actor: { kind: "user", userId: holder.userId } };
+  return {
+    ok: true,
+    contactId,
+    actor: { kind: "client_account", userId: holder.userId, token: { projectId: project.id, contactId } },
+  };
 }
 
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;

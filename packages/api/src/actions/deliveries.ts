@@ -14,6 +14,7 @@ import {
   UPLOAD_LIMIT,
   UPLOAD_URL_SECONDS,
 } from "../use-cases/projects";
+import { isClientActor } from "./actors";
 import { defineAction } from "./define";
 import { projectIdInput } from "./projects";
 import { teamActorOf } from "./team-actor";
@@ -88,7 +89,7 @@ export const deliveryFile = defineAction({
   scope: (input) => ({ projectId: input.projectId }),
   allow: [{ grant: "member" }, { grant: "client" }],
   run: (context, input) =>
-    context.actor.kind === "client_link"
+    isClientActor(context.actor)
       ? deliveryFileUrl(context.deps.db, context.deps.files, input)
       : teamDeliveryFileUrl(context.deps, teamActorOf(context), input),
 });

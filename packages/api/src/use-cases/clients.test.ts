@@ -139,7 +139,7 @@ describe.skipIf(!hasTestDatabase)("the client rule", () => {
     await expect(resolveClient(db, SECRET, { projectId, userId })).resolves.toEqual({
       ok: true,
       contactId,
-      actor: { kind: "user", userId },
+      actor: { kind: "client_account", userId, token: { projectId, contactId } },
     });
   });
 

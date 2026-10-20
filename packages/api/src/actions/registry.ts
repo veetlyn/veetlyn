@@ -5,6 +5,7 @@ import {
   projectClientPreview,
   projectClientRemove,
 } from "./clients";
+import { conversationAnswer, conversationPost, memberDepartments, requestDecline, requestShortlist } from "./conversations";
 import type { AnyActionDefinition } from "./define";
 import { deliveryAccept, deliveryFile, deliveryRequestChanges, deliverySubmit, deliveryUploadStart } from "./deliveries";
 import {
@@ -41,4 +42,9 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   deliveryRequestChanges,
   deliveryAccept,
   deliveryFile,
+  conversationPost,
+  conversationAnswer,
+  requestDecline,
+  requestShortlist,
+  memberDepartments,
 ];

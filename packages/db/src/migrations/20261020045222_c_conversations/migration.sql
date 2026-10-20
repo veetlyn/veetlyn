@@ -11,7 +11,7 @@ CREATE TABLE "conversation_message" (
 	"reply_to_id" text,
 	"ref_type" text,
 	"ref_id" text,
-	"surface" text NOT NULL,
+	"surface" text,
 	"discord_message_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
