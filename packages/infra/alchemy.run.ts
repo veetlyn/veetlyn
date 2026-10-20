@@ -139,6 +139,9 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
     include: ["**/*", "../../packages/core/src/**", "../../packages/ui/src/**"],
   },
   observability,
+  // Website.Vinext turns Workers Cache on, which cached signed-in API answers forwarded through this Worker and
+  // served them to other callers. Nothing here is meant to be shared; static files have their own caching.
+  cache: { enabled: false },
   domain: hosts?.web.domain,
   routes: hosts?.web.routes,
   env: {
