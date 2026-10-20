@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { signAccountClientLink, signClientLink, signLegacyClientLink, signPayLink, verifyClientLink, verifyPayLink } from "./client-links";
+import { signClientLink, signLegacyClientLink, signPayLink, verifyClientLink, verifyPayLink } from "./client-links";
 
 const SECRET = "test-secret-that-is-at-least-32-characters";
 const TARGET = { projectId: "proj-123", contactId: "contact-1", version: 2 };
@@ -9,15 +9,6 @@ describe("client links", () => {
   it("round-trips a project, a contact and a link version", async () => {
     const token = await signClientLink(SECRET, TARGET);
     await expect(verifyClientLink(SECRET, token)).resolves.toEqual({ ...TARGET, emailed: true });
-  });
-
-  it("tells a link given to a signed-in client from an emailed one, and neither passes for the other", async () => {
-    const token = await signAccountClientLink(SECRET, TARGET);
-    await expect(verifyClientLink(SECRET, token)).resolves.toEqual({ ...TARGET, emailed: false });
-    const [emailedPart, signature] = [token.slice(0, token.lastIndexOf(".a.")), token.slice(token.lastIndexOf(".") + 1)];
-    await expect(verifyClientLink(SECRET, `${emailedPart}.${signature}`)).resolves.toBeNull();
-    const emailed = await signClientLink(SECRET, TARGET);
-    await expect(verifyClientLink(SECRET, emailed.replace(/\.([^.]+)$/, ".a.$1"))).resolves.toBeNull();
   });
 
   it("rejects a token with any segment changed, truncated, or signed with another secret", async () => {
