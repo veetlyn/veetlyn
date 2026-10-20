@@ -203,6 +203,12 @@ export default Alchemy.Stack(
         proxied: true,
         comment: "Seller sites, served by the web Worker's route",
       });
+      // The wildcard route also matches staging's seller hosts and wins over their custom domains, so this
+      // Worker-less route hands them back to the staging Worker. Adopted: it was first created by hand.
+      yield* Cloudflare.Workers.WorkerRoute("StagingStoresOptOut", {
+        zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
+        pattern: "*.staging.payleor.app/*",
+      }).pipe(Alchemy.AdoptPolicy.adopt(true));
     }
     const web = yield* Web;
 
