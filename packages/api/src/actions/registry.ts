@@ -16,6 +16,7 @@ import {
   projectRefundClient,
   projectStart,
 } from "./projects";
+import { offeringSearch } from "./offerings";
 import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
 import { createRequest } from "./requests";
 
@@ -47,4 +48,5 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   requestDecline,
   requestShortlist,
   memberDepartments,
+  offeringSearch,
 ];

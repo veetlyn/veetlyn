@@ -1,8 +1,10 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, isNull, lte, ne, or, type SQL, sql } from "drizzle-orm";
 
 import type { Database } from "../index";
 import { postgresError } from "../postgres-errors";
+import { team } from "../schema/organization";
 import { servicesDepartment, servicesOffering } from "../schema/services-catalog";
+import { servicesTeamSettings } from "../schema/services-teams";
 import type { OfferingDraft } from "@jendal-workspace/core";
 
 export type ServicesDepartmentRow = { id: string; name: string; position: number };
@@ -285,3 +287,51 @@ export async function countServicesOfferings(
     .where(and(...conditions));
   return row?.count ?? 0;
 }
+
+const LIKE_SPECIALS = /[\\%_]/g;
+
+// What the client's AI may find (run C design §3): active, listed offerings in a listed department (or none) of
+// active services teams. A word of the query matches the offering's name or description, or the seller's name.
+export async function searchListedOfferings(
+  db: Database,
+  input: { words: readonly string[]; maxPriceMinor?: number; maxDays?: number; limit: number },
+) {
+  const wordFilters: SQL[] = input.words.flatMap((word) => {
+    const pattern = `%${word.replace(LIKE_SPECIALS, (c) => `\\${c}`)}%`;
+    return [ilike(servicesOffering.name, pattern), ilike(servicesOffering.description, pattern), ilike(team.name, pattern)];
+  });
+  return db
+    .select({
+      id: servicesOffering.id,
+      name: servicesOffering.name,
+      description: servicesOffering.description,
+      priceMinMinor: servicesOffering.priceMinMinor,
+      priceMaxMinor: servicesOffering.priceMaxMinor,
+      daysMin: servicesOffering.daysMin,
+      daysMax: servicesOffering.daysMax,
+      intakeQuestions: servicesOffering.intakeQuestions,
+      currency: servicesTeamSettings.currency,
+      sellerName: team.name,
+      sellerSlug: team.slug,
+    })
+    .from(servicesOffering)
+    .innerJoin(team, eq(team.id, servicesOffering.teamId))
+    .innerJoin(servicesTeamSettings, eq(servicesTeamSettings.teamId, team.id))
+    .leftJoin(servicesDepartment, eq(servicesDepartment.id, servicesOffering.departmentId))
+    .where(
+      and(
+        eq(servicesOffering.active, true),
+        eq(servicesOffering.listed, true),
+        or(isNull(servicesDepartment.id), eq(servicesDepartment.listed, true)),
+        eq(team.status, "active"),
+        eq(team.product, "services"),
+        wordFilters.length > 0 ? or(...wordFilters) : undefined,
+        input.maxPriceMinor === undefined ? undefined : lte(servicesOffering.priceMinMinor, input.maxPriceMinor),
+        input.maxDays === undefined ? undefined : lte(servicesOffering.daysMin, input.maxDays),
+      ),
+    )
+    .orderBy(asc(servicesOffering.priceMinMinor), asc(servicesOffering.id))
+    .limit(input.limit);
+}
+
+export type ListedOffering = Awaited<ReturnType<typeof searchListedOfferings>>[number];
