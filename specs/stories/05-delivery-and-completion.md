@@ -5,7 +5,7 @@ Deliveries (note, link, file), changes requested, acceptance, the balance, compl
 Shared facts for these stories:
 
 - `walk-crew` charges a 10% management fee and keeps a 15% team cut. Walk Through is the team admin and the assigned member, so the deliveries below are made from Walk Through's admin session.
-- The team's project page is `{dash}/walk-crew/projects/<id>`; the client page is `{site}/c/<token>` (link on the team's project page, "Client link:").
+- The team's project page is `{dash}/walk-crew/projects/<id>`; the client page is `{seller}/c/<token>` (link on the team's project page, "Client link:").
 - In dev, file uploads and downloads go to a local S3 endpoint, so the browser must allow local network access for the admin and site hosts. On the deployed hosts the `Files` bucket's CORS rule has not been checked yet (backlog, run H).
 - Deadline penalties and cases are not built, so the final price is the current quote.
 
