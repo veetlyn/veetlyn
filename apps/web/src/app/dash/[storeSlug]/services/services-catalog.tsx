@@ -2,6 +2,7 @@
 
 import { MAX_DEPARTMENT_NAME } from "@jendal-workspace/core";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -39,7 +40,7 @@ function DepartmentRow({
   const remove = useMutation(trpc.servicesCatalog.deleteDepartment.mutationOptions({ onSuccess: invalidate }));
   return (
     <li className="space-y-1">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Input
           aria-label={`Rename ${department.name}`}
           value={name}
@@ -52,7 +53,7 @@ function DepartmentRow({
             const value = name.trim();
             if (value !== department.name) rename.mutate({ teamSlug, departmentId: department.id, name: value });
           }}
-          className="h-8 max-w-60 text-sm"
+          className="max-w-60"
         />
         <span className="text-sm text-muted-foreground">
           {offeringCount} {offeringCount === 1 ? "service" : "services"}
@@ -126,13 +127,15 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   function renderOffering(offering: (typeof offerings)[number]) {
     const questionCount = offering.intakeQuestions.length;
     return (
-      <li key={offering.id} className="flex items-center gap-4 px-4 py-3">
+      <li key={offering.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
         <Link href={`/${teamSlug}/services/${offering.id}`} className="min-w-0 flex-1">
-          <p className="truncate font-medium">{offering.name}</p>
+          <p className="flex items-center gap-2 font-medium">
+            <span className="truncate">{offering.name}</span>
+            {!offering.active ? <Badge>Hidden</Badge> : null}
+          </p>
           <p className="text-sm text-muted-foreground">
             {priceLabel(offering, currency)} · {daysLabel(offering)}
             {questionCount > 0 ? ` · ${questionCount} ${questionCount === 1 ? "question" : "questions"}` : ""}
-            {!offering.active ? " · Hidden" : ""}
           </p>
         </Link>
         {isAdmin ? (
@@ -166,13 +169,10 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
-      <div className="flex items-baseline justify-between gap-4">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+      <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <Link href={`/${teamSlug}`} className="text-sm text-muted-foreground">
-            {team.data.team.name}
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Services</h1>
+          <h1 className="font-heading text-3xl">Services</h1>
         </div>
         {isAdmin ? (
           <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>
@@ -181,11 +181,15 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
         ) : null}
       </div>
 
-      {catalog.isError && <p role="alert">The services couldn't be loaded.</p>}
+      {catalog.isError && (
+        <p role="alert" className="text-sm text-destructive">
+          The services couldn't be loaded.
+        </p>
+      )}
 
       {!catalog.isError && offerings.length === 0 && (
-        <section className="grid gap-2 border border-dashed p-8 text-center">
-          <p className="font-medium">No services yet</p>
+        <section className="panel grid justify-items-center gap-2 p-10 text-center">
+          <p className="font-heading text-lg">No services yet</p>
           <p className="text-sm text-muted-foreground">
             {isAdmin ? (
               <Link href={`/${teamSlug}/services/new`} className="underline underline-offset-4">
@@ -199,7 +203,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
       )}
 
       {!catalog.isError && (isAdmin || departments.length > 0) && (
-        <section className="space-y-3">
+        <section className="panel space-y-3 p-5">
           <h2 className="font-medium">Departments</h2>
           <p className="text-sm text-muted-foreground">
             Optional groups for your seller page. A service can also stand alone.
@@ -256,16 +260,16 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
             .filter((department) => (byDepartment.get(department.id) ?? []).length > 0)
             .map((department) => (
               <section key={department.id} className="space-y-2">
-                <h2 className="font-medium">{department.name}</h2>
-                <ul className="divide-y border">
+                <h2 className="text-sm font-medium text-muted-foreground">{department.name}</h2>
+                <ul className="panel divide-y overflow-hidden">
                   {(byDepartment.get(department.id) ?? []).map((offering) => renderOffering(offering))}
                 </ul>
               </section>
             ))}
           {ungrouped.length > 0 && (
             <section className="space-y-2">
-              {departments.length > 0 && <h2 className="font-medium">Not in a department</h2>}
-              <ul className="divide-y border">{ungrouped.map((offering) => renderOffering(offering))}</ul>
+              {departments.length > 0 && <h2 className="text-sm font-medium text-muted-foreground">Not in a department</h2>}
+              <ul className="panel divide-y overflow-hidden">{ungrouped.map((offering) => renderOffering(offering))}</ul>
             </section>
           )}
         </div>

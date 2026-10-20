@@ -35,8 +35,8 @@ export default function PublishCard({ teamSlug, publicUrl }: { teamSlug: string;
   }
 
   return (
-    <section id="publish" className="grid scroll-mt-6 gap-3 border p-4">
-      <h2 className="font-medium">{product === "services" ? "Seller page" : "Storefront"}</h2>
+    <section id="publish" className="grid scroll-mt-6 gap-3 panel p-4">
+      <h2 className="font-semibold">{product === "services" ? "Seller page" : "Storefront"}</h2>
       <p className="text-sm">
         {sellerStatus === "draft" ? (
           "Draft: only your team can see it."

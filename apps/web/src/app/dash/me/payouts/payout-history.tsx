@@ -1,9 +1,10 @@
 "use client";
 
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { useQuery } from "@tanstack/react-query";
 
 import { formatMinor } from "@/lib/money";
-import { MEMBER_STATUS_LABELS, memberPayoutFeeMinor, payoutSentMinor } from "@/lib/payouts";
+import { MEMBER_STATUS_LABELS, PAYOUT_STATUS_TONES, memberPayoutFeeMinor, payoutSentMinor } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
 // Shares the payouts.mine query with the earnings section, which shows the loading and error states.
@@ -19,17 +20,17 @@ export function PayoutHistory() {
       {mine.data.requests.length === 0 ? (
         <p className="text-sm text-muted-foreground">No payout requests yet.</p>
       ) : (
-        <ul className="divide-y rounded-lg border text-sm">
+        <ul className="panel divide-y overflow-hidden text-sm">
           {mine.data.requests.map((request) => {
             const sentMinor = payoutSentMinor(request);
             const feeMinor = memberPayoutFeeMinor(request);
             return (
-              <li key={request.id} className="space-y-1 px-4 py-3">
+              <li key={request.id} className="space-y-1 px-4 py-3.5">
                 <div className="flex items-center justify-between gap-4">
                   <span className="font-medium">
-                    {request.teamName} · {formatMinor(request.amountMinor, request.currency)}
+                    {request.teamName} · <span className="font-tabular">{formatMinor(request.amountMinor, request.currency)}</span>
                   </span>
-                  <span className="text-muted-foreground">{MEMBER_STATUS_LABELS[request.status]}</span>
+                  <Badge tone={PAYOUT_STATUS_TONES[request.status]}>{MEMBER_STATUS_LABELS[request.status]}</Badge>
                 </div>
                 {request.source === "project" && request.projectTitle ? (
                   <p className="text-muted-foreground">For {request.projectTitle}</p>

@@ -5,78 +5,148 @@
 @source "../**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
+/* Short windows (a laptop with browser chrome): screens that must fit tighten their spacing. */
+@custom-variant short (@media (max-height: 800px));
 
+/* Payleor's Relief tokens on shadcn's names. Neutral greys, a graphite main button, mint as a signal (your turn,
+   done, focus) rather than a fill; warm colours only for trouble. Cal Sans UI for headings (served from apps/web's
+   public/fonts), Inter for text and numbers, Geist Mono for references (both loaded in apps/web's root layout). */
+@font-face {
+  font-family: "Cal Sans UI";
+  src: url("/fonts/CalSansUI-Variable.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
+  --background: #f6f6f7;
+  --foreground: #141417;
+  --card: #ffffff;
+  --card-foreground: #141417;
+  --popover: #ffffff;
+  --popover-foreground: #141417;
+  --primary: #1c1c20;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f1f3;
+  --secondary-foreground: #141417;
+  --muted: #f1f1f3;
+  --muted-foreground: #5d5d66;
+  --accent: #ececee;
+  --accent-foreground: #141417;
+  --destructive: oklch(52% 0.19 26);
+  --warning: oklch(52% 0.13 68);
+  --border: rgb(20 20 28 / 0.11);
+  --input: rgb(20 20 28 / 0.17);
+  --ring: color-mix(in oklch, #1fbf8f 62%, #141417);
+  --brand: #1fbf8f;
+  --brand-text: color-mix(in oklch, var(--brand) 55%, var(--foreground));
+  --brand-wash: color-mix(in oklch, var(--brand) 13%, var(--card));
+  --brand-foreground: #0d0d10;
+  --info: oklch(42% 0.07 250);
+  --info-wash: oklch(95% 0.02 250);
+  --scrim: rgb(10 10 16 / 0.45);
+  --tray: #ececee;
+  --stage: #121215;
+  --stage-ink: #f1f1f3;
+  --stage-muted: #9a9aa3;
+  --stage-line: rgb(255 255 255 / 0.09);
+  --stage-card: #1d1d21;
+  --band: #1c1c20;
+  --band-ink: #f1f1f3;
+  --band-muted: #a8a8b0;
+  --band-raise: #2a2a2f;
+  --band-line: rgb(255 255 255 / 0.1);
+  --surface-top: #ffffff;
+  --surface-bottom: #fafafb;
+  --main-top: #46464c;
+  --main-bottom: #1c1c20;
+  --main-edge: #0d0d10;
+  --edge-hi: rgb(255 255 255 / 0.75);
+  --raise: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(16 16 24 / 0.05), 0 2px 6px -2px rgb(16 16 24 / 0.04);
+  --well: inset 0 1px 2px rgb(16 16 24 / 0.07);
+  --drop: 0 1px 2px rgb(16 16 24 / 0.08);
+  --float: 0 0 0 1px rgb(20 20 28 / 0.17), 0 24px 60px -20px rgb(10 10 16 / 0.4), 0 8px 20px -10px rgb(10 10 16 / 0.2);
+  --chart-1: #1fbf8f;
+  --chart-2: color-mix(in oklch, #1fbf8f 62%, #ffffff);
+  --chart-3: color-mix(in oklch, #1fbf8f 34%, #ffffff);
+  --chart-4: #5f5f66;
+  --chart-5: #a8a8b0;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f1f1f3;
+  --sidebar-foreground: #141417;
+  --sidebar-primary: #1c1c20;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #141417;
+  --sidebar-border: rgb(20 20 28 / 0.09);
+  --sidebar-ring: color-mix(in oklch, #1fbf8f 62%, #141417);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.87 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0e0e10;
+  --foreground: #f1f1f3;
+  --card: #1a1a1d;
+  --card-foreground: #f1f1f3;
+  --popover: #1a1a1d;
+  --popover-foreground: #f1f1f3;
+  --primary: #f1f1f3;
+  --primary-foreground: #111113;
+  --secondary: #222226;
+  --secondary-foreground: #f1f1f3;
+  --muted: #222226;
+  --muted-foreground: #a8a8b0;
+  --accent: #26262b;
+  --accent-foreground: #f1f1f3;
+  --destructive: oklch(72% 0.17 26);
+  --warning: oklch(80% 0.14 68);
+  --border: rgb(241 241 243 / 0.09);
+  --input: rgb(241 241 243 / 0.16);
+  --ring: color-mix(in oklch, #1fbf8f 70%, #f1f1f3);
+  --info: oklch(86% 0.05 250);
+  --info-wash: oklch(30% 0.04 250);
+  --scrim: rgb(0 0 0 / 0.6);
+  --tray: #151517;
+  --stage: #1a1a1e;
+  --stage-card: #25252a;
+  --band: #1f1f23;
+  --band-ink: #f1f1f3;
+  --band-muted: #a8a8b0;
+  --band-raise: #2c2c31;
+  --band-line: rgb(255 255 255 / 0.1);
+  --surface-top: #1f1f23;
+  --surface-bottom: #18181b;
+  --main-top: #f7f7f8;
+  --main-bottom: #d6d6da;
+  --main-edge: #8e8e96;
+  --edge-hi: rgb(255 255 255 / 0.06);
+  --raise: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.45), 0 3px 8px -2px rgb(0 0 0 / 0.35);
+  --well: inset 0 1px 2px rgb(0 0 0 / 0.4);
+  --drop: 0 1px 2px rgb(0 0 0 / 0.45);
+  --float: 0 0 0 1px rgb(241 241 243 / 0.15), 0 24px 60px -20px rgb(0 0 0 / 0.7);
+  --chart-2: color-mix(in oklch, #1fbf8f 62%, #1a1a1d);
+  --chart-3: color-mix(in oklch, #1fbf8f 34%, #1a1a1d);
+  --chart-4: #a8a8b0;
+  --chart-5: #5f5f66;
+  --sidebar: #151517;
+  --sidebar-foreground: #f1f1f3;
+  --sidebar-primary: #f1f1f3;
+  --sidebar-primary-foreground: #111113;
+  --sidebar-accent: #1f1f23;
+  --sidebar-accent-foreground: #f1f1f3;
+  --sidebar-border: rgb(241 241 243 / 0.08);
+  --sidebar-ring: color-mix(in oklch, #1fbf8f 70%, #f1f1f3);
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cal Sans UI", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-num: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --color-band: var(--band);
+  --color-band-ink: var(--band-ink);
+  --color-band-muted: var(--band-muted);
+  --color-band-raise: var(--band-raise);
+  --color-band-line: var(--band-line);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -94,6 +164,20 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
+  --color-brand-wash: var(--brand-wash);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-info: var(--info);
+  --color-info-wash: var(--info-wash);
+  --color-scrim: var(--scrim);
+  --color-tray: var(--tray);
+  --color-stage: var(--stage);
+  --color-stage-ink: var(--stage-ink);
+  --color-stage-muted: var(--stage-muted);
+  --color-stage-line: var(--stage-line);
+  --color-stage-card: var(--stage-card);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -117,14 +201,70 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* Surfaces: a tray holds panels; panels are raised; fields are wells. */
+@utility tray {
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--tray);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+@utility panel {
+  border-radius: 10px;
+  border: 1px solid var(--input);
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  box-shadow: var(--raise);
+}
+@utility raised {
+  background: linear-gradient(180deg, var(--surface-top), var(--secondary));
+  box-shadow: 0 0 0 1px var(--input), inset 0 1px 0 var(--edge-hi), var(--drop);
+}
+@utility well {
+  box-shadow: var(--well);
+}
+@utility main-surface {
+  color: var(--primary-foreground);
+  background: linear-gradient(180deg, var(--main-top), var(--main-bottom));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.18), 0 0 0 1px var(--main-edge), 0 1px 2px rgb(0 0 0 / 0.2), 0 6px 14px -6px rgb(0 0 0 / 0.35);
+}
+/* Headings: Cal Sans UI at semibold with its geometric shapes, slightly tight. Never bold or black. */
+@utility font-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variation-settings: "GEOM" 100;
+  letter-spacing: -0.025em;
+}
+@utility font-tabular {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply font-sans bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
   }
   html {
     @apply font-sans;
+  }
+  h1, h2 {
+    text-wrap: balance;
+  }
+  /* A page that marks itself to fit the screen (the sign-in pages) never scrolls the window. */
+  body:has([data-screen-fit]) {
+    height: 100svh;
+    overflow: hidden;
+  }
+  input[type="radio"],
+  input[type="checkbox"],
+  input[type="range"],
+  progress {
+    accent-color: var(--brand);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 }

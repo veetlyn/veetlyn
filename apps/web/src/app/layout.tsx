@@ -1,20 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
 import Providers from "@/components/providers";
 import PwaRegistration from "@/components/pwa-registration";
 import SandboxBanner from "@/components/sandbox-banner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Payleor's type: Cal Sans UI for headings (self-hosted in public/fonts), Inter for text and numbers, Geist Mono for references.
+const FONTS = "https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Geist+Mono:wght@400;500&display=swap";
 
 export const metadata: Metadata = {
   title: "Payleor",
@@ -28,7 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} flex min-h-svh flex-col antialiased`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="stylesheet" href={FONTS} />
+        <link rel="preload" href="/fonts/CalSansUI-Variable.woff2" as="font" type="font/woff2" crossOrigin="" />
+      </head>
+      <body className="flex min-h-svh flex-col antialiased">
         <PwaRegistration />
         <SandboxBanner />
         <Providers>{children}</Providers>

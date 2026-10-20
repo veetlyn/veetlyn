@@ -35,6 +35,22 @@ export const MEMBER_STATUS_LABELS = {
   exported: "Approved, being sent",
 } satisfies Record<PayoutRequestStatus, string>;
 
+// Badge tones for payout states: warm only when someone has to act.
+export const PAYOUT_STATUS_TONES = {
+  requested: "info",
+  queued: "brand",
+  sending: "brand",
+  sent: "brand",
+  succeeded: "good",
+  failed: "fail",
+  rejected: "neutral",
+  exported: "brand",
+} as const satisfies Record<PayoutRequestStatus, "neutral" | "brand" | "good" | "warn" | "fail" | "info">;
+
+export function payoutStatusTone(request: PayoutState) {
+  return request.status === "sending" && request.uncertain ? "warn" : PAYOUT_STATUS_TONES[request.status];
+}
+
 export type PayoutAction = "approve" | "reject" | "retry" | "refresh" | "cancel_export";
 
 // A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once, and cannot be

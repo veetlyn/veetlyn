@@ -16,7 +16,7 @@ import { trpc } from "@/utils/trpc";
 
 const TONE_CLASS = {
   pending: "text-muted-foreground",
-  available: "text-emerald-700 dark:text-emerald-400",
+  available: "text-brand-text",
   problem: "text-destructive",
 } as const;
 
@@ -46,7 +46,7 @@ export default function CreateStoreForm({ urlParts }: { urlParts: StoreUrlParts 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+    <form onSubmit={handleSubmit} className="panel mt-6 grid gap-6 p-5">
       <div className="space-y-2">
         <Label htmlFor="store-name">Store name</Label>
         <Input

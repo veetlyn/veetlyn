@@ -9,7 +9,7 @@ import { queryClient, trpc } from "@/utils/trpc";
 
 function InvalidLink() {
   return (
-    <main className="container mx-auto max-w-xl px-4 py-10">
+    <main className="mx-auto w-full max-w-xl px-4 py-6 md:px-7 md:py-10">
       <p role="alert" className="text-sm text-destructive">
         This link is not valid. Check the link in your email.
       </p>
@@ -32,7 +32,7 @@ export default function OrderPage({ token, slug }: { token: string; slug: string
   if (!tokenLooksValid) return <InvalidLink />;
   if (order.isPending) {
     return (
-      <main className="container mx-auto max-w-xl px-4 py-10">
+      <main className="mx-auto w-full max-w-xl px-4 py-6 md:px-7 md:py-10">
         <p role="status" className="text-sm text-muted-foreground">
           Loading your order…
         </p>
@@ -42,7 +42,7 @@ export default function OrderPage({ token, slug }: { token: string; slug: string
   if (order.error) {
     if (order.error.data?.code === "NOT_FOUND" || order.error.data?.code === "BAD_REQUEST") return <InvalidLink />;
     return (
-      <main className="container mx-auto max-w-xl px-4 py-10">
+      <main className="mx-auto w-full max-w-xl px-4 py-6 md:px-7 md:py-10">
         <p role="alert" className="text-sm text-destructive">
           {order.error.message}
         </p>
@@ -55,17 +55,17 @@ export default function OrderPage({ token, slug }: { token: string; slug: string
   const message = grantMessage(grant.state, details.status);
 
   return (
-    <main className="container mx-auto max-w-xl space-y-8 px-4 py-10">
+    <main className="mx-auto w-full max-w-xl space-y-6 px-4 py-6 md:px-7 md:py-10">
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">Order from {team.name}</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{details.productTitle}</h1>
-        <p className="text-lg font-medium">{formatMinor(details.amountMinor, details.currency)}</p>
+        <h1 className="font-heading text-3xl">{details.productTitle}</h1>
+        <p className="font-tabular text-xl font-medium">{formatMinor(details.amountMinor, details.currency)}</p>
         {details.paidAt ? (
           <p className="text-sm text-muted-foreground">Paid {new Date(details.paidAt).toLocaleDateString()}</p>
         ) : null}
       </div>
       {canDownload ? (
-        <div className="space-y-2">
+        <div className="panel space-y-3 p-5">
           <Button type="button" disabled={download.isPending} onClick={() => download.mutate({ token, slug })}>
             {download.isPending ? "Preparing download…" : "Download"}
           </Button>
@@ -77,7 +77,7 @@ export default function OrderPage({ token, slug }: { token: string; slug: string
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="panel space-y-3 p-5">
           <p>{message}</p>
           {details.status === "refunded" || grant.state === "revoked" ? null : (
             <>

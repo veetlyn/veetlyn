@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import {
   MAX_INTAKE_QUESTION_CHARS,
   MAX_INTAKE_QUESTIONS,
@@ -23,7 +24,7 @@ import TeamNotFound from "@/components/services-team/team-not-found";
 import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = "h-9 w-full rounded-md border bg-transparent px-3 text-sm";
+const SELECT_CLASS = `w-full ${nativeSelectClass}`;
 
 type OfferingFormState = {
   name: string;
@@ -87,17 +88,17 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   if (team.isError) return <TeamNotFound />;
   if (catalog.isError) {
     return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
         <p role="alert">The services couldn't be loaded.</p>
       </main>
     );
   }
   if (offeringId && !offering) {
     return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <h1 className="text-2xl font-semibold">Service not found</h1>
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+        <h1 className="font-heading text-3xl">Service not found</h1>
         <p className="text-sm text-muted-foreground">This service is not in your team.</p>
-        <Link href={`/${teamSlug}/services`} className="underline">
+        <Link href={`/${teamSlug}/services`} className="text-sm underline underline-offset-4">
           Back to services
         </Link>
       </main>
@@ -166,17 +167,17 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   }
 
   return (
-    <main className="container mx-auto max-w-xl px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${teamSlug}/services`} className="text-sm text-muted-foreground">
+        <Link href={`/${teamSlug}/services`} className="text-sm text-muted-foreground hover:text-foreground">
           Services
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{offeringId ? "Edit service" : "Add a service"}</h1>
+        <h1 className="font-heading text-3xl">{offeringId ? "Edit service" : "Add a service"}</h1>
       </div>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can manage the services.</p>
       ) : null}
-      <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+      <form onSubmit={handleSubmit} className="panel mt-6 grid max-w-2xl gap-6 p-5 md:p-6">
         <div className="space-y-2">
           <Label htmlFor="offering-name">Name</Label>
           <Input

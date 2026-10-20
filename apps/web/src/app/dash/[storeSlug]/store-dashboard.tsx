@@ -24,12 +24,12 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
   const url = storeUrl(store.data.slug, urlParts);
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
         <Link href="/" className="text-sm text-muted-foreground">
           All stores
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{store.data.name}</h1>
+        <h1 className="font-heading text-3xl">{store.data.name}</h1>
       </div>
       <SetupChecklist
         steps={setupSteps(
@@ -40,7 +40,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
       />
       <PublishCard teamSlug={storeSlug} publicUrl={url} />
       <PayPalConnectCard teamId={store.data.id} />
-      <section className="grid gap-2 border p-4">
+      <section className="panel grid gap-2 p-5">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="font-medium">Products</h2>
           <Link href={`/${storeSlug}/products`} className="text-sm underline underline-offset-4">
@@ -53,7 +53,7 @@ export default function StoreDashboard({ storeSlug, urlParts }: { storeSlug: str
           Start from a link or a photo with Channel3, set your prices, and publish when you're ready.
         </p>
       </section>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+      <dl className="panel grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 p-5 text-sm">
         <dt className="text-muted-foreground">Store URL</dt>
         <dd>
           <a href={url} target="_blank" rel="noreferrer" className="underline underline-offset-4">

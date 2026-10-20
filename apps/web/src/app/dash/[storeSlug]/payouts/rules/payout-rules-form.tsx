@@ -1,5 +1,6 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import {
   type Currency,
   PAYDAYS,
@@ -13,7 +14,6 @@ import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
@@ -38,7 +38,7 @@ type TeamMember = inferRouterOutputs<AppRouter>["servicesTeam"]["listMembers"][n
 const FIXED_PRESETS = ["manual", "rules", "automatic"] as const;
 type FixedPreset = (typeof FIXED_PRESETS)[number];
 
-const SELECT_CLASS = "h-9 rounded-md border bg-transparent px-3 text-sm";
+const SELECT_CLASS = `${nativeSelectClass}`;
 const CHOICE_CLASS = "flex items-center gap-2 text-sm";
 
 const SCOPE_LABELS = {
@@ -81,7 +81,7 @@ function presetDescription(preset: FixedPreset, currency: Currency): string {
 
 function Group({ legend, children }: { legend: string; children: ReactNode }) {
   return (
-    <fieldset className="space-y-4 border p-4">
+    <fieldset className="space-y-4 panel p-4">
       <legend className="px-1 font-medium">{legend}</legend>
       {children}
     </fieldset>
@@ -179,7 +179,7 @@ function PresetPicker({ teamSlug, rules, onSaved }: { teamSlug: string; rules: R
           Presets
         </h2>
         {rules.preset === "custom" ? (
-          <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">Custom</span>
+          <span className="text-xs text-muted-foreground">Custom</span>
         ) : null}
       </div>
       <p className="text-sm text-muted-foreground">A preset replaces the rules below. Trusted members stay.</p>
@@ -194,7 +194,7 @@ function PresetPicker({ teamSlug, rules, onSaved }: { teamSlug: string; rules: R
               apply.reset();
               apply.mutate({ teamSlug, preset });
             }}
-            className="border p-3 text-left text-sm disabled:opacity-50 aria-pressed:border-foreground aria-pressed:bg-accent"
+            className="panel p-3 text-left text-sm disabled:opacity-50 aria-pressed:border-foreground aria-pressed:bg-accent"
           >
             <span className="block font-medium">{PRESET_LABELS[preset]}</span>
             <span className="block text-muted-foreground">{presetDescription(preset, rules.currency)}</span>
@@ -543,12 +543,9 @@ export default function PayoutRules({ teamSlug, viewerId }: { teamSlug: string; 
   const { team, role, settings } = result.data;
 
   return (
-    <main className="container mx-auto max-w-2xl space-y-6 px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${team.slug}/payouts`} className="text-sm text-muted-foreground">
-          Payouts
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Payout rules</h1>
+        <h1 className="font-heading text-3xl">Payout rules</h1>
         <p className="text-sm text-muted-foreground">How this team approves and sends its members' payouts.</p>
       </div>
       {settings?.solo ? (
