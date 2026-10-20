@@ -10,6 +10,7 @@ import {
   clientIdentity,
   projectClient,
 } from "../schema/contacts";
+import { team } from "../schema/organization";
 import { project } from "../schema/projects";
 
 export type LinkedContact = {
@@ -543,4 +544,48 @@ export async function countOpenRequestsForContact(
       ),
     );
   return row?.count ?? 0;
+}
+
+export type ClientProjectRow = {
+  projectId: string;
+  contactId: string;
+  linkVersion: number;
+  title: string;
+  brief: string;
+  status: (typeof project.$inferSelect)["status"];
+  createdAt: Date;
+  teamId: string;
+  teamName: string;
+  teamSlug: string;
+};
+
+// Every project, across teams, whose attached contact is this account: through a user identity, or a verified
+// email identity equal to the account's verified email (action catalog design §5.4). Newest first.
+export async function listClientProjectsForUser(tx: DbExecutor, userId: string): Promise<ClientProjectRow[]> {
+  const account = await findClientAccount(tx, userId);
+  if (!account) return [];
+  const byUser = and(eq(clientIdentity.kind, "user"), eq(clientIdentity.value, userId));
+  const byEmail = account.emailVerified
+    ? and(eq(clientIdentity.kind, "email"), eq(clientIdentity.value, account.email), isNotNull(clientIdentity.verifiedAt))
+    : undefined;
+  const rows = await tx
+    .selectDistinctOn([project.id], {
+      projectId: project.id,
+      contactId: projectClient.contactId,
+      linkVersion: projectClient.linkVersion,
+      title: project.title,
+      brief: project.brief,
+      status: project.status,
+      createdAt: project.createdAt,
+      teamId: team.id,
+      teamName: team.name,
+      teamSlug: team.slug,
+    })
+    .from(projectClient)
+    .innerJoin(clientIdentity, eq(clientIdentity.contactId, projectClient.contactId))
+    .innerJoin(project, eq(project.id, projectClient.projectId))
+    .innerJoin(team, eq(team.id, project.teamId))
+    .where(byEmail ? or(byUser, byEmail) : byUser)
+    .orderBy(project.id);
+  return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

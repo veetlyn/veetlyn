@@ -17,6 +17,7 @@ import type { AnyActionDefinition } from "./define";
 import { deliveryAccept, deliveryFile, deliveryRequestChanges, deliverySubmit, deliveryUploadStart } from "./deliveries";
 import {
   projectAssign,
+  projectClientList,
   projectClientView,
   projectGet,
   projectList,
@@ -35,6 +36,7 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   projectList,
   projectGet,
   projectClientView,
+  projectClientList,
   projectClientAdd,
   projectClientRemove,
   projectClientLinkEmail,

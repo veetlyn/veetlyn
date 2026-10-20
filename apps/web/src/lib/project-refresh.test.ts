@@ -35,9 +35,9 @@ describe("teamWaitsOnClient", () => {
 });
 
 describe("clientWaitsOnTeam", () => {
-  it("waits for a quote while quoting with none proposed", () => {
+  it("waits while quoting, even with a quote proposed, for more quotes and questions", () => {
     expect(clientWaitsOnTeam(view("quoting"))).toBe(true);
-    expect(clientWaitsOnTeam(view("quoting", ["superseded"]))).toBe(true);
+    expect(clientWaitsOnTeam(view("quoting", ["proposed"]))).toBe(true);
   });
 
   it("waits for the work while in progress with no pending amendment", () => {
@@ -45,13 +45,12 @@ describe("clientWaitsOnTeam", () => {
     expect(clientWaitsOnTeam(view("in_progress", ["accepted"], ["declined"]))).toBe(true);
   });
 
-  it("does not wait when the client has something to answer", () => {
-    expect(clientWaitsOnTeam(view("quoting", ["proposed"]))).toBe(false);
+  it("does not wait when the client has an amendment to answer", () => {
     expect(clientWaitsOnTeam(view("in_progress", ["accepted"], ["pending"]))).toBe(false);
   });
 
   it("does not wait in the other statuses", () => {
-    for (const status of ["awaiting_deposit", "delivered", "awaiting_balance", "completed", "cancelled"]) {
+    for (const status of ["awaiting_deposit", "delivered", "awaiting_balance", "completed", "cancelled", "declined", "expired"]) {
       expect(clientWaitsOnTeam(view(status, ["accepted"]))).toBe(false);
     }
   });

@@ -9,7 +9,9 @@ import { z } from "zod";
 import { refundClient } from "../use-cases/client-refunds";
 import { getClientProjectView, getTeamProjectView, listVisibleProjects } from "../use-cases/project-views";
 import { assignFreelancer, MAX_TITLE, MIN_TITLE, startProject } from "../use-cases/projects";
+import { listClientProjects } from "../use-cases/client-home";
 import { defineAction } from "./define";
+import { ActionError } from "./errors";
 import { teamActorOf } from "./team-actor";
 
 export const projectIdInput = z.object({ projectId: z.uuid() });
@@ -119,4 +121,29 @@ export const projectClientView = defineAction({
   scope: (input) => ({ projectId: input.projectId }),
   allow: [{ grant: "client" }],
   run: ({ deps }, input) => getClientProjectView(deps, input.projectId),
+});
+
+export const projectClientList = defineAction({
+  name: "project.client_list",
+  kind: "query",
+  summary: "List the signed-in person's projects as a client, across teams, newest first: title, team, status, request date, the start of the brief and the link to the team's client page.",
+  input: z.object({}),
+  output: z.array(
+    z.object({
+      id: z.uuid(),
+      title: z.string(),
+      briefStart: z.string(),
+      status: z.enum(PROJECT_STATUSES),
+      createdAt: z.iso.datetime(),
+      teamName: z.string(),
+      teamSlug: z.string(),
+      clientUrl: z.url().nullable(),
+    }),
+  ),
+  scope: () => ({}),
+  allow: [{ grant: "signed_in" }],
+  run: ({ deps, actor }) => {
+    if (actor.kind !== "user") throw new ActionError("internal", "A client list ran without a signed-in user.");
+    return listClientProjects(deps, actor.userId);
+  },
 });

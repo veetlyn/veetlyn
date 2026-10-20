@@ -42,6 +42,8 @@ import { fail, type ProjectActor, runProjectTransaction } from "./projects";
 
 // Who posts: a team member acting in their team, or the project's client through one of their contacts.
 export type ConversationAuthor = { kind: "member"; actor: ProjectActor } | { kind: "client"; contactId: string };
+// Who reads: reading needs no contact, since every contact of the project reads the same conversation.
+export type ConversationReader = { kind: "member"; actor: ProjectActor } | { kind: "client" };
 
 const NOT_FOUND = "Project not found.";
 
@@ -96,7 +98,7 @@ export async function accessFactsFor(db: Database, row: ProjectRow): Promise<Acc
   };
 }
 
-export async function viewerFor(db: Database, author: ConversationAuthor): Promise<Viewer> {
+export async function viewerFor(db: Database, author: ConversationReader): Promise<Viewer> {
   if (author.kind === "client") return { kind: "client" };
   const { actor } = author;
   const departmentIds = await memberDepartmentIds(db, { teamId: actor.teamId, userId: actor.actorId });
@@ -104,7 +106,7 @@ export async function viewerFor(db: Database, author: ConversationAuthor): Promi
 }
 
 // The access a viewer has to one project; a member of another team is a stranger to it.
-export async function accessTo(db: Database, author: ConversationAuthor, row: ProjectRow): Promise<ConversationAccess> {
+export async function accessTo(db: Database, author: ConversationReader, row: ProjectRow): Promise<ConversationAccess> {
   if (author.kind === "member" && author.actor.teamId !== row.teamId) return { read: [], write: [] };
   return conversationAccess(await viewerFor(db, author), await accessFactsFor(db, row));
 }
@@ -307,7 +309,7 @@ export type ConversationMessageView = {
   kind: ConversationMessageKind;
   authorKind: "client" | "member" | "system";
   authorName: string;
-  // The member who wrote it, for the team's own views; never sent to the client.
+  // The member who wrote it. Client-facing views map messages field by field and never send it.
   authorUserId: string | null;
   body: string;
   // The text as written when masking changed it; team admins only.
@@ -340,7 +342,7 @@ function viewOf(m: ConversationMessageWithAuthor, viewer: Viewer): ConversationM
     kind: m.kind,
     authorKind: m.authorKind,
     authorName,
-    authorUserId: member ? m.authorUserId : null,
+    authorUserId: m.authorUserId,
     body: m.shownBody,
     originalBody: member && viewer.role === "admin" && m.body !== m.shownBody ? m.body : null,
     replyToId: m.replyToId,
@@ -354,7 +356,7 @@ function viewOf(m: ConversationMessageWithAuthor, viewer: Viewer): ConversationM
 // Everything the viewer may read on one project, oldest first, with what they may write.
 export async function conversationFor(
   db: Database,
-  author: ConversationAuthor,
+  author: ConversationReader,
   row: ProjectRow,
 ): Promise<{ access: ConversationAccess; messages: ConversationMessageView[] }> {
   const viewer = await viewerFor(db, author);

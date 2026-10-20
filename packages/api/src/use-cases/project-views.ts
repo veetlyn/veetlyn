@@ -5,7 +5,7 @@ import {
   maskContactDetails,
     sellerPlanFor,
 } from "@jendal-workspace/core";
-import { memberDepartmentIds } from "@jendal-workspace/db/repositories/conversations";
+import { memberDepartmentIds, userDisplayName } from "@jendal-workspace/db/repositories/conversations";
 import type { ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import type { Database } from "@jendal-workspace/db";
 import { listDeliveryFiles } from "@jendal-workspace/db/repositories/files";
@@ -26,7 +26,7 @@ import { TRPCError } from "@trpc/server";
 
 import { type LinkSecretSource, linkSecret, signPayLink } from "../client-links";
 import { getClientRefundView, getStaffRefundView } from "./client-refunds";
-import { accessFactsForRows, conversationFor } from "./conversations";
+import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
 import { deliveryFileUrl, type ProjectActor } from "./projects";
 
 // The team's projects the viewer may see: staff see all, freelancers what is assigned to them and the requests
@@ -193,13 +193,15 @@ export async function getClientProjectView(deps: { db: Database; auth: LinkSecre
   const { db } = deps;
   const row = await findProjectById(db, projectId);
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-  const [quotes, amendments, payments, deliveries, refund] = await Promise.all([
+  const [quotes, amendments, payments, deliveries, refund, conversation] = await Promise.all([
     listProjectQuotes(db, projectId),
     listProjectAmendments(db, projectId),
     listProjectPayments(db, projectId),
     listProjectDeliveries(db, projectId),
     getClientRefundView(db, projectId),
+    conversationFor(db, { kind: "client" }, row),
   ]);
+  const freelancers = await clientFacingFreelancers(db, quotes, conversation.messages);
   const secret = linkSecret(deps.auth);
   const paymentViews = await Promise.all(
     payments.map(async (p) => ({
@@ -226,9 +228,12 @@ export async function getClientProjectView(deps: { db: Database; auth: LinkSecre
       currency: row.currency,
       managementFeeBps: row.managementFeeBps,
       finalPriceMinor: row.finalPriceMinor,
+      declinedReason: row.declinedReason,
+      declinedAt: row.declinedAt,
     },
     quotes: quotes.map((q) => ({
       id: q.id,
+      freelancer: freelancers.forUser(q.freelancerId),
       version: q.version,
       status: q.status,
       amountMinor: q.amountMinor,
@@ -266,5 +271,47 @@ export async function getClientProjectView(deps: { db: Database; auth: LinkSecre
       })),
     ),
     refund,
+    conversation: {
+      canWrite: conversation.access.write.includes("project"),
+      messages: conversation.messages.map((m) => ({
+        id: m.id,
+        kind: m.kind,
+        authorKind: m.authorKind,
+        authorName: m.authorName,
+        body: m.body,
+        replyToId: m.replyToId,
+        createdAt: m.createdAt,
+        freelancer: freelancers.forMessage(m),
+      })),
+    },
   };
+}
+
+// The client sees each freelancer by name with an opaque key to group their quote and questions (design §7);
+// the team's user ids stay server-side.
+async function clientFacingFreelancers(
+  db: Database,
+  quotes: readonly { id: string; freelancerId: string }[],
+  messages: readonly ConversationMessageView[],
+) {
+  const order: string[] = [];
+  const add = (userId: string | null) => {
+    if (userId && !order.includes(userId)) order.push(userId);
+  };
+  const quoteAuthor = new Map(quotes.map((q) => [q.id, q.freelancerId]));
+  const questionAuthor = new Map(messages.filter((m) => m.kind === "question").map((m) => [m.id, m.authorUserId]));
+  const ownerOf = (m: ConversationMessageView): string | null => {
+    if (m.kind === "event" && m.refType === "quote") return quoteAuthor.get(m.refId ?? "") ?? null;
+    if (m.kind === "answer") return questionAuthor.get(m.replyToId ?? "") ?? null;
+    return m.authorKind === "member" && m.space === "request" ? m.authorUserId : null;
+  };
+  for (const q of quotes) add(q.freelancerId);
+  for (const m of messages) add(ownerOf(m));
+  const names = new Map<string, string>();
+  for (const userId of order) names.set(userId, await userDisplayName(db, userId));
+  const view = (userId: string | null) => {
+    const index = userId ? order.indexOf(userId) : -1;
+    return userId && index >= 0 ? { key: `freelancer-${index + 1}`, name: names.get(userId) ?? "A team member" } : null;
+  };
+  return { forUser: view, forMessage: (m: ConversationMessageView) => view(ownerOf(m)) };
 }

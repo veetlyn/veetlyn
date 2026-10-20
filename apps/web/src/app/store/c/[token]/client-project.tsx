@@ -25,6 +25,8 @@ export default function ClientProject({ token }: { token: string }) {
   const declineAmendment = useMutation(trpc.project.clientDeclineAmendment.mutationOptions({ onSuccess: refresh }));
   const acceptDelivery = useMutation(trpc.project.clientAcceptDelivery.mutationOptions({ onSuccess: refresh }));
   const requestChanges = useMutation(trpc.project.clientRequestChanges.mutationOptions({ onSuccess: refresh }));
+  const post = useMutation(trpc.project.clientPost.mutationOptions({ onSuccess: refresh }));
+  const answer = useMutation(trpc.project.clientAnswer.mutationOptions({ onSuccess: refresh }));
 
   if (view.isPending) return <Loader />;
   // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
@@ -67,6 +69,14 @@ export default function ClientProject({ token }: { token: string }) {
           deliveryBusy: acceptDelivery.isPending || requestChanges.isPending,
           deliveryError: acceptDelivery.error ?? requestChanges.error,
           actionError: acceptQuote.error ?? acceptAmendment.error ?? declineAmendment.error,
+          post: async ({ body, teamOnly }) => {
+            await post.mutateAsync({ token, body, teamOnly });
+          },
+          answer: async (questionId, body) => {
+            await answer.mutateAsync({ token, questionId, body });
+          },
+          messageBusy: post.isPending || answer.isPending,
+          messageError: post.error ?? answer.error,
         }}
       />
     </main>
