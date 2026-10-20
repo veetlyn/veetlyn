@@ -66,7 +66,7 @@ export default async function ArticlePage({ params }: Params) {
           </div>
         </div>
       </div>
-      <main>
+      <div>
         <article className="post wrap">
           <figure className="post-art" role="img" aria-label={post.title}>
             <ArticleArt name={post.art} />
@@ -104,7 +104,7 @@ export default async function ArticlePage({ params }: Params) {
           </section>
         </article>
         <CloseCta />
-      </main>
+      </div>
     </>
   );
 }

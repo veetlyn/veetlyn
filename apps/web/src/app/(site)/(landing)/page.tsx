@@ -130,7 +130,7 @@ export default function HomePage() {
         </div>
         <div className="wrap"><LogoStrip /></div>
       </div>
-      <main>
+      <div>
         <section aria-labelledby="sides-h">
           <div className="wrap">
             <h2 id="sides-h" data-in>Agentic commerce, with a person on every payment</h2>
@@ -208,7 +208,7 @@ export default function HomePage() {
             <Link className="more" href="/pricing">See every plan, from Solo to Enterprise</Link>
           </div>
         </section><FaqList title="Money questions" items={INDEX_FAQ} /> <CloseCta />
-      </main>
+      </div>
 
     </>
   );

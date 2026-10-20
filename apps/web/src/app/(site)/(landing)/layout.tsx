@@ -9,7 +9,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     <div className="site-root flex-1">
       <SiteHeader dashOrigin={dash} />
-      {children}
+      <main id="main">{children}</main>
       <SiteFooter />
       <Reveal />
     </div>

@@ -60,7 +60,7 @@ export default async function FreelancersPage() {
           </ChatDemo>
         </div>
       </div>
-      <main>
+      <div>
         <section id="story" aria-labelledby="story-h">
           <div className="wrap">
             <h2 id="story-h" data-in>From a chat to your PayPal</h2>
@@ -148,7 +148,7 @@ export default async function FreelancersPage() {
           </div>
         </section>
         <FaqList title="Questions from freelancers" items={FREELANCER_FAQ} /><CloseCta />
-      </main>
+      </div>
     </>
   );
 }

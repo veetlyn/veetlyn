@@ -69,7 +69,7 @@ function Switch<T extends string>({
 function AgentsTable({ head, rows, hidden }: { head: readonly string[]; rows: readonly Row[]; hidden: boolean }) {
   const [first, ...columns] = head;
   return (
-    <div className="table-wrap" hidden={hidden}>
+    <div className="table-wrap" hidden={hidden} role="region" aria-label={`${first} agents, by plan`} tabIndex={0}>
       <table>
         <thead>
           <tr>

@@ -44,7 +44,7 @@ export default async function PricingPage() {
           </div>
         </div>
       </div>
-      <main>
+      <div>
         <PricingExplorer signupUrl={signup} />
         <section aria-labelledby="net-h">
           <div className="wrap">
@@ -80,7 +80,7 @@ export default async function PricingPage() {
           </div>
         </section>
         <FaqList title="Pricing questions" items={PRICING_FAQ} /><CloseCta />
-      </main>
+      </div>
     </>
   );
 }

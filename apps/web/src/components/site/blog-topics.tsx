@@ -40,7 +40,7 @@ export default function BlogTopics({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
-      <main>
+      <div>
         <section aria-label="Articles" style={{ paddingTop: "clamp(40px,5vw,64px)" }}>
           <div className="wrap">
             {first && <PostCard post={first} feature hidden={hidden(first.category)} />}
@@ -52,7 +52,7 @@ export default function BlogTopics({ children }: { children: ReactNode }) {
           </div>
         </section>
         {children}
-      </main>
+      </div>
     </>
   );
 }
