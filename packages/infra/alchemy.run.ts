@@ -153,6 +153,9 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
   // Website.Vinext turns Workers Cache on, which cached signed-in API answers forwarded through this Worker and
   // served them to other callers. Nothing here is meant to be shared; static files have their own caching.
   cache: { enabled: false },
+  // Rendering a page calls the api Worker several times in a row, so it runs beside the api Worker and the
+  // database; static files are still served from the edge.
+  placement: databasePlacement(),
   domain: hosts?.web.domain,
   routes: hosts?.web.routes,
   env: {
