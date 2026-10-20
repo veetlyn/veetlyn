@@ -51,6 +51,11 @@
   --stage-muted: #9a9aa3;
   --stage-line: rgb(255 255 255 / 0.09);
   --stage-card: #1d1d21;
+  --band: #1c1c20;
+  --band-ink: #f1f1f3;
+  --band-muted: #a8a8b0;
+  --band-raise: #2a2a2f;
+  --band-line: rgb(255 255 255 / 0.1);
   --surface-top: #ffffff;
   --surface-bottom: #fafafb;
   --main-top: #46464c;
@@ -103,6 +108,11 @@
   --tray: #151517;
   --stage: #1a1a1e;
   --stage-card: #25252a;
+  --band: #1f1f23;
+  --band-ink: #f1f1f3;
+  --band-muted: #a8a8b0;
+  --band-raise: #2c2c31;
+  --band-line: rgb(255 255 255 / 0.1);
   --surface-top: #1f1f23;
   --surface-bottom: #18181b;
   --main-top: #f7f7f8;
@@ -132,6 +142,11 @@
   --font-display: "Cal Sans UI", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-num: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --color-band: var(--band);
+  --color-band-ink: var(--band-ink);
+  --color-band-muted: var(--band-muted);
+  --color-band-raise: var(--band-raise);
+  --color-band-line: var(--band-line);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

@@ -1,0 +1,26 @@
+# Payleor
+
+> Payleor lets freelancers, agencies, stores and studios sell services and products inside Claude and ChatGPT through Payleor Network, a connector clients add to their AI. The AI finds sellers, asks questions, requests quotes and fills carts. The client approves every payment in PayPal on Payleor's page; a person or a rule the team sets approves every payout. Payleor never holds the money.
+
+## Product
+- [Payleor Network](https://payleor.com/network): the connector (api.payleor.com/mcp), the gaps it fills, membership, and how clients add it
+- [Discover](https://payleor.com/discover): services, courses, downloads and goods from sellers on the network
+- [Get found](https://payleor.com/visibility): web SEO included in every plan, and AI visibility for Network members
+- [Pricing](https://payleor.com/pricing): plans from $12 a month, 0.25 to 2% per payment or order, 5% once on clients the network brings
+
+## Who it is for
+- [Freelancers](https://payleor.com/freelancers): Get hired from your clients' AI
+- [Agencies](https://payleor.com/agencies): Everyone paid by your rules
+- [Stores](https://payleor.com/stores): Your products in AI carts
+- [Studios](https://payleor.com/studios): Services and products, one shop
+
+## Guides
+- [AI shopping left services out. Here is how Payleor Network lets them in](https://payleor.com/blog/ai-shopping-left-services-out): AI assistants sell physical goods. Services, courses and downloads had no way in. Payleor Network is one connector that lets clients' AI find, ask and request, while the client pays on Payleor with PayPal.
+- [Freelancers: get hired from your clients' AI, and paid before you start](https://payleor.com/blog/freelancers-get-hired-from-ai): How a freelancer on Payleor gets briefs from clients' AI, sends a quote drafted by an agent, and collects a deposit through PayPal, with every fee shown to the cent.
+- [Agencies: one client payment, every member paid by your rules](https://payleor.com/blog/agencies-split-client-payments): How agencies on Payleor take requests from AI, Discord and their page, let an agent draft quotes, and pay every freelancer their share by approval, by rule or by the payout agent.
+- [Stores: sell in AI carts without building your own ChatGPT app](https://payleor.com/blog/stores-sell-in-ai-carts): AI assistants can fill a cart, but most stores cannot plug into it. Payleor Network lets clients' AI fill one cart across Payleor stores, with one PayPal payment and an order for each store.
+- [Studios: sell the session and the product from one shop](https://payleor.com/blog/studios-sell-services-and-products): Salons, spas and studios sell time and things. Payleor runs services and products from one workspace and one link, pays staff their share, and halves the cheaper plan when you run both.
+- [How to get found on Google and in AI answers, without ads](https://payleor.com/blog/get-found-on-google-and-in-ai-answers): Search engines and AI assistants read the web the same way: clear pages, plain facts and structured data. What helps a seller get found, and what Payleor does for you.
+
+## Optional
+- [Contact](https://payleor.com/contact): Enterprise, membership, partnerships and support, contact@payleor.com

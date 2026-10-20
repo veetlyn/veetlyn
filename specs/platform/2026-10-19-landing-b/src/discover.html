@@ -1,0 +1,89 @@
+<!-- title: Discover services, courses and goods on Payleor Network -->
+<div class="band">
+  <div class="wrap hero page solo">
+    <div>
+      <h1 data-in>Discover</h1>
+      <p class="lead" data-in>Services, courses, downloads and goods from sellers on Payleor Network. The same catalog your clients' AI searches.</p>
+      <label class="search" data-in>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="sr-only">Search Discover</span>
+        <input id="q" type="search" placeholder="A logo, a pedicure, a Notion template..." autocomplete="off">
+      </label>
+    </div>
+  </div>
+</div>
+
+<main id="discover">
+  <section aria-label="Filters" style="padding-top:clamp(36px,5vw,56px)">
+    <div class="wrap">
+      <div class="tabs-row" role="group" aria-label="Category" data-filter="cat">
+        <button type="button" aria-pressed="true" data-v="all">All</button>
+        <button type="button" aria-pressed="false" data-v="design">Design</button>
+        <button type="button" aria-pressed="false" data-v="development">Development</button>
+        <button type="button" aria-pressed="false" data-v="writing">Writing</button>
+        <button type="button" aria-pressed="false" data-v="video">Video and audio</button>
+        <button type="button" aria-pressed="false" data-v="courses">Courses</button>
+        <button type="button" aria-pressed="false" data-v="templates">Templates</button>
+        <button type="button" aria-pressed="false" data-v="beauty">Beauty and wellness</button>
+        <button type="button" aria-pressed="false" data-v="goods">Goods</button>
+      </div>
+      <div class="filters">
+        <div class="chips" role="group" aria-label="Type" data-filter="type">
+          <span>Type</span>
+          <button type="button" aria-pressed="true" data-v="all">Any</button>
+          <button type="button" aria-pressed="false" data-v="service">Services</button>
+          <button type="button" aria-pressed="false" data-v="download">Downloads</button>
+          <button type="button" aria-pressed="false" data-v="course">Courses</button>
+          <button type="button" aria-pressed="false" data-v="product">Goods</button>
+        </div>
+        <div class="chips" role="group" aria-label="Who does the work" data-filter="done">
+          <span>Done by</span>
+          <button type="button" aria-pressed="true" data-v="all">Anyone</button>
+          <button type="button" aria-pressed="false" data-v="people">People</button>
+          <button type="button" aria-pressed="false" data-v="both">People with AI</button>
+          <button type="button" aria-pressed="false" data-v="ai">AI</button>
+        </div>
+        <div class="chips" role="group" aria-label="Sort" data-filter="sort">
+          <span>Sort</span>
+          <button type="button" aria-pressed="true" data-v="featured">Featured</button>
+          <button type="button" aria-pressed="false" data-v="price">Lowest price</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="members-h" style="padding-top:48px">
+    <div class="wrap">
+      <h2 id="members-h" data-in>Network members</h2>
+      <p class="lead-dark" data-in>Sellers with the member check. <a class="link" href="network.html#membership">What membership means</a></p>
+      <div class="shelf">
+        {{SHELF}}
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="all-h" style="padding-top:64px">
+    <div class="wrap">
+      <h2 id="all-h" data-in>Everything on the network</h2>
+      <div class="result-bar"><span id="count" aria-live="polite"></span><span>Sample listings while the network opens</span></div>
+      <div class="items">
+        {{ITEMS}}
+      </div>
+      <p class="empty" id="empty" hidden>Nothing matches yet. Try another word or clear a filter.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="how-h">
+    <div class="wrap">
+      <h2 id="how-h" data-in>One listing, found twice</h2>
+      <div class="features">
+        <div class="feature agent" data-in><p class="tag">People</p><h3>Browse it here</h3><p>Search, filter and open a seller's page.</p></div>
+        <div class="feature agent" data-in><p class="tag">AI</p><h3>Ask for it in a chat</h3><p>Clients who add Payleor Network search the same catalog.</p></div>
+        <div class="feature" data-in><p class="tag">Sellers</p><h3>5% once, then they are yours</h3><p>A new client from Discover or the network costs 5% of the first project.</p></div>
+      </div>
+      <a class="more" href="network.html">How Payleor Network works</a>
+    </div>
+  </section>
+
+  {{CLOSE}}
+</main>
