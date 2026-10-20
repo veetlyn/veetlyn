@@ -1,0 +1,19 @@
+specs/platform/plans/2026-10-16-h-hosts-and-deploy.md
+  s_ec180faf4f9b2e::t_bbb7036388b416 754
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cd1f59f13e90ad05cfa5311633282ade7a9175a8",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
