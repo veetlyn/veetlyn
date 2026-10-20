@@ -3,7 +3,19 @@
 const MARK = "M10.5 25.5V7.5h7a5.75 5.75 0 0 1 0 11.5h-7";
 const RINGS = Array.from({ length: 22 }, (_, i) => 0.5 + i * 0.075);
 
-export default function AuthVisual() {
+export default function AuthVisual({
+  headline = (
+    <>
+      Quote it. Get paid.
+      <br />
+      Pay your team.
+    </>
+  ),
+  subline = "Payleor keeps the money moving between your clients, your team and PayPal.",
+}: {
+  headline?: React.ReactNode;
+  subline?: string;
+}) {
   return (
     <div aria-hidden="true" className="relative hidden overflow-hidden rounded-[18px] bg-stage text-stage-ink lg:block">
       <svg
@@ -30,14 +42,8 @@ export default function AuthVisual() {
       </svg>
 
       <div className="absolute inset-x-[10%] bottom-[9%]">
-        <p className="max-w-md font-heading text-[2rem] leading-[1.1]">
-          Quote it. Get paid.
-          <br />
-          Pay your team.
-        </p>
-        <p className="mt-3 max-w-sm text-sm text-stage-muted">
-          Payleor keeps the money moving between your clients, your team and PayPal.
-        </p>
+        <p className="max-w-md font-heading text-[2rem] leading-[1.1]">{headline}</p>
+        <p className="mt-3 max-w-sm text-sm text-stage-muted">{subline}</p>
       </div>
     </div>
   );

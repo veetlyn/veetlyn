@@ -9,13 +9,24 @@ export function consentHost(redirectUri: string): string | null {
   }
 }
 
-const SCOPE_LABELS = new Map([
-  ["openid", "Know which Payleor account is yours"],
-  ["profile", "See your name"],
-  ["email", "See your email address"],
-  ["offline_access", "Stay connected until you disconnect it from your Payleor account"],
+const SEE_LABELS = new Map([
+  ["openid", "Which Payleor account is yours"],
+  ["profile", "Your name"],
+  ["email", "Your email address"],
 ]);
 
-export function scopeLabels(scopes: readonly string[]): string[] {
-  return [...new Set(scopes.map((scope) => SCOPE_LABELS.get(scope) ?? `Use “${scope}”`))];
+// What the person grants, in the three groups the consent page shows. Scopes Payleor does not describe are named
+// as they are, so nothing is granted silently.
+export function consentGroups(scopes: readonly string[]) {
+  const unique = [...new Set(scopes)];
+  return {
+    see: unique.flatMap((scope) => SEE_LABELS.get(scope) ?? []),
+    act: [
+      "Search offerings and request quotes for you",
+      "Reply to a team's questions, once you approve the wording",
+      ...(unique.includes("offline_access") ? ["Stay connected until you disconnect it"] : []),
+      ...unique.filter((scope) => !SEE_LABELS.has(scope) && scope !== "offline_access").map((scope) => `Use “${scope}”`),
+    ],
+    never: ["Pay for you", "Accept a quote or a delivery for you"],
+  };
 }

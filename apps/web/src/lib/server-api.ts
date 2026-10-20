@@ -101,6 +101,16 @@ export async function requireSession(): Promise<SessionInfo> {
   return session;
 }
 
+const publicClientSchema = z.object({ client_name: z.string().min(1) });
+
+// The name an OAuth client registered for itself: shown on the consent page as a claim, never as proof.
+export async function fetchOAuthClientName(clientId: string): Promise<string | null> {
+  if (!clientId) return null;
+  const response = await callApiAsUser(`/api/auth/oauth2/public-client?client_id=${encodeURIComponent(clientId)}`);
+  const parsed = publicClientSchema.safeParse(response.ok ? await response.json() : null);
+  return parsed.success ? parsed.data.client_name : null;
+}
+
 export async function redirectIfSignedIn(): Promise<void> {
   if (await fetchSession()) redirect("/");
 }
