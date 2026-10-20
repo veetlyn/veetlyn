@@ -43,6 +43,7 @@ export * from "./projects/refunds";
 export * from "./projects/events";
 export * from "./conversations/types";
 export * from "./conversations/access";
+export * from "./conversations/masking";
 export * from "./payouts/destination";
 export * from "./payouts/requests";
 export * from "./payouts/fees";
