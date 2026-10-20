@@ -69,4 +69,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # turbo marks db:migrate interactive (for local prompts) and refuses to run it in CI, so call drizzle-kit directly.
       - run: pnpm -F @jendal-workspace/db db:migrate:deploy
+      # Alchemy's state store is reached with the credentials its OAuth login cached on a laptop; without them it
+      # re-derives them through the account's Secrets Store, which the deploy token cannot read.
+      - name: Alchemy state store credentials
+        env:
+          STATE_STORE_CREDENTIALS: ${{ secrets.ALCHEMY_STATE_STORE_CREDENTIALS }}
+        run: |
+          umask 077
+          mkdir -p ~/.alchemy/credentials/default
+          printf '%s' "$STATE_STORE_CREDENTIALS" > ~/.alchemy/credentials/default/cloudflare-state-store.json
       - run: pnpm deploy:${{ env.STAGE }}
