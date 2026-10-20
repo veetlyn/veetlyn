@@ -7,7 +7,7 @@ import { verifyClientLink, verifyPayLink } from "../client-links";
 
 export type LinkKind = "client" | "pay";
 
-// The team whose site serves a client or pay link (run C design §7): the page answers only on that team's own
+// The team whose site serves a client or pay link (plugin design §7): the page answers only on that team's own
 // host. A forged token names no team. Whether the link still opens the project is the page's own check.
 export async function teamSlugForLink(
   db: Database,
@@ -34,6 +34,16 @@ export async function teamSlugForLink(
     .where(eq(payment.id, paymentId))
     .limit(1);
   return row?.slug ?? null;
+}
+
+export async function teamForProject(db: Database, projectId: string): Promise<{ slug: string; name: string } | null> {
+  const [row] = await db
+    .select({ slug: team.slug, name: team.name })
+    .from(project)
+    .innerJoin(team, eq(team.id, project.teamId))
+    .where(eq(project.id, projectId))
+    .limit(1);
+  return row ?? null;
 }
 
 // Where a team's client and pay pages live: its own seller site.

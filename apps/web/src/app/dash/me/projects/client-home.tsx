@@ -8,7 +8,7 @@ import Loader from "@/components/loader";
 import { CLIENT_PROJECT_TONES } from "@/lib/status-labels";
 import { trpc } from "@/utils/trpc";
 
-// The client's home (run C design §7): the projects they asked for across teams, each opening that team's own
+// The client's home (plugin design §7): the projects they asked for across teams, each opening that team's own
 // client page. The web twin of the AI assistant's project list.
 export default function ClientHome() {
   const projects = useQuery({ ...trpc.project.mine.queryOptions({}), retry: false, meta: { silent: true } });

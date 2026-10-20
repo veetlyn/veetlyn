@@ -13,7 +13,7 @@ function briefStart(brief: string): string {
   return flat.length > BRIEF_START ? `${flat.slice(0, BRIEF_START - 1)}…` : flat;
 }
 
-// The signed-in client's projects across teams (run C design §7, the plugin's project list): a project of a
+// The signed-in client's projects across teams (plugin design §7, the plugin's project list): a project of a
 // team the person belongs to is never theirs as a client.
 export async function listClientProjects(
   deps: { db: Database; auth: LinkSecretSource; email?: EmailServices },

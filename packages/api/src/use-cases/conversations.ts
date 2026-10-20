@@ -141,7 +141,7 @@ async function postInTransaction(
   message: Omit<NewConversationMessage, "projectId" | "body" | "shownBody"> & { body: string },
 ): Promise<{ messageId: string; space: ConversationSpace }> {
   const created = await insertMessage(tx, { ...message, projectId: row.id, ...messageBodies(row, message.body) });
-  // Run B delivers this to email, webhooks and Discord.
+  // The delivery pipeline sends it on to email, webhooks and Discord.
   await uow.appendEvents(row, [
     { type: "message.posted", data: { messageId: created.id, space: created.space, kind: created.kind } },
   ]);
