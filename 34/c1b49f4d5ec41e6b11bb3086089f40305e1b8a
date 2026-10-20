@@ -1,0 +1,33 @@
+apps/web/src/app/dash/oauth/consent/consent-form.tsx
+  s_ec180faf4f9b2e::t_6bcd3b970ccee2 4-5,9,13-38,41-44,46-49,51,53,56,64,69-97,99-103,105,111-121
+apps/web/src/components/header.tsx
+  s_ec180faf4f9b2e::t_5eabdfc5cbe43f 10
+apps/web/src/app/dash/(auth)/layout.tsx
+  s_ec180faf4f9b2e::t_6ac02345559159 1,6
+apps/web/src/app/dash/oauth/consent/page.tsx
+  s_ec180faf4f9b2e::t_6bcd3b970ccee2 1-4,9,15,18-38
+apps/web/src/components/auth/auth-visual.tsx
+  s_ec180faf4f9b2e::t_6ac02345559159 6-18,45-46
+apps/web/src/components/auth/auth-split.tsx
+  s_ec180faf4f9b2e::t_6ac02345559159 1-27
+apps/web/src/lib/oauth-consent.ts
+  s_ec180faf4f9b2e::t_b03d966283d906 12-15,18-31
+apps/web/src/lib/server-api.ts
+  s_ec180faf4f9b2e::t_b03d966283d906 104-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "34c1b49f4d5ec41e6b11bb3086089f40305e1b8a",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
