@@ -1,0 +1,49 @@
+apps/web/src/app/(site)/(landing)/blog/[slug]/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 69,107
+apps/web/src/components/site/site.css
+  s_ec180faf4f9b2e::t_3ca28b6038357c 70,357
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 133,211
+apps/web/src/app/(site)/(landing)/freelancers/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 63,151
+apps/web/src/components/site/discover-browser.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 132,190
+apps/web/src/components/site/blog-topics.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 43,55
+apps/web/src/components/site/pricing-explorer.tsx
+  s_ec180faf4f9b2e::t_3ca28b6038357c 72
+apps/web/src/components/site/chat-demo.tsx
+  s_ec180faf4f9b2e::t_3ca28b6038357c 89-96
+apps/web/src/app/(site)/(landing)/studios/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 162,176
+apps/web/src/app/(site)/(landing)/visibility/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 43,89
+apps/web/src/app/(site)/(landing)/layout.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 12
+apps/web/src/app/(site)/(landing)/contact/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 29,52
+apps/web/src/app/(site)/(landing)/agencies/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 62,156
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 51,131
+apps/web/src/app/(site)/(landing)/stores/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 58,175
+apps/web/src/app/(site)/(landing)/pricing/page.tsx
+  s_ec180faf4f9b2e::t_c438fec1101a69 47,83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f27d3d9b593cec48d2d218a36ef1d715c3d88eb9",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
