@@ -31,6 +31,7 @@ import { ActionError } from "../actions/errors";
 import { type LinkSecretSource, linkSecret } from "../client-links";
 import type { EmailServices } from "../context";
 import { primaryClientPath } from "./clients";
+import { clientPageUrl } from "./link-hosts";
 import { fail, runProjectTransaction } from "./projects";
 
 export type QuoteRequestInput = {
@@ -170,7 +171,11 @@ export async function createQuoteRequest(
 
   const { projectId, teamName, serviceName, supportEmail } = await requestQuote(db, input, signedIn);
   const to = signedIn?.account.email ?? input.email.trim().toLowerCase();
-  const clientUrl = `${emailServices.siteOrigin}${await primaryClientPath(db, linkSecret(deps.auth), projectId)}`;
+  const clientUrl = clientPageUrl(
+    emailServices.storeOrigin,
+    input.slug,
+    await primaryClientPath(db, linkSecret(deps.auth), projectId),
+  );
   const linkContent = quoteRequestLinkEmail({ clientName: input.name.trim(), teamName, url: clientUrl });
   // The client's mail proves the address, so its failure is the request's failure. The caller gets a
   // generic message; the provider's error text stays server-side.

@@ -38,7 +38,7 @@ describe.skipIf(!hasTestDatabase)("project contacts", () => {
   }
 
   function linkIn(text: string): string {
-    const match = /https:\/\/payleor\.test\/c\/(\S+)/.exec(text);
+    const match = /https:\/\/team\.payleor\.test\/c\/(\S+)/.exec(text);
     if (!match?.[1]) throw new Error("no client link in the email");
     return match[1];
   }

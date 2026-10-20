@@ -1838,10 +1838,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         subject: "Your request to Walk Crew",
         replyTo: "support@walkcrew.test",
       });
-      expect(toClient!.html).toContain("https://payleor.test/c/");
+      expect(toClient!.html).toContain("https://seller.payleor.test/c/");
       expect(toTeam).toMatchObject({ to: "support@walkcrew.test", subject: "New request from Jo" });
 
-      const match = /https:\/\/payleor\.test\/c\/(\S+)/.exec(toClient!.text);
+      const match = /https:\/\/seller\.payleor\.test\/c\/(\S+)/.exec(toClient!.text);
       expect(match).toBeTruthy();
       expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toEqual({
         projectId,
@@ -1862,7 +1862,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const requested = (await db.select().from(project)).find((p) => p.id !== clientProject)!;
       const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, requested.id));
       expect(attached!.contactId).not.toBe(verified!.contactId);
-      const token = /https:\/\/payleor\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
+      const token = /https:\/\/seller\.payleor\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
       expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, token)).toMatchObject({
         projectId: requested.id,
         contactId: attached!.contactId,

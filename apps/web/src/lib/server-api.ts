@@ -177,3 +177,14 @@ export async function fetchStorePolicyInfo(): Promise<StorePolicyInfo | null> {
   const parsed = storePolicyInfoSchema.safeParse(await response.json());
   return parsed.success ? parsed.data : null;
 }
+
+const linkTeamSchema = z.object({ result: z.object({ data: z.object({ slug: z.string() }) }) });
+
+// The team whose site serves a client or pay link; null for a link that names none.
+export async function fetchLinkTeam(kind: "client" | "pay", token: string): Promise<string | null> {
+  const input = encodeURIComponent(JSON.stringify({ kind, token }));
+  const response = await callApi(`/trpc/project.linkTeam?input=${input}`);
+  if (!response.ok) return null;
+  const parsed = linkTeamSchema.safeParse(await response.json());
+  return parsed.success ? parsed.data.result.data.slug : null;
+}
