@@ -1,0 +1,20 @@
+.github/workflows/deploy.yml
+  s_ec180faf4f9b2e::t_192b923743e7a8 72-79
+  s_ec180faf4f9b2e::t_903edac052777c 80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e7af2ca80aaeff326badce8a4713af6b800044db",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
