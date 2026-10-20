@@ -76,18 +76,28 @@ function zip(entries: readonly Entry[]): Buffer {
 const mcpUrl = argValue("--mcp-url") ?? PRODUCTION_MCP_URL;
 if (!/^https:\/\/[a-z0-9.-]+\/mcp$/.test(mcpUrl)) throw new Error(`Not an MCP endpoint URL: ${mcpUrl}`);
 
+const stage = mcpUrl === PRODUCTION_MCP_URL ? null : (new URL(mcpUrl).hostname.split(".")[1] ?? "custom");
+const suffix = stage ? `-${stage}` : "";
+const stageLabel = stage ? ` ${stage.charAt(0).toUpperCase()}${stage.slice(1)}` : "";
+
+// A staging build points the connector at its stage and carries the stage in its name, so a host can install
+// it next to the production plugin instead of replacing it.
+function forStage(name: string, text: string): string {
+  if (name === "mcp.json" || name === ".mcp.json") return text.replaceAll(PRODUCTION_MCP_URL, mcpUrl);
+  if (name !== "plugin.json" && name !== ".claude-plugin/plugin.json") return text;
+  return text
+    .replace('"name": "payleor"', `"name": "payleor${suffix}"`)
+    .replaceAll('"displayName": "Payleor"', `"displayName": "Payleor${stageLabel}"`);
+}
+
 const files: Entry[] = await Promise.all(
   (await listFiles(SOURCE)).map(async (path) => {
     const name = relative(SOURCE, path);
-    const text = await readFile(path, "utf8");
-    // Only the connector URL changes for a staging build.
-    const data = name === "mcp.json" || name === ".mcp.json" ? text.replaceAll(PRODUCTION_MCP_URL, mcpUrl) : text;
-    return { name, data: Buffer.from(data, "utf8") };
+    return { name, data: Buffer.from(forStage(name, await readFile(path, "utf8")), "utf8") };
   }),
 );
 
 await mkdir(OUT, { recursive: true });
-const suffix = mcpUrl === PRODUCTION_MCP_URL ? "" : `-${new URL(mcpUrl).hostname.split(".")[1] ?? "custom"}`;
 await writeFile(join(OUT, `payleor-plugin${suffix}.zip`), zip(files.map((f) => ({ ...f, name: `payleor/${f.name}` }))));
 await writeFile(join(OUT, `payleor-plugin-chatgpt${suffix}.zip`), zip(files));
 console.log(`Wrote ${files.length} files for ${mcpUrl} to dist/plugin/`);
