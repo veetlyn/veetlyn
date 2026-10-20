@@ -129,7 +129,7 @@ export default function DiscoverBrowser({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
-      <main>
+      <div>
         <section aria-label="Filters" style={{ paddingTop: "clamp(36px,5vw,56px)" }}>
           <div className="wrap">
             <Choices className="tabs-row" label="Category" options={CATEGORIES} value={category} onChange={setCategory} />
@@ -187,7 +187,7 @@ export default function DiscoverBrowser({ children }: { children: ReactNode }) {
           </div>
         </section>
         {children}
-      </main>
+      </div>
     </>
   );
 }

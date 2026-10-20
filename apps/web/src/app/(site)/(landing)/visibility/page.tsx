@@ -40,7 +40,7 @@ export default function VisibilityPage() {
         </div>
         <div className="wrap"><LogoStrip /></div>
       </div>
-      <main>
+      <div>
         <section id="included" aria-labelledby="inc-h">
           <div className="wrap">
             <h2 id="inc-h" data-in>Web SEO for every plan</h2>
@@ -86,7 +86,7 @@ export default function VisibilityPage() {
           </div>
         </section>
         <FaqList title="Questions about getting found" items={VISIBILITY_FAQ} /><CloseCta />
-      </main>
+      </div>
     </>
   );
 }

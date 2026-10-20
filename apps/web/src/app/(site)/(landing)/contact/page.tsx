@@ -26,7 +26,7 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
-      <main>
+      <div>
         <section aria-label="Contact" style={{ paddingTop: "clamp(48px,6vw,80px)" }}>
           <div className="wrap contact">
             <div className="paths">
@@ -49,7 +49,7 @@ export default function ContactPage() {
             <ContactForm />
           </div>
         </section>
-      </main>
+      </div>
     </>
   );
 }

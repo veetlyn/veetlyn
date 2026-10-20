@@ -48,7 +48,7 @@ export default async function NetworkPage() {
           </ChatDemo>
         </div>
       </div>
-      <main>
+      <div>
         <section aria-labelledby="gap-h">
           <div className="wrap">
             <h2 id="gap-h" data-in>AI shopping left services out. Payleor Network brings them in.</h2>
@@ -128,7 +128,7 @@ export default async function NetworkPage() {
           </div>
         </section>
         <FaqList title="Questions about the network" items={NETWORK_FAQ} /><CloseCta />
-      </main>
+      </div>
     </>
   );
 }

@@ -159,7 +159,7 @@ export default function StudiosPage() {
           </ChatDemo>
         </div>
       </div>
-      <main>
+      <div>
         <Week />
         <OneLink />
         <section aria-labelledby="bundle-h">
@@ -173,7 +173,7 @@ export default function StudiosPage() {
           </div>
         </section>
         <FaqList title="Questions from studios" items={STUDIO_FAQ} /><CloseCta />
-      </main>
+      </div>
     </>
   );
 }

@@ -55,7 +55,7 @@ export default async function StoresPage() {
           </ChatDemo>
         </div>
       </div>
-      <main>
+      <div>
         <section id="story" aria-labelledby="story-h">
           <div className="wrap">
             <h2 id="story-h" data-in>From a chat to a shipped order</h2>
@@ -172,7 +172,7 @@ export default async function StoresPage() {
           </div>
         </section>
         <FaqList title="Questions from store owners" items={STORE_FAQ} /><CloseCta />
-      </main>
+      </div>
     </>
   );
 }

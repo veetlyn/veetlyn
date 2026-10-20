@@ -59,7 +59,7 @@ export default async function AgenciesPage() {
           </ChatDemo>
         </div>
       </div>
-      <main>
+      <div>
         <section id="story" aria-labelledby="story-h">
           <div className="wrap">
             <h2 id="story-h" data-in>One project, everyone paid</h2>
@@ -153,7 +153,7 @@ export default async function AgenciesPage() {
           </div>
         </section>
         <FaqList title="Questions from agencies" items={AGENCY_FAQ} /><CloseCta />
-      </main>
+      </div>
     </>
   );
 }

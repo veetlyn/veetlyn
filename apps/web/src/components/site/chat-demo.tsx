@@ -86,12 +86,14 @@ export default function ChatDemo({
   }, [message]);
 
   return (
-    <div className="stage" role="img" aria-label={label} ref={stage}>
-      <p className="who">{who}</p>
-      <p className="bubble" ref={typed}>
-        {message}
-      </p>
-      {children}
+    <div className="stage" ref={stage}>
+      <div className="stage-art" role="img" aria-label={label}>
+        <p className="who">{who}</p>
+        <p className="bubble" ref={typed}>
+          {message}
+        </p>
+        {children}
+      </div>
       <div className="foot">
         <span>Sandbox example</span>
         <button className="replay" type="button" onClick={() => replay.current()}>
