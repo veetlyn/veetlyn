@@ -83,12 +83,23 @@ const observability = {
   traces: { enabled: true },
 };
 
+// A request makes many database round trips one after another. At the edge near a visitor far from the
+// database, each one crossed an ocean (8 s for a dashboard page); placed next to the database, they take
+// milliseconds and only the request itself travels. Local stages run on this machine.
+function databasePlacement() {
+  const url = process.env.DATABASE_URL;
+  if (!deployStage || !url) return undefined;
+  const origin = postgresOrigin(url);
+  return { host: `${origin.host}:${origin.port}` };
+}
+
 export const server = Cloudflare.Worker("server", {
   main: "../../apps/server/src/index.ts",
   compatibility: {
     flags: ["nodejs_compat"],
   },
   observability,
+  placement: databasePlacement(),
   domain: hosts?.api.domain,
   // Runs the maintenance sweeps in apps/server/src/maintenance.ts.
   crons: ["*/10 * * * *"],
