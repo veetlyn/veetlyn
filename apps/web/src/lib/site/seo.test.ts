@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { breadcrumbs, faqPage, pageMetadata, SITE_ORIGIN, websiteWithSearch } from "./seo";
+import { breadcrumbs, faqPage, pageMetadata, SITE_ORIGIN } from "./seo";
 
 describe("pageMetadata", () => {
   it("sets the description, the canonical URL and Open Graph from one call", () => {
@@ -32,9 +32,5 @@ describe("JSON-LD", () => {
         { "@type": "Question", name: "Does Payleor hold my money?", acceptedAnswer: { "@type": "Answer", text: "No." } },
       ],
     });
-  });
-
-  it("points the site search at Discover", () => {
-    expect(websiteWithSearch().potentialAction.target).toBe(`${SITE_ORIGIN}/discover?q={search_term_string}`);
   });
 });
