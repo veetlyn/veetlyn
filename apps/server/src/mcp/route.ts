@@ -1,6 +1,8 @@
 import { mcpResourceFor } from "@jendal-workspace/auth";
+import { consentGrantedAt } from "@jendal-workspace/db/repositories/oauth-grants";
 import { requireMcpAuth } from "@better-auth/mcp";
 import { createMcpHandler } from "@modelcontextprotocol/server";
+import { z } from "zod";
 
 import { BRIDGE_SOURCE, BRIDGE_VERSION } from "./bridge.generated";
 import { buildServer, type WidgetOrigins } from "./server";
@@ -20,6 +22,8 @@ export function mcpRequestHandler(deps: McpDeps, origins: WidgetOrigins): (reque
   };
 }
 
+const grantClaims = z.object({ sub: z.string().min(1), azp: z.string().min(1), iat: z.number() });
+
 export function createMcpRoute(
   base: Omit<McpDeps, "userId">,
   input: { authUrl: string; origins: WidgetOrigins },
@@ -27,9 +31,15 @@ export function createMcpRoute(
   return requireMcpAuth(
     base.auth,
     async (request, claims) => {
-      const userId = claims.sub;
-      if (!userId) return new Response("The access token names no user.", { status: 401 });
-      base.log.set({ mcp: { userId, clientId: claims.azp ?? claims.client_id } });
+      const token = grantClaims.safeParse(claims);
+      if (!token.success) return new Response("The access token names no user or client.", { status: 401 });
+      const { sub: userId, azp: clientId, iat } = token.data;
+      // A disconnect or a password reset removes the consent; the token must also postdate the current one.
+      const grantedAt = await consentGrantedAt(base.actions.db, { userId, clientId });
+      if (!grantedAt || iat < Math.floor(grantedAt.getTime() / 1000)) {
+        return new Response("This connection was ended. Connect Payleor again.", { status: 401 });
+      }
+      base.log.set({ mcp: { userId, clientId } });
       return mcpRequestHandler({ ...base, userId }, input.origins)(request);
     },
     { resource: mcpResourceFor(input.authUrl) },

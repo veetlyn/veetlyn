@@ -13,8 +13,8 @@ export async function listConnectedApps(db: Database, userId: string) {
     .orderBy(oauthConsent.createdAt);
 }
 
-// Ends a user's grants, to one client or to all: the consent goes, and so do the refresh tokens, which would
-// otherwise keep minting access tokens. Access tokens already issued run until they expire.
+// Ends a user's grants, to one client or to all: the consent goes, and so do the tokens. Access tokens are
+// signed JWTs checked without a database, so the MCP endpoint also requires the consent they were issued under.
 export async function revokeOAuthGrants(db: Database, input: { userId: string; clientId?: string }) {
   const forUser = <T extends typeof oauthConsent | typeof oauthRefreshToken | typeof oauthAccessToken>(table: T) =>
     input.clientId ? and(eq(table.userId, input.userId), eq(table.clientId, input.clientId)) : eq(table.userId, input.userId);
@@ -25,9 +25,19 @@ export async function revokeOAuthGrants(db: Database, input: { userId: string; c
   });
 }
 
-// The distinct hosts a client may receive codes at.
-export async function clientRedirectHosts(db: Database, clientId: string): Promise<Set<string> | null> {
+// When the user approved this client, or null once the grant was revoked.
+export async function consentGrantedAt(db: Database, input: { userId: string; clientId: string }): Promise<Date | null> {
+  const [row] = await db
+    .select({ createdAt: oauthConsent.createdAt })
+    .from(oauthConsent)
+    .where(and(eq(oauthConsent.userId, input.userId), eq(oauthConsent.clientId, input.clientId)))
+    .limit(1);
+  return row ? (row.createdAt ?? new Date(0)) : null;
+}
+
+// The distinct places a client may receive codes at, by origin; a URI that does not parse counts on its own.
+export async function clientRedirectOrigins(db: Database, clientId: string): Promise<Set<string> | null> {
   const [row] = await db.select({ redirectUris: oauthClient.redirectUris }).from(oauthClient).where(eq(oauthClient.clientId, clientId)).limit(1);
   if (!row) return null;
-  return new Set(row.redirectUris.flatMap((uri) => (URL.canParse(uri) ? [new URL(uri).host] : [])));
+  return new Set(row.redirectUris.map((uri) => (URL.canParse(uri) ? new URL(uri).origin : uri)));
 }

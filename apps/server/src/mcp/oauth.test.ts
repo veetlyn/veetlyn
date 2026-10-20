@@ -174,7 +174,7 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
 
   it("lists the client on the account page and ends its access when the user disconnects it", async () => {
     const clientId = await register([REDIRECT]);
-    const { refresh_token: refreshToken } = await connect(await signedInCookie(), clientId);
+    const { access_token: accessToken, refresh_token: refreshToken } = await connect(await signedInCookie(), clientId);
     const [ann] = await db.select({ id: user.id }).from(user).where(eq(user.email, "ann@example.com"));
     const account = appRouter.createCaller({
       db,
@@ -190,13 +190,15 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
     await account.disconnect({ clientId });
 
     expect(await account.list()).toEqual([]);
+    // The access token already issued stops working too, not only the refresh.
+    expect((await mcpList(accessToken)).status).toBe(401);
     const refreshed = await token({ grant_type: "refresh_token", refresh_token: refreshToken, client_id: clientId });
     expect(refreshed.status).toBe(400);
   });
 
   it("disconnects every AI client when the password is reset", async () => {
     const clientId = await register([REDIRECT]);
-    const { refresh_token: refreshToken } = await connect(await signedInCookie(), clientId);
+    const { access_token: accessToken, refresh_token: refreshToken } = await connect(await signedInCookie(), clientId);
 
     await auth.api.requestPasswordReset({ body: { email: "ann@example.com", redirectTo: "/reset-password" } });
     await settle();
@@ -205,5 +207,6 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
 
     const refreshed = await token({ grant_type: "refresh_token", refresh_token: refreshToken, client_id: clientId });
     expect(refreshed.status).toBe(400);
+    expect((await mcpList(accessToken)).status).toBe(401);
   });
 });

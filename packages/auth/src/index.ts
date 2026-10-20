@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
-import { clientRedirectHosts, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
+import { clientRedirectOrigins, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
 import { createServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
@@ -144,16 +144,20 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
       },
     },
     hooks: {
-      // A stored consent names the client, not the host the user saw on the consent page. A client registered
-      // with redirect URIs on several hosts is asked again each time, so its code never reaches a host the
-      // user did not see. Only the browser's own authorize request is marked: accepting consent runs authorize
-      // again from the consent request, which must go on to the code.
+      // A stored consent names the client, not the redirect the user saw on the consent page. A client that may
+      // receive codes at several origins, or one whose redirects cannot be read, is asked again each time, so
+      // its code never reaches an origin the user did not see. The supported assistants' metadata documents
+      // (CIMD) name their own redirects. Only the browser's own authorize request is marked: accepting consent
+      // runs authorize again from the consent request, which must go on to the code.
       before: createAuthMiddleware(async (ctx) => {
         const requested = ctx.request ? new URL(ctx.request.url).pathname : null;
-        const clientId = z.string().safeParse(ctx.query?.client_id);
-        if (!requested?.endsWith("/oauth2/authorize") || !clientId.success) return;
-        const hosts = await clientRedirectHosts(database, clientId.data);
-        if (hosts && hosts.size > 1) return { context: { query: { ...ctx.query, prompt: "consent" } } };
+        if (!requested?.endsWith("/oauth2/authorize")) return;
+        const forceConsent = { context: { query: { ...ctx.query, prompt: "consent" } } };
+        const clientId = z.string().min(1).safeParse(ctx.query?.client_id ?? ctx.body?.client_id);
+        if (!clientId.success) return forceConsent;
+        if (URL.canParse(clientId.data) && isCimdUrlAllowed(new URL(clientId.data))) return;
+        const origins = await clientRedirectOrigins(database, clientId.data);
+        if (!origins || origins.size > 1) return forceConsent;
       }),
     },
     rateLimit: {
