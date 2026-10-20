@@ -11,8 +11,11 @@ import {
   passwordResetEmail,
   verificationEmail,
 } from "@jendal-workspace/email";
+import { cimd } from "@better-auth/cimd";
+import { mcp } from "@better-auth/mcp";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
+import { jwt } from "better-auth/plugins";
 import { organization } from "better-auth/plugins/organization";
 import { z } from "zod";
 
@@ -80,6 +83,29 @@ function sendInBackground(services: AuthServices, kind: AuthEmailKind, content: 
   );
 }
 
+// The MCP resource sits on the api host next to the dashboard host that runs Better Auth
+// (dash.payleor.com → api.payleor.com/mcp, dash.staging.payleor.com → api.staging.payleor.com/mcp).
+export function mcpResourceFor(authUrl: string): string {
+  const host = new URL(authUrl).hostname.replace(/^(dash|admin)\./, "");
+  return `https://api.${host}/mcp`;
+}
+
+// Workers cannot pin a resolved address, so client metadata documents (CIMD) are fetched only from the AI
+// clients we support (Cloudflare's egress does not reach private networks) and redirects are refused.
+const CIMD_HOSTS = new Set(["claude.ai", "chatgpt.com"]);
+
+export function isCimdUrlAllowed(url: URL): boolean {
+  return url.protocol === "https:" && CIMD_HOSTS.has(url.hostname);
+}
+
+async function fetchCimdResource(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const url = new URL(input instanceof Request ? input.url : input.toString());
+  if (!isCimdUrlAllowed(url)) throw new Error(`CIMD host not allowed: ${url.hostname}`);
+  const response = await fetch(url, { ...init, redirect: "manual" });
+  if (response.status >= 300 && response.status < 400) throw new Error("CIMD redirect refused");
+  return response;
+}
+
 export function createAuth(env: AuthConfig, database: Database, services: AuthServices) {
   const paypalLive = env.PAYPAL_ENVIRONMENT === "live";
   return betterAuth({
@@ -122,6 +148,8 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
         "/sign-up/email": { window: 60, max: 5 },
         "/request-password-reset": { window: 600, max: 3 },
         "/send-verification-email": { window: 600, max: 3 },
+        // Dynamic registration is the fallback for MCP clients without CIMD; anyone can call it.
+        "/oauth2/register": { window: 3600, max: 10 },
       },
     },
     advanced: {
@@ -153,6 +181,19 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     plugins: [
+      jwt(),
+      mcp({
+        loginPage: "/login",
+        consentPage: "/oauth/consent",
+        resource: mcpResourceFor(env.BETTER_AUTH_URL),
+        allowDynamicClientRegistration: true,
+        allowUnauthenticatedClientRegistration: true,
+      }),
+      cimd({
+        fetchClientMetadataResource: fetchCimdResource,
+        metadataProfile: "mcp-2026-07-28",
+        isMetadataDocumentUrlAllowed: (clientIdUrl) => isCimdUrlAllowed(new URL(clientIdUrl)),
+      }),
       organization({
         // A store needs a slug, so no team is created automatically with an organization.
         teams: { enabled: true, defaultTeam: { enabled: false } },

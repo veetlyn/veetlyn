@@ -61,7 +61,7 @@ export const servicesOffering = pgTable(
     intakeQuestions: jsonb("intake_questions").$type<string[]>().notNull().default([]),
     // An inactive offering stays in the admin and disappears from the seller page.
     active: boolean("active").notNull().default(true),
-    // "List in AI assistants": default on, so a seller opts out rather than in (run C design §3).
+    // "List in AI assistants": default on, so a seller opts out rather than in (plugin design §3).
     listed: boolean("listed").notNull().default(true),
     position: integer("position").notNull().default(0),
     createdAt: timestamp("created_at").defaultNow().notNull(),

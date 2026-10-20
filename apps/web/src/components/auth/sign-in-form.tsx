@@ -3,11 +3,16 @@
 import { Button } from "@jendal-workspace/ui/components/button";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage, isEmailNotVerified, verifyEmailPath } from "@/lib/auth-flow";
 
 import TermsNotice from "./terms-notice";
+
+// When an AI client is connecting, sign-in continues at the consent page (a relative URL) or the authorize
+// endpoint (an absolute one).
+const oauthContinuation = z.object({ redirect: z.literal(true), url: z.string().min(1) });
 import TextField from "./text-field";
 
 export default function SignInForm({ siteOrigin }: { siteOrigin: string }) {
@@ -24,6 +29,11 @@ export default function SignInForm({ siteOrigin }: { siteOrigin: string }) {
     // No callbackURL: the client would redirect to it on success (Fact 14).
     const result = await authClient.signIn.email({ email, password: String(data.get("password") ?? "") });
     if (!result.error) {
+      const continuation = oauthContinuation.safeParse(result.data);
+      if (continuation.success) {
+        window.location.assign(continuation.data.url);
+        return;
+      }
       router.replace("/");
       return;
     }

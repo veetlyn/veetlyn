@@ -307,11 +307,11 @@ export async function countServicesOfferings(
 
 const LIKE_SPECIALS = /[\\%_]/g;
 
-// What the client's AI may find (run C design §3): active, listed offerings in a listed department (or none) of
+// What the client's AI may find (plugin design §3): active, listed offerings in a listed department (or none) of
 // active services teams. A word of the query matches the offering's name or description, or the seller's name.
 export async function searchListedOfferings(
   db: Database,
-  input: { words: readonly string[]; maxPriceMinor?: number; maxDays?: number; limit: number },
+  input: { words: readonly string[]; maxPriceMinor?: number; maxDays?: number; limit: number; id?: string },
 ) {
   const wordFilters: SQL[] = input.words.flatMap((word) => {
     const pattern = `%${word.replace(LIKE_SPECIALS, (c) => `\\${c}`)}%`;
@@ -342,6 +342,7 @@ export async function searchListedOfferings(
         or(isNull(servicesDepartment.id), eq(servicesDepartment.listed, true)),
         eq(team.status, "active"),
         eq(team.product, "services"),
+        input.id === undefined ? undefined : eq(servicesOffering.id, input.id),
         wordFilters.length > 0 ? or(...wordFilters) : undefined,
         input.maxPriceMinor === undefined ? undefined : lte(servicesOffering.priceMinMinor, input.maxPriceMinor),
         input.maxDays === undefined ? undefined : lte(servicesOffering.daysMin, input.maxDays),
@@ -352,3 +353,8 @@ export async function searchListedOfferings(
 }
 
 export type ListedOffering = Awaited<ReturnType<typeof searchListedOfferings>>[number];
+
+export async function findListedOffering(db: Database, id: string): Promise<ListedOffering | null> {
+  const [row] = await searchListedOfferings(db, { words: [], id, limit: 1 });
+  return row ?? null;
+}

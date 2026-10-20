@@ -7,9 +7,11 @@
     "check-types": "tsc --noEmit",
     "compile": "bun build --compile --no-compile-autoload-dotenv --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "discord:register": "varlock run -- bun src/discord/register.ts",
-    "env:generate": "varlock codegen"
+    "env:generate": "varlock codegen",
+    "mcp:bridge": "node scripts/build-widget-bridge.mjs"
   },
   "dependencies": {
+    "@better-auth/mcp": "1.7.7",
     "@hono/trpc-server": "^0.4.2",
     "@jendal-workspace/api": "workspace:*",
     "@jendal-workspace/auth": "workspace:*",
@@ -18,6 +20,8 @@
     "@jendal-workspace/db": "workspace:*",
     "@jendal-workspace/email": "workspace:*",
     "@jendal-workspace/paypal": "workspace:*",
+    "@modelcontextprotocol/ext-apps": "2.0.3",
+    "@modelcontextprotocol/server": "2.3.1",
     "@trpc/server": "catalog:",
     "aws4fetch": "^1.0.20",
     "better-auth": "catalog:",
@@ -31,6 +35,7 @@
     "@jendal-workspace/config": "workspace:*",
     "@jendal-workspace/infra": "workspace:*",
     "@types/node": "catalog:",
+    "drizzle-orm": "catalog:",
     "tsdown": "^0.23.0",
     "typescript": "catalog:"
   }
