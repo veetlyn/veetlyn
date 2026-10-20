@@ -1,0 +1,43 @@
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_8947e6f618a2a4 15,87-88
+specs/README.md
+  s_ec180faf4f9b2e::t_2277662532df0e 30,47,53
+specs/platform/2026-10-07-seller-pricing-proposal.md
+  s_ec180faf4f9b2e::t_6519773b9f7ea2 3
+specs/platform/2026-10-18-contextual-dash-ontology-design.md
+  s_ec180faf4f9b2e::t_69741f8d4840c8 1-366
+specs/platform/2026-10-18-widget-gallery.html
+  s_ec180faf4f9b2e::t_deba6e8882d4bb 1-366
+specs/platform/2026-10-19-pricing-draft.html
+  s_ec180faf4f9b2e::t_bc682736c5e4e6 1-303
+specs/stories/01-accounts-and-setup.md
+  s_ec180faf4f9b2e::t_d7074f495777b0 7,26,39,51,64,76,90,103,114,127,168-169,183,187,230,243,257
+specs/stories/02-seller-page-and-catalog.md
+  s_ec180faf4f9b2e::t_513804b0a7999e 48
+specs/stories/03-requests-and-quotes.md
+  s_ec180faf4f9b2e::t_4944a99d5183ed 140,153,191
+specs/stories/04-payments.md
+  s_ec180faf4f9b2e::t_37f151c3c1f01d 7,19,33-36,130,144,155,160,168
+specs/stories/05-delivery-and-completion.md
+  s_ec180faf4f9b2e::t_391506a81005cc 101-102,116
+specs/stories/06-store.md
+  s_ec180faf4f9b2e::t_6a952fe6a18c07 97
+specs/stories/07-payouts.md
+  s_ec180faf4f9b2e::t_652bb09cc9f9bc 169,181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "18f2d3a77ce535f1d74f6bc9035ae44fd59864d7",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
