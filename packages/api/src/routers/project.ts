@@ -8,6 +8,13 @@ import {
   projectClientRemove,
 } from "../actions/clients";
 import {
+  conversationAnswer,
+  conversationPost,
+  requestDecline,
+  requestListOpen,
+  requestShortlist,
+} from "../actions/conversations";
+import {
   deliveryAccept,
   deliveryFile,
   deliveryRequestChanges,
@@ -50,6 +57,10 @@ export const projectRouter = router({
   clientLinkEmail: teamProcedureFor(projectClientLinkEmail),
   clientLinkReissue: teamProcedureFor(projectClientLinkReissue),
   clientPreview: teamProcedureFor(projectClientPreview),
+  openRequests: teamProcedureFor(requestListOpen),
+  post: teamProcedureFor(conversationPost),
+  decline: teamProcedureFor(requestDecline),
+  shortlist: teamProcedureFor(requestShortlist),
 
   requestQuote: publicProcedureFor(createRequest),
 
@@ -60,4 +71,6 @@ export const projectRouter = router({
   clientRequestChanges: clientProcedureFor(deliveryRequestChanges),
   clientDeliveryFileUrl: clientProcedureFor(deliveryFile),
   clientAcceptDelivery: clientProcedureFor(deliveryAccept),
+  clientPost: clientProcedureFor(conversationPost),
+  clientAnswer: clientProcedureFor(conversationAnswer),
 });

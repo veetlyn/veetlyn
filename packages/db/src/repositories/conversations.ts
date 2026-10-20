@@ -5,7 +5,7 @@ import type { DbExecutor } from "../executor";
 import { user } from "../schema/auth";
 import { clientContact } from "../schema/contacts";
 import { conversationMessage, memberDepartment, requestShortlist } from "../schema/conversations";
-import { servicesDepartment } from "../schema/services-catalog";
+import { servicesDepartment, servicesOffering } from "../schema/services-catalog";
 
 export type ConversationMessageRow = typeof conversationMessage.$inferSelect;
 export type NewConversationMessage = typeof conversationMessage.$inferInsert;
@@ -126,4 +126,24 @@ export async function replaceShortlist(
   await tx.delete(requestShortlist).where(eq(requestShortlist.projectId, input.projectId));
   if (input.userIds.length === 0) return;
   await tx.insert(requestShortlist).values(input.userIds.map((userId) => ({ projectId: input.projectId, userId })));
+}
+
+export async function shortlistsFor(db: DbExecutor, projectIds: readonly string[]): Promise<Map<string, string[]>> {
+  const lists = new Map<string, string[]>();
+  if (projectIds.length === 0) return lists;
+  const rows = await db
+    .select({ projectId: requestShortlist.projectId, userId: requestShortlist.userId })
+    .from(requestShortlist)
+    .where(inArray(requestShortlist.projectId, [...projectIds]));
+  for (const row of rows) lists.set(row.projectId, [...(lists.get(row.projectId) ?? []), row.userId]);
+  return lists;
+}
+
+export async function offeringDepartments(db: DbExecutor, offeringIds: readonly string[]): Promise<Map<string, string | null>> {
+  if (offeringIds.length === 0) return new Map();
+  const rows = await db
+    .select({ id: servicesOffering.id, departmentId: servicesOffering.departmentId })
+    .from(servicesOffering)
+    .where(inArray(servicesOffering.id, [...offeringIds]));
+  return new Map(rows.map((r) => [r.id, r.departmentId]));
 }

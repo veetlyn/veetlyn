@@ -1,5 +1,4 @@
 import type { QuotingMode, ServicesTeamRole } from "../services-teams/types";
-import type { ProjectStatus } from "./state-machine";
 
 export function isProjectStaff(role: ServicesTeamRole): boolean {
   return role === "admin" || role === "manager";
@@ -77,16 +76,4 @@ export function canSubmitDelivery(input: {
   assignedFreelancerId: string | null;
 }): boolean {
   return isProjectStaff(input.role) || input.actorId === input.assignedFreelancerId;
-}
-
-// Freelancers see the projects assigned to them, and quoting projects when anyone in the team may quote.
-export function canSeeProject(input: {
-  role: ServicesTeamRole;
-  actorId: string;
-  assignedFreelancerId: string | null;
-  status: ProjectStatus;
-  quotingMode: QuotingMode;
-}): boolean {
-  if (isProjectStaff(input.role) || input.actorId === input.assignedFreelancerId) return true;
-  return input.quotingMode === "open" && input.status === "quoting";
 }

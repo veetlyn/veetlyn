@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { type AccessFacts, conversationAccess, type ConversationAccess, readableSpaces, type Viewer } from "./access";
+import {
+  type AccessFacts,
+  canSeeProject,
+  conversationAccess,
+  type ConversationAccess,
+  readableSpaces,
+  type Viewer,
+} from "./access";
 
 const DESIGN = "dept-design";
 const quoting: AccessFacts = {
@@ -65,5 +72,18 @@ describe("readableSpaces", () => {
   it("relays the request space to whoever reads the project space", () => {
     expect(readableSpaces(conversationAccess(client, quoting))).toEqual(["project", "request"]);
     expect(readableSpaces(conversationAccess(aicha, quoting))).toEqual(["request"]);
+  });
+});
+
+describe("canSeeProject", () => {
+  it("shows freelancers their projects and the requests open to them", () => {
+    const facts = { assignedFreelancerId: "u1", status: "in_progress", quotingMode: "assigned", departmentId: null, shortlist: [] } as const;
+    const freelancer = { role: "freelancer", departmentIds: [] } as const;
+    expect(canSeeProject({ ...freelancer, actorId: "u1", facts })).toBe(true);
+    expect(canSeeProject({ ...freelancer, actorId: "u2", facts })).toBe(false);
+    expect(canSeeProject({ role: "manager", actorId: "u2", departmentIds: [], facts })).toBe(true);
+    const request = { ...facts, assignedFreelancerId: null, status: "quoting", quotingMode: "open", departmentId: "d1" } as const;
+    expect(canSeeProject({ ...freelancer, actorId: "u2", facts: request })).toBe(false);
+    expect(canSeeProject({ ...freelancer, actorId: "u2", departmentIds: ["d1"], facts: request })).toBe(true);
   });
 });

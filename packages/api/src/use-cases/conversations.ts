@@ -26,8 +26,10 @@ import {
   listMessages,
   memberDepartmentIds,
   type NewConversationMessage,
+  offeringDepartments,
   replaceMemberDepartments,
   replaceShortlist,
+  shortlistsFor,
 } from "@jendal-workspace/db/repositories/conversations";
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -51,6 +53,32 @@ async function offeringDepartment(db: DbExecutor, offeringId: string | null): Pr
     .where(eq(servicesOffering.id, offeringId))
     .limit(1);
   return row?.departmentId ?? null;
+}
+
+// The audience facts of many projects of one team at once, for lists.
+export async function accessFactsForRows(
+  db: Database,
+  teamId: string,
+  rows: readonly ProjectRow[],
+): Promise<Map<string, AccessFacts>> {
+  const offeringIds = [...new Set(rows.flatMap((r) => (r.offeringId ? [r.offeringId] : [])))];
+  const [settings, departments, shortlists] = await Promise.all([
+    getServicesTeamSettings(db, teamId),
+    offeringDepartments(db, offeringIds),
+    shortlistsFor(db, rows.filter((r) => r.status === "quoting").map((r) => r.id)),
+  ]);
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      {
+        quotingMode: settings?.quotingMode ?? "assigned",
+        departmentId: row.offeringId ? (departments.get(row.offeringId) ?? null) : null,
+        shortlist: shortlists.get(row.id) ?? [],
+        status: row.status,
+        assignedFreelancerId: row.assignedFreelancerId,
+      },
+    ]),
+  );
 }
 
 export async function accessFactsFor(db: Database, row: ProjectRow): Promise<AccessFacts> {

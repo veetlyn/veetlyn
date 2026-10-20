@@ -67,3 +67,16 @@ export function readableSpaces(access: ConversationAccess): ConversationSpace[] 
 export function clientMessageSpace(status: ProjectStatus, teamOnly: boolean): ConversationSpace {
   return status === "quoting" && !teamOnly ? "request" : "project";
 }
+
+// Freelancers see the projects assigned to them, and the requests the conversation audience rule opens to them
+// (conversations design §4): their departments, a shortlist, or every freelancer when the request has neither.
+export function canSeeProject(input: {
+  role: ServicesTeamRole;
+  actorId: string;
+  departmentIds: readonly string[];
+  facts: AccessFacts;
+}): boolean {
+  if (isProjectStaff(input.role) || input.actorId === input.facts.assignedFreelancerId) return true;
+  const viewer = { kind: "member", role: input.role, userId: input.actorId, departmentIds: input.departmentIds } as const;
+  return conversationAccess(viewer, input.facts).read.length > 0;
+}

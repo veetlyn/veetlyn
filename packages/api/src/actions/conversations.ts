@@ -9,6 +9,7 @@ import {
   setMemberDepartments,
   setRequestShortlist,
 } from "../use-cases/conversations";
+import { listOpenRequests } from "../use-cases/project-views";
 import { type Actor, isClientActor, type Surface } from "./actors";
 import { defineAction } from "./define";
 import { ActionError } from "./errors";
@@ -107,4 +108,16 @@ export const memberDepartments = defineAction({
   scope: () => ({}),
   allow: [{ grant: "member" }],
   run: (context, input) => setMemberDepartments(context.deps.db, teamActorOf(context), input),
+});
+
+export const requestListOpen = defineAction({
+  name: "request.list_open",
+  kind: "query",
+  summary: "List the team's requests still being quoted that the caller may answer, newest first, with the department and the 48-hour response window.",
+  input: z.object({}),
+  output: null,
+  surfaces: ["web"],
+  scope: () => ({}),
+  allow: [{ grant: "member" }],
+  run: (context) => listOpenRequests(context.deps.db, teamActorOf(context)),
 });
