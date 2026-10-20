@@ -89,12 +89,13 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
     expect(await metadata.json()).toMatchObject({ resource: RESOURCE, authorization_servers: [ISSUER] });
   });
 
-  async function register(redirects: string[]): Promise<string> {
+  async function register(redirects: string[], applicationType: "web" | "native" = "web"): Promise<string> {
     const registered = await authRequest("/oauth2/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         client_name: "Harness",
+        application_type: applicationType,
         redirect_uris: redirects,
         token_endpoint_auth_method: "none",
         grant_types: ["authorization_code", "refresh_token"],
@@ -170,6 +171,17 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
 
     expect(location.pathname).toBe("/oauth/consent");
     expect(location.searchParams.get("redirect_uri")).toBe(OTHER_REDIRECT);
+  });
+
+  it("asks again for an app whose redirects use different custom schemes", async () => {
+    const clientId = await register(["com.payleor.one:/callback", "com.other.app:/callback"], "native");
+    const cookie = await signedInCookie();
+    const first = await authorize(cookie, clientId, "com.payleor.one:/callback");
+    await consent(cookie, first.location);
+
+    const { location } = await authorize(cookie, clientId, "com.other.app:/callback");
+
+    expect(location.pathname).toBe("/oauth/consent");
   });
 
   it("lists the client on the account page and ends its access when the user disconnects it", async () => {
