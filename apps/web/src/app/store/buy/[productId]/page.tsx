@@ -17,14 +17,14 @@ export default async function BuyPage({ params }: { params: Promise<{ productId:
   if (!page || !product) notFound();
 
   return (
-    <main className="container mx-auto max-w-xl space-y-8 px-4 py-10">
+    <main className="mx-auto w-full max-w-xl space-y-6 px-4 py-6 md:px-7 md:py-10">
       <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
         ← {page.name}
       </Link>
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Buy {product.title}</h1>
-        {product.description ? <p className="whitespace-pre-line">{product.description}</p> : null}
-        <p className="text-lg font-medium">{formatMinor(product.priceMinor, page.currency)}</p>
+        <h1 className="font-heading text-3xl">Buy {product.title}</h1>
+        {product.description ? <p className="whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
+        <p className="font-tabular text-xl font-medium">{formatMinor(product.priceMinor, page.currency)}</p>
       </div>
       <CheckoutForm slug={page.slug} productId={product.id} currency={page.currency} />
       <SandboxCheckoutHelp />

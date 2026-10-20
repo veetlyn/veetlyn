@@ -1,29 +1,55 @@
 import Link from "next/link";
 
+import { BrandMark } from "@/components/brand-mark";
 import { CONTACT_EMAIL } from "@/content/legal/meta";
+import { AUDIENCES } from "@/content/site/audiences";
+
+const PAYLEOR_LINKS = [
+  ["/network", "Payleor Network"],
+  ["/discover", "Discover"],
+  ["/visibility", "Get found"],
+  ["/pricing", "Pricing"],
+  ["/blog", "Blog"],
+  ["/contact", "Contact"],
+] as const;
 
 export default function SiteFooter() {
   return (
-    <footer className="border-t">
-      <div className="container mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <nav aria-label="Legal" className="flex flex-wrap gap-x-6 gap-y-2">
-          <Link href="/legal/terms" className="hover:text-foreground">
-            Terms of Service
-          </Link>
-          <Link href="/legal/privacy" className="hover:text-foreground">
-            Privacy Policy
-          </Link>
-          <Link href="/legal/acceptable-use" className="hover:text-foreground">
-            Acceptable Use Policy
-          </Link>
-        </nav>
-        <p>
-          <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground">
-            {CONTACT_EMAIL}
-          </a>{" "}
-          · © 2026 Payleor
-        </p>
+    <footer className="wrap site">
+      <div className="brand">
+        <Link className="mark" href="/">
+          <BrandMark />
+          Payleor
+        </Link>
+        <p>Sell products and services inside AI, paid through PayPal.</p>
       </div>
+      <div>
+        <b>Sell</b>
+        {AUDIENCES.map((a) => (
+          <Link key={a.path} href={a.path}>
+            {a.label}
+          </Link>
+        ))}
+      </div>
+      <div>
+        <b>Payleor</b>
+        {PAYLEOR_LINKS.map(([href, label]) => (
+          <Link key={href} href={href}>
+            {label}
+          </Link>
+        ))}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+      </div>
+      <p className="small">
+        Sandbox prototype. Walk Crew, Amadou, Clay Room, Roast House, Maison Lune, Coco Nails, Logo Bot, Inès and the
+        Discover listings are examples.
+      </p>
+      <nav className="legal" aria-label="Legal">
+        <Link href="/legal/terms">Terms of service</Link>
+        <Link href="/legal/privacy">Privacy policy</Link>
+        <Link href="/legal/acceptable-use">Acceptable use policy</Link>
+        <span>© 2026 Payleor</span>
+      </nav>
     </footer>
   );
 }

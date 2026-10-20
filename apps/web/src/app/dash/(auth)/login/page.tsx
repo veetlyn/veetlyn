@@ -32,7 +32,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       {reset === "1" ? (
         <p
           role="status"
-          className="border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-50"
+          className="rounded-lg bg-brand-wash p-3 text-sm text-foreground"
         >
           Your password was changed. Log in with your new password.
         </p>

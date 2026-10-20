@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -21,7 +22,7 @@ export default function EditProduct({ storeSlug, productId }: { storeSlug: strin
   if (store.isError) return <TeamNotFound />;
   if (store.data.product === "services") {
     return (
-      <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
+      <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
         <DigitalProductForm teamSlug={storeSlug} productId={productId} />
       </main>
     );
@@ -37,9 +38,9 @@ function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; prod
   if (detail.isPending) return <Loader />;
   if (detail.isError) {
     return (
-      <main className="container mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <h1 className="text-2xl font-semibold">Product not found</h1>
-        <Link href={`/${storeSlug}/products`} className="underline">
+      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+        <h1 className="font-heading text-3xl">Product not found</h1>
+        <Link href={`/${storeSlug}/products`} className="text-sm underline underline-offset-4">
           Back to products
         </Link>
       </main>
@@ -81,18 +82,18 @@ function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; prod
   }
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
-      <div className="flex items-baseline justify-between gap-4">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <Link href={`/${storeSlug}/products`} className="text-sm text-muted-foreground">
+          <Link href={`/${storeSlug}/products`} className="text-sm text-muted-foreground hover:text-foreground">
             Products
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">{product.title}</h1>
+          <h1 className="font-heading text-3xl">{product.title}</h1>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
+          <Badge tone={product.status === "published" ? "good" : "neutral"}>
             {product.status === "published" ? "Published" : "Draft"}
-          </span>
+          </Badge>
           <Button type="button" variant="outline" onClick={toggleStatus} disabled={statusMutation.isPending}>
             {product.status === "published" ? "Unpublish" : "Publish"}
           </Button>

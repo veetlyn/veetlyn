@@ -7,8 +7,9 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Agentic commerce on PayPal",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#000000",
+    // The manifest takes literal colours: the light theme's --background and --primary.
+    background_color: "#f6f6f7",
+    theme_color: "#1c1c20",
     icons: [
       {
         src: "/favicon/web-app-manifest-192x192.png",

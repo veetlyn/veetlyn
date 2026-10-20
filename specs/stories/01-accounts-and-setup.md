@@ -2,44 +2,140 @@
 
 The public site, sign-up and sign-in, email verification and password reset, creating a seller (solo or team), connecting PayPal, members and roles, and team settings. Hosts, accounts and the story format are in [`README.md`](README.md). The physical-goods store flow (Commerce, "Create your store") is not covered here.
 
-### ACC-01: Visitor reads the landing page
+### ACC-01: Visitor reads the index page
 
-- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** brand-ds landing (`877db9e`, `5cf4be4`, `38f907c`, `642ba0d`), replacing W1-D's page · **Status:** Built (not walked through). An agent-led version that will replace this page is drafted in [`../platform/2026-10-19-landing-b.html`](../platform/2026-10-19-landing-b.html); update this story when it ships.
+- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** L (branch `l-site`) · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none; not signed in.
 - **Steps:**
-  1. Open `{site}/` and wait on the hero card.
-  2. In the hero card, replace the price with `2000`.
-  3. Scroll through the page; in "Where clients find you", click **ChatGPT**; in "Nothing moves without you", open **Agents ask first**.
-  4. In the last section, change the workspace name and click **Create workspace**.
+  1. Open `{site}/` at 1280 wide and watch the chat card play; press **Play again**.
+  2. Open the **Network** menu, then **Who it is for**; press Escape; open one and click outside it.
+  3. Scroll to the end. Click **Get started**, then come back and click **Log in**.
+  4. Repeat at 390 wide with the **Menu** button.
 - **Expected:**
-  - The heading reads "Quote, get paid, pay your team." with **Start a workspace** and the links "See pricing", "How the money moves" and "Log in" ("See a demo store" instead of "Log in" when `DEMO_STORE_SLUG` is set).
-  - The hero card turns through three example projects. At $640 it reads "The client pays $704, half up front" and splits it: the freelancer receives $543.75, the team keeps $131.42, PayPal's fees $25.31 and Payleor's fee, 0.5%, $3.52. After step 2 it stops turning and shows $1,699.75, $411.73, $77.52 and $11.00 (the client pays $2,200).
-  - Sections in order: "How the money moves" (a timeline: $640 quoted, $384 deposit paid with the 10% fee, $320 balance paid, $543.75 sent to Amadou), "Built for paid work" (eight tiles of the product), "Where clients find you" (Claude, ChatGPT, Your seller page, Discord, A pay link; each shows the client's message and Payleor's card), "Nothing moves without you" (five rules that open like book spines, each with its proof), "One plan, small fee" (Solo $19, Team $59 and Agency $199 a month, at 1%, 0.5% and 0.25% per client payment), "Money questions", "Start your workspace" and the name "Payleor." at full width.
-  - Step 4 opens `{dash}/signup?workspace=<name>&product=services`.
-  - The header has "How it works", "Pricing", "Log in" and "Get started"; "Pricing" opens `{site}/pricing`, "Get started" opens `{dash}/signup`, "Log in" opens `{dash}/login`.
-- **Edge cases:** sign-up does not read the `workspace` and `product` parameters yet. The page's examples (Walk Crew, Amadou, the bakery logo) are sample content. Some tiles describe features still being built (disputes, store sales through ChatGPT and Claude, Discord); the replacement page labels them "Coming soon".
+  - A dark band with "Sell where AI shops", the buttons "Start selling" (to `/pricing`) and "How Payleor Network works" (to `/network`), and "Clients add Payleor Network once, in Claude or ChatGPT."
+  - The Claude card types "Find someone to design a logo for my bakery, under $900.", shows Logo Bot $29 and Walk Crew $400+, presses "Request a quote" into "Requested", shows Walk Crew's quote "Logo and brand kit, 10 days · deposit $384, $640", presses "Accept" into "Accepted", then "Accepted. Pay the deposit on Payleor, with PayPal." With reduced motion it shows the end state at once.
+  - "Where clients find you" with ChatGPT, Claude, Perplexity, Gemini and Google, and "Paid through" PayPal, in monochrome.
+  - Sections: "Agentic commerce, with a person on every payment" (three sides), "AI shopping left services out. Payleor Network brings them in.", "For anyone who sells" with four story cards to the audience pages, "Our terms, on top of every integration" (six terms), "Get found on search and in AI answers" (its note says web SEO comes to every seller page with run V; "We report what happened. We never promise rankings."), "Your clients stay yours. We charge when we bring you one." with "From $12 a month", "0.25–2%" and "5% once", "Money questions" (five, the first open) and "Be there when AI comes shopping".
+  - The menus each show four illustrated tiles and a feature card; one opens at a time; Escape closes it and puts focus back on its button; a click outside closes it. The header has Pricing, Blog, Contact, "Log in" (`{dash}/login`) and "Get started" (`{dash}/signup`) and stays under the sandbox banner while scrolling.
+  - Below 1140 wide the links fold into **Menu**: tiles for both menus, then Pricing, Blog, Contact and Log in.
+  - The footer has Sell and Payleor columns, the examples note, the three legal links and "© 2026 Payleor".
+- **Edge cases:** the deposit ($384), quote and plan figures are computed from `packages/core`; a price change in core changes the page.
 
-### ACC-01b: Visitor reads the pricing page
+### ACC-01b: Visitor compares plans on the pricing page
 
-- **Actor:** visitor · **Surface:** web (`{site}/pricing`) · **Delivered by:** brand-ds (`556922d`, bundle `88a4ad3`) · **Status:** Built (not walked through)
-- **Preconditions:** none; not signed in.
+- **Actor:** visitor · **Surface:** web (`{site}/pricing`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
 - **Steps:**
-  1. Open `{site}/pricing`.
-  2. Under Services teams, switch **Monthly** to **Yearly, 2 months free**.
-  3. In "What you'd pay on a project", keep Team and $2,000, then change "Where the client came from" to "Found me through an AI agent (first project)".
-  4. Under Using both, pick Solo and Scale.
+  1. Open `{site}/pricing`. Switch **Monthly** to **Yearly, 2 months free**, then **Services** to **Store**, then **Services + store**.
 - **Expected:**
-  - Services teams: "One plan. A small fee on payments. Nothing on clients you bring yourself."; plans Solo $19, Team $59 and Agency $199 a month with 1%, 0.5% and 0.25% on each client payment; after step 2, $16, $49 and $166 a month, "Billed $192 a year" and so on.
-  - The calculator shows Payleor's total $10 for your own client and $110 after step 3 ($10 payment fee and $100, 5% network fee, first project only), with "PayPal's own processing fee is separate".
-  - Optional: "AI visibility" ($29 a month) and "Self-hosted" ("Planned for 2027").
-  - Stores: Starter $12, Grow $39 and Scale $129 a month, plus 2%, 1% and 0.5% per order; yearly "save about 25%".
-  - Using both: Team and Grow show $98 struck through, "Grow at half price −$19.50", $78.50 a month, $63.50 billed yearly and a 0.5% fee. After step 4: $138.50 a month, $107 yearly, fee 0.5%.
-  - The last line reads "PayPal's processing fees apply and are charged by PayPal; their rate varies by country."
-- **Edge cases:** the 5% network fee is shown but not charged yet (it needs a project to know the client came through an AI agent). Billing is not live: the bundle and the yearly prices are not charged either, and every store is treated as Starter.
+  - Services, monthly: Solo $19 with 1% on each client payment, Team $59 with 0.5%, Agency $199 with 0.25%, Enterprise "Custom" with "Talk to sales" (to `/contact#sales`). Yearly: $16, $49 and $166 a month, "Billed $192 a year" on Solo.
+  - Store: Starter $12 with 2% on each order, Grow $39 with 1%, Scale $129 with 0.5% (yearly $9, $29, $99), and Enterprise.
+  - Services + store hides the plan cards and shows "Run services and a store" with the bundle builder (ACC-01g); the services and store agent tables both show.
+  - "Agents in every plan": intake drafts 50, 300, 1,500 and Custom; "Web SEO on every page" carries "Coming with run V". "Payleor Network: 5%, once", "Getting found" (Web SEO "Coming to every plan with run V", AI visibility "Network members · Waitlist", Self-hosted "Planned for 2027"), "Every plan includes our terms" with "14 days free, no setup fee", six questions.
+- **Edge cases:** every price and fee is read from `SELLER_PLANS`, `PLANS` and `NETWORK_FEE_BPS`.
+
+### ACC-01c: Visitor reads the Payleor Network page
+
+- **Actor:** visitor · **Surface:** web (`{site}/network`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
+- **Steps:**
+  1. Open `{site}/network`, let the ChatGPT card play, scroll to the end and click **Join the waitlist**.
+- **Expected:**
+  - The card shows Walk Crew's delivery ("Logo, 3 directions", Ready) and "Balance due $320"; "Accept delivery" turns into "Accepted", then "Accepted. Pay the $320 balance on Payleor, with PayPal."
+  - Six gaps, "What their AI can do, and what only the client can", "How clients add it" with `api.payleor.com/mcp` and the note that directory listings come after the platforms' review; nowhere says sellers are listed in Claude or ChatGPT.
+  - Membership (`#membership`): how to qualify, what members get with "Planned, opening soon", the Maison Lune member card. **Join the waitlist** opens `/contact#membership` with the topic "Network membership" selected.
+- **Edge cases:** none.
+
+### ACC-01d: Visitor browses Discover
+
+- **Actor:** visitor · **Surface:** web (`{site}/discover`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
+- **Steps:**
+  1. Open `{site}/discover?q=logo`. Clear the search, pick **Courses**, then **All**, **Done by: AI**, **Sort: Lowest price**; type "zzz".
+- **Expected:**
+  - With `?q=logo` the box reads "logo" and the grid shows 2 listings: "Logo and brand kit" (Walk Crew, with the member check) and "Logo ideas in a minute" (Logo Bot); the count reads "2 listings".
+  - "Network members" shows four member listings; the result bar says "Sample listings while the network opens".
+  - Courses shows the two courses; Done by AI shows Logo ideas in a minute and Deck translation; Lowest price orders by price, ties in featured order; "zzz" shows "0 listings" and "Nothing matches yet. Try another word or clear a filter."
+  - The page's JSON-LD is a CollectionPage with no listing in it.
+- **Edge cases:** the listings are samples until run V replaces them with the network's search.
+
+### ACC-01e: Visitor reads Get found
+
+- **Actor:** visitor · **Surface:** web (`{site}/visibility`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
+- **Steps:**
+  1. Open `{site}/visibility` and scroll to the end.
+- **Expected:**
+  - "Get found by Google and AI" with the answers card labelled "Example", then the logo strip.
+  - "Web SEO for every plan": Structured data, Crawlers, Speed and Discover each carry "Coming with run V".
+  - "AI visibility, for Network members" with "Planned" and nine items; "Nothing ships without your yes" in four steps; "We report what happened. We never promise rankings."; four questions.
+- **Edge cases:** the run V labels come off when run V merges.
+
+### ACC-01f: Visitor reads an audience page
+
+- **Actor:** visitor · **Surface:** web (`{site}/freelancers`, `/agencies`, `/stores`, `/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
+- **Steps:**
+  1. Open each page at 1280 wide and scroll through its story; repeat one at 390 wide.
+- **Expected:**
+  - Wide: the steps scroll beside a pinned scene that changes with the step nearest the middle; the rail fills. Phone: each step carries its own scene.
+  - Freelancers: the deposit scene shows $320.00; the last scene "You kept $578.77" with PayPal $22.83 and "Payleor, 1% and 5% once" $38.40; cards Solo, Team, Enterprise.
+  - Agencies: deposit $384.00 (half the quote $320.00, management fee $64.00), "Send $543.75 to Amadou?" with Walk Crew $131.42, PayPal $25.31, "Payleor, 0.5%" $3.52; cards Team, Agency, Enterprise.
+  - Stores: "Takes 1%, nothing more"; "Clay Room's order: $65.00" with "Payleor, 1% on Grow" $0.65; cards Starter, Grow, Scale, Enterprise.
+  - Studios: "A week at Maison Lune" with the deposit $22.50 and "Send $26.75 to Inès?" (Maison Lune $13.45, PayPal $2.32, Payleor $2.48), "One link for your bio and every chat", and the bundle builder.
+- **Edge cases:** the splits are computed from core (`apps/web/src/lib/site/examples.ts`, tested); a fee change fails that test.
+
+### ACC-01g: Visitor uses the fee calculator and the bundle builder
+
+- **Actor:** visitor · **Surface:** web (`{site}/pricing`, `{site}/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
+- **Steps:**
+  1. On `/pricing`, read the calculator, press **Your own client**, then switch to **Store**, pick Grow and type 120.
+  2. Switch to **Services + store**, then **Yearly**.
+- **Expected:**
+  - Default (Team, $640, Found through AI): "0.5% payment fee $3.20", "5% network fee, first project $32.00", "Payleor $35.20" and "The next project with this client: 0.5% only." Your own client: the network line is $0.00 and the note reads "Your own clients never pay the network fee."
+  - Store, Grow, 120: "1% order fee $1.20", "Payleor $1.20", "PayPal's own fee is separate."
+  - Bundle (Team + Grow): "Team $59.00", "Grow, half price $19.50", "A month $78.50", "Every payment and order pays 0.5%, the lower fee." Yearly: $49.00 + $14.50 = $63.50.
+- **Edge cases:** an empty or invalid amount shows $0.00 lines.
+
+### ACC-01h: Visitor writes to sales
+
+- **Actor:** visitor · **Surface:** web (`{site}/contact`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** a mail app on the device.
+- **Steps:**
+  1. Open `{site}/contact#sales`, then `{site}/contact#membership`. Fill name, email, company and message and press **Write the email**.
+- **Expected:**
+  - `#sales` selects "Enterprise and sales"; `#membership` selects "Network membership".
+  - The mail app opens a message to contact@payleor.com with the subject "<topic>: <company>" and a body with name, company, what they sell, team size and the message. Nothing is sent from the page.
+- **Edge cases:** without a company the subject uses the name.
+
+### ACC-01i: Visitor reads the blog
+
+- **Actor:** visitor · **Surface:** web (`{site}/blog`, `{site}/blog/<slug>`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
+- **Steps:**
+  1. Open `{site}/blog`, pick **For stores**, then **All**. Open `{site}/blog#visibility`.
+  2. Open "How to get found on Google and in AI answers, without ads" and scroll to the end. Open `{site}/blog/unknown`.
+- **Expected:**
+  - Six articles, the first as the feature card; a topic shows only its articles; `#visibility` opens on Getting found.
+  - The article: breadcrumbs Blog / Getting found, "October 19, 2026 · 2 min read · The Payleor team", the illustration, "In short", the body (its "What Payleor does for you" section says web SEO comes to every plan with run V), Questions, the call to action and "Keep reading" with three other articles.
+  - An unknown slug is a 404.
+- **Edge cases:** none.
+
+### ACC-01j: Crawlers read the site
+
+- **Actor:** crawler · **Surface:** web (`{site}/sitemap.xml`, `/robots.txt`, `/llms.txt`, every page) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
+- **Preconditions:** none.
+- **Steps:**
+  1. Fetch the three files on `{site}`. On each page, parse every `<script type="application/ld+json">`.
+- **Expected:**
+  - The sitemap lists 17 URLs on `https://payleor.com` (11 pages and 6 articles); robots allows `*` and names GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, Claude-User, PerplexityBot and Google-Extended, with the sitemap line; llms.txt starts with "# Payleor" and links every page and article.
+  - Each page has one JSON-LD graph that parses: Organization plus WebSite with a SearchAction to `/discover?q=` and FAQPage on the index; BreadcrumbList on the others, with FAQPage where the page has questions, SoftwareApplication offers on pricing, CollectionPage on Discover, Blog on the blog, BlogPosting on articles. Each page has a description and a canonical URL on `https://payleor.com`.
+- **Edge cases:** on `{dash}` the three files redirect to the login page, and seller hosts have none; seller-page robots and sitemaps come with run V.
 
 ### ACC-02: Visitor reads the platform legal pages
 
-- **Actor:** visitor · **Surface:** web (`{site}/legal/*`) · **Delivered by:** W1-D (`a8e5260`) · **Status:** Built (not walked through)
+- **Actor:** visitor · **Surface:** web (`{site}/legal/*`) · **Delivered by:** W1-D (`a8e5260`), footer by L · **Status:** Built (walked through 2026-10-20)
 - **Preconditions:** none.
 - **Steps:**
   1. On `{site}/`, use the footer links "Terms of service", "Privacy policy" and "Acceptable use policy".

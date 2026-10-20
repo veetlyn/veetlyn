@@ -64,7 +64,7 @@ export default function CheckoutForm({ slug, productId, currency }: { slug: stri
   }
 
   return (
-    <div className="space-y-6">
+    <div className="panel space-y-6 p-5">
       <div className="space-y-2">
         <Label htmlFor="checkout-email">Your email</Label>
         <Input

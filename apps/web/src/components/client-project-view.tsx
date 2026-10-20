@@ -2,6 +2,7 @@
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import { formatMoney, money, projectStatusLabel } from "@jendal-workspace/core";
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
@@ -9,9 +10,11 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { type FormEvent, useState } from "react";
 
 import { DeliveryFile } from "@/components/delivery-file";
+import { ProjectProgress } from "@/components/project-progress";
 import { DeliveryLink } from "@/components/delivery-link";
 import { clientRefundLabel, paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
+import { AMENDMENT_STATUS_LABELS, CLIENT_PROJECT_TONES, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
 
 export type ClientProjectData = inferRouterOutputs<AppRouter>["project"]["clientGet"];
 
@@ -64,25 +67,31 @@ export function ClientProjectView({
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {projectStatusLabel(project.status)}
+        <h1 className="font-heading text-3xl">{project.title}</h1>
+        <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <Badge tone={CLIENT_PROJECT_TONES[project.status]}>
+            {projectStatusLabel(project.status)}
+          </Badge>
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
         {refund ? <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p> : null}
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
       </div>
+      <ProjectProgress status={project.status} layout="row" />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Quotes</h2>
         {quotes.length === 0 ? <p className="text-sm text-muted-foreground">The team is preparing your quote.</p> : null}
         {quotes.map((quote) => (
-          <div key={quote.id} className="space-y-3 rounded-lg border p-4">
+          <div key={quote.id} className="space-y-3 panel p-4">
             <div className="flex items-center justify-between">
               <p className="font-medium">
-                {formatMoney(money(currency, quote.amountMinor))} · delivery in {quote.deliveryDays} days
+                <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
+                <span className="text-muted-foreground"> · delivery in {quote.deliveryDays} days</span>
               </p>
-              <span className="text-sm text-muted-foreground">{quote.status === "proposed" ? "Waiting for you" : quote.status}</span>
+              <Badge tone={quote.status === "proposed" ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
+                {quote.status === "proposed" ? "Waiting for you" : QUOTE_STATUS_LABELS[quote.status]}
+              </Badge>
             </div>
             <ul className="space-y-1 text-sm">
               {quote.items.map((item) => (
@@ -105,14 +114,14 @@ export function ClientProjectView({
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Amendments</h2>
           {amendments.map((amendment) => (
-            <div key={amendment.id} className="space-y-3 rounded-lg border p-4">
+            <div key={amendment.id} className="space-y-3 panel p-4">
               <div className="flex items-center justify-between">
                 <p className="font-medium">
                   {amendment.deltaMinor > 0 ? "+" : ""}
                   {formatMoney(money(currency, amendment.deltaMinor))} → new total{" "}
                   {formatMoney(money(currency, amendment.newAmountMinor))}
                 </p>
-                <span className="text-sm text-muted-foreground">{amendment.status === "pending" ? "Waiting for you" : amendment.status}</span>
+                <span className="text-sm text-muted-foreground">{amendment.status === "pending" ? "Waiting for you" : (AMENDMENT_STATUS_LABELS[amendment.status] ?? amendment.status)}</span>
               </div>
               {amendment.addItems.length > 0 ? (
                 <ul className="space-y-1 text-sm">
@@ -151,7 +160,7 @@ export function ClientProjectView({
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Delivery</h2>
           {newestFirst(deliveries).map((delivery) => (
-            <div key={delivery.id} className="space-y-3 rounded-lg border p-4">
+            <div key={delivery.id} className="space-y-3 panel p-4">
               <div className="flex items-center justify-between text-sm">
                 <p className="font-medium">Delivered {new Date(delivery.createdAt).toLocaleString()}</p>
                 <span className="text-muted-foreground">{deliveryStatusLabel(delivery.status)}</span>
@@ -239,10 +248,10 @@ export function ClientProjectView({
                 ? "Try paying again"
                 : "Pay with PayPal";
             return (
-              <div key={payment.id} className="space-y-3 rounded-lg border p-4">
+              <div key={payment.id} className="space-y-3 panel p-4">
                 <div className="flex items-center justify-between text-sm">
                   <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
-                  <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? payment.status}</span>
+                  <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</span>
                 </div>
                 <ul className="space-y-1 text-sm">
                   {payment.lines.map((line, index) => (

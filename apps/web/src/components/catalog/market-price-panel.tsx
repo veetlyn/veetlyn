@@ -25,7 +25,7 @@ export default function MarketPricePanel({ storeSlug, productId }: { storeSlug: 
 
   const report = query.data;
   return (
-    <section aria-labelledby="market-price-heading" className="grid gap-2 border p-4">
+    <section aria-labelledby="market-price-heading" className="grid gap-2 panel p-4">
       <div className="flex items-baseline justify-between gap-4">
         <h2 id="market-price-heading" className="font-medium">
           Market prices

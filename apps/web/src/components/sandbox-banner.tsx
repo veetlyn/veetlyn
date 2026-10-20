@@ -9,7 +9,7 @@ export default function SandboxBanner() {
   return (
     <aside
       aria-label="Sandbox notice"
-      className="sticky top-0 z-50 border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-50"
+      className="sticky top-0 z-50 bg-tray px-4 py-1.5 text-center text-[13px] font-medium text-muted-foreground"
     >
       <p>{content.text}</p>
     </aside>

@@ -404,16 +404,16 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         description: "Website redesign",
         amount: { currency_code: "USD", value: "600.00", breakdown: { item_total: { currency_code: "USD", value: "600.00" } } },
         payee: { merchant_id: "SELLER1" },
-        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "6.00" } }] },
+        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "3.00" } }] },
         items: [
           { name: "Deposit (50% of the quote)", quantity: "1", unit_amount: { currency_code: "USD", value: "500.00" } },
           { name: "Management fee (10%)", quantity: "1", unit_amount: { currency_code: "USD", value: "100.00" } },
         ],
       });
-      expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 600, status: "pending" });
+      expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 300, status: "pending" });
     });
 
-    it("creates an order for a solo seller with Payleor's 2% Solo fee", async () => {
+    it("creates an order for a solo seller with Payleor's 1% Solo fee", async () => {
       const { userId, organizationId } = await seedOrganization(db);
       const { id: soloTeamId } = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
       const caller = callerFor(userId);
@@ -433,13 +433,13 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
       expect(await callerFor(null, makePayPal(fetch)).payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
 
-      // Solo keeps the whole price (no management fee), so the deposit is half the quote and Payleor takes 2%.
+      // Solo keeps the whole price (no management fee), so the deposit is half the quote and Payleor takes 1%.
       const [create] = calls(requests, "/v2/checkout/orders");
       expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
         amount: { currency_code: "USD", value: "500.00" },
-        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "10.00" } }] },
+        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "5.00" } }] },
       });
-      expect(await paymentRow(paymentId)).toMatchObject({ platformFeeMinor: 1_000, status: "pending" });
+      expect(await paymentRow(paymentId)).toMatchObject({ platformFeeMinor: 500, status: "pending" });
     });
 
     it("captures the deposit, starts the work, and answers a repeated capture without calling PayPal again", async () => {

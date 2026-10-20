@@ -1,4 +1,5 @@
 import { isServicesTeamRole } from "@jendal-workspace/core";
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -22,9 +23,9 @@ export default async function DashHome() {
   const urlParts = await getStoreUrlParts();
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-8 px-4 py-8">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Your workspace</h1>
+    <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6 md:px-7 md:py-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-heading text-3xl">Your workspace</h1>
         <span className="flex flex-wrap gap-2">
           {organizations.some((o) => o.canCreateStores) ? (
             <Link href="/new" className={buttonVariants({ variant: "outline" })}>
@@ -42,35 +43,35 @@ export default async function DashHome() {
           <h2 id={`org-${organization.id}`} className="text-sm font-medium text-muted-foreground">
             {organization.name}
           </h2>
-          <ul className="divide-y border">
+          <ul className="panel divide-y overflow-hidden">
             {organization.stores.map((store) => (
-              <li key={store.id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <li key={store.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
                 <div className="min-w-0">
-                  <Link href={`/${store.slug}`} className="font-medium hover:underline">
+                  <Link href={`/${store.slug}`} className="font-medium underline-offset-4 hover:underline">
                     {store.name}
                   </Link>
                   <p className="truncate text-sm text-muted-foreground">
                     Store · {storeUrl(store.slug, urlParts)}
                   </p>
                 </div>
-                <span className="shrink-0 text-sm text-muted-foreground">
+                <Badge tone={store.status === "active" ? "good" : store.status === "suspended" ? "warn" : "neutral"}>
                   {STATUS_LABEL.get(store.status) ?? store.status}
-                </span>
+                </Badge>
               </li>
             ))}
             {organization.servicesTeams.map((servicesTeam) => (
-              <li key={servicesTeam.id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <li key={servicesTeam.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
                 <div className="min-w-0">
-                  <Link href={`/${servicesTeam.slug}`} className="font-medium hover:underline">
+                  <Link href={`/${servicesTeam.slug}`} className="font-medium underline-offset-4 hover:underline">
                     {servicesTeam.name}
                   </Link>
                   <p className="truncate text-sm text-muted-foreground">Services team</p>
                 </div>
-                <span className="shrink-0 text-sm text-muted-foreground">
+                <Badge>
                   {isServicesTeamRole(servicesTeam.role)
                     ? SERVICES_TEAM_ROLE_LABELS[servicesTeam.role]
                     : servicesTeam.role}
-                </span>
+                </Badge>
               </li>
             ))}
           </ul>

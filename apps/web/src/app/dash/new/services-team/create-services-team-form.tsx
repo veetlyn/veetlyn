@@ -15,7 +15,7 @@ import { trpc } from "@/utils/trpc";
 
 const TONE_CLASS = {
   pending: "text-muted-foreground",
-  available: "text-emerald-700 dark:text-emerald-400",
+  available: "text-brand-text",
   problem: "text-destructive",
 } as const;
 
@@ -49,18 +49,18 @@ export default function CreateServicesTeamForm({ dashOrigin }: { dashOrigin: str
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+    <form onSubmit={handleSubmit} className="panel mt-6 grid gap-6 p-5">
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Who is selling?</legend>
         <div className="grid gap-2">
-          <label className="flex items-start gap-3 border p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-input p-3 transition-colors hover:bg-accent/60 has-[:checked]:border-brand has-[:checked]:bg-brand-wash">
             <input
               type="radio"
               name="seller-kind"
               value="solo"
               checked={solo}
               onChange={() => setSolo(true)}
-              className="mt-1 accent-current"
+              className="mt-1"
             />
             <span>
               <span className="block font-medium">Just me</span>
@@ -69,14 +69,14 @@ export default function CreateServicesTeamForm({ dashOrigin }: { dashOrigin: str
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 border p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent">
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-input p-3 transition-colors hover:bg-accent/60 has-[:checked]:border-brand has-[:checked]:bg-brand-wash">
             <input
               type="radio"
               name="seller-kind"
               value="team"
               checked={!solo}
               onChange={() => setSolo(false)}
-              className="mt-1 accent-current"
+              className="mt-1"
             />
             <span>
               <span className="block font-medium">A team</span>

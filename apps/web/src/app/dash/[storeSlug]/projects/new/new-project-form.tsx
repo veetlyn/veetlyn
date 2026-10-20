@@ -1,17 +1,17 @@
 "use client";
 
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = "h-9 w-full rounded-md border bg-transparent px-3 text-sm";
+const SELECT_CLASS = `w-full ${nativeSelectClass}`;
 
 export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   const router = useRouter();
@@ -50,17 +50,14 @@ export default function NewProjectForm({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <main className="container mx-auto max-w-xl px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/${teamSlug}/projects`} className="text-sm text-muted-foreground">
-          Projects
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">New project</h1>
+        <h1 className="font-heading text-3xl">New project</h1>
         <p className="text-sm text-muted-foreground">
           The client gets a private link to follow the project, accept quotes and pay. No account needed.
         </p>
       </div>
-      <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
+      <form onSubmit={handleSubmit} className="mt-6 grid max-w-2xl gap-6 panel p-5 md:p-6">
         <div className="space-y-2">
           <Label htmlFor="project-title">Title</Label>
           <Input id="project-title" value={title} onChange={(e) => setTitle(e.target.value)} required minLength={3} maxLength={120} autoFocus />

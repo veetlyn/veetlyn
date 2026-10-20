@@ -1,8 +1,11 @@
 "use client";
 
+import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { useQuery } from "@tanstack/react-query";
+import { Package } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import DigitalProducts from "@/components/catalog/digital-products";
 import Loader from "@/components/loader";
@@ -26,13 +29,10 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
   if (products.isPending) return <Loader />;
 
   return (
-    <main className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
-      <div className="flex items-baseline justify-between gap-4">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+      <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <Link href={`/${storeSlug}`} className="text-sm text-muted-foreground">
-            {storeSlug}
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+          <h1 className="font-heading text-3xl">Products</h1>
         </div>
         <Link href={`/${storeSlug}/products/new`} className={buttonVariants()}>
           Add product
@@ -42,8 +42,8 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
       {products.isError && <p role="alert">The products couldn't be loaded.</p>}
 
       {products.data?.length === 0 && (
-        <section className="grid gap-2 border border-dashed p-8 text-center">
-          <p className="font-medium">No products yet</p>
+        <section className="panel grid justify-items-center gap-2 p-10 text-center">
+          <p className="font-heading text-lg">No products yet</p>
           <p className="text-sm text-muted-foreground">
             Add your first product — start from a link, a photo, or a blank form.
           </p>
@@ -51,23 +51,24 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
       )}
 
       {products.data && products.data.length > 0 && (
-        <ul className="divide-y border">
+        <ul className="panel divide-y overflow-hidden">
           {products.data.map((product) => (
             <li key={product.id}>
-              <Link href={`/${storeSlug}/products/${product.id}`} className="flex items-center gap-4 p-3">
-                {product.imageKey ? (
-                  <img src={productImageUrl(product.imageKey)} alt="" className="size-12 border object-cover" />
-                ) : (
-                  <div aria-hidden className="size-12 border bg-muted" />
-                )}
+              <Link href={`/${storeSlug}/products/${product.id}`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-accent/60">
+                <ProductThumb imageKey={product.imageKey} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{product.title}</p>
+                  <p className="flex items-center gap-2 font-medium">
+                    <span className="truncate">{product.title}</span>
+                    <Badge tone={product.status === "published" ? "good" : "neutral"}>
+                      {product.status === "published" ? "Published" : "Draft"}
+                    </Badge>
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    {product.status === "published" ? "Published" : "Draft"} · {product.variantCount}{" "}
+                    {product.variantCount}{" "}
                     {product.variantCount === 1 ? "variant" : "variants"} · {product.totalStock} in stock
                   </p>
                 </div>
-                <p className="text-sm">
+                <p className="font-tabular text-sm">
                   {product.priceLow === null
                     ? "No price"
                     : product.priceLow === product.priceHigh
@@ -80,5 +81,18 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
         </ul>
       )}
     </main>
+  );
+}
+
+// A product without a usable image shows a package icon instead of an empty or broken frame.
+function ProductThumb({ imageKey }: { imageKey: string | null }) {
+  const [broken, setBroken] = useState(false);
+  if (imageKey && !broken) {
+    return <img src={productImageUrl(imageKey)} alt="" onError={() => setBroken(true)} className="size-12 rounded-md border object-cover" />;
+  }
+  return (
+    <div aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground well">
+      <Package className="size-5" />
+    </div>
   );
 }

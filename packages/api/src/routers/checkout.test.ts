@@ -242,7 +242,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         productTitle: "Icon pack",
         currency: "USD",
         amountMinor: 1900,
-        platformFeeMinor: 19,
+        platformFeeMinor: 10,
         paypalOrderId: "ORDER1",
         paypalCaptureId: null,
         checkoutSecretHash: await hashToken(result.secret),
@@ -255,7 +255,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         description: "Icon pack",
         amount: { currency_code: "USD", value: "19.00" },
         payee: { merchant_id: "SELLER1" },
-        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "0.19" } }] },
+        payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "0.10" } }] },
         items: [{ name: "Icon pack", quantity: "1", unit_amount: { currency_code: "USD", value: "19.00" } }],
       });
     });

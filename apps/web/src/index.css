@@ -1,1 +1,6 @@
 @import "@jendal-workspace/ui/globals.css";
+
+/* The bowl of the P: a straight side closed by a half-round. Payleor's one shape. */
+@utility bowl {
+  border-radius: 3px 9999px 9999px 3px;
+}

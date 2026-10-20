@@ -4,11 +4,11 @@ export default function TermsNotice({ siteOrigin }: { siteOrigin: string }) {
     <p className="text-xs text-muted-foreground">
       By continuing you agree to the{" "}
       <a href={`${siteOrigin}/legal/terms`} className="underline underline-offset-2">
-        Terms of Service
+        Terms of service
       </a>{" "}
       and the{" "}
       <a href={`${siteOrigin}/legal/acceptable-use`} className="underline underline-offset-2">
-        Acceptable Use Policy
+        Acceptable use policy
       </a>
       .
     </p>
