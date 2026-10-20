@@ -1,6 +1,4 @@
 import {
-  type BillingInterval,
-  bundleQuote,
   getPlan,
   getSellerPlan,
   formatOrderFee,
@@ -41,11 +39,6 @@ export function saleFees(sale: Sale): SaleFees {
   const networkMinor =
     sale.kind === "services" && sale.source === "network" ? platformFeeMinor(sale.amountMinor, NETWORK_FEE_BPS) : 0;
   return { feeBps, feeMinor, networkMinor, totalMinor: feeMinor + networkMinor };
-}
-
-export function bundleMonthly(services: SellerPlanId, store: PlanId, interval: BillingInterval) {
-  const q = bundleQuote(getSellerPlan(services), getPlan(store), interval);
-  return { totalCents: q.totalCents, halved: q.discountedProduct, feeBps: q.feeBps };
 }
 
 // Every plan as a schema.org Offer: the monthly price and the fee it charges, for the pricing page's structured data.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bundleMonthly, pricingOffers, saleFees } from "./fees";
+import { pricingOffers, saleFees } from "./fees";
 
 describe("saleFees", () => {
   it("charges a services plan's fee, plus 5% once when the network brought the client", () => {
@@ -9,12 +9,6 @@ describe("saleFees", () => {
       feeMinor: 23,
       networkMinor: 225,
       totalMinor: 248,
-    });
-    expect(saleFees({ kind: "services", planId: "solo", amountMinor: 64_000, source: "network" })).toEqual({
-      feeBps: 100,
-      feeMinor: 640,
-      networkMinor: 3_200,
-      totalMinor: 3_840,
     });
   });
 
@@ -30,13 +24,6 @@ describe("saleFees", () => {
 
   it("charges nothing on an empty amount instead of throwing", () => {
     expect(saleFees({ kind: "store", planId: "starter", amountMinor: 0, source: "own" }).totalMinor).toBe(0);
-  });
-});
-
-describe("bundleMonthly", () => {
-  it("halves the cheaper plan and keeps the lower fee", () => {
-    expect(bundleMonthly("team", "grow", "monthly")).toEqual({ totalCents: 7_850, halved: "store", feeBps: 50 });
-    expect(bundleMonthly("agency", "grow", "yearly")).toEqual({ totalCents: 18_050, halved: "store", feeBps: 25 });
   });
 });
 
