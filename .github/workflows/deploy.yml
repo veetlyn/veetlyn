@@ -66,5 +66,6 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm db:migrate
+      # turbo marks db:migrate interactive (for local prompts) and refuses to run it in CI, so call drizzle-kit directly.
+      - run: pnpm -F @jendal-workspace/db db:migrate:deploy
       - run: pnpm deploy:${{ env.STAGE }}
