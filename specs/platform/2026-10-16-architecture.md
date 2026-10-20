@@ -39,7 +39,7 @@ Two Cloudflare Workers, defined with Alchemy v2 in `packages/infra/alchemy.run.t
 
 | Binding | Use |
 |---|---|
-| Hyperdrive → Postgres (Aiven when deployed; a local Docker Postgres in dev) | Source of truth. Query cache off, so reads see writes |
+| Hyperdrive → Postgres (Render Postgres when deployed, one instance per stage in Virginia; a local Docker Postgres in dev) | Source of truth. Query cache off, so reads see writes |
 | KV `STORE_CACHE` | Host and slug to seller lookups; Postgres is written first, then the cache |
 | Queue `PayPalWebhooks` | Verified webhook events, processed by the api Worker (batches of 10, retries) |
 | R2 `Files` | Private files (delivery files, digital products), uploaded and downloaded with presigned URLs |
