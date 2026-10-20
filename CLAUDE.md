@@ -49,4 +49,4 @@ One branch and worktree per run, its own test database. Open a pull request; Mou
 ## Claude Code cloud sessions
 
 - Start Postgres with `docker run -d --name pg -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:17` (or `service postgresql start` for the pre-installed 16), create `jendal_test`, and write `.env.test.local` with `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/jendal_test`.
-- The dev tunnel (`admin.payleor.com` to Mouhamed's machine) is not reachable from the cloud. Before run H, walkthroughs run on Mouhamed's machine; after run H, browser checks run against the deployed sandbox hosts (`specs/stories/README.md`).
+- There is no dev tunnel any more. Browser checks run against the deployed sandbox hosts: staging (`dash.staging.payleor.com`, deployed by hand from a branch) before a merge, production (`dash.payleor.com`) after it (`specs/stories/README.md`). Never deploy from a cloud session; ask Mouhamed to run the staging deploy.
