@@ -1,3 +1,6 @@
+import { appRouter } from "@jendal-workspace/api/routers/index";
+import { makeSession } from "@jendal-workspace/api/testing";
+import { createTestCatalogServices } from "@jendal-workspace/api/testing/catalog";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore } from "@jendal-workspace/core";
 import { user } from "@jendal-workspace/db/schema/auth";
@@ -15,10 +18,11 @@ import { createMcpRoute } from "./route";
 const ISSUER = "http://dash.localhost:3001/api/auth";
 const RESOURCE = "https://api.localhost/mcp";
 const REDIRECT = "https://client.example/callback";
+const OTHER_REDIRECT = "https://elsewhere.example/callback";
 
 describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
   const db = createTestDb();
-  const { auth } = createTestAuth(db);
+  const { auth, mailer, settle } = createTestAuth(db);
   const route = createMcpRoute(
     {
       actions: { db, files: createFakeFileStore(), auth },
@@ -31,6 +35,7 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
 
   beforeEach(async () => {
     await truncateAll(db);
+    mailer.sent.length = 0;
     const realFetch = globalThis.fetch;
     vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) => {
       const request = new Request(input, init);
@@ -84,59 +89,69 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
     expect(await metadata.json()).toMatchObject({ resource: RESOURCE, authorization_servers: [ISSUER] });
   });
 
-  it("registers a client, signs in, consents, gets a token and lists the tools", async () => {
+  async function register(redirects: string[]): Promise<string> {
     const registered = await authRequest("/oauth2/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         client_name: "Harness",
-        redirect_uris: [REDIRECT],
+        redirect_uris: redirects,
         token_endpoint_auth_method: "none",
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
       }),
     });
     expect(registered.status).toBeLessThan(300);
-    const { client_id: clientId } = z.object({ client_id: z.string() }).parse(await registered.json());
+    return z.object({ client_id: z.string() }).parse(await registered.json()).client_id;
+  }
 
-    const cookie = await signedInCookie();
+  // Where the authorize step sends the browser: the consent page, or the client's redirect with a code.
+  async function authorize(cookie: string, clientId: string, redirect: string) {
     const { verifier, challenge } = await pkce();
     const query = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
-      redirect_uri: REDIRECT,
+      redirect_uri: redirect,
       scope: "openid profile email offline_access",
       state: "state-1",
       code_challenge: challenge,
       code_challenge_method: "S256",
       resource: RESOURCE,
     });
-    const authorize = await authRequest(`/oauth2/authorize?${query}`, { headers: { cookie } });
-    const toConsent = new URL(authorize.headers.get("location") ?? "", ISSUER);
-    expect(toConsent.pathname).toBe("/oauth/consent");
+    const response = await authRequest(`/oauth2/authorize?${query}`, { headers: { cookie } });
+    return { location: new URL(response.headers.get("location") ?? "", ISSUER), verifier };
+  }
 
-    const consent = await authRequest("/oauth2/consent", {
+  async function consent(cookie: string, toConsent: URL): Promise<string> {
+    const response = await authRequest("/oauth2/consent", {
       method: "POST",
       headers: { "content-type": "application/json", cookie },
       body: JSON.stringify({ accept: true, oauth_query: toConsent.search.slice(1) }),
     });
-    const consented = z.object({ url: z.string() }).parse(await consent.json());
-    const code = new URL(consented.url).searchParams.get("code");
-    expect(code).toBeTruthy();
+    const code = new URL(z.object({ url: z.string() }).parse(await response.json()).url).searchParams.get("code");
+    if (!code) throw new Error("consent returned no code");
+    return code;
+  }
 
-    const tokenResponse = await authRequest("/oauth2/token", {
+  function token(body: Record<string, string>) {
+    return authRequest("/oauth2/token", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code: code ?? "",
-        redirect_uri: REDIRECT,
-        client_id: clientId,
-        code_verifier: verifier,
-        resource: RESOURCE,
-      }),
+      body: new URLSearchParams({ ...body, resource: RESOURCE }),
     });
-    const { access_token: accessToken } = z.object({ access_token: z.string() }).parse(await tokenResponse.json());
+  }
+
+  async function connect(cookie: string, clientId: string) {
+    const { location, verifier } = await authorize(cookie, clientId, REDIRECT);
+    expect(location.pathname).toBe("/oauth/consent");
+    const code = await consent(cookie, location);
+    const response = await token({ grant_type: "authorization_code", code, redirect_uri: REDIRECT, client_id: clientId, code_verifier: verifier });
+    return z.object({ access_token: z.string(), refresh_token: z.string() }).parse(await response.json());
+  }
+
+  it("registers a client, signs in, consents, gets a token and lists the tools", async () => {
+    const clientId = await register([REDIRECT]);
+    const { access_token: accessToken } = await connect(await signedInCookie(), clientId);
 
     const listed = await mcpList(accessToken);
     expect(listed.status).toBe(200);
@@ -144,5 +159,51 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
     // A token whose signature does not verify is refused.
     const tampered = `${accessToken.slice(0, -4)}AAAA`;
     expect((await mcpList(tampered)).status).toBe(401);
+  });
+
+  it("asks again before sending a code to another of the client's hosts than the one the user approved", async () => {
+    const clientId = await register([REDIRECT, OTHER_REDIRECT]);
+    const cookie = await signedInCookie();
+    await connect(cookie, clientId);
+
+    const { location } = await authorize(cookie, clientId, OTHER_REDIRECT);
+
+    expect(location.pathname).toBe("/oauth/consent");
+    expect(location.searchParams.get("redirect_uri")).toBe(OTHER_REDIRECT);
+  });
+
+  it("lists the client on the account page and ends its access when the user disconnects it", async () => {
+    const clientId = await register([REDIRECT]);
+    const { refresh_token: refreshToken } = await connect(await signedInCookie(), clientId);
+    const [ann] = await db.select({ id: user.id }).from(user).where(eq(user.email, "ann@example.com"));
+    const account = appRouter.createCaller({
+      db,
+      session: makeSession(ann!.id),
+      environment: "sandbox",
+      auth,
+      headers: new Headers(),
+      catalog: createTestCatalogServices(),
+      files: createFakeFileStore(),
+    }).connectedApps;
+    expect(await account.list()).toEqual([expect.objectContaining({ clientId, name: "Harness" })]);
+
+    await account.disconnect({ clientId });
+
+    expect(await account.list()).toEqual([]);
+    const refreshed = await token({ grant_type: "refresh_token", refresh_token: refreshToken, client_id: clientId });
+    expect(refreshed.status).toBe(400);
+  });
+
+  it("disconnects every AI client when the password is reset", async () => {
+    const clientId = await register([REDIRECT]);
+    const { refresh_token: refreshToken } = await connect(await signedInCookie(), clientId);
+
+    await auth.api.requestPasswordReset({ body: { email: "ann@example.com", redirectTo: "/reset-password" } });
+    await settle();
+    const resetToken = /reset-password\/([^?\s]+)/.exec(mailer.sent.at(-1)?.text ?? "")?.[1];
+    await auth.api.resetPassword({ body: { newPassword: "another-long-password", token: resetToken ?? "" } });
+
+    const refreshed = await token({ grant_type: "refresh_token", refresh_token: refreshToken, client_id: clientId });
+    expect(refreshed.status).toBe(400);
   });
 });

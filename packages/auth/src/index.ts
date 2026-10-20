@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { clientRedirectHosts, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
 import { createServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
@@ -14,7 +15,7 @@ import {
 import { cimd } from "@better-auth/cimd";
 import { mcp } from "@better-auth/mcp";
 import { betterAuth } from "better-auth";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { jwt } from "better-auth/plugins";
 import { organization } from "better-auth/plugins/organization";
 import { z } from "zod";
@@ -116,6 +117,10 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
       minPasswordLength: 10,
       resetPasswordTokenExpiresIn: ONE_HOUR_IN_SECONDS,
       revokeSessionsOnPasswordReset: true,
+      // A reset is how someone takes their account back, so connected AI clients go with the sessions.
+      onPasswordReset: async ({ user }) => {
+        await revokeOAuthGrants(database, { userId: user.id });
+      },
       sendResetPassword: async ({ user, url }) => {
         sendInBackground(services, "password-reset", { to: user.email, ...passwordResetEmail({ name: user.name, url }) });
       },
@@ -137,6 +142,19 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
           before: async (user) => ({ data: { ...user, acceptedTermsAt: new Date() } }),
         },
       },
+    },
+    hooks: {
+      // A stored consent names the client, not the host the user saw on the consent page. A client registered
+      // with redirect URIs on several hosts is asked again each time, so its code never reaches a host the
+      // user did not see. Only the browser's own authorize request is marked: accepting consent runs authorize
+      // again from the consent request, which must go on to the code.
+      before: createAuthMiddleware(async (ctx) => {
+        const requested = ctx.request ? new URL(ctx.request.url).pathname : null;
+        const clientId = z.string().safeParse(ctx.query?.client_id);
+        if (!requested?.endsWith("/oauth2/authorize") || !clientId.success) return;
+        const hosts = await clientRedirectHosts(database, clientId.data);
+        if (hosts && hosts.size > 1) return { context: { query: { ...ctx.query, prompt: "consent" } } };
+      }),
     },
     rateLimit: {
       // Better Auth enables it only in production by default; the limits are part of the product.

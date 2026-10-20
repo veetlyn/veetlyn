@@ -13,7 +13,7 @@ const SCOPE_LABELS = new Map([
   ["openid", "Know which Payleor account is yours"],
   ["profile", "See your name"],
   ["email", "See your email address"],
-  ["offline_access", "Stay connected until you disconnect it"],
+  ["offline_access", "Stay connected until you disconnect it from your Payleor account"],
 ]);
 
 export function scopeLabels(scopes: readonly string[]): string[] {

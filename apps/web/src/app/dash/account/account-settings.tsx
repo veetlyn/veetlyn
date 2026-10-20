@@ -1,11 +1,55 @@
 "use client";
 
 import { Button } from "@jendal-workspace/ui/components/button";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import Loader from "@/components/loader";
 import { authClient } from "@/lib/auth-client";
+import { trpc } from "@/utils/trpc";
+
+// The AI clients connected to Payleor's plugin (Claude, ChatGPT): each can act for the user until disconnected.
+function ConnectedApps() {
+  const apps = useQuery(trpc.connectedApps.list.queryOptions());
+  const disconnect = useMutation(trpc.connectedApps.disconnect.mutationOptions({ onSuccess: () => apps.refetch() }));
+  return (
+    <section aria-labelledby="apps-heading" className="panel space-y-3 p-5">
+      <h2 id="apps-heading" className="font-medium">
+        Connected AI apps
+      </h2>
+      {apps.data?.length ? (
+        <ul className="space-y-3">
+          {apps.data.map((app) => (
+            <li key={app.clientId} className="flex items-center justify-between gap-3">
+              <span className="min-w-0 text-sm">
+                <span className="block truncate font-medium">{app.name}</span>
+                {app.uri ? <span className="block truncate text-muted-foreground">{app.uri}</span> : null}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={disconnect.isPending}
+                onClick={() => disconnect.mutate({ clientId: app.clientId })}
+              >
+                Disconnect
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {apps.isPending ? "Loading…" : "No AI app is connected. Connect Payleor in Claude or ChatGPT to see it here."}
+        </p>
+      )}
+      {disconnect.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          Could not disconnect the app. Try again.
+        </p>
+      ) : null}
+    </section>
+  );
+}
 
 export default function AccountSettings({ hasError }: { hasError: boolean }) {
   const [error, setError] = useState(hasError);
@@ -61,6 +105,7 @@ export default function AccountSettings({ hasError }: { hasError: boolean }) {
           </>
         )}
       </section>
+      <ConnectedApps />
     </main>
   );
 }
