@@ -1,0 +1,51 @@
+specs/stories/README.md
+  s_ec180faf4f9b2e::t_c4c3acd00f5be6 7,9-12
+CLAUDE.md
+  s_ec180faf4f9b2e::t_c4c3acd00f5be6 52
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_da295dfb7d6f69 30-31
+  s_ec180faf4f9b2e::t_c4c3acd00f5be6 56,72,74,81-82
+  s_ec180faf4f9b2e::t_a35dc1889a64b1 33
+  s_ec180faf4f9b2e::t_b803c5b3b11b95 89
+specs/README.md
+  s_ec180faf4f9b2e::t_b803c5b3b11b95 48,61-62,64
+specs/archive/platform/plans/2026-10-16-h-hosts-and-deploy.md
+  s_ec180faf4f9b2e::t_da295dfb7d6f69 11,727-728,742,744,771
+specs/archive/README.md
+  s_ec180faf4f9b2e::t_b803c5b3b11b95 72-74,80-81
+specs/BACKLOG.md
+  s_ec180faf4f9b2e::t_c4c3acd00f5be6 35-36,41
+specs/stories/09-agentic.md
+  s_ec180faf4f9b2e::t_da295dfb7d6f69 15
+specs/archive/platform/plans/2026-10-15-a2-client-contacts.md
+  s_ec180faf4f9b2e::t_da295dfb7d6f69 1-337
+specs/platform/2026-10-19-site-and-design-system-design.md
+  s_ec180faf4f9b2e::t_a35dc1889a64b1 3,46
+specs/archive/platform/plans/2026-10-19-l-site.md
+  s_ec180faf4f9b2e::t_da295dfb7d6f69 1-10,12-448,453,455,458-718
+  s_ec180faf4f9b2e::t_27df707e0ae0d1 449-452,454,456-457
+  s_ec180faf4f9b2e::t_a35dc1889a64b1 11
+specs/platform/2026-10-16-architecture.md
+  s_ec180faf4f9b2e::t_c4c3acd00f5be6 18,20-23,37,49
+specs/platform/2026-10-07-seller-pricing-proposal.md
+  s_ec180faf4f9b2e::t_da295dfb7d6f69 3
+specs/archive/backlog-done.md
+  s_ec180faf4f9b2e::t_c4c3acd00f5be6 34-35,37-38
+  s_ec180faf4f9b2e::t_27df707e0ae0d1 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "21813069c8cb833f0b1449c87b592c817f5bc88c",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
