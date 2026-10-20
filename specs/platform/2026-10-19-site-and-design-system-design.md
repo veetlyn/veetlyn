@@ -1,6 +1,6 @@
 # payleor.com, rebuilt on the Landing B design system, then the dash
 
-**Date:** 2026-10-19. **Status:** run L built in the cloud on branch `l-site` (2026-10-19), walkthrough pending ([plan Outcome](plans/2026-10-19-l-site.md#outcome)); the content and look were approved on the prototype by Mouhamed during the 2026-10-19 session ("I love this ds. Plan the full integration to payleor.com with all the features. Then we need the dash to follow."). **Prototype:** [`2026-10-19-landing-b.html`](2026-10-19-landing-b.html) and its folder [`2026-10-19-landing-b/`](2026-10-19-landing-b/) (published as a private artifact; the build script and sources live in the session scratchpad and are reproduced by the plan).
+**Date:** 2026-10-19. **Status:** the site part (§1–5) is built: run L, merged into main as `ed0d175` (PR #9), walked through 2026-10-20 ([plan Outcome](../archive/platform/plans/2026-10-19-l-site.md#outcome)). §6, the dash, is still to plan (the DS phase). The prototype is archived in [`../archive/platform/2026-10-19-landing-b.html`](../archive/platform/2026-10-19-landing-b.html).
 
 ## 1. Intent
 
@@ -43,7 +43,7 @@ The page is written for the Nov 12 submission and the sandbox. The rules:
 
 | Phase | What | Plan | Slot |
 |---|---|---|---|
-| L | The site on payleor.com: every page, the mega menus, the blog, Discover with samples, the SEO layer | [`plans/2026-10-19-l-site.md`](plans/2026-10-19-l-site.md) | Proposed: in parallel with C (Oct 20–23), it touches only `(site)` routes, `packages/ui` tokens and `apps/web/src/lib/site` |
+| L | The site on payleor.com: every page, the mega menus, the blog, Discover with samples, the SEO layer | [`plans/2026-10-19-l-site.md`](../archive/platform/plans/2026-10-19-l-site.md) | Proposed: in parallel with C (Oct 20–23), it touches only `(site)` routes, `packages/ui` tokens and `apps/web/src/lib/site` |
 | V | Web SEO on every seller page; Discover over the network's search; Discover sales count toward the network fee | to write after C (it reuses C's offering search) | Needs a slot (program §4) |
 | W | Membership waitlist: a form that stores applications with their proofs, an admin list to approve or decline, the member check on cards | to write | After the hackathon unless a slot opens |
 | AV | AI visibility agent for members | to design | After the hackathon |

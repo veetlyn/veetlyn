@@ -69,11 +69,16 @@ Merge commits are also on the run board's "Done before the program" table in [`.
 | [`platform/plans/2026-10-14-a1-action-registry.md`](platform/plans/2026-10-14-a1-action-registry.md) | Run A1 plan (2026-10-14): `ActionError` and actors, the `action_log` with a 180-day cleanup, `perform`, router logic moved into use cases, the registry and its test, tRPC adapters. Merged as `4a27fb6` (PR #1); walked through with spike S |
 | [`platform/plans/2026-10-14-s-plugin-spike.md`](platform/plans/2026-10-14-s-plugin-spike.md) | Spike S plan (2026-10-14): Better Auth as an MCP OAuth provider, an `/mcp` endpoint with tools and widgets over the tunnel, Claude then ChatGPT; closed with a go for both. Branch `spike-plugin`, not merged; findings in [`../platform/2026-10-14-plugin-spike-facts.md`](../platform/2026-10-14-plugin-spike-facts.md) |
 | [`platform/plans/2026-10-14-s-plugin-walkthrough.md`](platform/plans/2026-10-14-s-plugin-walkthrough.md) | Spike S walkthrough (2026-10-14): the whole client flow A1–A19 in Claude then ChatGPT, with the human and seller steps marked and the results table |
+| [`platform/plans/2026-10-15-a2-client-contacts.md`](platform/plans/2026-10-15-a2-client-contacts.md) | Run A2 plan (2026-10-15): client contacts, verified identities, revocable client links, safe migration. Merged as `1a0e640` (PR #2), walked through 2026-10-16 (AGT-01–06) |
+| [`platform/plans/2026-10-16-h-hosts-and-deploy.md`](platform/plans/2026-10-16-h-hosts-and-deploy.md) | Run H plan (2026-10-16): the `dash.` host, production and staging on our domains, the deploy workflow, security audit A1–A5. Merged as `0841314` (PR #3); production live and AGT-07/08 walked through 2026-10-20 |
+| [`platform/plans/2026-10-19-l-site.md`](platform/plans/2026-10-19-l-site.md) | Run L plan (2026-10-19): payleor.com on the Landing B design system, the blog, Discover, the SEO and AI visibility layer. Merged as `ed0d175` (PR #9), walked through 2026-10-20 |
 
 ## Designs and research
 
 | Path | Contents |
 |---|---|
+| [`platform/2026-10-19-landing-b.html`](platform/2026-10-19-landing-b.html) and [its folder](platform/2026-10-19-landing-b/) | Landing B prototype (2026-10-19): every page of payleor.com, the mega menus, the blog with six articles, the SEO files; built into the app by run L |
+| [`platform/2026-10-19-pricing-draft.html`](platform/2026-10-19-pricing-draft.html) | Pricing page draft (2026-10-19), replaced by the prototype's pricing page and the prices in `packages/core` |
 | [`platform/2026-10-03-payleor-platform-design.md`](platform/2026-10-03-payleor-platform-design.md) | The first platform design (2026-10-03): a commerce-only product with AI checkout protocols, a dispute agent, Braintree and per-store dashboards. Replaced on 2026-10-16 by `../platform/2026-10-16-architecture.md` |
 | [`platform/2026-10-02-cloudflare-birthday-week.md`](platform/2026-10-02-cloudflare-birthday-week.md) | Summary of Cloudflare's Birthday Week 2026 announcements, the input to research §12 |
 | [`platform/2026-10-04-public-site-auth-onboarding-design.md`](platform/2026-10-04-public-site-auth-onboarding-design.md) | Landing page and live pricing, sandbox banner, sign-in and email flows, store onboarding and setup checklist, platform legal pages and store policies |

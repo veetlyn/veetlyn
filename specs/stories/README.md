@@ -4,12 +4,12 @@ Every finished feature of Payleor as a user story with steps and expected result
 
 ## Hosts
 
-| Placeholder | Today (dev tunnel) | After run H (deployed sandbox) |
+| Placeholder | Production (after a merge) | Staging (a branch before its merge) |
 |---|---|---|
-| `{site}` | `https://payleor.com` | `https://payleor.com` |
-| `{dash}` | `https://admin.payleor.com` | `https://dash.payleor.com` |
-| `{seller}` | `https://<slug>.payleor.app` | `https://<slug>.payleor.app` |
-| `{api}` | `https://api.payleor.com` | the api Worker's host on `payleor.com` |
+| `{site}` | `https://payleor.com` | `https://staging.payleor.com` |
+| `{dash}` | `https://dash.payleor.com` | `https://dash.staging.payleor.com` |
+| `{seller}` | `https://<slug>.payleor.app` | `https://<slug>.staging.payleor.app` |
+| `{api}` | `https://api.payleor.com` | `https://api.staging.payleor.com` |
 
 Everything runs in the PayPal sandbox. No real money moves.
 

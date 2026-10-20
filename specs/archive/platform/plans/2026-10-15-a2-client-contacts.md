@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript (pnpm, turbo), Drizzle on Postgres, tRPC 11, zod 4.5, Vitest with a real test database.
 
-**Spec:** [`../2026-10-13-action-catalog-design.md`](../2026-10-13-action-catalog-design.md) §5 (A2). Program: [`../2026-10-13-agentic-surfaces-program.md`](../2026-10-13-agentic-surfaces-program.md) §4. Builds on A1 (merged `4a27fb6`); run C (`2026-10-15-c-plugin-design.md`) consumes the client identity for the plugin.
+**Spec:** [`../2026-10-13-action-catalog-design.md`](../../../platform/2026-10-13-action-catalog-design.md) §5 (A2). Program: [`../2026-10-13-agentic-surfaces-program.md`](../../../platform/2026-10-13-agentic-surfaces-program.md) §4. Builds on A1 (merged `4a27fb6`); run C (`2026-10-15-c-plugin-design.md`) consumes the client identity for the plugin.
 
 **Base:** main at `f41c961`. Branch `a2-client-contacts`, worktree `worktrees/a2-client-contacts`, own test database `jendal_test_a2` (`docker exec jendal-pg createdb -U postgres jendal_test_a2`; copy `.env.test.local` into the worktree and point `TEST_DATABASE_URL` at it). Every worker uses only that database, never the dev database, and never pushes to main.
 

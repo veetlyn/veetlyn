@@ -12,7 +12,7 @@ Security rules every story here assumes (program §3.4):
 
 ## A2: client contacts
 
-Plan: [`2026-10-15-a2-client-contacts.md`](../platform/plans/2026-10-15-a2-client-contacts.md), walked in Task 11.
+Plan: [`2026-10-15-a2-client-contacts.md`](../archive/platform/plans/2026-10-15-a2-client-contacts.md), walked in Task 11.
 
 ### AGT-01: The team manages a project's clients in a Clients section
 

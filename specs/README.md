@@ -45,7 +45,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Agentic surfaces program](platform/2026-10-13-agentic-surfaces-program.md) | Approved 2026-10-13; the current program |
 | [Agentic dash design](platform/2026-10-16-agentic-dash-design.md) | Sections approved 2026-10-16; written document awaiting review. Proposes to replace the program's runs after A2 |
 | [Contextual dash](platform/2026-10-18-contextual-dash-ontology-design.md) | Parked 2026-10-18: the agentic dash is put aside for the revamp of the current screens and the plugin's widgets. Reference only |
-| [Action catalog design](platform/2026-10-13-action-catalog-design.md) | Approved; A1 built, A2 planned |
+| [Action catalog design](platform/2026-10-13-action-catalog-design.md) | Approved; A1 and A2 built; run C builds on the client contacts (§5) |
 | [Conversations design](platform/2026-10-14-conversations-design.md) | Approved; built across runs C, B and E |
 | [Run C design](platform/2026-10-15-c-plugin-design.md) | Approved 2026-10-15 |
 | [Discord ticket flow design](platform/2026-10-13-discord-ticket-flow-design.md) | Source for run E, to revise first |
@@ -57,12 +57,11 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Sponsor integrations](platform/2026-10-05-sponsor-integrations-design.md) | Approved; AG Grid in run D |
 | [PayPal facts](platform/2026-10-07-r1-paypal-facts.md) | Reference |
 | [Connector UX guidelines](platform/2026-10-14-connector-ux-guidelines.md) | Reference: 38 rules for the plugin's tools and widgets, from Claude, OpenAI and the MCP Apps spec |
-| [A2 plan](platform/plans/2026-10-15-a2-client-contacts.md) | Planned |
 | [Run C plan](platform/plans/2026-10-15-c-plugin.md) | Planned |
-| [H plan](platform/plans/2026-10-16-h-hosts-and-deploy.md) | Planned 2026-10-16 |
-| [Security audit](platform/2026-10-16-security-audit.md) | Review 2026-10-16; findings open, none critical |
+| [Site and design system](platform/2026-10-19-site-and-design-system-design.md) | The site (§1–5) built by run L; §6, the dash on the same system, still to plan |
+| [Security audit](platform/2026-10-16-security-audit.md) | Review 2026-10-16; A1–A5 fixed by run H, B1–B4 taken by run C |
 
-Finished plans (S, A1 and earlier) and their walkthrough evidence are in [`archive/`](archive/README.md); what each run found is in its plan's Outcome.
+Finished plans (S, A1, A2, H, L and earlier) and their walkthrough evidence are in [`archive/`](archive/README.md); what each run found is in its plan's Outcome.
 
 ## Keeping this index useful
 

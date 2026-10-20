@@ -15,12 +15,12 @@ Money always goes to the seller's PayPal account; Payleor takes its fee through 
 
 ## 2. Hosts
 
-| Host | Today (dev tunnel) | After run H | After run C |
+| Host | Production (since 2026-10-20) | Staging | After run C |
 |---|---|---|---|
-| `payleor.com` | Landing, pricing, legal pages, client page `/c/{token}`, pay page `/pay/{token}` | same | Landing and the client's home across teams; `/c` and `/pay` move to the team's site |
-| `admin.payleor.com` | Sign-in, account, seller dashboards (`/{slug}/…`) | renamed `dash.payleor.com` | same |
-| `api.payleor.com` | The api Worker: auth, tRPC, webhooks, Discord, onboarding return | same | plus `/mcp`, the plugin's endpoint |
-| `{slug}.payleor.app` | One seller's site: seller page or storefront, request form, `/buy`, orders, policies | same | plus the client and pay pages (`{slug}.payleor.app/c/{token}`, `/pay/{token}`) |
+| `payleor.com` | Landing, pricing, legal pages, client page `/c/{token}`, pay page `/pay/{token}` | `staging.payleor.com` | Landing and the client's home across teams; `/c` and `/pay` move to the team's site |
+| `dash.payleor.com` | Sign-in, account, seller dashboards (`/{slug}/…`); `admin.payleor.com` redirects here | `dash.staging.payleor.com` | same |
+| `api.payleor.com` | The api Worker: auth, tRPC, webhooks, Discord, onboarding return | `api.staging.payleor.com` | plus `/mcp`, the plugin's endpoint |
+| `{slug}.payleor.app` | One seller's site: seller page or storefront, request form, `/buy`, orders, policies | `{slug}.staging.payleor.app` | plus the client and pay pages (`{slug}.payleor.app/c/{token}`, `/pay/{token}`) |
 
 - `PLATFORM_DOMAIN` is `payleor.com`, `STORE_DOMAIN` is `payleor.app`. `payleor.com` is multi-tenant (accounts, dashboards, the client's HQ); each `payleor.app` subdomain is one seller's own site, where client, team and freelancer interact.
 - One account works on every host (federated sign-in, [`2026-10-06-auth-federation-design.md`](2026-10-06-auth-federation-design.md)). Signed client links stay the no-account path.
@@ -34,7 +34,7 @@ Two Cloudflare Workers, defined with Alchemy v2 in `packages/infra/alchemy.run.t
 
 | Worker | Source | Serves |
 |---|---|---|
-| **web** | `apps/web` (vinext, the Next.js API on Vite) | Every page. Route trees: `admin/` (dashboards), `(site)/` (landing, legal, client and pay pages), `store/` (seller sites). The Worker entry forwards `/api/*` and `/trpc/*` to the api Worker through the `SERVER` service binding, keeping the host, so the browser only talks to its own origin |
+| **web** | `apps/web` (vinext, the Next.js API on Vite) | Every page. Route trees: `dash/` (dashboards), `(site)/` (landing, legal, client and pay pages), `store/` (seller sites). The Worker entry forwards `/api/*` and `/trpc/*` to the api Worker through the `SERVER` service binding, keeping the host, so the browser only talks to its own origin |
 | **api** | `apps/server` (Hono) | `/api/auth/*` (Better Auth), `/trpc/*`, `/webhooks/paypal`, `/api/paypal/onboarding/return`, `/discord/interactions`, store info and catalog images; the PayPal webhook queue consumer; the maintenance cron |
 
 | Binding | Use |
@@ -46,7 +46,7 @@ Two Cloudflare Workers, defined with Alchemy v2 in `packages/infra/alchemy.run.t
 | R2 `ProductImages` | Catalog images |
 | Cron `*/10 * * * *` | Maintenance sweeps (§8) |
 
-Local development: `pnpm dev` runs both Workers with `alchemy dev`; `pnpm tunnel` serves `admin.payleor.com` and `*.payleor.app` from this machine until run H deploys. Environment values are declared in `.env.schema` files and loaded by varlock.
+Local development: `pnpm dev` runs both Workers with `alchemy dev` on `localhost:3001` and `dash.localhost:3001`. Production deploys from GitHub Actions after CI passes on main; staging deploys by hand (`specs/PROGRESS.md`, Environment). Workers Cache is off for the web Worker: it served signed-in answers to other callers (H plan, Build notes). Environment values are declared in `.env.schema` files and loaded by varlock.
 
 ## 4. Code layout
 

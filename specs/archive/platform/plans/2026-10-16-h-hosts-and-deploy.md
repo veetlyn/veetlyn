@@ -8,7 +8,7 @@
 
 **Tech Stack:** Alchemy 2.0.0-beta.80 (Effect), Cloudflare Workers (Workers Paid), Hyperdrive to Aiven Postgres, Vinext (Next.js on Workers), drizzle-kit, GitHub Actions, Vitest.
 
-**Spec:** [program](../2026-10-13-agentic-surfaces-program.md) §4 (H) and §6 item 6 (hosts); [architecture](../2026-10-16-architecture.md) §2; [security audit](../2026-10-16-security-audit.md) A1–A5; [agentic dash design](../2026-10-16-agentic-dash-design.md) §10 (H Oct 16–17). Backlog rows owned by H in [`BACKLOG.md`](../../BACKLOG.md).
+**Spec:** [program](../../../platform/2026-10-13-agentic-surfaces-program.md) §4 (H) and §6 item 6 (hosts); [architecture](../../../platform/2026-10-16-architecture.md) §2; [security audit](../../../platform/2026-10-16-security-audit.md) A1–A5; [agentic dash design](../../../platform/2026-10-16-agentic-dash-design.md) §10 (H Oct 16–17). Backlog rows owned by H in [`BACKLOG.md`](../../../BACKLOG.md).
 
 **Base:** main at `d1f59f1`. Branch `h-hosts-deploy`, worktree `worktrees/h-hosts-deploy`, test database `jendal_test_h` (`docker exec jendal-pg createdb -U postgres jendal_test_h`; copy `.env.test.local` into the worktree and point `TEST_DATABASE_URL` at it). Never push to main.
 
@@ -724,8 +724,8 @@ If Task 8's first deploy shows the Alchemy CLI needs Bun, add `oven-sh/setup-bun
 
 **Files:** `specs/PROGRESS.md` (Environment section, the tunnel steps at `:69`, the walkthrough rule at `:53`), `specs/platform/2026-10-16-architecture.md` §2 (hosts table: today = production; staging hosts; `admin.` redirects), `specs/stories/README.md` (`{dash}` and the hosts for walkthroughs: production after merge, staging before), `CLAUDE.md` ("Claude Code cloud sessions": the tunnel is gone; browser checks use staging or production), `specs/BACKLOG.md` (move the H rows to `archive/backlog-done.md` with the merge commit; the landing copy row's owner becomes V).
 
-- [ ] **Step 1:** Make those edits; run `python3 /path/to/check_links.py` or `grep -rn "admin.payleor.com\|pnpm tunnel" specs CLAUDE.md` and fix every live (non-archive) mention.
-- [ ] **Step 2: Commit on main** (spec edits): `git commit -m "docs(specs): environment after the first deploy"`.
+- [x] **Step 1:** Make those edits; run `python3 /path/to/check_links.py` or `grep -rn "admin.payleor.com\|pnpm tunnel" specs CLAUDE.md` and fix every live (non-archive) mention.
+- [x] **Step 2: Commit on main** (spec edits): `git commit -m "docs(specs): environment after the first deploy"`.
 
 ### Task 11: Rename the dashboard tree and identifiers (after A2 merges)
 
@@ -739,9 +739,9 @@ On a short branch `h-dash-tree` from main once A2 is merged, so A2's edits to th
 
 ### Task 12: Walkthrough on production
 
-- [x] **Step 1:** Run AGT-07 and AGT-08 from [`stories/09-agentic.md`](../../stories/09-agentic.md) on the production hosts with a browser tool. [human] Mouhamed approves the payment in the PayPal popup (AGT-07 step 4) and reads the PayPal consent screen (AGT-08 step 2).
+- [x] **Step 1:** Run AGT-07 and AGT-08 from [`stories/09-agentic.md`](../../../stories/09-agentic.md) on the production hosts with a browser tool. [human] Mouhamed approves the payment in the PayPal popup (AGT-07 step 4) and reads the PayPal consent screen (AGT-08 step 2).
 - [x] **Step 2:** Check in the production database (through `pnpm db:studio` with the production `DATABASE_URL`, run by Mouhamed, or the dash pages) that the payment is captured and the webhook event is recorded.
-- [ ] **Step 3:** Mark AGT-07 and AGT-08 Walked through (date) in the stories; fill the Outcome below; move this plan to `archive/` per `specs/README.md`.
+- [x] **Step 3:** Mark AGT-07 and AGT-08 Walked through (date) in the stories; fill the Outcome below; move this plan to `archive/` per `specs/README.md`.
 
 ## Build notes
 
@@ -768,4 +768,4 @@ On a short branch `h-dash-tree` from main once A2 is merged, so A2's edits to th
 
 **Found, in the backlog:** the Aiven server's 20 connections are shared by production and staging Hyperdrive and were all taken (a direct connection was refused until one freed), which matches dash pages taking about 10 s, actions 10–15 s, and webhook events waiting 60–70 s before processing; the new-quote form keeps its lines after sending; the account menu cuts off a long email; CI uses Alchemy's cached OAuth credentials for the state store; production has no sandbox test card variables.
 
-**Still to do:** Task 10 (docs for the new environment), then move this plan to `archive/`.
+**Docs (Task 10, 2026-10-20):** PROGRESS (environment, walkthrough rule, production accounts), the architecture hosts table, the stories hosts table and CLAUDE.md now describe production and staging; the tunnel is retired. H's finished backlog rows moved to `archive/backlog-done.md`. Live mentions of `admin.payleor.com` remain only where they say it redirects, and in archived or historical documents.
