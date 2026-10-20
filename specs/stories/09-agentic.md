@@ -92,7 +92,7 @@ Plan: not written. Its walkthrough also runs the whole book on the deployed host
 
 ### AGT-07: The platform runs on the deployed sandbox hosts
 
-- **Actor:** team admin, client · **Surface:** web (`{site}`, `{dash}`, `{seller}`) · **Delivered by:** H · **Status:** Planned (H)
+- **Actor:** team admin, client · **Surface:** web (`{site}`, `{dash}`, `{seller}`) · **Delivered by:** H · **Status:** Walked through 2026-10-20 on production (H plan Outcome)
 - **Preconditions:** run H deployed; `{dash}` is `https://dash.payleor.com`.
 - **Steps:**
   1. Open `{site}`, sign in on `{dash}`, open `{dash}/walk-crew`.
@@ -107,7 +107,7 @@ Plan: not written. Its walkthrough also runs the whole book on the deployed host
 
 ### AGT-08: PayPal shows the partner app as Payleor
 
-- **Actor:** team admin · **Surface:** PayPal consent screens · **Delivered by:** H · **Status:** Planned (H)
+- **Actor:** team admin · **Surface:** PayPal consent screens · **Delivered by:** H · **Status:** Walked through 2026-10-20 on production (H plan Outcome)
 - **Preconditions:** AGT-07.
 - **Steps:**
   1. Start turning on automatic payouts (OUT-04).
