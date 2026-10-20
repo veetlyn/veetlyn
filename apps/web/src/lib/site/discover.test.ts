@@ -32,6 +32,7 @@ describe("browse", () => {
     expect(browse(items, { q: "Automated" }).map((i) => i.title)).toEqual(["Logo ideas"]);
   });
   it("filters by category, type and who does the work", () => {
+    expect(browse(items, { category: "courses" }).map((i) => i.title)).toEqual(["Glazing course"]);
     expect(browse(items, { type: "course" }).map((i) => i.title)).toEqual(["Glazing course"]);
     expect(browse(items, { done: "ai" }).map((i) => i.title)).toEqual(["Logo ideas"]);
   });
