@@ -4,7 +4,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01: Visitor reads the index page
 
-- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** L (branch `l-site`) · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** L (branch `l-site`) · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none; not signed in.
 - **Steps:**
   1. Open `{site}/` at 1280 wide and watch the chat card play; press **Play again**.
@@ -23,7 +23,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01b: Visitor compares plans on the pricing page
 
-- **Actor:** visitor · **Surface:** web (`{site}/pricing`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/pricing`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/pricing`. Switch **Monthly** to **Yearly, 2 months free**, then **Services** to **Store**, then **Services + store**.
@@ -36,7 +36,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01c: Visitor reads the Payleor Network page
 
-- **Actor:** visitor · **Surface:** web (`{site}/network`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/network`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/network`, let the ChatGPT card play, scroll to the end and click **Join the waitlist**.
@@ -48,7 +48,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01d: Visitor browses Discover
 
-- **Actor:** visitor · **Surface:** web (`{site}/discover`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/discover`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/discover?q=logo`. Clear the search, pick **Courses**, then **All**, **Done by: AI**, **Sort: Lowest price**; type "zzz".
@@ -61,7 +61,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01e: Visitor reads Get found
 
-- **Actor:** visitor · **Surface:** web (`{site}/visibility`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/visibility`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/visibility` and scroll to the end.
@@ -73,7 +73,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01f: Visitor reads an audience page
 
-- **Actor:** visitor · **Surface:** web (`{site}/freelancers`, `/agencies`, `/stores`, `/studios`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/freelancers`, `/agencies`, `/stores`, `/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open each page at 1280 wide and scroll through its story; repeat one at 390 wide.
@@ -87,7 +87,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01g: Visitor uses the fee calculator and the bundle builder
 
-- **Actor:** visitor · **Surface:** web (`{site}/pricing`, `{site}/studios`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/pricing`, `{site}/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. On `/pricing`, read the calculator, press **Your own client**, then switch to **Store**, pick Grow and type 120.
@@ -100,7 +100,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01h: Visitor writes to sales
 
-- **Actor:** visitor · **Surface:** web (`{site}/contact`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/contact`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** a mail app on the device.
 - **Steps:**
   1. Open `{site}/contact#sales`, then `{site}/contact#membership`. Fill name, email, company and message and press **Write the email**.
@@ -111,7 +111,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01i: Visitor reads the blog
 
-- **Actor:** visitor · **Surface:** web (`{site}/blog`, `{site}/blog/<slug>`) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** visitor · **Surface:** web (`{site}/blog`, `{site}/blog/<slug>`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/blog`, pick **For stores**, then **All**. Open `{site}/blog#visibility`.
@@ -124,7 +124,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01j: Crawlers read the site
 
-- **Actor:** crawler · **Surface:** web (`{site}/sitemap.xml`, `/robots.txt`, `/llms.txt`, every page) · **Delivered by:** L · **Status:** In progress (L): built on branch `l-site`, not walked through
+- **Actor:** crawler · **Surface:** web (`{site}/sitemap.xml`, `/robots.txt`, `/llms.txt`, every page) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Fetch the three files on `{site}`. On each page, parse every `<script type="application/ld+json">`.
@@ -135,10 +135,10 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-02: Visitor reads the platform legal pages
 
-- **Actor:** visitor · **Surface:** web (`{site}/legal/*`) · **Delivered by:** W1-D (`a8e5260`) · **Status:** Built (not walked through)
+- **Actor:** visitor · **Surface:** web (`{site}/legal/*`) · **Delivered by:** W1-D (`a8e5260`), footer by L · **Status:** Built (walked through 2026-10-20)
 - **Preconditions:** none.
 - **Steps:**
-  1. On `{site}/`, use the footer links "Terms of Service", "Privacy Policy" and "Acceptable Use Policy".
+  1. On `{site}/`, use the footer links "Terms of service", "Privacy policy" and "Acceptable use policy".
 - **Expected:**
   - Each page has its title, "Last updated October 5, 2026", and ends with "This text is a template and is not legal advice."
   - The Terms name Mouhamed Bakhoum as the operator, Senegalese law and the courts of Dakar.
