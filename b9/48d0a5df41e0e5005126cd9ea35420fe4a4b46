@@ -1,0 +1,68 @@
+.claude/skills/security-audit/RESOURCE-EXHAUSTION-AND-AVAILABILITY.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-78
+.claude/skills/security-audit/SUPPLY-CHAIN-AND-RELEASE.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-73
+.claude/skills/security-audit/CLIENT-SIDE.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-83
+.claude/skills/security-audit/WEB-PROTOCOL-AND-AUTH.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-105
+.claude/skills/security-audit/report-schema.json
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-461
+.claude/skills/security-audit/MEMORY-SAFETY-AND-BINARY.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-101
+.claude/skills/security-audit/SKILL.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-192
+.claude/skills/security-audit/ATTACK-CLASSES.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-130
+.claude/skills/security-audit/validate-findings.cjs
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-773
+CLAUDE.md
+  s_ec180faf4f9b2e::t_f0a14339104aa8 27
+.claude/skills/security-audit/DESKTOP-MOBILE-AND-LOCAL-IPC.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-89
+.claude/skills/security-audit/RECONNAISSANCE.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-156
+.claude/skills/security-audit/DATA-ISOLATION-AND-LIFECYCLE.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-84
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_a05b3c4ab63d0d 55-56
+  s_ec180faf4f9b2e::t_45ba23a4b98f3a 57-58
+  s_ec180faf4f9b2e::t_83afc1218b7cdd 53
+.claude/skills/security-audit/PROTOCOLS-RPC-AND-MESSAGING.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-81
+.claude/skills/security-audit/LICENSE
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-21
+.claude/skills/security-audit/validate-coverage-ledger.test.cjs
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-740
+.claude/skills/README.md
+  s_ec180faf4f9b2e::t_e86328e1b85cd9 17
+  s_ec180faf4f9b2e::t_09c70ae5758b56 19
+.claude/skills/security-audit/validate-findings.test.cjs
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-652
+.claude/skills/security-audit/AI-AND-LLM.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-83
+.claude/skills/security-audit/HUNTING.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-251
+.claude/skills/security-audit/VALIDATION-AND-REPORTING.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-186
+.claude/skills/security-audit/CLOUD-AND-DEPLOYMENT.md
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-86
+.claude/skills/security-audit/validate-coverage-ledger.cjs
+  s_ec180faf4f9b2e::t_dc4718bd40df36 1-872
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b948d0a5df41e0e5005126cd9ea35420fe4a4b46",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
