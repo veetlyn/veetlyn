@@ -44,6 +44,7 @@ import { trpc, trpcClient } from "@/utils/trpc";
 import { ProjectProgress } from "@/components/project-progress";
 
 import { ClientsSection } from "./clients-section";
+import { ConversationSection } from "./conversation-section";
 import { QuoteCalculator } from "./quote-calculator";
 import { RefundSection } from "./refund-section";
 
@@ -293,10 +294,12 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
         {project.source === "web" ? (
           <section className="space-y-3 pt-3">
             <h2 className="text-lg font-semibold">Request</h2>
+            {primary ? (
             <p className="text-sm">
               Requested by{" "}
-              {primary ? (primaryEmail ? `${primary.name} <${primaryEmail}>` : primary.name) : "unknown"}
+              {primaryEmail ? `${primary.name} <${primaryEmail}>` : primary.name}
             </p>
+            ) : null}
             {project.requestAnswers.length > 0 ? (
               <dl className="space-y-2">
                 {project.requestAnswers.map((qa, index) => (
@@ -313,7 +316,10 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
       </div>
 
       <div className="grid min-w-0 gap-8">
+      <ConversationSection teamSlug={teamSlug} detail={detail.data} members={members.data ?? []} onChange={refresh} />
+      {contacts.length > 0 ? (
       <ClientsSection teamSlug={teamSlug} projectId={projectId} contacts={contacts} role={role} onChange={refresh} />
+      ) : null}
 
       {!solo && canAssignFreelancer(role) && project.status === "quoting" ? (
         <section className="space-y-3">
