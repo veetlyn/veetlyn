@@ -37,8 +37,8 @@ function postgresOrigin(connectionUri: string) {
   };
 }
 
-// alchemy dev does not use the Hyperdrive service: the Worker connects to the dev origin itself, and
-// workerd only trusts public CAs, so it cannot reach Aiven (private CA). Local stages use a local database.
+// alchemy dev does not use the Hyperdrive service: the Worker connects to the dev origin itself, so local
+// stages use a local database instead of a deployed one.
 function devDatabaseOrigin() {
   const url = process.env.DEV_DATABASE_URL;
   if (!url) throw new Error("Set DEV_DATABASE_URL in packages/infra/.env to run a local stage.");
