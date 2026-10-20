@@ -60,6 +60,9 @@ export const project = pgTable(
     deadlineAt: timestamp("deadline_at"),
     // The price the client accepted the delivery at (services spec §5.3); null until then.
     finalPriceMinor: minor("final_price_minor"),
+    // Set when staff decline the request (conversations design §5); the client sees the reason.
+    declinedReason: text("declined_reason"),
+    declinedAt: timestamp("declined_at"),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

@@ -14,7 +14,14 @@ import {
 
 // Services spec §5.1: the full table, with no pending amendment, no unpaid top-up and a balance due.
 const EXPECTED = {
-  quoting: { add_quote: "quoting", assign_freelancer: "quoting", accept_quote: "awaiting_deposit", cancel: "cancelled" },
+  quoting: {
+    add_quote: "quoting",
+    assign_freelancer: "quoting",
+    accept_quote: "awaiting_deposit",
+    cancel: "cancelled",
+    decline: "declined",
+    expire: "expired",
+  },
   awaiting_deposit: { deposit_captured: "in_progress", cancel: "cancelled" },
   in_progress: { submit_delivery: "delivered", propose_amendment: "in_progress", cancel: "cancelled" },
   delivered: {
@@ -26,6 +33,8 @@ const EXPECTED = {
   awaiting_balance: { balance_captured: "completed", cancel: "cancelled" },
   completed: {},
   cancelled: {},
+  declined: {},
+  expired: {},
 } satisfies Record<ProjectStatus, Partial<Record<ProjectEvent, ProjectStatus>>>;
 
 // Allowed in the status but refused by a guard under the facts used for the table.
@@ -90,7 +99,14 @@ describe("project state machine", () => {
   });
 
   it("lists the events a status allows", () => {
-    expect(allowedProjectEvents("quoting")).toEqual(["add_quote", "assign_freelancer", "accept_quote", "cancel"]);
+    expect(allowedProjectEvents("quoting")).toEqual([
+      "add_quote",
+      "assign_freelancer",
+      "accept_quote",
+      "cancel",
+      "decline",
+      "expire",
+    ]);
     expect(allowedProjectEvents("in_progress", { pendingAmendment: true })).toEqual([
       "submit_delivery",
       "accept_amendment",

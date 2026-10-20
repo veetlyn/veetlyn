@@ -31,6 +31,8 @@ export const TEAM_PROJECT_TONES = {
   awaiting_balance: "neutral",
   completed: "good",
   cancelled: "neutral",
+  declined: "neutral",
+  expired: "neutral",
 } as const satisfies Record<ProjectStatus, "brand" | "good" | "neutral">;
 
 export const CLIENT_PROJECT_TONES = {
@@ -41,4 +43,6 @@ export const CLIENT_PROJECT_TONES = {
   awaiting_balance: "brand",
   completed: "good",
   cancelled: "neutral",
+  declined: "neutral",
+  expired: "neutral",
 } as const satisfies Record<ProjectStatus, "brand" | "good" | "neutral">;

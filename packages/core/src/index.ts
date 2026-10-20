@@ -41,6 +41,7 @@ export * from "./projects/permissions";
 export * from "./projects/completion";
 export * from "./projects/refunds";
 export * from "./projects/events";
+export * from "./conversations/types";
 export * from "./payouts/destination";
 export * from "./payouts/requests";
 export * from "./payouts/fees";
