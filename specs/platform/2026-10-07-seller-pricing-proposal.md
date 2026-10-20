@@ -1,6 +1,6 @@
 # Pricing for freelancers, teams and shops
 
-- **Status:** approved as proposed on 2026-10-07
+- **Status:** approved as proposed on 2026-10-07; services plans **replaced on 2026-10-19** by the pricing page in [`2026-10-19-pricing-draft.html`](2026-10-19-pricing-draft.html): three plans (Solo $19, 1%; Team $59, 0.5%, up to 10 members; Agency $199, 0.25%, up to 50), yearly at two months free, and a one-time 5% network fee on the first project with a client found through an AI agent (shown on the page, not yet charged). The shop plans below are unchanged
 - **Asked for in:** the sellers design review ([`2026-10-07-sellers-minimal-flow-design.md`](../archive/platform/2026-10-07-sellers-minimal-flow-design.md) §14): every plan has a subscription and a per-payment fee, with plans scaled separately for freelancers and for teams
 - **Based on:** [`2026-10-07-pricing-research.md`](../archive/platform/2026-10-07-pricing-research.md) (vendor pages, accessed 2026-10-07). "Research A§1" means Part A, section 1
 - **Replaces:** the services spec's fee of 0.5% + 0.10 per client payment and its bundles (services spec goal 7 and §13). Shop plans stay as in platform spec §6.7

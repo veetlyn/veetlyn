@@ -137,7 +137,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 - **Expected:**
   - Step 1: **Send quote** is disabled and the form says "Assign a freelancer first; in this team the assigned freelancer quotes."
   - The form shows "Total <sum>" as lines are typed, and a quote calculator (QUO-14).
-  - After sending: a card "Quote v1 · <total>" with status "proposed", its lines and "Delivery in 14 days after the deposit."
+  - After sending: a card "Quote v1 · <total>" with status "Sent", its lines and "Delivery in 14 days after the deposit."
   - The client page shows the quote as "<total> · delivery in 14 days" with "Waiting for you" and **Accept quote**.
 - **Edge cases:** a line without a description or amount shows "Each line needs a description and an amount above zero."; several quotes may be sent before the client answers. "Open quotes" and "Team quotes" add a "Freelancer" choice for staff, and in "Team quotes" a freelancer cannot quote (not walked through).
 
@@ -150,7 +150,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
   2. Fill one quote line and **Send quote**.
 - **Expected:**
   - There is no "Assignment" section and no quote calculator.
-  - The quote is sent at once ("Quote v1", "proposed") and appears on the client page with **Accept quote**.
+  - The quote is sent at once ("Quote v1", "Sent") and appears on the client page with **Accept quote**.
 - **Edge cases:** a direct `project.assign` call answers "A solo seller does the work; there is no one to assign."
 
 ### QUO-13: The client accepts a quote
@@ -188,7 +188,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
   1. On the project page, under "Propose an amendment", tick **Remove "<a line>"**, click **Add a line** and add a cheaper line, write a "Note for the client", then **Propose amendment**.
   2. On the client page, click **Accept amendment**.
 - **Expected:**
-  - The team page lists the amendment as "<change> → <new total>" with status "pending", and the form disappears while it waits.
+  - The team page lists the amendment as "<change> → <new total>" with status "Waiting", and the form disappears while it waits.
   - The client page shows "Amendments" with "<change> → new total <amount>", the added lines, the note, "Waiting for you", **Accept amendment** and **Decline**.
   - After acceptance: the amendment reads "accepted"; the team page shows "Quote v2" accepted and v1 "superseded"; no new payment is created, and the overpaid management fee counts toward the balance.
 - **Edge cases:** while an amendment waits, the client cannot accept a delivery ("An amendment is waiting for the client's answer."); removing every line shows "An amendment cannot remove every line. Cancel the project instead."; a freelancer who is not assigned cannot propose ("Only the assigned freelancer or a manager proposes amendments.").

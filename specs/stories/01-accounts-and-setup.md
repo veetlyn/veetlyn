@@ -4,7 +4,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01: Visitor reads the index page
 
-- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** L (branch `l-site`) · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/`) · **Delivered by:** L (branch `l-site`) · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none; not signed in.
 - **Steps:**
   1. Open `{site}/` at 1280 wide and watch the chat card play; press **Play again**.
@@ -23,7 +23,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01b: Visitor compares plans on the pricing page
 
-- **Actor:** visitor · **Surface:** web (`{site}/pricing`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/pricing`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/pricing`. Switch **Monthly** to **Yearly, 2 months free**, then **Services** to **Store**, then **Services + store**.
@@ -36,7 +36,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01c: Visitor reads the Payleor Network page
 
-- **Actor:** visitor · **Surface:** web (`{site}/network`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/network`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/network`, let the ChatGPT card play, scroll to the end and click **Join the waitlist**.
@@ -48,7 +48,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01d: Visitor browses Discover
 
-- **Actor:** visitor · **Surface:** web (`{site}/discover`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/discover`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/discover?q=logo`. Clear the search, pick **Courses**, then **All**, **Done by: AI**, **Sort: Lowest price**; type "zzz".
@@ -61,7 +61,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01e: Visitor reads Get found
 
-- **Actor:** visitor · **Surface:** web (`{site}/visibility`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/visibility`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/visibility` and scroll to the end.
@@ -73,7 +73,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01f: Visitor reads an audience page
 
-- **Actor:** visitor · **Surface:** web (`{site}/freelancers`, `/agencies`, `/stores`, `/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/freelancers`, `/agencies`, `/stores`, `/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open each page at 1280 wide and scroll through its story; repeat one at 390 wide.
@@ -87,7 +87,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01g: Visitor uses the fee calculator and the bundle builder
 
-- **Actor:** visitor · **Surface:** web (`{site}/pricing`, `{site}/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/pricing`, `{site}/studios`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. On `/pricing`, read the calculator, press **Your own client**, then switch to **Store**, pick Grow and type 120.
@@ -100,7 +100,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01h: Visitor writes to sales
 
-- **Actor:** visitor · **Surface:** web (`{site}/contact`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/contact`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** a mail app on the device.
 - **Steps:**
   1. Open `{site}/contact#sales`, then `{site}/contact#membership`. Fill name, email, company and message and press **Write the email**.
@@ -111,7 +111,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01i: Visitor reads the blog
 
-- **Actor:** visitor · **Surface:** web (`{site}/blog`, `{site}/blog/<slug>`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** visitor · **Surface:** web (`{site}/blog`, `{site}/blog/<slug>`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/blog`, pick **For stores**, then **All**. Open `{site}/blog#visibility`.
@@ -124,7 +124,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 
 ### ACC-01j: Crawlers read the site
 
-- **Actor:** crawler · **Surface:** web (`{site}/sitemap.xml`, `/robots.txt`, `/llms.txt`, every page) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (merges with PR #7)
+- **Actor:** crawler · **Surface:** web (`{site}/sitemap.xml`, `/robots.txt`, `/llms.txt`, every page) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Fetch the three files on `{site}`. On each page, parse every `<script type="application/ld+json">`.
@@ -165,7 +165,8 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   1. Open `{dash}/signup`. Fill "Your name", "Email" and a "Password" of at least 10 characters, then **Create account**.
   2. Open the email "Verify your email for Payleor" and click **Verify email**.
 - **Expected:**
-  - The sign-up page is titled "Create your Payleor account" with "Free for 14 days. No setup fee." and the notice "By continuing you agree to the Terms of Service and the Acceptable Use Policy" linking to `{site}/legal/…`.
+  - The sign-in pages (sign-up, log in, forgot password, reset password, verify email) fill the window without scrolling: the form on the left with the Payleor mark and the theme switch, the Payleor P drawn as contour lines on the right (hidden on phones), and no dash header.
+  - The sign-up page is titled "Create your Payleor account" with "Free for 14 days. No setup fee." and the notice "By continuing you agree to the Terms of service and the Acceptable use policy" linking to `{site}/legal/…`.
   - After submit, `{dash}/verify-email` shows "Check your inbox" and "We sent a link to <address>. Open it to verify your address. The link expires in 1 hour."
   - The resend button counts down ("Send a new link in 59s" …) and then reads "Send a new link"; clicking it shows "We sent a new link." and restarts the countdown.
   - The email comes from "Payleor" `accounts@payleor.com`.
@@ -179,11 +180,11 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Steps:**
   1. Open `{dash}/login` ("Log in to Payleor"), enter the email and password, then **Log in**.
   2. Open `{dash}/login` again while signed in.
-  3. Open the user menu (the user's name, top right) and choose **Sign Out**.
+  3. Open the user menu (the user's name, top right) and choose **Sign out**.
 - **Expected:**
   - Step 1 lands on `{dash}/`, the workspace home (ACC-10).
   - Step 2 redirects to `{dash}/`.
-  - The user menu lists the email, "Account settings", "Payouts" and "Sign Out". After signing out, opening `{dash}/` redirects to `{dash}/login`.
+  - The user menu lists the email, "Account settings", "Payouts" and "Sign out". After signing out, opening `{dash}/` redirects to `{dash}/login`.
 - **Edge cases:** a wrong password shows an error under the form and stays on the page; the 6th attempt within a minute shows "Too many attempts. Try again in a few minutes." (not walked through).
 
 ### ACC-06: A user resets a forgotten password
@@ -226,7 +227,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Expected:**
   - "Just me" reads "You do the work and keep the whole price. No members, no payouts."
   - The status line shows "Checking the address…", then "<`{dash}`/address> is available."
-  - The browser lands on `{dash}/<slug>`: the dashboard shows "Set up your seller page", the nav has Projects, Services and Settings but no Members or Payouts, and "Selling as" reads "Just me".
+  - The browser lands on `{dash}/<slug>`: the dashboard shows "Set up your seller page", the sidebar has Projects, Services and Settings but no Members or Payouts, and the header reads "Selling as just me".
   - The workspace home lists the seller under a new workspace of its own, labelled "Services team", role "Admin".
 - **Edge cases:** an address in use shows "This team address is already taken."; a reserved one (for example `settings`) shows "This team address is reserved."; a bad format shows "Use 3 to 40 lowercase letters, numbers or single hyphens."; the button stays disabled until the address is available and the name has 2 characters.
 
@@ -239,7 +240,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   2. Choose **A team**, enter a name and an available address, then **Create our team**.
 - **Expected:**
   - "A team" reads "Members share the price: your team cut and a management fee apply."
-  - The dashboard shows "Set up your team", and the nav adds Members and Payouts. "Selling as" reads "A team".
+  - The dashboard shows "Set up your team", and the sidebar adds Members and Payouts. The header reads "Selling as a team".
   - The team is created in the user's existing workspace and appears on the workspace home with role "Admin".
 - **Edge cases:** the address `walk-crew` shows "This team address is already taken." (walked through in B2); stores and services teams share one address space.
 
@@ -253,7 +254,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Expected:**
   - "Your workspace", with one section per workspace (by name) listing each seller: name, "Services team", and the user's role ("Admin", "Manager" or "Freelancer").
   - The buttons "Create your services team" (always) and "Create your store" (only for workspace owners and admins).
-  - Clicking the name opens the seller dashboard at `{dash}/walk-crew`, with a "Your workspace" link back.
+  - Clicking the name opens the seller dashboard at `{dash}/walk-crew`, with the Payleor mark at the top of the sidebar linking back to the workspace home.
 - **Edge cases:** a user with no sellers is redirected to `{dash}/new`.
 
 ### ACC-11: The dashboard checklist tracks setup

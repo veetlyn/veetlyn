@@ -27,6 +27,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | Sign-in, accounts, OAuth for stores and MCP clients | [`platform/2026-10-06-auth-federation-design.md`](platform/2026-10-06-auth-federation-design.md) |
 | The action registry (`perform`, grants, actors, action log) and client contacts | [`platform/2026-10-13-action-catalog-design.md`](platform/2026-10-13-action-catalog-design.md) (§4 A1, §5 A2) |
 | The Claude and ChatGPT plugin: MCP, OAuth, widgets, packaging | [`platform/2026-10-14-plugin-spike-facts.md`](platform/2026-10-14-plugin-spike-facts.md), [`platform/2026-10-15-c-plugin-design.md`](platform/2026-10-15-c-plugin-design.md), [`platform/2026-10-14-connector-ux-guidelines.md`](platform/2026-10-14-connector-ux-guidelines.md) |
+| The dash: workspace contexts, sections, who each record waits on, drafts, the Needs you inbox | [`platform/2026-10-18-contextual-dash-ontology-design.md`](platform/2026-10-18-contextual-dash-ontology-design.md), with [`platform/2026-10-16-agentic-dash-design.md`](platform/2026-10-16-agentic-dash-design.md) for components, push, the plugin and failures |
 | Conversations between clients, staff and freelancers | [`platform/2026-10-14-conversations-design.md`](platform/2026-10-14-conversations-design.md) |
 | Discord (run E) | [`platform/2026-10-13-discord-ticket-flow-design.md`](platform/2026-10-13-discord-ticket-flow-design.md) (revise to program §4 first) |
 | Seller plans, fees and billing | [`platform/2026-10-07-seller-pricing-proposal.md`](platform/2026-10-07-seller-pricing-proposal.md) |
@@ -43,11 +44,13 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 |---|---|
 | [Agentic surfaces program](platform/2026-10-13-agentic-surfaces-program.md) | Approved 2026-10-13; the current program |
 | [Agentic dash design](platform/2026-10-16-agentic-dash-design.md) | Sections approved 2026-10-16; written document awaiting review. Proposes to replace the program's runs after A2 |
+| [Contextual dash](platform/2026-10-18-contextual-dash-ontology-design.md) | Parked 2026-10-18: the agentic dash is put aside for the revamp of the current screens and the plugin's widgets. Reference only |
 | [Action catalog design](platform/2026-10-13-action-catalog-design.md) | Approved; A1 built, A2 planned |
 | [Conversations design](platform/2026-10-14-conversations-design.md) | Approved; built across runs C, B and E |
 | [Run C design](platform/2026-10-15-c-plugin-design.md) | Approved 2026-10-15 |
 | [Discord ticket flow design](platform/2026-10-13-discord-ticket-flow-design.md) | Source for run E, to revise first |
 | [Plugin spike facts](platform/2026-10-14-plugin-spike-facts.md) | Final; go for Claude and ChatGPT |
+| [Widget gallery](platform/2026-10-18-widget-gallery.html) | Draft 2026-10-18: the plugin's seven client cards in light and dark, each with loading, error and superseded states, on the spike's data; open it in a browser. Reference for run C's port of the widget |
 | [Architecture](platform/2026-10-16-architecture.md) | Reference, from the code at `4a27fb6`; update it with any change that makes it wrong |
 | [Auth federation design](platform/2026-10-06-auth-federation-design.md) | Approved 2026-10-06, not built; partly changed by run C (see its status) |
 | [Seller pricing](platform/2026-10-07-seller-pricing-proposal.md) | Approved 2026-10-07 |

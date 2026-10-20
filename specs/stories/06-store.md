@@ -94,7 +94,7 @@ Shared facts for these stories:
 - **Expected:**
   - The page shows "Confirming your payment…", then opens `{seller}/orders/<token>`.
   - The order page shows "Order from Walk Crew", "Icon pack", $19.00, "Paid <date>", **Download** and "5 downloads left · link works until <date 7 days later>".
-  - DB check (developer): the order is `paid` with its capture id, PayPal's fee and Payleor's fee (1% for `walk-crew`, $0.19); the PayPal order's `custom_id` is `order:<order id>`; ledger transfers `order_paid` and `order_fees`.
+  - DB check (developer): the order is `paid` with its capture id, PayPal's fee and Payleor's fee (0.5% for `walk-crew`, $0.10 after rounding half up); the PayPal order's `custom_id` is `order:<order id>`; ledger transfers `order_paid` and `order_fees`.
 - **Edge cases (not walked through):** a declined capture shows "PayPal declined this payment. Try again or choose another way to pay." (or "PayPal declined this payment method. Choose another way to pay."); a pending capture shows "PayPal is still processing your payment. We'll email your download link as soon as it clears."; an unconfirmed capture shows "We could not confirm your payment. It may have gone through; check your email before trying again." (B2, `eed3537`). Checkout starts and captures are limited per IP and per order ("Too many attempts. Wait a few minutes and try again.").
 
 ### STO-08: The buyer downloads the file

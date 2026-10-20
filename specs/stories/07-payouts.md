@@ -166,7 +166,7 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
   - The page reads "How this team approves and sends its members' payouts." and "A preset replaces the rules below. Trusted members stay."
   - The presets read "Manual" ("An admin approves every payout."), "Rules" ("Requests up to $100.00 are approved on their own.") and "Automatic" ("Each completed project pays out on its own.").
   - Step 2 toasts "Payout rules saved."; the form shows "Pay each completed project automatically" ticked, "Pays projects completed since {today}.", hold 0 days, auto-approve "Any amount" for "Automatic payouts".
-  - Step 3 toasts "Payout rules saved." and shows the "Custom" badge.
+  - Step 3 toasts "Payout rules saved." and shows "Custom" next to the Presets heading.
 - **Edge cases:** a freelancer or manager sees "Only an admin can change the team settings."; a solo seller sees "Payouts are for teams. As a solo seller, clients pay you directly in your PayPal account."
 
 ### OUT-13: The rules page refuses inconsistent rules
@@ -178,7 +178,7 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
   2. Change "Second admin applies to" to "Member requests" and save again.
 - **Expected:**
   - Step 1 shows "Auto-approve at most the second-approver amount." and saves nothing.
-  - Step 2 saves ("Payout rules saved.", badge "Custom").
+  - Step 2 saves ("Payout rules saved.", with "Custom" next to the Presets heading).
 - **Edge cases:** a second-approver amount on a team with one admin: "Add a second admin before requiring two approvals." (also shown as the field's hint); hold days outside 0 to 90: "Hold payouts for 0 to 90 days."; a minimum under 1.00: "The minimum payout is at least $1.00."; a negative floor: "The balance floor cannot be negative.". Only the step 1 refusal was seen in a walkthrough.
 
 ### OUT-14: Requests up to an amount are approved on their own
