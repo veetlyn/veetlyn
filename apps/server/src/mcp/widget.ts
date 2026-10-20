@@ -73,7 +73,7 @@ let state = { data: null, meta: null };
 
 const CONTROL = /[\\u0000-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u2028-\\u202e\\u2066-\\u2069]/g;
 const plain = (value, max) => { const flat = String(value ?? "").replace(CONTROL, "").replace(/\\s+/g, " ").trim(); return flat.length > max ? flat.slice(0, max - 1) + "…" : flat; };
-const quoted = (value, max = 120) => "«" + plain(value, max).replace(/[«»]/g, '"') + "»";
+const quoted = (value, max = 120) => "«" + plain(value, max).replace(/[«»‹›《》〈〉⟨⟩]/g, '"') + "»";
 const money = (minor, currency = "USD") => new Intl.NumberFormat(undefined, { style: "currency", currency }).format(minor / 100);
 const el = (tag, attrs = {}, ...children) => {
   const node = document.createElement(tag);
@@ -155,7 +155,7 @@ function projectsView(data) {
 
 async function refreshProject(p, button, notice) {
   const result = await callTool("get_project", { projectId: p.id }, button, notice);
-  const next = result?.structuredContent;
+  const next = result?._meta?.payleor?.card;
   if (next?.project && next.project.status !== p.status) {
     tellModel("The user refreshed the Payleor card: the project " + quoted(p.title) + " is now " + next.project.statusLabel + ".", { projectId: p.id, status: next.project.status });
   }
@@ -247,7 +247,7 @@ function projectView(data, meta) {
 }
 
 function show(result) {
-  state = { data: result?.structuredContent ?? null, meta: result?._meta ?? null };
+  state = { data: result?._meta?.payleor?.card ?? null, meta: result?._meta ?? null };
   const data = state.data;
   if (!data?.view) { root.replaceChildren(el("div", { class: "card" }, el("p", { class: "cap" }, textOf(result) || "Nothing to show."))); return; }
   const views = { offerings: offeringsView, projects: projectsView, project: (d) => projectView(d, state.meta) };

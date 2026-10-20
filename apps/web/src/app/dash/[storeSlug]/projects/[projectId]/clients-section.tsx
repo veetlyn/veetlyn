@@ -75,9 +75,11 @@ export function ClientsSection({
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Clients</h2>
-        <Button variant="outline" size="sm" onClick={() => setPreviewOpen((open) => !open)} aria-expanded={previewOpen}>
-          {previewOpen ? "Close the preview" : "Preview as client"}
-        </Button>
+        {manages ? (
+          <Button variant="outline" size="sm" onClick={() => setPreviewOpen((open) => !open)} aria-expanded={previewOpen}>
+            {previewOpen ? "Close the preview" : "Preview as client"}
+          </Button>
+        ) : null}
       </div>
       <ul className="space-y-2">
         {contacts.map((contact) => {

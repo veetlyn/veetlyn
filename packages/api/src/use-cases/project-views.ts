@@ -81,7 +81,8 @@ export async function listVisibleProjects(db: Database, viewer: ProjectActor) {
       title: row.title,
       status: row.status,
       currency: row.currency,
-      clientName: clientNames.get(row.id) ?? null,
+      // Before acceptance a freelancer knows the client only as "Client", as in the request's conversation.
+      clientName: seesRequestOnly(viewer, row) ? "Client" : (clientNames.get(row.id) ?? null),
       createdAt: row.createdAt,
     }));
 }
@@ -171,6 +172,8 @@ export async function getClientPreview(
   viewer: ProjectActor,
   projectId: string,
 ) {
+  // The client page shows the unmasked brief and the client's messages to staff, which a freelancer may not read.
+  if (!isProjectStaff(viewer.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Only admins and managers preview the client page." });
   const { row } = await requireVisibleProject(deps.db, viewer, projectId);
   const view = await getClientProjectView(deps, row.id);
   // Pay links stay with the client: the preview only says a payment can be paid (`payable`).

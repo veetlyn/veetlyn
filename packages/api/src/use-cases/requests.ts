@@ -147,7 +147,7 @@ export async function requestQuote(
   return { ...result, teamName: team.name, serviceName, supportEmail: contact?.supportEmail ?? null };
 }
 
-// The public quote request form (sellers design §4.2): no account, a honeypot, and per-IP and
+// The public quote request form (sellers design §4.2): no account, a honeypot, and per-IP, per-account and
 // per-email limits before a project row and the two emails. The honeypot check runs first so bots
 // never touch the limit budget; the per-email limit lives in requestQuote, after validation.
 export async function createQuoteRequest(
@@ -158,9 +158,14 @@ export async function createQuoteRequest(
 ): Promise<{ ok: true; projectId: string | null }> {
   const { db } = deps;
   if (input.website.trim() !== "") return { ok: true as const, projectId: null };
-  if (request.ip) {
-    const allowed = await hitRequestLimit(db, { key: `quote-request:ip:${request.ip}`, windowMs: HOUR_MS, max: 20 });
-    if (!allowed) {
+  // The same budget across teams, per address on the web and per account when signed in: an AI client
+  // calls without an address, so its sender is the account.
+  const senderKeys = [
+    request.ip ? `quote-request:ip:${request.ip}` : null,
+    signedIn?.account ? `quote-request:user:${signedIn.account.userId}` : null,
+  ];
+  for (const key of senderKeys) {
+    if (key && !(await hitRequestLimit(db, { key, windowMs: HOUR_MS, max: 20 }))) {
       throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Wait a little and try again." });
     }
   }

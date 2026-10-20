@@ -2,7 +2,7 @@ import type { Database } from "@jendal-workspace/db";
 import { listClientProjectsForUser } from "@jendal-workspace/db/repositories/contacts";
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 
-import { type LinkSecretSource, linkSecret, signClientLink } from "../client-links";
+import { type LinkSecretSource, linkSecret, signAccountClientLink } from "../client-links";
 import type { EmailServices } from "../context";
 import { clientPageUrl } from "./link-hosts";
 
@@ -30,7 +30,7 @@ export async function listClientProjects(
     rows
       .filter((row) => !memberOf.get(row.teamId))
       .map(async (row) => {
-        const token = await signClientLink(secret, {
+        const token = await signAccountClientLink(secret, {
           projectId: row.projectId,
           contactId: row.contactId,
           version: row.linkVersion,

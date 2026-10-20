@@ -10,7 +10,8 @@ export function plain(value: string, max: number): string {
 }
 
 export function quoted(value: string, max = 120): string {
-  return `«${plain(value, max).replace(/[«»]/g, '"')}»`;
+  // Lookalike brackets could pass for the frame's own ends.
+  return `«${plain(value, max).replace(/[«»‹›《》〈〉⟨⟩]/g, '"')}»`;
 }
 
 export const money = (minor: number, currency: string): string =>

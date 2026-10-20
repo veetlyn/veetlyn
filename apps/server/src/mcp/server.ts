@@ -17,6 +17,7 @@ import {
   requestQuote,
   searchOfferings,
 } from "./tools";
+import { quoted } from "./text";
 import { WIDGET_URI, widgetHtml } from "./widget";
 
 const SERVER_INSTRUCTIONS = `Payleor is where clients hire freelancers, studios and AI sellers for paid work, and pay with PayPal. Use these tools when the user wants work done for them (design, development, writing, video, marketing) or asks about a Payleor project.
@@ -33,11 +34,25 @@ type CardContent =
   | { view: "offerings"; query: string; offerings: OfferingCard[] }
   | { view: "projects"; projects: ProjectRow[] };
 
-function result(text: string, structuredContent?: CardContent, meta?: CardMeta): Result {
+// Some hosts show structuredContent to the model, so it carries only ids and statuses: seller words reach the
+// model framed in the text, and the card reads them from _meta.
+function summary(card: CardContent) {
+  switch (card.view) {
+    case "project":
+      return { view: card.view, project: { id: card.project.id, status: card.project.status } };
+    case "offerings":
+      return { view: card.view, offerings: card.offerings.map((o) => ({ id: o.id })) };
+    case "projects":
+      return { view: card.view, projects: card.projects.map((p) => ({ id: p.id, status: p.status })) };
+  }
+}
+
+function result(text: string, card?: CardContent, meta?: CardMeta): Result {
   const out: Result = { content: [{ type: "text", text }] };
-  if (structuredContent) out.structuredContent = structuredContent;
-  // Hosts give _meta to the widget, not to the model: the pay link and the confirmations stay out of the chat.
-  if (meta) out._meta = meta;
+  if (card) out.structuredContent = summary(card);
+  // Hosts give _meta to the widget, not to the model: the card's words, the pay link and the confirmations stay
+  // out of the chat.
+  if (card) out._meta = { payleor: { ...meta?.payleor, card } };
   return out;
 }
 
@@ -131,7 +146,7 @@ export function buildServer(deps: McpDeps, origins: WidgetOrigins): McpServer {
         deps.log.set({ mcp: { tool: "request_quote", projectId } });
         return card(
           projectId,
-          `Request sent to ${seller}. Their freelancers may ask questions before quoting; check back with get_project. Payleor emailed the user a private link to the project page.`,
+          `Request sent to ${quoted(seller, 80)}. Their freelancers may ask questions before quoting; check back with get_project. Payleor emailed the user a private link to the project page.`,
         );
       }),
   );

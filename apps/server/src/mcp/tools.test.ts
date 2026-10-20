@@ -143,6 +143,30 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const sent = await tool(clientId, "request_quote", { offeringId, brief: "A warm logo for my bakery, ready in a week." });
     const projectId = z.string().parse(sent.result?.structuredContent?.project?.id);
     expect(await findProjectById(db, projectId)).toMatchObject({ clientHomeSurface: "mcp", status: "quoting" });
+    // Seller text reaches the model framed in the text only; structuredContent, which some hosts show the model,
+    // carries ids and statuses, and the card reads its words from _meta.
+    expect(textOf(sent)).toContain("Request sent to «Walk Crew».");
+    for (const r of [found, sent]) {
+      expect(JSON.stringify(r.result?.structuredContent)).not.toMatch(/Walk Crew|Logo refresh/);
+      expect(JSON.stringify(r.result?._meta?.payleor?.card)).toContain("Walk Crew");
+    }
+  });
+
+  it("limits one client's requests across teams, as the web form does by address", async () => {
+    const { organizationId, clientId } = await setup();
+    const offerings = await Promise.all(
+      Array.from({ length: 7 }, async (_, i) => {
+        const team = await seedServicesTeam(db, { organizationId, slug: `team-${i}`, name: `Team ${i}`, status: "active" });
+        return seedServicesOffering(db, { teamId: team.id, name: "Logo refresh" });
+      }),
+    );
+    const sent = [];
+    for (const offeringId of offerings) {
+      for (let n = 0; n < 3; n++) sent.push(await tool(clientId, "request_quote", { offeringId, brief: `A logo for shop ${n}` }));
+    }
+    expect(sent.slice(0, 20).filter((r) => r.result?.isError).map(textOf)).toEqual([]);
+    expect(sent[20]?.result?.isError).toBe(true);
+    expect(textOf(sent[20]!)).toContain("Too many requests");
   });
 
   it("sums up each freelancer's quote and question, and keeps the confirmations out of the text", async () => {
@@ -152,18 +176,18 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const asked = await postConversationMessage(
       db,
       { kind: "member", actor: { teamId, role: "freelancer", actorId: ben } },
-      { projectId, kind: "question", body: "Do you have the vector file?" },
+      { projectId, kind: "question", body: "Do you have the 《vector》 file?" },
       "web",
     );
     const shown = await tool(clientId, "get_project", { projectId });
     const text = textOf(shown);
     expect(text).toContain(
-      "2 freelancers responded: «Aïcha» quoted $150.00 in 4 days; «Ben» asked «Do you have the vector file?».",
+      "2 freelancers responded: «Aïcha» quoted $150.00 in 4 days; «Ben» asked «Do you have the \"vector\" file?».",
     );
     expect(text).toContain(`question id ${asked.messageId}`);
     const token = z.string().parse(shown.result?._meta?.payleor?.confirmations?.quotes?.[quoteId]);
     expect(text).not.toContain(token);
-    expect(shown.result?.structuredContent?.freelancers).toHaveLength(2);
+    expect(shown.result?._meta?.payleor?.card?.freelancers).toHaveLength(2);
   });
 
   it("answers a question masked before acceptance, and accepts a quote only with the card's confirmation", async () => {

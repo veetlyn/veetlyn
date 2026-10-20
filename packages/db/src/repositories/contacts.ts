@@ -26,7 +26,7 @@ export type LinkedContact = {
 // so a reissue or a removal cannot interleave with the resolution and the verification that follows it.
 export async function findLinkedContact(
   tx: Transaction,
-  claim: { projectId: string; contactId: string | null; version: number },
+  claim: { projectId: string; contactId: string | null; version: number; emailed: boolean },
 ): Promise<LinkedContact | null> {
   const [row] = await tx
     .select({
@@ -57,7 +57,7 @@ export async function findLinkedContact(
     projectId: row.projectId,
     contactId: row.contactId,
     teamId: row.teamId,
-    provedEmail: claim.contactId === null ? null : row.linkEmail,
+    provedEmail: claim.contactId === null || !claim.emailed ? null : row.linkEmail,
   };
 }
 

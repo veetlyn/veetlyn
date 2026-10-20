@@ -50,7 +50,7 @@ describe.skipIf(!hasTestDatabase)("open requests board", () => {
     const editor = await seedServicesTeamMember(db, { organizationId, teamId: team.id, role: "freelancer" });
     const logo = await seedServicesOffering(db, { teamId: team.id, departmentId: design.id });
     const request = async (title: string, createdAt: Date) => {
-      const id = await seedProject(db, { teamId: team.id, title, source: "web", clientEmail: "ann@example.com" });
+      const id = await seedProject(db, { teamId: team.id, title, source: "web", clientEmail: "ann@example.com", clientName: "Ann Lee" });
       await db
         .update(project)
         .set({ offeringId: logo, createdAt, brief: "Logo please, reach me at ann@example.com" })
@@ -85,5 +85,8 @@ describe.skipIf(!hasTestDatabase)("open requests board", () => {
     const asOwner = await callerFor(ownerId).project.get({ teamSlug: "walk-crew", projectId: newer });
     expect(asOwner.contacts).toHaveLength(1);
     expect(asOwner.project.brief).toBe("Logo please, reach me at ann@example.com");
+    const named = (list: { id: string; clientName: string | null }[]) => list.find((p) => p.id === newer)?.clientName;
+    expect(named(await callerFor(designer).project.list({ teamSlug: "walk-crew" }))).toBe("Client");
+    expect(named(await callerFor(ownerId).project.list({ teamSlug: "walk-crew" }))).toBe("Ann Lee");
   });
 });

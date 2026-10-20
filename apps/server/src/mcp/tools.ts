@@ -7,7 +7,7 @@ import { projectClientList, projectClientView } from "@jendal-workspace/api/acti
 import { quoteAccept } from "@jendal-workspace/api/actions/quotes";
 import { createRequest } from "@jendal-workspace/api/actions/requests";
 import type { Actor } from "@jendal-workspace/api/actions/actors";
-import { linkSecret, signClientLink } from "@jendal-workspace/api/client-links";
+import { linkSecret, signAccountClientLink } from "@jendal-workspace/api/client-links";
 import { resolveClient } from "@jendal-workspace/api/use-cases/clients";
 import { clientPageUrl, teamForProject } from "@jendal-workspace/api/use-cases/link-hosts";
 import type { Auth } from "@jendal-workspace/auth";
@@ -247,7 +247,7 @@ export async function projectCard(
       : null;
   const projectUrl =
     slug && link
-      ? clientPageUrl(deps.storeOrigin, slug, `/c/${await signClientLink(secret, { projectId, contactId, version: link.linkVersion })}`)
+      ? clientPageUrl(deps.storeOrigin, slug, `/c/${await signAccountClientLink(secret, { projectId, contactId, version: link.linkVersion })}`)
       : null;
 
   const card: ProjectCard = {

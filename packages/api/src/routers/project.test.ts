@@ -392,6 +392,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     expect(preview.project).toMatchObject({ id: projectId, title: "Website redesign" });
     expect(preview.payments).toEqual([expect.objectContaining({ kind: "deposit", payable: true, payPath: null })]);
+    // The client page holds the unmasked brief and the client's team-only messages: staff only.
+    await expect(callerFor(freelancer).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
     const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
     await expect(callerFor(outsider.userId).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -1847,6 +1851,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         projectId,
         contactId: contact!.id,
         version: 1,
+        emailed: true,
       });
     });
 
