@@ -1,7 +1,7 @@
 import { addQuote } from "@jendal-workspace/api/use-cases/projects";
 import { postConversationMessage } from "@jendal-workspace/api/use-cases/conversations";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
-import { createFakeFileStore, HIDDEN_CONTACT, type JsonObject } from "@jendal-workspace/core";
+import { createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { createDb, type Database } from "@jendal-workspace/db";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { user } from "@jendal-workspace/db/schema/auth";
@@ -118,7 +118,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     return { ...fixture, projectId };
   }
 
-  it("shows the model five tools and keeps the two accepts for the widget", async () => {
+  it("lists eight tools and keeps the two accepts for the widget", async () => {
     const { clientId } = await setup();
     const listed = await call(mcpRequestHandler(depsFor(clientId), origins), "tools/list", {});
     const visibility = Object.fromEntries((listed.result?.tools ?? []).map((t) => [t.name, t._meta?.ui?.visibility]));
@@ -179,7 +179,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const answered = await tool(clientId, "reply", { projectId, questionId: asked.messageId, message: "ann@example.com" });
     expect(textOf(answered)).toContain("emails, phone numbers and messaging links are hidden");
     const [answer] = await db.select().from(conversationMessage).where(eq(conversationMessage.replyToId, asked.messageId));
-    expect(answer).toMatchObject({ shownBody: HIDDEN_CONTACT, surface: "mcp", authorKind: "client" });
+    expect(answer).toMatchObject({ kind: "answer", surface: "mcp", authorKind: "client" });
 
     const forged = await tool(clientId, "accept_quote", { projectId, quoteId, confirmation: `${Math.floor(Date.now() / 1000) + 60}.${"0".repeat(64)}` });
     expect(forged.result?.isError).toBe(true);

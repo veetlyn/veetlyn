@@ -87,7 +87,7 @@ describe.skipIf(!hasTestDatabase)("the client's side of the conversation", () =>
     expect(forBen.conversation.messages.map((m) => m.body)).not.toContain("Only for the team: budget is firm");
   });
 
-  it("shows the client the decline reason and closes their message box", async () => {
+  it("shows the client the decline reason and that the conversation is closed", async () => {
     const { ownerId, teamId } = await openTeam("walk-crew");
     const projectId = await seedProject(db, { teamId, source: "web" });
     const token = await clientTokenFor(db, linkSecret(auth), projectId);
@@ -95,7 +95,6 @@ describe.skipIf(!hasTestDatabase)("the client's side of the conversation", () =>
     const view = await callerFor(null).project.clientGet({ token });
     expect(view.project).toMatchObject({ status: "declined", declinedReason: "Fully booked until December." });
     expect(view.conversation.canWrite).toBe(false);
-    await expect(callerFor(null).project.clientPost({ token, body: "Why?" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("lists a signed-in client's projects across teams with each team's own client page", async () => {

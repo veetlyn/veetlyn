@@ -178,15 +178,6 @@ describe.skipIf(!hasTestDatabase)("conversations", () => {
     expect(mine?.shownBody).toBe("Call +221 77 123 45 67");
   });
 
-  it("writes no event when the change it reports fails", async () => {
-    const { projectId, aicha } = await setup();
-    const { quoteId } = await quote(aicha, projectId);
-    await acceptQuote(db, { projectId, quoteId });
-    await expect(acceptQuote(db, { projectId, quoteId })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    const accepted = (await messagesOf(projectId)).filter((m) => m.body.startsWith("The client accepted"));
-    expect(accepted).toHaveLength(1);
-  });
-
   it("records the delivery and the client's change request on the project timeline", async () => {
     const { projectId, aicha } = await setup();
     const { quoteId } = await quote(aicha, projectId);

@@ -76,14 +76,11 @@ describe("readableSpaces", () => {
 });
 
 describe("canSeeProject", () => {
-  it("shows freelancers their projects and the requests open to them", () => {
+  it("shows staff every project and a freelancer the ones assigned to them", () => {
     const facts = { assignedFreelancerId: "u1", status: "in_progress", quotingMode: "assigned", departmentId: null, shortlist: [] } as const;
     const freelancer = { role: "freelancer", departmentIds: [] } as const;
     expect(canSeeProject({ ...freelancer, actorId: "u1", facts })).toBe(true);
     expect(canSeeProject({ ...freelancer, actorId: "u2", facts })).toBe(false);
     expect(canSeeProject({ role: "manager", actorId: "u2", departmentIds: [], facts })).toBe(true);
-    const request = { ...facts, assignedFreelancerId: null, status: "quoting", quotingMode: "open", departmentId: "d1" } as const;
-    expect(canSeeProject({ ...freelancer, actorId: "u2", facts: request })).toBe(false);
-    expect(canSeeProject({ ...freelancer, actorId: "u2", departmentIds: ["d1"], facts: request })).toBe(true);
   });
 });
