@@ -37,8 +37,8 @@ function postgresOrigin(connectionUri: string) {
   };
 }
 
-// alchemy dev does not use the Hyperdrive service: the Worker connects to the dev origin itself, and
-// workerd only trusts public CAs, so it cannot reach Aiven (private CA). Local stages use a local database.
+// alchemy dev does not use the Hyperdrive service: the Worker connects to the dev origin itself, so local
+// stages use a local database instead of a deployed one.
 function devDatabaseOrigin() {
   const url = process.env.DEV_DATABASE_URL;
   if (!url) throw new Error("Set DEV_DATABASE_URL in packages/infra/.env to run a local stage.");
@@ -83,12 +83,23 @@ const observability = {
   traces: { enabled: true },
 };
 
+// A request makes many database round trips one after another. At the edge near a visitor far from the
+// database, each one crossed an ocean (8 s for a dashboard page); placed next to the database, they take
+// milliseconds and only the request itself travels. Local stages run on this machine.
+function databasePlacement() {
+  const url = process.env.DATABASE_URL;
+  if (!deployStage || !url) return undefined;
+  const origin = postgresOrigin(url);
+  return { host: `${origin.host}:${origin.port}` };
+}
+
 export const server = Cloudflare.Worker("server", {
   main: "../../apps/server/src/index.ts",
   compatibility: {
     flags: ["nodejs_compat"],
   },
   observability,
+  placement: databasePlacement(),
   domain: hosts?.api.domain,
   // Runs the maintenance sweeps in apps/server/src/maintenance.ts.
   crons: ["*/10 * * * *"],
@@ -142,6 +153,9 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
   // Website.Vinext turns Workers Cache on, which cached signed-in API answers forwarded through this Worker and
   // served them to other callers. Nothing here is meant to be shared; static files have their own caching.
   cache: { enabled: false },
+  // Rendering a page calls the api Worker several times in a row, so it runs beside the api Worker and the
+  // database; static files are still served from the edge.
+  placement: databasePlacement(),
   domain: hosts?.web.domain,
   routes: hosts?.web.routes,
   env: {
