@@ -1,0 +1,21 @@
+specs/BACKLOG.md
+  s_ec180faf4f9b2e::t_5421e553dcb406 32-33
+specs/platform/plans/2026-10-15-c-plugin.md
+  s_ec180faf4f9b2e::t_abd1d8950c14cd 370-385,421,427
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6987dd4649d63fdd5819170fe2ea04239f814038",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
