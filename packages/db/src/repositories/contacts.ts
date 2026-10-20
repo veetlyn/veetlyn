@@ -457,3 +457,90 @@ export async function projectContactLink(
     .limit(1);
   return row ?? null;
 }
+
+export type ClientAccount = { userId: string; email: string; name: string; emailVerified: boolean };
+
+export async function findClientAccount(db: DbExecutor, userId: string): Promise<ClientAccount | null> {
+  const [row] = await db
+    .select({ userId: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return row ? { ...row, email: row.email.toLowerCase() } : null;
+}
+
+// A signed-in requester (action catalog design §5.5) is the team's contact holding their user identity or their
+// verified email, or a new contact with both identities verified by the session. Runs under the (team, email)
+// lock, so two requests at once cannot create two contacts.
+export async function matchOrCreateAccountContact(
+  tx: Transaction,
+  input: { teamId: string; account: ClientAccount },
+): Promise<string> {
+  const { teamId, account } = input;
+  await lockClientIdentity(tx, { teamId, key: account.email });
+  const [match] = await tx
+    .select({ contactId: clientIdentity.contactId })
+    .from(clientIdentity)
+    .where(
+      and(
+        eq(clientIdentity.teamId, teamId),
+        isNotNull(clientIdentity.verifiedAt),
+        or(
+          and(eq(clientIdentity.kind, "user"), eq(clientIdentity.value, account.userId)),
+          and(eq(clientIdentity.kind, "email"), eq(clientIdentity.value, account.email)),
+        ),
+      ),
+    )
+    .orderBy(sql`${clientIdentity.kind} = 'user' desc`)
+    .limit(1);
+  let contactId = match?.contactId;
+  if (!contactId) {
+    const [created] = await tx
+      .insert(clientContact)
+      .values({ teamId, name: account.name.trim() || account.email.split("@")[0] || "Client" })
+      .returning({ id: clientContact.id });
+    if (!created) throw new Error("Insert into client_contact returned no row");
+    contactId = created.id;
+  }
+  const held = await tx
+    .select({ kind: clientIdentity.kind, value: clientIdentity.value, verifiedAt: clientIdentity.verifiedAt })
+    .from(clientIdentity)
+    .where(eq(clientIdentity.contactId, contactId));
+  const now = new Date();
+  const wanted: [ClientIdentityKind, string][] = [
+    ["user", account.userId],
+    ["email", account.email],
+  ];
+  for (const [kind, value] of wanted) {
+    const existing = held.find((h) => h.kind === kind && h.value === value);
+    if (existing?.verifiedAt) continue;
+    if (existing) {
+      await tx
+        .update(clientIdentity)
+        .set({ verifiedAt: now })
+        .where(and(eq(clientIdentity.contactId, contactId), eq(clientIdentity.kind, kind), eq(clientIdentity.value, value)));
+      continue;
+    }
+    await tx.insert(clientIdentity).values({ contactId, teamId, kind, value, source: "account", verifiedAt: now });
+  }
+  return contactId;
+}
+
+export async function countOpenRequestsForContact(
+  tx: DbExecutor,
+  input: { teamId: string; contactId: string },
+): Promise<number> {
+  const [row] = await tx
+    .select({ count: countDistinct(project.id) })
+    .from(project)
+    .innerJoin(projectClient, eq(projectClient.projectId, project.id))
+    .where(
+      and(
+        eq(project.teamId, input.teamId),
+        eq(project.source, "web"),
+        inArray(project.status, OPEN_PROJECT_STATUSES),
+        eq(projectClient.contactId, input.contactId),
+      ),
+    );
+  return row?.count ?? 0;
+}

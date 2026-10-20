@@ -31,6 +31,7 @@ CREATE TABLE "request_shortlist" (
 --> statement-breakpoint
 ALTER TABLE "services_department" ADD COLUMN "listed" boolean DEFAULT true NOT NULL;--> statement-breakpoint
 ALTER TABLE "services_offering" ADD COLUMN "listed" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "project" ADD COLUMN "client_home_surface" text DEFAULT 'web' NOT NULL;--> statement-breakpoint
 ALTER TABLE "project" ADD COLUMN "declined_reason" text;--> statement-breakpoint
 ALTER TABLE "project" ADD COLUMN "declined_at" timestamp;--> statement-breakpoint
 CREATE INDEX "conversation_message_project_idx" ON "conversation_message" ("project_id","created_at");--> statement-breakpoint

@@ -51,6 +51,9 @@ export const project = pgTable(
     offeringId: text("offering_id").references(() => servicesOffering.id, { onDelete: "set null" }),
     // "web" is a request from the seller page (run 3b); everything else starts in the admin.
     source: text("source", { enum: PROJECT_SOURCES }).notNull().default("admin"),
+    // Where the client follows the project: "mcp" when they requested it from their AI assistant, which cannot
+    // receive pushes, so notices also go by email (AGT-11, AGT-16).
+    clientHomeSurface: text("client_home_surface", { enum: ["web", "mcp"] }).notNull().default("web"),
     assignedFreelancerId: text("assigned_freelancer_id").references(() => user.id, { onDelete: "set null" }),
     // Copied from the team settings when the project starts, so later settings changes leave it alone.
     currency: text("currency", { enum: CURRENCIES }).notNull(),

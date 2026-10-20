@@ -50,6 +50,6 @@ describe("project router types", () => {
       answers: { question: string; answer: string }[];
       website: string;
     }>();
-    expectTypeOf<Outputs["requestQuote"]>().toEqualTypeOf<{ ok: true }>();
+    expectTypeOf<Outputs["requestQuote"]>().toEqualTypeOf<{ ok: true; projectId: string | null }>();
   });
 });

@@ -1798,7 +1798,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const { caller, mailer } = requestCaller();
 
       const result = await caller.project.requestQuote(validRequest({ offeringId }));
-      expect(result).toEqual({ ok: true });
+      expect(result).toEqual({ ok: true, projectId: null });
 
       const rows = await db.select().from(project);
       expect(rows).toHaveLength(1);
@@ -1881,7 +1881,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const { caller, mailer } = requestCaller();
 
       const result = await caller.project.requestQuote(validRequest({ offeringId, website: "https://spam.example" }));
-      expect(result).toEqual({ ok: true });
+      expect(result).toEqual({ ok: true, projectId: null });
       expect(await db.select().from(project)).toEqual([]);
       expect(mailer.sent).toEqual([]);
     });
@@ -1915,7 +1915,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         });
       }
       // The team's own active offering still works.
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true, projectId: null });
     });
 
     it("refuses a fourth open request from the same email on the team, even when two arrive at once", async () => {
@@ -1946,7 +1946,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           caller.project.requestQuote(validRequest({ offeringId, description: "short" })),
         ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       }
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true, projectId: null });
 
       for (let i = 0; i < 4; i += 1) {
         await hitRequestLimit(db, { key: "quote-request:email:seller:jo@x.com", windowMs: 3_600_000, max: 5 });
@@ -1972,7 +1972,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       });
 
       const { caller } = requestCaller();
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true, projectId: null });
     });
 
     it("validates the name and description", async () => {

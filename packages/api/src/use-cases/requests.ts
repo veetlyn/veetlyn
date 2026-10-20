@@ -7,13 +7,20 @@ import {
 import type { Database } from "@jendal-workspace/db";
 import {
   attachContact,
+  type ClientAccount,
+  countOpenRequestsForContact,
   countOpenRequestsForEmail,
   lockClientIdentity,
+  matchOrCreateAccountContact,
   matchOrCreateContact,
 } from "@jendal-workspace/db/repositories/contacts";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
-import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import {
+  findServicesTeamBySlug,
+  getServicesTeamSettings,
+  servicesTeamRoleFor,
+} from "@jendal-workspace/db/repositories/services-teams";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { project } from "@jendal-workspace/db/schema/projects";
 import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspace/email";
@@ -37,15 +44,28 @@ export type QuoteRequestInput = {
 
 const HOUR_MS = 3_600_000;
 
+// A signed-in requester (the client's AI assistant): their account is the contact, and the project follows them
+// on that surface.
+export type RequestAccount = { account: ClientAccount; homeSurface: "web" | "mcp" };
+
 // Sellers design §4.2: a public request becomes a project in quoting, source "web". The per-email
 // limit is spent only by valid requests, so typos never lock a client out.
 export async function requestQuote(
   db: Database,
   input: QuoteRequestInput,
+  signedIn?: RequestAccount,
 ): Promise<{ projectId: string; teamName: string; serviceName: string; supportEmail: string | null }> {
   const team = await findServicesTeamBySlug(db, input.slug);
   if (!team || !isStorePublic({ ...team, product: "services" })) fail("NOT_FOUND", "Seller not found.");
-  const email = input.email.trim().toLowerCase();
+  const account = signedIn?.account;
+  if (account) {
+    // A member of the team is never its client (action catalog design §5.4).
+    if ((await servicesTeamRoleFor(db, team.id, account.userId)) !== null) {
+      fail("FORBIDDEN", "You are a member of this team, so you cannot request its services as a client.");
+    }
+    if (!account.emailVerified) fail("FORBIDDEN", "Verify your Payleor account's email before requesting a quote.");
+  }
+  const email = account?.email ?? input.email.trim().toLowerCase();
   const problems = validateQuoteRequest({
     name: input.name,
     email,
@@ -76,7 +96,10 @@ export async function requestQuote(
   const result = await runProjectTransaction(db, async (tx, uow) => {
     // Serialises requests per (team, email) so two at once cannot both pass the open-request count.
     await lockClientIdentity(tx, { teamId: team.id, key: email });
-    const open = await countOpenRequestsForEmail(tx, { teamId: team.id, email });
+    const accountContactId = account ? await matchOrCreateAccountContact(tx, { teamId: team.id, account }) : null;
+    const open = accountContactId
+      ? await countOpenRequestsForContact(tx, { teamId: team.id, contactId: accountContactId })
+      : await countOpenRequestsForEmail(tx, { teamId: team.id, email });
     if (open >= QUOTE_REQUEST_LIMITS.openPerEmailPerTeam) {
       fail(
         "BAD_REQUEST",
@@ -95,6 +118,7 @@ export async function requestQuote(
         })),
         offeringId: input.offeringId,
         source: "web",
+        clientHomeSurface: signedIn?.homeSurface ?? "web",
         currency: settings.currency,
         managementFeeBps: settings.managementFeeBps,
         teamCutBps: settings.teamCutBps,
@@ -102,13 +126,9 @@ export async function requestQuote(
       .returning();
     if (!row) throw new Error("Insert into project returned no row");
     const clientName = input.name.trim();
-    const contactId = await matchOrCreateContact(tx, {
-      teamId: team.id,
-      email,
-      discordId: null,
-      name: clientName,
-      source: "request",
-    });
+    const contactId =
+      accountContactId ??
+      (await matchOrCreateContact(tx, { teamId: team.id, email, discordId: null, name: clientName, source: "request" }));
     // The link is emailed to this address right after the transaction.
     await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: null, linkEmail: email });
     await uow.apply({
@@ -133,9 +153,10 @@ export async function createQuoteRequest(
   deps: { db: Database; auth: LinkSecretSource; email?: EmailServices },
   request: { ip: string | null },
   input: QuoteRequestInput & { website: string },
-): Promise<{ ok: true }> {
+  signedIn?: RequestAccount,
+): Promise<{ ok: true; projectId: string | null }> {
   const { db } = deps;
-  if (input.website.trim() !== "") return { ok: true as const };
+  if (input.website.trim() !== "") return { ok: true as const, projectId: null };
   if (request.ip) {
     const allowed = await hitRequestLimit(db, { key: `quote-request:ip:${request.ip}`, windowMs: HOUR_MS, max: 20 });
     if (!allowed) {
@@ -147,7 +168,8 @@ export async function createQuoteRequest(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Requests are not available right now." });
   }
 
-  const { projectId, teamName, serviceName, supportEmail } = await requestQuote(db, input);
+  const { projectId, teamName, serviceName, supportEmail } = await requestQuote(db, input, signedIn);
+  const to = signedIn?.account.email ?? input.email.trim().toLowerCase();
   const clientUrl = `${emailServices.siteOrigin}${await primaryClientPath(db, linkSecret(deps.auth), projectId)}`;
   const linkContent = quoteRequestLinkEmail({ clientName: input.name.trim(), teamName, url: clientUrl });
   // The client's mail proves the address, so its failure is the request's failure. The caller gets a
@@ -158,18 +180,18 @@ export async function createQuoteRequest(
       onBehalfOf: teamName,
       replyTo: supportEmail ?? undefined,
       tag: "quote-request",
-      to: input.email.trim().toLowerCase(),
+      to: to,
       ...linkContent,
     });
   } catch (error) {
-    await emailServices.onError?.(error, { kind: "quote-request", to: input.email.trim().toLowerCase() });
+    await emailServices.onError?.(error, { kind: "quote-request", to: to });
     throw new ActionError("internal", "We could not send the email. Try again in a moment.", { expose: true });
   }
   if (supportEmail) {
     const notice = quoteRequestNoticeEmail({
       teamName,
       clientName: input.name.trim(),
-      clientEmail: input.email.trim().toLowerCase(),
+      clientEmail: to,
       serviceName,
       description: input.description.trim(),
       // Trimmed, as stored on the project.
@@ -182,5 +204,6 @@ export async function createQuoteRequest(
     if (emailServices.waitUntil) emailServices.waitUntil(send);
     else await send;
   }
-  return { ok: true as const };
+  // Only a signed-in requester learns the project's id: it opens nothing without their session.
+  return { ok: true as const, projectId: signedIn ? projectId : null };
 }

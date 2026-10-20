@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "b8eb71b6-cdde-430a-9fb7-3cb67117285c",
+  "id": "aa7776e0-cdde-4a29-8480-5128cde8a4ce",
   "prevIds": [
     "50a802f3-3e7a-4545-80ce-0a3fb6b35d7f"
   ],
@@ -3415,6 +3415,19 @@
       "generated": null,
       "identity": null,
       "name": "source",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "project"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'web'",
+      "generated": null,
+      "identity": null,
+      "name": "client_home_surface",
       "entityType": "columns",
       "schema": "public",
       "table": "project"
