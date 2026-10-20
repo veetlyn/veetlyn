@@ -19,6 +19,7 @@ import { createContext } from "./context";
 import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
+import { noStoreByDefault } from "./no-store";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
@@ -48,6 +49,7 @@ const domains = { platformDomain: ENV.PLATFORM_DOMAIN, storeDomain: ENV.STORE_DO
 const app = new Hono<AppEnv>();
 
 app.use(evlog());
+app.use(noStoreByDefault);
 
 app.use("*", async (c, next) => {
   const db = getDb();
