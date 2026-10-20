@@ -7,12 +7,13 @@ import { servicesDepartment, servicesOffering } from "../schema/services-catalog
 import { servicesTeamSettings } from "../schema/services-teams";
 import type { OfferingDraft } from "@jendal-workspace/core";
 
-export type ServicesDepartmentRow = { id: string; name: string; position: number };
+export type ServicesDepartmentRow = { id: string; name: string; position: number; listed: boolean };
 
 export type ServicesOfferingRow = OfferingDraft & {
   id: string;
   departmentId: string | null;
   active: boolean;
+  listed: boolean;
   position: number;
 };
 
@@ -21,6 +22,7 @@ const departmentColumns = {
   id: servicesDepartment.id,
   name: servicesDepartment.name,
   position: servicesDepartment.position,
+  listed: servicesDepartment.listed,
 };
 
 const offeringColumns = {
@@ -34,6 +36,7 @@ const offeringColumns = {
   daysMax: servicesOffering.daysMax,
   intakeQuestions: servicesOffering.intakeQuestions,
   active: servicesOffering.active,
+  listed: servicesOffering.listed,
   position: servicesOffering.position,
 };
 
@@ -165,7 +168,7 @@ export async function findServicesOffering(
 // Null on a duplicate name in this team; the unique index is the concurrency guard.
 export async function createServicesOffering(
   db: Database,
-  input: { teamId: string; departmentId?: string | null } & OfferingDraft,
+  input: { teamId: string; departmentId?: string | null; listed?: boolean } & OfferingDraft,
 ): Promise<ServicesOfferingRow | null> {
   const name = input.name.trim();
   const [existing] = await db
@@ -196,6 +199,7 @@ export async function createServicesOffering(
         daysMax: input.daysMax,
         intakeQuestions: input.intakeQuestions,
         active: true,
+        listed: input.listed ?? true,
         position: positionRow?.next ?? 0,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -208,7 +212,7 @@ export async function createServicesOffering(
 // Null when the offering is not the team's, or the name is taken by another offering in the team.
 export async function updateServicesOffering(
   db: Database,
-  input: { id: string; teamId: string; departmentId?: string | null } & OfferingDraft,
+  input: { id: string; teamId: string; departmentId?: string | null; listed?: boolean } & OfferingDraft,
 ): Promise<ServicesOfferingRow | null> {
   const [owned] = await db
     .select({ id: servicesOffering.id })
@@ -242,6 +246,7 @@ export async function updateServicesOffering(
     updatedAt: new Date(),
   };
   if ("departmentId" in input) values.departmentId = input.departmentId ?? null;
+  if (input.listed !== undefined) values.listed = input.listed;
 
   const rows = await nullOnDuplicateName(
     db
@@ -251,6 +256,18 @@ export async function updateServicesOffering(
       .returning(offeringColumns),
   );
   return rows?.[0] ?? null;
+}
+
+export async function setServicesDepartmentListed(
+  db: Database,
+  input: { id: string; teamId: string; listed: boolean },
+): Promise<boolean> {
+  const rows = await db
+    .update(servicesDepartment)
+    .set({ listed: input.listed })
+    .where(and(eq(servicesDepartment.id, input.id), eq(servicesDepartment.teamId, input.teamId)))
+    .returning({ id: servicesDepartment.id });
+  return rows.length > 0;
 }
 
 export async function setServicesOfferingActive(

@@ -35,6 +35,7 @@ type OfferingFormState = {
   daysMin: string;
   daysMax: string;
   active: boolean;
+  listed: boolean;
   questions: string[];
 };
 
@@ -47,6 +48,7 @@ const EMPTY_FORM: OfferingFormState = {
   daysMin: "1",
   daysMax: "7",
   active: true,
+  listed: true,
   questions: [],
 };
 
@@ -119,6 +121,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         daysMin: String(offering.daysMin),
         daysMax: String(offering.daysMax),
         active: offering.active,
+        listed: offering.listed,
         questions: offering.intakeQuestions,
       }
     : EMPTY_FORM;
@@ -149,6 +152,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
     const payload = {
       teamSlug,
       departmentId: values.departmentId === "" ? null : values.departmentId,
+      listed: values.listed,
       ...normalizeOfferingDraft(draft),
     };
     if (!offeringId) {
@@ -317,6 +321,15 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
             Up to {MAX_INTAKE_QUESTIONS}. They appear on the request form on your seller page.
           </p>
         </section>
+        <div className="grid gap-1">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={values.listed} onCheckedChange={(checked) => patch({ listed: checked === true })} />
+            List in AI assistants
+          </label>
+          <p className="pl-6 text-sm text-muted-foreground">
+            Clients asking Claude or ChatGPT for this kind of work can find it and request a quote.
+          </p>
+        </div>
         {offeringId ? (
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={values.active} onCheckedChange={(checked) => patch({ active: checked === true })} />

@@ -20,6 +20,7 @@ import {
   listServicesDepartments,
   listServicesOfferings,
   renameServicesDepartment,
+  setServicesDepartmentListed,
   setServicesOfferingActive,
   updateServicesOffering,
 } from "@jendal-workspace/db/repositories/services-catalog";
@@ -124,8 +125,22 @@ export const servicesCatalogRouter = router({
       return { departmentId: input.departmentId };
     }),
 
+  // "List in AI assistants" for a whole department: off hides its offerings from the plugin's search.
+  setDepartmentListed: servicesTeamProcedure
+    .input(z.object({ departmentId: z.string().min(1), listed: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "manage_settings", ADMIN_ONLY);
+      const changed = await setServicesDepartmentListed(ctx.db, {
+        id: input.departmentId,
+        teamId: ctx.servicesTeam.id,
+        listed: input.listed,
+      });
+      if (!changed) throw new TRPCError({ code: "NOT_FOUND", message: "This department is not in your team." });
+      return { departmentId: input.departmentId, listed: input.listed };
+    }),
+
   createOffering: servicesTeamProcedure
-    .input(offeringInput.extend({ departmentId: z.string().nullish() }))
+    .input(offeringInput.extend({ departmentId: z.string().nullish(), listed: z.boolean().default(true) }))
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_settings", ADMIN_ONLY);
       const draft = draftFrom(input);
@@ -134,6 +149,7 @@ export const servicesCatalogRouter = router({
       const created = await createServicesOffering(ctx.db, {
         teamId: ctx.servicesTeam.id,
         departmentId: input.departmentId ?? null,
+        listed: input.listed,
         ...draft,
       });
       if (!created) throw new TRPCError({ code: "CONFLICT", message: "Your team already has a service with this name." });
@@ -141,7 +157,13 @@ export const servicesCatalogRouter = router({
     }),
 
   updateOffering: servicesTeamProcedure
-    .input(offeringInput.extend({ offeringId: z.string().min(1), departmentId: z.string().nullish() }))
+    .input(
+      offeringInput.extend({
+        offeringId: z.string().min(1),
+        departmentId: z.string().nullish(),
+        listed: z.boolean().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_settings", ADMIN_ONLY);
       // The repository cannot tell "not ours" from "name taken" (both null), so check ownership first.
@@ -154,6 +176,7 @@ export const servicesCatalogRouter = router({
         id: input.offeringId,
         teamId: ctx.servicesTeam.id,
         departmentId: input.departmentId ?? null,
+        listed: input.listed,
         ...draft,
       });
       if (!updated) throw new TRPCError({ code: "CONFLICT", message: "Your team already has a service with this name." });
