@@ -1,0 +1,19 @@
+specs/BACKLOG.md
+  s_8d5502f182faa3::t_cfc29aa1edaf13 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "07c5846166694d073e6e520506f704a2db2f4997",
+  "prompts": {},
+  "sessions": {
+    "s_8d5502f182faa3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a43e6a01f090b768f",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
