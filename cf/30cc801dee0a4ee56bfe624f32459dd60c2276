@@ -1,0 +1,58 @@
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/clients-section.tsx
+  s_ec180faf4f9b2e::t_0dbb41aac58ef4 78-82
+packages/api/src/use-cases/clients.test.ts
+  s_ec180faf4f9b2e::t_75e86c5bcc0b6c 17
+  s_ec180faf4f9b2e::t_4feb4ba63374a0 246-253
+  s_ec180faf4f9b2e::t_9cecf42db2d46d 254-255
+packages/api/src/client-links.ts
+  s_ec180faf4f9b2e::t_75e86c5bcc0b6c 10-13,60-62,71-74,83,85-88,90-91
+packages/api/src/use-cases/project-views.ts
+  s_ec180faf4f9b2e::t_0dbb41aac58ef4 175-176
+  s_ec180faf4f9b2e::t_37f78708d7f0b9 84-85
+apps/server/src/mcp/tools.test.ts
+  s_ec180faf4f9b2e::t_d6ece780e43775 146-152,190
+  s_ec180faf4f9b2e::t_30af74ad3d0b97 167
+  s_ec180faf4f9b2e::t_14b2ac4e21f770 155-164,166,168-169
+  s_ec180faf4f9b2e::t_aa9abcc4b8f2d4 179,185
+  s_ec180faf4f9b2e::t_71f9049bb3ef61 165
+  s_ec180faf4f9b2e::t_9ef39a7a8a5295 153-154
+packages/api/src/routers/requests-board.test.ts
+  s_ec180faf4f9b2e::t_267432b38960d7 53,88-90
+apps/server/src/mcp/text.ts
+  s_ec180faf4f9b2e::t_dc773b7fb93fa4 13-14
+apps/server/src/mcp/tools.ts
+  s_ec180faf4f9b2e::t_75e86c5bcc0b6c 10,250
+packages/api/src/routers/project.test.ts
+  s_ec180faf4f9b2e::t_8e95b47f0cb5a7 1854
+  s_ec180faf4f9b2e::t_6500697e06bdb1 395-398
+apps/server/src/mcp/server.ts
+  s_ec180faf4f9b2e::t_d86c0bdbd86e75 20
+  s_ec180faf4f9b2e::t_782ff7f33794ce 37-50,52-55,149
+apps/server/src/mcp/widget.ts
+  s_ec180faf4f9b2e::t_782ff7f33794ce 158,250
+  s_ec180faf4f9b2e::t_f2d3b25f15c4c1 76
+packages/api/src/client-links.test.ts
+  s_ec180faf4f9b2e::t_d61a0a9917ec38 3,11-20,36
+packages/api/src/use-cases/client-home.ts
+  s_ec180faf4f9b2e::t_75e86c5bcc0b6c 5,33
+packages/api/src/use-cases/requests.ts
+  s_ec180faf4f9b2e::t_dcd44e3dada00a 150,161-168
+packages/db/src/repositories/contacts.ts
+  s_ec180faf4f9b2e::t_75e86c5bcc0b6c 29,60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf30cc801dee0a4ee56bfe624f32459dd60c2276",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
