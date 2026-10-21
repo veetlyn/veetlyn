@@ -14,7 +14,7 @@ export function paymentFeesTransfer(
 ): LedgerTransferDraft | null {
   const moves = [
     { from: a.teamRevenue, to: a.paypalFees, amountMinor: input.paypalFeeMinor },
-    { from: a.teamRevenue, to: a.payleorFees, amountMinor: input.platformFeeMinor },
+    { from: a.teamRevenue, to: a.platformFees, amountMinor: input.platformFeeMinor },
   ].filter((move) => move.amountMinor > 0);
   if (moves.length === 0) return null;
   return transferFromMoves({
@@ -44,7 +44,7 @@ export function orderFeesTransfer(
 ): LedgerTransferDraft | null {
   const moves = [
     { from: a.teamRevenue, to: a.paypalFees, amountMinor: input.paypalFeeMinor },
-    { from: a.teamRevenue, to: a.payleorFees, amountMinor: input.platformFeeMinor },
+    { from: a.teamRevenue, to: a.platformFees, amountMinor: input.platformFeeMinor },
   ].filter((move) => move.amountMinor > 0);
   if (moves.length === 0) return null;
   return transferFromMoves({
@@ -80,7 +80,7 @@ export function refundFeesTransfer(input: {
 }): LedgerTransferDraft | null {
   const moves = [
     { from: a.paypalFees, to: a.teamRevenue, amountMinor: input.paypalFeeMinor },
-    { from: a.payleorFees, to: a.teamRevenue, amountMinor: input.platformFeeMinor },
+    { from: a.platformFees, to: a.teamRevenue, amountMinor: input.platformFeeMinor },
   ].filter((move) => move.amountMinor > 0);
   if (moves.length === 0) return null;
   return transferFromMoves({

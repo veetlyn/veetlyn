@@ -19,7 +19,7 @@ const INES_SPLIT = [
   { label: "Inès", minor: ines.staffMinor, tone: "brand" },
   { label: "Maison Lune", minor: ines.salonMinor, tone: "ink" },
   { label: "PayPal", minor: ines.paypalMinor, tone: "paypal" },
-  { label: "Payleor", minor: ines.payleorMinor, tone: "payleor" },
+  { label: "Payleor", minor: ines.platformMinor, tone: "platform" },
 ] as const;
 
 function Week() {

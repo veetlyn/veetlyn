@@ -92,11 +92,11 @@ function makePayPal(fetchImpl: Parameters<typeof createPayPalClient>[0]["fetch"]
       environment: "sandbox",
       fetch: fetchImpl,
       sleep: () => Promise.resolve(),
-      partnerAttributionId: "PAYLEOR_BN",
+      partnerAttributionId: "PLATFORM_BN",
     }),
     partnerId: "PARTNER42",
     returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
-    sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+    sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
   };
 }
 
@@ -209,7 +209,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
     expect(await db.select().from(ledgerBalance)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ account: ledgerAccounts.paypalFees, balanceMinor: 2_370 }),
-        expect.objectContaining({ account: ledgerAccounts.payleorFees, balanceMinor: 600 }),
+        expect.objectContaining({ account: ledgerAccounts.platformFees, balanceMinor: 600 }),
       ]),
     );
   });
@@ -494,8 +494,8 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         { reference: "payment_refunded:refund:R1", account: ledgerAccounts.paypalClearing, amountMinor: 10_000 },
       ];
       const fees = [
-        { reference: "refund_fees:R1", account: ledgerAccounts.payleorFees, amountMinor: -100 },
         { reference: "refund_fees:R1", account: ledgerAccounts.paypalFees, amountMinor: -395 },
+        { reference: "refund_fees:R1", account: ledgerAccounts.platformFees, amountMinor: -100 },
         { reference: "refund_fees:R1", account: ledgerAccounts.teamRevenue, amountMinor: 495 },
       ];
       expect(await postingsOf("payment_refunded")).toEqual(refunded);
@@ -937,8 +937,8 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         { kind: "order_refunded", reference: "order_refunded:refund:R1", amountMinor: 500 },
       ]);
       const returnedFees = [
-        { reference: "refund_fees:R1", account: ledgerAccounts.payleorFees, amountMinor: -5 },
         { reference: "refund_fees:R1", account: ledgerAccounts.paypalFees, amountMinor: -19 },
+        { reference: "refund_fees:R1", account: ledgerAccounts.platformFees, amountMinor: -5 },
         { reference: "refund_fees:R1", account: ledgerAccounts.teamRevenue, amountMinor: 24 },
       ];
       expect(await refundFeePostings()).toEqual(returnedFees);

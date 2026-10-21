@@ -45,7 +45,7 @@ export function agencyExample() {
     memberMinor: b.memberReceivesMinor,
     teamMinor: b.teamKeepsMinor,
     paypalMinor: b.checkoutFeeMinor + b.payoutFeeMinor,
-    payleorMinor: b.platformFeeMinor,
+    platformMinor: b.platformFeeMinor,
   };
 }
 
@@ -62,7 +62,7 @@ export function freelancerExample() {
     keptMinor: b.teamKeepsMinor - fees.networkMinor,
     // A solo seller pays no member, so PayPal's only fee is the checkout's.
     paypalMinor: b.checkoutFeeMinor,
-    payleorMinor: fees.totalMinor,
+    platformMinor: fees.totalMinor,
   };
 }
 
@@ -79,7 +79,7 @@ export function studioExample() {
     staffMinor: b.memberReceivesMinor,
     salonMinor: b.teamKeepsMinor - fees.networkMinor,
     paypalMinor: b.checkoutFeeMinor + b.payoutFeeMinor,
-    payleorMinor: fees.totalMinor,
+    platformMinor: fees.totalMinor,
   };
 }
 
