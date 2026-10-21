@@ -1,0 +1,21 @@
+package.json
+  s_ec180faf4f9b2e::t_fd34f39fcc6b64 16
+scripts/check-no-brand.mjs
+  s_ec180faf4f9b2e::t_758bec14bb852f 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f98765885034672195c6c385b1f564b6d09e38cd",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
