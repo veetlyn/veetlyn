@@ -4,6 +4,7 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 import "varlock/auto-load";
+import { z } from "zod";
 
 import { deployedHosts, parseDeployedStage, storeSlugsFrom } from "./deploy-hosts.ts";
 import { localPorts, parseLocalStage, stageUrls, tunnelSettings } from "./dev-hosts.ts";
@@ -19,10 +20,18 @@ if (!localStage && !deployStage) {
 }
 const ports = localPorts(localStage ?? "dev");
 const localUrls = localStage ? stageUrls(localStage, tunnelSettings(process.env)) : undefined;
-const hosts = deployStage ? deployedHosts(deployStage, storeSlugsFrom(process.env.STAGING_STORE_SLUGS)) : undefined;
+// Deployed stages need both zones; local stages do not use them.
+const zones = deployStage
+  ? z
+      .object({ platformZone: z.string().min(1), storeZone: z.string().min(1) })
+      .parse({ platformZone: process.env.PLATFORM_ZONE, storeZone: process.env.STORE_ZONE })
+  : undefined;
+const hosts = deployStage && zones ? deployedHosts(deployStage, storeSlugsFrom(process.env.STAGING_STORE_SLUGS), zones) : undefined;
 // The empty fallbacks are unreachable after the check above.
 const platformDomain = localUrls ? localUrls.platformDomain : (hosts?.platformDomain ?? "");
 const storeDomain = localUrls ? localUrls.storeDomain : (hosts?.storeDomain ?? "");
+// Mail is sent from the platform zone unless EMAIL_DOMAIN says otherwise.
+const emailDomain = zones?.platformZone ?? "example.com";
 const dashOrigin = localUrls ? localUrls.dash : (hosts?.dashOrigin ?? "");
 
 function postgresOrigin(connectionUri: string) {
@@ -125,8 +134,8 @@ export const server = Cloudflare.Worker("server", {
     DISCORD_PUBLIC_KEY: Config.String("DISCORD_PUBLIC_KEY"),
     DISCORD_BOT_TOKEN: Config.Redacted("DISCORD_BOT_TOKEN"),
     RESEND_API_KEY: Config.Redacted("RESEND_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
-    EMAIL_DOMAIN: Config.String("EMAIL_DOMAIN").pipe(Config.withDefault("payleor.com")),
-    EMAIL_REPLY_TO: Config.String("EMAIL_REPLY_TO").pipe(Config.withDefault("support@payleor.com")),
+    EMAIL_DOMAIN: Config.String("EMAIL_DOMAIN").pipe(Config.withDefault(emailDomain)),
+    EMAIL_REPLY_TO: Config.String("EMAIL_REPLY_TO").pipe(Config.withDefault(`support@${emailDomain}`)),
     PRODUCT_IMAGES: ProductImages,
     FILES: Files,
     FILES_S3: Cloudflare.R2.S3Credentials(Files, { access: "read-write" }),
@@ -195,11 +204,11 @@ export default Alchemy.Stack(
       scriptName: serverWorker.workerName,
       settings: { batchSize: 10, maxRetries: 10, maxWaitTimeMs: 1000, retryDelay: 30 },
     });
-    if (deployStage === "production") {
-      // Seller sites: the web Worker's *.payleor.app route needs a proxied record to receive requests.
+    if (deployStage === "production" && zones) {
+      // Seller sites: the web Worker's wildcard store route needs a proxied record to receive requests.
       yield* Cloudflare.DNS.Record("StoreWildcard", {
         zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
-        name: "*.payleor.app",
+        name: `*.${zones.storeZone}`,
         type: "AAAA",
         content: "100::",
         proxied: true,
@@ -209,7 +218,7 @@ export default Alchemy.Stack(
       // Worker-less route hands them back to the staging Worker. Adopted: it was first created by hand.
       yield* Cloudflare.Workers.WorkerRoute("StagingStoresOptOut", {
         zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
-        pattern: "*.staging.payleor.app/*",
+        pattern: `*.staging.${zones.storeZone}/*`,
       }).pipe(Alchemy.AdoptPolicy.adopt(true));
     }
     const web = yield* Web;
