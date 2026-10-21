@@ -1,0 +1,27 @@
+.github/workflows/deploy.yml
+  s_ec180faf4f9b2e::t_fd04857b6c5322 53-55
+packages/infra/alchemy.run.ts
+  s_ec180faf4f9b2e::t_fd04857b6c5322 113,166
+packages/infra/.env.schema
+  s_ec180faf4f9b2e::t_fd04857b6c5322 1,7-16,21,24,33
+.github/workflows/ci.yml
+  s_ec180faf4f9b2e::t_fd04857b6c5322 33
+apps/server/.env.schema
+  s_ec180faf4f9b2e::t_fd04857b6c5322 22,26-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "027e068d4fee67355b418fc3201783d62e152104",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
