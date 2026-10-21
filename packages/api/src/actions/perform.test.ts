@@ -83,7 +83,7 @@ const throwing = defineAction({
 describe.skipIf(!hasTestDatabase)("perform", () => {
   const db = createTestDb();
   const { auth } = createTestAuth(db);
-  const deps: ActionDeps = { db, files: createFakeFileStore(), auth };
+  const deps: ActionDeps = { db, platformName: "Platform", files: createFakeFileStore(), auth };
   const request = { requestId: "req-1", ip: "203.0.113.7" };
 
   const call = (actor: Actor, surface: Surface = "api", overrides: { deps?: ActionDeps; team?: { id: string } } = {}) => ({

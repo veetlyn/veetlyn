@@ -73,14 +73,14 @@ function exportRefusal(request: PayoutRequestRow, now: Date): string | null {
 
 // All or nothing: one payout that cannot be exported refuses the whole export.
 export async function exportPayoutsWeb(
-  deps: { db: Database; now?: () => Date },
+  deps: { db: Database; platformName: string; now?: () => Date },
   input: { team: PayoutTeam; requestIds: readonly string[] },
 ): Promise<PayoutsWebExport> {
   const now = nowOf(deps);
   if (await hasTeamPayoutCredentials(deps.db, input.team.id)) throw badRequest(AUTOMATIC_PAYOUTS_ON);
   const ids = [...new Set(input.requestIds)];
   const offlineBatchId = crypto.randomUUID();
-  const note = `Payout from ${input.team.name} via Payleor`;
+  const note = `Payout from ${input.team.name} via ${deps.platformName}`;
 
   const csv = await deps.db.transaction(async (tx) => {
     // Locked in id order so two overlapping exports cannot deadlock; the file keeps the order the admin chose.
@@ -114,7 +114,7 @@ export async function exportPayoutsWeb(
     }
     return refusingBadFiles(() => payoutsWebCsv(rows));
   });
-  return { csv, filename: `payleor-payouts-${now.toISOString().slice(0, 10)}.csv`, count: ids.length };
+  return { csv, filename: `payouts-${now.toISOString().slice(0, 10)}.csv`, count: ids.length };
 }
 
 type ImportCount = keyof PayoutsWebImport;

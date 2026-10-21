@@ -30,16 +30,16 @@ describe.skipIf(!hasTestDatabase)("project contacts", () => {
     const mailer = createFakeMailer();
     const email: EmailServices = {
       mailer,
-      siteOrigin: "https://payleor.test",
+      siteOrigin: "https://platform.test",
       platformName: "Platform",
-      dashOrigin: "https://dash.payleor.test",
-      storeOrigin: (slug) => `https://${slug}.payleor.test`,
+      dashOrigin: "https://dash.platform.test",
+      storeOrigin: (slug) => `https://${slug}.platform.test`,
     };
     return { deps: { db, auth: { options: { secret: SECRET } }, email }, mailer };
   }
 
   function linkIn(text: string): string {
-    const match = /https:\/\/team\.payleor\.test\/c\/(\S+)/.exec(text);
+    const match = /https:\/\/team\.platform\.test\/c\/(\S+)/.exec(text);
     if (!match?.[1]) throw new Error("no client link in the email");
     return match[1];
   }

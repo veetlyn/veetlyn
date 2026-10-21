@@ -110,6 +110,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
       db,
       session: null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers({ "cf-connecting-ip": options.ip ?? "203.0.113.9" }),
       catalog: createTestCatalogServices(),
@@ -118,10 +119,10 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
       email: options.mailer
         ? {
             mailer: options.mailer,
-            siteOrigin: "https://payleor.test",
+            siteOrigin: "https://platform.test",
             platformName: "Platform",
-            dashOrigin: "https://dash.payleor.test",
-            storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+            dashOrigin: "https://dash.platform.test",
+            storeOrigin: (slug: string) => `https://${slug}.platform.test`,
           }
         : undefined,
     });
@@ -222,7 +223,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
   });
 
   describe("start", () => {
-    it("creates a pending order and a PayPal order for the seller with Payleor's fee", async () => {
+    it("creates a pending order and a PayPal order for the seller with the platform's fee", async () => {
       const { teamId, productId } = await seller();
       const { requests, fetch } = fakePayPalApi();
 
@@ -352,8 +353,8 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         to: "jo@example.com",
         subject: "Your download: Icon pack",
       });
-      expect(message?.text).toContain("https://pixels.payleor.test/orders/");
-      const emailToken = /https:\/\/pixels\.payleor\.test\/orders\/([\w-]{43})/.exec(message?.text ?? "")?.[1] ?? "";
+      expect(message?.text).toContain("https://pixels.platform.test/orders/");
+      const emailToken = /https:\/\/pixels\.platform\.test\/orders\/([\w-]{43})/.exec(message?.text ?? "")?.[1] ?? "";
       expect(emailToken).not.toBe(browserToken);
       expect(hashes).toContain(await hashToken(emailToken));
     });
@@ -466,6 +467,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         db,
         session: null,
         environment: "sandbox",
+        platformName: "Platform",
         auth,
         headers: new Headers({ "cf-connecting-ip": "203.0.113.9" }),
         catalog: createTestCatalogServices(),
@@ -473,10 +475,10 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         paypal: makePayPal(fetch),
         email: {
           mailer: { send: () => Promise.reject(new Error("provider down")) },
-          siteOrigin: "https://payleor.test",
+          siteOrigin: "https://platform.test",
           platformName: "Platform",
-          dashOrigin: "https://dash.payleor.test",
-          storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+          dashOrigin: "https://dash.platform.test",
+          storeOrigin: (slug: string) => `https://${slug}.platform.test`,
           onError: (_error, email) => {
             reported.push(email);
           },

@@ -92,6 +92,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
@@ -1248,7 +1249,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           code: "BAD_GATEWAY",
           message: `PayPal did not refund the client: ${refusal}`,
         });
-        // The admin reads PayPal's words; the action log keeps only Payleor's.
+        // The admin reads PayPal's words; the action log keeps only the platform's.
         const logged = await db
           .select({ outcome: actionLog.outcome, message: actionLog.message })
           .from(actionLog)
@@ -1771,6 +1772,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         db,
         session: null,
         environment: "sandbox",
+        platformName: "Platform",
         auth,
         headers: options.headers ?? new Headers(),
         catalog: createTestCatalogServices(),
@@ -1779,10 +1781,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       if (options.email !== false) {
         context.email = {
           mailer,
-          siteOrigin: "https://payleor.test",
+          siteOrigin: "https://platform.test",
           platformName: "Platform",
-          dashOrigin: "https://dash.payleor.test",
-          storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+          dashOrigin: "https://dash.platform.test",
+          storeOrigin: (slug: string) => `https://${slug}.platform.test`,
         };
       }
       const caller = appRouter.createCaller(context);
@@ -1843,10 +1845,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         subject: "Your request to Walk Crew",
         replyTo: "support@walkcrew.test",
       });
-      expect(toClient!.html).toContain("https://seller.payleor.test/c/");
+      expect(toClient!.html).toContain("https://seller.platform.test/c/");
       expect(toTeam).toMatchObject({ to: "support@walkcrew.test", subject: "New request from Jo" });
 
-      const match = /https:\/\/seller\.payleor\.test\/c\/(\S+)/.exec(toClient!.text);
+      const match = /https:\/\/seller\.platform\.test\/c\/(\S+)/.exec(toClient!.text);
       expect(match).toBeTruthy();
       expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toEqual({
         projectId,
@@ -1868,7 +1870,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const requested = (await db.select().from(project)).find((p) => p.id !== clientProject)!;
       const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, requested.id));
       expect(attached!.contactId).not.toBe(verified!.contactId);
-      const token = /https:\/\/seller\.payleor\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
+      const token = /https:\/\/seller\.platform\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
       expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, token)).toMatchObject({
         projectId: requested.id,
         contactId: attached!.contactId,
@@ -2013,15 +2015,16 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const send = vi.fn().mockRejectedValue(new Error("resend: 422 invalid address"));
       const email: EmailServices = {
         mailer: { send },
-        siteOrigin: "https://payleor.test",
+        siteOrigin: "https://platform.test",
         platformName: "Platform",
-        dashOrigin: "https://dash.payleor.test",
-        storeOrigin: (slug) => `https://${slug}.payleor.test`,
+        dashOrigin: "https://dash.platform.test",
+        storeOrigin: (slug) => `https://${slug}.platform.test`,
       };
       const caller = appRouter.createCaller({
         db,
         session: null,
         environment: "sandbox",
+        platformName: "Platform",
         auth,
         headers: new Headers(),
         catalog: createTestCatalogServices(),

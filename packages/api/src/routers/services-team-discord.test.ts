@@ -29,6 +29,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam.createDiscordLinkCode", () => {
       db,
       session: makeSession(userId),
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),

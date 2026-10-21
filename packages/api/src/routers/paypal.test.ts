@@ -121,6 +121,7 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       paypal,

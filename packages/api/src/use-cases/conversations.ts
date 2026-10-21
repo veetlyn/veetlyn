@@ -121,7 +121,7 @@ function closedReason(row: ProjectRow, space: ConversationSpace): string {
 }
 
 // Messages posted while quoting are shown masked to everyone, in both spaces and from every surface, and stay
-// masked afterwards (design §6). Events are Payleor's own words and are never masked.
+// masked afterwards (design §6). Events are the platform's own words and are never masked.
 function messageBodies(row: Pick<ProjectRow, "status">, body: string): Pick<NewConversationMessage, "body" | "shownBody"> {
   if (row.status !== "quoting") return { body, shownBody: body };
   return { body, shownBody: maskContactDetails(body).shown };
@@ -164,7 +164,7 @@ async function requireReadable(db: Database, author: ConversationAuthor, project
 }
 
 // Conversations design §4: freelancers write in the request space, staff in either, the accepted freelancer in
-// the project space; the client writes once and Payleor places the message.
+// the project space; the client writes once and the platform places the message.
 export async function postConversationMessage(
   db: Database,
   author: ConversationAuthor,
@@ -322,10 +322,10 @@ export type ConversationMessageView = {
 };
 
 // Freelancers read the client's replies relayed as "Client" (design §4); staff see the contact's name.
-function authorNameFor(m: ConversationMessageWithAuthor, viewer: Viewer): string {
+function authorNameFor(m: ConversationMessageWithAuthor, viewer: Viewer, platformName: string): string {
   switch (m.authorKind) {
     case "system":
-      return "Payleor";
+      return platformName;
     case "member":
       return m.authorUserName ?? "Team member";
     case "client":
@@ -333,9 +333,9 @@ function authorNameFor(m: ConversationMessageWithAuthor, viewer: Viewer): string
   }
 }
 
-function viewOf(m: ConversationMessageWithAuthor, viewer: Viewer): ConversationMessageView {
+function viewOf(m: ConversationMessageWithAuthor, viewer: Viewer, platformName: string): ConversationMessageView {
   const member = viewer.kind === "member";
-  const authorName = authorNameFor(m, viewer);
+  const authorName = authorNameFor(m, viewer, platformName);
   return {
     id: m.id,
     space: m.space,
@@ -358,6 +358,7 @@ export async function conversationFor(
   db: Database,
   author: ConversationReader,
   row: ProjectRow,
+  platformName: string,
 ): Promise<{ access: ConversationAccess; messages: ConversationMessageView[] }> {
   const viewer = await viewerFor(db, author);
   const access =
@@ -365,5 +366,5 @@ export async function conversationFor(
       ? { read: [], write: [] }
       : conversationAccess(viewer, await accessFactsFor(db, row));
   const messages = await listMessages(db, { projectId: row.id, spaces: readableSpaces(access) });
-  return { access, messages: messages.map((m) => viewOf(m, viewer)) };
+  return { access, messages: messages.map((m) => viewOf(m, viewer, platformName)) };
 }

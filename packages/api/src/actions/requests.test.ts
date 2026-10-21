@@ -41,14 +41,15 @@ describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () =
         {
           deps: {
             db,
+            platformName: "Platform",
             files: createFakeFileStore(),
             auth: { options: { secret: "test-secret-that-is-at-least-32-characters" } },
             email: {
               mailer,
-              siteOrigin: "https://payleor.test",
+              siteOrigin: "https://platform.test",
               platformName: "Platform",
-              dashOrigin: "https://dash.payleor.test",
-              storeOrigin: (slug) => `https://${slug}.payleor.test`,
+              dashOrigin: "https://dash.platform.test",
+              storeOrigin: (slug) => `https://${slug}.platform.test`,
             },
           },
           actor: { kind: "user", userId },

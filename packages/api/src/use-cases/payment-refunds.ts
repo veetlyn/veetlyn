@@ -79,7 +79,7 @@ async function postReturnedFees(tx: Transaction, row: PaymentRow, refund: PayPal
 }
 
 // Applies one COMPLETED PayPal refund of a services payment, once, inside the caller's transaction: the capture
-// refund answer and the webhook may both report it. A refund Payleor issued for an overpayment confirms its
+// refund answer and the webhook may both report it. A refund the platform issued for an overpayment confirms its
 // part (refund_confirmed); any other is posted as payment_refunded. Locks the project's refund before the payment,
 // the order the admin's refund call takes too.
 export async function applyCompletedPaymentRefund(
@@ -159,7 +159,7 @@ export async function applyPaymentRefunds(
     const early = captures.find((item) => isRefundedCaptureStatus(item.status));
     if (!early) return "not captured";
     // Recording it would start or complete the project with money the client already got back.
-    throw new CaptureFactConflict(`Capture ${early.id} of payment ${row.id} was refunded before Payleor applied it`);
+    throw new CaptureFactConflict(`Capture ${early.id} of payment ${row.id} was refunded before the platform applied it`);
   }
   const captureId = row.paypalCaptureId;
   if (!captureId) throw new Error(`Payment ${row.id} is ${row.status} without a capture`);

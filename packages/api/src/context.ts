@@ -19,12 +19,12 @@ export type PayPalServices = {
 // Transactional email outside auth (quote requests). Absent in tests that do not send email.
 export type EmailServices = {
   mailer: Mailer;
-  // Absolute origins for links in emails, e.g. https://payleor.com and https://dash.payleor.com.
+  // Absolute origins for links in emails, e.g. https://example.com and https://dash.example.com.
   siteOrigin: string;
   dashOrigin: string;
   // The product name people read; set per stage (PLATFORM_NAME).
   platformName: string;
-  // Absolute origin of a team's store host, e.g. https://walk-crew.payleor.app.
+  // Absolute origin of a team's store host, e.g. https://walk-crew.example.com.
   storeOrigin: (slug: string) => string;
   // Sends that may outlive the response; awaited when absent.
   waitUntil?: (promise: Promise<unknown>) => void;
@@ -35,6 +35,8 @@ export type PayoutServices = {
   // Seals the teams' PayPal client secrets (AES-GCM, the team id as additional data).
   secretKey: CryptoKey;
   keyId: string;
+  // Named in the note PayPal shows the receiver of a payout.
+  platformName: string;
   // Builds a PayPal client for one team's own REST app; the server gives it a per-team token cache. That cache
   // must be keyed by the secret too: verifying new credentials must never reuse a token the old ones obtained.
   clientFor(input: { teamId: string; clientId: string; clientSecret: string }): PayPalClient;
@@ -44,6 +46,8 @@ export type Context = {
   session: Session | null;
   db: Database;
   environment: TenantEnvironment;
+  // The product name people read; set per stage (PLATFORM_NAME).
+  platformName: string;
   // Procedures that act through Better Auth (organizations, stores) pass the caller's headers on.
   auth: Auth;
   headers: Headers;

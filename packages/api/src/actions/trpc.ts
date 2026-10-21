@@ -38,6 +38,7 @@ type LooseDefinition = ActionDefinition<Loose, unknown, Loose>;
 function depsOf(ctx: Context): ActionDeps {
   return {
     db: ctx.db,
+    platformName: ctx.platformName,
     files: ctx.files,
     auth: ctx.auth,
     paypal: ctx.paypal,

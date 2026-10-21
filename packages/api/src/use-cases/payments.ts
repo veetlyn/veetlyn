@@ -57,7 +57,7 @@ export type CaptureFact = {
   reviewReason: CaptureReviewReason | null;
 };
 
-// Money moved in a way Payleor did not ask for (a second capture, a capture on an abandoned order or a
+// Money moved in a way the platform did not ask for (a second capture, a capture on an abandoned order or a
 // cancelled payment, a wrong amount). A person has to look; retrying cannot fix it.
 export class CaptureFactConflict extends Error {
   override name = "CaptureFactConflict";
@@ -83,7 +83,7 @@ async function lockPayment(tx: Transaction, paymentId: string): Promise<PaymentR
 }
 
 // A payment has one capture. Another capture id, or a completed capture on an abandoned order, means money
-// moved in a way Payleor did not ask for; that needs a person, so it throws instead of guessing.
+// moved in a way the platform did not ask for; that needs a person, so it throws instead of guessing.
 function checkCaptureBelongs(row: PaymentRow, fact: CaptureFact): void {
   if (row.paypalCaptureId && row.paypalCaptureId !== fact.captureId) {
     throw new CaptureFactConflict(`Payment ${row.id} already has capture ${row.paypalCaptureId}; PayPal reported ${fact.captureId}`);
@@ -282,7 +282,7 @@ export async function applyCaptureFact(db: Database, fact: CaptureFact): Promise
   return result;
 }
 
-// Records PayPal's fee and Payleor's fee for a captured payment, once: the first fact that carries the
+// Records PayPal's fee and the platform's fee for a captured payment, once: the first fact that carries the
 // breakdown wins, whether it is the capture itself or a later webhook re-fetch. A refunded capture keeps its
 // breakdown, and PayPal still charged the fees. Converted funds are flagged here.
 export async function recordCaptureFees(db: Database, fact: CaptureFact): Promise<void> {
@@ -326,7 +326,7 @@ async function requireSeller(db: Database, teamId: string): Promise<{ merchantId
   if (!team?.paypalMerchantId) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This team cannot take PayPal payments yet." });
   }
-  // Payleor's fee follows the seller's plan (pricing proposal §1): Solo 2%, Team 1%.
+  // The platform's fee follows the seller's plan (pricing proposal §1): Solo 2%, Team 1%.
   const settings = await getServicesTeamSettings(db, teamId);
   return { merchantId: team.paypalMerchantId, name: team.name, solo: settings?.solo ?? false };
 }

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { protectedProcedure, router } from "../index";
 
-// The AI clients (Claude, ChatGPT, others) the user let act for them through Payleor's plugin.
+// The AI clients (Claude, ChatGPT, others) the user let act for them through the platform's plugin.
 export const connectedAppsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) =>
     (await listConnectedApps(ctx.db, ctx.session.user.id)).map((app) => ({
