@@ -1,6 +1,6 @@
 # Run C: the client's AI plugin and conversations — design
 
-**Date:** 2026-10-15. **Status:** approved by Mouhamed section by section (data/actions, web surfaces, plugin, packaging/testing) on 2026-10-15, after the spike closed with a go for both clients and a full-corpus re-read.
+**Date:** 2026-10-15. **Status:** built and merged as `cc0e08d` (PR #13, 2026-10-21); outcome in the [plan](../archive/platform/plans/2026-10-15-c-plugin.md). Earlier: approved by Mouhamed section by section (data/actions, web surfaces, plugin, packaging/testing) on 2026-10-15, after the spike closed with a go for both clients and a full-corpus re-read.
 
 **Program:** run C of the agentic surfaces program ([`2026-10-13-agentic-surfaces-program.md`](2026-10-13-agentic-surfaces-program.md) §4, §4.1), Oct 20–23. **Builds on:** the approved conversations design ([`2026-10-14-conversations-design.md`](2026-10-14-conversations-design.md)), the spike facts and chosen setup ([`2026-10-14-plugin-spike-facts.md`](2026-10-14-plugin-spike-facts.md) "Setup chosen for run C"), the action registry (run A1, merged `4a27fb6`) and client contacts (run A2, [`2026-10-13-action-catalog-design.md`](2026-10-13-action-catalog-design.md) §5, lands before C).
 

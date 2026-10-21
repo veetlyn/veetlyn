@@ -57,7 +57,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Sponsor integrations](platform/2026-10-05-sponsor-integrations-design.md) | Approved; AG Grid in run D |
 | [PayPal facts](platform/2026-10-07-r1-paypal-facts.md) | Reference |
 | [Connector UX guidelines](platform/2026-10-14-connector-ux-guidelines.md) | Reference: 38 rules for the plugin's tools and widgets, from Claude, OpenAI and the MCP Apps spec |
-| [Run C plan](platform/plans/2026-10-15-c-plugin.md) | Built in the cloud on `c-plugin`; walkthrough pending |
+| [Run C plan](archive/platform/plans/2026-10-15-c-plugin.md) | Done: merged as `cc0e08d` (PR #13), walked through on staging in Claude and ChatGPT |
 | [Site and design system](platform/2026-10-19-site-and-design-system-design.md) | The site (§1–5) built by run L; §6, the dash on the same system, still to plan |
 | [Security audit](platform/2026-10-16-security-audit.md) | Review 2026-10-16; A1–A5 fixed by run H, B1–B4 taken by run C |
 

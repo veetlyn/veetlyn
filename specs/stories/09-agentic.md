@@ -118,7 +118,7 @@ Plan: not written. Its walkthrough also runs the whole book on the deployed host
 
 ## C: client's AI plugin
 
-Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task 12 sharpened these stories to what was built (2026-10-20), Task 17 walks them. The plugin zips come from `pnpm plugin:zip` (add `--mcp-url https://api.staging.payleor.com/mcp` for staging); the demo data from `packages/db/scripts/demo-seed-conversations.ts`.
+Plan: [`2026-10-15-c-plugin.md`](../archive/platform/plans/2026-10-15-c-plugin.md); Task 12 sharpened these stories to what was built (2026-10-20), Task 17 walks them. The plugin zips come from `pnpm plugin:zip` (add `--mcp-url https://api.staging.payleor.com/mcp` for staging); the demo data from `packages/db/scripts/demo-seed-conversations.ts`.
 
 ### AGT-09: A client connects the Payleor plugin in Claude and ChatGPT
 
