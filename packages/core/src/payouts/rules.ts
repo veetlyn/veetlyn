@@ -140,7 +140,7 @@ export function balanceHold(
   if (input.balanceMinor === null) {
     return rules.balanceFloorMinor === null
       ? null
-      : "Turn on automatic payouts again so Payleor can read your PayPal balance.";
+      : "Turn on automatic payouts again so we can read your PayPal balance.";
   }
   if (input.balanceMinor < input.amountMinor) return "The team's PayPal balance is too low. Add funds, then retry.";
   if (rules.balanceFloorMinor !== null && input.balanceMinor - input.amountMinor < rules.balanceFloorMinor) {

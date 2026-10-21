@@ -65,7 +65,7 @@ describe("balanceHold", () => {
     ["no floor, enough", { ...base }, 10_000, 20_000, null],
     ["no floor, too low", { ...base }, 30_000, 20_000, "The team's PayPal balance is too low. Add funds, then retry."],
     ["under the floor", { ...base, balanceFloorMinor: 15_000 }, 10_000, 20_000, "Waiting until the team's PayPal balance stays above $150.00."],
-    ["floor, unreadable", { ...base, balanceFloorMinor: 15_000 }, 10_000, null, "Turn on automatic payouts again so Payleor can read your PayPal balance."],
+    ["floor, unreadable", { ...base, balanceFloorMinor: 15_000 }, 10_000, null, "Turn on automatic payouts again so we can read your PayPal balance."],
     ["no floor, unreadable", { ...base }, 10_000, null, null],
   ] as const)("%s", (_name, rules, amount, balance, expected) => {
     expect(balanceHold(rules, { amountMinor: amount, balanceMinor: balance, currency: "USD" })).toBe(expected);

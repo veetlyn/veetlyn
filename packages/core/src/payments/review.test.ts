@@ -20,7 +20,7 @@ describe("captureReviewReason", () => {
       expected: "converted_receivable",
     },
     { name: "PayPal's fee in another currency", breakdown: { paypal_fee: eur(), platform_fees: [] }, expected: "fee_currency" },
-    { name: "Payleor's fee in another currency", breakdown: { paypal_fee: usd(), platform_fees: [{ amount: eur() }] }, expected: "fee_currency" },
+    { name: "the platform's fee in another currency", breakdown: { paypal_fee: usd(), platform_fees: [{ amount: eur() }] }, expected: "fee_currency" },
   ])("$name", ({ breakdown, expected }) => {
     expect(captureReviewReason(breakdown, "USD")).toBe(expected);
   });

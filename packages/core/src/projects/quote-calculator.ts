@@ -25,7 +25,7 @@ export type QuoteBreakdown = {
 
 const MAX_STEPS = 10_000;
 
-// What each party ends up with when the team quotes quoteMinor: the client's payment, PayPal's and Payleor's fees,
+// What each party ends up with when the team quotes quoteMinor: the client's payment, PayPal's and the platform's fees,
 // what the team keeps and what the member receives after the payout fee.
 export function quoteBreakdown(input: Omit<QuoteCalculatorInput, "targetNetMinor">, quoteMinor: number): QuoteBreakdown {
   const earnings = freelancerEarningsMinor(quoteMinor, input.teamCutBps);
@@ -41,7 +41,7 @@ export function quoteBreakdown(input: Omit<QuoteCalculatorInput, "targetNetMinor
     amountMinor: clientPaysMinor,
     international: false,
   });
-  // Payleor's fee is charged on each client payment, so it is taken on what the client pays.
+  // The platform's fee is charged on each client payment, so it is taken on what the client pays.
   const platform = platformFeeMinor(clientPaysMinor, input.platformFeeBps);
   return {
     quoteMinor,

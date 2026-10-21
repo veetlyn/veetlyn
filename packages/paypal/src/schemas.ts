@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Response schemas read only the fields Payleor uses. Top-level objects are loose and every field PayPal may
+// Response schemas read only the fields the platform uses. Top-level objects are loose and every field PayPal may
 // omit is optional, so a valid response never fails; `.catch` marks the fields that were always read leniently.
 
 export function parsedItems<T extends z.ZodType>(schema: T, values: readonly unknown[]): z.output<T>[] {

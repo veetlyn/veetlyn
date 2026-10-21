@@ -62,7 +62,7 @@ export function readableSpaces(access: ConversationAccess): ConversationSpace[] 
   return access.read.includes("project") ? ["project", "request"] : access.read;
 }
 
-// The client writes once and Payleor places the message (design §4): before acceptance a reply reaches the
+// The client writes once and the platform places the message (design §4): before acceptance a reply reaches the
 // freelancers looking at the request unless it is for the team only; afterwards everything is the project's.
 export function clientMessageSpace(status: ProjectStatus, teamOnly: boolean): ConversationSpace {
   return status === "quoting" && !teamOnly ? "request" : "project";

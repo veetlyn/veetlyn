@@ -61,7 +61,7 @@ function isPhone(candidate: string): boolean {
   return (candidate.match(/\d/g)?.length ?? 0) >= MIN_PHONE_DIGITS;
 }
 
-// Hides what would let the two sides deal off Payleor before a quote is accepted. Allowed links are matched
+// Hides what would let the two sides deal off the platform before a quote is accepted. Allowed links are matched
 // whole, so the digits inside them are never taken for a phone number. Details written out in words pass.
 export type MaskedBody = { shown: string; masked: boolean };
 

@@ -218,7 +218,7 @@ describe("every posting builder balances (property-style, 500 random cases each)
 });
 
 describe("paymentFeesTransfer", () => {
-  it("charges PayPal's fee and Payleor's fee to the team's revenue", () => {
+  it("charges PayPal's fee and the platform's fee to the team's revenue", () => {
     expect(
       paymentFeesTransfer({ currency: "USD", projectId: "p1", paymentId: "pay1", paypalFeeMinor: 498, platformFeeMinor: 120 }),
     ).toEqual({

@@ -60,7 +60,7 @@ describe("validateStoreSlug", () => {
     "ns2",
     "security",
     "abuse",
-    "payleor",
+    "platform",
     "paypal",
     "venmo",
     "braintree",

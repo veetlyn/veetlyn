@@ -36,7 +36,7 @@ export const conversationMessage = pgTable(
     replyToId: text("reply_to_id"),
     refType: text("ref_type"),
     refId: text("ref_id"),
-    // Where a person posted it; null for the events Payleor writes.
+    // Where a person posted it; null for the events the platform writes.
     surface: text("surface", { enum: CONVERSATION_SURFACES }),
     discordMessageId: text("discord_message_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),

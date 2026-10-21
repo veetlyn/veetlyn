@@ -124,7 +124,7 @@ export async function listMemberEarnings(db: DbExecutor, userId: string): Promis
 
 // "Log in with PayPal" (sign-up, sign-in or linkSocial) writes this Better Auth account row: `id` is
 // the row ID getAccessToken takes, `accountId` is PayPal's user_id, not the payer ID (Fact 14).
-// A PayPal account belongs to one Payleor user, but one user can link several PayPal accounts; the
+// A PayPal account belongs to one user, but one user can link several PayPal accounts; the
 // most recently updated row is the one the user just linked or signed in with.
 export async function findLinkedPayPalAccount(
   db: Database,

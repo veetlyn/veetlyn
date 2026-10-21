@@ -4,7 +4,7 @@ import { HIDDEN_CONTACT, maskContactDetails } from "./masking";
 
 const H = HIDDEN_CONTACT;
 
-// Conversations design §6: each example is a way a freelancer or client could take the work off Payleor
+// Conversations design §6: each example is a way a freelancer or client could take the work off the platform
 // before a quote is accepted, or a link the brief needs that must survive.
 const MASKED: [string, string, string][] = [
   ["a plain email", "Write to me at aicha.d@gmail.com please", `Write to me at ${H} please`],

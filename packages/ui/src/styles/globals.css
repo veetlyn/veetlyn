@@ -8,7 +8,7 @@
 /* Short windows (a laptop with browser chrome): screens that must fit tighten their spacing. */
 @custom-variant short (@media (max-height: 800px));
 
-/* Payleor's Relief tokens on shadcn's names. Neutral greys, a graphite main button, mint as a signal (your turn,
+/* The platform's Relief tokens on shadcn's names. Neutral greys, a graphite main button, mint as a signal (your turn,
    done, focus) rather than a fill; warm colours only for trouble. Cal Sans UI for headings (served from apps/web's
    public/fonts), Inter for text and numbers, Geist Mono for references (both loaded in apps/web's root layout). */
 @font-face {

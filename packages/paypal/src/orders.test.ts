@@ -41,7 +41,7 @@ const CAPTURED = {
 } satisfies PayPalOrder;
 
 describe("orders.create", () => {
-  it("creates an order for the seller with Payleor's fee", async () => {
+  it("creates an order for the seller with the platform's fee", async () => {
     const { client, requests } = clientWith(() => jsonResponse(201, { id: "ORDER1", status: "CREATED" }));
 
     const order = await client.orders.create({
@@ -216,7 +216,7 @@ describe("captureFromOrder", () => {
       seller_receivable_breakdown: {
         gross_amount: { currency_code: "USD", value: "120.00" },
         paypal_fee: { currency_code: "USD", value: "4.98" },
-        platform_fees: [{ amount: { currency_code: "USD", value: "1.20" }, payee: { merchant_id: "PAYLEOR" } }],
+        platform_fees: [{ amount: { currency_code: "USD", value: "1.20" }, payee: { merchant_id: "PLATFORM" } }],
         net_amount: { currency_code: "USD", value: "113.82" },
       },
     };
@@ -333,7 +333,7 @@ describe("refundsFromOrder", () => {
               { id: "R1", status: "COMPLETED", amount: { currency_code: "USD", value: "5.00" } },
               { id: "R2", status: "PENDING", amount: { currency_code: "USD", value: "1.00" } },
               { bad: true },
-              // The sandbox's $5.00 partial refund of a $19.00 order: PayPal returned its fee and Payleor's.
+              // The sandbox's $5.00 partial refund of a $19.00 order: PayPal returned its fee and the platform's.
               {
                 id: "R3",
                 status: "COMPLETED",
@@ -341,7 +341,7 @@ describe("refundsFromOrder", () => {
                 seller_payable_breakdown: {
                   gross_amount: { currency_code: "USD", value: "5.00" },
                   paypal_fee: { currency_code: "USD", value: "0.19" },
-                  platform_fees: [{ amount: { currency_code: "USD", value: "0.05" }, payee: { merchant_id: "PAYLEOR" } }],
+                  platform_fees: [{ amount: { currency_code: "USD", value: "0.05" }, payee: { merchant_id: "PLATFORM" } }],
                   net_amount: { currency_code: "USD", value: "4.76" },
                   total_refunded_amount: { currency_code: "USD", value: "5.00" },
                 },

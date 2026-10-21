@@ -8,7 +8,7 @@ export type Plan = {
   name: string;
   // US cents per month. The yearly price is billed once a year as 12 times this amount.
   priceCents: Record<BillingInterval, number>;
-  // Payleor's fee on each order in basis points (100 = 1%), taken through PayPal's partner fee.
+  // The platform's fee on each order in basis points (100 = 1%), taken through PayPal's partner fee.
   orderFeeBps: number;
   staffSeats: number;
   customDomain: boolean;

@@ -4,7 +4,7 @@ import type { Database } from "../index";
 import { account } from "../schema/auth";
 import { discordLinkCode, servicesTeamSettings } from "../schema/services-teams";
 
-// The Payleor user behind a Discord account: a Better Auth account row whose provider is "discord"
+// The user behind a Discord account: a Better Auth account row whose provider is "discord"
 // and whose account ID is the Discord snowflake (Fact 10).
 export async function findUserIdByDiscordId(db: Database, discordId: string): Promise<string | null> {
   const [row] = await db
@@ -17,7 +17,7 @@ export async function findUserIdByDiscordId(db: Database, discordId: string): Pr
 
 export type DiscordLinkCode = { code: string; expiresAt: Date };
 
-// A one-time code an admin creates in the team admin and runs as /payleor link code:… (services spec §4.2).
+// A one-time code an admin creates in the team admin and runs as /platform link code:… (services spec §4.2).
 export async function createDiscordLinkCode(
   db: Database,
   teamId: string,

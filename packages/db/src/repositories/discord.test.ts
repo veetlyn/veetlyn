@@ -23,7 +23,7 @@ describe.skipIf(!hasTestDatabase)("discord repository", () => {
     return { organizationId, userId, team };
   }
 
-  it("finds the Payleor user behind a Discord account, and only that provider", async () => {
+  it("finds the platform user behind a Discord account, and only that provider", async () => {
     const { userId } = await seedTeam("acme-studio");
     await db.insert(account).values([
       { id: crypto.randomUUID(), accountId: "123456789012345678", providerId: "discord", userId },
