@@ -1,0 +1,21 @@
+specs/platform/plans/2026-10-21-prep-no-brand.md
+  s_ec180faf4f9b2e::t_1164f047a0babe 1-301
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_6956ae025855cd 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8292e1da88c36cbab2123b0779a1f8e487d091f5",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
