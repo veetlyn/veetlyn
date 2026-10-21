@@ -206,7 +206,7 @@ export const payoutsRouter = router({
     .input(z.object({ requestIds: z.array(z.string().trim().min(1).max(100)).min(1).max(PAYOUTS_WEB_MAX_ROWS) }))
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "approve_payouts", PAYOUTS_ONLY);
-      return exportPayoutsWeb({ db: ctx.db, now: ctx.now }, { team: ctx.servicesTeam, requestIds: input.requestIds });
+      return exportPayoutsWeb({ db: ctx.db, platformName: ctx.platformName, now: ctx.now }, { team: ctx.servicesTeam, requestIds: input.requestIds });
     }),
 
   // The text of the payout's CSV log downloaded from PayPal.

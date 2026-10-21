@@ -116,11 +116,11 @@ describe.skipIf(!hasTestDatabase)("conversations", () => {
     });
     const row = await findProjectById(db, projectId);
     if (!row) throw new Error("no project");
-    const forFreelancer = await conversationFor(db, as(aicha), row);
+    const forFreelancer = await conversationFor(db, as(aicha), row, "Platform");
     expect(forFreelancer.messages.map((m) => [m.authorName, m.body, m.originalBody])).toEqual([
       ["Client", `Mail me at ${HIDDEN_CONTACT}, files at drive.google.com/x`, null],
     ]);
-    const forAdmin = await conversationFor(db, as(admin), row);
+    const forAdmin = await conversationFor(db, as(admin), row, "Platform");
     expect(forAdmin.messages[0]?.originalBody).toBe("Mail me at ann@example.com, files at drive.google.com/x");
     expect(forAdmin.messages).toHaveLength(2);
   });

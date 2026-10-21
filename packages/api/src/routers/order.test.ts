@@ -41,6 +41,7 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
       db,
       session: options.userId ? makeSession(options.userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
@@ -48,10 +49,10 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
       email: mailer
         ? {
             mailer,
-            siteOrigin: "https://payleor.test",
+            siteOrigin: "https://platform.test",
             platformName: "Platform",
-            dashOrigin: "https://dash.payleor.test",
-            storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+            dashOrigin: "https://dash.platform.test",
+            storeOrigin: (slug: string) => `https://${slug}.platform.test`,
           }
         : undefined,
     });
@@ -184,7 +185,7 @@ describe.skipIf(!hasTestDatabase)("order router", () => {
       expect(mailer.sent).toHaveLength(1);
       const message = mailer.sent[0];
       expect(message?.to).toBe("jo@example.com");
-      const match = message?.text.match(/https:\/\/pixels\.payleor\.test\/orders\/([A-Za-z0-9_-]+)/);
+      const match = message?.text.match(/https:\/\/pixels\.platform\.test\/orders\/([A-Za-z0-9_-]+)/);
       const newToken = match?.[1];
       expect(newToken).toBeDefined();
       expect(newToken).not.toBe(token);

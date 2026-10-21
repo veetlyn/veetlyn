@@ -105,6 +105,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       paypal,
@@ -388,7 +389,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     });
 
-    it("creates an order for the team with Payleor's 1% Team fee", async () => {
+    it("creates an order for the team with the platform's 1% Team fee", async () => {
       const { paymentId, token } = await connectedDeposit();
       const { requests, fetch } = fakePayPalApi();
 
@@ -413,7 +414,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 300, status: "pending" });
     });
 
-    it("creates an order for a solo seller with Payleor's 1% Solo fee", async () => {
+    it("creates an order for a solo seller with the platform's 1% Solo fee", async () => {
       const { userId, organizationId } = await seedOrganization(db);
       const { id: soloTeamId } = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
       const caller = callerFor(userId);
@@ -433,7 +434,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
       expect(await callerFor(null, makePayPal(fetch)).payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
 
-      // Solo keeps the whole price (no management fee), so the deposit is half the quote and Payleor takes 1%.
+      // Solo keeps the whole price (no management fee), so the deposit is half the quote and the platform takes 1%.
       const [create] = calls(requests, "/v2/checkout/orders");
       expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
         amount: { currency_code: "USD", value: "500.00" },

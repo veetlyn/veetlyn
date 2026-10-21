@@ -37,6 +37,7 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
       db,
       session: makeSession(userId),
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
@@ -358,7 +359,7 @@ describe.skipIf(!hasTestDatabase)("seller router", () => {
     await seedServicesOffering(db, { teamId });
     const onTeamStatusChanged = vi.fn();
     const caller = callerFor(adminId, onTeamStatusChanged);
-    const suspended = { code: "BAD_REQUEST", message: "This seller is suspended. Contact support@payleor.com." };
+    const suspended = { code: "BAD_REQUEST", message: "This seller is suspended. Contact support." };
 
     await expect(caller.seller.publish({ teamSlug: "acme-studio" })).rejects.toMatchObject(suspended);
     await expect(caller.seller.unpublish({ teamSlug: "acme-studio" })).rejects.toMatchObject(suspended);

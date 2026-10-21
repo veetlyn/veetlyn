@@ -31,6 +31,7 @@ describe.skipIf(!hasTestDatabase)("servicesCatalog router", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),

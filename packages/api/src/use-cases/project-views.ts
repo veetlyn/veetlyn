@@ -88,7 +88,7 @@ export async function listVisibleProjects(db: Database, viewer: ProjectActor) {
 }
 
 export async function getTeamProjectView(
-  deps: { db: Database; auth: LinkSecretSource },
+  deps: { db: Database; auth: LinkSecretSource; platformName: string },
   viewer: ProjectActor,
   projectId: string,
 ) {
@@ -112,7 +112,7 @@ export async function getTeamProjectView(
   // The legacy client columns stay server-side: the contacts say who the client is.
   const { clientEmail: _email, clientName: _name, clientDiscordId: _discord, ...project } = row;
   const requestOnly = seesRequestOnly(viewer, row);
-  const conversation = await conversationFor(db, { kind: "member", actor: viewer }, row);
+  const conversation = await conversationFor(db, { kind: "member", actor: viewer }, row, deps.platformName);
   return {
     project: requestOnly
       ? {
@@ -168,7 +168,7 @@ export async function listOpenRequests(db: Database, viewer: ProjectActor) {
 
 // "Preview as client" (design §5.3): what the client page shows, read-only, with no link to act through.
 export async function getClientPreview(
-  deps: { db: Database; auth: LinkSecretSource },
+  deps: { db: Database; auth: LinkSecretSource; platformName: string },
   viewer: ProjectActor,
   projectId: string,
 ) {
@@ -192,7 +192,10 @@ export async function teamDeliveryFileUrl(
 // The client project page (services spec §5.2): signed link, no account. Internal user ids
 // (freelancerId, authorId, proposedById) and the PayPal ids stay server-side; the link holder
 // sees only what the page renders.
-export async function getClientProjectView(deps: { db: Database; auth: LinkSecretSource }, projectId: string) {
+export async function getClientProjectView(
+  deps: { db: Database; auth: LinkSecretSource; platformName: string },
+  projectId: string,
+) {
   const { db } = deps;
   const row = await findProjectById(db, projectId);
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
@@ -202,7 +205,7 @@ export async function getClientProjectView(deps: { db: Database; auth: LinkSecre
     listProjectPayments(db, projectId),
     listProjectDeliveries(db, projectId),
     getClientRefundView(db, projectId),
-    conversationFor(db, { kind: "client" }, row),
+    conversationFor(db, { kind: "client" }, row, deps.platformName),
   ]);
   const freelancers = await clientFacingFreelancers(db, quotes, conversation.messages);
   const secret = linkSecret(deps.auth);

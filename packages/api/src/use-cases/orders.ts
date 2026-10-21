@@ -180,7 +180,7 @@ export async function startCheckout(
     amountMinor: priceMinor,
     checkoutSecretHash: await hashToken(secret),
   });
-  // Payleor's fee follows the seller's plan (pricing proposal §1): Solo 2%, Team 1%.
+  // The platform's fee follows the seller's plan (pricing proposal §1): Solo 2%, Team 1%.
   const fee = platformFeeMinor(priceMinor, sellerPlanFor({ id: team.id, solo: settings.solo }).feeBps);
   const value = toPayPalValue(priceMinor);
   const paypalOrder = await deps.paypal.client.orders.create({
@@ -339,7 +339,7 @@ export async function applyOrderCaptureFact(
   return applied.result;
 }
 
-// Records PayPal's fee and Payleor's fee for a paid order, once: the first fact that carries the breakdown wins.
+// Records PayPal's fee and the platform's fee for a paid order, once: the first fact that carries the breakdown wins.
 // A refunded capture keeps its breakdown, and PayPal still charged the fees. Converted funds are flagged here.
 export async function recordOrderFees(db: Database, fact: OrderCaptureFact): Promise<void> {
   const { paypalFeeMinor, reviewReason } = fact;
@@ -385,6 +385,7 @@ export async function sendDownloadEmail(
       tag: "order-download",
       to,
       ...orderDownloadEmail({
+        platformName: email.platformName,
         teamName: input.team.name,
         productTitle: input.order.productTitle,
         url: `${email.storeOrigin(input.team.slug)}/orders/${input.token}`,
@@ -524,7 +525,7 @@ type MarkedRefund = { result: OrderRefundResult; order: OrderRow; capture: PayPa
 
 // Sellers decision: any refund or reversal, full or partial, refunds the order and revokes every grant. Each
 // PayPal refund is posted once by its id, with the fees it returned, and a reversal once by its capture,
-// whichever event reports it. A capture refunded before Payleor applied it is recorded as paid then refunded,
+// whichever event reports it. A capture refunded before the platform applied it is recorded as paid then refunded,
 // without a grant or an email, so the ledger still shows the payment, its fees and the refund.
 // expectedRefundId is the refund the event reported: until PayPal's order lists it, the queue retries.
 export async function applyOrderRefund(
@@ -568,7 +569,7 @@ export async function applyOrderRefund(
   const { order, capture } = marked;
   const captureId = order.paypalCaptureId;
   if (!captureId) throw new Error(`Order ${order.id} is ${order.status} without a capture`);
-  // The capture's fees may not be recorded yet: the capture was refunded before Payleor applied it, or a
+  // The capture's fees may not be recorded yet: the capture was refunded before the platform applied it, or a
   // refund landed before the fee step.
   if (capture) await recordOrderFees(deps.db, orderCaptureFact(order.id, paypalOrder.id, capture));
 

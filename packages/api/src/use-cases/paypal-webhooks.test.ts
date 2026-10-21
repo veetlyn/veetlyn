@@ -135,6 +135,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       paypal,
@@ -331,15 +332,15 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
 
     expect(await processPayPalWebhookEvent(deps, storedEvent({ orderId: "OTHER" }))).toEqual({
       status: "ignored",
-      note: "not a Payleor payment",
+      note: "not a platform payment",
     });
     expect(await processPayPalWebhookEvent(deps, storedEvent({ customId: crypto.randomUUID(), orderId: null }))).toEqual({
       status: "ignored",
-      note: "not a Payleor payment",
+      note: "not a platform payment",
     });
     expect(await processPayPalWebhookEvent(deps, storedEvent({ customId: "INV-42", orderId: null }))).toEqual({
       status: "ignored",
-      note: "not a Payleor payment",
+      note: "not a platform payment",
     });
     expect(
       await processPayPalWebhookEvent(deps, storedEvent({ eventType: "MERCHANT.ONBOARDING.COMPLETED", customId: paymentId })),
@@ -560,7 +561,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       expect(await postingsOf("payment_refunded")).toEqual(postings);
     });
 
-    it("confirms an overpayment refund Payleor issued, completing its part and the project refund", async () => {
+    it("confirms an overpayment refund the platform issued, completing its part and the project refund", async () => {
       const { userId, freelancer, projectId, paymentId, deps, showRefunds } = await capturedDeposit();
       expect(await completeWithoutBuild(userId, projectId, freelancer)).toMatchObject({ status: "completed" });
       expect(await balanceOf(ledgerAccounts.clientRefunds)).toBe(16_000);
@@ -642,7 +643,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       expect(await postingsOf("refund_confirmed")).toEqual([]);
     });
 
-    it("parks a capture refunded before Payleor applied it, posting nothing", async () => {
+    it("parks a capture refunded before the platform applied it, posting nothing", async () => {
       const { paymentId, deps } = await startedDeposit({
         lookup: () => jsonResponse(200, refundedDepositOrder("REFUNDED", [{ id: "R1", value: "600.00" }])),
       });
@@ -650,12 +651,12 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       const outcome = await processPayPalWebhookEvent(deps, storedEvent({ customId: paymentId }));
 
       expect(outcome.status).toBe("parked");
-      expect(outcome.note).toContain("refunded before Payleor applied it");
+      expect(outcome.note).toContain("refunded before the platform applied it");
       expect(await paymentRow(paymentId)).toMatchObject({ status: "pending", refundedMinor: 0 });
       expect(await db.select().from(ledgerTransfer)).toEqual([]);
     });
 
-    it("ignores a refund whose capture is not a Payleor payment", async () => {
+    it("ignores a refund whose capture is not a platform payment", async () => {
       const { deps } = await capturedDeposit();
 
       expect(
@@ -663,7 +664,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
           deps,
           storedEvent({ eventType: "PAYMENT.CAPTURE.REFUNDED", customId: null, orderId: null, captureId: "OTHER" }),
         ),
-      ).toEqual({ status: "ignored", note: "not a Payleor payment" });
+      ).toEqual({ status: "ignored", note: "not a platform payment" });
     });
   });
 
@@ -747,10 +748,10 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         paypal: makePayPal(api.fetch),
         email: {
           mailer,
-          siteOrigin: "https://payleor.test",
+          siteOrigin: "https://platform.test",
           platformName: "Platform",
-          dashOrigin: "https://dash.payleor.test",
-          storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
+          dashOrigin: "https://dash.platform.test",
+          storeOrigin: (slug: string) => `https://${slug}.platform.test`,
         },
       };
       return { teamId, order, mailer, deps, requests: api.requests, customId: `order:${order.id}` };
@@ -809,7 +810,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         .orderBy(ledgerEntry.account);
     }
 
-    // PayPal's sandbox answer for a $5.00 refund: its fee and Payleor's fee returned in proportion.
+    // PayPal's sandbox answer for a $5.00 refund: its fee and the platform's fee returned in proportion.
     const SANDBOX_REFUND_BREAKDOWN = {
       paypal_fee: { currency_code: "USD", value: "0.19" },
       platform_fees: [{ amount: { currency_code: "USD", value: "0.05" } }],
@@ -919,7 +920,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
           id: "R2",
           status: "COMPLETED",
           value: "7.50",
-          // Payleor's fee returned in another currency: no part of R2's fees is posted.
+          // the platform's fee returned in another currency: no part of R2's fees is posted.
           breakdown: { ...SANDBOX_REFUND_BREAKDOWN, platform_fees: [{ amount: { currency_code: "EUR", value: "0.07" } }] },
         },
       ]);
@@ -1100,7 +1101,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       ]);
     });
 
-    it("commits nothing for a capture refunded before Payleor applied it until PayPal lists the refund", async () => {
+    it("commits nothing for a capture refunded before the platform applied it until PayPal lists the refund", async () => {
       let lookup = refundedLookup("REFUNDED", []);
       const { order, mailer, deps, customId } = await storeOrder({ lookup: () => lookup() });
       const event = storedEvent({ customId });
@@ -1212,12 +1213,12 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
       expect((await orderRow(order.id))?.status).toBe("paid");
     });
 
-    it("ignores an event for an order Payleor does not have", async () => {
+    it("ignores an event for an order the platform does not have", async () => {
       const { deps } = await storeOrder({ lookup: completedLookup });
 
       expect(
         await processPayPalWebhookEvent(deps, storedEvent({ customId: `order:${crypto.randomUUID()}`, orderId: null })),
-      ).toEqual({ status: "ignored", note: "not a Payleor payment" });
+      ).toEqual({ status: "ignored", note: "not a platform payment" });
     });
   });
 });

@@ -16,6 +16,7 @@ describe.skipIf(!hasTestDatabase)("healthCheck", () => {
       db,
       session: null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),

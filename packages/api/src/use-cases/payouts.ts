@@ -176,7 +176,7 @@ function backoff(request: PayoutRequestRow, now: Date): PayoutRequestPatch {
 
 type Decided = { row: PayoutRequestRow; sendNow: boolean };
 
-// A team without automatic payouts never has its approved payouts sent by Payleor: they wait for a Payouts Web export
+// A team without automatic payouts never has its approved payouts sent by the platform: they wait for a Payouts Web export
 // (or for automatic payouts to be turned on).
 async function markApproved(
   tx: DbExecutor,
@@ -664,7 +664,7 @@ async function attemptSend(
       item: {
         receiverPayerId: request.receiverPayerId,
         amount: { value: toPayPalValue(sentMinor), currency: request.currency },
-        note: `Payout from ${team.name} via Payleor`,
+        note: `Payout from ${team.name} via ${deps.payouts.platformName}`,
         senderItemId: request.id,
       },
     });
