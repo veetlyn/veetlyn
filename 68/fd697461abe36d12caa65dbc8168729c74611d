@@ -1,0 +1,23 @@
+specs/PROGRESS.md
+  s_ec180faf4f9b2e::t_ce91ac62a5dec3 14,35
+specs/README.md
+  s_ec180faf4f9b2e::t_50154fba7c9361 51
+specs/platform/2026-10-21-b1-operating-model-design.md
+  s_ec180faf4f9b2e::t_e984493f3242f1 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68fd697461abe36d12caa65dbc8168729c74611d",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
