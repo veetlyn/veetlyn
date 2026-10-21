@@ -4,14 +4,14 @@ import { type SenderKey, senderAddress } from "./senders";
 
 describe("senderAddress", () => {
   it.each<[SenderKey, string, string]>([
-    ["accounts", "accounts@payleor.com", "Platform"],
-    ["stores", "stores@payleor.com", "Platform Stores"],
-    ["invoices", "invoices@payleor.com", "Platform Invoices"],
-    ["payouts", "payouts@payleor.com", "Platform Payouts"],
-    ["disputes", "disputes@payleor.com", "Platform Disputes"],
-    ["billing", "billing@payleor.com", "Platform Billing"],
+    ["accounts", "accounts@platform.test", "Platform"],
+    ["stores", "stores@platform.test", "Platform Stores"],
+    ["invoices", "invoices@platform.test", "Platform Invoices"],
+    ["payouts", "payouts@platform.test", "Platform Payouts"],
+    ["disputes", "disputes@platform.test", "Platform Disputes"],
+    ["billing", "billing@platform.test", "Platform Billing"],
   ])("sends %s mail from %s as %s", (key, email, name) => {
-    expect(senderAddress(key, "payleor.com", "Platform")).toEqual({ email, name });
+    expect(senderAddress(key, "platform.test", "Platform")).toEqual({ email, name });
   });
 
   it("uses the configured domain, lowercased", () => {
@@ -22,40 +22,40 @@ describe("senderAddress", () => {
   });
 
   it("names the party it sends for", () => {
-    expect(senderAddress("stores", "payleor.com", "Platform", "Ada's Shop")).toEqual({
-      email: "stores@payleor.com",
+    expect(senderAddress("stores", "platform.test", "Platform", "Ada's Shop")).toEqual({
+      email: "stores@platform.test",
       name: "Ada's Shop via Platform",
     });
   });
 
   it("strips line breaks and control characters so the name cannot inject headers", () => {
-    const { name } = senderAddress("stores", "payleor.com", "Platform", "Shop\r\nBcc: victim@example.com\u0000\u202e");
+    const { name } = senderAddress("stores", "platform.test", "Platform", "Shop\r\nBcc: victim@example.com\u0000\u202e");
 
     expect(name).toBe("Shop Bcc victim example.com via Platform");
   });
 
   it('strips quotes, angle brackets and the other address characters "<>@,;:\\()[]', () => {
-    const { name } = senderAddress("invoices", "payleor.com", "Platform", '"Acme" <billing@paypal.com>, (Team); [x]: \\y');
+    const { name } = senderAddress("invoices", "platform.test", "Platform", '"Acme" <billing@paypal.com>, (Team); [x]: \\y');
 
     expect(name).toBe("Acme billing paypal.com Team x y via Platform");
   });
 
   it("collapses whitespace and trims", () => {
-    expect(senderAddress("stores", "payleor.com", "Platform", "  Ada \t  Shop  ").name).toBe("Ada Shop via Platform");
+    expect(senderAddress("stores", "platform.test", "Platform", "  Ada \t  Shop  ").name).toBe("Ada Shop via Platform");
   });
 
   it("caps the party name at 64 characters", () => {
-    const { name } = senderAddress("stores", "payleor.com", "Platform", "a".repeat(100));
+    const { name } = senderAddress("stores", "platform.test", "Platform", "a".repeat(100));
 
     expect(name).toBe(`${"a".repeat(64)} via Platform`);
   });
 
   it("falls back to the sender name when nothing usable is left", () => {
-    expect(senderAddress("invoices", "payleor.com", "Platform", ' <@> "\r\n ').name).toBe("Platform Invoices");
-    expect(senderAddress("invoices", "payleor.com", "Platform", "").name).toBe("Platform Invoices");
+    expect(senderAddress("invoices", "platform.test", "Platform", ' <@> "\r\n ').name).toBe("Platform Invoices");
+    expect(senderAddress("invoices", "platform.test", "Platform", "").name).toBe("Platform Invoices");
   });
 
-  it.each(["", "payleor", "payleor.com>", "a@payleor.com", "payleor.com\r\nBcc: x", "-payleor.com", "payleor..com"])(
+  it.each(["", "platform", "platform.test>", "a@platform.test", "platform.test\r\nBcc: x", "-platform.test", "platform..com"])(
     "rejects the domain %j",
     (domain) => {
       expect(() => senderAddress("accounts", domain, "Platform")).toThrow(/EMAIL_DOMAIN/);

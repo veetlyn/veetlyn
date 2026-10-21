@@ -36,6 +36,8 @@ export type AuthEmailKind = "verification" | "password-reset";
 
 export type AuthServices = {
   mailer: Mailer;
+  // The product name people read in auth emails (PLATFORM_NAME).
+  platformName: string;
   // The Worker's ctx.waitUntil: emails and Better Auth background tasks finish after the response.
   waitUntil: (promise: Promise<unknown>) => void;
   // This package does not log; the api Worker logs with the recipient hashed.
@@ -85,7 +87,7 @@ function sendInBackground(services: AuthServices, kind: AuthEmailKind, content: 
 }
 
 // The MCP resource sits on the api host next to the dashboard host that runs Better Auth
-// (dash.payleor.com → api.payleor.com/mcp, dash.staging.payleor.com → api.staging.payleor.com/mcp).
+// (dash.example.com → api.example.com/mcp, dash.staging.example.com → api.staging.example.com/mcp).
 export function mcpResourceFor(authUrl: string): string {
   const host = new URL(authUrl).hostname.replace(/^(dash|admin)\./, "");
   return `https://api.${host}/mcp`;
@@ -122,7 +124,7 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
         await revokeOAuthGrants(database, { userId: user.id });
       },
       sendResetPassword: async ({ user, url }) => {
-        sendInBackground(services, "password-reset", { to: user.email, ...passwordResetEmail({ name: user.name, url }) });
+        sendInBackground(services, "password-reset", { to: user.email, ...passwordResetEmail({ platformName: services.platformName, name: user.name, url }) });
       },
     },
     emailVerification: {
@@ -131,7 +133,7 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
       autoSignInAfterVerification: true,
       expiresIn: ONE_HOUR_IN_SECONDS,
       sendVerificationEmail: async ({ user, url }) => {
-        sendInBackground(services, "verification", { to: user.email, ...verificationEmail({ name: user.name, url }) });
+        sendInBackground(services, "verification", { to: user.email, ...verificationEmail({ platformName: services.platformName, name: user.name, url }) });
       },
     },
     user: { additionalFields: userFields },
@@ -194,7 +196,7 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
     // "Link Discord" (services spec §4.2) and the payout destination's "Log in with PayPal" link a
     // second identity onto a signed-in account; the two identities may use different email addresses.
     // No trustedProviders: a trusted provider would let a sign-in with an unverified provider email
-    // take over the Payleor account with that email.
+    // take over the account with that email.
     account: {
       accountLinking: {
         allowDifferentEmails: true,
