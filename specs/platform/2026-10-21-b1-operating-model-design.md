@@ -111,6 +111,10 @@ Before B1, one mechanical PR:
 
 AGT-16, AGT-19 and AGT-37 as written, plus a new "B1: operating model" section: the rulebook editor and publish; terms accepted on the request form; the agreement accepted on join; the update-window warning and a strike; client-silence auto-complete; a late-refund proposal confirmed; a tier deposit; the leaving notice; a dispute run; a notice opt-out.
 
-## 10. Out of scope
+## 10. Dependencies
+
+Every new or upgraded dependency is a version published at least 14 days earlier, unless a security fix needs a newer one (Mouhamed, 2026-10-21). B1 pins `@json-render/core` and `@json-render/react` at **0.21.0** (2026-09-18; 0.21.1 of 2026-10-13 is too recent). `files-sdk` (unified storage: `r2`, `s3`, `memory`) is to replace the platform's own `FileStore` in B2 or M, at 3.0.0 (2026-10-09, eligible from 2026-10-23) or later; B1 does not touch files.
+
+## 11. Out of scope
 
 API keys, webhook delivery, seller MCP tools and the API skill (B2); the AI importer (D); Cloudflare Email Sending until it leaves beta; publishing the OSS packages (after Nov 12, with the rename).
