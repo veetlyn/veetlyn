@@ -3,7 +3,7 @@
 //
 // The tunnel uses the production host layout on TUNNEL_DOMAIN (D): the web app on D and every
 // subdomain of D, the api on api.D. With TUNNEL_STORE_DOMAIN (S), stores move to *.S as they do in
-// production (PLATFORM_DOMAIN payleor.com, STORE_DOMAIN payleor.app).
+// production (PLATFORM_DOMAIN is the platform zone, STORE_DOMAIN the store zone).
 
 export type LocalStage = "dev" | "preprod";
 
