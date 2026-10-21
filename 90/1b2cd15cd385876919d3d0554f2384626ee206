@@ -1,0 +1,21 @@
+specs/platform/plans/2026-10-15-c-plugin.md
+  s_ec180faf4f9b2e::t_85f771015074d9 405-406,426
+specs/platform/plans/evidence/c-golden-prompts.md
+  s_ec180faf4f9b2e::t_569d2fc8b7ebe5 5,9-18,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "901b2cd15cd385876919d3d0554f2384626ee206",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
