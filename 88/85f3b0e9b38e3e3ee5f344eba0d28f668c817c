@@ -1,0 +1,63 @@
+apps/web/src/components/legal/mdx-components.tsx
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 3,6
+packages/api/src/use-cases/project-clients.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 34
+packages/email/src/transport.ts
+  s_ec180faf4f9b2e::t_4b3cf87e413db5 10,66,75
+packages/api/src/context.ts
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 25-26
+packages/api/src/routers/checkout.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 122,477
+packages/api/src/routers/client-conversation.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 46
+packages/email/src/senders.test.ts
+  s_ec180faf4f9b2e::t_4b3cf87e413db5 7-12,14,18,20,25,27,32,34,38,40,44,48,50,54-55,61
+packages/email/src/transport.test.ts
+  s_ec180faf4f9b2e::t_4b3cf87e413db5 14
+  s_ec180faf4f9b2e::t_ee78ff4d776da0 61,86
+packages/email/src/senders.ts
+  s_ec180faf4f9b2e::t_4b3cf87e413db5 8-12,14,16-19,34,37,41
+packages/api/src/routers/project.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 1783,2017
+apps/server/src/mcp/tools.ts
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 27
+apps/server/src/index.ts
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 115
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 751
+apps/server/src/mcp/oauth.test.ts
+  s_ec180faf4f9b2e::t_332b406f10867e 31
+packages/api/src/actions/requests.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 49
+packages/email/src/mailer.ts
+  s_ec180faf4f9b2e::t_4b3cf87e413db5 5
+apps/web/src/app/layout.tsx
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 6,8,34-36
+apps/server/src/services.ts
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 43
+packages/api/src/routers/order.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 52
+apps/web/src/components/platform-name.tsx
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 1-19
+apps/server/src/mcp/tools.test.ts
+  s_ec180faf4f9b2e::t_c52f0f2e9e290d 85
+  s_ec180faf4f9b2e::t_332b406f10867e 93
+apps/web/src/lib/platform.ts
+  s_ec180faf4f9b2e::t_ff207c5279eaa4 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8885f3b0e9b38e3e3ee5f344eba0d28f668c817c",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
