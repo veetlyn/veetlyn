@@ -56,7 +56,7 @@ describe("services spec §5.3 worked example", () => {
     expect(teamCutMinor(85_000, CUT_BPS) + managementFeeMinor(quote, FEE_BPS)).toBe(22_750);
   });
 
-  it("takes Payleor's 1% Team fee: $6 on $600 and $3.50 on $350", () => {
+  it("takes the platform's 1% Team fee: $6 on $600 and $3.50 on $350", () => {
     expect(platformFeeMinor(60_000, 100)).toBe(600);
     expect(platformFeeMinor(35_000, 100)).toBe(350);
   });

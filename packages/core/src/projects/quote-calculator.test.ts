@@ -14,7 +14,7 @@ const team = {
 describe("quoteForMemberTarget", () => {
   // bpsOf rounds half up. Quote 1000.00: cut 150.00, earnings 850.00, US flat payout fee 0.25 → 849.75.
   // Quote 999.99: cut round(149.9985) = 150.00, earnings 849.99 → 849.74, one cent short. So 1000.00 is the smallest.
-  // Client pays 1000.00 + 100.00; checkout fee ceil(1100.00 × 3.49%) + 0.49 = 38.39 + 0.49 = 38.88; Payleor's fee 1% = 11.00;
+  // Client pays 1000.00 + 100.00; checkout fee ceil(1100.00 × 3.49%) + 0.49 = 38.39 + 0.49 = 38.88; the platform's fee 1% = 11.00;
   // team keeps 150.00 + 100.00 − 38.88 − 11.00 = 200.12.
   it("finds the smallest quote that leaves the member at least the target after the payout fee", () => {
     expect(quoteForMemberTarget({ ...team, targetNetMinor: 84_975 })).toEqual({

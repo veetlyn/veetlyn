@@ -9,7 +9,7 @@ export type SellerPlan = {
   audience: SellerAudience;
   // US cents per month. The yearly price is billed once a year as 12 times this amount.
   priceCents: Record<BillingInterval, number>;
-  // Payleor's fee on each client payment and store order in basis points, taken as PayPal platform_fees.
+  // The platform's fee on each client payment and store order in basis points, taken as PayPal platform_fees.
   feeBps: number;
   members: number;
   storageGb: number;
@@ -40,7 +40,7 @@ export const SELLER_PLANS: readonly SellerPlan[] = [
     payoutAgent: false,
     publicApi: false,
     prioritySupport: false,
-    highlights: ["1 person", "Your own seller page", "Client pay pages and deliveries", "Listed in the Payleor network"],
+    highlights: ["1 person", "Your own seller page", "Client pay pages and deliveries", "Listed in the seller network"],
   },
   {
     id: "team",

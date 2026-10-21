@@ -184,11 +184,11 @@ export const payment = pgTable(
     quotePartMinor: minor("quote_part_minor").notNull(),
     managementFeeMinor: minor("management_fee_minor").notNull(),
     amountMinor: minor("amount_minor").notNull(),
-    // Payleor's fee: set at order creation at the plan's rate, then replaced by the fee PayPal charged once known.
+    // The platform's fee: set at order creation at the plan's rate, then replaced by the fee PayPal charged once known.
     platformFeeMinor: minor("platform_fee_minor"),
     // PayPal's fee on the capture, from its seller receivable breakdown; null until a fact carried it (R1c).
     paypalFeeMinor: minor("paypal_fee_minor"),
-    // What PayPal has given back to the client so far, whether Payleor asked for it or the seller did.
+    // What PayPal has given back to the client so far, whether the platform asked for it or the seller did.
     refundedMinor: minor("refunded_minor").notNull().default(0),
     reviewReason: text("review_reason").$type<CaptureReviewReason>(),
     lines: jsonb("lines").$type<PaymentLine[]>().notNull(),

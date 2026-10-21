@@ -7,7 +7,7 @@ import { type LedgerTransferDraft, transferFromMoves } from "./transfers";
 
 type ProjectPosting = { currency: MoneyCurrency; projectId: string };
 
-// The team bears PayPal's fee and Payleor's platform fee (services spec §5); both leave the team's PayPal
+// The team bears PayPal's fee and the platform fee (services spec §5); both leave the team's PayPal
 // balance at capture. Null when PayPal charged nothing.
 export function paymentFeesTransfer(
   input: ProjectPosting & { paymentId: string; paypalFeeMinor: number; platformFeeMinor: number },
@@ -171,7 +171,7 @@ export function completionTransfer(
   });
 }
 
-// Refund on completion or cancel, recorded when Payleor asks PayPal for it.
+// Refund on completion or cancel, recorded when the platform asks PayPal for it.
 export function refundRequestedTransfer(
   input: ProjectPosting & { refundId: string; quotePartMinor: number; managementFeeMinor: number },
 ): LedgerTransferDraft {

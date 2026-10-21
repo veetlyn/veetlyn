@@ -15,12 +15,12 @@ describe("store policies", () => {
 
   it("builds the policy URLs from the store's base URL, with or without a trailing slash", () => {
     const expected = {
-      returns: "https://acme.payleor.site/policies/returns",
-      shipping: "https://acme.payleor.site/policies/shipping",
-      terms: "https://acme.payleor.site/policies/terms",
-      privacy: "https://acme.payleor.site/policies/privacy",
+      returns: "https://acme.stores.test/policies/returns",
+      shipping: "https://acme.stores.test/policies/shipping",
+      terms: "https://acme.stores.test/policies/terms",
+      privacy: "https://acme.stores.test/policies/privacy",
     };
-    expect(storePolicyUrls("https://acme.payleor.site")).toEqual(expected);
-    expect(storePolicyUrls("https://acme.payleor.site/")).toEqual(expected);
+    expect(storePolicyUrls("https://acme.stores.test")).toEqual(expected);
+    expect(storePolicyUrls("https://acme.stores.test/")).toEqual(expected);
   });
 });

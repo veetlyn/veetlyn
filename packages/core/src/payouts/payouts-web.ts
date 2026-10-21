@@ -145,10 +145,10 @@ function logMoney(cell: string): LogMoney | null {
   const match = /^([\d,.]*?)(?:[,.](\d{2}))?$/.exec(number);
   const whole = match?.[1]?.replace(/[,.]/g, "") ?? "";
   if (!match || (whole === "" && match[2] === undefined)) {
-    throw new PayoutsWebError(`PayPal's log has an amount Payleor cannot read: "${text}".`);
+    throw new PayoutsWebError(`PayPal's log has an amount that cannot be read: "${text}".`);
   }
   const minor = Number(whole || "0") * 100 + Number(match[2] ?? "0");
-  if (!Number.isSafeInteger(minor)) throw new PayoutsWebError(`PayPal's log has an amount Payleor cannot read: "${text}".`);
+  if (!Number.isSafeInteger(minor)) throw new PayoutsWebError(`PayPal's log has an amount that cannot be read: "${text}".`);
   return { minor, currency };
 }
 

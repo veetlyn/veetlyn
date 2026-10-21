@@ -26,7 +26,7 @@ describe("publishProblem", () => {
 
   it("refuses a suspended seller before anything else", () => {
     expect(publishProblem({ ...ready, status: "suspended", paypalMerchantId: null })).toBe(
-      "This seller is suspended. Contact support@payleor.com.",
+      "This seller is suspended. Contact support.",
     );
   });
 });

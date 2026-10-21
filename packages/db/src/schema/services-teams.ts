@@ -58,7 +58,7 @@ export const servicesTeamSettings = pgTable(
   (_table) => [check("services_team_settings_bio_check", sql`char_length(bio) <= 280`)],
 );
 
-// S2: a one-time code an admin creates in the team admin and runs as /payleor link in their server
+// S2: a one-time code an admin creates in the team admin and runs as /platform link in their server
 // (services spec §4.2); consumed by deleting it (see the discord repository).
 export const discordLinkCode = pgTable(
   "discord_link_code",

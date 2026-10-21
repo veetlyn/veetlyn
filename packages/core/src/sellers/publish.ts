@@ -9,7 +9,7 @@ export type PublishState = {
   listedCount: number;
 };
 
-export const SUSPENDED_SELLER_MESSAGE = "This seller is suspended. Contact support@payleor.com.";
+export const SUSPENDED_SELLER_MESSAGE = "This seller is suspended. Contact support.";
 
 // Sellers design §3.2: a seller publishes once it can take payments and has something to sell.
 export function publishProblem(state: PublishState): string | null {

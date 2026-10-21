@@ -41,7 +41,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   // Trust and brands
   "security",
   "abuse",
-  "payleor",
+  "platform",
   "paypal",
   "venmo",
   "braintree",
