@@ -4,7 +4,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { CONTACT_EMAIL } from "@/content/legal/meta";
 import { AUDIENCES } from "@/content/site/audiences";
 
-const PAYLEOR_LINKS = [
+const PLATFORM_LINKS = [
   ["/network", "Payleor Network"],
   ["/discover", "Discover"],
   ["/visibility", "Get found"],
@@ -33,7 +33,7 @@ export default function SiteFooter() {
       </div>
       <div>
         <b>Payleor</b>
-        {PAYLEOR_LINKS.map(([href, label]) => (
+        {PLATFORM_LINKS.map(([href, label]) => (
           <Link key={href} href={href}>
             {label}
           </Link>

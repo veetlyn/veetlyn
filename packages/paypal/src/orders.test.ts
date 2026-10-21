@@ -21,7 +21,7 @@ function clientWith(respond: (url: string) => Response) {
     environment: "sandbox",
     fetch,
     sleep: () => Promise.resolve(),
-    partnerAttributionId: "PAYLEOR_BN",
+    partnerAttributionId: "PLATFORM_BN",
   });
   return { client, requests };
 }
@@ -61,7 +61,7 @@ describe("orders.create", () => {
     expect(call.url).toBe("https://api-m.sandbox.paypal.com/v2/checkout/orders");
     expect(call.headers.get("paypal-request-id")).toBe("order:pay-1:abc");
     expect(call.headers.get("paypal-auth-assertion")).toBe(ASSERTION);
-    expect(call.headers.get("paypal-partner-attribution-id")).toBe("PAYLEOR_BN");
+    expect(call.headers.get("paypal-partner-attribution-id")).toBe("PLATFORM_BN");
     expect(JSON.parse(call.body ?? "")).toEqual({
       intent: "CAPTURE",
       purchase_units: [

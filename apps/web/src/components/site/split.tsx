@@ -1,6 +1,6 @@
 import { usdCents } from "@/lib/site/examples";
 
-export type SplitPart = { label: string; minor: number; tone: "brand" | "ink" | "paypal" | "payleor" };
+export type SplitPart = { label: string; minor: number; tone: "brand" | "ink" | "paypal" | "platform" };
 
 // Where one payment goes, as a bar and its legend. The story grows the bar's parts when its scene is on.
 export default function Split({ parts }: { parts: readonly SplitPart[] }) {

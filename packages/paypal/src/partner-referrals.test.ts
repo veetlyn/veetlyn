@@ -31,7 +31,7 @@ describe("partnerReferrals.create", () => {
       environment: "sandbox",
       fetch,
       sleep: () => Promise.resolve(),
-      partnerAttributionId: "PAYLEOR_BN",
+      partnerAttributionId: "PLATFORM_BN",
     });
 
     const referral = await client.partnerReferrals.create({
@@ -44,7 +44,7 @@ describe("partnerReferrals.create", () => {
     expect(call.method).toBe("POST");
     expect(call.url).toBe("https://api-m.sandbox.paypal.com/v2/customer/partner-referrals");
     expect(call.headers.get("paypal-request-id")).toBe("partner-referral:team-1:abc");
-    expect(call.headers.get("paypal-partner-attribution-id")).toBe("PAYLEOR_BN");
+    expect(call.headers.get("paypal-partner-attribution-id")).toBe("PLATFORM_BN");
     expect(JSON.parse(call.body ?? "")).toEqual({
       tracking_id: "team-1",
       partner_config_override: { return_url: "https://admin.example.com/api/paypal/onboarding/return" },

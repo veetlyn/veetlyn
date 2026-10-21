@@ -632,5 +632,5 @@
 .site-root .tone-brand { --c: var(--brand); }
 .site-root .tone-ink { --c: var(--foreground); }
 .site-root .tone-paypal { --c: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
-.site-root .tone-payleor { --c: var(--muted-foreground); }
+.site-root .tone-platform { --c: var(--muted-foreground); }
 .site-root .split .bar span[class^="tone-"] { background: var(--c); }

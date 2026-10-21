@@ -67,7 +67,7 @@ function makePayPal(
     }),
     partnerId: "PARTNER42",
     returnUrl: RETURN_URL,
-    sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+    sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
     onTeamMerchantChanged,
   };
 }

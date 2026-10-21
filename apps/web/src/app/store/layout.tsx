@@ -12,7 +12,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   const { site } = await getPlatformOrigins();
   const pageFor = (policy: StorePolicy) =>
     info.product === "services" ? SELLER_POLICY_PAGES.get(policy) : STORE_POLICY_PAGES[policy];
-  const payleorLinks = [
+  const platformLinks = [
     { href: `${site}/legal/terms`, label: "Payleor terms" },
     { href: `${site}/legal/privacy`, label: "Payleor privacy" },
     { href: `${site}/legal/acceptable-use`, label: "Acceptable use" },
@@ -34,7 +34,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
             <a href={site} className="hover:text-foreground">
               Powered by Payleor
             </a>
-            {payleorLinks.map(({ href, label }) => (
+            {platformLinks.map(({ href, label }) => (
               <a key={href} href={href} className="hover:text-foreground">
                 {label}
               </a>

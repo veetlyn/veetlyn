@@ -21,7 +21,7 @@ const amadouDeposit = depositDue(amadou.quoteMinor, SOLO_MANAGEMENT_FEE_BPS).quo
 const AMADOU_SPLIT = [
   { label: "You", minor: amadou.keptMinor, tone: "brand" },
   { label: "PayPal", minor: amadou.paypalMinor, tone: "paypal" },
-  { label: `Payleor, ${soloFee} and ${formatOrderFee(NETWORK_FEE_BPS)} once`, minor: amadou.payleorMinor, tone: "payleor" },
+  { label: `Payleor, ${soloFee} and ${formatOrderFee(NETWORK_FEE_BPS)} once`, minor: amadou.platformMinor, tone: "platform" },
 ] as const;
 
 export const metadata = pageMetadata({

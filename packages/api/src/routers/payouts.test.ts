@@ -149,7 +149,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       client: client("partner-client-id", "partner-secret"),
       partnerId: PARTNER_ID,
       returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
-      sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+      sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
     };
     return { payouts, paypal };
   }

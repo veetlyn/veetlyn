@@ -76,11 +76,11 @@ function makePayPal(fetchImpl: Parameters<typeof createPayPalClient>[0]["fetch"]
       environment: "sandbox",
       fetch: fetchImpl,
       sleep: () => Promise.resolve(),
-      partnerAttributionId: "PAYLEOR_BN",
+      partnerAttributionId: "PLATFORM_BN",
     }),
     partnerId: "PARTNER42",
     returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
-    sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+    sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
   };
 }
 
@@ -184,7 +184,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         team: { name: "Pixel Shop" },
         paypal: {
           clientId: "partner-client-id",
-          partnerAttributionId: "PAYLEOR_BN",
+          partnerAttributionId: "PLATFORM_BN",
           environment: "sandbox",
           merchantId: "SELLER1",
         },

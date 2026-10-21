@@ -228,7 +228,7 @@ describe("paymentFeesTransfer", () => {
       entries: [
         { account: "team_revenue", currency: "USD", amountMinor: -618 },
         { account: "paypal_fees", currency: "USD", amountMinor: 498 },
-        { account: "payleor_fees", currency: "USD", amountMinor: 120 },
+        { account: "platform_fees", currency: "USD", amountMinor: 120 },
       ],
     });
   });
@@ -262,7 +262,7 @@ describe("order postings", () => {
       expect.arrayContaining([
         { account: "team_revenue", currency: "USD", amountMinor: -134 },
         { account: "paypal_fees", currency: "USD", amountMinor: 115 },
-        { account: "payleor_fees", currency: "USD", amountMinor: 19 },
+        { account: "platform_fees", currency: "USD", amountMinor: 19 },
       ]),
     );
     expect(orderFeesTransfer({ currency: "USD", orderId: "o1", paypalFeeMinor: 0, platformFeeMinor: 0 })).toBeNull();
@@ -291,7 +291,7 @@ describe("refund postings", () => {
         entries: [
           { account: "paypal_fees", currency: "USD", amountMinor: -19 },
           { account: "team_revenue", currency: "USD", amountMinor: 24 },
-          { account: "payleor_fees", currency: "USD", amountMinor: -5 },
+          { account: "platform_fees", currency: "USD", amountMinor: -5 },
         ],
       },
     },

@@ -1005,7 +1005,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           }),
           partnerId: "PARTNER42",
           returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
-          sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+          sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
         };
         const refundCalls = () => api.requests.filter((r: RecordedRequest) => r.url.includes("/v2/payments/captures/"));
         return { paypal, refundCalls };

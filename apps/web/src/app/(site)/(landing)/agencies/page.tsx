@@ -20,7 +20,7 @@ const WALK_CREW_SPLIT = [
   { label: "Amadou", minor: walkCrew.memberMinor, tone: "brand" },
   { label: "Walk Crew", minor: walkCrew.teamMinor, tone: "ink" },
   { label: "PayPal", minor: walkCrew.paypalMinor, tone: "paypal" },
-  { label: `Payleor, ${formatOrderFee(EXAMPLE_TEAM.platformFeeBps)}`, minor: walkCrew.payleorMinor, tone: "payleor" },
+  { label: `Payleor, ${formatOrderFee(EXAMPLE_TEAM.platformFeeBps)}`, minor: walkCrew.platformMinor, tone: "platform" },
 ] as const;
 
 export const metadata = pageMetadata({
