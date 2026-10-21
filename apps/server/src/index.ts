@@ -104,6 +104,7 @@ app.all("/mcp", (c) => {
     {
       actions: {
         db: c.get("db"),
+        platformName: email.platformName,
         files: mcpFiles,
         auth: c.get("auth"),
         paypal: getPayPalServices(),
@@ -133,7 +134,7 @@ app.use("/trpc/*", (c, next) =>
 
 app.route("/api/paypal/onboarding/return", createPayPalOnboardingRoute(getPayPalServices()));
 
-// The URL registered on the partner app (R1c plan, fact 1); api.payleor.com reaches this Worker directly.
+// The URL registered on the partner app (R1c plan, fact 1); api.example.com reaches this Worker directly.
 app.route(
   "/webhooks/paypal",
   createPayPalWebhookRoute({

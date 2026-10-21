@@ -37,7 +37,7 @@ export function createMcpRoute(
       // A disconnect or a password reset removes the consent; the token must also postdate the current one.
       const grantedAt = await consentGrantedAt(base.actions.db, { userId, clientId });
       if (!grantedAt || iat < Math.floor(grantedAt.getTime() / 1000)) {
-        return new Response("This connection was ended. Connect Payleor again.", { status: 401 });
+        return new Response(`This connection was ended. Connect ${base.platformName} again.`, { status: 401 });
       }
       base.log.set({ mcp: { userId, clientId } });
       return mcpRequestHandler({ ...base, userId }, input.origins)(request);

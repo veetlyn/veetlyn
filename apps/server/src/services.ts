@@ -27,13 +27,14 @@ export function getDb(): Database {
 export function createAuth(database: Database, executionCtx: ExecutionContext) {
   return createConfiguredAuth(ENV, database, {
     mailer: createMailer(ENV),
+    platformName: ENV.PLATFORM_NAME,
     waitUntil: (promise) => executionCtx.waitUntil(promise),
     onEmailError: logEmailError,
   });
 }
 
 // A mailer per request, as in createAuth; links in emails point at the site and dash origins derived from
-// BETTER_AUTH_URL (http://dash.localhost:3001 in dev, https://dash.payleor.com in production).
+// BETTER_AUTH_URL (http://dash.localhost:3001 in dev, https://dash.example.com in production).
 export function getEmailServices(executionCtx: { waitUntil(promise: Promise<unknown>): void }): EmailServices {
   const dashOrigin = ENV.BETTER_AUTH_URL;
   return {
@@ -86,7 +87,7 @@ async function loadPayoutServices(): Promise<PayoutServices | undefined> {
     return undefined;
   }
   const environment: TenantEnvironment = ENV.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
-  return createPayoutServices({ secretKey, environment, tokenKv: ENV.STORE_CACHE });
+  return createPayoutServices({ secretKey, platformName: ENV.PLATFORM_NAME, environment, tokenKv: ENV.STORE_CACHE });
 }
 
 // Postgres messages can quote the row's values (the caller's IP), so only the error's name and code are logged.

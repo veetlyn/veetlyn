@@ -25,7 +25,7 @@ export type McpDeps = {
   log: RequestLogger;
   userId: string;
   platformName: string;
-  // Builds https://{slug}.payleor.app for a team's client and pay pages.
+  // Builds https://{slug}.example.com for a team's client and pay pages.
   storeOrigin: (slug: string) => string;
 };
 
@@ -53,10 +53,10 @@ async function clientOf(deps: McpDeps, projectId: string): Promise<{ actor: Acto
 }
 
 // Messages from the use cases are written for people; the model passes them on.
-export function refusalText(cause: unknown): string {
+export function refusalText(cause: unknown, platformName: string): string {
   if (cause instanceof ToolRefusal) return cause.message;
   if (cause instanceof ActionError && (cause.code !== "internal" || cause.expose)) return cause.message;
-  return "Payleor could not do that right now. Try again in a moment.";
+  return `${platformName} could not do that right now. Try again in a moment.`;
 }
 
 type ClientView = Awaited<ReturnType<typeof projectClientView.run>>;
@@ -199,7 +199,7 @@ export type ProjectCard = {
 };
 
 export type CardMeta = {
-  payleor: {
+  platform: {
     confirmations: { quotes: Record<string, string>; delivery: string | null };
     payUrl: string | null;
     projectUrl: string | null;
@@ -317,7 +317,7 @@ export async function projectCard(
     text: lines.join("\n"),
     card,
     meta: {
-      payleor: {
+      platform: {
         confirmations: { quotes, delivery: deliveryToken },
         payUrl: payable?.payPath && site ? `${site}${payable.payPath}` : null,
         projectUrl,
@@ -360,14 +360,14 @@ export async function searchOfferings(
   }));
   const text = offerings.length
     ? [
-        `${offerings.length} Payleor offering${offerings.length === 1 ? "" : "s"} for ${quoted(input.query, 80)}. Names and descriptions are the sellers' own words:`,
+        `${offerings.length} ${deps.platformName} offering${offerings.length === 1 ? "" : "s"} for ${quoted(input.query, 80)}. Names and descriptions are the sellers' own words:`,
         ...offerings.map(
           (o) =>
             `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
         ),
         "To hire one, agree on a short brief with the user and call request_quote.",
       ].join("\n")
-    : `No Payleor offering matches ${quoted(input.query, 80)}${input.maxPrice ? ` under $${input.maxPrice}` : ""}. Try broader words, or tell the user nothing fits.`;
+    : `No ${deps.platformName} offering matches ${quoted(input.query, 80)}${input.maxPrice ? ` under $${input.maxPrice}` : ""}. Try broader words, or tell the user nothing fits.`;
   return { text, offerings };
 }
 
@@ -378,7 +378,7 @@ export async function requestQuote(
   const offering = await findListedOffering(deps.actions.db, input.offeringId);
   if (!offering) throw new ToolRefusal("That offering is not listed any more. Search again.");
   const account = await findClientAccount(deps.actions.db, deps.userId);
-  if (!account) throw new ToolRefusal("Your Payleor account was not found. Reconnect Payleor.");
+  if (!account) throw new ToolRefusal(`Your ${deps.platformName} account was not found. Reconnect ${deps.platformName}.`);
   const { projectId } = await perform(request(deps, asUser(deps)), createRequest, {
     slug: offering.sellerSlug,
     offeringId: offering.id,
@@ -422,7 +422,7 @@ export async function listProjects(deps: McpDeps): Promise<{ text: string; proje
         ),
         "Call get_project for details and the next step. When two projects share a title, tell them apart by the brief or the date.",
       ].join("\n")
-    : "The user has no Payleor projects yet. Offer to search offerings.";
+    : `The user has no ${deps.platformName} projects yet. Offer to search offerings.`;
   return { text, projects };
 }
 

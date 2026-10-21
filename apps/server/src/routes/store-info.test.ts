@@ -46,7 +46,7 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
     const studio = await activeStudio();
 
     const response = await appFor(studio).request(
-      "https://acme-studio.payleor.app/api/store",
+      "https://acme-studio.platform.test/api/store",
     );
 
     expect(await response.json()).toEqual({
@@ -66,7 +66,7 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
     });
 
     const response = await appFor(store).request(
-      "https://acme.payleor.app/api/store/policy-info",
+      "https://acme.platform.test/api/store/policy-info",
     );
 
     expect(await response.json()).toEqual({
@@ -88,7 +88,7 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
     });
 
     const response = await appFor(studio).request(
-      "https://acme-studio.payleor.app/api/store/page",
+      "https://acme-studio.platform.test/api/store/page",
     );
 
     expect(response.status).toBe(200);
@@ -108,7 +108,7 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
 
   it("reports that platform hosts have no seller page", async () => {
     const response = await appFor(null).request(
-      "https://api.payleor.app/api/store/page",
+      "https://api.platform.test/api/store/page",
     );
 
     expect(response.status).toBe(404);
@@ -120,7 +120,7 @@ describe.skipIf(!hasTestDatabase)("store info routes", () => {
     await truncateAll(db);
 
     const response = await appFor(studio).request(
-      "https://acme-studio.payleor.app/api/store/page",
+      "https://acme-studio.platform.test/api/store/page",
     );
 
     expect(response.status).toBe(404);
