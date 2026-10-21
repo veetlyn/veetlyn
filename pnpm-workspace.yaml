@@ -1,6 +1,10 @@
 packages:
   - apps/*
   - packages/*
+# Only versions published at least 14 days ago resolve (20160 minutes). A security fix that cannot wait goes in
+# minimumReleaseAgeExclude with the advisory id in a comment.
+minimumReleaseAge: 20160
+minimumReleaseAgeExclude: []
 allowBuilds:
   esbuild: true
   sharp: true
