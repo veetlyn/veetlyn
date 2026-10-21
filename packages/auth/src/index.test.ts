@@ -199,7 +199,7 @@ describe.skipIf(!hasTestDatabase)("email verification", () => {
       sender: "accounts",
       tag: "verification",
       to: "ada@example.com",
-      subject: "Verify your email for Payleor",
+      subject: "Verify your email for Platform",
     });
     const link = linkIn(message?.text ?? "");
     expect(link.origin + link.pathname).toBe(`${BASE}/api/auth/verify-email`);
@@ -258,7 +258,7 @@ describe.skipIf(!hasTestDatabase)("password reset", () => {
   async function resetToken(email: string): Promise<string> {
     await auth.api.requestPasswordReset({ body: { email, redirectTo: "/reset-password" } });
     await settle();
-    const message = mailer.sent.find((m) => m.subject === "Reset your Payleor password");
+    const message = mailer.sent.find((m) => m.subject === "Reset your Platform password");
     expect(message).toMatchObject({ sender: "accounts", tag: "password-reset", to: email });
     const response = await auth.handler(new Request(linkIn(message?.text ?? "")));
     const location = new URL(response.headers.get("location") ?? "", BASE);
@@ -439,7 +439,7 @@ describe.skipIf(!hasTestDatabase)("Discord sign-in and linking", () => {
     const context = await auth.$context;
 
     expect(context.options.account?.accountLinking?.allowDifferentEmails).toBe(true);
-    // A trusted provider would link a Discord or PayPal sign-in to any Payleor user with the same,
+    // A trusted provider would link a Discord or PayPal sign-in to any platform user with the same,
     // possibly unverified, provider email (Fact 22).
     expect(context.trustedProviders).toEqual([]);
   });
