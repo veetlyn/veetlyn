@@ -42,6 +42,7 @@ function createTeamTokenCache(kv: JsonKv, environment: TenantEnvironment, app: T
 // Team clients carry no partner attribution id: they are the team's own calls with its own REST app.
 export function createPayoutServices(input: {
   secretKey: CryptoKey;
+  platformName: string;
   environment: TenantEnvironment;
   tokenKv: JsonKv;
   fetch?: FetchLike;
@@ -49,6 +50,7 @@ export function createPayoutServices(input: {
   return {
     secretKey: input.secretKey,
     keyId: "v1",
+    platformName: input.platformName,
     clientFor(app) {
       return createPayPalClient({
         clientId: app.clientId,

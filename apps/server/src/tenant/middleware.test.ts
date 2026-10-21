@@ -20,8 +20,8 @@ const closed: StoreRecord = { ...acme, id: "store-2", slug: "closed", status: "s
 const draft: StoreRecord = { ...acme, id: "store-3", slug: "draft", status: "draft" };
 const studio: StoreRecord = { ...acme, id: "team-4", slug: "studio", name: "Studio", product: "services" };
 
-const SAME: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.app" };
-const SPLIT: HostDomains = { platformDomain: "payleor.app", storeDomain: "payleor.site" };
+const SAME: HostDomains = { platformDomain: "platform.test", storeDomain: "platform.test" };
+const SPLIT: HostDomains = { platformDomain: "platform.test", storeDomain: "stores.test" };
 
 function buildApp(domains: HostDomains = SAME) {
   const directoryCalls: string[] = [];
@@ -65,7 +65,7 @@ describe("tenantMiddleware", () => {
   it("resolves a store subdomain and exposes it to routes", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://acme.payleor.app/api/store");
+    const response = await app.request("https://acme.platform.test/api/store");
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme", product: "store" });
@@ -74,7 +74,7 @@ describe("tenantMiddleware", () => {
   it("resolves an active services team with its product", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://studio.payleor.app/api/store");
+    const response = await app.request("https://studio.platform.test/api/store");
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ storeId: "team-4", slug: "studio", name: "Studio", product: "services" });
@@ -83,7 +83,7 @@ describe("tenantMiddleware", () => {
   it("returns 404 for the dropped path-based store URLs", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://store.payleor.app/acme/api/store");
+    const response = await app.request("https://store.platform.test/acme/api/store");
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "store_not_found" });
@@ -92,8 +92,8 @@ describe("tenantMiddleware", () => {
   it("resolves stores on a separate store domain only", async () => {
     const { app } = buildApp(SPLIT);
 
-    const onStoreDomain = await app.request("https://acme.payleor.site/api/store");
-    const onPlatformDomain = await app.request("https://acme.payleor.app/api/store");
+    const onStoreDomain = await app.request("https://acme.stores.test/api/store");
+    const onPlatformDomain = await app.request("https://acme.platform.test/api/store");
 
     expect(await onStoreDomain.json()).toEqual({ storeId: "store-1", slug: "acme", name: "Acme", product: "store" });
     expect(onPlatformDomain.status).toBe(404);
@@ -110,7 +110,7 @@ describe("tenantMiddleware", () => {
   it("passes platform hosts through without a tenant", async () => {
     const { app, directoryCalls } = buildApp();
 
-    const response = await app.request("https://api.payleor.app/anything");
+    const response = await app.request("https://api.platform.test/anything");
 
     expect(await response.json()).toEqual({ target: "platform", store: null });
     expect(directoryCalls).toEqual([]);
@@ -120,10 +120,10 @@ describe("tenantMiddleware", () => {
     const { app } = buildApp();
 
     for (const url of [
-      "https://ghost.payleor.app/",
-      "https://draft.payleor.app/",
-      "https://closed.payleor.app/",
-      "https://docs.payleor.app/",
+      "https://ghost.platform.test/",
+      "https://draft.platform.test/",
+      "https://closed.platform.test/",
+      "https://docs.platform.test/",
     ]) {
       const response = await app.request(url);
       expect(response.status).toBe(404);
@@ -134,8 +134,8 @@ describe("tenantMiddleware", () => {
   it("serves repeat lookups from the cache", async () => {
     const { app, directoryCalls } = buildApp();
 
-    await app.request("https://acme.payleor.app/");
-    await app.request("https://acme.payleor.app/");
+    await app.request("https://acme.platform.test/");
+    await app.request("https://acme.platform.test/");
 
     expect(directoryCalls).toEqual(["slug:acme"]);
   });
@@ -143,7 +143,7 @@ describe("tenantMiddleware", () => {
   it("reports that platform hosts have no store info", async () => {
     const { app } = buildApp();
 
-    const response = await app.request("https://api.payleor.app/api/store");
+    const response = await app.request("https://api.platform.test/api/store");
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "not_a_store_host" });

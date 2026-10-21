@@ -2,13 +2,14 @@
 // turns off bun's own .env loading (Fact 21). Never log the token or the request headers.
 import { z } from "zod";
 
-import { DISCORD_COMMANDS } from "./commands";
+import { discordCommands } from "./commands";
 
 const applicationId = process.env.DISCORD_APP_ID;
 const botToken = process.env.DISCORD_BOT_TOKEN;
+const platformName = process.env.PLATFORM_NAME;
 
-if (!applicationId || !botToken) {
-  console.error("DISCORD_APP_ID and DISCORD_BOT_TOKEN are not set. Run this through `pnpm -F server discord:register`.");
+if (!applicationId || !botToken || !platformName) {
+  console.error("DISCORD_APP_ID, DISCORD_BOT_TOKEN and PLATFORM_NAME are not set. Run this through `pnpm -F server discord:register`.");
   process.exit(1);
 }
 
@@ -17,7 +18,7 @@ if (!applicationId || !botToken) {
 const response = await fetch(`https://discord.com/api/v10/applications/${applicationId}/commands`, {
   method: "PUT",
   headers: { authorization: `Bot ${botToken}`, "content-type": "application/json" },
-  body: JSON.stringify(DISCORD_COMMANDS),
+  body: JSON.stringify(discordCommands(platformName)),
 });
 
 if (!response.ok) {

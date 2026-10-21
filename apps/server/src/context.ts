@@ -3,6 +3,7 @@ import type { TenantEnvironment } from "@jendal-workspace/core";
 import type { Context as HonoContext, ExecutionContext } from "hono";
 
 import type { AppEnv } from "./app-env";
+import { ENV } from "./env.server";
 import {
   createCatalogServices,
   createFileStore,
@@ -29,6 +30,7 @@ export async function createContext(
     db: c.get("db"),
     session,
     environment,
+    platformName: ENV.PLATFORM_NAME,
     auth,
     headers,
     paypal: getPayPalServices(),

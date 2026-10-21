@@ -20,7 +20,7 @@ import {
   handleDiscordInteraction,
 } from "./interactions";
 
-const config = { applicationId: "application-1", webBaseUrl: "https://dash.payleor.test" };
+const config = { applicationId: "application-1", webBaseUrl: "https://dash.platform.test", platformName: "Platform" };
 
 function linkInteraction(discordId: string, permissions: string, code: string) {
   return {
@@ -28,7 +28,7 @@ function linkInteraction(discordId: string, permissions: string, code: string) {
     token: "token-1",
     type: 2,
     data: {
-      name: "payleor",
+      name: "platform",
       options: [{ name: "link", type: 1, options: [{ name: "code", type: 3, value: code }] }],
     },
     guild_id: "guild-1",
@@ -70,7 +70,7 @@ describe.skipIf(!hasTestDatabase)("handleDiscordInteraction", () => {
 
     expect(result).toEqual({
       kind: "reply",
-      response: { type: 4, data: { flags: 64, content: "Payleor cannot handle this interaction yet." } },
+      response: { type: 4, data: { flags: 64, content: "Platform cannot handle this interaction yet." } },
     });
   });
 
@@ -88,13 +88,13 @@ describe.skipIf(!hasTestDatabase)("handleDiscordInteraction", () => {
         type: 4,
         data: {
           flags: 64,
-          content: "Set up your PayPal payout destination on Payleor: https://dash.payleor.test/me/payouts",
+          content: "Set up your PayPal payout destination on Platform: https://dash.platform.test/me/payouts",
         },
       },
     });
   });
 
-  describe("/payleor link", () => {
+  describe("/platform link", () => {
     it("defers, then links the server for a team admin with Manage Server, consuming the code once", async () => {
       const { team } = await seedTeamAdmin("discord-admin");
       const { code } = await createDiscordLinkCode(db, team.id);
@@ -107,7 +107,7 @@ describe.skipIf(!hasTestDatabase)("handleDiscordInteraction", () => {
 
       expect(result.kind).toBe("deferred");
       if (result.kind !== "deferred") throw new Error("expected a deferred reply");
-      await expect(result.followUp).resolves.toContain("now linked to your Payleor team");
+      await expect(result.followUp).resolves.toContain("now linked to your Platform team");
       await expect(getServicesTeamSettings(db, team.id)).resolves.toMatchObject({ discordGuildId: "guild-1" });
       // The handler consumed the code, so it cannot be replayed.
       await expect(consumeDiscordLinkCode(db, code)).resolves.toBeNull();
@@ -135,7 +135,7 @@ describe.skipIf(!hasTestDatabase)("handleDiscordInteraction", () => {
       await expect(result.followUp).resolves.toContain("code is not valid");
     });
 
-    it("refuses a Discord account that is not linked to a Payleor user", async () => {
+    it("refuses a Discord account that is not linked to a Platform user", async () => {
       const { organizationId } = await seedOrganization(db);
       const team = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
       const { code } = await createDiscordLinkCode(db, team.id);
@@ -147,7 +147,7 @@ describe.skipIf(!hasTestDatabase)("handleDiscordInteraction", () => {
       );
 
       if (result.kind !== "deferred") throw new Error("expected a deferred reply");
-      await expect(result.followUp).resolves.toContain("link your Discord account to Payleor");
+      await expect(result.followUp).resolves.toContain("link your Discord account to Platform");
       await expect(getServicesTeamSettings(db, team.id)).resolves.toMatchObject({ discordGuildId: null });
     });
 

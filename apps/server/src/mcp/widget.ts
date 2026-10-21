@@ -1,7 +1,7 @@
 import { BRIDGE_VERSION } from "./bridge.generated";
 
 // Hosts cache a widget by its URI, so a changed widget gets a new one.
-export const WIDGET_URI = "ui://payleor/app-v6";
+export const WIDGET_URI = "ui://platform/app-v6";
 
 const CSS = `
   .w {
@@ -66,8 +66,9 @@ const CSS = `
 
 // Everything rendered goes through text nodes; strings from sellers and clients reach the model only framed as
 // quoted data with control characters stripped and a length cap (security audit B2).
-const SCRIPT = `
-const app = new App({ name: "payleor", version: "0.3.0" }, {}, { autoResize: true });
+const script = (platformName: string) => `
+const PLATFORM = ${JSON.stringify(platformName).replaceAll("<", "\\u003c")};
+const app = new App({ name: PLATFORM, version: "0.3.0" }, {}, { autoResize: true });
 const root = document.getElementById("root");
 let state = { data: null, meta: null };
 
@@ -99,7 +100,7 @@ async function callTool(name, args, button, notice) {
   if (button) { button.disabled = true; button.dataset.label = button.textContent; button.textContent = "Working…"; }
   try {
     const result = await app.callServerTool({ name, arguments: args });
-    if (result.isError) throw new Error(textOf(result) || "Payleor refused this action.");
+    if (result.isError) throw new Error(textOf(result) || PLATFORM + " refused this action.");
     show(result);
     return result;
   } catch (error) {
@@ -155,9 +156,9 @@ function projectsView(data) {
 
 async function refreshProject(p, button, notice) {
   const result = await callTool("get_project", { projectId: p.id }, button, notice);
-  const next = result?._meta?.payleor?.card;
+  const next = result?._meta?.platform?.card;
   if (next?.project && next.project.status !== p.status) {
-    tellModel("The user refreshed the Payleor card: the project " + quoted(p.title) + " is now " + next.project.statusLabel + ".", { projectId: p.id, status: next.project.status });
+    tellModel("The user refreshed the " + PLATFORM + " card: the project " + quoted(p.title) + " is now " + next.project.statusLabel + ".", { projectId: p.id, status: next.project.status });
   }
 }
 
@@ -188,7 +189,7 @@ function freelancerSlide(data, f, tokens, notice) {
   if (quoting && q?.status === "proposed" && token) {
     slide.append(el("div", { class: "actions" }, el("button", { class: "primary", onclick: async (e) => {
       const result = await callTool("accept_quote", { projectId: p.id, quoteId: q.id, confirmation: token }, e.currentTarget, notice);
-      if (result) tellModel("The user accepted the quote from " + quoted(f.name, 60) + " (" + money(q.amountMinor, p.currency) + ") in the Payleor card. The deposit is due next.", { projectId: p.id, quoteId: q.id });
+      if (result) tellModel("The user accepted the quote from " + quoted(f.name, 60) + " (" + money(q.amountMinor, p.currency) + ") in the " + PLATFORM + " card. The deposit is due next.", { projectId: p.id, quoteId: q.id });
     } }, "Accept quote")));
   }
   return slide;
@@ -197,7 +198,7 @@ function freelancerSlide(data, f, tokens, notice) {
 function projectView(data, meta) {
   const p = data.project;
   const notice = el("div", { class: "notice" });
-  const links = meta?.payleor ?? {};
+  const links = meta?.platform ?? {};
   const confirmations = links.confirmations ?? { quotes: {}, delivery: null };
   const has = (a) => data.actions.includes(a);
   const actions = el("div", { class: "actions" });
@@ -207,13 +208,13 @@ function projectView(data, meta) {
       if (!(await openExternal(links.payUrl))) { notice.textContent = "The pay page did not open. Use Open project page instead."; notice.className = "notice error"; return; }
       notice.className = "notice";
       notice.textContent = "PayPal checkout opened in a new tab. After paying, press Check payment.";
-      tellModel("The user opened Payleor's pay page for the " + data.payment.kind.replace("_", "-") + " of " + money(data.payment.amountMinor, p.currency) + ".", { projectId: p.id });
+      tellModel("The user opened " + PLATFORM + "'s pay page for the " + data.payment.kind.replace("_", "-") + " of " + money(data.payment.amountMinor, p.currency) + ".", { projectId: p.id });
     } }, "Pay " + money(data.payment.amountMinor, p.currency) + " with PayPal"));
     actions.append(el("button", { onclick: (e) => refreshProject(p, e.currentTarget, notice) }, "Check payment"));
   } else if (has("accept_delivery") && data.delivery && confirmations.delivery) {
     actions.append(el("button", { class: "primary", onclick: async (e) => {
       const result = await callTool("accept_delivery", { projectId: p.id, deliveryId: data.delivery.id, confirmation: confirmations.delivery }, e.currentTarget, notice);
-      if (result) tellModel("The user accepted the delivery of " + quoted(p.title) + " in the Payleor card.", { projectId: p.id });
+      if (result) tellModel("The user accepted the delivery of " + quoted(p.title) + " in the " + PLATFORM + " card.", { projectId: p.id });
     } }, "Accept delivery"));
     actions.append(el("button", { onclick: async (e) => {
       e.currentTarget.disabled = true;
@@ -223,7 +224,7 @@ function projectView(data, meta) {
   } else if (has("search")) {
     actions.append(el("button", { class: "primary", onclick: async (e) => {
       e.currentTarget.disabled = true;
-      await app.sendMessage({ role: "user", content: [{ type: "text", text: "Search Payleor again for someone else." }] }).catch(() => {});
+      await app.sendMessage({ role: "user", content: [{ type: "text", text: "Search " + PLATFORM + " again for someone else." }] }).catch(() => {});
     } }, "Search again"));
   } else {
     actions.append(el("button", { onclick: (e) => refreshProject(p, e.currentTarget, notice) }, "Refresh"));
@@ -247,7 +248,7 @@ function projectView(data, meta) {
 }
 
 function show(result) {
-  state = { data: result?._meta?.payleor?.card ?? null, meta: result?._meta ?? null };
+  state = { data: result?._meta?.platform?.card ?? null, meta: result?._meta ?? null };
   const data = state.data;
   if (!data?.view) { root.replaceChildren(el("div", { class: "card" }, el("p", { class: "cap" }, textOf(result) || "Nothing to show."))); return; }
   const views = { offerings: offeringsView, projects: projectsView, project: (d) => projectView(d, state.meta) };
@@ -261,16 +262,18 @@ await app.connect();
 applyHost(app.getHostContext());
 `;
 
-// The bridge comes from Payleor's own api host (security audit B3), served by the route in route.ts.
-export function widgetHtml(apiOrigin: string): string {
+const escapeHtml = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// The bridge comes from the platform's own api host (security audit B3), served by the route in route.ts.
+export function widgetHtml(apiOrigin: string, platformName: string): string {
   const bridge = `${apiOrigin}/mcp/bridge-${BRIDGE_VERSION}.js`;
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
-<title>Payleor</title>
+<title>${escapeHtml(platformName)}</title>
 <style>${CSS}</style></head>
 <body><div id="root" class="w" aria-live="polite"><div class="card" aria-label="Loading"><div class="sk h"></div><div class="sk s"></div><div class="sk"></div><div class="sk btn"></div></div></div>
 <script type="module">
 import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables } from "${bridge}";
-${SCRIPT}
+${script(platformName)}
 </script></body></html>`;
 }
