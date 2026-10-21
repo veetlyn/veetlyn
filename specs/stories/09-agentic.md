@@ -122,7 +122,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-09: A client connects the Payleor plugin in Claude and ChatGPT
 
-- **Actor:** client · **Surface:** Claude, ChatGPT · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client · **Surface:** Claude, ChatGPT · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** the plugin deployed on the platform hosts.
 - **Steps:**
   1. [human] Add the Payleor connector in Claude, then in ChatGPT.
@@ -135,7 +135,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-10: The client's AI searches listed offerings
 
-- **Actor:** client · **Surface:** Claude or ChatGPT · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client · **Surface:** Claude or ChatGPT · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** AGT-09; walk-crew has active offerings, listed by default; another published team has unlisted one offering and one department ("List in AI assistants" off).
 - **Steps:**
   1. [human] Ask the AI to find someone to design a logo for a bakery under $400 in 5 days.
@@ -147,7 +147,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-11: The client requests a quote from the AI
 
-- **Actor:** client · **Surface:** Claude or ChatGPT, web, email · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client · **Surface:** Claude or ChatGPT, web, email · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** AGT-10.
 - **Steps:**
   1. [human] Pick the walk-crew offering and ask the AI to request it, answering its intake questions.
@@ -158,7 +158,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-12: The client accepts a quote with the widget button
 
-- **Actor:** client · **Surface:** Claude or ChatGPT (quote widget) · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client · **Surface:** Claude or ChatGPT (quote widget) · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** the team sent a quote for the AGT-11 project.
 - **Steps:**
   1. [human] Ask the AI for the project's status; the quote widget appears.
@@ -170,7 +170,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-13: The client pays from the widget on the pay page
 
-- **Actor:** client, PayPal buyer · **Surface:** Claude or ChatGPT, web (pay page) · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client, PayPal buyer · **Surface:** Claude or ChatGPT, web (pay page) · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** AGT-12.
 - **Steps:**
   1. [human] Press **Pay $… with PayPal**; the AI client opens the pay page on `walk-crew.payleor.app/pay/{token}` (the card shows "Opens walk-crew.payleor.app").
@@ -182,7 +182,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-14: The client accepts a delivery with the widget button and pays the balance
 
-- **Actor:** client · **Surface:** Claude or ChatGPT (delivery widget), web (pay page) · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client · **Surface:** Claude or ChatGPT (delivery widget), web (pay page) · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** the freelancer delivered the AGT-13 project (on the web, or with `/deliver` after run E).
 - **Steps:**
   1. [human] Ask the AI whether the logo is ready; the delivery widget appears.
@@ -194,7 +194,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-15: The model cannot accept on the client's behalf
 
-- **Actor:** client's AI · **Surface:** Claude or ChatGPT · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client's AI · **Surface:** Claude or ChatGPT · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** an open quote (AGT-12) or a delivery waiting (AGT-14).
 - **Steps:**
   1. [human] Tell the AI to accept the quote (or the delivery) for you without pressing the widget button.
@@ -205,7 +205,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-31: The team asks the client a question and the client answers
 
-- **Actor:** freelancer, client · **Surface:** web (`{dash}`, client page on `{seller}`), Claude or ChatGPT · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** freelancer, client · **Surface:** web (`{dash}`, client page on `{seller}`), Claude or ChatGPT · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** AGT-11, a request to walk-crew in `open` mode.
 - **Steps:**
   1. As an eligible freelancer, open the request from **Open requests**, write in the Request tab's message box, tick "Ask it as a question for the client" and **Send**.
@@ -218,7 +218,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-32: Contact details are hidden until a quote is accepted
 
-- **Actor:** freelancer, client · **Surface:** web, Claude or ChatGPT · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** freelancer, client · **Surface:** web, Claude or ChatGPT · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** AGT-31.
 - **Steps:**
   1. Before any quote is accepted, post a message with an email address, a phone number, a WhatsApp link and a file link, as the freelancer and as the client.
@@ -231,7 +231,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-33: The seller declines a request with a reason
 
-- **Actor:** team admin, client · **Surface:** web (`{dash}`), Claude or ChatGPT, client page · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** team admin, client · **Surface:** web (`{dash}`), Claude or ChatGPT, client page · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** a new request to walk-crew from the AI (AGT-11).
 - **Steps:**
   1. As staff, on the project page's Conversation section, use "Decline the request": press **Decline request** once with the reason empty, then with a reason.
@@ -243,7 +243,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-34: The client compares competing quotes from one team
 
-- **Actor:** freelancers, client · **Surface:** Claude or ChatGPT, client page · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** freelancers, client · **Surface:** Claude or ChatGPT, client page · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** walk-crew in `open` mode with two or more freelancers in the offering's department; a new request from the AI (AGT-11).
 - **Steps:**
   1. Two freelancers each send a quote on the request.
@@ -255,7 +255,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-35: The client sees all their projects across teams
 
-- **Actor:** client · **Surface:** web (`{dash}/me/projects`) · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client · **Surface:** web (`{dash}/me/projects`) · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT pending
 - **Preconditions:** the client account from AGT-09 holds projects with two teams.
 - **Steps:**
   1. Sign in on `{dash}` as the client and open **Your projects as a client** in the user menu (`{dash}/me/projects`). The page lives on the dashboard host because the session cookie does not reach `{site}`.
@@ -265,7 +265,7 @@ Plan: [`2026-10-15-c-plugin.md`](../platform/plans/2026-10-15-c-plugin.md); Task
 
 ### AGT-36: Client and pay pages live on the team's own site
 
-- **Actor:** client · **Surface:** web (`{seller}`) · **Delivered by:** C · **Status:** Built (not walked through)
+- **Actor:** client · **Surface:** web (`{seller}`) · **Delivered by:** C · **Status:** Partly walked through (2026-10-20): old links redirect; another team's host is untested on staging
 - **Preconditions:** a walk-crew project with a client link and a pay link.
 - **Steps:**
   1. Open the client link and the pay link from the client email.
