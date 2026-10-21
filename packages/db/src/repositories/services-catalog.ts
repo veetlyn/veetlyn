@@ -1,16 +1,19 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, isNull, lte, ne, or, type SQL, sql } from "drizzle-orm";
 
 import type { Database } from "../index";
 import { postgresError } from "../postgres-errors";
+import { team } from "../schema/organization";
 import { servicesDepartment, servicesOffering } from "../schema/services-catalog";
+import { servicesTeamSettings } from "../schema/services-teams";
 import type { OfferingDraft } from "@jendal-workspace/core";
 
-export type ServicesDepartmentRow = { id: string; name: string; position: number };
+export type ServicesDepartmentRow = { id: string; name: string; position: number; listed: boolean };
 
 export type ServicesOfferingRow = OfferingDraft & {
   id: string;
   departmentId: string | null;
   active: boolean;
+  listed: boolean;
   position: number;
 };
 
@@ -19,6 +22,7 @@ const departmentColumns = {
   id: servicesDepartment.id,
   name: servicesDepartment.name,
   position: servicesDepartment.position,
+  listed: servicesDepartment.listed,
 };
 
 const offeringColumns = {
@@ -32,6 +36,7 @@ const offeringColumns = {
   daysMax: servicesOffering.daysMax,
   intakeQuestions: servicesOffering.intakeQuestions,
   active: servicesOffering.active,
+  listed: servicesOffering.listed,
   position: servicesOffering.position,
 };
 
@@ -163,7 +168,7 @@ export async function findServicesOffering(
 // Null on a duplicate name in this team; the unique index is the concurrency guard.
 export async function createServicesOffering(
   db: Database,
-  input: { teamId: string; departmentId?: string | null } & OfferingDraft,
+  input: { teamId: string; departmentId?: string | null; listed?: boolean } & OfferingDraft,
 ): Promise<ServicesOfferingRow | null> {
   const name = input.name.trim();
   const [existing] = await db
@@ -194,6 +199,7 @@ export async function createServicesOffering(
         daysMax: input.daysMax,
         intakeQuestions: input.intakeQuestions,
         active: true,
+        listed: input.listed ?? true,
         position: positionRow?.next ?? 0,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -206,7 +212,7 @@ export async function createServicesOffering(
 // Null when the offering is not the team's, or the name is taken by another offering in the team.
 export async function updateServicesOffering(
   db: Database,
-  input: { id: string; teamId: string; departmentId?: string | null } & OfferingDraft,
+  input: { id: string; teamId: string; departmentId?: string | null; listed?: boolean } & OfferingDraft,
 ): Promise<ServicesOfferingRow | null> {
   const [owned] = await db
     .select({ id: servicesOffering.id })
@@ -240,6 +246,7 @@ export async function updateServicesOffering(
     updatedAt: new Date(),
   };
   if ("departmentId" in input) values.departmentId = input.departmentId ?? null;
+  if (input.listed !== undefined) values.listed = input.listed;
 
   const rows = await nullOnDuplicateName(
     db
@@ -249,6 +256,18 @@ export async function updateServicesOffering(
       .returning(offeringColumns),
   );
   return rows?.[0] ?? null;
+}
+
+export async function setServicesDepartmentListed(
+  db: Database,
+  input: { id: string; teamId: string; listed: boolean },
+): Promise<boolean> {
+  const rows = await db
+    .update(servicesDepartment)
+    .set({ listed: input.listed })
+    .where(and(eq(servicesDepartment.id, input.id), eq(servicesDepartment.teamId, input.teamId)))
+    .returning({ id: servicesDepartment.id });
+  return rows.length > 0;
 }
 
 export async function setServicesOfferingActive(
@@ -284,4 +303,58 @@ export async function countServicesOfferings(
     .from(servicesOffering)
     .where(and(...conditions));
   return row?.count ?? 0;
+}
+
+const LIKE_SPECIALS = /[\\%_]/g;
+
+// What the client's AI may find (plugin design §3): active, listed offerings in a listed department (or none) of
+// active services teams. A word of the query matches the offering's name or description, or the seller's name.
+export async function searchListedOfferings(
+  db: Database,
+  input: { words: readonly string[]; maxPriceMinor?: number; maxDays?: number; limit: number; id?: string },
+) {
+  const wordFilters: SQL[] = input.words.flatMap((word) => {
+    const pattern = `%${word.replace(LIKE_SPECIALS, (c) => `\\${c}`)}%`;
+    return [ilike(servicesOffering.name, pattern), ilike(servicesOffering.description, pattern), ilike(team.name, pattern)];
+  });
+  return db
+    .select({
+      id: servicesOffering.id,
+      name: servicesOffering.name,
+      description: servicesOffering.description,
+      priceMinMinor: servicesOffering.priceMinMinor,
+      priceMaxMinor: servicesOffering.priceMaxMinor,
+      daysMin: servicesOffering.daysMin,
+      daysMax: servicesOffering.daysMax,
+      intakeQuestions: servicesOffering.intakeQuestions,
+      currency: servicesTeamSettings.currency,
+      sellerName: team.name,
+      sellerSlug: team.slug,
+    })
+    .from(servicesOffering)
+    .innerJoin(team, eq(team.id, servicesOffering.teamId))
+    .innerJoin(servicesTeamSettings, eq(servicesTeamSettings.teamId, team.id))
+    .leftJoin(servicesDepartment, eq(servicesDepartment.id, servicesOffering.departmentId))
+    .where(
+      and(
+        eq(servicesOffering.active, true),
+        eq(servicesOffering.listed, true),
+        or(isNull(servicesDepartment.id), eq(servicesDepartment.listed, true)),
+        eq(team.status, "active"),
+        eq(team.product, "services"),
+        input.id === undefined ? undefined : eq(servicesOffering.id, input.id),
+        wordFilters.length > 0 ? or(...wordFilters) : undefined,
+        input.maxPriceMinor === undefined ? undefined : lte(servicesOffering.priceMinMinor, input.maxPriceMinor),
+        input.maxDays === undefined ? undefined : lte(servicesOffering.daysMin, input.maxDays),
+      ),
+    )
+    .orderBy(asc(servicesOffering.priceMinMinor), asc(servicesOffering.id))
+    .limit(input.limit);
+}
+
+export type ListedOffering = Awaited<ReturnType<typeof searchListedOfferings>>[number];
+
+export async function findListedOffering(db: Database, id: string): Promise<ListedOffering | null> {
+  const [row] = await searchListedOfferings(db, { words: [], id, limit: 1 });
+  return row ?? null;
 }

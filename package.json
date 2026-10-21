@@ -20,6 +20,7 @@
     "db:generate": "turbo run db:generate -F @jendal-workspace/db --",
     "db:migrate": "turbo run db:migrate -F @jendal-workspace/db --",
     "db:migrate:dev": "pnpm -F @jendal-workspace/infra db:migrate:dev",
+    "plugin:zip": "node scripts/build-plugin-zips.ts",
     "deploy:staging": "pnpm -F @jendal-workspace/infra deploy:staging",
     "deploy:production": "pnpm -F @jendal-workspace/infra deploy:production",
     "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",

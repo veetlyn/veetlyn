@@ -28,6 +28,7 @@ import type { Actor } from "../actions/actors";
 import { ActionError } from "../actions/errors";
 import { type LinkSecretSource, linkSecret, signClientLink, verifyClientLink } from "../client-links";
 import type { EmailServices } from "../context";
+import { clientPageUrl } from "./link-hosts";
 import { contactName, fail, type ProjectActor, runProjectTransaction } from "./projects";
 
 export type ClientHolder = { token: string; userId?: string } | { projectId: string; userId: string };
@@ -74,7 +75,11 @@ export async function resolveClient(db: Database, secret: string, holder: Client
   if (!holder.userId) return { ok: false, reason: "not_a_client" };
   const contactId = await findClientContactForUser(db, { projectId: project.id, userId: holder.userId });
   if (!contactId) return { ok: false, reason: "not_a_client" };
-  return { ok: true, contactId, actor: { kind: "user", userId: holder.userId } };
+  return {
+    ok: true,
+    contactId,
+    actor: { kind: "client_account", userId: holder.userId, token: { projectId: project.id, contactId } },
+  };
 }
 
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -176,15 +181,19 @@ async function sendClientLink(
     await uow.appendEvents(project, [
       { type: "project.client_link_sent", data: { contactId: contact.id, linkVersion: link.linkVersion } },
     ]);
-    const [team] = await tx.select({ name: teamTable.name }).from(teamTable).where(eq(teamTable.id, project.teamId));
+    const [team] = await tx
+      .select({ name: teamTable.name, slug: teamTable.slug })
+      .from(teamTable)
+      .where(eq(teamTable.id, project.teamId));
     const token = await signClientLink(secret, { projectId: project.id, contactId: contact.id, version: link.linkVersion });
-    return { to, token, clientName: contact.name, teamName: team?.name ?? "", projectTitle: project.title };
+    if (!team) throw new Error(`Project ${project.id} has no team`);
+    return { to, token, clientName: contact.name, teamName: team.name, teamSlug: team.slug, projectTitle: project.title };
   });
   const content = clientLinkEmail({
     clientName: prepared.clientName,
     teamName: prepared.teamName,
     projectTitle: prepared.projectTitle,
-    url: `${emailServices.siteOrigin}/c/${prepared.token}`,
+    url: clientPageUrl(emailServices.storeOrigin, prepared.teamSlug, `/c/${prepared.token}`),
   });
   try {
     await emailServices.mailer.send({

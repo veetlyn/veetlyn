@@ -10,13 +10,13 @@ Shared facts for these stories:
 
 ### PAY-01: Client opens the pay page for the deposit
 
-- **Actor:** client · **Surface:** web (client page, pay page) · **Delivered by:** R1a (`17a6499`), R1b (`a46bcf2`) · **Status:** Built
+- **Actor:** client · **Surface:** web (client page, pay page) · **Delivered by:** R1a (`17a6499`), R1b (`a46bcf2`) · **Status:** Built (not walked through since the client and pay pages moved to `{seller}` in C)
 - **Preconditions:** a `walk-crew` project with a $200 quote in two lines that the client accepted on the client page (see `03-requests-and-quotes.md`).
 - **Steps:**
-  1. Open the client page `{site}/c/<token>` (from the client email, or the "Client link:" line on the team's project page `{dash}/walk-crew/projects/<id>`).
+  1. Open the client page `{seller}/c/<token>` (from the client email, or the "Client link:" line on the team's project page `{dash}/walk-crew/projects/<id>`).
   2. In **Payments**, click **Pay with PayPal** on the Deposit card.
 - **Expected:**
-  - The client page's Deposit card shows the status "Waiting", the lines "Deposit (50% of the quote)" $100.00 and "Management fee (10%)" $20.00, "Total" $120.00, and **Pay with PayPal** linking to `{site}/pay/<token>`.
+  - The client page's Deposit card shows the status "Waiting", the lines "Deposit (50% of the quote)" $100.00 and "Management fee (10%)" $20.00, "Total" $120.00, and **Pay with PayPal** linking to `{seller}/pay/<token>`.
   - The pay page shows the team name, the project title, "Deposit", the same lines and "Total" $120.00, the PayPal button, and "Back to the project" linking to the client page.
   - The pay link names the payment only; the amount always comes from the server.
 - **Edge cases:** the same page labels a top-up "Top-up" (PAY-11) and a balance "Balance" (DEL-08).
@@ -64,10 +64,10 @@ Shared facts for these stories:
 
 ### PAY-05: An invalid pay link
 
-- **Actor:** client · **Surface:** web (pay page) · **Delivered by:** R1b (`a46bcf2`) · **Status:** Built
+- **Actor:** client · **Surface:** web (pay page) · **Delivered by:** R1b (`a46bcf2`) · **Status:** Built (not walked through since the client and pay pages moved to `{seller}` in C)
 - **Preconditions:** none.
 - **Steps:**
-  1. Open `{site}/pay/not-a-real-token`, then a real pay link with one character changed.
+  1. Open `{seller}/pay/not-a-real-token`, then a real pay link with one character changed.
 - **Expected:**
   - Both show "This link is not valid" and "Ask the team to send you the payment link again."
   - Developer check: the `payment.payGet` error answer is `NOT_FOUND` "This link is not valid." with no `stack` field.

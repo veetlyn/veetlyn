@@ -20,6 +20,8 @@ export const OUTBOX_EVENT_TYPES = [
   "project.completed",
   "refund.requested",
   "project.cancelled",
+  "project.declined",
+  "message.posted",
   "payout.requested",
   "payout.approved",
   "payout.queued",

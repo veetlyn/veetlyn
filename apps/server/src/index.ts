@@ -19,6 +19,7 @@ import { createContext } from "./context";
 import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
+import { BRIDGE_PATH, bridgeResponse, createMcpRoute, widgetOriginsFor } from "./mcp/route";
 import { noStoreByDefault } from "./no-store";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
@@ -33,6 +34,7 @@ import {
   getEmailServices,
   getPayoutServices,
   getPayPalServices,
+  logActionLogError,
 } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
 import { tenantMiddleware } from "./tenant/middleware";
@@ -77,6 +79,44 @@ app.use(
 );
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw));
+
+// OAuth discovery for AI clients connecting the plugin: the protected resource on this host, and the
+// authorization server's metadata with the issuer path appended (RFC 8414), forwarded here by the web Worker.
+app.on(
+  ["GET", "HEAD"],
+  [
+    "/.well-known/oauth-protected-resource",
+    "/.well-known/oauth-protected-resource/*",
+    "/.well-known/oauth-authorization-server/*",
+    "/.well-known/openid-configuration/*",
+  ],
+  (c) => c.get("auth").handler(c.req.raw),
+);
+
+const mcpFiles = createFileStore();
+const widgetOrigins = widgetOriginsFor({ authUrl: ENV.BETTER_AUTH_URL, storeDomain: domains.storeDomain });
+
+app.get(BRIDGE_PATH, () => bridgeResponse());
+
+app.all("/mcp", (c) => {
+  const email = getEmailServices(c.executionCtx);
+  return createMcpRoute(
+    {
+      actions: {
+        db: c.get("db"),
+        files: mcpFiles,
+        auth: c.get("auth"),
+        paypal: getPayPalServices(),
+        email,
+        onLogError: logActionLogError,
+      },
+      auth: c.get("auth"),
+      log: c.get("log"),
+      storeOrigin: email.storeOrigin,
+    },
+    { authUrl: ENV.BETTER_AUTH_URL, origins: widgetOrigins },
+  )(c.req.raw);
+});
 
 app.use("/trpc/*", (c, next) =>
   trpcServer({

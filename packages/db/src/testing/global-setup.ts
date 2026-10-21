@@ -24,6 +24,13 @@ export default async function setup() {
     await migrate(drizzle({ client }), {
       migrationsFolder: fileURLToPath(new URL("../migrations", import.meta.url)),
     });
+    // Better Auth's MCP plugin inserts its resource on every auth start when the row is missing, and parallel
+    // test files racing on that insert fail it; so the row for the test auth URL (createTestAuth's
+    // http://dash.localhost:3001) exists from the start and truncateAll keeps it.
+    await client.unsafe(
+      `insert into oauth_resource (id, identifier, name, policy_version, created_at, updated_at)
+       values ('test-mcp-resource', 'https://api.localhost/mcp', 'https://api.localhost/mcp', 1, now(), now())`,
+    );
   } finally {
     await client.end();
   }

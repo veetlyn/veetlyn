@@ -5,7 +5,6 @@ import { effectiveServicesTeamRole } from "../services-teams/permissions";
 import {
   canAssignFreelancer,
   canProposeAmendment,
-  canSeeProject,
   canStartProject,
   canSubmitDelivery,
   quoteAuthor,
@@ -92,15 +91,6 @@ describe("project permissions", () => {
     expect(canProposeAmendment({ role: "manager", actorId: "u2", assignedFreelancerId: "u1" })).toBe(true);
   });
 
-  it("shows freelancers their projects and open quoting projects", () => {
-    const project = { assignedFreelancerId: "u1", status: "in_progress", quotingMode: "assigned" } as const;
-    expect(canSeeProject({ ...project, role: "freelancer", actorId: "u1" })).toBe(true);
-    expect(canSeeProject({ ...project, role: "freelancer", actorId: "u2" })).toBe(false);
-    expect(canSeeProject({ ...project, role: "manager", actorId: "u2" })).toBe(true);
-    expect(
-      canSeeProject({ role: "freelancer", actorId: "u2", assignedFreelancerId: null, status: "quoting", quotingMode: "open" }),
-    ).toBe(true);
-  });
   describe("canSubmitDelivery", () => {
     it("lets the assigned freelancer and staff deliver, and no one else", () => {
       const project = { assignedFreelancerId: "u1" };

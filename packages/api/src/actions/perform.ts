@@ -6,7 +6,7 @@ import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-
 
 import type { LinkSecretSource } from "../client-links";
 import type { EmailServices, PayPalServices } from "../context";
-import type { Actor, RequestMeta, Surface } from "./actors";
+import { type Actor, isClientActor, type RequestMeta, type Surface } from "./actors";
 import type { ActionDefinition, Grant, ScopeRequest } from "./define";
 import { ActionError, type ActionErrorCode, toActionError } from "./errors";
 
@@ -42,7 +42,7 @@ async function loadScope(req: PerformRequest, scopeRequest: ScopeRequest): Promi
   if (scopeRequest.projectId) {
     project = await findProjectById(req.deps.db, scopeRequest.projectId);
     // A link holder learns only that the link does not work, as for a forged one.
-    if (!project && req.actor.kind === "client_link") throw new ActionError("not_found", "This link is not valid.");
+    if (!project && isClientActor(req.actor)) throw new ActionError("not_found", "This link is not valid.");
     if (!project || (teamId && project.teamId !== teamId)) throw new ActionError("not_found", NOT_FOUND_PROJECT);
     teamId = project.teamId;
   }
@@ -56,7 +56,7 @@ function passes(grant: Grant, actor: Actor, scope: Scope): boolean {
     case "member":
       return scope.role !== null;
     case "client":
-      return actor.kind === "client_link" && scope.project !== null && actor.token.projectId === scope.project.id;
+      return isClientActor(actor) && scope.project !== null && actor.token.projectId === scope.project.id;
     case "signed_in":
       return actor.kind === "user";
     case "anyone":
@@ -70,7 +70,7 @@ function passes(grant: Grant, actor: Actor, scope: Scope): boolean {
 // project only.
 function refusal(actor: Actor, scope: Scope): ActionError {
   const related =
-    scope.role !== null || (actor.kind === "client_link" && actor.token.projectId === scope.project?.id);
+    scope.role !== null || (isClientActor(actor) && actor.token.projectId === scope.project?.id);
   if (!related && scope.project) return new ActionError("not_found", NOT_FOUND_PROJECT);
   if (!related && scope.teamId) return new ActionError("not_found", "Team not found.");
   return new ActionError("forbidden", "You cannot do this.");
@@ -79,6 +79,7 @@ function refusal(actor: Actor, scope: Scope): ActionError {
 function actorId(actor: Actor): string | null {
   switch (actor.kind) {
     case "user":
+    case "client_account":
       return actor.userId;
     case "system":
       return actor.job;

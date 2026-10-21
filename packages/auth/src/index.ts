@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { clientRedirectOrigins, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
 import { createServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
@@ -11,8 +12,11 @@ import {
   passwordResetEmail,
   verificationEmail,
 } from "@jendal-workspace/email";
+import { cimd } from "@better-auth/cimd";
+import { mcp } from "@better-auth/mcp";
 import { betterAuth } from "better-auth";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { jwt } from "better-auth/plugins";
 import { organization } from "better-auth/plugins/organization";
 import { z } from "zod";
 
@@ -80,6 +84,29 @@ function sendInBackground(services: AuthServices, kind: AuthEmailKind, content: 
   );
 }
 
+// The MCP resource sits on the api host next to the dashboard host that runs Better Auth
+// (dash.payleor.com → api.payleor.com/mcp, dash.staging.payleor.com → api.staging.payleor.com/mcp).
+export function mcpResourceFor(authUrl: string): string {
+  const host = new URL(authUrl).hostname.replace(/^(dash|admin)\./, "");
+  return `https://api.${host}/mcp`;
+}
+
+// Workers cannot pin a resolved address, so client metadata documents (CIMD) are fetched only from the AI
+// clients we support (Cloudflare's egress does not reach private networks) and redirects are refused.
+const CIMD_HOSTS = new Set(["claude.ai", "chatgpt.com"]);
+
+export function isCimdUrlAllowed(url: URL): boolean {
+  return url.protocol === "https:" && CIMD_HOSTS.has(url.hostname);
+}
+
+async function fetchCimdResource(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const url = new URL(input instanceof Request ? input.url : input.toString());
+  if (!isCimdUrlAllowed(url)) throw new Error(`CIMD host not allowed: ${url.hostname}`);
+  const response = await fetch(url, { ...init, redirect: "manual" });
+  if (response.status >= 300 && response.status < 400) throw new Error("CIMD redirect refused");
+  return response;
+}
+
 export function createAuth(env: AuthConfig, database: Database, services: AuthServices) {
   const paypalLive = env.PAYPAL_ENVIRONMENT === "live";
   return betterAuth({
@@ -90,6 +117,10 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
       minPasswordLength: 10,
       resetPasswordTokenExpiresIn: ONE_HOUR_IN_SECONDS,
       revokeSessionsOnPasswordReset: true,
+      // A reset is how someone takes their account back, so connected AI clients go with the sessions.
+      onPasswordReset: async ({ user }) => {
+        await revokeOAuthGrants(database, { userId: user.id });
+      },
       sendResetPassword: async ({ user, url }) => {
         sendInBackground(services, "password-reset", { to: user.email, ...passwordResetEmail({ name: user.name, url }) });
       },
@@ -112,6 +143,23 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
         },
       },
     },
+    hooks: {
+      // A stored consent names the client, not the redirect the user saw on the consent page. A client that may
+      // receive codes at several origins, or one whose redirects cannot be read, is asked again each time, so
+      // its code never reaches an origin the user did not see. The supported assistants' metadata documents
+      // (CIMD) name their own redirects. Only the browser's own authorize request is marked: accepting consent
+      // runs authorize again from the consent request, which must go on to the code.
+      before: createAuthMiddleware(async (ctx) => {
+        const requested = ctx.request ? new URL(ctx.request.url).pathname : null;
+        if (!requested?.endsWith("/oauth2/authorize")) return;
+        const forceConsent = { context: { query: { ...ctx.query, prompt: "consent" } } };
+        const clientId = z.string().min(1).safeParse(ctx.query?.client_id ?? ctx.body?.client_id);
+        if (!clientId.success) return forceConsent;
+        if (URL.canParse(clientId.data) && isCimdUrlAllowed(new URL(clientId.data))) return;
+        const origins = await clientRedirectOrigins(database, clientId.data);
+        if (!origins || origins.size > 1) return forceConsent;
+      }),
+    },
     rateLimit: {
       // Better Auth enables it only in production by default; the limits are part of the product.
       enabled: true,
@@ -122,6 +170,8 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
         "/sign-up/email": { window: 60, max: 5 },
         "/request-password-reset": { window: 600, max: 3 },
         "/send-verification-email": { window: 600, max: 3 },
+        // Dynamic registration is the fallback for MCP clients without CIMD; anyone can call it.
+        "/oauth2/register": { window: 3600, max: 10 },
       },
     },
     advanced: {
@@ -153,6 +203,19 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     plugins: [
+      jwt(),
+      mcp({
+        loginPage: "/login",
+        consentPage: "/oauth/consent",
+        resource: mcpResourceFor(env.BETTER_AUTH_URL),
+        allowDynamicClientRegistration: true,
+        allowUnauthenticatedClientRegistration: true,
+      }),
+      cimd({
+        fetchClientMetadataResource: fetchCimdResource,
+        metadataProfile: "mcp-2026-07-28",
+        isMetadataDocumentUrlAllowed: (clientIdUrl) => isCimdUrlAllowed(new URL(clientIdUrl)),
+      }),
       organization({
         // A store needs a slug, so no team is created automatically with an organization.
         teams: { enabled: true, defaultTeam: { enabled: false } },

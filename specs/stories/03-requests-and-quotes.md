@@ -32,14 +32,14 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 
 ### QUO-03: The client gets a private link to their project
 
-- **Actor:** client · **Surface:** email, web (`{site}/c/<token>`) · **Delivered by:** R3c (`8d51ff2`); client page from S4 (`eb3b570`) · **Status:** Built
+- **Actor:** client · **Surface:** email, web (`{seller}/c/<token>`) · **Delivered by:** R3c (`8d51ff2`); client page from S4 (`eb3b570`) · **Status:** Built (not walked through since the client and pay pages moved to `{seller}` in C)
 - **Preconditions:** QUO-02 done.
 - **Steps:**
   1. Open the email "Your request to Walk Crew" in the client's inbox.
   2. Click **Open your page**.
 - **Expected:**
   - The sender is "Walk Crew via Payleor" at `invoices@payleor.com`, with reply-to the team's support email.
-  - The email says "Walk Crew received your request. Follow it, and accept or discuss the quote, on your private page:" and links to `{site}/c/<token>`.
+  - The email says "Walk Crew received your request. Follow it, and accept or discuss the quote, on your private page:" and links to `{seller}/c/<token>`.
   - The client page shows the project title, "Quoting", the description, and under "Quotes": "The team is preparing your quote." No account is needed.
 - **Edge cases:** a changed or made-up token shows "This link is not valid" and "Ask the team to send you the project link again."; the link never expires.
 
@@ -114,14 +114,14 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 
 ### QUO-10: A manager starts a project for a client
 
-- **Actor:** team admin or manager · **Surface:** web (`{dash}/walk-crew/projects/new`) · **Delivered by:** S4 (`eb3b570`); service picker from R3a (`444c1f4`) · **Status:** Built
+- **Actor:** team admin or manager · **Surface:** web (`{dash}/walk-crew/projects/new`) · **Delivered by:** S4 (`eb3b570`); service picker from R3a (`444c1f4`) · **Status:** Built (not walked through since the client and pay pages moved to `{seller}` in C)
 - **Preconditions:** signed in as the Team admin.
 - **Steps:**
   1. Open **Projects** > **New project**.
   2. Fill "Title", pick a "Service" (or "Not one of my services"), "Client email" and "Brief", then **Start project**.
 - **Expected:**
   - The form says "The client gets a private link to follow the project, accept quotes and pay. No account needed."
-  - The browser lands on the project page: status "Quoting", the client's email, the brief, and "Client link: `{site}/c/<token>`".
+  - The browser lands on the project page: status "Quoting", the client's email, the brief, and "Client link: `{seller}/c/<token>`".
   - The project appears in the Projects list with status "Quoting".
   - No email goes to the client; the team shares the client link itself.
 - **Edge cases:** **Start project** stays disabled until the title has 3 characters and an email or a Discord user ID is given; a freelancer who submits the form sees "Only admins and managers start projects." (not walked through).
@@ -155,7 +155,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 
 ### QUO-13: The client accepts a quote
 
-- **Actor:** client · **Surface:** web (`{site}/c/<token>`) · **Delivered by:** S4 (`eb3b570`); pages refresh on their own since B1 (`46cb788`) · **Status:** Built
+- **Actor:** client · **Surface:** web (`{seller}/c/<token>`) · **Delivered by:** S4 (`eb3b570`); pages refresh on their own since B1 (`46cb788`) · **Status:** Built (not walked through since the client and pay pages moved to `{seller}` in C)
 - **Preconditions:** a `walk-crew` project with a proposed quote (QUO-11), for example $200 with a 10% management fee.
 - **Steps:**
   1. On the client page, click **Accept quote**.
@@ -182,7 +182,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 
 ### QUO-15: The team lowers the price with an amendment
 
-- **Actor:** team admin, client · **Surface:** web (project page, `{site}/c/<token>`) · **Delivered by:** S4 (`eb3b570`) · **Status:** Built (walked through in B3)
+- **Actor:** team admin, client · **Surface:** web (project page, `{seller}/c/<token>`) · **Delivered by:** S4 (`eb3b570`) · **Status:** Built (not walked through since the client and pay pages moved to `{seller}` in C)
 - **Preconditions:** a `walk-crew` project "In progress" (deposit paid, PAY-01) with an accepted quote of at least two lines, no pending amendment.
 - **Steps:**
   1. On the project page, under "Propose an amendment", tick **Remove "<a line>"**, click **Add a line** and add a cheaper line, write a "Note for the client", then **Propose amendment**.
@@ -195,7 +195,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
 
 ### QUO-16: An amendment that raises the price creates a top-up; the client can decline
 
-- **Actor:** team admin, client · **Surface:** web (project page, `{site}/c/<token>`) · **Delivered by:** S4 (`eb3b570`) · **Status:** Built (not walked through)
+- **Actor:** team admin, client · **Surface:** web (project page, `{seller}/c/<token>`) · **Delivered by:** S4 (`eb3b570`) · **Status:** Built (not walked through since the client and pay pages moved to `{seller}` in C)
 - **Preconditions:** a `walk-crew` project "In progress" with an accepted quote and no pending amendment.
 - **Steps:**
   1. Propose an amendment that adds a $400 line.

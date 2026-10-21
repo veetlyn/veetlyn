@@ -313,4 +313,24 @@ describe.skipIf(!hasTestDatabase)("servicesCatalog router", () => {
     expect(other.departments).toEqual([]);
     expect(other.offerings).toEqual([]);
   });
+
+  it("lists a service in AI assistants by default, and an edit without the flag keeps the admin's opt-out", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const owner = callerFor(ownerId);
+    const created = await owner.servicesCatalog.createOffering({ teamSlug: "acme-studio", ...offering() });
+    expect(created.listed).toBe(true);
+    await owner.servicesCatalog.updateOffering({ teamSlug: "acme-studio", offeringId: created.id, ...offering(), listed: false });
+    const renamed = await owner.servicesCatalog.updateOffering({
+      teamSlug: "acme-studio",
+      offeringId: created.id,
+      ...offering({ name: "Logo refresh" }),
+    });
+    expect(renamed.listed).toBe(false);
+
+    const department = await owner.servicesCatalog.createDepartment({ teamSlug: "acme-studio", name: "Brand" });
+    await owner.servicesCatalog.setDepartmentListed({ teamSlug: "acme-studio", departmentId: department.id, listed: false });
+    const { departments } = await owner.servicesCatalog.list({ teamSlug: "acme-studio" });
+    expect(departments).toEqual([expect.objectContaining({ id: department.id, listed: false })]);
+  });
 });

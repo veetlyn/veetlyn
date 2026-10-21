@@ -50,10 +50,10 @@ describe.skipIf(!hasTestDatabase)("services catalog repository", () => {
     const duplicate = await createServicesDepartment(db, { teamId: studio.id, name: "BRANDING" });
     const otherTeam = await createServicesDepartment(db, { teamId: labs.id, name: "branding" });
 
-    expect(first).toEqual({ id: expect.any(String), name: "Branding", position: 0 });
-    expect(second).toEqual({ id: expect.any(String), name: "Web design", position: 1 });
+    expect(first).toEqual({ id: expect.any(String), name: "Branding", position: 0, listed: true });
+    expect(second).toEqual({ id: expect.any(String), name: "Web design", position: 1, listed: true });
     expect(duplicate).toBeNull();
-    expect(otherTeam).toEqual({ id: expect.any(String), name: "branding", position: 0 });
+    expect(otherTeam).toEqual({ id: expect.any(String), name: "branding", position: 0, listed: true });
   });
 
   it("lists departments ordered by position, then name", async () => {
@@ -88,8 +88,8 @@ describe.skipIf(!hasTestDatabase)("services catalog repository", () => {
       renameServicesDepartment(db, { id: other.id, teamId: studio.id, name: "Steal" }),
     ).resolves.toBe(false);
     await expect(listServicesDepartments(db, studio.id)).resolves.toEqual([
-      { id: branding.id, name: "Identity", position: 0 },
-      { id: web.id, name: "Web design", position: 1 },
+      { id: branding.id, name: "Identity", position: 0, listed: true },
+      { id: web.id, name: "Web design", position: 1, listed: true },
     ]);
   });
 
@@ -135,6 +135,7 @@ describe.skipIf(!hasTestDatabase)("services catalog repository", () => {
       id: expect.any(String),
       departmentId: branding.id,
       active: true,
+      listed: true,
       position: 0,
       ...draft,
     });
