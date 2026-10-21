@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { linkSecret } from "../client-links";
 import type { Context } from "../context";
-import { publicProcedure } from "../index";
+import { protectedProcedure, publicProcedure } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
 import { resolveClient } from "../use-cases/clients";
 import type { Actor } from "./actors";
@@ -127,5 +127,16 @@ export function publicProcedureFor(definition: LooseDefinition) {
   const procedure = publicProcedure.input(definition.input);
   const resolve = ({ ctx, input }: { ctx: Context; input: Loose }) =>
     performOnWeb(ctx, { kind: "anonymous" }, definition, input);
+  return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
+}
+
+// For signed-in actions that are not about one team: the session's user is the actor.
+export function signedInProcedureFor<Schema extends z.ZodType, Result, Kind extends "action" | "query">(
+  definition: Definition<Schema, Result, Kind>,
+): Procedure<Kind, z.input<Schema>, Result>;
+export function signedInProcedureFor(definition: LooseDefinition) {
+  const procedure = protectedProcedure.input(definition.input);
+  const resolve = ({ ctx, input }: { ctx: Context & { session: { user: { id: string } } }; input: Loose }) =>
+    performOnWeb(ctx, { kind: "user", userId: ctx.session.user.id }, definition, input);
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
 }

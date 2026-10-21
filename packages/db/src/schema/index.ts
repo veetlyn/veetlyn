@@ -17,3 +17,5 @@ export * from "./action-log";
 export * from "./payouts";
 export * from "./limits";
 export * from "./contacts";
+export * from "./conversations";
+export * from "./oauth";

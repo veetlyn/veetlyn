@@ -7,6 +7,10 @@ const encoder = new TextEncoder();
 // Links sent before client contacts existed name only the project; they still verify under their own key.
 const LEGACY_CLIENT_LINK_LABEL = "payleor client link v1";
 const CLIENT_LINK_LABEL = "payleor client link v2";
+// The same link handed to a signed-in client (their home, their AI) instead of emailed: it opens the page but
+// proves no address.
+const ACCOUNT_CLIENT_LINK_LABEL = "payleor client link v2 account";
+const ACCOUNT_MARK = "a";
 const PAY_LINK_LABEL = "payleor pay link v1";
 
 async function linkKey(secret: string, label: string): Promise<CryptoKey> {
@@ -53,14 +57,19 @@ async function verifyLink(secret: string, label: string, token: string): Promise
 
 export type ClientLinkTarget = { projectId: string; contactId: string; version: number };
 
-// A legacy link carries no contact: it stands for the project's primary contact at version 0.
-export type VerifiedClientLink = { projectId: string; contactId: string | null; version: number };
+// A legacy link carries no contact: it stands for the project's primary contact at version 0. `emailed` says the
+// link is one the server emails, so opening it can prove the address it went to.
+export type VerifiedClientLink = { projectId: string; contactId: string | null; version: number; emailed: boolean };
 
 const SEGMENT = /^[A-Za-z0-9-]+$/;
 const VERSION = /^(0|[1-9][0-9]{0,8})$/;
 
 export function signClientLink(secret: string, target: ClientLinkTarget): Promise<string> {
   return signLink(secret, CLIENT_LINK_LABEL, `${target.projectId}.${target.contactId}.${target.version}`);
+}
+
+export function signAccountClientLink(secret: string, target: ClientLinkTarget): Promise<string> {
+  return signLink(secret, ACCOUNT_CLIENT_LINK_LABEL, `${target.projectId}.${target.contactId}.${target.version}.${ACCOUNT_MARK}`);
 }
 
 export function signLegacyClientLink(secret: string, projectId: string): Promise<string> {
@@ -71,13 +80,15 @@ export async function verifyClientLink(secret: string, token: string): Promise<V
   const segments = token.split(".");
   if (segments.length === 2) {
     const projectId = await verifyLink(secret, LEGACY_CLIENT_LINK_LABEL, token);
-    return projectId ? { projectId, contactId: null, version: 0 } : null;
+    return projectId ? { projectId, contactId: null, version: 0, emailed: true } : null;
   }
-  const [projectId, contactId, version] = segments;
-  if (segments.length !== 4 || !projectId || !contactId || !version) return null;
+  const [projectId, contactId, version, mark] = segments;
+  const emailed = segments.length === 4;
+  if (!emailed && (segments.length !== 5 || mark !== ACCOUNT_MARK)) return null;
+  if (!projectId || !contactId || !version) return null;
   if (!SEGMENT.test(projectId) || !SEGMENT.test(contactId) || !VERSION.test(version)) return null;
-  if (!(await verifyLink(secret, CLIENT_LINK_LABEL, token))) return null;
-  return { projectId, contactId, version: Number(version) };
+  if (!(await verifyLink(secret, emailed ? CLIENT_LINK_LABEL : ACCOUNT_CLIENT_LINK_LABEL, token))) return null;
+  return { projectId, contactId, version: Number(version), emailed };
 }
 
 export function signPayLink(secret: string, paymentId: string): Promise<string> {

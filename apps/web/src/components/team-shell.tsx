@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpFromLine,
   FolderKanban,
+  HandCoins,
   Inbox,
   LayoutGrid,
   MessagesSquare,
@@ -26,6 +27,7 @@ type NavItem = { href: string; label: string; icon: typeof Inbox; show?: boolean
 
 const SEGMENT_LABELS = new Map<string, string>([
   ["projects", "Projects"],
+  ["requests", "Open requests"],
   ["services", "Services"],
   ["products", "Products"],
   ["orders", "Orders"],
@@ -66,6 +68,7 @@ export default function TeamShell({
 
   const work: NavItem[] = [
     { href: `/${slug}`, label: "Overview", icon: LayoutGrid },
+    { href: `/${slug}/requests`, label: "Open requests", icon: HandCoins, show: kind === "services" && !solo },
     { href: `/${slug}/projects`, label: "Projects", icon: FolderKanban, show: kind === "services" },
     { href: `/${slug}/services`, label: "Services", icon: Tag, show: kind === "services" },
     { href: `/${slug}/products`, label: "Products", icon: Package, show: storeEnabled },

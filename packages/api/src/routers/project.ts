@@ -8,6 +8,13 @@ import {
   projectClientRemove,
 } from "../actions/clients";
 import {
+  conversationAnswer,
+  conversationPost,
+  requestDecline,
+  requestListOpen,
+  requestShortlist,
+} from "../actions/conversations";
+import {
   deliveryAccept,
   deliveryFile,
   deliveryRequestChanges,
@@ -16,6 +23,7 @@ import {
 } from "../actions/deliveries";
 import {
   projectAssign,
+  projectClientList,
   projectClientView,
   projectGet,
   projectList,
@@ -24,8 +32,13 @@ import {
 } from "../actions/projects";
 import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "../actions/quotes";
 import { createRequest } from "../actions/requests";
-import { clientProcedureFor, publicProcedureFor, teamProcedureFor } from "../actions/trpc";
-import { router } from "../index";
+import { clientProcedureFor, publicProcedureFor, signedInProcedureFor, teamProcedureFor } from "../actions/trpc";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+
+import { linkSecret } from "../client-links";
+import { publicProcedure, router } from "../index";
+import { teamSlugForLink } from "../use-cases/link-hosts";
 import { servicesTeamProcedure } from "../services-team-procedure";
 
 export const projectRouter = router({
@@ -50,8 +63,22 @@ export const projectRouter = router({
   clientLinkEmail: teamProcedureFor(projectClientLinkEmail),
   clientLinkReissue: teamProcedureFor(projectClientLinkReissue),
   clientPreview: teamProcedureFor(projectClientPreview),
+  openRequests: teamProcedureFor(requestListOpen),
+  post: teamProcedureFor(conversationPost),
+  decline: teamProcedureFor(requestDecline),
+  shortlist: teamProcedureFor(requestShortlist),
 
   requestQuote: publicProcedureFor(createRequest),
+  mine: signedInProcedureFor(projectClientList),
+
+  // The web Worker asks which team's site serves a link before rendering the client or pay page on a host.
+  linkTeam: publicProcedure
+    .input(z.object({ kind: z.enum(["client", "pay"]), token: z.string().min(1).max(512) }))
+    .query(async ({ ctx, input }) => {
+      const slug = await teamSlugForLink(ctx.db, linkSecret(ctx.auth), input);
+      if (!slug) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
+      return { slug };
+    }),
 
   clientGet: clientProcedureFor(projectClientView),
   clientAcceptQuote: clientProcedureFor(quoteAccept),
@@ -60,4 +87,6 @@ export const projectRouter = router({
   clientRequestChanges: clientProcedureFor(deliveryRequestChanges),
   clientDeliveryFileUrl: clientProcedureFor(deliveryFile),
   clientAcceptDelivery: clientProcedureFor(deliveryAccept),
+  clientPost: clientProcedureFor(conversationPost),
+  clientAnswer: clientProcedureFor(conversationAnswer),
 });

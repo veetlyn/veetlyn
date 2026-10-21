@@ -27,12 +27,15 @@ import {
   switchToTeam as switchTeamToTeamMode,
   workspaceRoleFor,
 } from "@jendal-workspace/db/repositories/services-teams";
+import { listMemberDepartments } from "@jendal-workspace/db/repositories/conversations";
 import { countServicesOfferings } from "@jendal-workspace/db/repositories/services-catalog";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 import { z } from "zod";
 
+import { memberDepartments } from "../actions/conversations";
+import { teamProcedureFor } from "../actions/trpc";
 import { protectedProcedure, router } from "../index";
 import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
 import { organizationForNewTeam, toTRPCError } from "../team-creation";
@@ -190,6 +193,13 @@ export const servicesTeamRouter = router({
     requireAction(ctx.servicesTeamRole, "view_members", "Only managers and admins can see the member list.");
     return listServicesTeamMembers(ctx.db, ctx.servicesTeam);
   }),
+
+  listMemberDepartments: servicesTeamProcedure.query(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "view_members", "Only managers and admins can see the member list.");
+    return listMemberDepartments(ctx.db, ctx.servicesTeam.id);
+  }),
+
+  setMemberDepartments: teamProcedureFor(memberDepartments),
 
   addMember: servicesTeamProcedure
     .input(z.object({ email: z.string().trim().max(320).pipe(z.email()), role: roleInput }))

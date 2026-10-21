@@ -392,6 +392,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     expect(preview.project).toMatchObject({ id: projectId, title: "Website redesign" });
     expect(preview.payments).toEqual([expect.objectContaining({ kind: "deposit", payable: true, payPath: null })]);
+    // The client page holds the unmasked brief and the client's team-only messages: staff only.
+    await expect(callerFor(freelancer).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
     const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
     await expect(callerFor(outsider.userId).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -1798,7 +1802,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const { caller, mailer } = requestCaller();
 
       const result = await caller.project.requestQuote(validRequest({ offeringId }));
-      expect(result).toEqual({ ok: true });
+      expect(result).toEqual({ ok: true, projectId: null });
 
       const rows = await db.select().from(project);
       expect(rows).toHaveLength(1);
@@ -1838,15 +1842,16 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         subject: "Your request to Walk Crew",
         replyTo: "support@walkcrew.test",
       });
-      expect(toClient!.html).toContain("https://payleor.test/c/");
+      expect(toClient!.html).toContain("https://seller.payleor.test/c/");
       expect(toTeam).toMatchObject({ to: "support@walkcrew.test", subject: "New request from Jo" });
 
-      const match = /https:\/\/payleor\.test\/c\/(\S+)/.exec(toClient!.text);
+      const match = /https:\/\/seller\.payleor\.test\/c\/(\S+)/.exec(toClient!.text);
       expect(match).toBeTruthy();
       expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, match![1]!)).toEqual({
         projectId,
         contactId: contact!.id,
         version: 1,
+        emailed: true,
       });
     });
 
@@ -1862,7 +1867,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const requested = (await db.select().from(project)).find((p) => p.id !== clientProject)!;
       const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, requested.id));
       expect(attached!.contactId).not.toBe(verified!.contactId);
-      const token = /https:\/\/payleor\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
+      const token = /https:\/\/seller\.payleor\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
       expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, token)).toMatchObject({
         projectId: requested.id,
         contactId: attached!.contactId,
@@ -1881,7 +1886,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const { caller, mailer } = requestCaller();
 
       const result = await caller.project.requestQuote(validRequest({ offeringId, website: "https://spam.example" }));
-      expect(result).toEqual({ ok: true });
+      expect(result).toEqual({ ok: true, projectId: null });
       expect(await db.select().from(project)).toEqual([]);
       expect(mailer.sent).toEqual([]);
     });
@@ -1915,7 +1920,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         });
       }
       // The team's own active offering still works.
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true, projectId: null });
     });
 
     it("refuses a fourth open request from the same email on the team, even when two arrive at once", async () => {
@@ -1946,7 +1951,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           caller.project.requestQuote(validRequest({ offeringId, description: "short" })),
         ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       }
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true, projectId: null });
 
       for (let i = 0; i < 4; i += 1) {
         await hitRequestLimit(db, { key: "quote-request:email:seller:jo@x.com", windowMs: 3_600_000, max: 5 });
@@ -1972,7 +1977,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       });
 
       const { caller } = requestCaller();
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true });
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true, projectId: null });
     });
 
     it("validates the name and description", async () => {

@@ -8,7 +8,7 @@ const TARGET = { projectId: "proj-123", contactId: "contact-1", version: 2 };
 describe("client links", () => {
   it("round-trips a project, a contact and a link version", async () => {
     const token = await signClientLink(SECRET, TARGET);
-    await expect(verifyClientLink(SECRET, token)).resolves.toEqual(TARGET);
+    await expect(verifyClientLink(SECRET, token)).resolves.toEqual({ ...TARGET, emailed: true });
   });
 
   it("rejects a token with any segment changed, truncated, or signed with another secret", async () => {
@@ -24,7 +24,7 @@ describe("client links", () => {
 
   it("still accepts links sent before contacts, as the primary contact at version 0", async () => {
     const legacy = await signLegacyClientLink(SECRET, "proj-123");
-    await expect(verifyClientLink(SECRET, legacy)).resolves.toEqual({ projectId: "proj-123", contactId: null, version: 0 });
+    await expect(verifyClientLink(SECRET, legacy)).resolves.toEqual({ projectId: "proj-123", contactId: null, version: 0, emailed: true });
     await expect(verifyClientLink(SECRET, legacy.replace("proj-123", "proj-999"))).resolves.toBeNull();
   });
 });

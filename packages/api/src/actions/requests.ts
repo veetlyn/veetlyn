@@ -1,8 +1,12 @@
 import { QUOTE_REQUEST_LIMITS } from "@jendal-workspace/core";
 import { z } from "zod";
 
-import { createQuoteRequest } from "../use-cases/requests";
+import { findClientAccount } from "@jendal-workspace/db/repositories/contacts";
+
+import { createQuoteRequest, type RequestAccount } from "../use-cases/requests";
+import type { Actor, Surface } from "./actors";
 import { defineAction } from "./define";
+import type { ActionDeps } from "./perform";
 
 // Abuse caps only: the use case validates and gives the friendly messages.
 export const requestQuoteInput = z.object({
@@ -23,8 +27,18 @@ export const createRequest = defineAction({
   kind: "action",
   summary: `Ask a seller for a quote: their store slug, a name, an email and a description of ${QUOTE_REQUEST_LIMITS.minDescription} to ${QUOTE_REQUEST_LIMITS.maxDescription} characters, with up to ${QUOTE_REQUEST_LIMITS.maxAnswers} answers to the offering's questions.`,
   input: requestQuoteInput,
-  output: z.object({ ok: z.literal(true) }),
+  output: z.object({ ok: z.literal(true), projectId: z.uuid().nullable() }),
   scope: () => ({}),
   allow: [{ grant: "anyone" }],
-  run: ({ deps, request }, input) => createQuoteRequest(deps, { ip: request.ip }, input),
+  run: async ({ deps, actor, surface, request }, input) =>
+    createQuoteRequest(deps, { ip: request.ip }, input, await signedInRequester(deps, actor, surface)),
 });
+
+// A signed-in user requests as their account; anyone else stays an anonymous requester whose link proves the
+// address later.
+async function signedInRequester(deps: ActionDeps, actor: Actor, surface: Surface): Promise<RequestAccount | undefined> {
+  if (actor.kind !== "user") return undefined;
+  const account = await findClientAccount(deps.db, actor.userId);
+  if (!account) return undefined;
+  return { account, homeSurface: surface === "mcp" ? "mcp" : "web" };
+}

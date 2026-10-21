@@ -11,10 +11,10 @@ import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { trpc } from "@/utils/trpc";
 import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
 
-const CLOSED = new Set(["completed", "cancelled"]);
+const CLOSED = new Set(["completed", "cancelled", "declined", "expired"]);
 const FILTERS = [
   ["open", "Open"],
-  ["closed", "Completed"],
+  ["closed", "Closed"],
   ["all", "All"],
 ] as const;
 

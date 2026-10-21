@@ -14,7 +14,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { signClientLink, signLegacyClientLink } from "../client-links";
+import { signAccountClientLink, signClientLink, signLegacyClientLink } from "../client-links";
 import { resolveClient } from "./clients";
 
 const SECRET = "test-secret-that-is-at-least-32-characters";
@@ -139,7 +139,7 @@ describe.skipIf(!hasTestDatabase)("the client rule", () => {
     await expect(resolveClient(db, SECRET, { projectId, userId })).resolves.toEqual({
       ok: true,
       contactId,
-      actor: { kind: "user", userId },
+      actor: { kind: "client_account", userId, token: { projectId, contactId } },
     });
   });
 
@@ -241,6 +241,16 @@ describe.skipIf(!hasTestDatabase)("the client rule", () => {
     const [row] = await db.select().from(clientIdentity).where(eq(clientIdentity.value, "client@example.com"));
     expect(row).toMatchObject({ source: "typed" });
     expect(projectId).toBeTruthy();
+  });
+
+  it("verifies nothing through the link given to a signed-in client, though it opens the page", async () => {
+    const { projectId, contactId } = await setup();
+    const { linkVersion } = (await primaryContactFor(db, projectId))!;
+    const token = await signAccountClientLink(SECRET, { projectId, contactId, version: linkVersion });
+
+    await expect(resolveClient(db, SECRET, { token })).resolves.toMatchObject({ ok: true, contactId });
+
+    expect(await identitiesOf(contactId)).toEqual({ "email:client@example.com": false });
   });
 
   it("verifies nothing through a link that was never emailed, or one sent before contacts", async () => {

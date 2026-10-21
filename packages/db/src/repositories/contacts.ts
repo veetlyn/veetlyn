@@ -10,6 +10,7 @@ import {
   clientIdentity,
   projectClient,
 } from "../schema/contacts";
+import { team } from "../schema/organization";
 import { project } from "../schema/projects";
 
 export type LinkedContact = {
@@ -25,7 +26,7 @@ export type LinkedContact = {
 // so a reissue or a removal cannot interleave with the resolution and the verification that follows it.
 export async function findLinkedContact(
   tx: Transaction,
-  claim: { projectId: string; contactId: string | null; version: number },
+  claim: { projectId: string; contactId: string | null; version: number; emailed: boolean },
 ): Promise<LinkedContact | null> {
   const [row] = await tx
     .select({
@@ -56,7 +57,7 @@ export async function findLinkedContact(
     projectId: row.projectId,
     contactId: row.contactId,
     teamId: row.teamId,
-    provedEmail: claim.contactId === null ? null : row.linkEmail,
+    provedEmail: claim.contactId === null || !claim.emailed ? null : row.linkEmail,
   };
 }
 
@@ -456,4 +457,135 @@ export async function projectContactLink(
     .where(and(eq(projectClient.projectId, input.projectId), eq(projectClient.contactId, input.contactId)))
     .limit(1);
   return row ?? null;
+}
+
+export type ClientAccount = { userId: string; email: string; name: string; emailVerified: boolean };
+
+export async function findClientAccount(db: DbExecutor, userId: string): Promise<ClientAccount | null> {
+  const [row] = await db
+    .select({ userId: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return row ? { ...row, email: row.email.toLowerCase() } : null;
+}
+
+// A signed-in requester (action catalog design §5.5) is the team's contact holding their user identity or their
+// verified email, or a new contact with both identities verified by the session. Runs under the (team, email)
+// lock, so two requests at once cannot create two contacts.
+export async function matchOrCreateAccountContact(
+  tx: Transaction,
+  input: { teamId: string; account: ClientAccount },
+): Promise<string> {
+  const { teamId, account } = input;
+  await lockClientIdentity(tx, { teamId, key: account.email });
+  const [match] = await tx
+    .select({ contactId: clientIdentity.contactId })
+    .from(clientIdentity)
+    .where(
+      and(
+        eq(clientIdentity.teamId, teamId),
+        isNotNull(clientIdentity.verifiedAt),
+        or(
+          and(eq(clientIdentity.kind, "user"), eq(clientIdentity.value, account.userId)),
+          and(eq(clientIdentity.kind, "email"), eq(clientIdentity.value, account.email)),
+        ),
+      ),
+    )
+    .orderBy(sql`${clientIdentity.kind} = 'user' desc`)
+    .limit(1);
+  let contactId = match?.contactId;
+  if (!contactId) {
+    const [created] = await tx
+      .insert(clientContact)
+      .values({ teamId, name: account.name.trim() || account.email.split("@")[0] || "Client" })
+      .returning({ id: clientContact.id });
+    if (!created) throw new Error("Insert into client_contact returned no row");
+    contactId = created.id;
+  }
+  const held = await tx
+    .select({ kind: clientIdentity.kind, value: clientIdentity.value, verifiedAt: clientIdentity.verifiedAt })
+    .from(clientIdentity)
+    .where(eq(clientIdentity.contactId, contactId));
+  const now = new Date();
+  const wanted: [ClientIdentityKind, string][] = [
+    ["user", account.userId],
+    ["email", account.email],
+  ];
+  for (const [kind, value] of wanted) {
+    const existing = held.find((h) => h.kind === kind && h.value === value);
+    if (existing?.verifiedAt) continue;
+    if (existing) {
+      await tx
+        .update(clientIdentity)
+        .set({ verifiedAt: now })
+        .where(and(eq(clientIdentity.contactId, contactId), eq(clientIdentity.kind, kind), eq(clientIdentity.value, value)));
+      continue;
+    }
+    await tx.insert(clientIdentity).values({ contactId, teamId, kind, value, source: "account", verifiedAt: now });
+  }
+  return contactId;
+}
+
+export async function countOpenRequestsForContact(
+  tx: DbExecutor,
+  input: { teamId: string; contactId: string },
+): Promise<number> {
+  const [row] = await tx
+    .select({ count: countDistinct(project.id) })
+    .from(project)
+    .innerJoin(projectClient, eq(projectClient.projectId, project.id))
+    .where(
+      and(
+        eq(project.teamId, input.teamId),
+        eq(project.source, "web"),
+        inArray(project.status, OPEN_PROJECT_STATUSES),
+        eq(projectClient.contactId, input.contactId),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+export type ClientProjectRow = {
+  projectId: string;
+  contactId: string;
+  linkVersion: number;
+  title: string;
+  brief: string;
+  status: (typeof project.$inferSelect)["status"];
+  createdAt: Date;
+  teamId: string;
+  teamName: string;
+  teamSlug: string;
+};
+
+// Every project, across teams, whose attached contact is this account: through a user identity, or a verified
+// email identity equal to the account's verified email (action catalog design §5.4). Newest first.
+export async function listClientProjectsForUser(tx: DbExecutor, userId: string): Promise<ClientProjectRow[]> {
+  const account = await findClientAccount(tx, userId);
+  if (!account) return [];
+  const byUser = and(eq(clientIdentity.kind, "user"), eq(clientIdentity.value, userId));
+  const byEmail = account.emailVerified
+    ? and(eq(clientIdentity.kind, "email"), eq(clientIdentity.value, account.email), isNotNull(clientIdentity.verifiedAt))
+    : undefined;
+  const rows = await tx
+    .selectDistinctOn([project.id], {
+      projectId: project.id,
+      contactId: projectClient.contactId,
+      linkVersion: projectClient.linkVersion,
+      title: project.title,
+      brief: project.brief,
+      status: project.status,
+      createdAt: project.createdAt,
+      teamId: team.id,
+      teamName: team.name,
+      teamSlug: team.slug,
+    })
+    .from(projectClient)
+    .innerJoin(clientIdentity, eq(clientIdentity.contactId, projectClient.contactId))
+    .innerJoin(project, eq(project.id, projectClient.projectId))
+    .innerJoin(team, eq(team.id, project.teamId))
+    .where(byEmail ? or(byUser, byEmail) : byUser)
+    .orderBy(project.id);
+  return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

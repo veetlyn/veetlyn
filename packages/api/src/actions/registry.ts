@@ -5,16 +5,26 @@ import {
   projectClientPreview,
   projectClientRemove,
 } from "./clients";
+import {
+  conversationAnswer,
+  conversationPost,
+  memberDepartments,
+  requestDecline,
+  requestListOpen,
+  requestShortlist,
+} from "./conversations";
 import type { AnyActionDefinition } from "./define";
 import { deliveryAccept, deliveryFile, deliveryRequestChanges, deliverySubmit, deliveryUploadStart } from "./deliveries";
 import {
   projectAssign,
+  projectClientList,
   projectClientView,
   projectGet,
   projectList,
   projectRefundClient,
   projectStart,
 } from "./projects";
+import { offeringSearch } from "./offerings";
 import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
 import { createRequest } from "./requests";
 
@@ -26,6 +36,7 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   projectList,
   projectGet,
   projectClientView,
+  projectClientList,
   projectClientAdd,
   projectClientRemove,
   projectClientLinkEmail,
@@ -41,4 +52,11 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   deliveryRequestChanges,
   deliveryAccept,
   deliveryFile,
+  conversationPost,
+  conversationAnswer,
+  requestDecline,
+  requestShortlist,
+  memberDepartments,
+  requestListOpen,
+  offeringSearch,
 ];

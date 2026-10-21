@@ -28,7 +28,8 @@ export function isNotFoundError(error: { data?: { code?: string } | null } | nul
 }
 
 export function clientWaitsOnTeam(view: ProjectWaitView): boolean {
-  if (view.project.status === "quoting") return !hasProposedQuote(view);
+  // Other freelancers may still quote or ask a question after the first quote arrives.
+  if (view.project.status === "quoting") return true;
   if (view.project.status === "in_progress") return !hasPendingAmendment(view);
   return false;
 }

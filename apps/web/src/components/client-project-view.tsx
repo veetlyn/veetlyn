@@ -9,6 +9,7 @@ import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import type { inferRouterOutputs } from "@trpc/server";
 import { type FormEvent, useState } from "react";
 
+import { Composer, ConversationThread } from "@/components/conversation/thread";
 import { DeliveryFile } from "@/components/delivery-file";
 import { ProjectProgress } from "@/components/project-progress";
 import { DeliveryLink } from "@/components/delivery-link";
@@ -31,7 +32,102 @@ export type ClientProjectActions = {
   deliveryBusy: boolean;
   deliveryError: { message: string } | null;
   actionError: { message: string } | null;
+  post: (draft: { body: string; teamOnly: boolean }) => Promise<void>;
+  answer: (questionId: string, body: string) => Promise<void>;
+  messageBusy: boolean;
+  messageError: { message: string } | null;
 };
+
+type Quote = ClientProjectData["quotes"][number];
+type ConversationMessage = ClientProjectData["conversation"]["messages"][number];
+
+// Responses grouped by freelancer (conversations design §7): each one's quote and questions together.
+function responsesByFreelancer(quotes: readonly Quote[], messages: readonly ConversationMessage[]) {
+  const groups = new Map<string, { name: string; quotes: Quote[]; questions: ConversationMessage[] }>();
+  const group = (freelancer: { key: string; name: string }) => {
+    const found = groups.get(freelancer.key) ?? { name: freelancer.name, quotes: [], questions: [] };
+    groups.set(freelancer.key, found);
+    return found;
+  };
+  for (const quote of quotes) if (quote.freelancer) group(quote.freelancer).quotes.push(quote);
+  for (const message of messages) {
+    if (message.kind === "question" && message.freelancer) group(message.freelancer).questions.push(message);
+  }
+  return [...groups.entries()];
+}
+
+function AnswerBox({
+  question,
+  answered,
+  actions,
+}: {
+  question: ConversationMessage;
+  answered: boolean;
+  actions: ClientProjectActions | null;
+}) {
+  const [body, setBody] = useState("");
+  if (answered) return <p className="text-sm text-muted-foreground">Answered.</p>;
+  return (
+    <form
+      className="grid gap-2"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (!actions || !body.trim()) return;
+        try {
+          await actions.answer(question.id, body.trim());
+          setBody("");
+        } catch {
+          // The page shows the error; the answer stays typed.
+        }
+      }}
+    >
+      <Label htmlFor={`answer-${question.id}`}>Your answer</Label>
+      <Textarea id={`answer-${question.id}`} rows={2} maxLength={4000} value={body} onChange={(e) => setBody(e.target.value)} />
+      <Button type="submit" variant="outline" className="justify-self-start" disabled={!actions || actions.messageBusy || !body.trim()}>
+        Send answer
+      </Button>
+    </form>
+  );
+}
+
+function QuoteSummary({
+  quote,
+  currency,
+  quoting,
+  actions,
+}: {
+  quote: Quote;
+  currency: ClientProjectData["project"]["currency"];
+  quoting: boolean;
+  actions: ClientProjectActions | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="font-medium">
+          <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
+          <span className="text-muted-foreground"> · delivery in {quote.deliveryDays} days</span>
+        </p>
+        <Badge tone={quote.status === "proposed" ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
+          {quote.status === "proposed" ? "Waiting for you" : QUOTE_STATUS_LABELS[quote.status]}
+        </Badge>
+      </div>
+      <ul className="space-y-1 text-sm">
+        {quote.items.map((item) => (
+          <li key={item.id} className="flex justify-between gap-4">
+            <span>{item.description}</span>
+            <span>{formatMoney(money(currency, item.amountMinor))}</span>
+          </li>
+        ))}
+      </ul>
+      {quote.status === "proposed" && quoting ? (
+        <Button disabled={!actions || actions.quoteBusy} onClick={() => actions?.acceptQuote(quote.id)}>
+          Accept quote
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 export function ClientProjectView({
   data,
@@ -44,7 +140,10 @@ export function ClientProjectView({
 }) {
   const [changesOpen, setChangesOpen] = useState(false);
   const [changesNote, setChangesNote] = useState("");
-  const { project, quotes, amendments, payments, deliveries, refund } = data;
+  const { project, quotes, amendments, payments, deliveries, refund, conversation } = data;
+  const closedRequest = project.status === "declined" || project.status === "expired";
+  const responses = responsesByFreelancer(quotes, conversation.messages);
+  const answeredIds = new Set(conversation.messages.filter((m) => m.kind === "answer").map((m) => m.replyToId));
   const currency = project.currency;
   const pendingPayments = payments.filter((p) => p.payable);
   const awaitingDelivery = project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
@@ -77,38 +176,44 @@ export function ClientProjectView({
         {refund ? <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p> : null}
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
       </div>
-      <ProjectProgress status={project.status} layout="row" />
+      {closedRequest ? (
+        <section className="panel space-y-2 p-4">
+          <p className="font-medium">
+            {project.status === "declined" ? "The team declined this request" : "This request expired without an answer"}
+          </p>
+          {project.declinedReason ? <p className="text-sm whitespace-pre-wrap">{project.declinedReason}</p> : null}
+          <a href="/request" className={buttonVariants({ variant: "outline" })}>
+            Send a new request
+          </a>
+        </section>
+      ) : project.status !== "cancelled" ? (
+        <ProjectProgress status={project.status} layout="row" />
+      ) : null}
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Quotes</h2>
-        {quotes.length === 0 ? <p className="text-sm text-muted-foreground">The team is preparing your quote.</p> : null}
-        {quotes.map((quote) => (
-          <div key={quote.id} className="space-y-3 panel p-4">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">
-                <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
-                <span className="text-muted-foreground"> · delivery in {quote.deliveryDays} days</span>
-              </p>
-              <Badge tone={quote.status === "proposed" ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
-                {quote.status === "proposed" ? "Waiting for you" : QUOTE_STATUS_LABELS[quote.status]}
-              </Badge>
-            </div>
-            <ul className="space-y-1 text-sm">
-              {quote.items.map((item) => (
-                <li key={item.id} className="flex justify-between gap-4">
-                  <span>{item.description}</span>
-                  <span>{formatMoney(money(currency, item.amountMinor))}</span>
-                </li>
+      {responses.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Responses</h2>
+          {responses.map(([key, response]) => (
+            <div key={key} className="space-y-3 panel p-4">
+              <p className="font-medium">{response.name}</p>
+              {response.quotes.map((quote) => (
+                <QuoteSummary key={quote.id} quote={quote} currency={currency} quoting={project.status === "quoting"} actions={actions} />
               ))}
-            </ul>
-            {quote.status === "proposed" && project.status === "quoting" ? (
-              <Button disabled={!actions || actions.quoteBusy} onClick={() => actions?.acceptQuote(quote.id)}>
-                Accept quote
-              </Button>
-            ) : null}
-          </div>
-        ))}
-      </section>
+              {response.questions.map((question) => (
+                <div key={question.id} className="space-y-2 border-t pt-3">
+                  <p className="text-sm font-medium">Question</p>
+                  <p className="text-sm whitespace-pre-wrap">{question.body}</p>
+                  <AnswerBox question={question} answered={answeredIds.has(question.id)} actions={conversation.canWrite ? actions : null} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {quotes.length === 0 && !closedRequest ? (
+        <p className="text-sm text-muted-foreground">The team is preparing your quote.</p>
+      ) : null}
 
       {amendments.length > 0 ? (
         <section className="space-y-3">
@@ -277,6 +382,30 @@ export function ClientProjectView({
           })}
         </section>
       ) : null}
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Messages</h2>
+        <div className="panel grid gap-5 p-4">
+          <ConversationThread
+            messages={conversation.messages}
+            isMine={(m) => m.authorKind === "client"}
+            empty="No messages yet. Questions from the team show here and above, next to their quotes."
+          />
+          {conversation.canWrite && actions ? (
+            <Composer
+              audience={
+                project.status === "quoting"
+                  ? "The freelancers looking at your request read this (contact details are hidden until you accept a quote)."
+                  : "Your freelancer and the team read this."
+              }
+              teamOnlyChoice={project.status === "quoting" ? "Send to the team only" : undefined}
+              busy={actions.messageBusy}
+              error={actions.messageError?.message ?? null}
+              onSend={({ body, teamOnly }) => actions.post({ body, teamOnly })}
+            />
+          ) : null}
+        </div>
+      </section>
 
       {project.status === "completed" ? (
         <p className="text-sm text-muted-foreground">This project is complete. Thank you.</p>

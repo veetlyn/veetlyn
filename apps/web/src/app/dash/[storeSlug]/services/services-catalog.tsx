@@ -3,6 +3,7 @@
 import { MAX_DEPARTMENT_NAME } from "@jendal-workspace/core";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Badge } from "@jendal-workspace/ui/components/badge";
+import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -20,7 +21,7 @@ function DepartmentRow({
   offeringCount,
 }: {
   teamSlug: string;
-  department: { id: string; name: string };
+  department: { id: string; name: string; listed: boolean };
   offeringCount: number;
 }) {
   const queryClient = useQueryClient();
@@ -38,6 +39,7 @@ function DepartmentRow({
     }),
   );
   const remove = useMutation(trpc.servicesCatalog.deleteDepartment.mutationOptions({ onSuccess: invalidate }));
+  const setListed = useMutation(trpc.servicesCatalog.setDepartmentListed.mutationOptions({ onSuccess: invalidate }));
   return (
     <li className="space-y-1">
       <div className="flex flex-wrap items-center gap-2">
@@ -58,6 +60,16 @@ function DepartmentRow({
         <span className="text-sm text-muted-foreground">
           {offeringCount} {offeringCount === 1 ? "service" : "services"}
         </span>
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={department.listed}
+            disabled={setListed.isPending}
+            onCheckedChange={(checked) =>
+              setListed.mutate({ teamSlug, departmentId: department.id, listed: checked === true })
+            }
+          />
+          List in AI assistants
+        </label>
         <Button
           type="button"
           variant="outline"
@@ -71,9 +83,9 @@ function DepartmentRow({
           Delete
         </Button>
       </div>
-      {rename.error ? (
+      {rename.error ?? setListed.error ? (
         <p role="alert" className="text-sm text-destructive">
-          {rename.error.message}
+          {(rename.error ?? setListed.error)?.message}
         </p>
       ) : null}
     </li>
@@ -132,6 +144,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
           <p className="flex items-center gap-2 font-medium">
             <span className="truncate">{offering.name}</span>
             {!offering.active ? <Badge>Hidden</Badge> : null}
+            {offering.active && !offering.listed ? <Badge>Not in AI assistants</Badge> : null}
           </p>
           <p className="text-sm text-muted-foreground">
             {priceLabel(offering, currency)} · {daysLabel(offering)}

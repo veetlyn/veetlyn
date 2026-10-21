@@ -18,7 +18,8 @@
     "**/.alchemy/**",
     "**/dist/**",
     "**/.vite/**",
-    "packages/db/src/migrations/**"
+    "packages/db/src/migrations/**",
+    "apps/server/src/mcp/bridge.generated.ts"
   ],
   "jsPlugins": [{ "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }],
   "rules": {

@@ -101,6 +101,16 @@ export async function requireSession(): Promise<SessionInfo> {
   return session;
 }
 
+const publicClientSchema = z.object({ client_name: z.string().min(1) });
+
+// The name an OAuth client registered for itself: shown on the consent page as a claim, never as proof.
+export async function fetchOAuthClientName(clientId: string): Promise<string | null> {
+  if (!clientId) return null;
+  const response = await callApiAsUser(`/api/auth/oauth2/public-client?client_id=${encodeURIComponent(clientId)}`);
+  const parsed = publicClientSchema.safeParse(response.ok ? await response.json() : null);
+  return parsed.success ? parsed.data.client_name : null;
+}
+
 export async function redirectIfSignedIn(): Promise<void> {
   if (await fetchSession()) redirect("/");
 }
@@ -176,4 +186,15 @@ export async function fetchStorePolicyInfo(): Promise<StorePolicyInfo | null> {
   if (!response.ok) return null;
   const parsed = storePolicyInfoSchema.safeParse(await response.json());
   return parsed.success ? parsed.data : null;
+}
+
+const linkTeamSchema = z.object({ result: z.object({ data: z.object({ slug: z.string() }) }) });
+
+// The team whose site serves a client or pay link; null for a link that names none.
+export async function fetchLinkTeam(kind: "client" | "pay", token: string): Promise<string | null> {
+  const input = encodeURIComponent(JSON.stringify({ kind, token }));
+  const response = await callApi(`/trpc/project.linkTeam?input=${input}`);
+  if (!response.ok) return null;
+  const parsed = linkTeamSchema.safeParse(await response.json());
+  return parsed.success ? parsed.data.result.data.slug : null;
 }

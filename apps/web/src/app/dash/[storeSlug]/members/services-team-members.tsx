@@ -3,6 +3,7 @@
 import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { isServicesTeamRole, SERVICES_TEAM_ROLES, type ServicesTeamRole } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
+import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -60,10 +61,63 @@ function MemberTitle({ teamSlug, member }: { teamSlug: string; member: Member })
   );
 }
 
+// Which requests reach a freelancer: those for offerings in their departments, plus requests with none.
+function MemberDepartments({
+  teamSlug,
+  member,
+  departments,
+  chosen,
+}: {
+  teamSlug: string;
+  member: Member;
+  departments: { id: string; name: string }[];
+  chosen: string[];
+}) {
+  const queryClient = useQueryClient();
+  const save = useMutation(
+    trpc.servicesTeam.setMemberDepartments.mutationOptions({
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.listMemberDepartments.queryKey({ teamSlug }) }),
+    }),
+  );
+  const toggle = (departmentId: string, on: boolean) => {
+    const next = on ? [...chosen, departmentId] : chosen.filter((id) => id !== departmentId);
+    save.mutate({ teamSlug, userId: member.userId, departmentIds: next });
+  };
+  return (
+    <fieldset className="mt-2 grid gap-1">
+      <legend className="text-sm text-muted-foreground">Answers requests for</legend>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {departments.map((department) => (
+          <label key={department.id} className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={chosen.includes(department.id)}
+              disabled={save.isPending}
+              onCheckedChange={(checked) => toggle(department.id, checked === true)}
+            />
+            {department.name}
+          </label>
+        ))}
+      </div>
+      {save.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {save.error.message}
+        </p>
+      ) : null}
+    </fieldset>
+  );
+}
+
 export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
   const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const members = useQuery({ ...trpc.servicesTeam.listMembers.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const catalog = useQuery({ ...trpc.servicesCatalog.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const memberDepartments = useQuery({
+    ...trpc.servicesTeam.listMemberDepartments.queryOptions({ teamSlug }),
+    retry: false,
+    meta: { silent: true },
+  });
 
   const [email, setEmail] = useState("");
   const [newRole, setNewRole] = useState<ServicesTeamRole>("freelancer");
@@ -85,6 +139,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   if (team.isError) return <TeamNotFound />;
 
   const isAdmin = team.data.role === "admin";
+  const departments = catalog.data?.departments ?? [];
   const solo = team.data.settings?.solo ?? false;
   // Managers see the list; only admins change it. Freelancers get a FORBIDDEN from listMembers.
   const listForbidden = members.error?.data?.code === "FORBIDDEN";
@@ -127,6 +182,16 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                     <MemberTitle teamSlug={teamSlug} member={member} />
                   ) : member.title ? (
                     <p className="truncate text-sm text-muted-foreground">{member.title}</p>
+                  ) : null}
+                  {isAdmin && member.role === "freelancer" && departments.length > 0 ? (
+                    <MemberDepartments
+                      teamSlug={teamSlug}
+                      member={member}
+                      departments={departments}
+                      chosen={(memberDepartments.data ?? [])
+                        .filter((row) => row.userId === member.userId)
+                        .map((row) => row.departmentId)}
+                    />
                   ) : null}
                 </div>
                 {member.workspaceAdmin ? (

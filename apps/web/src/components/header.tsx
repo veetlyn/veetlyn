@@ -7,7 +7,7 @@ import { BrandMark } from "./brand-mark";
 import { ModeToggle } from "./mode-toggle";
 import UserMenu from "./user-menu";
 
-const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password", "/reset-password", "/verify-email"]);
+const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password", "/reset-password", "/verify-email", "/oauth/consent"]);
 
 // The top bar of dash pages outside a team. Team pages (TeamShell) and sign-in pages have their own frame.
 export default function Header() {

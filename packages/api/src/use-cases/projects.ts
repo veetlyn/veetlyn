@@ -12,7 +12,9 @@ import {
   completionRefundId,
   depositDue,
   finalPriceMinor,
+  formatMoney,
   managementFeeCreditTransfer,
+  money,
   paymentLines,
   quoteAuthor,
   quoteAuthorRefusalMessage,
@@ -31,6 +33,7 @@ import {
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import { attachContact, matchOrCreateContact } from "@jendal-workspace/db/repositories/contacts";
+import { insertEventMessage, userDisplayName } from "@jendal-workspace/db/repositories/conversations";
 import {
   findProjectById,
   getCurrentQuote,
@@ -263,6 +266,14 @@ export async function addQuote(
       deliveryDays: input.deliveryDays,
     });
     await tx.insert(quoteItem).values(items.map((item, position) => ({ quoteId, position, ...item })));
+    // In the request space, so the freelancers looking at the request see the competing quotes (design §4).
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "request",
+      body: `${await userDisplayName(tx, author.freelancerId)} sent a quote: ${formatMoney(money(row.currency, amountMinor))}, delivered in ${input.deliveryDays} days.`,
+      refType: "quote",
+      refId: quoteId,
+    });
     return { quoteId };
   });
 }
@@ -308,6 +319,13 @@ export async function acceptQuote(
       managementFeeMinor: deposit.managementFeeMinor,
       amountMinor: deposit.totalMinor,
       lines: paymentLines("deposit", deposit, row.managementFeeBps),
+    });
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: `The client accepted ${await userDisplayName(tx, found.freelancerId)}'s quote of ${formatMoney(money(row.currency, found.amountMinor))}.`,
+      refType: "quote",
+      refId: found.id,
     });
     return { paymentId, amountMinor: deposit.totalMinor };
   });
@@ -361,6 +379,13 @@ export async function proposeAmendment(
       deltaMinor: newAmountMinor - current.amountMinor,
       newAmountMinor,
       extraDays: amended.extraDays,
+    });
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: `The team proposed a change to the quote: ${formatMoney(money(row.currency, newAmountMinor))} in total.`,
+      refType: "amendment",
+      refId: amendmentId,
     });
     return { amendmentId };
   });
@@ -466,6 +491,13 @@ export async function acceptAmendment(
         lines: paymentLines("top_up", effect.topUp, row.managementFeeBps),
       });
     }
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: "The client accepted the change to the quote.",
+      refType: "amendment",
+      refId: found.id,
+    });
     return { quoteVersion: current.version + 1, topUpPaymentId };
   });
 }
@@ -487,6 +519,13 @@ export async function declineAmendment(db: Database, input: { projectId: string;
       events: [{ type: "amendment.declined", data: { amendmentId: found.id, projectId: row.id } }],
     });
     await tx.update(amendment).set({ status: "declined", decidedAt: new Date() }).where(eq(amendment.id, found.id));
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: "The client declined the change to the quote.",
+      refType: "amendment",
+      refId: found.id,
+    });
   });
 }
 
@@ -610,6 +649,13 @@ export async function submitDelivery(
       fileUploadId: fileUploadId ?? null,
     });
     if (fileUploadId) await markFileUploadAttached(tx, fileUploadId);
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: `${await userDisplayName(tx, actor.actorId)} delivered the work.`,
+      refType: "delivery",
+      refId: deliveryId,
+    });
     return { deliveryId };
   });
 }
@@ -662,6 +708,13 @@ export async function requestChanges(
       .update(delivery)
       .set({ status: "changes_requested", clientNote: note, decidedAt: new Date() })
       .where(eq(delivery.id, found.id));
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: "The client asked for changes to the delivery.",
+      refType: "delivery",
+      refId: found.id,
+    });
   });
 }
 
@@ -755,6 +808,13 @@ export async function acceptDelivery(
       throw new Error(`accept_delivery moved project ${row.id} to ${status}`);
     }
     await tx.update(delivery).set({ status: "accepted", decidedAt: new Date() }).where(eq(delivery.id, found.id));
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: "The client accepted the delivery.",
+      refType: "delivery",
+      refId: found.id,
+    });
     return { status, balancePaymentId };
   });
 }

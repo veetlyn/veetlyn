@@ -13,6 +13,13 @@ describe("shouldForwardToApi", () => {
     expect(forwards("https://admin.payleor.app/trpc/store.listMine?batch=1")).toBe(true);
   });
 
+  // Claude and ChatGPT read the issuer's metadata with the issuer path inserted (RFC 8414); a page answering
+  // instead breaks connecting the plugin.
+  it("forwards OAuth discovery for the issuer on the dashboard host", () => {
+    expect(forwards("https://dash.payleor.com/.well-known/oauth-authorization-server/api/auth")).toBe(true);
+    expect(forwards("https://dash.payleor.com/.well-known/openid-configuration/api/auth")).toBe(true);
+  });
+
   it("forwards store API paths", () => {
     expect(forwards("https://acme.payleor.app/api/store")).toBe(true);
     expect(forwards("https://shop.example.com/api/store")).toBe(true);

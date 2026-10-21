@@ -6,6 +6,8 @@ export const PROJECT_STATUSES = [
   "awaiting_balance",
   "completed",
   "cancelled",
+  "declined",
+  "expired",
 ] as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
@@ -27,6 +29,8 @@ export const PROJECT_EVENTS = [
   "accept_delivery",
   "balance_captured",
   "cancel",
+  "decline",
+  "expire",
 ] as const;
 
 export type ProjectEvent = (typeof PROJECT_EVENTS)[number];
@@ -89,6 +93,9 @@ export const PROJECT_TRANSITIONS = {
   },
   balance_captured: { from: ["awaiting_balance"], to: () => "completed" },
   cancel: { from: OPEN_PROJECT_STATUSES, to: () => "cancelled" },
+  // Conversations design §2: a request ends without a quote when staff decline it or nobody answers in time.
+  decline: { from: ["quoting"], to: () => "declined" },
+  expire: { from: ["quoting"], to: () => "expired" },
 } satisfies Readonly<Record<ProjectEvent, TransitionRule>>;
 
 const NO_FACTS: ProjectFacts = { pendingAmendment: false, unpaidTopUp: false, balanceDueMinor: 0 };
@@ -132,6 +139,8 @@ export const PROJECT_STATUS_LABELS = {
   awaiting_balance: "Awaiting balance",
   completed: "Completed",
   cancelled: "Cancelled",
+  declined: "Declined",
+  expired: "Expired",
 } satisfies Record<ProjectStatus, string>;
 
 export function projectStatusLabel(status: ProjectStatus): string {

@@ -42,6 +42,7 @@ export default function UserMenu() {
           <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
           <DropdownMenuItem render={<Link href="/account" />}>Account settings</DropdownMenuItem>
           <DropdownMenuItem render={<Link href="/me/payouts" />}>Payouts</DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/me/projects" />}>Your projects as a client</DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onClick={() => {
