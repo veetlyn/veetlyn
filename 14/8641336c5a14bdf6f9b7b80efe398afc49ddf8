@@ -1,0 +1,19 @@
+specs/platform/2026-10-21-b1-operating-model-design.md
+  s_ec180faf4f9b2e::t_a0adbf89df62dc 114-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "148641336c5a14bdf6f9b7b80efe398afc49ddf8",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
