@@ -112,6 +112,7 @@ app.all("/mcp", (c) => {
       },
       auth: c.get("auth"),
       log: c.get("log"),
+      platformName: email.platformName,
       storeOrigin: email.storeOrigin,
     },
     { authUrl: ENV.BETTER_AUTH_URL, origins: widgetOrigins },

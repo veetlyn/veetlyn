@@ -24,6 +24,7 @@ export type McpDeps = {
   auth: Auth;
   log: RequestLogger;
   userId: string;
+  platformName: string;
   // Builds https://{slug}.payleor.app for a team's client and pay pages.
   storeOrigin: (slug: string) => string;
 };

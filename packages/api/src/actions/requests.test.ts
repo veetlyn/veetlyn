@@ -46,6 +46,7 @@ describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () =
             email: {
               mailer,
               siteOrigin: "https://payleor.test",
+              platformName: "Platform",
               dashOrigin: "https://dash.payleor.test",
               storeOrigin: (slug) => `https://${slug}.payleor.test`,
             },

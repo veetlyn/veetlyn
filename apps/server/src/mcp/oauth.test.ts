@@ -28,6 +28,7 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
       actions: { db, files: createFakeFileStore(), auth },
       auth,
       log: fromPartial<RequestLogger>({ set: () => {} }),
+      platformName: "Platform",
       storeOrigin: (slug) => `https://${slug}.payleor.test`,
     },
     { authUrl: "http://dash.localhost:3001", origins: { api: "https://api.localhost", storeWildcard: "https://*.payleor.test" } },

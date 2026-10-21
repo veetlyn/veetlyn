@@ -82,6 +82,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
         email: {
           mailer: createFakeMailer(),
           siteOrigin: "https://payleor.test",
+          platformName: "Platform",
           dashOrigin: "https://dash.payleor.test",
           storeOrigin: (slug) => `https://${slug}.payleor.test`,
         },
@@ -89,6 +90,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
       auth,
       log: fromPartial<RequestLogger>({ set: () => {} }),
       userId,
+      platformName: "Platform",
       storeOrigin: (slug) => `https://${slug}.payleor.test`,
     };
   }

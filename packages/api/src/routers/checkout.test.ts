@@ -119,6 +119,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         ? {
             mailer: options.mailer,
             siteOrigin: "https://payleor.test",
+            platformName: "Platform",
             dashOrigin: "https://dash.payleor.test",
             storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
           }
@@ -473,6 +474,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         email: {
           mailer: { send: () => Promise.reject(new Error("provider down")) },
           siteOrigin: "https://payleor.test",
+          platformName: "Platform",
           dashOrigin: "https://dash.payleor.test",
           storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
           onError: (_error, email) => {
