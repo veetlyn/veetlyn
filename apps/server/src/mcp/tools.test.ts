@@ -216,8 +216,17 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const stranger = await seedUser(db, "Eve");
     const stolen = await tool(stranger, "accept_quote", { projectId, quoteId, confirmation: token });
     expect(textOf(stolen)).toContain("No project with this id belongs to you");
-    await tool(clientId, "accept_quote", { projectId, quoteId, confirmation: token });
+    await addQuote(db, { teamId, role: "freelancer", actorId: ben }, { projectId, items: [{ ...item[0]!, amountMinor: 14_000 }], deliveryDays: 3 });
+    const latest = await tool(clientId, "get_project", { projectId });
+    const ready = z.string().parse(latest.result?._meta?.payleor?.confirmations?.quotes?.[quoteId]);
+    await tool(clientId, "accept_quote", { projectId, quoteId, confirmation: ready });
     expect((await findProjectById(db, projectId))?.status).toBe("awaiting_deposit");
+
+    // After the answer and the acceptance, the assistant still reads what was asked, what was paid and who lost.
+    const after = textOf(await tool(clientId, "get_project", { projectId }));
+    expect(after).toContain(`- Answered question from «Ben» (question id ${asked.messageId}): «Your email for the files?»; the answer: «`);
+    expect(after).toContain("«Ben» quoted $140.00 in 3 days, not chosen");
+    expect(after).toMatch(/- Payment: deposit \$[\d.,]+, pending\./);
   });
 
   it("refuses the client once they join the project's team", async () => {

@@ -110,8 +110,9 @@ function summaryLine(slides: readonly Slide[], currency: string, frame: Framing)
   if (slides.length === 0) return null;
   const parts = slides.map((s) => {
     const said: string[] = [];
-    if (s.quote && (s.quote.status === "proposed" || s.quote.status === "accepted")) {
-      said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${s.quote.deliveryDays} days`);
+    if (s.quote) {
+      const lost = s.quote.status === "superseded" || s.quote.status === "rejected";
+      said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${s.quote.deliveryDays} days${lost ? ", not chosen" : ""}`);
     }
     const open = s.questions.filter((q) => !q.answered);
     if (open.length > 0) said.push(`asked ${frame.text(open[0]?.body ?? "")}`);
@@ -221,6 +222,9 @@ export async function projectCard(
   const openQuestions = slides.flatMap((s) =>
     s.questions.filter((q) => !q.answered).map((q) => ({ id: q.id, freelancer: s.name, body: q.body })),
   );
+  const answers = new Map(
+    view.conversation.messages.flatMap((m) => (m.kind === "answer" && m.replyToId ? [[m.replyToId, plain(m.body, 400)] as const] : [])),
+  );
   const slug = team?.slug ?? null;
   const seller = team ? plain(team.name, 80) : "the team";
   const step = nextStep(view, quoted(seller, 80), openQuestions.length);
@@ -289,6 +293,19 @@ export async function projectCard(
         : [],
     ),
     ...openQuestions.map((q) => `- Open question from ${quoted(q.freelancer, 60)} (question id ${q.id}): ${quoted(q.body, 400)}`),
+    // Answered questions and settled payments stay in the text, so the assistant can still say what was asked and paid.
+    ...slides.flatMap((s) =>
+      s.questions
+        .filter((q) => q.answered)
+        .map((q) => {
+          const answer = answers.get(q.id);
+          return `- Answered question from ${quoted(s.name, 60)} (question id ${q.id}): ${quoted(q.body, 400)}${answer ? `; the answer: ${quoted(answer, 400)}` : ""}`;
+        }),
+    ),
+    ...view.payments.map(
+      (p) =>
+        `- Payment: ${p.kind} ${money(p.amountMinor, project.currency)}, ${p.status}${p.refundedMinor > 0 ? `, ${money(p.refundedMinor, project.currency)} refunded` : ""}.`,
+    ),
     delivery ? `Latest delivery (id ${delivery.id}): ${delivery.status}${delivery.note ? `, note ${quoted(delivery.note, 300)}` : ""}.` : null,
     `Next step: ${step.text}`,
     step.actions.some((a) => a === "accept_quote" || a === "accept_delivery" || a === "pay")

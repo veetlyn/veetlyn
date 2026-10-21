@@ -167,7 +167,7 @@ function freelancerSlide(data, f, tokens, notice) {
   const q = f.quote;
   const quoting = p.status === "quoting";
   const slide = el("article", { class: "card", role: "listitem" },
-    el("div", { class: "row" }, el("div", { class: "head" }, f.name), q ? el("span", { class: q.status === "accepted" ? "status done" : q.status === "proposed" ? "status you" : "status" }, q.status === "proposed" ? "Quoted" : q.status === "accepted" ? "Accepted" : "Replaced") : el("span", { class: "status" }, "Asking")));
+    el("div", { class: "row" }, el("div", { class: "head" }, f.name), q ? el("span", { class: q.status === "accepted" ? "status done" : q.status === "proposed" ? "status you" : "status" }, q.status === "proposed" ? "Quoted" : q.status === "accepted" ? "Accepted" : "Not chosen") : el("span", { class: "status" }, "Asking")));
   if (q) {
     slide.append(
       el("div", { class: "amount num" }, money(q.amountMinor, p.currency)),
