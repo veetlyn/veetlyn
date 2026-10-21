@@ -748,6 +748,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         email: {
           mailer,
           siteOrigin: "https://payleor.test",
+          platformName: "Platform",
           dashOrigin: "https://dash.payleor.test",
           storeOrigin: (slug: string) => `https://${slug}.payleor.test`,
         },

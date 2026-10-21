@@ -43,6 +43,7 @@ describe.skipIf(!hasTestDatabase)("the client's side of the conversation", () =>
       email: {
         mailer: createFakeMailer(),
         siteOrigin: "https://payleor.test",
+        platformName: "Platform",
         dashOrigin: "https://dash.payleor.test",
         storeOrigin: (slug) => `https://${slug}.payleor.test`,
       },

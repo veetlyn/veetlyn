@@ -40,6 +40,7 @@ export function getEmailServices(executionCtx: { waitUntil(promise: Promise<unkn
     mailer: createMailer(ENV),
     siteOrigin: siteOriginFor(dashOrigin),
     dashOrigin,
+    platformName: ENV.PLATFORM_NAME,
     storeOrigin: storeOriginFor({ storeDomain: ENV.STORE_DOMAIN || ENV.PLATFORM_DOMAIN, dashOrigin }),
     waitUntil: (promise) => executionCtx.waitUntil(promise),
     onError: logEmailError,

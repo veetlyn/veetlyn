@@ -22,6 +22,8 @@ export type EmailServices = {
   // Absolute origins for links in emails, e.g. https://payleor.com and https://dash.payleor.com.
   siteOrigin: string;
   dashOrigin: string;
+  // The product name people read; set per stage (PLATFORM_NAME).
+  platformName: string;
   // Absolute origin of a team's store host, e.g. https://walk-crew.payleor.app.
   storeOrigin: (slug: string) => string;
   // Sends that may outlive the response; awaited when absent.

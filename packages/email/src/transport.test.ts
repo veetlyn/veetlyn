@@ -11,7 +11,7 @@ import {
   type Transport,
 } from "./transport";
 
-const DOMAIN = { EMAIL_DOMAIN: "payleor.com", EMAIL_REPLY_TO: "support@payleor.com" };
+const DOMAIN = { EMAIL_DOMAIN: "payleor.com", EMAIL_REPLY_TO: "support@payleor.com", PLATFORM_NAME: "Platform" };
 
 const RESEND: MailerConfig = { ...DOMAIN, RESEND_API_KEY: "test-resend-key" };
 
@@ -58,7 +58,7 @@ describe("createMailer with a Resend API key", () => {
     expect(request.method).toBe("POST");
     expect(request.headers.get("authorization")).toBe("Bearer test-resend-key");
     expect(request.body).toMatchObject({
-      from: "Payleor <accounts@payleor.com>",
+      from: "Platform <accounts@payleor.com>",
       to: ["ada@example.com"],
       reply_to: ["support@payleor.com"],
       subject: "Verify your email for Payleor",
@@ -83,7 +83,7 @@ describe("createMailer with a Resend API key", () => {
     });
 
     expect(onlyRequest(fetchMock).body).toMatchObject({
-      from: "Ada's Shop via Payleor <stores@payleor.com>",
+      from: "Ada's Shop via Platform <stores@payleor.com>",
       reply_to: ["ada@shop.example"],
       tags: [{ name: "sender", value: "stores" }],
     });

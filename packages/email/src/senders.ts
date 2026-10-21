@@ -5,18 +5,18 @@ export type SenderAddress = { email: string; name: string };
 // Each purpose has its own address so recipients can filter and the domain's reputation is tracked per stream.
 const SENDERS = {
   // Sign-in, verification, password reset, invites and security notices.
-  accounts: { localPart: "accounts", name: "Payleor" },
-  // Mail to store buyers, usually as "{Store} via Payleor".
-  stores: { localPart: "stores", name: "Payleor Stores" },
-  // Quotes, payment requests and receipts to services-team clients, usually as "{Team} via Payleor".
-  invoices: { localPart: "invoices", name: "Payleor Invoices" },
+  accounts: { localPart: "accounts", suffix: "" },
+  // Mail to store buyers, usually as "{Store} via {platform name}".
+  stores: { localPart: "stores", suffix: " Stores" },
+  // Quotes, payment requests and receipts to services-team clients, usually as "{Team} via {platform name}".
+  invoices: { localPart: "invoices", suffix: " Invoices" },
   // Mail to freelancers about their payouts.
-  payouts: { localPart: "payouts", name: "Payleor Payouts" },
+  payouts: { localPart: "payouts", suffix: " Payouts" },
   // Cases and PayPal disputes.
-  disputes: { localPart: "disputes", name: "Payleor Disputes" },
-  // Payleor's own subscription billing.
-  billing: { localPart: "billing", name: "Payleor Billing" },
-} satisfies Record<SenderKey, { localPart: string; name: string }>;
+  disputes: { localPart: "disputes", suffix: " Disputes" },
+  // The platform's own subscription billing.
+  billing: { localPart: "billing", suffix: " Billing" },
+} satisfies Record<SenderKey, { localPart: string; suffix: string }>;
 
 const MAX_PARTY_NAME_LENGTH = 64;
 
@@ -31,12 +31,12 @@ function cleanPartyName(value: string): string {
   return Array.from(collapsed).slice(0, MAX_PARTY_NAME_LENGTH).join("").trim();
 }
 
-export function senderAddress(key: SenderKey, domain: string, onBehalfOf?: string): SenderAddress {
+export function senderAddress(key: SenderKey, domain: string, platformName: string, onBehalfOf?: string): SenderAddress {
   const host = domain.trim().toLowerCase();
   if (!HOSTNAME.test(host)) {
-    throw new Error(`EMAIL_DOMAIN must be a hostname such as payleor.com; got ${JSON.stringify(domain)}.`);
+    throw new Error(`EMAIL_DOMAIN must be a hostname such as example.com; got ${JSON.stringify(domain)}.`);
   }
   const sender = SENDERS[key];
   const party = onBehalfOf ? cleanPartyName(onBehalfOf) : "";
-  return { email: `${sender.localPart}@${host}`, name: party ? `${party} via Payleor` : sender.name };
+  return { email: `${sender.localPart}@${host}`, name: party ? `${party} via ${platformName}` : `${platformName}${sender.suffix}` };
 }

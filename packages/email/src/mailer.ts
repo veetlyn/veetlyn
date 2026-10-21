@@ -2,7 +2,7 @@ import type { SenderKey } from "./senders";
 
 export interface EmailMessage {
   sender: SenderKey;
-  // The store or team the message is sent for; shown as "{onBehalfOf} via Payleor".
+  // The store or team the message is sent for; shown as "{onBehalfOf} via {platform name}".
   onBehalfOf?: string;
   // Defaults to EMAIL_REPLY_TO.
   replyTo?: string;
