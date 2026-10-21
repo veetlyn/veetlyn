@@ -1,0 +1,34 @@
+packages/auth/src/testing.ts
+  s_ec180faf4f9b2e::t_21feba8428f5b1 26
+packages/email/src/transport.test.ts
+  s_ec180faf4f9b2e::t_3143ef9c2a79ce 14,24,61,63-64,86,112,161-162
+packages/auth/src/index.test.ts
+  s_ec180faf4f9b2e::t_ff861755194072 202,261,442
+packages/email/src/senders.test.ts
+  s_ec180faf4f9b2e::t_3143ef9c2a79ce 7-12,14,25-26,32,38,44,48,54-55,58
+packages/auth/src/index.ts
+  s_ec180faf4f9b2e::t_424f6d317186f5 39-40,127,136
+  s_ec180faf4f9b2e::t_b64da87d44255d 199
+  s_ec180faf4f9b2e::t_038c89f47ad86e 90
+packages/email/src/templates.ts
+  s_ec180faf4f9b2e::t_3cf4d997da0afc 12,18,29,35,39,41-42,44,47,51,53-54,56,64,66,77,84,112,122,124
+  s_ec180faf4f9b2e::t_37aef18094fe51 95
+packages/email/src/templates.test.ts
+  s_ec180faf4f9b2e::t_3143ef9c2a79ce 8,12,14,17,21,30-31,33,42,45-46,54,60,76,78,83-84,89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ae834cef0bfa054d242a9d9e2e2616e1ffb1a8c",
+  "prompts": {},
+  "sessions": {
+    "s_ec180faf4f9b2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec6484cd-c33e-40e0-bbfd-36f313d7fd70",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
