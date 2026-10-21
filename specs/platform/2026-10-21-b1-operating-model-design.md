@@ -1,6 +1,6 @@
 # Run B1: the operating model, notices and the engine — design
 
-**Date:** 2026-10-21. **Status:** sections approved by Mouhamed one by one on 2026-10-21; written design awaiting his review.
+**Date:** 2026-10-21. **Status:** approved by Mouhamed on 2026-10-21 (sections one by one, then the written design).
 
 **Program:** run B of the agentic surfaces program ([`2026-10-13-agentic-surfaces-program.md`](2026-10-13-agentic-surfaces-program.md) §4), split on 2026-10-21 into **B1** (this design: notices and rules) and **B2** (API keys, Standard Webhooks, seller tools on MCP and the API on par, the API skill, AI seller support). B1 starts Oct 21, after the prep run below; B2 follows.
 
