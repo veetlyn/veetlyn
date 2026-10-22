@@ -3,6 +3,7 @@
 import { type BillingInterval, formatOrderFee, NETWORK_FEE_BPS, PLANS, SELLER_PLANS } from "@jendal-workspace/core";
 import { useState } from "react";
 
+import { PlatformName } from "@/components/platform-name";
 import { parsePriceInput } from "@/lib/money";
 import { usd, usdCents } from "@/lib/site/examples";
 import { type SaleSource, saleFees } from "@/lib/site/fees";
@@ -11,7 +12,7 @@ type Product = "services" | "store";
 
 const PLAN_LISTS = { services: SELLER_PLANS, store: PLANS } as const;
 
-// What Payleor would take on one sale, with the plan, the price and (for services) where the client came from.
+// What the platform would take on one sale, with the plan, the price and (for services) where the client came from.
 export default function FeeCalculator({ product, interval }: { product: Product; interval: BillingInterval }) {
   const [planIndex, setPlanIndex] = useState({ services: 1, store: 1 });
   const [amount, setAmount] = useState({ services: "640", store: "36" });
@@ -86,7 +87,9 @@ export default function FeeCalculator({ product, interval }: { product: Product;
           </p>
         )}
         <p className="row sum">
-          <span>Payleor</span>
+          <span>
+            <PlatformName />
+          </span>
           <span>{usdCents(fees.totalMinor)}</span>
         </p>
       </div>

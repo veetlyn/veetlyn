@@ -4,8 +4,11 @@ import LegalPage from "@/components/legal/legal-page";
 import { legalMdxComponents } from "@/components/legal/mdx-components";
 import { LEGAL_LAST_UPDATED } from "@/content/legal/meta";
 import Terms from "@/content/legal/terms.mdx";
+import { platformName } from "@/lib/platform";
 
-export const metadata: Metadata = { title: "Terms of service · Payleor" };
+export function generateMetadata(): Metadata {
+  return { title: `Terms of service · ${platformName()}` };
+}
 
 export default function TermsPage() {
   return (

@@ -1,4 +1,5 @@
 import { H2, P } from "@/components/legal/prose";
+import { PlatformName } from "@/components/platform-name";
 
 import { type PolicyStore, StoreContact, StoreLink } from "../store-policies/shared";
 
@@ -10,8 +11,8 @@ export default function SellerTerms({ store }: { store: PolicyStore }) {
       </P>
       <H2>Who you are working with</H2>
       <P>
-        {store.name} provides the services on this page and is responsible for them. Payleor provides the software that
-        runs this page, the quotes and the payments, and is not a party to your agreement with {store.name}.
+        {store.name} provides the services on this page and is responsible for them. <PlatformName /> provides the
+        software that runs this page, the quotes and the payments, and is not a party to your agreement with {store.name}.
       </P>
       <H2>Quotes</H2>
       <P>
@@ -21,7 +22,7 @@ export default function SellerTerms({ store }: { store: PolicyStore }) {
       <H2>Payment</H2>
       <P>
         You pay a deposit when you accept the quote and the balance when you accept the delivery. Payments are processed
-        by PayPal; {store.name} and Payleor never see your card details.
+        by PayPal; {store.name} and <PlatformName /> never see your card details.
       </P>
       <H2>Delivery and changes</H2>
       <P>

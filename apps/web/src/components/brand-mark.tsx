@@ -1,4 +1,6 @@
-// Payleor's mark: the P's bowl and a square, the square in the brand colour.
+import { PlatformName } from "./platform-name";
+
+// The platform's mark: the P's bowl and a square, the square in the brand colour.
 export function BrandMark({ className = "size-6" }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
@@ -19,7 +21,7 @@ export function BrandLockup() {
   return (
     <span className="inline-flex items-center gap-2 font-heading text-lg">
       <BrandMark />
-      Payleor
+      <PlatformName />
     </span>
   );
 }

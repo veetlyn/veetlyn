@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { usePlatformName } from "@/components/platform-name";
 import ArticleArt from "@/components/site/art/article";
 import MiniArt from "@/components/site/art/mini";
 import {
@@ -11,8 +12,8 @@ import {
   AUDIENCE_MENU,
   type MenuEntry,
   type MenuFeature,
-  NETWORK_FEATURE,
-  NETWORK_MENU,
+  networkFeature,
+  networkMenu,
   TOP_LINKS,
 } from "@/content/site/nav";
 
@@ -69,15 +70,18 @@ function Drop({
 export default function SiteHeader({ dashOrigin }: { dashOrigin: string }) {
   const header = useRef<HTMLElement>(null);
   const pathname = useHeaderMenus(header);
+  const name = usePlatformName();
+  const netMenu = networkMenu(name);
+  const netFeature = networkFeature(name);
   return (
     <header className="top band" ref={header}>
       <div className="wrap">
-        <Link className="mark" href="/" aria-label="Payleor home">
+        <Link className="mark" href="/" aria-label={`${name} home`}>
           <BrandMark />
-          Payleor
+          {name}
         </Link>
         <nav className="links" aria-label="Main">
-          <Drop label="Network" entries={NETWORK_MENU} feature={NETWORK_FEATURE} pathname={pathname} />
+          <Drop label="Network" entries={netMenu} feature={netFeature} pathname={pathname} />
           <Drop label="Who it is for" entries={AUDIENCE_MENU} feature={AUDIENCE_FEATURE} pathname={pathname} />
           {TOP_LINKS.map((l) => (
             <Link key={l.path} className="nav-item" href={l.path} aria-current={current(pathname, l.path)}>
@@ -92,7 +96,7 @@ export default function SiteHeader({ dashOrigin }: { dashOrigin: string }) {
             <div className="menu-panel">
               <p className="menu-h">Network</p>
               <div className="menu-grid">
-                {NETWORK_MENU.map((e) => (
+                {netMenu.map((e) => (
                   <Tile key={e.path} entry={e} pathname={pathname} className="menu-tile" />
                 ))}
               </div>

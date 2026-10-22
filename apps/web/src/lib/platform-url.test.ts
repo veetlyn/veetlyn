@@ -11,9 +11,9 @@ describe("platformOrigins", () => {
   });
 
   it("uses https without a port on deployed hosts", () => {
-    expect(platformOrigins("payleor.app", "payleor.app")).toEqual({
-      site: "https://payleor.app",
-      dash: "https://dash.payleor.app",
+    expect(platformOrigins("platform.test", "platform.test")).toEqual({
+      site: "https://platform.test",
+      dash: "https://dash.platform.test",
     });
     expect(platformOrigins("elysiumjs.com", "dash.elysiumjs.com:443")).toEqual({
       site: "https://elysiumjs.com",

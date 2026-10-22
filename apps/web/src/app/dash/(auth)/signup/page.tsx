@@ -5,6 +5,7 @@ import OrDivider from "@/components/auth/or-divider";
 import SignUpForm from "@/components/auth/sign-up-form";
 import DiscordSignInButton from "@/components/discord-sign-in-button";
 import PayPalSignInButton from "@/components/paypal-sign-in-button";
+import { platformName } from "@/lib/platform";
 import { getPlatformOrigins } from "@/lib/server-api";
 
 export default async function SignUpPage() {
@@ -12,7 +13,7 @@ export default async function SignUpPage() {
 
   return (
     <AuthCard
-      title="Create your Payleor account"
+      title={`Create your ${platformName()} account`}
       description="Free for 14 days. No setup fee."
       footer={
         <p>

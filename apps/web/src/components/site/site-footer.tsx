@@ -1,25 +1,27 @@
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand-mark";
-import { CONTACT_EMAIL } from "@/content/legal/meta";
+import { contactEmail } from "@/content/legal/meta";
 import { AUDIENCES } from "@/content/site/audiences";
-
-const PLATFORM_LINKS = [
-  ["/network", "Payleor Network"],
-  ["/discover", "Discover"],
-  ["/visibility", "Get found"],
-  ["/pricing", "Pricing"],
-  ["/blog", "Blog"],
-  ["/contact", "Contact"],
-] as const;
+import { platformSite } from "@/lib/platform";
 
 export default function SiteFooter() {
+  const { name, domain } = platformSite();
+  const email = contactEmail(domain);
+  const platformLinks = [
+    ["/network", `${name} Network`],
+    ["/discover", "Discover"],
+    ["/visibility", "Get found"],
+    ["/pricing", "Pricing"],
+    ["/blog", "Blog"],
+    ["/contact", "Contact"],
+  ] as const;
   return (
     <footer className="wrap site">
       <div className="brand">
         <Link className="mark" href="/">
           <BrandMark />
-          Payleor
+          {name}
         </Link>
         <p>Sell products and services inside AI, paid through PayPal.</p>
       </div>
@@ -32,13 +34,13 @@ export default function SiteFooter() {
         ))}
       </div>
       <div>
-        <b>Payleor</b>
-        {PLATFORM_LINKS.map(([href, label]) => (
+        <b>{name}</b>
+        {platformLinks.map(([href, label]) => (
           <Link key={href} href={href}>
             {label}
           </Link>
         ))}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+        <a href={`mailto:${email}`}>{email}</a>
       </div>
       <p className="small">
         Sandbox prototype. Walk Crew, Amadou, Clay Room, Roast House, Maison Lune, Coco Nails, Logo Bot, Inès and the
@@ -48,7 +50,7 @@ export default function SiteFooter() {
         <Link href="/legal/terms">Terms of service</Link>
         <Link href="/legal/privacy">Privacy policy</Link>
         <Link href="/legal/acceptable-use">Acceptable use policy</Link>
-        <span>© 2026 Payleor</span>
+        <span>© 2026 {name}</span>
       </nav>
     </footer>
   );

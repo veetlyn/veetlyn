@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { platformDomain } from "@/lib/platform";
 import { absoluteUrl } from "@/lib/site/seo";
 
 // Every crawler may read the site, the AI assistants' crawlers included, each named so a later rule for one of
@@ -18,6 +19,6 @@ const AI_CRAWLERS = [
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [{ userAgent: "*", allow: "/" }, ...AI_CRAWLERS.map((userAgent) => ({ userAgent, allow: "/" }))],
-    sitemap: absoluteUrl("/sitemap.xml"),
+    sitemap: absoluteUrl("/sitemap.xml", platformDomain()),
   };
 }

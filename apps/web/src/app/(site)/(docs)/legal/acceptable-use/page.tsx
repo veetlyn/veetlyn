@@ -4,8 +4,11 @@ import LegalPage from "@/components/legal/legal-page";
 import { legalMdxComponents } from "@/components/legal/mdx-components";
 import AcceptableUse from "@/content/legal/acceptable-use.mdx";
 import { LEGAL_LAST_UPDATED } from "@/content/legal/meta";
+import { platformName } from "@/lib/platform";
 
-export const metadata: Metadata = { title: "Acceptable use policy · Payleor" };
+export function generateMetadata(): Metadata {
+  return { title: `Acceptable use policy · ${platformName()}` };
+}
 
 export default function AcceptableUsePage() {
   return (

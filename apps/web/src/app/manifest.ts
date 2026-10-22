@@ -1,9 +1,12 @@
 import type { MetadataRoute } from "next";
 
+import { platformName } from "@/lib/platform";
+
 export default function manifest(): MetadataRoute.Manifest {
+  const name = platformName();
   return {
-    name: "Payleor",
-    short_name: "Payleor",
+    name,
+    short_name: name,
     description: "Agentic commerce on PayPal",
     start_url: "/",
     display: "standalone",

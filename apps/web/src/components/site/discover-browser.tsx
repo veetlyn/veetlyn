@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type ReactNode, useEffect, useState } from "react";
 
+import { PlatformName } from "@/components/platform-name";
 import MemberCheck from "@/components/site/member-check";
 import { DONE_LABEL, KIND_LABEL, type Listing, SAMPLE_LISTINGS } from "@/content/site/listings";
 import { browse, type Filters } from "@/lib/site/discover";
@@ -109,8 +110,8 @@ export default function DiscoverBrowser({ children }: { children: ReactNode }) {
           <div>
             <h1 data-in>Discover</h1>
             <p className="lead" data-in>
-              Services, courses, downloads and goods from sellers on Payleor Network. The same catalog your clients' AI
-              searches.
+              Services, courses, downloads and goods from sellers on <PlatformName /> Network. The same catalog your
+              clients' AI searches.
             </p>
             <label className="search" data-in>
               <svg viewBox="0 0 24 24" aria-hidden="true">

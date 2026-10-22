@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { POSTS } from "../../content/blog/posts";
+import { posts } from "../../content/blog/posts";
 import { llmsTxt, sitePaths } from "./llms";
 
+const SITE = { name: "Platform", domain: "platform.test" };
+
 describe("llms.txt", () => {
-  it("summarises Payleor and links every page and article with absolute URLs", () => {
-    const txt = llmsTxt();
-    expect(txt.startsWith("# Payleor\n\n> ")).toBe(true);
-    expect(txt).toContain("https://payleor.com/network");
-    for (const p of POSTS) expect(txt).toContain(`https://payleor.com/blog/${p.slug}`);
+  it("summarises the platform and links every page and article with absolute URLs", () => {
+    const txt = llmsTxt(SITE);
+    expect(txt.startsWith("# Platform\n\n> ")).toBe(true);
+    expect(txt).toContain("https://platform.test/network");
+    for (const p of posts(SITE)) expect(txt).toContain(`https://platform.test/blog/${p.slug}`);
   });
   it("never claims sellers are listed in Claude and ChatGPT directories", () => {
-    expect(llmsTxt()).not.toMatch(/listed in (Claude|ChatGPT)/i);
+    expect(llmsTxt(SITE)).not.toMatch(/listed in (Claude|ChatGPT)/i);
   });
 });
 

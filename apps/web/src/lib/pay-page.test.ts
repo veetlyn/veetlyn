@@ -46,22 +46,22 @@ describe("labels", () => {
     expect(captureOutcomeProblem("declined")).toBe("PayPal declined this payment. Try again or choose another way to pay.");
   });
 
-  it("maps Payleor's PayPal environment to the SDK's", () => {
+  it("maps the platform's PayPal environment to the SDK's", () => {
     expect(sdkEnvironment("sandbox")).toBe("sandbox");
     expect(sdkEnvironment("live")).toBe("production");
   });
 });
 
 describe("clientPageReferrer", () => {
-  const origin = "https://payleor.test";
+  const origin = "https://platform.test";
 
   it("links back to the client page the visitor came from on this site", () => {
-    expect(clientPageReferrer("https://payleor.test/c/p.c.1.sig?x=1", origin)).toBe("/c/p.c.1.sig");
+    expect(clientPageReferrer("https://platform.test/c/p.c.1.sig?x=1", origin)).toBe("/c/p.c.1.sig");
   });
 
   it("offers no way back from another site, another page, or no referrer", () => {
     expect(clientPageReferrer("https://evil.test/c/p.c.1.sig", origin)).toBeNull();
-    expect(clientPageReferrer("https://payleor.test/pay/abc", origin)).toBeNull();
+    expect(clientPageReferrer("https://platform.test/pay/abc", origin)).toBeNull();
     expect(clientPageReferrer("", origin)).toBeNull();
     expect(clientPageReferrer("not a url", origin)).toBeNull();
   });

@@ -5,11 +5,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import Loader from "@/components/loader";
+import { PlatformName, usePlatformName } from "@/components/platform-name";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
 
-// The AI clients connected to Payleor's plugin (Claude, ChatGPT): each can act for the user until disconnected.
+// The AI clients connected to the platform's plugin (Claude, ChatGPT): each can act for the user until disconnected.
 function ConnectedApps() {
+  const platformName = usePlatformName();
   const apps = useQuery(trpc.connectedApps.list.queryOptions());
   const disconnect = useMutation(trpc.connectedApps.disconnect.mutationOptions({ onSuccess: () => apps.refetch() }));
   return (
@@ -39,7 +41,7 @@ function ConnectedApps() {
         </ul>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {apps.isPending ? "Loading…" : "No AI app is connected. Connect Payleor in Claude or ChatGPT to see it here."}
+          {apps.isPending ? "Loading…" : `No AI app is connected. Connect ${platformName} in Claude or ChatGPT to see it here.`}
         </p>
       )}
       {disconnect.error ? (
@@ -92,12 +94,14 @@ export default function AccountSettings({ hasError }: { hasError: boolean }) {
         </h2>
         {discordAccount ? (
           <p className="text-sm text-muted-foreground">
-            Discord is linked to this account. Payleor's Discord commands work for you.
+            Discord is linked to this account. <PlatformName />
+            's Discord commands work for you.
           </p>
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Link Discord to use Payleor's commands in your team's server with this Payleor account.
+              Link Discord to use <PlatformName />
+              's commands in your team's server with this <PlatformName /> account.
             </p>
             <Button type="button" variant="outline" onClick={linkDiscord} disabled={pending}>
               {pending ? "Redirecting to Discord…" : "Link Discord"}

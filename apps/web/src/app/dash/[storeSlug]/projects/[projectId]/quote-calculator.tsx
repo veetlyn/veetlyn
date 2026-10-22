@@ -13,6 +13,8 @@ import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { useState } from "react";
 
+import { PlatformName } from "@/components/platform-name";
+
 export type QuoteCalculatorRates = {
   currency: MoneyCurrency;
   teamCutBps: number;
@@ -59,7 +61,10 @@ function QuoteResult({
       <ul className="space-y-1 text-muted-foreground">
         <li>Client pays {format(breakdown.clientPaysMinor)}</li>
         <li>PayPal's checkout fee (about) {format(breakdown.checkoutFeeMinor)}, paid by the team</li>
-        <li>Payleor's fee {format(breakdown.platformFeeMinor)}</li>
+        <li>
+          <PlatformName />
+          's fee {format(breakdown.platformFeeMinor)}
+        </li>
         <li>Team keeps {format(breakdown.teamKeepsMinor)}</li>
         <li>PayPal's payout fee (about) {format(breakdown.payoutFeeMinor)}</li>
         <li>Member receives {format(breakdown.memberReceivesMinor)}</li>

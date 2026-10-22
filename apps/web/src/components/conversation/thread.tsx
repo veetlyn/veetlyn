@@ -35,7 +35,7 @@ function bubbleVariant(mine: boolean, kind: ThreadMessage["kind"]): "tinted" | "
   return kind === "question" ? "outline" : "muted";
 }
 
-// One conversation, oldest first: people's messages as bubbles, Payleor's events as quiet lines, answers next
+// One conversation, oldest first: people's messages as bubbles, platform events as quiet lines, answers next
 // to the question they answer.
 export function ConversationThread<M extends ThreadMessage>({
   messages,

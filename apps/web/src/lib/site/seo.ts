@@ -1,58 +1,62 @@
 import type { Metadata } from "next";
 
-export const SITE_ORIGIN = "https://payleor.com";
-const ORG_ID = `${SITE_ORIGIN}/#org`;
+export type SeoSite = { name: string; domain: string };
 
-export const absoluteUrl = (path: string) => `${SITE_ORIGIN}${path}`;
+export const siteOrigin = (domain: string) => `https://${domain}`;
+const orgId = (domain: string) => `${siteOrigin(domain)}/#org`;
+
+export const absoluteUrl = (path: string, domain: string) => `${siteOrigin(domain)}${path}`;
 
 export function pageMetadata(p: {
   path: string;
   title: string;
   description: string;
   kind?: "website" | "article";
+  site: SeoSite;
 }): Metadata {
-  const url = absoluteUrl(p.path);
+  const { site } = p;
+  const url = absoluteUrl(p.path, site.domain);
   return {
     title: p.title,
     description: p.description,
     alternates: { canonical: url },
-    openGraph: { title: p.title, description: p.description, url, siteName: "Payleor", type: p.kind ?? "website" },
+    openGraph: { title: p.title, description: p.description, url, siteName: site.name, type: p.kind ?? "website" },
     twitter: { card: "summary", title: p.title, description: p.description },
   };
 }
 
-export const organization = () =>
+export const organization = (site: SeoSite) =>
   ({
     "@type": "Organization",
-    "@id": ORG_ID,
-    name: "Payleor",
-    url: absoluteUrl("/"),
-    email: "contact@payleor.com",
+    "@id": orgId(site.domain),
+    name: site.name,
+    url: absoluteUrl("/", site.domain),
+    email: `contact@${site.domain}`,
   }) as const;
 
-export const websiteWithSearch = () =>
+export const websiteWithSearch = (site: SeoSite) =>
   ({
     "@type": "WebSite",
-    "@id": `${SITE_ORIGIN}/#site`,
-    url: absoluteUrl("/"),
-    name: "Payleor",
-    publisher: { "@id": ORG_ID },
+    "@id": `${siteOrigin(site.domain)}/#site`,
+    url: absoluteUrl("/", site.domain),
+    name: site.name,
+    publisher: { "@id": orgId(site.domain) },
     potentialAction: {
       "@type": "SearchAction",
-      target: `${SITE_ORIGIN}/discover?q={search_term_string}`,
+      target: `${siteOrigin(site.domain)}/discover?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   }) as const;
 
-export function breadcrumbs(trail: ReadonlyArray<readonly [name: string, path: string]>) {
-  const all: ReadonlyArray<readonly [string, string]> = [["Payleor", "/"], ...trail];
+export function breadcrumbs(trail: ReadonlyArray<readonly [name: string, path: string]>, site: SeoSite) {
+  const all: ReadonlyArray<readonly [string, string]> = [[site.name, "/"], ...trail];
   return {
     "@type": "BreadcrumbList" as const,
     itemListElement: all.map(([name, path], i) => ({
       "@type": "ListItem" as const,
       position: i + 1,
       name,
-      item: absoluteUrl(path),
+      item: absoluteUrl(path, site.domain),
     })),
   };
 }
@@ -75,8 +79,9 @@ export function blogPosting(p: {
   date: string;
   section: string;
   words: number;
+  domain: string;
 }) {
-  const url = absoluteUrl(`/blog/${p.slug}`);
+  const url = absoluteUrl(`/blog/${p.slug}`, p.domain);
   return {
     "@type": "BlogPosting" as const,
     "@id": `${url}#post`,
@@ -89,8 +94,8 @@ export function blogPosting(p: {
     articleSection: p.section,
     wordCount: p.words,
     inLanguage: "en",
-    author: { "@id": ORG_ID },
-    publisher: { "@id": ORG_ID },
+    author: { "@id": orgId(p.domain) },
+    publisher: { "@id": orgId(p.domain) },
   };
 }
 

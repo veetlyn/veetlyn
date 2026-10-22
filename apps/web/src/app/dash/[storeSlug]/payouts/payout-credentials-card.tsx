@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 
 import Loader from "@/components/loader";
+import { PlatformName } from "@/components/platform-name";
 import { payPalOnboardingLinks } from "@/lib/paypal-onboarding";
 import { trpc } from "@/utils/trpc";
 
@@ -151,7 +152,7 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
               Continue in PayPal
             </a>
             <p className="text-sm text-muted-foreground">
-              PayPal opens in a small secure window and shares this team's payout access with Payleor.
+              PayPal opens in a small secure window and shares this team's payout access with <PlatformName />.
             </p>
             {complete.isPending ? (
               <p className="text-sm text-muted-foreground">Checking the connection with PayPal…</p>
@@ -184,7 +185,9 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
           </div>
           {saved.canReadBalance ? null : (
             <div className="space-y-3">
-              <p className="text-sm">Reconnect so Payleor can read your PayPal balance.</p>
+              <p className="text-sm">
+                Reconnect so <PlatformName /> can read your PayPal balance.
+              </p>
               {connectFlow("Reconnect")}
             </div>
           )}
@@ -210,7 +213,7 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Payleor sends members' payouts from this team's PayPal balance. PayPal's fee comes off each payout.
+            <PlatformName /> sends members' payouts from this team's PayPal balance. PayPal's fee comes off each payout.
           </p>
           {connectFlow("Turn on automatic payouts")}
         </div>
