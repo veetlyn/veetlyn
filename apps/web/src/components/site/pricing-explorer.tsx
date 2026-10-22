@@ -3,6 +3,7 @@
 import { type BillingInterval, getSellerPlan } from "@jendal-workspace/core";
 import { type ReactNode, useState } from "react";
 
+import { PlatformName } from "@/components/platform-name";
 import BundleBuilder from "@/components/site/bundle-builder";
 import FeeCalculator from "@/components/site/fee-calculator";
 import { Tier, type TierId } from "@/components/site/tiers";
@@ -21,7 +22,15 @@ const drafts = (id: "solo" | "team" | "agency") => getSellerPlan(id).aiDraftsPer
 type Row = { id: string; label: ReactNode; cells: readonly [boolean | string, boolean | string, boolean | string, boolean | string] };
 
 const SERVICES_ROWS: readonly Row[] = [
-  { id: "listed", label: "Listed on Payleor Network", cells: [true, true, true, true] },
+  {
+    id: "listed",
+    label: (
+      <>
+        Listed on <PlatformName /> Network
+      </>
+    ),
+    cells: [true, true, true, true],
+  },
   { id: "intake", label: "Intake agent, drafts a month", cells: [drafts("solo"), drafts("team"), drafts("agency"), "Custom"] },
   { id: "copilot", label: "Team copilot", cells: [false, true, true, true] },
   { id: "payout", label: "Payout agent", cells: [false, false, true, true] },
@@ -38,7 +47,15 @@ const SERVICES_ROWS: readonly Row[] = [
   { id: "discord", label: "Discord request threads", cells: [false, true, true, true] },
 ];
 const STORE_ROWS: readonly Row[] = [
-  { id: "carts", label: "Sold in Payleor Network carts", cells: [true, true, true, true] },
+  {
+    id: "carts",
+    label: (
+      <>
+        Sold in <PlatformName /> Network carts
+      </>
+    ),
+    cells: [true, true, true, true],
+  },
   { id: "checkout", label: "One checkout across stores", cells: [true, true, true, true] },
   { id: "admin", label: "Admin agent", cells: [false, true, true, true] },
   { id: "credits", label: "AI credits for your agents", cells: ["Some", "More", "The most", "Custom"] },
@@ -196,7 +213,7 @@ export default function PricingExplorer({ signupUrl }: { signupUrl: string }) {
                 What you would pay on a sale
               </h2>
               <p className="lead-dark" data-in>
-                Pick a plan and a price. PayPal's own fee is separate, and Payleor never adds to it.
+                Pick a plan and a price. PayPal's own fee is separate, and <PlatformName /> never adds to it.
               </p>
             </div>
             <FeeCalculator product={product} interval={interval} />

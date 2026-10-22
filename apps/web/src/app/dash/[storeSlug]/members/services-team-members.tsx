@@ -11,6 +11,7 @@ import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { trpc } from "@/utils/trpc";
@@ -228,7 +229,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
             <form onSubmit={handleAdd} className="mt-8 grid gap-4">
               <h2 className="font-medium">Add a member</h2>
               <p className="text-sm text-muted-foreground">
-                They need a Payleor account already; ask them to sign up first.
+                They need a <PlatformName /> account already; ask them to sign up first.
               </p>
               <div className="flex flex-wrap items-end gap-3">
                 <div className="min-w-60 grow space-y-2">

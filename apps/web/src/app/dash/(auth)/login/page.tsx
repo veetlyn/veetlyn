@@ -5,14 +5,16 @@ import OrDivider from "@/components/auth/or-divider";
 import SignInForm from "@/components/auth/sign-in-form";
 import DiscordSignInButton from "@/components/discord-sign-in-button";
 import PayPalSignInButton from "@/components/paypal-sign-in-button";
+import { platformName } from "@/lib/platform";
 import { getPlatformOrigins } from "@/lib/server-api";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
   const [{ reset }, origins] = await Promise.all([searchParams, getPlatformOrigins()]);
+  const name = platformName();
 
   return (
     <AuthCard
-      title="Log in to Payleor"
+      title={`Log in to ${name}`}
       footer={
         <>
           <p>
@@ -21,7 +23,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </Link>
           </p>
           <p>
-            New to Payleor?{" "}
+            New to {name}?{" "}
             <Link href="/signup" className="underline underline-offset-4">
               Create an account
             </Link>

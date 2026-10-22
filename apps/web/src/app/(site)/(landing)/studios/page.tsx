@@ -10,19 +10,20 @@ import PMark from "@/components/site/p-mark";
 import Split from "@/components/site/split";
 import Story from "@/components/site/story";
 import { STUDIO_FAQ } from "@/content/site/faqs";
+import { platformSite } from "@/lib/platform";
 import { studioExample, usd, usdCents } from "@/lib/site/examples";
 import { breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
 const ines = studioExample();
 const pedicureDeposit = depositDue(ines.priceMinor, 0).quotePartMinor;
-const INES_SPLIT = [
-  { label: "Inès", minor: ines.staffMinor, tone: "brand" },
-  { label: "Maison Lune", minor: ines.salonMinor, tone: "ink" },
-  { label: "PayPal", minor: ines.paypalMinor, tone: "paypal" },
-  { label: "Payleor", minor: ines.platformMinor, tone: "platform" },
-] as const;
 
-function Week() {
+function Week({ name }: { name: string }) {
+  const inesSplit = [
+    { label: "Inès", minor: ines.staffMinor, tone: "brand" },
+    { label: "Maison Lune", minor: ines.salonMinor, tone: "ink" },
+    { label: "PayPal", minor: ines.paypalMinor, tone: "paypal" },
+    { label: name, minor: ines.platformMinor, tone: "platform" },
+  ] as const;
   return (
     <section id="week" aria-labelledby="week-h">
       <div className="wrap">
@@ -46,7 +47,7 @@ function Week() {
                     <p className="row num"><span>Nail kit · Coco Nails</span><span>$24.00</span></p>
                     <p className="row num sum"><span className="t">Two stores</span><span className="t">$42.00</span></p>
                   </div>
-                  <span className="act">Check out on Payleor</span>
+                  <span className="act">Check out on {name}</span>
                   <p className="s" style={{ marginTop: "8px" }}>One PayPal payment</p>
                 </div>
               </div>
@@ -74,7 +75,7 @@ function Week() {
               <div className="scene">
                 <div className="ui">
                   <p className="t" style={{ font: "600 22px/1.2 var(--site-display)" }}>Send {usdCents(ines.staffMinor)} to Inès?</p>
-                  <Split parts={INES_SPLIT} />
+                  <Split parts={inesSplit} />
                   <span className="act ink">Confirm payout</span>
                 </div>
               </div>
@@ -100,7 +101,7 @@ function Week() {
   );
 }
 
-function OneLink() {
+function OneLink({ storeDomain }: { storeDomain: string }) {
   return (
     <section id="link" aria-labelledby="link-h">
       <div className="wrap everywhere">
@@ -108,9 +109,9 @@ function OneLink() {
           <h2 id="link-h" data-in>One link for your bio and every chat</h2>
           <div className="chans" data-in><span>Your bio</span><span>Claude</span><span>ChatGPT</span><span>Discord</span><span>A pay link</span></div>
         </div>
-        <div className="phone" data-in role="img" aria-label="Maison Lune's page at maisonlune.payleor.app with its services and its store: pedicure, argan shampoo and a nail kit">
+        <div className="phone" data-in role="img" aria-label={`Maison Lune's page at maisonlune.${storeDomain} with its services and its store: pedicure, argan shampoo and a nail kit`}>
           <div className="screen">
-            <span className="url">maisonlune.payleor.app</span>
+            <span className="url">maisonlune.{storeDomain}</span>
             <p className="shopname"><b>Maison Lune</b><span className="s">Hair and nails, Brooklyn</span></p>
             <div className="tabs"><span className="on">All</span><span>Services</span><span>Store</span></div>
             <div className="ui" style={{ boxShadow: "none", background: "var(--background)", display: "grid", gap: "12px" }}>
@@ -125,17 +126,23 @@ function OneLink() {
   );
 }
 
-export const metadata = pageMetadata({
-  path: "/studios",
-  title: "Payleor for studios",
-  description:
-    "For salons, spas and studios that sell services and products: one shop, one link, staff paid their share, and the cheaper plan at half price.",
-});
+export function generateMetadata() {
+  const site = platformSite();
+  return pageMetadata({
+    path: "/studios",
+    title: `${site.name} for studios`,
+    description:
+      "For salons, spas and studios that sell services and products: one shop, one link, staff paid their share, and the cheaper plan at half price.",
+    site,
+  });
+}
 
 export default function StudiosPage() {
+  const site = platformSite();
+  const { name, storeDomain } = site;
   return (
     <>
-      <JsonLd data={graph(organization(), breadcrumbs([["Studios", "/studios"]]), faqStructuredData(STUDIO_FAQ))} />
+      <JsonLd data={graph(organization(site), breadcrumbs([["Studios", "/studios"]], site), faqStructuredData(STUDIO_FAQ))} />
       <div className="band">
         <div className="wrap hero page">
           <div>
@@ -146,12 +153,12 @@ export default function StudiosPage() {
             </div>
           </div>
           <ChatDemo
-            label="In Claude, a client asks for a pedicure on Saturday and their argan shampoo. Payleor's card shows Maison Lune's pedicure and shampoo; the client requests the pedicure and adds the shampoo to the cart."
+            label={`In Claude, a client asks for a pedicure on Saturday and their argan shampoo. ${name}'s card shows Maison Lune's pedicure and shampoo; the client requests the pedicure and adds the shampoo to the cart.`}
             who="Claude"
             message="Find me a pedicure for Saturday and reorder my argan shampoo."
           >
             <div className="widget frame" data-at="400">
-              <p className="wtop"><PMark /><b>Payleor Network</b> · Maison Lune</p>
+              <p className="wtop"><PMark /><b>{name} Network</b> · Maison Lune</p>
               <div className="wrow"><span><span className="t">Pedicure</span><br /><span className="s">Service · 45 min</span></span><span className="num t">$45</span><span className="act" data-press="1800" data-done="Requested">Request</span></div>
               <div className="wrow"><span><span className="t">Argan shampoo</span><br /><span className="s">Product · 250 ml</span></span><span className="num t">$18</span><span className="act ghost" data-press="2800" data-done="In cart">Add to cart</span></div>
             </div>
@@ -160,8 +167,8 @@ export default function StudiosPage() {
         </div>
       </div>
       <div>
-        <Week />
-        <OneLink />
+        <Week name={name} />
+        <OneLink storeDomain={storeDomain} />
         <section aria-labelledby="bundle-h">
           <div className="wrap calc-wrap">
             <div>

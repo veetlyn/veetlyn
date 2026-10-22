@@ -1,6 +1,7 @@
 import AuthSplit from "@/components/auth/auth-split";
 import AuthVisual from "@/components/auth/auth-visual";
 import { consentGroups, consentHost } from "@/lib/oauth-consent";
+import { platformName } from "@/lib/platform";
 import { fetchOAuthClientName, requireSession } from "@/lib/server-api";
 
 import ConsentForm from "./consent-form";
@@ -14,6 +15,7 @@ export default async function ConsentPage({
 }) {
   const { user } = await requireSession();
   const { client_id: clientId = "", scope = "", redirect_uri: redirectUri = "" } = await searchParams;
+  const name = platformName();
   return (
     <AuthSplit
       visual={
@@ -25,7 +27,7 @@ export default async function ConsentPage({
               You approve the money.
             </>
           }
-          subline="Assistants search, ask and request quotes through Payleor. Accepting and paying always take your own press."
+          subline={`Assistants search, ask and request quotes through ${name}. Accepting and paying always take your own press.`}
         />
       }
     >
@@ -33,7 +35,7 @@ export default async function ConsentPage({
         clientName={await fetchOAuthClientName(clientId)}
         host={consentHost(redirectUri)}
         account={{ name: user.name, email: user.email }}
-        groups={consentGroups(scope.split(" ").filter(Boolean))}
+        groups={consentGroups(scope.split(" ").filter(Boolean), name)}
       />
     </AuthSplit>
   );

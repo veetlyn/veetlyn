@@ -9,33 +9,41 @@ import PMark from "@/components/site/p-mark";
 import Split from "@/components/site/split";
 import Story from "@/components/site/story";
 import { Tier } from "@/components/site/tiers";
-import { AGENCY_FAQ } from "@/content/site/faqs";
+import { agencyFaq } from "@/content/site/faqs";
+import { platformSite } from "@/lib/platform";
 import { getPlatformOrigins } from "@/lib/server-api";
 import { agencyExample, EXAMPLE_TEAM, usdCents, walkCrewBalanceMinor } from "@/lib/site/examples";
 import { breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
 const walkCrew = agencyExample();
 const deposit = depositDue(walkCrew.quoteMinor, EXAMPLE_TEAM.managementFeeBps);
-const WALK_CREW_SPLIT = [
-  { label: "Amadou", minor: walkCrew.memberMinor, tone: "brand" },
-  { label: "Walk Crew", minor: walkCrew.teamMinor, tone: "ink" },
-  { label: "PayPal", minor: walkCrew.paypalMinor, tone: "paypal" },
-  { label: `Payleor, ${formatOrderFee(EXAMPLE_TEAM.platformFeeBps)}`, minor: walkCrew.platformMinor, tone: "platform" },
-] as const;
 
-export const metadata = pageMetadata({
-  path: "/agencies",
-  title: "Payleor for agencies",
-  description:
-    "Run your agency with agents: requests from AI and Discord, quotes drafted for you, and every member paid their share by your payout rules.",
-});
+export function generateMetadata() {
+  const site = platformSite();
+  return pageMetadata({
+    path: "/agencies",
+    title: `${site.name} for agencies`,
+    description:
+      "Run your agency with agents: requests from AI and Discord, quotes drafted for you, and every member paid their share by your payout rules.",
+    site,
+  });
+}
 
 export default async function AgenciesPage() {
+  const site = platformSite();
+  const { name } = site;
+  const faq = agencyFaq(name);
+  const walkCrewSplit = [
+    { label: "Amadou", minor: walkCrew.memberMinor, tone: "brand" },
+    { label: "Walk Crew", minor: walkCrew.teamMinor, tone: "ink" },
+    { label: "PayPal", minor: walkCrew.paypalMinor, tone: "paypal" },
+    { label: `${name}, ${formatOrderFee(EXAMPLE_TEAM.platformFeeBps)}`, minor: walkCrew.platformMinor, tone: "platform" },
+  ] as const;
   const { dash } = await getPlatformOrigins();
   const signup = `${dash}/signup`;
   return (
     <>
-      <JsonLd data={graph(organization(), breadcrumbs([["Agencies", "/agencies"]]), faqStructuredData(AGENCY_FAQ))} />
+      <JsonLd data={graph(organization(site), breadcrumbs([["Agencies", "/agencies"]], site), faqStructuredData(faq))} />
       <div className="band">
         <div className="wrap hero page">
           <div>
@@ -51,7 +59,7 @@ export default async function AgenciesPage() {
             message="Hi! We need a logo for our bakery, three directions, in two weeks."
           >
             <div className="widget frame" data-at="400">
-              <p className="wtop"><PMark /><b>Payleor</b> · Draft by the intake agent</p>
+              <p className="wtop"><PMark /><b>{name}</b> · Draft by the intake agent</p>
               <div className="wrow"><span><span className="t">Logo, 3 directions</span><br /><span className="s">Amadou · 10 days</span></span><span className="num t">$400</span><span></span></div>
               <div className="wrow"><span><span className="t">Colour and type sheet</span><br /><span className="s">Amadou</span></span><span className="num t">$240</span><span className="act" data-press="2000" data-done="Confirmed">Confirm</span></div>
             </div>
@@ -108,7 +116,7 @@ export default async function AgenciesPage() {
                   <div className="scene">
                     <div className="ui">
                       <p className="t" style={{ font: "600 22px/1.2 var(--site-display)" }}>Send {usdCents(walkCrew.memberMinor)} to Amadou?</p>
-                      <Split parts={WALK_CREW_SPLIT} />
+                      <Split parts={walkCrewSplit} />
                       <span className="act ink">Confirm payout</span>
                     </div>
                   </div>
@@ -152,7 +160,7 @@ export default async function AgenciesPage() {
             <Link className="more" href="/pricing">Compare every plan</Link>
           </div>
         </section>
-        <FaqList title="Questions from agencies" items={AGENCY_FAQ} /><CloseCta />
+        <FaqList title="Questions from agencies" items={faq} /><CloseCta />
       </div>
     </>
   );

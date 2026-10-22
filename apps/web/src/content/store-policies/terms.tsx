@@ -1,4 +1,5 @@
 import { A, H2, P } from "@/components/legal/prose";
+import { PlatformName } from "@/components/platform-name";
 
 import { type PolicyStore, StoreContact, StoreLink } from "./shared";
 
@@ -10,8 +11,8 @@ export default function StoreTerms({ store }: { store: PolicyStore }) {
       </P>
       <H2>Who you are buying from</H2>
       <P>
-        {store.name} is the seller of the products on this website. Payleor provides the online store platform and does
-        not sell, ship or guarantee the products.
+        {store.name} is the seller of the products on this website. <PlatformName /> provides the online store platform
+        and does not sell, ship or guarantee the products.
       </P>
       <H2>Orders and prices</H2>
       <P>

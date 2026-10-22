@@ -1,4 +1,4 @@
-/* payleor.com on the Landing B design system. Colours are the Relief tokens and the band, so light and dark follow
+/* The marketing site on the Landing B design system. Colours are the Relief tokens and the band, so light and dark follow
    the app's theme; every rule is scoped to the site's root so nothing reaches the dash. */
 .site-root {
   --site-display: "Cal Sans UI", "Inter", ui-sans-serif, system-ui, sans-serif;

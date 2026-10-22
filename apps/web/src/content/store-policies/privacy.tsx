@@ -1,4 +1,5 @@
 import { H2, LI, P, UL } from "@/components/legal/prose";
+import { PlatformName } from "@/components/platform-name";
 
 import { type PolicyStore, StoreContact, StoreLink } from "./shared";
 
@@ -10,8 +11,8 @@ export default function StorePrivacy({ store }: { store: PolicyStore }) {
       </P>
       <H2>Who is responsible</H2>
       <P>
-        {store.name} controls the personal data you give when you shop here. Payleor, the platform that runs this store,
-        processes it on the store's behalf.
+        {store.name} controls the personal data you give when you shop here. <PlatformName />, the platform that runs
+        this store, processes it on the store's behalf.
       </P>
       <H2>What we collect</H2>
       <UL>
@@ -30,7 +31,9 @@ export default function StorePrivacy({ store }: { store: PolicyStore }) {
       <UL>
         <LI>PayPal, to take your payment</LI>
         <LI>shipping carriers, to deliver your order</LI>
-        <LI>Payleor, which hosts this store</LI>
+        <LI>
+          <PlatformName />, which hosts this store
+        </LI>
       </UL>
       <H2>How long we keep it</H2>
       <P>We keep order records as long as tax and accounting law requires, and delete other data when we no longer need it.</P>

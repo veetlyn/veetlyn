@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { SELLER_POLICY_PAGES } from "@/content/seller-policies";
 import { STORE_POLICY_PAGES } from "@/content/store-policies";
+import { platformName } from "@/lib/platform";
 import { fetchStoreInfo, getPlatformOrigins } from "@/lib/server-api";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -10,11 +11,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   if (!info) return children;
 
   const { site } = await getPlatformOrigins();
+  const name = platformName();
   const pageFor = (policy: StorePolicy) =>
     info.product === "services" ? SELLER_POLICY_PAGES.get(policy) : STORE_POLICY_PAGES[policy];
   const platformLinks = [
-    { href: `${site}/legal/terms`, label: "Payleor terms" },
-    { href: `${site}/legal/privacy`, label: "Payleor privacy" },
+    { href: `${site}/legal/terms`, label: `${name} terms` },
+    { href: `${site}/legal/privacy`, label: `${name} privacy` },
     { href: `${site}/legal/acceptable-use`, label: "Acceptable use" },
   ];
 
@@ -30,9 +32,9 @@ export default async function StoreLayout({ children }: { children: React.ReactN
               </Link>
             ))}
           </nav>
-          <nav aria-label="Payleor" className="flex flex-wrap gap-x-5 gap-y-2">
+          <nav aria-label={name} className="flex flex-wrap gap-x-5 gap-y-2">
             <a href={site} className="hover:text-foreground">
-              Powered by Payleor
+              Powered by {name}
             </a>
             {platformLinks.map(({ href, label }) => (
               <a key={href} href={href} className="hover:text-foreground">
