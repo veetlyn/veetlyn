@@ -35,7 +35,16 @@ export function storeSlugsFrom(value: string | undefined): string[] {
   return slugs;
 }
 
+function checkZone(name: string, zone: string): void {
+  const labels = zone.split(".");
+  if (labels.length < 2 || labels.some((label) => !HOST_LABEL.test(label))) {
+    throw new Error(`${name} has "${zone}", which is not a domain name.`);
+  }
+}
+
 export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly string[], zones: Zones): DeployedHosts {
+  checkZone("PLATFORM_ZONE", zones.platformZone);
+  checkZone("STORE_ZONE", zones.storeZone);
   const prefix = stage === "production" ? "" : "staging.";
   const platformDomain = `${prefix}${zones.platformZone}`;
   const storeDomain = `${prefix}${zones.storeZone}`;
