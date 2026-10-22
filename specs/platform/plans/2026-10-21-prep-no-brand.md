@@ -298,4 +298,5 @@ git commit -m "refactor(infra): zones come from PLATFORM_ZONE and STORE_ZONE"
 
 ## Outcome
 
-(empty)
+- **Test audit (`test-audit`, 2026-10-22):** 64 test files updated (`+389 / -334` lines); removed test-fixture defaults (`"Platform"`, `"platform.test"`) from `apps/web/src/lib/**` and `apps/web/src/content/**` helpers so production callers must pass `platformSite()` / `platformName()` explicitly and tests supply their own fixtures. Added 1 regression test in `packages/infra/deploy-hosts.test.ts` for invalid `PLATFORM_ZONE` / `STORE_ZONE` values. `167/167` test files (`1,798/1,798` tests) pass.
+- **Security audit (`~/security-audit-skill/payleor/run-3`, quick, scoped to `68fd697..de76292`, 2026-10-22):** 0 confirmed findings, 0 needing validation, 3 coverage units covered (`PLATFORM_NAME` / domain env decoding, `PLATFORM_ZONE` / `STORE_ZONE` domain validation in `deployedHosts`, and the `payleor_fees` $\rightarrow$ `platform_fees` ledger migration). Hardened `deployedHosts` (`de76292`) with `checkZone` to reject any zone that is not a multi-label lowercase DNS name.
