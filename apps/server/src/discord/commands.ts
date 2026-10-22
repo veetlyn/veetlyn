@@ -18,10 +18,14 @@ export type DiscordCommand = {
   options?: DiscordCommandOption[];
 };
 
+export function discordCommandName(platformName: string): string {
+  return platformName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "") || "platform";
+}
+
 export function discordCommands(platformName: string): readonly DiscordCommand[] {
   return [
     {
-      name: "platform",
+      name: discordCommandName(platformName),
       type: 1,
       description: `Manage your ${platformName} services team`,
       options: [

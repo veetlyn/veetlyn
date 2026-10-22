@@ -51,7 +51,8 @@ describe("quoteRequestLinkEmail", () => {
 describe("quoteRequestNoticeEmail", () => {
   it("lists the request details and escapes the client name in HTML", () => {
     const email = quoteRequestNoticeEmail({
-      platformName: "Platform",      teamName: "Walk Crew",
+      platformName: "Platform",
+      teamName: "Walk Crew",
       clientName: "Jo <b>",
       clientEmail: "jo@x.com",
       serviceName: "Logo refresh",
@@ -73,7 +74,8 @@ describe("quoteRequestNoticeEmail", () => {
 describe("orderDownloadEmail", () => {
   it("links the order page and names the product and the seller", () => {
     const email = orderDownloadEmail({
-      platformName: "Platform",      teamName: "Walk Crew",
+      platformName: "Platform",
+      teamName: "Walk Crew",
       productTitle: "Icon pack",
       url: "https://walk-crew.platform.test/orders/tok",
     });

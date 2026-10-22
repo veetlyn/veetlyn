@@ -7,6 +7,8 @@ import {
 } from "@jendal-workspace/db/repositories/discord";
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 
+import { discordCommandName } from "./commands";
+
 // Interaction types (Fact 3). Only PING, commands and autocomplete arrive today; components and
 // modals come with later plans (services spec §8.4) and get the polite default meanwhile.
 const INTERACTION_PING = 1;
@@ -105,11 +107,12 @@ function dispatchCommand(
   interaction: DiscordInteraction,
 ): InteractionResult {
   const command = interaction.data?.name ?? "";
+  const rootCommand = discordCommandName(config.platformName);
   const sub = subcommand(interaction);
   if (command === "payouts" && sub.name === "setup") {
     return ephemeral(`Set up your PayPal payout destination on ${config.platformName}: ${config.webBaseUrl}/me/payouts`);
   }
-  if (command === "platform" && sub.name === "link") {
+  if (command === rootCommand && sub.name === "link") {
     // Linking a server touches the database, so it may pass the 3-second window: the reply defers
     // (only EPHEMERAL is valid on a defer, Fact 5) and the route edits the original response with
     // the follow-up (Fact 4). Expected failures resolve into user-facing messages here; anything
@@ -119,7 +122,7 @@ function dispatchCommand(
       followUp: linkServer(config, services, interaction, sub.option("code") ?? ""),
     };
   }
-  return ephemeral(`${config.platformName} does not know this command. Run /platform link or /payouts setup.`);
+  return ephemeral(`${config.platformName} does not know this command. Run /${rootCommand} link or /payouts setup.`);
 }
 
 async function linkServer(
