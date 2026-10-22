@@ -35,6 +35,17 @@ describe("deployedHosts", () => {
     expect(hosts.web.routes).toEqual([]);
     expect(hosts.api.domain).toBe("api.staging.platform.test");
   });
+
+  it("refuses a zone that is not a domain name", () => {
+    for (const bad of ["", "platform", "https://platform.test", "platform.test/path", "*.platform.test", "Platform.test"]) {
+      expect(() => deployedHosts("production", [], { platformZone: bad, storeZone: "platform-store.test" })).toThrow(
+        /PLATFORM_ZONE/,
+      );
+      expect(() => deployedHosts("production", [], { platformZone: "platform.test", storeZone: bad })).toThrow(
+        /STORE_ZONE/,
+      );
+    }
+  });
 });
 
 describe("parseDeployedStage and storeSlugsFrom", () => {
