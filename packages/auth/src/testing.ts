@@ -23,6 +23,7 @@ export function createTestAuth(db: Database, options: { config?: Partial<AuthCon
   const emailErrors: Array<{ kind: AuthEmailKind; to: string }> = [];
   const auth = createAuth({ ...TEST_AUTH_CONFIG, ...options.config }, db, {
     mailer: options.mailer ?? mailer,
+    platformName: "Platform",
     waitUntil: (promise) => {
       pending.push(promise);
     },

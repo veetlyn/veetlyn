@@ -143,13 +143,14 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     const payouts: PayoutServices = {
       secretKey: await importSecretKey(TEST_KEY),
       keyId: "v1",
+      platformName: "Platform",
       clientFor: (input) => client(input.clientId, input.clientSecret),
     };
     const paypal: PayPalServices = {
       client: client("partner-client-id", "partner-secret"),
       partnerId: PARTNER_ID,
       returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
-      sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+      sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
     };
     return { payouts, paypal };
   }
@@ -160,6 +161,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       now,
       session: makeSession(userId),
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
@@ -238,7 +240,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     await expect(openSecret(services.payouts.secretKey, sealed, teamId)).resolves.toBe(CLIENT_SECRET);
 
     await expect(admin.servicesTeam.get(TEAM)).resolves.toMatchObject({ payoutCredentialsSaved: true });
-    // Teams connected before Payleor kept the PayPal country get it now; it sets PayPal's payout fee.
+    // Teams connected before the platform kept the PayPal country get it now; it sets PayPal's payout fee.
     await expect(getTeamPayPalCountry(db, teamId)).resolves.toBe("US");
   });
 
@@ -623,7 +625,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
           recipient_type: "PAYPAL_ID",
           receiver: PAYER_ID,
           amount: { value: "499.75", currency: "USD" },
-          note: "Payout from acme-studio via Payleor",
+          note: "Payout from acme-studio via Platform",
           sender_item_id: id,
         },
       ],
@@ -1760,7 +1762,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
       await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
         status: "queued",
-        failureMessage: "Turn on automatic payouts again so Payleor can read your PayPal balance.",
+        failureMessage: "Turn on automatic payouts again so we can read your PayPal balance.",
       });
       expect(paypal.requests).toEqual([]);
     });
@@ -1778,7 +1780,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
       await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
         status: "queued",
-        failureMessage: "Turn on automatic payouts again so Payleor can read your PayPal balance.",
+        failureMessage: "Turn on automatic payouts again so we can read your PayPal balance.",
       });
       await admin.payouts.saveRules(MANUAL);
       await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "sent" });
@@ -1886,11 +1888,11 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
       const [ada, bo] = [await rowOf(adaPayoutId), await rowOf(boPayoutId)];
       expect(exported).toEqual({
-        filename: "payleor-payouts-2026-10-14.csv",
+        filename: "payouts-2026-10-14.csv",
         count: 2,
         csv: [
-          `${PAYER_ID},499.75,USD,${ada?.offlineReference},Payout from acme-studio via Payleor,PAYPAL`,
-          `${BO_PAYER_ID},99.75,USD,${bo?.offlineReference},Payout from acme-studio via Payleor,PAYPAL`,
+          `${PAYER_ID},499.75,USD,${ada?.offlineReference},Payout from acme-studio via Platform,PAYPAL`,
+          `${BO_PAYER_ID},99.75,USD,${bo?.offlineReference},Payout from acme-studio via Platform,PAYPAL`,
         ].join("\r\n"),
       });
       const exportedRow = {

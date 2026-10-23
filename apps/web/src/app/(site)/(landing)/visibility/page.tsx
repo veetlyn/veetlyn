@@ -5,25 +5,33 @@ import FaqList, { faqStructuredData } from "@/components/site/faq-list";
 import JsonLd from "@/components/site/json-ld";
 import LogoStrip from "@/components/site/logo-strip";
 import PMark from "@/components/site/p-mark";
-import { VISIBILITY_FAQ } from "@/content/site/faqs";
+import { visibilityFaq } from "@/content/site/faqs";
+import { platformSite } from "@/lib/platform";
 import { breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
-export const metadata = pageMetadata({
-  path: "/visibility",
-  title: "Get found on Google and in AI answers",
-  description:
-    "Get found on Google and in AI answers. Web SEO comes to every seller page with run V, and Network members will get AI visibility run by an agent with their approval.",
-});
+export function generateMetadata() {
+  const site = platformSite();
+  return pageMetadata({
+    path: "/visibility",
+    title: "Get found on Google and in AI answers",
+    description:
+      "Get found on Google and in AI answers. Web SEO comes to every seller page with run V, and Network members will get AI visibility run by an agent with their approval.",
+    site,
+  });
+}
 
 export default function VisibilityPage() {
+  const site = platformSite();
+  const { name, domain, storeDomain } = site;
+  const faq = visibilityFaq(name);
   return (
     <>
-      <JsonLd data={graph(organization(), breadcrumbs([["Get found", "/visibility"]]), faqStructuredData(VISIBILITY_FAQ))} />
+      <JsonLd data={graph(organization(site), breadcrumbs([["Get found", "/visibility"]], site), faqStructuredData(faq))} />
       <div className="band">
         <div className="wrap hero page">
           <div>
             <h1 data-in>Get found by Google and AI</h1>
-            <p className="lead" data-in>Web SEO comes to every seller page with run V, the way it is built into payleor.com today. Network members will also get AI visibility, run by an agent that asks before anything ships.</p>
+            <p className="lead" data-in>Web SEO comes to every seller page with run V, the way it is built into {domain} today. Network members will also get AI visibility, run by an agent that asks before anything ships.</p>
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href="/contact#membership">Join the membership waitlist</Link>{" "}<a className="link" href="#included">What every plan gets</a>
             </div>
@@ -31,9 +39,9 @@ export default function VisibilityPage() {
           <div className="answers" data-in role="img" aria-label="Example: someone asks for a pedicure in Brooklyn this Saturday, and Google, ChatGPT, Perplexity and Google's AI Overview all name Maison Lune">
             <p className="ask-label">Someone asks</p>
             <p className="ask">a pedicure in Brooklyn this Saturday</p>
-            <div className="answer-row"><p className="engine">Google</p><p className="s">maisonlune.payleor.app</p><p className="serp-title">Pedicure in Brooklyn · Maison Lune</p></div>
+            <div className="answer-row"><p className="engine">Google</p><p className="s">maisonlune.{storeDomain}</p><p className="serp-title">Pedicure in Brooklyn · Maison Lune</p></div>
             <div className="answer-row"><p className="engine">ChatGPT</p><p>Maison Lune does pedicures for $45, and you can request Saturday.</p></div>
-            <div className="answer-row"><p className="engine">Perplexity · Sources</p><p><span className="src-n">1</span> maisonlune.payleor.app/pedicure</p></div>
+            <div className="answer-row"><p className="engine">Perplexity · Sources</p><p><span className="src-n">1</span> maisonlune.{storeDomain}/pedicure</p></div>
             <div className="answer-row"><p className="engine">AI Overviews</p><p>Maison Lune in Brooklyn offers pedicures and hair care from one page.</p></div>
             <p className="s" style={{ marginTop: "12px" }}>Example</p>
           </div>
@@ -44,13 +52,13 @@ export default function VisibilityPage() {
         <section id="included" aria-labelledby="inc-h">
           <div className="wrap">
             <h2 id="inc-h" data-in>Web SEO for every plan</h2>
-            <p className="lead-dark" data-in>Before an AI can name you, it has to read you. Seller pages are built to be read with run V; payleor.com already is.</p>
+            <p className="lead-dark" data-in>Before an AI can name you, it has to read you. Seller pages are built to be read with run V; {domain} already is.</p>
             <div className="features">
               <div className="feature" data-in><p className="tag">Structured data <span className="soon">Coming with run V</span></p><h3>Your offers, labelled</h3><p>Services, products, prices and questions, written for search engines and AI tools.</p></div>
               <div className="feature" data-in><p className="tag">Crawlers <span className="soon">Coming with run V</span></p><h3>Open to AI crawlers</h3><p>A sitemap, an llms.txt and robots rules that let AI assistants read you.</p></div>
               <div className="feature" data-in><p className="tag">Speed <span className="soon">Coming with run V</span></p><h3>Fast, clean pages</h3><p>One page per offer, with clear titles and links that last.</p></div>
               <div className="feature" data-in><p className="tag">Discover <span className="soon">Coming with run V</span></p><h3>Listed on Discover</h3><p>People browse the same catalog your clients' AI searches.</p></div>
-              <div className="feature" data-in><p className="tag">Payleor Network</p><h3>Found in Claude and ChatGPT</h3><p>By every client who adds Payleor Network.</p></div>
+              <div className="feature" data-in><p className="tag">{name} Network</p><h3>Found in Claude and ChatGPT</h3><p>By every client who adds {name} Network.</p></div>
               <div className="feature" data-in><p className="tag">Your domain</p><h3>On your own address</h3><p>On Team, Agency, Grow and Scale.</p></div>
             </div>
           </div>
@@ -85,7 +93,7 @@ export default function VisibilityPage() {
             <p className="term-line" data-in><PMark />We report what happened. We never promise rankings.</p>
           </div>
         </section>
-        <FaqList title="Questions about getting found" items={VISIBILITY_FAQ} /><CloseCta />
+        <FaqList title="Questions about getting found" items={faq} /><CloseCta />
       </div>
     </>
   );

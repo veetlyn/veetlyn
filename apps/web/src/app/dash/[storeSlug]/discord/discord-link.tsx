@@ -5,12 +5,15 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import Loader from "@/components/loader";
+import { usePlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { trpc } from "@/utils/trpc";
 
 type LinkCode = { code: string; expiresAt: string };
 
 export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
+  const name = usePlatformName();
+  const cmd = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "") || "platform";
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const [createdCode, setCreatedCode] = useState<LinkCode | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -38,7 +41,7 @@ export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
           </h2>
           <p className="text-sm text-muted-foreground">Server ID: {linkedGuildId}</p>
           <p className="text-sm text-muted-foreground">
-            Payleor's commands work in that server. One server per team; an admin can link again to change it.
+            {name}'s commands work in that server. One server per team; an admin can link again to change it.
           </p>
         </section>
       ) : role !== "admin" ? (
@@ -49,8 +52,8 @@ export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
             Create a link code
           </h2>
           <p className="text-sm text-muted-foreground">
-            Create a one-time code, then run <code>/payleor link code:…</code> in your server. You need the Manage
-            Server permission there, and your Discord account must be linked to this Payleor account in Account
+            Create a one-time code, then run <code>/{cmd} link code:…</code> in your server. You need the Manage
+            Server permission there, and your Discord account must be linked to this {name} account in Account
             settings. The code expires 15 minutes after you create it.
           </p>
           <Button
@@ -68,7 +71,7 @@ export default function DiscordLink({ teamSlug }: { teamSlug: string }) {
           {createdCode ? (
             <div className="space-y-2 border-t pt-3">
               <p className="text-sm">In your server, run:</p>
-              <p className="break-all font-mono text-sm">/payleor link code:{createdCode.code}</p>
+              <p className="break-all font-mono text-sm">/{cmd} link code:{createdCode.code}</p>
               <p className="text-sm text-muted-foreground">
                 Expires {new Date(createdCode.expiresAt).toLocaleTimeString()} ({createdCode.expiresAt}).
               </p>

@@ -125,21 +125,21 @@ describe("memberPayoutFeeMinor", () => {
 
 describe("payPalConnectProblem", () => {
   it("is nothing without an error", () => {
-    expect(payPalConnectProblem(undefined)).toBeNull();
+    expect(payPalConnectProblem(undefined, "Platform")).toBeNull();
   });
 
-  it("names a PayPal account that already belongs to another Payleor account", () => {
-    expect(payPalConnectProblem(["1", "account_already_linked_to_different_user"])).toMatch(
-      /already connected to another Payleor account/,
+  it("names a PayPal account that already belongs to another Platform account", () => {
+    expect(payPalConnectProblem(["1", "account_already_linked_to_different_user"], "Platform")).toMatch(
+      /already connected to another Platform account/,
     );
   });
 
   it("says the sign-in ran out of time when the state no longer matches", () => {
-    expect(payPalConnectProblem(["1", "state_mismatch"])).toMatch(/within 5 minutes/);
+    expect(payPalConnectProblem(["1", "state_mismatch"], "Platform")).toMatch(/within 5 minutes/);
   });
 
   it("asks to try again for any other error", () => {
-    expect(payPalConnectProblem("1")).toBe("PayPal did not confirm the connection. Try again.");
-    expect(payPalConnectProblem(["1", "access_denied"])).toBe("PayPal did not confirm the connection. Try again.");
+    expect(payPalConnectProblem("1", "Platform")).toBe("PayPal did not confirm the connection. Try again.");
+    expect(payPalConnectProblem(["1", "access_denied"], "Platform")).toBe("PayPal did not confirm the connection. Try again.");
   });
 });

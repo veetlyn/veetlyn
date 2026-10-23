@@ -31,6 +31,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
@@ -44,6 +45,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       db,
       session,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers,
       catalog: createTestCatalogServices(),
@@ -369,7 +371,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       admin.servicesTeam.addMember({ teamSlug: "acme-studio", email: "nobody@example.com", role: "manager" }),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      message: "No Payleor account uses this email. Ask them to sign up first.",
+      message: "No account uses this email. Ask them to sign up first.",
     });
 
     // Roles change for team members, not for workspace admins.

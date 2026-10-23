@@ -8,9 +8,9 @@ const soloFee = formatOrderFee(getSellerPlan("solo").feeBps);
 
 export const faqAnswerText = (f: Faq) => (f.link ? `${f.a} ${f.link.label}.` : f.a);
 
-export const INDEX_FAQ: readonly Faq[] = [
+export const indexFaq = (name: string): readonly Faq[] => [
   {
-    q: "Does Payleor hold my money?",
+    q: `Does ${name} hold my money?`,
     a: "No. Clients pay into your PayPal business account. Our fee comes out of the same payment.",
   },
   {
@@ -21,16 +21,16 @@ export const INDEX_FAQ: readonly Faq[] = [
     q: "Can I sell products and services together?",
     a: "Yes. One workspace, one link. Run both and the cheaper plan is half price.",
   },
-  { q: "Can an AI sell on Payleor?", a: "Yes. Connect it through our API. Buyers see that the work is automated." },
+  { q: `Can an AI sell on ${name}?`, a: "Yes. Connect it through our API. Buyers see that the work is automated." },
   { q: "Can I leave with my data?", a: "Yes. Export everything at any time. The code is open source under AGPL-3.0." },
 ];
 
-export const NETWORK_FAQ: readonly Faq[] = [
+export const networkFaq = (name: string): readonly Faq[] => [
   {
-    q: "Is Payleor Network in the Claude or ChatGPT directory?",
+    q: `Is ${name} Network in the Claude or ChatGPT directory?`,
     a: "Not yet. Clients add it by its address. Directory listings come after the platforms' review.",
   },
-  { q: "Can the AI pay for my client?", a: "No. The client pays on Payleor and approves the payment in PayPal." },
+  { q: "Can the AI pay for my client?", a: `No. The client pays on ${name} and approves the payment in PayPal.` },
   {
     q: "Do I have to be listed?",
     a: "No. Every offering is listed by default, and you can take any of them off the network.",
@@ -51,7 +51,7 @@ export const FREELANCER_FAQ: readonly Faq[] = [
   { q: "Can I bring my own clients?", a: `Yes. Your own clients only pay your plan's ${soloFee} fee.` },
 ];
 
-export const AGENCY_FAQ: readonly Faq[] = [
+export const agencyFaq = (name: string): readonly Faq[] => [
   {
     q: "How do members get paid?",
     a: "Each member connects their own PayPal. Their share goes out after your approval, by your rules, or on payday.",
@@ -61,7 +61,7 @@ export const AGENCY_FAQ: readonly Faq[] = [
     a: "Not yet. Slack comes after launch. Today, requests come from AI, Discord and your page, and notices go by email.",
   },
   {
-    q: "Can our own agent work with Payleor?",
+    q: `Can our own agent work with ${name}?`,
     a: "Yes, through the public API and webhooks on Team and Agency. The payer still approves every payment in PayPal.",
   },
   {
@@ -71,10 +71,10 @@ export const AGENCY_FAQ: readonly Faq[] = [
   },
 ];
 
-export const STORE_FAQ: readonly Faq[] = [
+export const storeFaq = (name: string): readonly Faq[] => [
   {
     q: "Can I bring my products from Shopify, WooCommerce or Gumroad?",
-    a: "Add them to your Payleor store. There is no import tool yet.",
+    a: `Add them to your ${name} store. There is no import tool yet.`,
   },
   { q: "Who collects the shipping address?", a: "PayPal, at checkout. You see it on the order." },
   { q: "Do I need a PayPal business account?", a: "Yes. Payments go straight into it." },
@@ -98,18 +98,18 @@ export const STUDIO_FAQ: readonly Faq[] = [
   { q: "Which fee applies when I run both?", a: "The lower of your two plans, on every payment and order." },
 ];
 
-export const PRICING_FAQ: readonly Faq[] = [
+export const pricingFaq = (name: string): readonly Faq[] => [
   {
-    q: "Do my clients pay anything to Payleor?",
+    q: `Do my clients pay anything to ${name}?`,
     a: "No. Clients pay the price you set, through PayPal, without an account. Your fees come out of what you receive.",
   },
   {
     q: "Is there a fee on payouts to my team?",
-    a: "Payleor adds nothing. PayPal charges its own payout fee, shown before you send.",
+    a: `${name} adds nothing. PayPal charges its own payout fee, shown before you send.`,
   },
   {
     q: "How do you know a client came from the network?",
-    a: "Their first request starts inside an AI agent through Payleor. The project shows it before you quote.",
+    a: `Their first request starts inside an AI agent through ${name}. The project shows it before you quote.`,
   },
   {
     q: "Can I leave and take my data?",
@@ -125,10 +125,10 @@ export const PRICING_FAQ: readonly Faq[] = [
   },
 ];
 
-export const VISIBILITY_FAQ: readonly Faq[] = [
+export const visibilityFaq = (name: string): readonly Faq[] => [
   {
     q: "What does every plan get?",
-    a: "Web SEO on every seller page, coming with run V: structured data, a sitemap, an llms.txt, fast pages, and a listing on Discover and Payleor Network.",
+    a: `Web SEO on every seller page, coming with run V: structured data, a sitemap, an llms.txt, fast pages, and a listing on Discover and ${name} Network.`,
   },
   {
     q: "How do I get AI visibility?",

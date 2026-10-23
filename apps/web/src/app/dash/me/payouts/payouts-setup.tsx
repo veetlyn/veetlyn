@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import Loader from "@/components/loader";
+import { PlatformName } from "@/components/platform-name";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
 
@@ -118,7 +119,7 @@ export default function PayoutsSetup({
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Connect your PayPal account once. Payleor stores your PayPal payer ID; teams pay you with it.
+              Connect your PayPal account once. <PlatformName /> stores your PayPal payer ID; teams pay you with it.
             </p>
             {save.isError ? (
               <p role="alert" className="text-sm text-destructive">

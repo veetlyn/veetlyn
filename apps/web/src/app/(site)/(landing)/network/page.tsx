@@ -6,57 +6,64 @@ import FaqList, { faqStructuredData } from "@/components/site/faq-list";
 import JsonLd from "@/components/site/json-ld";
 import MemberCheck from "@/components/site/member-check";
 import PMark from "@/components/site/p-mark";
-import { NETWORK_FAQ } from "@/content/site/faqs";
+import { networkFaq } from "@/content/site/faqs";
+import { platformSite } from "@/lib/platform";
 import { getPlatformOrigins } from "@/lib/server-api";
 import { usd, walkCrewBalanceMinor } from "@/lib/site/examples";
 import { PRICE_FACTS } from "@/lib/site/fees";
 import { breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
-export const metadata = pageMetadata({
-  path: "/network",
-  title: "Payleor Network",
-  description:
-    "Payleor Network is the connector clients add to Claude and ChatGPT. Their AI finds sellers and requests quotes, and clients pay on Payleor with PayPal.",
-});
+export function generateMetadata() {
+  const site = platformSite();
+  return pageMetadata({
+    path: "/network",
+    title: `${site.name} Network`,
+    description: `${site.name} Network is the connector clients add to Claude and ChatGPT. Their AI finds sellers and requests quotes, and clients pay on ${site.name} with PayPal.`,
+    site,
+  });
+}
 
 export default async function NetworkPage() {
+  const site = platformSite();
+  const { name, domain } = site;
+  const faq = networkFaq(name);
   const { dash } = await getPlatformOrigins();
   const signup = `${dash}/signup`;
   return (
     <>
-      <JsonLd data={graph(organization(), breadcrumbs([["Payleor Network", "/network"]]), faqStructuredData(NETWORK_FAQ))} />
+      <JsonLd data={graph(organization(site), breadcrumbs([[`${name} Network`, "/network"]], site), faqStructuredData(faq))} />
       <div className="band">
         <div className="wrap hero page">
           <div>
-            <h1 data-in>Payleor Network</h1>
-            <p className="lead" data-in>The connector your clients add to Claude and ChatGPT. Their AI finds you, asks and requests. They pay on Payleor, with PayPal.</p>
+            <h1 data-in>{name} Network</h1>
+            <p className="lead" data-in>The connector your clients add to Claude and ChatGPT. Their AI finds you, asks and requests. They pay on {name}, with PayPal.</p>
             <div className="ctas" data-in>
               <a className="btn btn-mint" href={signup}>Get listed</a>{" "}<a className="link" href="#add">Add it to Claude or ChatGPT</a>
             </div>
           </div>
           <ChatDemo
-            label="In ChatGPT, the bakery asks whether its logo is ready. Payleor Network shows Walk Crew's delivery; the client accepts it with a press and is sent to pay the balance on Payleor."
+            label={`In ChatGPT, the bakery asks whether its logo is ready. ${name} Network shows Walk Crew's delivery; the client accepts it with a press and is sent to pay the balance on ${name}.`}
             who="ChatGPT"
             message="Is my bakery logo ready?"
           >
             <div className="widget frame" data-at="400">
-              <p className="wtop"><PMark /><b>Payleor Network</b> · Delivery from Walk Crew</p>
+              <p className="wtop"><PMark /><b>{name} Network</b> · Delivery from Walk Crew</p>
               <div className="wrow"><span><span className="t">Logo, 3 directions</span><br /><span className="s">logo-final.zip · 3 files</span></span><span className="num t">Ready</span><span></span></div>
               <div className="wrow"><span><span className="t">Balance due</span><br /><span className="s">After you accept</span></span><span className="num t">{usd(walkCrewBalanceMinor())}</span><span className="act" data-press="1900" data-done="Accepted">Accept delivery</span></div>
             </div>
-            <p className="reply frame" data-at="2800">Accepted. Pay the {usd(walkCrewBalanceMinor())} balance on Payleor, with PayPal.</p>
+            <p className="reply frame" data-at="2800">Accepted. Pay the {usd(walkCrewBalanceMinor())} balance on {name}, with PayPal.</p>
           </ChatDemo>
         </div>
       </div>
       <div>
         <section aria-labelledby="gap-h">
           <div className="wrap">
-            <h2 id="gap-h" data-in>AI shopping left services out. Payleor Network brings them in.</h2>
+            <h2 id="gap-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
             <p className="lead-dark" data-in>The assistants' own checkouts sell physical goods. Services, courses and downloads have no way in. These are the gaps the network fills.</p>
             <div className="features">
-              <div className="feature agent" data-in><p className="tag">A way in</p><h3>For people who sell their work</h3><p>One connector puts every Payleor seller in front of a client's AI.</p></div>
+              <div className="feature agent" data-in><p className="tag">A way in</p><h3>For people who sell their work</h3><p>One connector puts every {name} seller in front of a client's AI.</p></div>
               <div className="feature agent" data-in><p className="tag">One integration</p><h3>We build it once, for everyone</h3><p>No seller writes a connector or passes a platform review.</p></div>
-              <div className="feature agent" data-in><p className="tag">Platform rules</p><h3>The AI never pays</h3><p>Payment happens on Payleor's page, approved by the payer in PayPal.</p></div>
+              <div className="feature agent" data-in><p className="tag">Platform rules</p><h3>The AI never pays</h3><p>Payment happens on {name}'s page, approved by the payer in PayPal.</p></div>
               <div className="feature" data-in><p className="tag">Consent</p><h3>A press the model cannot fake</h3><p>Accepting a quote or a delivery takes the client's own press on a card.</p></div>
               <div className="feature" data-in><p className="tag">Proof</p><h3>A record for work with no tracking number</h3><p>The agreed scope, changes, deliveries and the client's answers are kept.</p></div>
               <div className="feature" data-in><p className="tag">After the sale</p><h3>Money for the whole team</h3><p>Deposits, balances, shares and payouts by your rules.</p></div>
@@ -73,7 +80,7 @@ export default async function NetworkPage() {
               </div>
               <div className="side middle" data-in>
                 <p className="for">Only the client can</p>
-                <ul><li>Accept a quote, with a press</li><li>Accept a delivery, with a press</li><li>Pay, on Payleor with PayPal</li><li>Rate the seller</li></ul>
+                <ul><li>Accept a quote, with a press</li><li>Accept a delivery, with a press</li><li>Pay, on {name} with PayPal</li><li>Rate the seller</li></ul>
                 <p className="foot-line">Card details stay with PayPal.</p>
               </div>
             </div>
@@ -85,9 +92,9 @@ export default async function NetworkPage() {
             <div className="features">
               <div className="feature" data-in><p className="tag">Claude</p><h3>Add a custom connector</h3><p>Settings, then Connectors, then Add custom connector, with this address.</p></div>
               <div className="feature" data-in><p className="tag">ChatGPT</p><h3>Add it in developer mode</h3><p>Turn on developer mode, then add the connector with the same address.</p></div>
-              <div className="feature agent" data-in><p className="tag">The address</p><h3 className="num">api.payleor.com/mcp</h3><p>One address for every seller on the network.</p></div>
+              <div className="feature agent" data-in><p className="tag">The address</p><h3 className="num">api.{domain}/mcp</h3><p>One address for every seller on the network.</p></div>
             </div>
-            <p className="note" data-in>Directory listings in Claude and ChatGPT come after the platforms' review. Until then, clients add Payleor Network themselves, once.</p>
+            <p className="note" data-in>Directory listings in Claude and ChatGPT come after the platforms' review. Until then, clients add {name} Network themselves, once.</p>
           </div>
         </section>
         <section aria-labelledby="sell-h">
@@ -108,11 +115,11 @@ export default async function NetworkPage() {
             <div className="member">
               <div className="side theirs" data-in>
                 <p className="for">How to qualify</p>
-                <ul><li>A verified PayPal business account</li><li>A delivery record on Payleor</li><li>Proof you already have: Trustpilot, a Google Business Profile, your social accounts</li></ul>
+                <ul><li>A verified PayPal business account</li><li>A delivery record on {name}</li><li>Proof you already have: Trustpilot, a Google Business Profile, your social accounts</li></ul>
               </div>
               <div className="side middle" data-in>
                 <p className="for">What members get</p>
-                <ul><li>AI visibility, run by an agent with your approval</li><li>The member check on every card and page</li><li>A place on the Network members shelf in Discover</li><li>First access to new agents</li><li>A named contact at Payleor</li></ul>
+                <ul><li>AI visibility, run by an agent with your approval</li><li>The member check on every card and page</li><li>A place on the Network members shelf in Discover</li><li>First access to new agents</li><li>A named contact at {name}</li></ul>
                 <p className="planned">Planned, opening soon</p>
               </div>
               <div className="member-card" data-in role="img" aria-label="A member card for Maison Lune with the member check and three verified proofs">
@@ -127,7 +134,7 @@ export default async function NetworkPage() {
             </div>
           </div>
         </section>
-        <FaqList title="Questions about the network" items={NETWORK_FAQ} /><CloseCta />
+        <FaqList title="Questions about the network" items={faq} /><CloseCta />
       </div>
     </>
   );

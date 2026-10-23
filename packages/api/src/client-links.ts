@@ -5,13 +5,13 @@
 const encoder = new TextEncoder();
 
 // Links sent before client contacts existed name only the project; they still verify under their own key.
-const LEGACY_CLIENT_LINK_LABEL = "payleor client link v1";
-const CLIENT_LINK_LABEL = "payleor client link v2";
+const LEGACY_CLIENT_LINK_LABEL = "platform client link v1";
+const CLIENT_LINK_LABEL = "platform client link v2";
 // The same link handed to a signed-in client (their home, their AI) instead of emailed: it opens the page but
 // proves no address.
-const ACCOUNT_CLIENT_LINK_LABEL = "payleor client link v2 account";
+const ACCOUNT_CLIENT_LINK_LABEL = "platform client link v2 account";
 const ACCOUNT_MARK = "a";
-const PAY_LINK_LABEL = "payleor pay link v1";
+const PAY_LINK_LABEL = "platform pay link v1";
 
 async function linkKey(secret: string, label: string): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [

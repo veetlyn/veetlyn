@@ -175,11 +175,11 @@ export function payoutNetMinor(input: {
 }
 
 // Better Auth returns from Log in with PayPal to errorCallbackURL with its error code appended as a second `error`.
-export function payPalConnectProblem(error: string | string[] | undefined): string | null {
+export function payPalConnectProblem(error: string | string[] | undefined, platformName: string): string | null {
   if (error === undefined) return null;
   const codes = Array.isArray(error) ? error : [error];
   if (codes.includes("account_already_linked_to_different_user")) {
-    return "This PayPal account is already connected to another Payleor account. Log out of PayPal, then log in with a different PayPal account.";
+    return `This PayPal account is already connected to another ${platformName} account. Log out of PayPal, then log in with a different PayPal account.`;
   }
   // Better Auth's state cookie lasts 5 minutes; a slower PayPal sign-in comes back without it.
   if (codes.includes("state_mismatch")) {

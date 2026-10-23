@@ -7,6 +7,7 @@ import { type SenderAddress, senderAddress } from "./senders";
 export type MailerConfig = {
   RESEND_API_KEY?: string;
   EMAIL_DOMAIN: string;
+  PLATFORM_NAME: string;
   EMAIL_REPLY_TO: string;
 };
 
@@ -62,7 +63,7 @@ function resendTransport(apiKey: string): Transport {
 }
 
 export function mailerWithTransports(
-  config: Pick<MailerConfig, "EMAIL_DOMAIN" | "EMAIL_REPLY_TO">,
+  config: Pick<MailerConfig, "EMAIL_DOMAIN" | "EMAIL_REPLY_TO" | "PLATFORM_NAME">,
   transports: readonly Transport[],
 ): Mailer {
   return {
@@ -71,7 +72,7 @@ export function mailerWithTransports(
       const tags: OutgoingTag[] = [{ name: "sender", value: message.sender }];
       if (message.tag) tags.push({ name: "kind", value: tagValue(message.tag) });
       const email: OutgoingEmail = {
-        from: senderAddress(message.sender, config.EMAIL_DOMAIN, message.onBehalfOf),
+        from: senderAddress(message.sender, config.EMAIL_DOMAIN, config.PLATFORM_NAME, message.onBehalfOf),
         to: message.to,
         replyTo: message.replyTo ?? config.EMAIL_REPLY_TO,
         subject: message.subject,

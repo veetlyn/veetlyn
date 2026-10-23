@@ -3,7 +3,8 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { z } from "zod";
 
-import { CONTACT_EMAIL } from "@/content/legal/meta";
+import { usePlatformInfo } from "@/components/platform-name";
+import { contactEmail } from "@/content/legal/meta";
 
 const TOPICS = ["Enterprise and sales", "Network membership", "Support", "Partnership", "Press"] as const;
 const TOPIC_FOR_HASH = new Map<string, (typeof TOPICS)[number]>([
@@ -24,6 +25,7 @@ const formSchema = z.object({
 // pick the topic.
 export default function ContactForm() {
   const [topic, setTopic] = useState<string>(TOPICS[0]);
+  const email = contactEmail(usePlatformInfo().domain);
 
   useEffect(() => {
     const pick = () => {
@@ -42,7 +44,7 @@ export default function ContactForm() {
       "\n",
     );
     const subject = `${f.topic}: ${f.company || f.name}`;
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   return (
@@ -96,7 +98,7 @@ export default function ContactForm() {
         Write the email
       </button>
       <p className="form-note">
-        This opens your email app with the message ready to send to {CONTACT_EMAIL}. Nothing is sent until you press
+        This opens your email app with the message ready to send to {email}. Nothing is sent until you press
         send there.
       </p>
     </form>

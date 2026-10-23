@@ -135,8 +135,8 @@ describe("request headers", () => {
   });
 
   it("sends the BN code when one is configured", async () => {
-    const withBn = await postWithHeaders({ partnerAttributionId: "PAYLEOR_BN" });
-    expect(withBn.headers.get("paypal-partner-attribution-id")).toBe("PAYLEOR_BN");
+    const withBn = await postWithHeaders({ partnerAttributionId: "PLATFORM_BN" });
+    expect(withBn.headers.get("paypal-partner-attribution-id")).toBe("PLATFORM_BN");
 
     const withoutBn = await postWithHeaders();
     expect(withoutBn.headers.get("paypal-partner-attribution-id")).toBeNull();

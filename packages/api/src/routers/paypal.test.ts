@@ -67,7 +67,7 @@ function makePayPal(
     }),
     partnerId: "PARTNER42",
     returnUrl: RETURN_URL,
-    sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+    sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
     onTeamMerchantChanged,
   };
 }
@@ -121,6 +121,7 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       paypal,

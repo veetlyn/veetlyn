@@ -10,6 +10,7 @@ import { type ChangeEvent, useState } from "react";
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { PlatformName } from "@/components/platform-name";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
@@ -169,8 +170,8 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
         </p>
       ) : null}
       <p className="text-sm text-muted-foreground">
-        Your PayPal account needs Payouts turned on. PayPal charges its fee to your account; Payleor takes it from the
-        member's payout, as with automatic payouts.
+        Your PayPal account needs Payouts turned on. PayPal charges its fee to your account; <PlatformName /> takes it
+        from the member's payout, as with automatic payouts.
       </p>
     </section>
   );

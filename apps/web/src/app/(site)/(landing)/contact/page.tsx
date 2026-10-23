@@ -2,20 +2,27 @@ import { getSellerPlan } from "@jendal-workspace/core";
 
 import ContactForm from "@/components/site/contact-form";
 import JsonLd from "@/components/site/json-ld";
-import { CONTACT_EMAIL } from "@/content/legal/meta";
+import { contactEmail } from "@/content/legal/meta";
+import { platformSite } from "@/lib/platform";
 import { breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
-export const metadata = pageMetadata({
-  path: "/contact",
-  title: "Contact Payleor",
-  description:
-    "Talk to Payleor about Enterprise plans, Network membership, partnerships or support. Write to contact@payleor.com.",
-});
+export function generateMetadata() {
+  const site = platformSite();
+  const email = contactEmail(site.domain);
+  return pageMetadata({
+    path: "/contact",
+    title: `Contact ${site.name}`,
+    description: `Talk to ${site.name} about Enterprise plans, Network membership, partnerships or support. Write to ${email}.`,
+    site,
+  });
+}
 
 export default function ContactPage() {
+  const site = platformSite();
+  const email = contactEmail(site.domain);
   return (
     <>
-      <JsonLd data={graph(organization(), breadcrumbs([["Contact", "/contact"]]))} />
+      <JsonLd data={graph(organization(site), breadcrumbs([["Contact", "/contact"]], site))} />
       <div className="band">
         <div className="wrap hero page solo">
           <div>
@@ -43,7 +50,7 @@ export default function ContactPage() {
               <div className="path" data-in>
                 <h2>Everything else</h2>
                 <p>Support, press and partners.</p>
-                <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+                <a href={`mailto:${email}`}>{email}</a>
               </div>
             </div>
             <ContactForm />

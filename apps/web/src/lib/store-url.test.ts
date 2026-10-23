@@ -12,12 +12,12 @@ describe("storeUrlParts", () => {
   });
 
   it("drops the request port when the store domain is public", () => {
-    expect(storeUrlParts("payleor.site", "dash.payleor.app:8443")).toEqual({ prefix: "https://", suffix: ".payleor.site" });
+    expect(storeUrlParts("platform.site", "dash.platform.test:8443")).toEqual({ prefix: "https://", suffix: ".platform.site" });
   });
 });
 
 describe("storeUrl", () => {
   it("joins the slug with the parts", () => {
-    expect(storeUrl("acme", { prefix: "https://", suffix: ".payleor.site" })).toBe("https://acme.payleor.site");
+    expect(storeUrl("acme", { prefix: "https://", suffix: ".platform.site" })).toBe("https://acme.platform.site");
   });
 });

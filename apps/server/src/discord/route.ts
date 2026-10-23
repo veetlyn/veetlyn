@@ -17,6 +17,7 @@ import { verifyDiscordSignature } from "./verify";
 const config: DiscordConfig = {
   applicationId: ENV.DISCORD_APP_ID,
   webBaseUrl: ENV.BETTER_AUTH_URL,
+  platformName: ENV.PLATFORM_NAME,
 };
 
 export const discordRoute = new Hono<AppEnv>().post("/discord/interactions", async (c) => {

@@ -25,12 +25,13 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
   const { auth, mailer, settle } = createTestAuth(db);
   const route = createMcpRoute(
     {
-      actions: { db, files: createFakeFileStore(), auth },
+      actions: { db, platformName: "Platform", files: createFakeFileStore(), auth },
       auth,
       log: fromPartial<RequestLogger>({ set: () => {} }),
-      storeOrigin: (slug) => `https://${slug}.payleor.test`,
+      platformName: "Platform",
+      storeOrigin: (slug) => `https://${slug}.platform.test`,
     },
-    { authUrl: "http://dash.localhost:3001", origins: { api: "https://api.localhost", storeWildcard: "https://*.payleor.test" } },
+    { authUrl: "http://dash.localhost:3001", origins: { api: "https://api.localhost", storeWildcard: "https://*.platform.test" } },
   );
 
   beforeEach(async () => {
@@ -174,9 +175,9 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
   });
 
   it("asks again for an app whose redirects use different custom schemes", async () => {
-    const clientId = await register(["com.payleor.one:/callback", "com.other.app:/callback"], "native");
+    const clientId = await register(["com.platform.one:/callback", "com.other.app:/callback"], "native");
     const cookie = await signedInCookie();
-    const first = await authorize(cookie, clientId, "com.payleor.one:/callback");
+    const first = await authorize(cookie, clientId, "com.platform.one:/callback");
     await consent(cookie, first.location);
 
     const { location } = await authorize(cookie, clientId, "com.other.app:/callback");
@@ -192,6 +193,7 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
       db,
       session: makeSession(ann!.id),
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),

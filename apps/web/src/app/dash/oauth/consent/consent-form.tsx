@@ -5,6 +5,7 @@ import { Ban, Check, Eye } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 
+import { usePlatformName } from "@/components/platform-name";
 import { authClient } from "@/lib/auth-client";
 import type { consentGroups } from "@/lib/oauth-consent";
 
@@ -50,6 +51,7 @@ export default function ConsentForm({
 }) {
   const [pending, setPending] = useState<"allow" | "deny" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const platformName = usePlatformName();
   const name = clientName ?? "An AI assistant";
 
   async function decide(accept: boolean) {
@@ -69,13 +71,15 @@ export default function ConsentForm({
     <div className="space-y-5 short:space-y-4">
       <div className="space-y-1.5">
         <p className="text-sm text-muted-foreground">Connect an AI assistant</p>
-        <h1 className="font-heading text-3xl short:text-2xl">{name} wants to use Payleor as you</h1>
+        <h1 className="font-heading text-3xl short:text-2xl">
+          {name} wants to use {platformName} as you
+        </h1>
       </div>
 
       <div className="panel divide-y divide-border">
         <div className="space-y-1 p-4">
-          <p className="text-xs text-muted-foreground">After you allow it, Payleor sends you back to</p>
-          <p className="font-heading text-xl break-all">{host ?? "an address Payleor cannot read"}</p>
+          <p className="text-xs text-muted-foreground">After you allow it, {platformName} sends you back to</p>
+          <p className="font-heading text-xl break-all">{host ?? `an address ${platformName} cannot read`}</p>
           <p className="text-xs text-muted-foreground">
             Allow only if this is the assistant you are connecting, such as claude.ai or chatgpt.com. The name above is
             the app's own claim; this address is not.
@@ -118,7 +122,9 @@ export default function ConsentForm({
             {pending === "allow" ? "Allowing…" : "Allow"}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">You can disconnect it at any time from your Payleor account.</p>
+        <p className="text-xs text-muted-foreground">
+          You can disconnect it at any time from your {platformName} account.
+        </p>
       </div>
     </div>
   );

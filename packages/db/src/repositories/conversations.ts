@@ -16,7 +16,7 @@ export async function insertMessage(tx: DbExecutor, row: NewConversationMessage)
   return created;
 }
 
-// Payleor's own line on the timeline, written in the transaction of the change it reports.
+// The platform's own line on the timeline, written in the transaction of the change it reports.
 export async function insertEventMessage(
   tx: DbExecutor,
   input: { projectId: string; space: ConversationSpace; body: string; refType: string; refId: string },

@@ -21,6 +21,7 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
+import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { formatMinor } from "@/lib/money";
 import {
@@ -458,11 +459,17 @@ function RulesForm({
           onChange={(balanceFloor) => patch({ balanceFloor })}
           hint={
             <>
-              <p>Payleor reads your PayPal balance to apply this.</p>
+              <p>
+                <PlatformName /> reads your PayPal balance to apply this.
+              </p>
               {balanceReadable === "reconnect" ? (
-                <p>Turn on automatic payouts again so Payleor can read your balance.</p>
+                <p>
+                  Turn on automatic payouts again so <PlatformName /> can read your balance.
+                </p>
               ) : balanceReadable === "off" ? (
-                <p>Turn on automatic payouts so Payleor can read your balance.</p>
+                <p>
+                  Turn on automatic payouts so <PlatformName /> can read your balance.
+                </p>
               ) : null}
             </>
           }

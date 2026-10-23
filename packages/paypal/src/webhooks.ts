@@ -11,7 +11,7 @@ export type WebhookTransmission = {
   transmissionTime: string;
 };
 
-// The ids Payleor keeps from a verified event. The payload itself is not stored: order resources carry the
+// The ids the platform keeps from a verified event. The payload itself is not stored: order resources carry the
 // buyer's name and email, and the processor re-fetches the resource from PayPal anyway.
 export type ParsedWebhookEvent = {
   id: string;

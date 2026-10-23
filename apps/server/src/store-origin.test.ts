@@ -4,8 +4,8 @@ import { siteOriginFor, storeOriginFor } from "./store-origin";
 
 describe("storeOriginFor", () => {
   it("uses https and the store domain", () => {
-    expect(storeOriginFor({ storeDomain: "payleor.app", dashOrigin: "https://dash.payleor.com" })("walk-crew")).toBe(
-      "https://walk-crew.payleor.app",
+    expect(storeOriginFor({ storeDomain: "platform.test", dashOrigin: "https://dash.platform.test" })("walk-crew")).toBe(
+      "https://walk-crew.platform.test",
     );
   });
 
@@ -18,8 +18,8 @@ describe("storeOriginFor", () => {
 
 describe("siteOriginFor", () => {
   it("drops the dash label from the dash origin", () => {
-    expect(siteOriginFor("https://dash.payleor.com")).toBe("https://payleor.com");
-    expect(siteOriginFor("https://dash.staging.payleor.com")).toBe("https://staging.payleor.com");
+    expect(siteOriginFor("https://dash.platform.test")).toBe("https://platform.test");
+    expect(siteOriginFor("https://dash.staging.platform.test")).toBe("https://staging.platform.test");
     expect(siteOriginFor("http://dash.localhost:3001")).toBe("http://localhost:3001");
   });
 });

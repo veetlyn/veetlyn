@@ -65,6 +65,7 @@ describe("createPayoutServices", () => {
     });
     const services = createPayoutServices({
       secretKey: await importSecretKey(TEST_KEY),
+      platformName: "Platform",
       environment: "sandbox",
       tokenKv: kv,
       fetch: paypal.fetch,
@@ -175,7 +176,7 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
         ],
       });
     });
-    const payouts = createPayoutServices({ secretKey, environment: "sandbox", tokenKv: fakeKv().kv, fetch: paypal.fetch });
+    const payouts = createPayoutServices({ secretKey, platformName: "Platform", environment: "sandbox", tokenKv: fakeKv().kv, fetch: paypal.fetch });
     const error = vi.spyOn(log, "error");
 
     await expect(settleSentPayouts({ db, payouts, now: () => NOW })).resolves.toEqual({ checked: 2, settled: 1 });
@@ -215,6 +216,7 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
     });
     const payouts = createPayoutServices({
       secretKey: await importSecretKey(TEST_KEY),
+      platformName: "Platform",
       environment: "sandbox",
       tokenKv: fakeKv().kv,
       fetch: paypal.fetch,

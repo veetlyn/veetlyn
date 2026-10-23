@@ -33,6 +33,7 @@ describe.skipIf(!hasTestDatabase)("open requests board", () => {
       db,
       session: makeSession(userId),
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
