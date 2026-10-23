@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { PlatformName } from "@/components/platform-name";
 import { usd } from "@/lib/site/examples";
 
 export type TierId = SellerPlanId | PlanId | "enterprise";
@@ -69,7 +70,9 @@ const TIERS = {
     for: "For one freelancer",
     btn: "btn-quiet",
     features: [
-      <b key="n">Listed on Payleor Network</b>,
+      <b key="n">
+        Listed on <PlatformName /> Network
+      </b>,
       <>
         <b>Intake agent</b>, {solo.aiDraftsPerMonth} drafts a month
       </>,
@@ -99,7 +102,9 @@ const TIERS = {
       </>,
       "Payouts by approval or by rule",
       "Discord and the public API",
-      "Your own domain, no Payleor badge",
+      <>
+        Your own domain, no <PlatformName /> badge
+      </>,
       `${team.storageGb} GB of files`,
     ],
   },
@@ -152,7 +157,9 @@ const TIERS = {
     for: "For creators and new shops",
     btn: "btn-quiet",
     features: [
-      <b key="c">Sold in Payleor Network carts</b>,
+      <b key="c">
+        Sold in <PlatformName /> Network carts
+      </b>,
       "Storefront on your page",
       <>
         <b>Web SEO</b> built into every page {SEO_LATER}

@@ -12,6 +12,7 @@ import { ActionError, type ActionErrorCode, toActionError } from "./errors";
 
 export type ActionDeps = {
   db: Database;
+  platformName: string;
   files: FileStore;
   auth: LinkSecretSource;
   paypal?: PayPalServices;

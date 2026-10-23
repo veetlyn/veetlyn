@@ -7,14 +7,14 @@ import { type LedgerTransferDraft, transferFromMoves } from "./transfers";
 
 type ProjectPosting = { currency: MoneyCurrency; projectId: string };
 
-// The team bears PayPal's fee and Payleor's platform fee (services spec §5); both leave the team's PayPal
+// The team bears PayPal's fee and the platform fee (services spec §5); both leave the team's PayPal
 // balance at capture. Null when PayPal charged nothing.
 export function paymentFeesTransfer(
   input: ProjectPosting & { paymentId: string; paypalFeeMinor: number; platformFeeMinor: number },
 ): LedgerTransferDraft | null {
   const moves = [
     { from: a.teamRevenue, to: a.paypalFees, amountMinor: input.paypalFeeMinor },
-    { from: a.teamRevenue, to: a.payleorFees, amountMinor: input.platformFeeMinor },
+    { from: a.teamRevenue, to: a.platformFees, amountMinor: input.platformFeeMinor },
   ].filter((move) => move.amountMinor > 0);
   if (moves.length === 0) return null;
   return transferFromMoves({
@@ -44,7 +44,7 @@ export function orderFeesTransfer(
 ): LedgerTransferDraft | null {
   const moves = [
     { from: a.teamRevenue, to: a.paypalFees, amountMinor: input.paypalFeeMinor },
-    { from: a.teamRevenue, to: a.payleorFees, amountMinor: input.platformFeeMinor },
+    { from: a.teamRevenue, to: a.platformFees, amountMinor: input.platformFeeMinor },
   ].filter((move) => move.amountMinor > 0);
   if (moves.length === 0) return null;
   return transferFromMoves({
@@ -80,7 +80,7 @@ export function refundFeesTransfer(input: {
 }): LedgerTransferDraft | null {
   const moves = [
     { from: a.paypalFees, to: a.teamRevenue, amountMinor: input.paypalFeeMinor },
-    { from: a.payleorFees, to: a.teamRevenue, amountMinor: input.platformFeeMinor },
+    { from: a.platformFees, to: a.teamRevenue, amountMinor: input.platformFeeMinor },
   ].filter((move) => move.amountMinor > 0);
   if (moves.length === 0) return null;
   return transferFromMoves({
@@ -171,7 +171,7 @@ export function completionTransfer(
   });
 }
 
-// Refund on completion or cancel, recorded when Payleor asks PayPal for it.
+// Refund on completion or cancel, recorded when the platform asks PayPal for it.
 export function refundRequestedTransfer(
   input: ProjectPosting & { refundId: string; quotePartMinor: number; managementFeeMinor: number },
 ): LedgerTransferDraft {

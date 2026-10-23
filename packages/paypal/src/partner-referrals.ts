@@ -3,7 +3,7 @@ import type { z } from "zod";
 import type { PayPalRequest } from "./client";
 import { partnerReferralSchema } from "./schemas";
 
-// Platform spec §5 step 1: the permissions Payleor asks every seller for (Fact 2).
+// Platform spec §5 step 1: the permissions the platform asks every seller for (Fact 2).
 export const PARTNER_REFERRAL_FEATURES = [
   "PAYMENT",
   "REFUND",

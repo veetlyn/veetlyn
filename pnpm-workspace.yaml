@@ -4,15 +4,18 @@ packages:
 # Only versions published at least 14 days ago resolve (20160 minutes). A security fix that cannot wait goes in
 # minimumReleaseAgeExclude with the advisory id in a comment.
 minimumReleaseAge: 20160
-minimumReleaseAgeExclude: []
+# next 16.4.1: GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr (through better-auth > next, unused here).
+minimumReleaseAgeExclude:
+  - next@16.4.1
 allowBuilds:
   esbuild: true
   sharp: true
   msgpackr-extract: true
   workerd: true
 # seroval comes in through better-auth > solid-js (unused here); 1.5.x has GHSA-jp82-f5mq-hwhp and a critical
-# fromJSON advisory.
+# fromJSON advisory. next comes in through better-auth > next (unused here; the web app uses vinext).
 overrides:
+  next: 16.4.1
   seroval: 1.6.3
   seroval-plugins: 1.6.3
 catalog:

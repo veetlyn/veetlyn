@@ -1,4 +1,4 @@
-/* payleor.com on the Landing B design system. Colours are the Relief tokens and the band, so light and dark follow
+/* The marketing site on the Landing B design system. Colours are the Relief tokens and the band, so light and dark follow
    the app's theme; every rule is scoped to the site's root so nothing reaches the dash. */
 .site-root {
   --site-display: "Cal Sans UI", "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -632,5 +632,5 @@
 .site-root .tone-brand { --c: var(--brand); }
 .site-root .tone-ink { --c: var(--foreground); }
 .site-root .tone-paypal { --c: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
-.site-root .tone-payleor { --c: var(--muted-foreground); }
+.site-root .tone-platform { --c: var(--muted-foreground); }
 .site-root .split .bar span[class^="tone-"] { background: var(--c); }

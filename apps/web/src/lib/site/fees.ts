@@ -30,7 +30,7 @@ export type Sale =
 
 export type SaleFees = { feeBps: number; feeMinor: number; networkMinor: number; totalMinor: number };
 
-// What Payleor takes on one sale, with the same rounding the ledger uses. The network fee applies to a services
+// What the platform takes on one sale, with the same rounding the ledger uses. The network fee applies to a services
 // client's first project only; store orders never carry it until that is decided.
 export function saleFees(sale: Sale): SaleFees {
   const feeBps = sale.kind === "services" ? getSellerPlan(sale.planId).feeBps : getPlan(sale.planId).orderFeeBps;

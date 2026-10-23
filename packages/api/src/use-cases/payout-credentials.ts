@@ -31,7 +31,7 @@ import { PAYPAL_URL_MAX_LENGTH, payPalCountry } from "../paypal/onboarding";
 import { payPalErrorLog } from "./paypal-amounts";
 
 // accountId is null for credentials saved before PayPal reported which account they belong to. canReadBalance is
-// false for credentials whose token lacks the reporting scope, such as those saved before Payleor asked for it.
+// false for credentials whose token lacks the reporting scope, such as those saved before the platform asked for it.
 export type PayoutCredentialsView = { accountId: string | null; verifiedAt: string; canReadBalance: boolean };
 
 type PayoutTeam = Pick<ServicesTeamRecord, "id" | "slug" | "paypalMerchantId">;
@@ -191,7 +191,7 @@ async function requirePayoutsScope(client: PayPalClient, teamId: string): Promis
   return scopes;
 }
 
-// Teams connected before Payleor kept the PayPal country get it here. Payout fees fall back to the international
+// Teams connected before the platform kept the PayPal country get it here. Payout fees fall back to the international
 // estimate without it, so a failure only logs.
 async function refreshTeamPayPalCountry(db: Database, paypal: PayPalServices, teamId: string, merchantId: string) {
   try {

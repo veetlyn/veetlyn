@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { slugStatus } from "./slug-status";
 
-const url = (slug: string) => `https://${slug}.payleor.site`;
+const url = (slug: string) => `https://${slug}.platform.site`;
 
 describe("slugStatus", () => {
   it("shows nothing for an empty address", () => {
@@ -16,7 +16,7 @@ describe("slugStatus", () => {
   it("shows the full URL when the address is available", () => {
     expect(slugStatus("acme", { status: "available", slug: "acme" }, url)).toEqual({
       tone: "available",
-      text: "https://acme.payleor.site is available.",
+      text: "https://acme.platform.site is available.",
     });
   });
 

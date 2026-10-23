@@ -24,7 +24,7 @@ Note:
 "Blocked Amount: $0,00\u00A0USD in 0 payments"
 
 Transaction ID,Recipient,Recipient Name,Unique Identifier,Amount,Fee,Total,Status,Reason Code,Custom Note,Message
-0N1309609K054603L,AWVNN2ZZ6ZWT4,,PLTEST000001,"$1,00\u00A0USD","$0,02\u00A0USD","$1,02\u00A0USD",Completed,,Payleor test,`;
+0N1309609K054603L,AWVNN2ZZ6ZWT4,,PLTEST000001,"$1,00\u00A0USD","$0,02\u00A0USD","$1,02\u00A0USD",Completed,,Platform test,`;
 
 const PAYOUTS_WEB_HEADER =
   "Transaction ID,Recipient,Recipient Name,Unique Identifier,Amount,Fee,Total,Status,Reason Code,Custom Note,Message";
@@ -79,7 +79,7 @@ describe("parsePayoutsWebLog", () => {
 
   it("refuses an amount it cannot read rather than guessing", () => {
     expect(() => parsePayoutsWebLog(payoutsWebLog({ amount: "n/a" }))).toThrow(
-      `PayPal's log has an amount Payleor cannot read: "n/a".`,
+      `PayPal's log has an amount that cannot be read: "n/a".`,
     );
   });
 
@@ -145,13 +145,13 @@ describe("payoutsWebCsv", () => {
     sentMinor: 2_450,
     currency: "USD",
     reference: "PL7K2M9Q4XR1AB",
-    note: "Payout from Walk Crew via Payleor",
+    note: "Payout from Walk Crew via Platform",
   };
 
   it("writes PayPal's upload rows without a header, quoting a note with a comma", () => {
     expect(payoutsWebCsv([row, { ...row, receiverPayerId: "PAYER2", sentMinor: 100_000, note: `Crew, "Walk"` }])).toBe(
       [
-        "AWVNN2ZZ6ZWT4,24.50,USD,PL7K2M9Q4XR1AB,Payout from Walk Crew via Payleor,PAYPAL",
+        "AWVNN2ZZ6ZWT4,24.50,USD,PL7K2M9Q4XR1AB,Payout from Walk Crew via Platform,PAYPAL",
         'PAYER2,1000.00,USD,PL7K2M9Q4XR1AB,"Crew, ""Walk""",PAYPAL',
       ].join("\r\n"),
     );

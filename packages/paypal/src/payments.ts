@@ -13,7 +13,7 @@ export type RefundCaptureInput = {
 
 export function createPayments(request: PayPalRequest) {
   return {
-    // No payment_instruction: Payleor keeps whatever share of its fee PayPal does not return on its own.
+    // No payment_instruction: the platform keeps whatever share of its fee PayPal does not return on its own.
     refundCapture(input: RefundCaptureInput): Promise<PayPalRefund> {
       return request(
         {

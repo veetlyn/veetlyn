@@ -190,6 +190,7 @@ async function sendClientLink(
     return { to, token, clientName: contact.name, teamName: team.name, teamSlug: team.slug, projectTitle: project.title };
   });
   const content = clientLinkEmail({
+    platformName: emailServices.platformName,
     clientName: prepared.clientName,
     teamName: prepared.teamName,
     projectTitle: prepared.projectTitle,

@@ -85,11 +85,11 @@ function makePayPal(fetchImpl: Parameters<typeof createPayPalClient>[0]["fetch"]
       environment: "sandbox",
       fetch: fetchImpl,
       sleep: () => Promise.resolve(),
-      partnerAttributionId: "PAYLEOR_BN",
+      partnerAttributionId: "PLATFORM_BN",
     }),
     partnerId: "PARTNER42",
     returnUrl: "https://admin.example.com/api/paypal/onboarding/return",
-    sdk: { clientId: "partner-client-id", partnerAttributionId: "PAYLEOR_BN", environment: "sandbox" },
+    sdk: { clientId: "partner-client-id", partnerAttributionId: "PLATFORM_BN", environment: "sandbox" },
   };
 }
 
@@ -105,6 +105,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       paypal,
@@ -285,7 +286,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         expect.arrayContaining([
           expect.objectContaining({ account: ledgerAccounts.teamRevenue, balanceMinor: 10_000 - 2_970 }),
           expect.objectContaining({ account: ledgerAccounts.paypalFees, balanceMinor: 2_370 }),
-          expect.objectContaining({ account: ledgerAccounts.payleorFees, balanceMinor: 600 }),
+          expect.objectContaining({ account: ledgerAccounts.platformFees, balanceMinor: 600 }),
         ]),
       );
     });
@@ -337,7 +338,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         team: { name: "team" },
         paypal: {
           clientId: "partner-client-id",
-          partnerAttributionId: "PAYLEOR_BN",
+          partnerAttributionId: "PLATFORM_BN",
           environment: "sandbox",
           merchantId: "SELLER1",
         },
@@ -388,7 +389,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       await expect(caller.payment.payCapture({ token, orderId: "ORDER1" })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     });
 
-    it("creates an order for the team with Payleor's 1% Team fee", async () => {
+    it("creates an order for the team with the platform's 1% Team fee", async () => {
       const { paymentId, token } = await connectedDeposit();
       const { requests, fetch } = fakePayPalApi();
 
@@ -413,7 +414,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 300, status: "pending" });
     });
 
-    it("creates an order for a solo seller with Payleor's 1% Solo fee", async () => {
+    it("creates an order for a solo seller with the platform's 1% Solo fee", async () => {
       const { userId, organizationId } = await seedOrganization(db);
       const { id: soloTeamId } = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
       const caller = callerFor(userId);
@@ -433,7 +434,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
       expect(await callerFor(null, makePayPal(fetch)).payment.payStart({ token })).toEqual({ orderId: "ORDER1" });
 
-      // Solo keeps the whole price (no management fee), so the deposit is half the quote and Payleor takes 1%.
+      // Solo keeps the whole price (no management fee), so the deposit is half the quote and the platform takes 1%.
       const [create] = calls(requests, "/v2/checkout/orders");
       expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
         amount: { currency_code: "USD", value: "500.00" },
@@ -723,7 +724,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       const fees = await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.reference, `payment_fees:${balancePaymentId}`));
       expect(fees).toEqual([expect.objectContaining({ kind: "payment_fees", projectId })]);
       expect(await balanceOf(ledgerAccounts.paypalFees)).toBe(1_994);
-      expect(await balanceOf(ledgerAccounts.payleorFees)).toBe(500);
+      expect(await balanceOf(ledgerAccounts.platformFees)).toBe(500);
       await expectCompleted(projectId, freelancerId, 1_994 + 500);
     });
 

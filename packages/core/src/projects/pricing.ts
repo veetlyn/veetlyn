@@ -2,7 +2,7 @@ import { assertAmount, assertBps, bpsOf } from "../money/money";
 
 export const DEPOSIT_BPS = 5_000;
 
-// Payleor's fee on one client payment or store order, at the seller plan's rate (pricing proposal §4).
+// The platform's fee on one client payment or store order, at the seller plan's rate (pricing proposal §4).
 // A tiny payment can round to zero; the order then carries no platform_fees.
 export function platformFeeMinor(paymentMinor: number, feeBps: number): number {
   assertAmount(paymentMinor, "payment");

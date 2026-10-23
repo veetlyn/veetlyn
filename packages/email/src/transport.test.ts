@@ -11,7 +11,7 @@ import {
   type Transport,
 } from "./transport";
 
-const DOMAIN = { EMAIL_DOMAIN: "payleor.com", EMAIL_REPLY_TO: "support@payleor.com" };
+const DOMAIN = { EMAIL_DOMAIN: "platform.test", EMAIL_REPLY_TO: "support@platform.test", PLATFORM_NAME: "Platform" };
 
 const RESEND: MailerConfig = { ...DOMAIN, RESEND_API_KEY: "test-resend-key" };
 
@@ -21,7 +21,7 @@ const message: EmailMessage = {
   sender: "accounts",
   tag: "verification",
   to: "ada@example.com",
-  subject: "Verify your email for Payleor",
+  subject: "Verify your email for Platform",
   text: "Hello",
   html: "<p>Hello</p>",
 };
@@ -58,10 +58,10 @@ describe("createMailer with a Resend API key", () => {
     expect(request.method).toBe("POST");
     expect(request.headers.get("authorization")).toBe("Bearer test-resend-key");
     expect(request.body).toMatchObject({
-      from: "Payleor <accounts@payleor.com>",
+      from: "Platform <accounts@platform.test>",
       to: ["ada@example.com"],
-      reply_to: ["support@payleor.com"],
-      subject: "Verify your email for Payleor",
+      reply_to: ["support@platform.test"],
+      subject: "Verify your email for Platform",
       html: "<p>Hello</p>",
       text: "Hello",
       tags: [
@@ -83,7 +83,7 @@ describe("createMailer with a Resend API key", () => {
     });
 
     expect(onlyRequest(fetchMock).body).toMatchObject({
-      from: "Ada's Shop via Payleor <stores@payleor.com>",
+      from: "Ada's Shop via Platform <stores@platform.test>",
       reply_to: ["ada@shop.example"],
       tags: [{ name: "sender", value: "stores" }],
     });
@@ -109,7 +109,7 @@ describe("createMailer with a Resend API key", () => {
   it("rejects without calling Resend when EMAIL_DOMAIN is not a hostname", async () => {
     const fetchMock = stubFetch();
 
-    const mailer = createMailer({ ...RESEND, EMAIL_DOMAIN: "payleor.com>" });
+    const mailer = createMailer({ ...RESEND, EMAIL_DOMAIN: "platform.test>" });
 
     await expect(mailer.send(message)).rejects.toThrow(/EMAIL_DOMAIN/);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -158,8 +158,8 @@ describe("mailerWithTransports", () => {
     await mailer.send(message);
 
     expect(calls).toEqual([
-      "first:accounts@payleor.com:sender=accounts,kind=verification",
-      "second:accounts@payleor.com:sender=accounts,kind=verification",
+      "first:accounts@platform.test:sender=accounts,kind=verification",
+      "second:accounts@platform.test:sender=accounts,kind=verification",
     ]);
   });
 

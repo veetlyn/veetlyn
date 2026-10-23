@@ -7,6 +7,8 @@ import {
 } from "@jendal-workspace/db/repositories/discord";
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 
+import { discordCommandName } from "./commands";
+
 // Interaction types (Fact 3). Only PING, commands and autocomplete arrive today; components and
 // modals come with later plans (services spec §8.4) and get the polite default meanwhile.
 const INTERACTION_PING = 1;
@@ -34,7 +36,7 @@ export type DiscordInteractionOption = {
   options?: DiscordInteractionOption[];
 };
 
-// Only the fields Payleor reads (Fact 3): the invoker as member (guild) or user (DM), the guild,
+// Only the fields the platform reads (Fact 3): the invoker as member (guild) or user (DM), the guild,
 // the command data and the interaction token.
 export type DiscordInteraction = {
   id: string;
@@ -50,6 +52,8 @@ export type DiscordConfig = {
   applicationId: string;
   // The admin origin (BETTER_AUTH_URL); /payouts setup links to /me/payouts there.
   webBaseUrl: string;
+  // The product name people read (PLATFORM_NAME).
+  platformName: string;
 };
 
 export type InteractionResponse = { type: number; data?: { content?: string; flags?: number; choices?: unknown[] } };
@@ -85,7 +89,7 @@ export async function handleDiscordInteraction(
     case INTERACTION_AUTOCOMPLETE:
       return { kind: "reply", response: { type: CALLBACK_AUTOCOMPLETE_RESULT, data: { choices: [] } } };
     default:
-      return ephemeral("Payleor cannot handle this interaction yet.");
+      return ephemeral(`${config.platformName} cannot handle this interaction yet.`);
   }
 }
 
@@ -103,11 +107,12 @@ function dispatchCommand(
   interaction: DiscordInteraction,
 ): InteractionResult {
   const command = interaction.data?.name ?? "";
+  const rootCommand = discordCommandName(config.platformName);
   const sub = subcommand(interaction);
   if (command === "payouts" && sub.name === "setup") {
-    return ephemeral(`Set up your PayPal payout destination on Payleor: ${config.webBaseUrl}/me/payouts`);
+    return ephemeral(`Set up your PayPal payout destination on ${config.platformName}: ${config.webBaseUrl}/me/payouts`);
   }
-  if (command === "payleor" && sub.name === "link") {
+  if (command === rootCommand && sub.name === "link") {
     // Linking a server touches the database, so it may pass the 3-second window: the reply defers
     // (only EPHEMERAL is valid on a defer, Fact 5) and the route edits the original response with
     // the follow-up (Fact 4). Expected failures resolve into user-facing messages here; anything
@@ -117,7 +122,7 @@ function dispatchCommand(
       followUp: linkServer(config, services, interaction, sub.option("code") ?? ""),
     };
   }
-  return ephemeral("Payleor does not know this command. Run /payleor link or /payouts setup.");
+  return ephemeral(`${config.platformName} does not know this command. Run /${rootCommand} link or /payouts setup.`);
 }
 
 async function linkServer(
@@ -130,32 +135,32 @@ async function linkServer(
   const discordId = interaction.member?.user.id;
   const permissions = interaction.member?.permissions;
   if (!guildId || !discordId) {
-    return "Run this command in the server you want to link to your Payleor team.";
+    return `Run this command in the server you want to link to your ${config.platformName} team.`;
   }
   if (!permissions || (BigInt(permissions) & BigInt(MANAGE_GUILD)) !== BigInt(MANAGE_GUILD)) {
-    return "You need the Manage Server permission in this server to link it to Payleor.";
+    return `You need the Manage Server permission in this server to link it to ${config.platformName}.`;
   }
   // Consumed first and atomically, so the one-time code cannot be raced or replayed.
   const teamId = await consumeDiscordLinkCode(services.db, code);
   if (!teamId) {
-    return "That code is not valid. An admin of your team creates a link code in the team admin on Payleor.";
+    return `That code is not valid. An admin of your team creates a link code in the team admin on ${config.platformName}.`;
   }
   const userId = await findUserIdByDiscordId(services.db, discordId);
   if (!userId) {
-    return `First, link your Discord account to Payleor in Account settings (${config.webBaseUrl}/account), then run the command again.`;
+    return `First, link your Discord account to ${config.platformName} in Account settings (${config.webBaseUrl}/account), then run the command again.`;
   }
   const role = await servicesTeamRoleFor(services.db, teamId, userId);
   if (!canServicesTeam(role, "manage_connections")) {
-    return "Your Payleor account is not an admin of that team, so it cannot link the server.";
+    return `Your ${config.platformName} account is not an admin of that team, so it cannot link the server.`;
   }
   const result = await setServicesTeamDiscordGuildId(services.db, teamId, guildId);
   if (result === "conflict") {
-    return "Another Payleor team is already linked to this server.";
+    return `Another ${config.platformName} team is already linked to this server.`;
   }
   if (result === "missing") {
-    return "Your team's settings are missing on Payleor. Open the team admin and try again.";
+    return `Your team's settings are missing on ${config.platformName}. Open the team admin and try again.`;
   }
-  return "This server is now linked to your Payleor team. The Link Discord step in your team's setup checklist is done.";
+  return `This server is now linked to your ${config.platformName} team. The Link Discord step in your team's setup checklist is done.`;
 }
 
 // Edits the deferred original response through the interaction webhook; no bot token needed (Fact 4).

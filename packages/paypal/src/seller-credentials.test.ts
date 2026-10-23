@@ -12,7 +12,7 @@ function clientWith(handler: Parameters<typeof fakeFetch>[0]) {
     clientSecret: "partner-secret",
     environment: "sandbox",
     fetch: fake.fetch,
-    partnerAttributionId: "PAYLEOR_BN",
+    partnerAttributionId: "PLATFORM_BN",
   });
   return { client, requests: fake.requests };
 }
@@ -50,7 +50,7 @@ describe("sellerCredentials", () => {
     expect(read.method).toBe("GET");
     expect(read.url).toBe(`https://api-m.sandbox.paypal.com${CREDENTIALS_PATH}`);
     expect(read.headers.get("authorization")).toBe("Bearer seller-token");
-    expect(read.headers.get("paypal-partner-attribution-id")).toBe("PAYLEOR_BN");
+    expect(read.headers.get("paypal-partner-attribution-id")).toBe("PLATFORM_BN");
   });
 
   it.each([

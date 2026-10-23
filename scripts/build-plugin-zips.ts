@@ -1,14 +1,21 @@
-// Builds the plugin zips judges and testers upload: payleor-plugin.zip for Claude (the folder inside the zip)
-// and payleor-plugin-chatgpt.zip for ChatGPT (files at the root, as its upload expects).
-// Usage: pnpm plugin:zip [--mcp-url https://api.staging.payleor.com/mcp]
+// Builds the plugin zips judges and testers upload: <plugin>-plugin.zip for Claude (the folder inside the zip)
+// and <plugin>-plugin-chatgpt.zip for ChatGPT (files at the root, as its upload expects). <plugin> is the folder
+// under plugins/. PLATFORM_NAME and PLATFORM_DOMAIN come from the environment (apps/server/.env.schema).
+// Usage: pnpm plugin:zip [--mcp-url https://api.staging.example.com/mcp]
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { crc32, deflateRawSync } from "node:zlib";
 
+import { z } from "zod";
+
 const ROOT = new URL("..", import.meta.url).pathname;
-const SOURCE = join(ROOT, "plugins/payleor");
+const PLUGINS = join(ROOT, "plugins");
 const OUT = join(ROOT, "dist/plugin");
-const PRODUCTION_MCP_URL = "https://api.payleor.com/mcp";
+
+const env = z.object({ PLATFORM_NAME: z.string().min(1), PLATFORM_DOMAIN: z.string().min(1) }).parse(process.env);
+const PRODUCTION_MCP_URL = `https://api.${env.PLATFORM_DOMAIN}/mcp`;
+// The URL a plugin file carries for the connector, whatever stage it was written for.
+const CONNECTOR_URL = /https:\/\/api\.[a-z0-9.-]+\/mcp/g;
 
 function argValue(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -73,6 +80,10 @@ function zip(entries: readonly Entry[]): Buffer {
   return Buffer.concat([...locals, directory, end]);
 }
 
+const [pluginName, ...otherPlugins] = (await readdir(PLUGINS, { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name);
+if (!pluginName || otherPlugins.length > 0) throw new Error("plugins/ must hold exactly one plugin folder");
+const SOURCE = join(PLUGINS, pluginName);
+
 const mcpUrl = argValue("--mcp-url") ?? PRODUCTION_MCP_URL;
 if (!/^https:\/\/[a-z0-9.-]+\/mcp$/.test(mcpUrl)) throw new Error(`Not an MCP endpoint URL: ${mcpUrl}`);
 
@@ -83,11 +94,11 @@ const stageLabel = stage ? ` ${stage.charAt(0).toUpperCase()}${stage.slice(1)}` 
 // A staging build points the connector at its stage and carries the stage in its name, so a host can install
 // it next to the production plugin instead of replacing it.
 function forStage(name: string, text: string): string {
-  if (name === "mcp.json" || name === ".mcp.json") return text.replaceAll(PRODUCTION_MCP_URL, mcpUrl);
+  if (name === "mcp.json" || name === ".mcp.json") return text.replace(CONNECTOR_URL, mcpUrl);
   if (name !== "plugin.json" && name !== ".claude-plugin/plugin.json") return text;
   return text
-    .replace('"name": "payleor"', `"name": "payleor${suffix}"`)
-    .replaceAll('"displayName": "Payleor"', `"displayName": "Payleor${stageLabel}"`);
+    .replace(`"name": "${pluginName}"`, `"name": "${pluginName}${suffix}"`)
+    .replaceAll(/"displayName": "[^"]*"/g, `"displayName": ${JSON.stringify(`${env.PLATFORM_NAME}${stageLabel}`)}`);
 }
 
 const files: Entry[] = await Promise.all(
@@ -98,6 +109,6 @@ const files: Entry[] = await Promise.all(
 );
 
 await mkdir(OUT, { recursive: true });
-await writeFile(join(OUT, `payleor-plugin${suffix}.zip`), zip(files.map((f) => ({ ...f, name: `payleor/${f.name}` }))));
-await writeFile(join(OUT, `payleor-plugin-chatgpt${suffix}.zip`), zip(files));
+await writeFile(join(OUT, `${pluginName}-plugin${suffix}.zip`), zip(files.map((f) => ({ ...f, name: `${pluginName}/${f.name}` }))));
+await writeFile(join(OUT, `${pluginName}-plugin-chatgpt${suffix}.zip`), zip(files));
 console.log(`Wrote ${files.length} files for ${mcpUrl} to dist/plugin/`);

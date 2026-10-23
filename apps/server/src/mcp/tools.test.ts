@@ -28,7 +28,7 @@ import { z } from "zod";
 import { mcpRequestHandler } from "./route";
 import type { McpDeps } from "./tools";
 
-const origins = { api: "https://api.payleor.test", storeWildcard: "https://*.payleor.test" };
+const origins = { api: "https://api.platform.test", storeWildcard: "https://*.platform.test" };
 
 const rpcResponse = z.object({
   result: z
@@ -46,7 +46,7 @@ const rpcResponse = z.object({
 // Claude's era (2025-11-25) answers each request as a server-sent event stream.
 async function call(handler: (request: Request) => Promise<Response>, method: string, params: JsonObject) {
   const response = await handler(
-    new Request("https://api.payleor.test/mcp", {
+    new Request("https://api.platform.test/mcp", {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -77,19 +77,22 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     return {
       actions: {
         db: database,
+        platformName: "Platform",
         files: createFakeFileStore(),
         auth,
         email: {
           mailer: createFakeMailer(),
-          siteOrigin: "https://payleor.test",
-          dashOrigin: "https://dash.payleor.test",
-          storeOrigin: (slug) => `https://${slug}.payleor.test`,
+          siteOrigin: "https://platform.test",
+          platformName: "Platform",
+          dashOrigin: "https://dash.platform.test",
+          storeOrigin: (slug) => `https://${slug}.platform.test`,
         },
       },
       auth,
       log: fromPartial<RequestLogger>({ set: () => {} }),
       userId,
-      storeOrigin: (slug) => `https://${slug}.payleor.test`,
+      platformName: "Platform",
+      storeOrigin: (slug) => `https://${slug}.platform.test`,
     };
   }
 
@@ -148,7 +151,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     expect(textOf(sent)).toContain("Request sent to «Walk Crew».");
     for (const r of [found, sent]) {
       expect(JSON.stringify(r.result?.structuredContent)).not.toMatch(/Walk Crew|Logo refresh/);
-      expect(JSON.stringify(r.result?._meta?.payleor?.card)).toContain("Walk Crew");
+      expect(JSON.stringify(r.result?._meta?.platform?.card)).toContain("Walk Crew");
     }
   });
 
@@ -185,9 +188,9 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
       "2 freelancers responded: «Aïcha» quoted $150.00 in 4 days; «Ben» asked «Do you have the \"vector\" file?».",
     );
     expect(text).toContain(`question id ${asked.messageId}`);
-    const token = z.string().parse(shown.result?._meta?.payleor?.confirmations?.quotes?.[quoteId]);
+    const token = z.string().parse(shown.result?._meta?.platform?.confirmations?.quotes?.[quoteId]);
     expect(text).not.toContain(token);
-    expect(shown.result?._meta?.payleor?.card?.freelancers).toHaveLength(2);
+    expect(shown.result?._meta?.platform?.card?.freelancers).toHaveLength(2);
   });
 
   it("answers a question masked before acceptance, and accepts a quote only with the card's confirmation", async () => {
@@ -211,14 +214,14 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     expect((await findProjectById(db, projectId))?.status).toBe("quoting");
 
     const card = await tool(clientId, "get_project", { projectId });
-    const token = z.string().parse(card.result?._meta?.payleor?.confirmations?.quotes?.[quoteId]);
+    const token = z.string().parse(card.result?._meta?.platform?.confirmations?.quotes?.[quoteId]);
     // A token for one user does not work for another.
     const stranger = await seedUser(db, "Eve");
     const stolen = await tool(stranger, "accept_quote", { projectId, quoteId, confirmation: token });
     expect(textOf(stolen)).toContain("No project with this id belongs to you");
     await addQuote(db, { teamId, role: "freelancer", actorId: ben }, { projectId, items: [{ ...item[0]!, amountMinor: 14_000 }], deliveryDays: 3 });
     const latest = await tool(clientId, "get_project", { projectId });
-    const ready = z.string().parse(latest.result?._meta?.payleor?.confirmations?.quotes?.[quoteId]);
+    const ready = z.string().parse(latest.result?._meta?.platform?.confirmations?.quotes?.[quoteId]);
     await tool(clientId, "accept_quote", { projectId, quoteId, confirmation: ready });
     expect((await findProjectById(db, projectId))?.status).toBe("awaiting_deposit");
 
@@ -242,7 +245,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const { clientId } = await requested();
     const perRequest = createDb({ DATABASE_URL: process.env.TEST_DATABASE_URL ?? "" });
     const response = await mcpRequestHandler(depsFor(clientId, perRequest), origins)(
-      new Request("https://api.payleor.test/mcp", {
+      new Request("https://api.platform.test/mcp", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "list_my_projects", arguments: {} } }),

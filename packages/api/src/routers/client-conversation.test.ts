@@ -36,15 +36,17 @@ describe.skipIf(!hasTestDatabase)("the client's side of the conversation", () =>
       db,
       session: userId ? makeSession(userId) : null,
       environment: "sandbox",
+      platformName: "Platform",
       auth,
       headers: new Headers(),
       catalog: createTestCatalogServices(),
       files: createFakeFileStore(),
       email: {
         mailer: createFakeMailer(),
-        siteOrigin: "https://payleor.test",
-        dashOrigin: "https://dash.payleor.test",
-        storeOrigin: (slug) => `https://${slug}.payleor.test`,
+        siteOrigin: "https://platform.test",
+        platformName: "Platform",
+        dashOrigin: "https://dash.platform.test",
+        storeOrigin: (slug) => `https://${slug}.platform.test`,
       },
     });
 
@@ -75,7 +77,7 @@ describe.skipIf(!hasTestDatabase)("the client's side of the conversation", () =>
     const view = await callerFor(null).project.clientGet({ token });
     expect(view.quotes.map((q) => q.freelancer)).toEqual([{ key: "freelancer-1", name: "Aïcha" }]);
     expect(view.conversation.messages.map((m) => [m.kind, m.freelancer?.key ?? null, m.authorName])).toEqual([
-      ["event", "freelancer-1", "Payleor"],
+      ["event", "freelancer-1", "Platform"],
       ["question", "freelancer-2", "Ben"],
       ["answer", "freelancer-2", "Client"],
       ["text", null, "Client"],
@@ -128,6 +130,6 @@ describe.skipIf(!hasTestDatabase)("the client's side of the conversation", () =>
     );
     expect(mine).toHaveLength(2);
     const logo = mine.find((p) => p.id === first);
-    expect(logo?.clientUrl).toMatch(/^https:\/\/walk-crew\.payleor\.test\/c\//);
+    expect(logo?.clientUrl).toMatch(/^https:\/\/walk-crew\.platform\.test\/c\//);
   });
 });

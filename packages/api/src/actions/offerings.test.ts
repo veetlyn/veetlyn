@@ -23,7 +23,7 @@ describe.skipIf(!hasTestDatabase)("offering.search", () => {
   const search = (input: { query: string; budgetMinor?: number; deadlineDays?: number }) =>
     perform(
       {
-        deps: { db, files: createFakeFileStore(), auth: { options: { secret: "test-secret-that-is-at-least-32-characters" } } },
+        deps: { db, platformName: "Platform", files: createFakeFileStore(), auth: { options: { secret: "test-secret-that-is-at-least-32-characters" } } },
         actor: { kind: "anonymous" },
         surface: "mcp",
         request: { requestId: crypto.randomUUID(), ip: null },

@@ -2,36 +2,49 @@ import { describe, expect, it } from "vitest";
 
 import { deployedHosts, parseDeployedStage, storeSlugsFrom } from "./deploy-hosts.ts";
 
+const ZONES = { platformZone: "platform.test", storeZone: "platform-store.test" };
+
 describe("deployedHosts", () => {
   it("serves production on the apex domains with a wildcard store route", () => {
-    const hosts = deployedHosts("production", ["walk-crew"]);
-    expect(hosts.platformDomain).toBe("payleor.com");
-    expect(hosts.storeDomain).toBe("payleor.app");
-    expect(hosts.dashOrigin).toBe("https://dash.payleor.com");
+    const hosts = deployedHosts("production", ["walk-crew"], ZONES);
+    expect(hosts.platformDomain).toBe("platform.test");
+    expect(hosts.storeDomain).toBe("platform-store.test");
+    expect(hosts.dashOrigin).toBe("https://dash.platform.test");
     expect(hosts.web.domain).toEqual({
-      name: "payleor.com",
-      aliases: ["dash.payleor.com", "admin.payleor.com"],
-      redirects: ["www.payleor.com"],
+      name: "platform.test",
+      aliases: ["dash.platform.test", "admin.platform.test"],
+      redirects: ["www.platform.test"],
     });
-    expect(hosts.web.routes).toEqual([{ pattern: "*.payleor.app/*", zoneName: "payleor.app" }]);
-    expect(hosts.api.domain).toBe("api.payleor.com");
-    expect(hosts.fileOrigins).toEqual(["https://payleor.com", "https://dash.payleor.com"]);
+    expect(hosts.web.routes).toEqual([{ pattern: "*.platform-store.test/*", zoneName: "platform-store.test" }]);
+    expect(hosts.api.domain).toBe("api.platform.test");
+    expect(hosts.fileOrigins).toEqual(["https://platform.test", "https://dash.platform.test"]);
   });
 
   // A staging route on a production zone would take over production's seller sites.
   it("keeps staging off the production hosts: named store hosts, no routes", () => {
-    const hosts = deployedHosts("staging", ["walk-crew", "acme"]);
-    expect(hosts.platformDomain).toBe("staging.payleor.com");
-    expect(hosts.storeDomain).toBe("staging.payleor.app");
-    expect(hosts.dashOrigin).toBe("https://dash.staging.payleor.com");
+    const hosts = deployedHosts("staging", ["walk-crew", "acme"], ZONES);
+    expect(hosts.platformDomain).toBe("staging.platform.test");
+    expect(hosts.storeDomain).toBe("staging.platform-store.test");
+    expect(hosts.dashOrigin).toBe("https://dash.staging.platform.test");
     expect(hosts.web.domain.aliases).toEqual([
-      "dash.staging.payleor.com",
-      "admin.staging.payleor.com",
-      "walk-crew.staging.payleor.app",
-      "acme.staging.payleor.app",
+      "dash.staging.platform.test",
+      "admin.staging.platform.test",
+      "walk-crew.staging.platform-store.test",
+      "acme.staging.platform-store.test",
     ]);
     expect(hosts.web.routes).toEqual([]);
-    expect(hosts.api.domain).toBe("api.staging.payleor.com");
+    expect(hosts.api.domain).toBe("api.staging.platform.test");
+  });
+
+  it("refuses a zone that is not a domain name", () => {
+    for (const bad of ["", "platform", "https://platform.test", "platform.test/path", "*.platform.test", "Platform.test"]) {
+      expect(() => deployedHosts("production", [], { platformZone: bad, storeZone: "platform-store.test" })).toThrow(
+        /PLATFORM_ZONE/,
+      );
+      expect(() => deployedHosts("production", [], { platformZone: "platform.test", storeZone: bad })).toThrow(
+        /STORE_ZONE/,
+      );
+    }
   });
 });
 

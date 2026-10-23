@@ -24,7 +24,7 @@ export type CreateSellerOrderInput = {
   merchantId: string;
   currency: string;
   value: string;
-  // Payleor's fee as a PayPal amount string; null leaves platform_fees out.
+  // The platform's fee as a PayPal amount string; null leaves platform_fees out.
   platformFeeValue: string | null;
   customId: string;
   description: string;

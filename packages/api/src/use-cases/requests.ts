@@ -64,7 +64,7 @@ export async function requestQuote(
     if ((await servicesTeamRoleFor(db, team.id, account.userId)) !== null) {
       fail("FORBIDDEN", "You are a member of this team, so you cannot request its services as a client.");
     }
-    if (!account.emailVerified) fail("FORBIDDEN", "Verify your Payleor account's email before requesting a quote.");
+    if (!account.emailVerified) fail("FORBIDDEN", "Verify your account's email before requesting a quote.");
   }
   const email = account?.email ?? input.email.trim().toLowerCase();
   const problems = validateQuoteRequest({
@@ -181,7 +181,7 @@ export async function createQuoteRequest(
     input.slug,
     await primaryClientPath(db, linkSecret(deps.auth), projectId),
   );
-  const linkContent = quoteRequestLinkEmail({ clientName: input.name.trim(), teamName, url: clientUrl });
+  const linkContent = quoteRequestLinkEmail({ platformName: emailServices.platformName, clientName: input.name.trim(), teamName, url: clientUrl });
   // The client's mail proves the address, so its failure is the request's failure. The caller gets a
   // generic message; the provider's error text stays server-side.
   try {
@@ -199,6 +199,7 @@ export async function createQuoteRequest(
   }
   if (supportEmail) {
     const notice = quoteRequestNoticeEmail({
+      platformName: emailServices.platformName,
       teamName,
       clientName: input.name.trim(),
       clientEmail: to,

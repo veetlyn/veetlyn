@@ -7,7 +7,7 @@ import { defineAction } from "./define";
 export const offeringSearch = defineAction({
   name: "offering.search",
   kind: "query",
-  summary: `Find services sellers on Payleor list for AI assistants: up to ${MAX_SEARCH_RESULTS} active offerings whose name, description or seller matches the query, optionally within a budget (minor units, compared with the lowest price) and a number of days (compared with the fastest delivery).`,
+  summary: `Find services sellers on the platform list for AI assistants: up to ${MAX_SEARCH_RESULTS} active offerings whose name, description or seller matches the query, optionally within a budget (minor units, compared with the lowest price) and a number of days (compared with the fastest delivery).`,
   input: z.object({
     query: z.string().trim().max(200),
     budgetMinor: z.int().positive().optional(),

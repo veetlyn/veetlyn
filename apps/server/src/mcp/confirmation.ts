@@ -3,7 +3,7 @@
 // the commit tool refuses a call without a valid one. The state change itself makes a second use fail (a quote
 // or a delivery is accepted once).
 const encoder = new TextEncoder();
-const LABEL = "payleor mcp confirmation v1";
+const LABEL = "platform mcp confirmation v1";
 const TTL_SECONDS = 15 * 60;
 
 export type ConfirmationAction = "accept_quote" | "accept_delivery";

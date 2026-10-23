@@ -9,13 +9,13 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function renderHtml(input: { greeting: string; intro: string; action: string; url: string; outro: string }): string {
+function renderHtml(input: { platformName: string; greeting: string; intro: string; action: string; url: string; outro: string }): string {
   const url = escapeHtml(input.url);
   return `<!doctype html>
 <html lang="en">
 <body style="margin:0;padding:24px;background:#f6f6f6;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#111">
 <div style="max-width:480px;margin:0 auto;background:#fff;padding:32px;border-radius:8px">
-<p style="margin:0 0 16px;font-size:18px;font-weight:600">Payleor</p>
+<p style="margin:0 0 16px;font-size:18px;font-weight:600">${escapeHtml(input.platformName)}</p>
 <p style="margin:0 0 16px">${escapeHtml(input.greeting)}</p>
 <p style="margin:0 0 24px">${escapeHtml(input.intro).replace(/\n/g, "<br>")}</p>
 <p style="margin:0 0 24px"><a href="${url}" style="display:inline-block;background:#111;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none">${escapeHtml(input.action)}</a></p>
@@ -26,32 +26,34 @@ function renderHtml(input: { greeting: string; intro: string; action: string; ur
 </html>`;
 }
 
-function render(input: { subject: string; name: string; intro: string; action: string; url: string; outro: string }): EmailContent {
+function render(input: { platformName: string; subject: string; name: string; intro: string; action: string; url: string; outro: string }): EmailContent {
   const greeting = `Hi ${input.name},`;
   return {
     // A caller-supplied name can land in the subject; CR/LF must not survive into the header.
     subject: input.subject.replace(/[\r\n]+/g, " "),
     text: [greeting, "", input.intro, input.url, "", input.outro].join("\n"),
-    html: renderHtml({ greeting, intro: input.intro, action: input.action, url: input.url, outro: input.outro }),
+    html: renderHtml({ platformName: input.platformName, greeting, intro: input.intro, action: input.action, url: input.url, outro: input.outro }),
   };
 }
 
-export function verificationEmail(input: { name: string; url: string }): EmailContent {
+export function verificationEmail(input: { platformName: string; name: string; url: string }): EmailContent {
   return render({
-    subject: "Verify your email for Payleor",
+    platformName: input.platformName,
+    subject: `Verify your email for ${input.platformName}`,
     name: input.name,
-    intro: "Confirm your email address to finish creating your Payleor account.",
+    intro: `Confirm your email address to finish creating your ${input.platformName} account.`,
     action: "Verify email",
     url: input.url,
-    outro: "This link expires in 1 hour. If you did not sign up for Payleor, you can ignore this email.",
+    outro: `This link expires in 1 hour. If you did not sign up for ${input.platformName}, you can ignore this email.`,
   });
 }
 
-export function passwordResetEmail(input: { name: string; url: string }): EmailContent {
+export function passwordResetEmail(input: { platformName: string; name: string; url: string }): EmailContent {
   return render({
-    subject: "Reset your Payleor password",
+    platformName: input.platformName,
+    subject: `Reset your ${input.platformName} password`,
     name: input.name,
-    intro: "Use this link to choose a new password for your Payleor account.",
+    intro: `Use this link to choose a new password for your ${input.platformName} account.`,
     action: "Choose a new password",
     url: input.url,
     outro:
@@ -59,8 +61,9 @@ export function passwordResetEmail(input: { name: string; url: string }): EmailC
   });
 }
 
-export function quoteRequestLinkEmail(input: { clientName: string; teamName: string; url: string }): EmailContent {
+export function quoteRequestLinkEmail(input: { platformName: string; clientName: string; teamName: string; url: string }): EmailContent {
   return render({
+    platformName: input.platformName,
     subject: `Your request to ${input.teamName}`,
     name: input.clientName,
     intro: `${input.teamName} received your request. Follow it, and accept or discuss the quote, on your private page:`,
@@ -71,12 +74,14 @@ export function quoteRequestLinkEmail(input: { clientName: string; teamName: str
 }
 
 export function clientLinkEmail(input: {
+  platformName: string;
   clientName: string;
   teamName: string;
   projectTitle: string;
   url: string;
 }): EmailContent {
   return render({
+    platformName: input.platformName,
     subject: `Your project with ${input.teamName}`,
     name: input.clientName,
     intro: `${input.teamName} sent you the link to your page for "${input.projectTitle}". Follow the work, and accept or discuss quotes and deliveries, there:`,
@@ -87,6 +92,7 @@ export function clientLinkEmail(input: {
 }
 
 export function quoteRequestNoticeEmail(input: {
+  platformName: string;
   teamName: string;
   clientName: string;
   clientEmail: string;
@@ -103,6 +109,7 @@ export function quoteRequestNoticeEmail(input: {
     ...(answerLines.length > 0 ? ["", ...answerLines] : []),
   ].join("\n");
   return render({
+    platformName: input.platformName,
     subject: `New request from ${input.clientName}`,
     name: input.teamName,
     intro: details,
@@ -112,8 +119,9 @@ export function quoteRequestNoticeEmail(input: {
   });
 }
 
-export function orderDownloadEmail(input: { teamName: string; productTitle: string; url: string }): EmailContent {
+export function orderDownloadEmail(input: { platformName: string; teamName: string; productTitle: string; url: string }): EmailContent {
   return render({
+    platformName: input.platformName,
     subject: `Your download: ${input.productTitle}`,
     name: "there",
     intro: `Thanks for your purchase from ${input.teamName}. Download ${input.productTitle} from your order page:`,

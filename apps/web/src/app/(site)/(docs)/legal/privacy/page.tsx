@@ -4,8 +4,11 @@ import LegalPage from "@/components/legal/legal-page";
 import { legalMdxComponents } from "@/components/legal/mdx-components";
 import { LEGAL_LAST_UPDATED } from "@/content/legal/meta";
 import Privacy from "@/content/legal/privacy.mdx";
+import { platformName } from "@/lib/platform";
 
-export const metadata: Metadata = { title: "Privacy policy · Payleor" };
+export function generateMetadata(): Metadata {
+  return { title: `Privacy policy · ${platformName()}` };
+}
 
 export default function PrivacyPage() {
   return (

@@ -1,4 +1,4 @@
-// AES-GCM 256 for secrets Payleor stores on behalf of a team, such as its PayPal REST app secret.
+// AES-GCM 256 for secrets the platform stores on behalf of a team, such as its PayPal REST app secret.
 
 export type SealedSecret = { ciphertext: string; iv: string; keyId: string };
 

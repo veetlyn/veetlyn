@@ -213,7 +213,7 @@ export const servicesTeamRouter = router({
       if (!found) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "No Payleor account uses this email. Ask them to sign up first.",
+          message: "No account uses this email. Ask them to sign up first.",
         });
       }
       const workspaceRole = await workspaceRoleFor(ctx.db, ctx.servicesTeam.organizationId, found.id);

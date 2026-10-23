@@ -4,9 +4,10 @@
 
 export type DeployedStage = "production" | "staging";
 
-const PLATFORM_ZONE = "payleor.com";
-const STORE_ZONE = "payleor.app";
 const HOST_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+// The zones the deployed stages serve: the platform site and dashboard, and the seller storefronts.
+export type Zones = { platformZone: string; storeZone: string };
 
 export type DeployedHosts = {
   platformDomain: string;
@@ -34,10 +35,19 @@ export function storeSlugsFrom(value: string | undefined): string[] {
   return slugs;
 }
 
-export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly string[]): DeployedHosts {
+function checkZone(name: string, zone: string): void {
+  const labels = zone.split(".");
+  if (labels.length < 2 || labels.some((label) => !HOST_LABEL.test(label))) {
+    throw new Error(`${name} has "${zone}", which is not a domain name.`);
+  }
+}
+
+export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly string[], zones: Zones): DeployedHosts {
+  checkZone("PLATFORM_ZONE", zones.platformZone);
+  checkZone("STORE_ZONE", zones.storeZone);
   const prefix = stage === "production" ? "" : "staging.";
-  const platformDomain = `${prefix}${PLATFORM_ZONE}`;
-  const storeDomain = `${prefix}${STORE_ZONE}`;
+  const platformDomain = `${prefix}${zones.platformZone}`;
+  const storeDomain = `${prefix}${zones.storeZone}`;
   const storeHosts = stage === "production" ? [] : stagingStoreSlugs.map((slug) => `${slug}.${storeDomain}`);
   return {
     platformDomain,
@@ -50,7 +60,7 @@ export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly 
         aliases: [`dash.${platformDomain}`, `admin.${platformDomain}`, ...storeHosts],
         redirects: [`www.${platformDomain}`],
       },
-      routes: stage === "production" ? [{ pattern: `*.${storeDomain}/*`, zoneName: STORE_ZONE }] : [],
+      routes: stage === "production" ? [{ pattern: `*.${storeDomain}/*`, zoneName: zones.storeZone }] : [],
     },
     api: { domain: `api.${platformDomain}` },
     fileOrigins: [`https://${platformDomain}`, `https://dash.${platformDomain}`],

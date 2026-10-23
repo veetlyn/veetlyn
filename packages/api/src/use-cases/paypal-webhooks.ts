@@ -31,7 +31,7 @@ const CAPTURE_EVENTS = new Set([
   "PAYMENT.CAPTURE.DENIED",
 ]);
 const REFUND_EVENTS = new Set(["PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"]);
-const NOT_OURS: WebhookOutcome = { status: "ignored", note: "not a Payleor payment" };
+const NOT_OURS: WebhookOutcome = { status: "ignored", note: "not a platform payment" };
 // Refusals the pay page shows the client; the webhook has nothing left to do after them.
 const CLIENT_REFUSALS = new Set(["CONFLICT", "BAD_REQUEST", "UNPROCESSABLE_CONTENT"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -45,7 +45,7 @@ async function findPayment(deps: PaymentDeps, event: PayPalWebhookEventRow) {
   return row ?? null;
 }
 
-// PayPal refusals that will not change on retry, and capture facts that contradict Payleor's records.
+// PayPal refusals that will not change on retry, and capture facts that contradict the platform's records.
 function settledFailure(cause: unknown): WebhookOutcome | null {
   if (cause instanceof CaptureFactConflict) return { status: "parked", note: cause.message };
   if (isSettledPayPalRefusal(cause)) {

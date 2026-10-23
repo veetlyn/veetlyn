@@ -3,24 +3,29 @@ import Link from "next/link";
 import CloseCta from "@/components/site/close-cta";
 import DiscoverBrowser from "@/components/site/discover-browser";
 import JsonLd from "@/components/site/json-ld";
+import { platformSite } from "@/lib/platform";
 import { PRICE_FACTS } from "@/lib/site/fees";
 import { absoluteUrl, breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
-export const metadata = pageMetadata({
-  path: "/discover",
-  title: "Discover",
-  description:
-    "Browse services, courses, downloads and goods from sellers on Payleor Network, the same catalog clients' AI searches in Claude and ChatGPT.",
-});
+export function generateMetadata() {
+  const site = platformSite();
+  return pageMetadata({
+    path: "/discover",
+    title: "Discover",
+    description: `Browse services, courses, downloads and goods from sellers on ${site.name} Network, the same catalog clients' AI searches in Claude and ChatGPT.`,
+    site,
+  });
+}
 
 export default function DiscoverPage() {
+  const site = platformSite();
   return (
     <>
       {/* The listings are samples until the network's search replaces them, so they stay out of structured data. */}
       <JsonLd
-        data={graph(organization(), breadcrumbs([["Discover", "/discover"]]), {
+        data={graph(organization(site), breadcrumbs([["Discover", "/discover"]], site), {
           "@type": "CollectionPage",
-          url: absoluteUrl("/discover"),
+          url: absoluteUrl("/discover", site.domain),
           name: "Discover",
         })}
       />
@@ -39,7 +44,7 @@ export default function DiscoverPage() {
               <div className="feature agent" data-in>
                 <p className="tag">AI</p>
                 <h3>Ask for it in a chat</h3>
-                <p>Clients who add Payleor Network search the same catalog.</p>
+                <p>Clients who add {site.name} Network search the same catalog.</p>
               </div>
               <div className="feature" data-in>
                 <p className="tag">Sellers</p>
@@ -51,7 +56,7 @@ export default function DiscoverPage() {
               </div>
             </div>
             <Link className="more" href="/network">
-              How Payleor Network works
+              How {site.name} Network works
             </Link>
           </div>
         </section>
