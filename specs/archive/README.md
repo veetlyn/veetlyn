@@ -72,6 +72,7 @@ Merge commits are also on the run board's "Done before the program" table in [`.
 | [`platform/plans/2026-10-15-a2-client-contacts.md`](platform/plans/2026-10-15-a2-client-contacts.md) | Run A2 plan (2026-10-15): client contacts, verified identities, revocable client links, safe migration. Merged as `1a0e640` (PR #2), walked through 2026-10-16 (AGT-01–06) |
 | [`platform/plans/2026-10-16-h-hosts-and-deploy.md`](platform/plans/2026-10-16-h-hosts-and-deploy.md) | Run H plan (2026-10-16): the `dash.` host, production and staging on our domains, the deploy workflow, security audit A1–A5. Merged as `0841314` (PR #3); production live and AGT-07/08 walked through 2026-10-20 |
 | [`platform/plans/2026-10-19-l-site.md`](platform/plans/2026-10-19-l-site.md) | Run L plan (2026-10-19): payleor.com on the Landing B design system, the blog, Discover, the SEO and AI visibility layer. Merged as `ed0d175` (PR #9), walked through 2026-10-20 |
+| [`platform/plans/2026-10-21-prep-no-brand.md`](platform/plans/2026-10-21-prep-no-brand.md) | Prep plan (2026-10-21): remove hardcoded product name and zones from source (`PLATFORM_NAME`, `PLATFORM_ZONE`, `STORE_ZONE`, `platform_fees` ledger account migration, `check-no-brand` lint check). Merged as `c89947d` (PR #17), deployed and smoke-checked on staging and production 2026-10-22 |
 
 ## Designs and research
 
