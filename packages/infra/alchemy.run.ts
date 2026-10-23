@@ -157,7 +157,7 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
   memo: {
     lockfile: true,
     // The web build bundles these workspace packages.
-    include: ["**/*", "../../packages/core/src/**", "../../packages/ui/src/**"],
+    include: ["**/*", "../../packages/core/src/**", "../../packages/ui/src/**", "../../packages/oss/*/src/**"],
   },
   observability,
   // Website.Vinext turns Workers Cache on, which cached signed-in API answers forwarded through this Worker and
