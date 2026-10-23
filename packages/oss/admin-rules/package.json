@@ -1,0 +1,30 @@
+{
+  "name": "@opmodel/admin-rules",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./RulebookEditor": "./src/RulebookEditor.tsx",
+    "./RulebookSummaryView": "./src/RulebookSummaryView.tsx",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@json-render/core": "catalog:",
+    "@opmodel/engine-rules": "workspace:*",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@json-render/react": ">=0.21.0 <0.22",
+    "react": ">=19 <20"
+  },
+  "devDependencies": {
+    "@json-render/react": "catalog:",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

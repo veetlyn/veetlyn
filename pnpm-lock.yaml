@@ -12,6 +12,9 @@ catalogs:
     '@json-render/core':
       specifier: 0.21.0
       version: 0.21.0
+    '@json-render/react':
+      specifier: 0.21.0
+      version: 0.21.0
     '@tailwindcss/postcss':
       specifier: ^4.3.3
       version: 4.3.3
@@ -495,6 +498,31 @@ importers:
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+
+  packages/oss/admin-rules:
+    dependencies:
+      '@json-render/core':
+        specifier: 'catalog:'
+        version: 0.21.0(zod@4.6.5)
+      '@opmodel/engine-rules':
+        specifier: workspace:*
+        version: link:../engine-rules
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@json-render/react':
+        specifier: 'catalog:'
+        version: 0.21.0(react@19.3.0)(zod@4.6.5)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/oss/engine-outbox:
     dependencies:
@@ -1688,6 +1716,11 @@ packages:
     resolution: {integrity: sha512-vysEbTjO1y8mEgAsp0tztRyaWCkNsBrG8MhAqbndGK3qmMXjMRdCNtk21+AQRNKdRelFGVAwBgtUNW8tfjQlsw==}
     peerDependencies:
       zod: ^4.0.0
+
+  '@json-render/react@0.21.0':
+    resolution: {integrity: sha512-z/fZg0L8fJe2dnnQjWkmMw409iBclSWcOqdjoBy8eLHeBr/7F7VipzkY1CfgA2Fa5uW+zxZ54OvWMtdDcsp/yg==}
+    peerDependencies:
+      react: ^19.2.3
 
   '@kobalte/core@0.13.14':
     resolution: {integrity: sha512-SBVB1lnvYbYt2x3t7fG0lo5fGLEbHQ6PII3NDPva8vD5e2v53On84ZVQiuIk0XI/55R4GQhden7Yem+R/XR8uQ==}
@@ -6929,6 +6962,13 @@ snapshots:
   '@json-render/core@0.21.0(zod@4.6.5)':
     dependencies:
       zod: 4.6.5
+
+  '@json-render/react@0.21.0(react@19.3.0)(zod@4.6.5)':
+    dependencies:
+      '@json-render/core': 0.21.0(zod@4.6.5)
+      react: 19.3.0
+    transitivePeerDependencies:
+      - zod
 
   '@kobalte/core@0.13.14(solid-js@1.9.15)':
     dependencies:
