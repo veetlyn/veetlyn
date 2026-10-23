@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { DISPUTE_WEBHOOK_EVENT_TYPES, parseDecimalToMinorUnits, parseDisputeWebhookEvent } from "../index";
+import type { JsonBody } from "../schemas";
 
-const CREATED = {
+const CREATED: JsonBody = {
   id: "WH-D1",
   event_type: "CUSTOMER.DISPUTE.CREATED",
   resource_type: "dispute",
