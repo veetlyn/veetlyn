@@ -275,13 +275,13 @@ Plan: [`2026-10-15-c-plugin.md`](../archive/platform/plans/2026-10-15-c-plugin.m
   - On another team's subdomain they are not found; the old site URL redirects to the team's site.
 - **Edge cases:** none.
 
-## B: delivery and API
+## B1: operating model, notices and engine
 
-Plan: not written.
+Plan: [`2026-10-22-b1-operating-model.md`](../platform/plans/2026-10-22-b1-operating-model.md), Task 10; design: [`2026-10-21-b1-operating-model-design.md`](../platform/2026-10-21-b1-operating-model-design.md).
 
 ### AGT-16: Client notices go to the client's home surface
 
-- **Actor:** client · **Surface:** email · **Delivered by:** B · **Status:** Planned (B)
+- **Actor:** client · **Surface:** email · **Delivered by:** B1 · **Status:** Planned (B1)
 - **Preconditions:** projects whose client's home is web and email, and one whose home is the AI.
 - **Steps:**
   1. Send a quote, request a payment and submit a delivery on each project.
@@ -290,9 +290,137 @@ Plan: not written.
   - A notice that fails to send is retried by the cron and is not sent twice.
 - **Edge cases:** clients whose home is Discord get the notice in Discord after run E (AGT-21).
 
+### AGT-19: Offerings say how they are fulfilled
+
+- **Actor:** team admin, client · **Surface:** web (`{dash}`, `{seller}`), plugin · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** walk-crew services.
+- **Steps:**
+  1. Set an offering's fulfilment type (by people, automated, or both).
+  2. Open the seller page; search for it through the plugin (AGT-10).
+- **Expected:**
+  - The seller page and the plugin results show the fulfilment type on each offering.
+- **Edge cases:** none.
+
+### AGT-37: A request the seller does not act on within 48 hours expires
+
+- **Actor:** team admin, client · **Surface:** web, email, Claude or ChatGPT · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** a new request to walk-crew; the deadline shortened for the walkthrough, or a request backdated (DB check (developer)).
+- **Steps:**
+  1. Leave the request without a quote, question or decline past the reminder time, then past the deadline.
+- **Expected:**
+  - The team gets a reminder before the deadline.
+  - At the deadline the request shows as expired on `{dash}`, the client page and the plugin card, and the client is told by email.
+- **Edge cases:** a question or a decline counts as acting; an expired request cannot be quoted.
+
+### AGT-46: A team edits and publishes its operating rules
+
+- **Actor:** team admin · **Surface:** web (`{dash}/walk-crew/rules`) · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** walk-crew with an existing project pinned to rulebook v1.
+- **Steps:**
+  1. Open the team's Rules page, edit a rule (such as free revisions or upfront rate), preview the client terms and member agreement summaries, and publish a new version.
+  2. Start or receive a new request.
+- **Expected:**
+  - Publishing creates rulebook v2; the new request pins v2, while the existing project stays on v1.
+- **Edge cases:** editing a draft does not affect new or running projects until published.
+
+### AGT-47: Client and member accept the current rules before working together
+
+- **Actor:** client, team member · **Surface:** web (`{seller}`, `{dash}`) · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** AGT-46.
+- **Steps:**
+  1. On the seller quote request form, read the client terms summary and submit a request after checking the agreement box.
+  2. Sign in on `{dash}` as a team member after a new rulebook version was published, accept the member agreement, and toggle **Email me about my projects**.
+- **Expected:**
+  - Both acceptances are recorded against the published rulebook version (`rulebook_acceptance`).
+  - When a member turns project emails off, team notices for their projects are skipped (`outbox_delivery` marked `skipped`).
+- **Edge cases:** submitting the request form without accepting the terms is refused.
+
+### AGT-48: Upfront payment rules set the deposit or full payment
+
+- **Actor:** team admin, client · **Surface:** web (`{dash}`, `{seller}` pay page) · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** walk-crew with tiered upfront rules (`< $300` -> `100% upfront`, `>= $1,000` -> `50% upfront`).
+- **Steps:**
+  1. Send and accept a `$200` quote on one project and a `$1,200` quote on another.
+  2. Open each pay link, pay the upfront invoice, deliver, and accept the delivery.
+- **Expected:**
+  - The `$200` quote collects 100% up front (plus the management fee) and completes immediately when the delivery is accepted without a second payment step.
+  - The `$1,200` quote collects a 50% deposit up front and moves to `awaiting_balance` when the delivery is accepted.
+- **Edge cases:** the upfront rate is locked when the quote is accepted.
+
+### AGT-49: Free revisions stop at the limit and offer a paid revision amendment
+
+- **Actor:** client, team admin · **Surface:** web (client page, `{dash}`) · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** an in-progress project with 1 free revision.
+- **Steps:**
+  1. Submit a delivery, request changes once as the client, deliver again, and try to request changes a second time.
+  2. Propose and accept the pre-filled paid revision amendment.
+- **Expected:**
+  - The first revision request succeeds; the second is refused because the free revision limit is reached, pointing to a paid revision amendment pre-filled with the rulebook's revision price.
+- **Edge cases:** once the paid revision amendment is accepted and topped up, the client can request changes again.
+
+### AGT-50: Late delivery records a refund proposal the admin confirms or waives
+
+- **Actor:** freelancer, team admin · **Surface:** web (`{dash}`) · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** an in-progress project past its `deadlineAt` under a rulebook with a late-delivery rate (for example 2%/day capped at 20%).
+- **Steps:**
+  1. Submit the delivery after the deadline.
+  2. As the team admin, open the project page and confirm (or waive) the proposed late-delivery refund.
+- **Expected:**
+  - Submitting late records a pending late-delivery refund proposal on the project without moving money automatically.
+  - Confirming the proposal applies the refund/reduction and adjusts the member's share; waiving clears it without moving money.
+- **Edge cases:** on-time deliveries or rulebooks with 0%/day record no proposal.
+
+### AGT-51: Missed member updates remind the member and record a mark
+
+- **Actor:** freelancer, team admin · **Surface:** web (`{dash}`), email · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** an in-progress project whose update window has elapsed without a message or delivery (DB check (developer)).
+- **Steps:**
+  1. Run the scheduler sweep past the reminder time, then past the update deadline.
+  2. Repeat or seed marks to reach the rulebook's strike threshold, and test giving leaving notice.
+- **Expected:**
+  - The member receives an update reminder before the deadline, and a `late_update` mark is recorded when the window expires.
+  - Reaching the strike threshold records a warning/strike and alerts the team admins; giving leaving notice records the notice window.
+- **Edge cases:** posting a message or submitting a delivery resets the update window.
+
+### AGT-52: Client silence follows the team's ladder (accept and complete, or abandon)
+
+- **Actor:** client, system scheduler · **Surface:** web, email · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** a delivered project where the client has not accepted or requested changes past the silence ladder's reminder and final days (DB check (developer)).
+- **Steps:**
+  1. Run the scheduler sweep at the first reminder, second reminder, and final close day.
+- **Expected:**
+  - The client receives the silence reminders by email.
+  - At the final day, a fully paid project auto-completes (`completed`) and settles the ledger split; if the rulebook's unpaid-balance silence outcome is `abandon` (or balance remains unpaid under `abandon`), the project moves to `abandoned`.
+- **Edge cases:** any client reply or change request cancels the silence ladder.
+
+### AGT-53: Quality refunds respect the rulebook's caps
+
+- **Actor:** team admin · **Surface:** web (`{dash}`) · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** a paid project in progress or delivered, under a rulebook with quality refund caps (for example 50% in progress, 25% after delivery).
+- **Steps:**
+  1. Attempt to issue a quality refund above the phase cap, then within the cap.
+- **Expected:**
+  - A refund above the rulebook's cap for the current project phase is refused; a refund within the cap succeeds.
+- **Edge cases:** full cancellation before work starts allows up to the before-work cap (100%).
+
+### AGT-54: A PayPal dispute pauses the project's timers and payouts
+
+- **Actor:** PayPal webhook, team admin · **Surface:** webhooks, web (`{dash}`), email · **Delivered by:** B1 · **Status:** Planned (B1)
+- **Preconditions:** a paid project with a captured PayPal payment.
+- **Steps:**
+  1. Send a signed or simulated `CUSTOMER.DISPUTE.CREATED` webhook for the capture, then `CUSTOMER.DISPUTE.RESOLVED`.
+- **Expected:**
+  - Opening the dispute records a `dispute` row, pauses the project's scheduled timers (`schedule_item`), holds payouts for the project, and emails `disputes@` and the team admins.
+  - Resolving the dispute in the seller's favour resumes the timers and unblocks payouts.
+- **Edge cases:** duplicate webhook deliveries for the same dispute ID are idempotent.
+
+## B2: API, webhooks and seller tools
+
+Plan: not written.
+
 ### AGT-17: A team creates an API key with explicit permissions
 
-- **Actor:** team admin · **Surface:** web, public API · **Delivered by:** B · **Status:** Planned (B)
+- **Actor:** team admin · **Surface:** web, public API · **Delivered by:** B2 · **Status:** Planned (B2)
 - **Preconditions:** walk-crew.
 - **Steps:**
   1. Create an API key with only the permissions to read projects and send quotes.
@@ -307,7 +435,7 @@ Plan: not written.
 
 ### AGT-18: A team receives signed webhooks
 
-- **Actor:** team's own system · **Surface:** webhooks · **Delivered by:** B · **Status:** Planned (B)
+- **Actor:** team's own system · **Surface:** webhooks · **Delivered by:** B2 · **Status:** Planned (B2)
 - **Preconditions:** walk-crew registers a webhook endpoint the tester can read.
 - **Steps:**
   1. Move a project through quote, payment and delivery, and let a payout settle.
@@ -316,28 +444,6 @@ Plan: not written.
   - Project events and payout events arrive at the endpoint, each signed; the signature checks out, and a tampered body fails it.
   - A delivery the endpoint refuses is retried later.
 - **Edge cases:** none.
-
-### AGT-19: Offerings say how they are fulfilled
-
-- **Actor:** team admin, client · **Surface:** web (`{dash}`, `{seller}`), plugin · **Delivered by:** B · **Status:** Planned (B)
-- **Preconditions:** walk-crew services.
-- **Steps:**
-  1. Set an offering's fulfilment type (by people, automated, or both).
-  2. Open the seller page; search for it through the plugin (AGT-10).
-- **Expected:**
-  - The seller page and the plugin results show the fulfilment type on each offering.
-- **Edge cases:** none.
-
-### AGT-37: A request the seller does not act on within 48 hours expires
-
-- **Actor:** team admin, client · **Surface:** web, email, Claude or ChatGPT · **Delivered by:** B · **Status:** Planned (B)
-- **Preconditions:** a new request to walk-crew; the deadline shortened for the walkthrough, or a request backdated (DB check (developer)).
-- **Steps:**
-  1. Leave the request without a quote, question or decline past the reminder time, then past the deadline.
-- **Expected:**
-  - The team gets a reminder before the deadline.
-  - At the deadline the request shows as expired on `{dash}`, the client page and the plugin card, and the client is told by email.
-- **Edge cases:** a question or a decline counts as acting; an expired request cannot be quoted.
 
 ## M: the mall
 

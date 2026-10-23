@@ -49,6 +49,7 @@ Never read the whole folder, and never send a helper agent to: most of it is his
 | [Conversations design](platform/2026-10-14-conversations-design.md) | Approved; built across runs C, B and E |
 | [Run C design](platform/2026-10-15-c-plugin-design.md) | Built and merged 2026-10-21 |
 | [Run B1 design](platform/2026-10-21-b1-operating-model-design.md) | Approved 2026-10-21 |
+| [Run B1 plan](platform/plans/2026-10-22-b1-operating-model.md) | Planned 2026-10-22 |
 | [Discord ticket flow design](platform/2026-10-13-discord-ticket-flow-design.md) | Source for run E, to revise first |
 | [Plugin spike facts](platform/2026-10-14-plugin-spike-facts.md) | Final; go for Claude and ChatGPT |
 | [Widget gallery](platform/2026-10-18-widget-gallery.html) | Draft 2026-10-18: the plugin's seven client cards in light and dark, each with loading, error and superseded states, on the spike's data; open it in a browser. Reference for run C's port of the widget |
