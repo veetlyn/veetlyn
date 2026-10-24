@@ -365,6 +365,7 @@ async function queueOrderPaidNotice(
               buyerEmail: input.order.buyerEmail,
               productTitle: input.order.productTitle,
               teamName: input.team.name,
+              supportEmail: input.team.supportEmail,
               url,
             },
           },
@@ -372,10 +373,24 @@ async function queueOrderPaidNotice(
       ),
     );
     await fanOutOutboxEvents({ db: deps.db }, events);
-    await deliverDueOutboxDeliveries({ db: deps.db, email });
+    const outcome = await deliverDueOutboxDeliveries({ db: deps.db, email });
+    if (outcome.failed > 0) {
+      // The delivery row carries the retry; the reporter hears it now, as with the direct send.
+      try {
+        await email.onError?.(new Error("order email send failed"), { kind: "order-download", to: input.order.buyerEmail });
+      } catch {
+        // A failing error reporter must not turn a lost email into a failed capture.
+      }
+    }
   } catch (error) {
-    // The capture is already committed; the cron sweep picks the delivery up.
+    // The capture is already committed; the cron sweep picks the delivery up, and the failure is
+    // reported the same way the direct send reported it.
     log.error({ action: "order.email", order: { id: input.order.id }, error: { name: errorName(error) } });
+    try {
+      await email.onError?.(error, { kind: "order-download", to: input.order.buyerEmail });
+    } catch {
+      // A failing error reporter must not turn a lost email into a failed capture.
+    }
   }
 }
 

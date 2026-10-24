@@ -87,6 +87,8 @@ describe.skipIf(!hasTestDatabase)("services team repository", () => {
     expect(saved).toEqual({
       teamId: studio.id,
       solo: false,
+      kind: "agency",
+      managerCutBps: 0,
       storeEnabled: false,
       bio: "",
       ...input,
