@@ -28,6 +28,7 @@ export const OUTBOX_EVENT_TYPES = [
   "payout.sent",
   "payout.failed",
   "order.paid",
+  "member.leaving_notice",
 ] as const;
 
 export type OutboxEventType = (typeof OUTBOX_EVENT_TYPES)[number];

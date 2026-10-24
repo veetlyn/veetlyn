@@ -15,6 +15,7 @@ import {
   matchOrCreateContact,
 } from "@jendal-workspace/db/repositories/contacts";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
+import { ensurePublishedRulebook, recordRulebookAcceptance } from "@jendal-workspace/db/repositories/operating-model";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import {
   findServicesTeamBySlug,
@@ -97,6 +98,7 @@ export async function requestQuote(
   const result = await runProjectTransaction(db, async (tx, uow) => {
     // Serialises requests per (team, email) so two at once cannot both pass the open-request count.
     await lockClientIdentity(tx, { teamId: team.id, key: email });
+    const rulebook = await ensurePublishedRulebook(tx, team.id);
     const accountContactId = account ? await matchOrCreateAccountContact(tx, { teamId: team.id, account }) : null;
     const open = accountContactId
       ? await countOpenRequestsForContact(tx, { teamId: team.id, contactId: accountContactId })
@@ -123,6 +125,11 @@ export async function requestQuote(
         currency: settings.currency,
         managementFeeBps: settings.managementFeeBps,
         teamCutBps: settings.teamCutBps,
+        // The request pins the team's published rulebook: its rules govern this project even if the
+        // team publishes a new version while it runs (AGT-46).
+        rulebookId: rulebook.id,
+        revisions: rulebook.spec.revisions.freeCount,
+        upfrontBps: rulebook.spec.upfront.defaultBps,
       })
       .returning();
     if (!row) throw new Error("Insert into project returned no row");
@@ -132,6 +139,14 @@ export async function requestQuote(
       (await matchOrCreateContact(tx, { teamId: team.id, email, discordId: null, name: clientName, source: "request" }));
     // The link is emailed to this address right after the transaction.
     await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: null, linkEmail: email });
+    // Requesting work accepts the team's terms at the pinned version (AGT-47).
+    await recordRulebookAcceptance(tx, {
+      rulebookId: rulebook.id,
+      teamId: team.id,
+      actorKind: "client",
+      contactId,
+      projectId: row.id,
+    });
     await uow.apply({
       project: row,
       set: {},

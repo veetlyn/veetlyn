@@ -140,7 +140,13 @@ export const servicesCatalogRouter = router({
     }),
 
   createOffering: servicesTeamProcedure
-    .input(offeringInput.extend({ departmentId: z.string().nullish(), listed: z.boolean().default(true) }))
+    .input(
+      offeringInput.extend({
+        departmentId: z.string().nullish(),
+        listed: z.boolean().default(true),
+        fulfilment: z.enum(["people", "automated", "both"]).default("people"),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_settings", ADMIN_ONLY);
       const draft = draftFrom(input);
@@ -150,6 +156,7 @@ export const servicesCatalogRouter = router({
         teamId: ctx.servicesTeam.id,
         departmentId: input.departmentId ?? null,
         listed: input.listed,
+        fulfilment: input.fulfilment,
         ...draft,
       });
       if (!created) throw new TRPCError({ code: "CONFLICT", message: "Your team already has a service with this name." });
@@ -162,6 +169,7 @@ export const servicesCatalogRouter = router({
         offeringId: z.string().min(1),
         departmentId: z.string().nullish(),
         listed: z.boolean().optional(),
+        fulfilment: z.enum(["people", "automated", "both"]).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -177,6 +185,7 @@ export const servicesCatalogRouter = router({
         teamId: ctx.servicesTeam.id,
         departmentId: input.departmentId ?? null,
         listed: input.listed,
+        fulfilment: input.fulfilment,
         ...draft,
       });
       if (!updated) throw new TRPCError({ code: "CONFLICT", message: "Your team already has a service with this name." });

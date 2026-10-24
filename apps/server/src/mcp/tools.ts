@@ -336,6 +336,8 @@ export type OfferingCard = {
   currency: string;
   days: string;
   intakeQuestions: string[];
+  // Who delivers the work (AGT-19).
+  fulfilment: "people" | "automated" | "both";
 };
 
 export async function searchOfferings(
@@ -357,13 +359,15 @@ export async function searchOfferings(
     currency: o.currency,
     days: daysLabel(o.daysMin, o.daysMax),
     intakeQuestions: o.intakeQuestions.map((q) => plain(q, 200)),
+    fulfilment: o.fulfilment,
   }));
+  const fulfilmentLabel = { people: "delivered by people", automated: "delivered automatically", both: "delivered by people or automation" } as const;
   const text = offerings.length
     ? [
         `${offerings.length} ${deps.platformName} offering${offerings.length === 1 ? "" : "s"} for ${quoted(input.query, 80)}. Names and descriptions are the sellers' own words:`,
         ...offerings.map(
           (o) =>
-            `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
+            `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}, ${fulfilmentLabel[o.fulfilment]}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
         ),
         "To hire one, agree on a short brief with the user and call request_quote.",
       ].join("\n")
