@@ -1,0 +1,37 @@
+apps/server/src/mcp/tools.ts
+  s_2f463c64952183::t_b0ba9cf80c2e2c 339-340,362,364,370
+packages/api/package.json
+  s_2f463c64952183::t_15ac52769ac1cd 17
+packages/api/src/__tests__/rulebooks.test.ts
+  s_2f463c64952183::t_7acdb1617edaa3 1-142
+packages/api/src/routers/services-catalog.ts
+  s_2f463c64952183::t_755e8335a47b50 143-149,159,172,188
+packages/api/src/use-cases/requests.ts
+  s_2f463c64952183::t_684f6887f9b2df 18,101,128-132,142-149
+packages/api/src/use-cases/rulebooks.ts
+  s_2f463c64952183::t_9eab10f610eca0 1-109
+packages/core/src/projects/events.ts
+  s_2f463c64952183::t_d1fa58c0688b33 31
+packages/db/src/repositories/services-catalog.test.ts
+  s_2f463c64952183::t_cd95eed4b763ac 139
+packages/db/src/repositories/services-catalog.ts
+  s_2f463c64952183::t_fde9dd3cac1187 40,172,204,217,252,333
+pnpm-lock.yaml
+  s_2f463c64952183::t_1c2384b5443837 331-333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4065845739c7da4657adda1e80b58dd7c6ecba93",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
