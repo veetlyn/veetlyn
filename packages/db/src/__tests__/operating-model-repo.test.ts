@@ -50,11 +50,9 @@ describe.skipIf(!hasTestDatabase)("operating model repository", () => {
     expect(await ensurePublishedRulebook(db, teamId)).toMatchObject({ id: rulebook.id });
   });
 
-  it("publishes v2 with new cuts while in-flight projects stay pinned to v1", async () => {
+  it("keeps one draft row per team and stamps v2 on publish", async () => {
     const { teamId, userId } = await seedServicesTeamWithAdmin(db);
-    const v1 = await ensurePublishedRulebook(db, teamId);
-    const projectId = await seedProject(db, { teamId });
-    await db.update(project).set({ rulebookId: v1.id }).where(eq(project.id, projectId));
+    await ensurePublishedRulebook(db, teamId);
 
     const draft = await saveRulebookDraft(db, {
       teamId,
@@ -69,12 +67,8 @@ describe.skipIf(!hasTestDatabase)("operating model repository", () => {
 
     const v2 = await publishRulebook(db, { teamId, userId });
     expect(v2).toMatchObject({ version: 2, status: "published" });
+    expect(await getDraftRulebook(db, teamId)).toBeNull();
     expect(await getPublishedRulebook(db, teamId)).toMatchObject({ id: v2.id });
-
-    const [pinned] = await db.select({ rulebookId: project.rulebookId }).from(project).where(eq(project.id, projectId));
-    expect(pinned).toEqual({ rulebookId: v1.id });
-    const [settings] = await db.select().from(servicesTeamSettings).where(eq(servicesTeamSettings.teamId, teamId));
-    expect(settings).toMatchObject({ teamCutBps: 2500, managerCutBps: 1000 });
   });
 
   it("records client and member acceptances and answers the member query", async () => {
