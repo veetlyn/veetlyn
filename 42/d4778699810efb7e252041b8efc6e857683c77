@@ -1,0 +1,19 @@
+packages/db/src/__tests__/operating-model-repo.test.ts
+  s_2f463c64952183::t_69a3a6db8cd9db 53,55,70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "42d4778699810efb7e252041b8efc6e857683c77",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
