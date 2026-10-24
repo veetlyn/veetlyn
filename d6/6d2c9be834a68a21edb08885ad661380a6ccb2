@@ -1,0 +1,29 @@
+apps/server/src/index.ts
+  s_2f463c64952183::t_d33dc024ed5915 26,147
+apps/server/src/routes/paypal-webhooks.ts
+  s_2f463c64952183::t_26be58a0e45c2e 5,16-18,109-116
+packages/api/src/__tests__/disputes-webhook.test.ts
+  s_2f463c64952183::t_4fb6ef512ff513 1-140
+packages/api/src/use-cases/disputes.ts
+  s_2f463c64952183::t_f2c8111d66eec9 1-176
+packages/api/src/use-cases/payouts.ts
+  s_2f463c64952183::t_7c1edc63fc5fd7 59-60,65,335-338,796-800
+packages/core/src/projects/events.ts
+  s_2f463c64952183::t_25541be6d6e36c 40-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d66d2c9be834a68a21edb08885ad661380a6ccb2",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
