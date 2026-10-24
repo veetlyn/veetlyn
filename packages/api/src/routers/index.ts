@@ -10,6 +10,7 @@ import { payoutDestinationRouter } from "./payout-destination";
 import { payoutsRouter } from "./payouts";
 import { paypalRouter } from "./paypal";
 import { projectRouter } from "./project";
+import { rulesRouter } from "./rules";
 import { sellerRouter } from "./seller";
 import { servicesCatalogRouter } from "./services-catalog";
 import { servicesTeamRouter } from "./services-team";
@@ -29,6 +30,7 @@ export const appRouter = router({
   payouts: payoutsRouter,
   paypal: paypalRouter,
   project: projectRouter,
+  rules: rulesRouter,
   seller: sellerRouter,
   servicesCatalog: servicesCatalogRouter,
   servicesTeam: servicesTeamRouter,

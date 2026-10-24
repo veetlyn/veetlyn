@@ -1,0 +1,94 @@
+import {
+  AGENCY_RULEBOOK_SPEC,
+  COLLECTIVE_RULEBOOK_SPEC,
+  RulebookRulesSchema,
+  SOLO_RULEBOOK_SPEC,
+  type RulebookSpec,
+} from "@opmodel/engine-rules";
+import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+
+import { router } from "../index";
+import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
+import {
+  acceptMemberRulebook,
+  getTeamRulebookState,
+  giveMemberLeavingNotice,
+  publishRulebook,
+  saveRulebookDraft,
+  setMemberNoticePreference,
+} from "../use-cases/rulebooks";
+
+const PRESETS = {
+  solo: SOLO_RULEBOOK_SPEC,
+  agency: AGENCY_RULEBOOK_SPEC,
+  collective: COLLECTIVE_RULEBOOK_SPEC,
+} as const satisfies Record<string, RulebookSpec>;
+
+const draftInput = z.object({
+  preset: z.enum(["solo", "agency", "collective", "custom"]),
+  rules: RulebookRulesSchema,
+});
+
+const SETTINGS_ADMINS_ONLY = "Only team admins manage the rules.";
+
+// The rules page's API (AGT-46, AGT-47): the team's published and draft rulebooks with their
+// plain-English documents, the member's acceptance and notice settings, and the actions around them.
+export const rulesRouter = router({
+  state: servicesTeamProcedure.query(async ({ ctx }) => {
+    const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+    return getTeamRulebookState(ctx.db, {
+      teamId: ctx.servicesTeam.id,
+      currency: settings?.currency ?? "USD",
+      userId: ctx.session.user.id,
+    });
+  }),
+
+  presets: servicesTeamProcedure.query(() => PRESETS),
+
+  saveDraft: servicesTeamProcedure.input(draftInput).mutation(async ({ ctx, input }) => {
+    requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ADMINS_ONLY);
+    return saveRulebookDraft(ctx.db, {
+      teamId: ctx.servicesTeam.id,
+      userId: ctx.session.user.id,
+      preset: input.preset,
+      spec: input.rules,
+    });
+  }),
+
+  publish: servicesTeamProcedure.mutation(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ADMINS_ONLY);
+    return publishRulebook(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id });
+  }),
+
+  acceptMember: servicesTeamProcedure.mutation(async ({ ctx }) => {
+    return acceptMemberRulebook(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id });
+  }),
+
+  setNoticePreference: servicesTeamProcedure
+    .input(z.object({ projectNoticesEnabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      return setMemberNoticePreference(ctx.db, {
+        teamId: ctx.servicesTeam.id,
+        userId: ctx.session.user.id,
+        projectNoticesEnabled: input.projectNoticesEnabled,
+      });
+    }),
+
+  giveLeavingNotice: servicesTeamProcedure.mutation(async ({ ctx }) => {
+    const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+    const state = await getTeamRulebookState(ctx.db, {
+      teamId: ctx.servicesTeam.id,
+      currency: settings?.currency ?? "USD",
+    });
+    if (state.published.rules.leavingNotice.days === 0) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "This team's rules set no leaving notice." });
+    }
+    return giveMemberLeavingNotice(ctx.db, {
+      teamId: ctx.servicesTeam.id,
+      userId: ctx.session.user.id,
+      rulebook: state.published.rules,
+    });
+  }),
+});
