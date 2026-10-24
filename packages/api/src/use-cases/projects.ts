@@ -797,6 +797,31 @@ export async function acceptDelivery(
   db: Database,
   input: { projectId: string; deliveryId: string },
 ): Promise<{ status: "awaiting_balance" | "completed"; balancePaymentId: string | null }> {
+  return settleDelivery(db, input, "accept_delivery");
+}
+
+// Timed system acceptance shares settlement, while client adapters retain their access checks.
+export async function autoAcceptDelivery(db: Database, projectId: string): Promise<void> {
+  const row = await findProjectById(db, projectId);
+  if (!row || row.status !== "delivered") return;
+  try {
+    const [found] = await db.select().from(delivery)
+      .where(and(eq(delivery.projectId, projectId), eq(delivery.status, "submitted"))).limit(1);
+    if (!found) throw new Error(`Project ${projectId} is delivered without an open delivery`);
+    await settleDelivery(db, { projectId, deliveryId: found.id }, "auto_complete");
+  } catch (error) {
+    // A concurrent client decision can retire this timer before its compare-and-set wins.
+    const latest = await findProjectById(db, projectId);
+    if (latest && latest.status !== "delivered") return;
+    throw error;
+  }
+}
+
+async function settleDelivery(
+  db: Database,
+  input: { projectId: string; deliveryId: string },
+  event: "accept_delivery" | "auto_complete",
+): Promise<{ status: "awaiting_balance" | "completed"; balancePaymentId: string | null }> {
   return runProjectTransaction(db, async (tx, uow) => {
     const row = await requireProject(tx, input.projectId);
     const found = await requireOpenDelivery(tx, row.id, input.deliveryId);
@@ -811,12 +836,16 @@ export async function acceptDelivery(
       paidManagementFeeMinor: facts.paidManagementFeeMinor,
       managementFeeCreditedMinor: facts.managementFeeCreditedMinor,
     });
-    const status = checkTransition(row.status, "accept_delivery", { ...facts, balanceDueMinor: balance.dueMinor });
+    const status = checkTransition(row.status, event, { ...facts, balanceDueMinor: balance.dueMinor });
     const accepted: OutboxEventInput = {
       type: "delivery.accepted",
       data: { deliveryId: found.id, finalPriceMinor: finalPrice },
     };
 
+    const acceptanceEvents: OutboxEventInput[] = [accepted];
+    if (event === "auto_complete") {
+      acceptanceEvents.push({ type: "project.auto_completed", data: { projectId: row.id, to: status } });
+    }
     let balancePaymentId: string | null = null;
     if (status === "awaiting_balance") {
       balancePaymentId = crypto.randomUUID();
@@ -824,7 +853,7 @@ export async function acceptDelivery(
         project: row,
         set: { status, finalPriceMinor: finalPrice },
         events: [
-          accepted,
+          ...acceptanceEvents,
           { type: "payment.created", data: { paymentId: balancePaymentId, kind: "balance", amountMinor: balance.dueMinor } },
         ],
       });
@@ -853,9 +882,11 @@ export async function acceptDelivery(
         freelancerId: row.assignedFreelancerId,
         finalPriceMinor: finalPrice,
         teamCutBps: row.teamCutBps,
+        managerId: row.managerId,
+        managerCutBps: row.managerCutBps,
         balance,
       });
-      const events: OutboxEventInput[] = [accepted, { type: "project.completed", data: { finalPriceMinor: finalPrice } }];
+      const events: OutboxEventInput[] = [...acceptanceEvents, { type: "project.completed", data: { finalPriceMinor: finalPrice } }];
       if (completion.refundMinor > 0) {
         events.push({
           type: "refund.requested",
@@ -884,7 +915,7 @@ export async function acceptDelivery(
     await insertEventMessage(tx, {
       projectId: row.id,
       space: "project",
-      body: "The client accepted the delivery.",
+      body: event === "auto_complete" ? "The review window closed and the delivery was accepted." : "The client accepted the delivery.",
       refType: "delivery",
       refId: found.id,
     });

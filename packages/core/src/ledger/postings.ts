@@ -160,8 +160,11 @@ export function completionTransfer(
     managerCutBps?: number;
   },
 ): LedgerTransferDraft {
-  const managerCut = input.managerId && input.managerCutBps && input.managerCutBps > 0 ? bpsOf(input.finalPriceMinor, input.managerCutBps) : 0;
   const teamCut = teamCutMinor(input.finalPriceMinor, input.teamCutBps);
+  // Independently rounded cuts can exceed a tiny price by one cent; allocate the team cut first.
+  const managerCut = input.managerId && input.managerId !== input.freelancerId && input.managerCutBps
+    ? Math.min(input.finalPriceMinor - teamCut, bpsOf(input.finalPriceMinor, input.managerCutBps))
+    : 0;
   const memberShare = input.finalPriceMinor - teamCut - managerCut;
   const moves = [
     { from: a.clientHeld(input.projectId), to: a.teamRevenue, amountMinor: teamCut },

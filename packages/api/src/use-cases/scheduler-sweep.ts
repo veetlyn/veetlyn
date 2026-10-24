@@ -1,4 +1,4 @@
-import { balanceDue, finalPriceMinor, type JsonObject } from "@jendal-workspace/core";
+import type { JsonObject } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import {
   claimDueScheduleItems,
@@ -7,7 +7,7 @@ import {
   recordMemberMark,
   upsertPendingScheduleItems,
 } from "@jendal-workspace/db/repositories/operating-model";
-import { findProjectById, getCurrentQuote, getProjectFacts, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
+import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { runInTransaction, type OutboxEventInput } from "@jendal-workspace/db/repositories/unit-of-work";
 import { rulebook } from "@jendal-workspace/db/schema/operating-model";
 import type { RulebookRules } from "@opmodel/engine-rules";
@@ -15,7 +15,7 @@ import { planProjectSchedule } from "@opmodel/engine-scheduler";
 import { eq } from "drizzle-orm";
 import { log } from "evlog";
 
-import { checkTransition } from "./projects";
+import { autoAcceptDelivery, checkTransition } from "./projects";
 
 // The 10-minute scheduler (AGT-37, AGT-51, AGT-52): claims due schedule items under a row lock and
 // fires each once, through the same project transactions people's actions use. A failing item is
@@ -124,15 +124,7 @@ async function fireItem(db: Database, item: { subject_id: string; kind: string }
         });
         return "fired";
       }
-      const facts = await autoCompleteFacts(db, row);
-      await runInTransaction(db, async (_tx, uow) => {
-        const status = checkTransition(row.status, "auto_complete", facts);
-        await uow.apply({
-          project: row,
-          set: { status },
-          events: [{ type: "project.auto_completed", data: { projectId: row.id, to: status } }],
-        });
-      });
+      await autoAcceptDelivery(db, row.id);
       return "fired";
     }
 
@@ -163,20 +155,4 @@ async function armUpdateCycle(db: Database, row: ProjectRow, rules: RulebookRule
     rules,
   });
   await upsertPendingScheduleItems(db, { teamId: row.teamId, subjectId: row.id, schedule: plan.schedule, cancel: [...plan.cancel] });
-}
-
-// What the auto-complete transition needs: whether a balance would still be due.
-async function autoCompleteFacts(db: Database, row: ProjectRow): Promise<{ balanceDueMinor: number }> {
-  const facts = await getProjectFacts(db, row.id);
-  const current = await getCurrentQuote(db, row.id);
-  const quoteMinor = current?.amountMinor ?? 0;
-  const due = balanceDue({
-    quoteMinor,
-    managementFeeBps: row.managementFeeBps,
-    finalPriceMinor: finalPriceMinor(quoteMinor, 0),
-    paidQuoteMinor: facts.paidQuoteMinor,
-    paidManagementFeeMinor: facts.paidManagementFeeMinor,
-    managementFeeCreditedMinor: facts.managementFeeCreditedMinor,
-  });
-  return { balanceDueMinor: due.dueMinor };
 }
