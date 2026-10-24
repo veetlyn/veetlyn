@@ -26,7 +26,6 @@ import {
 } from "../repositories/operating-model";
 import { runInTransaction } from "../repositories/unit-of-work";
 import { memberMark, outboxDelivery, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
-import { project } from "../schema/projects";
 import { servicesTeamSettings } from "../schema/services-teams";
 import { outbox } from "../schema/outbox";
 import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, seedUser, truncateAll } from "../testing/db";
