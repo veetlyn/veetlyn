@@ -36,6 +36,19 @@ function render(input: { platformName: string; subject: string; name: string; in
   };
 }
 
+// Shared by the notice builders: one action email with an escaped, clickable link.
+export function renderActionEmail(input: {
+  platformName: string;
+  subject: string;
+  name: string;
+  intro: string;
+  action: string;
+  url: string;
+  outro: string;
+}): EmailContent {
+  return render(input);
+}
+
 export function verificationEmail(input: { platformName: string; name: string; url: string }): EmailContent {
   return render({
     platformName: input.platformName,

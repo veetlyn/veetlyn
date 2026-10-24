@@ -23,6 +23,7 @@ import { BRIDGE_PATH, bridgeResponse, createMcpRoute, widgetOriginsFor } from ".
 import { noStoreByDefault } from "./no-store";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
+import { deliverDueOutboxDeliveries } from "@jendal-workspace/api/use-cases/outbox-dispatcher";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
@@ -184,6 +185,11 @@ export default {
         createProjectPayouts: () => createProjectPayouts({ db, payouts }, { now: new Date() }),
         sendPayouts: payouts ? () => sendDuePayouts({ db, payouts }, { now: new Date() }) : undefined,
         settlePayouts: payouts ? () => settleSentPayouts({ db, payouts }) : undefined,
+        deliverOutboxNotices: () => {
+          const email = getEmailServices(ctx);
+          if (!email) return Promise.resolve({ sent: 0, failed: 0, skipped: 0 });
+          return deliverDueOutboxDeliveries({ db, email, secret: ENV.BETTER_AUTH_SECRET });
+        },
       });
     } finally {
       ctx.waitUntil(db.$client.end());

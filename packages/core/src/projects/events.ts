@@ -27,6 +27,7 @@ export const OUTBOX_EVENT_TYPES = [
   "payout.queued",
   "payout.sent",
   "payout.failed",
+  "order.paid",
 ] as const;
 
 export type OutboxEventType = (typeof OUTBOX_EVENT_TYPES)[number];

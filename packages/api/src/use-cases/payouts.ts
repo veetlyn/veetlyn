@@ -60,6 +60,7 @@ import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
+import { appendPayoutOutboxEvent } from "./outbox-dispatcher";
 import { credentialsMatchTeam, payoutClientFromCredentials } from "./payout-credentials";
 import { adminCountOf, decisionRules, type PayoutRulesTeam } from "./payout-rules";
 import {
@@ -392,7 +393,29 @@ export async function requestPayout(
   });
 
   const row = await sendDecided(deps, team, decided, now);
+  await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.requested", row, team));
+  // A fresh queued row here means the request was auto-approved for a later payday (row 45).
+  if (row.status === "queued" && decided.sendNow === false) {
+    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.approved", row, team));
+  }
   return { ...payoutRequestView(row), teamName: team.name, teamSlug: team.slug, projectTitle: null };
+}
+
+// The display fields a payout notice carries (backlog row 45); nothing here is money-moving.
+function payoutNoticeInput(
+  type: "payout.requested" | "payout.approved" | "payout.queued" | "payout.sent" | "payout.failed",
+  row: PayoutRequestRow,
+  team: { id: string; name: string },
+) {
+  return {
+    type,
+    teamId: team.id,
+    teamName: team.name,
+    memberUserId: row.userId,
+    amountMinor: row.amountMinor,
+    currency: row.currency,
+    payoutRequestId: row.id,
+  };
 }
 
 // The payout of a completed project past its hold: the member's earnings from it, capped at what they have available
@@ -520,6 +543,9 @@ export async function approvePayoutRequest(
     const approved = await markApproved(tx, request, { now, sendAfter: decision.sendAfter, decidedByUserId: input.deciderId });
     return { ...approved, approvalsNeeded: 0 };
   });
+  if (decided.approvalsNeeded === 0) {
+    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.approved", decided.row, input.team));
+  }
   const row = decided.sendNow ? await sendPayout(deps, input.team, input.requestId) : decided.row;
   return { ...payoutRequestView(row), approvalsNeeded: decided.approvalsNeeded };
 }
@@ -771,7 +797,9 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
   if (request.uncertainAt !== null && outcome.kind !== "sent") outcome = { kind: "uncertain", cause: outcome.cause };
   if (outcome.kind === "sent") {
     try {
-      return await recordBatch(deps.db, request.id, outcome.batchId);
+      const sent = await recordBatch(deps.db, request.id, outcome.batchId);
+      await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.sent", sent, team));
+      return sent;
     } catch (cause) {
       // PayPal made the batch; a retry gets it back under the same ids and records it.
       outcome = { kind: "uncertain", cause };
@@ -788,7 +816,7 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
   if (outcome.kind === "held") {
     const message = outcome.message;
     // The next attempt gets fresh ids: PayPal made no payout under these, and might replay this refusal for them.
-    return recordForClaim(deps.db, request, (tx, locked) =>
+    const queued = await recordForClaim(deps.db, request, (tx, locked) =>
       updatePayoutRequest(tx, locked.id, {
         status: "queued",
         failureMessage: message,
@@ -796,10 +824,12 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
         ...backoff(locked, now),
       }),
     );
+    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.queued", queued, team));
+    return queued;
   }
   if (outcome.kind === "refused") {
     const message = outcome.message;
-    return recordForClaim(deps.db, request, async (tx, locked) => {
+    const failed = await recordForClaim(deps.db, request, async (tx, locked) => {
       const failed = await updatePayoutRequest(tx, locked.id, {
         status: "failed",
         failureMessage: message,
@@ -808,6 +838,8 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
       await postIfNew(tx, locked.teamId, payoutReleasedTransfer(postingFor(locked)));
       return failed;
     });
+    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.failed", failed, team));
+    return failed;
   }
   try {
     await recordForClaim(deps.db, request, (tx, locked) =>

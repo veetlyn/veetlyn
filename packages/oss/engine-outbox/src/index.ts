@@ -30,7 +30,7 @@ export function deliveryDedupeKey(outboxId: string, channel: DeliveryChannel, re
   return `${outboxId}:${channel}:${recipient}`;
 }
 
-export function recordDeliverySuccess(record: OutboxDeliveryRecord, providerMessageId: string, at: Date): OutboxDeliveryRecord {
+export function recordDeliverySuccess(record: OutboxDeliveryRecord, providerMessageId: string | null, at: Date): OutboxDeliveryRecord {
   return { ...record, status: "sent", attempts: record.attempts + 1, sentAt: at, lastError: null, providerMessageId };
 }
 

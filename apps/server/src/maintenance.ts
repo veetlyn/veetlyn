@@ -32,6 +32,8 @@ export type MaintenanceDeps = {
   // Absent when payouts are not set up on this server; the send and settle sweeps are then skipped.
   sendPayouts?: () => Promise<{ sent: number; held: number }>;
   settlePayouts?: () => Promise<{ checked: number; settled: number }>;
+  // The outbox notice retry sweep (AGT-16); absent when email is not configured on this server.
+  deliverOutboxNotices?: () => Promise<{ sent: number; failed: number; skipped: number }>;
   now?: () => Date;
 };
 
@@ -43,7 +45,8 @@ export type MaintenanceSweep =
   | "orders"
   | "projectPayouts"
   | "payoutSends"
-  | "payouts";
+  | "payouts"
+  | "outboxNotices";
 
 export type MaintenanceReport = {
   webhookEventsRequeued: number;
@@ -56,6 +59,8 @@ export type MaintenanceReport = {
   payoutsSent: number;
   payoutsChecked: number;
   payoutsSettled: number;
+  outboxNoticesSent: number;
+  outboxNoticesFailed: number;
   errors: MaintenanceSweep[];
 };
 
@@ -73,6 +78,8 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     payoutsSent: 0,
     payoutsChecked: 0,
     payoutsSettled: 0,
+    outboxNoticesSent: 0,
+    outboxNoticesFailed: 0,
     errors: [],
   };
 
@@ -166,6 +173,17 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
       report.payoutsChecked = checked;
       report.payoutsSettled = settled;
       return { checked, settled };
+    });
+  }
+
+  // Notice deliveries whose send failed retry here on the 10-minute cadence (AGT-16).
+  const deliverOutboxNotices = deps.deliverOutboxNotices;
+  if (deliverOutboxNotices) {
+    await sweep("outboxNotices", async () => {
+      const { sent, failed, skipped } = await deliverOutboxNotices();
+      report.outboxNoticesSent = sent;
+      report.outboxNoticesFailed = failed;
+      return { sent, failed, skipped };
     });
   }
 
