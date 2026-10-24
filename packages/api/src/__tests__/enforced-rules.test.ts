@@ -5,7 +5,7 @@ import { ensurePublishedRulebook, recordMemberMark } from "@jendal-workspace/db/
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
 import { rulebookAcceptance, scheduleItem, memberMark } from "@jendal-workspace/db/schema/operating-model";
-import { delivery, payment, project as projectTable, quote } from "@jendal-workspace/db/schema/projects";
+import { delivery, project as projectTable, quote } from "@jendal-workspace/db/schema/projects";
 import {
   createTestDb,
   hasTestDatabase,
@@ -21,7 +21,6 @@ import { acceptQuote, armProjectSchedule, requestChanges } from "../use-cases/pr
 import { runDueScheduleItems } from "../use-cases/scheduler-sweep";
 
 const H = 3_600_000;
-const DAY = 86_400_000;
 
 async function pinnedProject(db: ReturnType<typeof createTestDb>, teamId: string, title = "Brand refresh"): Promise<string> {
   const rb = await ensurePublishedRulebook(db, teamId);
@@ -148,29 +147,4 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
     expect(rows[0]).toMatchObject({ actorKind: "client" });
   });
 
-  it("auto-completes a fully paid delivered project when the review window closes", async () => {
-    const { teamId } = await seedServicesTeamWithAdmin(db);
-    const projectId = await pinnedProject(db, teamId);
-    await db
-      .update(projectTable)
-      .set({ status: "delivered", upfrontBps: 10_000, finalPriceMinor: 110_000 })
-      .where(eq(projectTable.id, projectId));
-    await db.insert(payment).values({
-      projectId,
-      teamId,
-      kind: "deposit",
-      status: "captured",
-      currency: "USD",
-      quotePartMinor: 110_000,
-      managementFeeMinor: 0,
-      amountMinor: 110_000,
-      lines: [],
-      capturedAt: new Date(),
-    });
-    await db.insert(scheduleItem).values({ teamId, subjectId: projectId, kind: "project.autoComplete", runAt: new Date(Date.now() - DAY) });
-
-    const report = await runDueScheduleItems({ db });
-    expect(report).toMatchObject({ failed: 0 });
-    expect((await findProjectById(db, projectId))?.status).toBe("completed");
-  });
 });

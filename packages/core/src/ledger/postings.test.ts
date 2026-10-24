@@ -355,3 +355,18 @@ describe("splitServicesRefund", () => {
     expect(splitServicesRefund({ amountMinor, clientHeldMinor })).toEqual(expected);
   });
 });
+
+describe("completion allocation arithmetic", () => {
+  it.each([
+    { price: 5, teamBps: 1000, managerBps: 1000, managerId: "m1", team: 1, manager: 1, member: 3 },
+    { price: 1, teamBps: 5000, managerBps: 5000, managerId: "m1", team: 1, manager: 0, member: 0 },
+  ])("allocates $price cents with team=$teamBps manager=$managerBps ($managerId)", ({ price, teamBps, managerBps, managerId, team, manager, member }) => {
+    const transfer = completionTransfer({ ...base, freelancerId: "f1", finalPriceMinor: price, teamCutBps: teamBps, managerCutBps: managerBps, managerId });
+    const amounts = new Map(transfer.entries.map((entry) => [entry.account, entry.amountMinor]));
+    expect(isBalanced(transfer)).toBe(true);
+    expect(amounts.get("client_held:p1")).toBe(-price);
+    expect(amounts.get("team_revenue") ?? 0).toBe(team);
+    expect(amounts.get("owed:m1:available") ?? 0).toBe(manager);
+    expect(amounts.get("owed:f1:available") ?? 0).toBe(member);
+  });
+});
