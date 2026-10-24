@@ -38,6 +38,11 @@ export const servicesTeamSettings = pgTable(
       .references(() => team.id, { onDelete: "cascade" }),
     // Sellers design §3.1: a team of one; its cut is 100% and its management fee 0.
     solo: boolean("solo").default(false).notNull(),
+    // The team kind that seeds its rulebook preset (operating model design §3); kept beside solo
+    // because the backfill reads it and the settings page edits it.
+    kind: text("kind", { enum: ["solo", "agency", "collective"] }).notNull().default("agency"),
+    // The manager cut published with the rulebook; synced so settings and rules never disagree.
+    managerCutBps: integer("manager_cut_bps").notNull().default(0),
     // Sellers design §3.2: the store section of the seller page (run 4 fills it).
     storeEnabled: boolean("store_enabled").default(false).notNull(),
     // Sellers design §3.2: shown on the seller page; MAX_BIO_CHARS in core.

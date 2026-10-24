@@ -15,6 +15,10 @@
   },
   "dependencies": {
     "@jendal-workspace/core": "workspace:*",
+    "@opmodel/engine-drizzle": "workspace:*",
+    "@opmodel/engine-outbox": "workspace:*",
+    "@opmodel/engine-rules": "workspace:*",
+    "@opmodel/engine-scheduler": "workspace:*",
     "drizzle-orm": "catalog:",
     "postgres": "^3.4.9",
     "zod": "catalog:"
