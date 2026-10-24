@@ -1,0 +1,51 @@
+apps/server/src/index.ts
+  s_2f463c64952183::t_e973dc806c9e49 26,188-192
+apps/server/src/maintenance.test.ts
+  s_2f463c64952183::t_131bcec304614f 135-136
+apps/server/src/maintenance.ts
+  s_2f463c64952183::t_80ae3dafca50ca 35-36,48-49,62-63,81-82,179-189
+packages/api/src/__tests__/outbox-dispatcher.test.ts
+  s_2f463c64952183::t_57b60125b55530 1-163
+packages/api/src/routers/store.ts
+  s_2f463c64952183::t_1568632a89454f 2,28-38
+packages/api/src/use-cases/orders.ts
+  s_2f463c64952183::t_aabe578c7ebad9 47,68,339,344-394
+packages/api/src/use-cases/outbox-dispatcher.ts
+  s_2f463c64952183::t_0f433bfa1426a6 1-376
+packages/api/src/use-cases/payout-sweeps.ts
+  s_2f463c64952183::t_59e50f5b71ac79 6,37-49
+packages/api/src/use-cases/payouts.ts
+  s_2f463c64952183::t_28b7bdae295280 63,396-400,404-420,546-548,800-802,819,827-828,832,841-842
+packages/core/src/projects/events.ts
+  s_2f463c64952183::t_d0f2dc582bf5ea 30
+packages/db/src/__tests__/operating-model-repo.test.ts
+  s_2f463c64952183::t_6ea023260fbdb1 147-148
+packages/db/src/repositories/operating-model.ts
+  s_2f463c64952183::t_0dec2bc8f59674 206,210-212,216,236-239
+packages/email/src/index.ts
+  s_2f463c64952183::t_2065e68f193be2 3
+packages/email/src/notices.test.ts
+  s_2f463c64952183::t_2080d9e788d641 1-95
+packages/email/src/notices.ts
+  s_2f463c64952183::t_deb2ad59719ead 1-227
+packages/email/src/templates.ts
+  s_2f463c64952183::t_847cf9832d9a43 39-51
+packages/oss/engine-outbox/src/index.ts
+  s_2f463c64952183::t_2eaf8a5cf073ba 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7af9183b62fe34b0795af05dfcf2d39510c9159c",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
