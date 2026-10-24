@@ -125,6 +125,8 @@ async function projectChangeOnCapture(
       freelancerId,
       finalPriceMinor: row.finalPriceMinor,
       teamCutBps: row.teamCutBps,
+      managerId: row.managerId,
+      managerCutBps: row.managerCutBps,
     });
     return {
       set: { status: result.to },

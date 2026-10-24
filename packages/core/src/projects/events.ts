@@ -29,6 +29,14 @@ export const OUTBOX_EVENT_TYPES = [
   "payout.failed",
   "order.paid",
   "member.leaving_notice",
+  "request.remind",
+  "request.expired",
+  "member.update_remind",
+  "member.update_late",
+  "member.warning",
+  "review.remind",
+  "project.auto_completed",
+  "project.abandoned",
 ] as const;
 
 export type OutboxEventType = (typeof OUTBOX_EVENT_TYPES)[number];

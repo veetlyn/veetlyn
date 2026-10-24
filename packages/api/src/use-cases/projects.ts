@@ -49,6 +49,7 @@ import {
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
 import { createProjectRefund } from "@jendal-workspace/db/repositories/project-refunds";
+import { recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -59,8 +60,11 @@ import {
   type UnitOfWork,
 } from "@jendal-workspace/db/repositories/unit-of-work";
 import { fileUpload } from "@jendal-workspace/db/schema/files";
+import { rulebook } from "@jendal-workspace/db/schema/operating-model";
 import { amendment, delivery, payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
-import { and, eq } from "drizzle-orm";
+import { computeUpfrontBps, type RulebookRules } from "@opmodel/engine-rules";
+import { planProjectSchedule } from "@opmodel/engine-scheduler";
+import { and, eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export type ProjectActor = { teamId: string; role: ServicesTeamRole; actorId: string };
@@ -85,7 +89,8 @@ export async function runProjectTransaction<T>(
   }
 }
 
-function checkTransition(status: ProjectStatus, event: ProjectEvent, facts?: Partial<ProjectFacts>): ProjectStatus {
+// The scheduler fires transitions with the same guard people's actions go through.
+export function checkTransition(status: ProjectStatus, event: ProjectEvent, facts?: Partial<ProjectFacts>): ProjectStatus {
   const result = transitionProject(status, event, facts);
   if (!result.ok) fail("BAD_REQUEST", transitionRefusalMessage(result.reason));
   return result.to;
@@ -229,7 +234,7 @@ export async function addQuote(
     fail("BAD_REQUEST", `Delivery time must be a whole number of days from 1 to ${MAX_DELIVERY_DAYS}.`);
   }
 
-  return runProjectTransaction(db, async (tx, uow) => {
+  const quoted = await runProjectTransaction(db, async (tx, uow) => {
     const row = await requireTeamProject(tx, actor, input.projectId);
     checkTransition(row.status, "add_quote");
     const author = quoteAuthor({
@@ -276,6 +281,9 @@ export async function addQuote(
     });
     return { quoteId };
   });
+  // The seller answered, so the response window closes (AGT-37).
+  await armProjectSchedule(db, await findProjectById(db, input.projectId), new Date(), { memberActivityAt: new Date() });
+  return quoted;
 }
 
 // Services spec §5.2 step 3: only the project's client accepts a quote (the router checks the client
@@ -293,17 +301,29 @@ export async function acceptQuote(
       .where(and(eq(quote.id, input.quoteId), eq(quote.projectId, row.id)))
       .limit(1);
     if (!found || found.status !== "proposed") fail("BAD_REQUEST", "This quote is not waiting for an answer.");
-    const deposit = depositDue(found.amountMinor, row.managementFeeBps);
+    // The pinned rulebook's upfront rule (flat or tiered) fixes the deposit here (AGT-48).
+    const rules = await pinnedRulebookRules(tx, row.rulebookId);
+    const upfrontBps = rules ? computeUpfrontBps(rules, found.amountMinor) : row.upfrontBps;
+    const deposit = depositDue(found.amountMinor, row.managementFeeBps, upfrontBps);
     const paymentId = crypto.randomUUID();
     await uow.apply({
       project: row,
       // The quote names the freelancer who does the work; accepting it assigns them (§5.2 step 3).
-      set: { status, assignedFreelancerId: found.freelancerId },
+      set: { status, assignedFreelancerId: found.freelancerId, upfrontBps },
       events: [
         { type: "quote.accepted", data: { quoteId: found.id, version: found.version, amountMinor: found.amountMinor } },
         { type: "payment.created", data: { paymentId, kind: "deposit", amountMinor: deposit.totalMinor } },
       ],
     });
+    if (row.rulebookId) {
+      // Accepting the quote accepts the terms the request already pinned (AGT-47).
+      await recordRulebookAcceptance(tx, {
+        rulebookId: row.rulebookId,
+        teamId: row.teamId,
+        actorKind: "client",
+        projectId: row.id,
+      });
+    }
     await tx.update(quote).set({ status: "accepted", acceptedAt: new Date() }).where(eq(quote.id, found.id));
     await tx
       .update(quote)
@@ -336,6 +356,38 @@ async function requireCurrentQuote(tx: Transaction, row: ProjectRow): Promise<Qu
   // The status guard already proved the project is past acceptance, so this cannot be missing.
   if (!current) throw new Error(`Project ${row.id} is ${row.status} without an accepted quote`);
   return current;
+}
+
+// The rules a project runs under: its pinned rulebook's spec, or null for projects that predate
+// rulebooks (the platform defaults then apply).
+async function pinnedRulebookRules(db: DbExecutor, rulebookId: string | null): Promise<RulebookRules | null> {
+  if (!rulebookId) return null;
+  const [row] = await db.select({ spec: rulebook.spec }).from(rulebook).where(eq(rulebook.id, rulebookId)).limit(1);
+  return row?.spec ?? null;
+}
+
+// Arms, moves or cancels the project's timed rules for its current status (AGT-37, AGT-51, AGT-52).
+// Called after a transition or a member's action; `memberActivityAt` marks the seller's reply that
+// closes the response window, `deliveredAt` the delivery that opens the review ladder.
+export async function armProjectSchedule(
+  db: DbExecutor,
+  row: ProjectRow | null,
+  now: Date,
+  anchors: { memberActivityAt?: Date; deliveredAt?: Date } = {},
+): Promise<void> {
+  if (!row) return;
+  const rules = await pinnedRulebookRules(db, row.rulebookId);
+  if (!rules) return;
+  const plan = planProjectSchedule({
+    projectStatus: row.status,
+    requestedAt: row.createdAt,
+    workStartedAt: row.status === "in_progress" ? now : null,
+    lastMemberActivityAt: anchors.memberActivityAt ?? null,
+    deliveredAt: anchors.deliveredAt ?? null,
+    pausedByDispute: false,
+    rules,
+  });
+  await upsertPendingScheduleItems(db, { teamId: row.teamId, subjectId: row.id, schedule: plan.schedule, cancel: [...plan.cancel] });
 }
 
 // Services spec §5.5: the assigned freelancer or a manager proposes an amendment in in_progress or
@@ -621,7 +673,7 @@ export async function submitDelivery(
   const { note, link } = deliveryInput(input);
   const { fileUploadId } = input;
   if (fileUploadId) await requireUploadedFile(db, files, actor, { projectId: input.projectId, fileUploadId });
-  return runProjectTransaction(db, async (tx, uow) => {
+  const submitted = await runProjectTransaction(db, async (tx, uow) => {
     const row = await requireTeamProject(tx, actor, input.projectId);
     if (!canSubmitDelivery({ role: actor.role, actorId: actor.actorId, assignedFreelancerId: row.assignedFreelancerId })) {
       fail("FORBIDDEN", SUBMIT_DELIVERY_REFUSAL);
@@ -658,6 +710,9 @@ export async function submitDelivery(
     });
     return { deliveryId };
   });
+  // The review ladder starts at the delivery (AGT-52).
+  await armProjectSchedule(db, await findProjectById(db, input.projectId), new Date(), { deliveredAt: new Date() });
+  return submitted;
 }
 
 // Callers check access to the project first; the link names the file so the browser saves it under that name.
@@ -699,6 +754,24 @@ export async function requestChanges(
     const row = await requireProject(tx, input.projectId);
     const found = await requireOpenDelivery(tx, row.id, input.deliveryId);
     const status = checkTransition(row.status, "request_changes");
+    // The free rounds the pinned rulebook allows; past them the client is pointed at a paid
+    // revision amendment (AGT-49). Projects that predate rulebooks keep the old behavior.
+    if (row.rulebookId) {
+      const used = await tx
+        .select({ count: sql<number>`count(*)::int`.mapWith(Number) })
+        .from(delivery)
+        .where(and(eq(delivery.projectId, row.id), eq(delivery.status, "changes_requested")));
+      if ((used[0]?.count ?? 0) >= row.revisions) {
+        const rules = await pinnedRulebookRules(tx, row.rulebookId);
+        const priceMinor = rules?.revisions.paidRevisionPriceMinor ?? 0;
+        fail(
+          "BAD_REQUEST",
+          priceMinor > 0
+            ? `REVISION_LIMIT_REACHED: the free rounds are used; a paid revision costs ${formatMoney(money(row.currency, priceMinor))}.`
+            : "REVISION_LIMIT_REACHED: the free rounds are used.",
+        );
+      }
+    }
     await uow.apply({
       project: row,
       set: { status, revisions: row.revisions + 1 },

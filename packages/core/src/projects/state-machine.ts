@@ -8,6 +8,7 @@ export const PROJECT_STATUSES = [
   "cancelled",
   "declined",
   "expired",
+  "abandoned",
 ] as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
@@ -31,6 +32,8 @@ export const PROJECT_EVENTS = [
   "cancel",
   "decline",
   "expire",
+  "auto_complete",
+  "abandon",
 ] as const;
 
 export type ProjectEvent = (typeof PROJECT_EVENTS)[number];
@@ -96,6 +99,14 @@ export const PROJECT_TRANSITIONS = {
   // Conversations design §2: a request ends without a quote when staff decline it or nobody answers in time.
   decline: { from: ["quoting"], to: () => "declined" },
   expire: { from: ["quoting"], to: () => "expired" },
+  // The client silence ladder (AGT-52): acceptance by timeout, or the project ends and the payments
+  // already made stay settled.
+  auto_complete: {
+    from: ["delivered"],
+    to: (facts) => (facts.balanceDueMinor > 0 ? "awaiting_balance" : "completed"),
+    guard: noOpenAmendmentMoney,
+  },
+  abandon: { from: ["delivered", "awaiting_balance"], to: () => "abandoned" },
 } satisfies Readonly<Record<ProjectEvent, TransitionRule>>;
 
 const NO_FACTS: ProjectFacts = { pendingAmendment: false, unpaidTopUp: false, balanceDueMinor: 0 };
@@ -141,6 +152,7 @@ export const PROJECT_STATUS_LABELS = {
   cancelled: "Cancelled",
   declined: "Declined",
   expired: "Expired",
+  abandoned: "Ended without an answer",
 } satisfies Record<ProjectStatus, string>;
 
 export function projectStatusLabel(status: ProjectStatus): string {

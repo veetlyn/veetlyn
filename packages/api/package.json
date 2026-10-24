@@ -15,6 +15,7 @@
     "@jendal-workspace/email": "workspace:*",
     "@jendal-workspace/paypal": "workspace:*",
     "@opmodel/engine-rules": "workspace:*",
+    "@opmodel/engine-scheduler": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "better-auth": "catalog:",
