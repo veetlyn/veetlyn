@@ -1,0 +1,29 @@
+packages/api/src/use-cases/orders.ts
+  s_2f463c64952183::t_44e89d0c6b9341 368,376-384,386-387,389-393
+packages/api/src/use-cases/outbox-dispatcher.ts
+  s_2f463c64952183::t_541f6ef7dc9e02 212-213
+packages/core/src/services-teams/types.test.ts
+  s_2f463c64952183::t_38ae74e306804b 20-21
+packages/core/src/services-teams/types.ts
+  s_2f463c64952183::t_e304aec52313cf 26-27,36-37,59,65
+packages/db/src/repositories/services-teams.test.ts
+  s_2f463c64952183::t_6766f0aaf38302 90-91
+packages/db/src/repositories/services-teams.ts
+  s_2f463c64952183::t_eb232dd4432e2b 32-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f343603f695b3b23aa6ded003d457de0a0b152e",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
