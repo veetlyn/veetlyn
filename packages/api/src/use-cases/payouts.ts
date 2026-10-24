@@ -56,10 +56,13 @@ import {
   listServicesTeamMembers,
 } from "@jendal-workspace/db/repositories/services-teams";
 import { type PayoutBatch, type PayoutItem, type PayPalClient, PayPalError } from "@jendal-workspace/paypal";
+import { payoutRequest } from "@jendal-workspace/db/schema/payouts";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
+import { teamHasOpenDispute } from "@jendal-workspace/db/repositories/operating-model";
 import { appendPayoutOutboxEvent } from "./outbox-dispatcher";
 import { credentialsMatchTeam, payoutClientFromCredentials } from "./payout-credentials";
 import { adminCountOf, decisionRules, type PayoutRulesTeam } from "./payout-rules";
@@ -329,6 +332,10 @@ export async function requestPayout(
   const now = nowOf(deps);
   const team = await findServicesTeamBySlug(db, input.teamSlug);
   if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found." });
+  // An open PayPal case can claw paid money back, so payouts wait until it resolves (AGT-54).
+  if (await teamHasOpenDispute(db, team.id)) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "An open PayPal dispute pauses this team's payouts." });
+  }
   const settings = await getServicesTeamSettings(db, team.id);
   if (settings?.solo) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A solo seller has no payouts to send." });
@@ -786,6 +793,11 @@ async function holdForBalance(
 // try: 15 minutes, 1 hour, 6 hours, then daily.
 export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: string): Promise<PayoutRequestRow> {
   const now = nowOf(deps);
+  // An open case holds the team's payouts (AGT-54); the sweep retries after it resolves.
+  if (await teamHasOpenDispute(deps.db, team.id)) {
+    const [waiting] = await deps.db.select().from(payoutRequest).where(eq(payoutRequest.id, requestId)).limit(1);
+    if (waiting) return waiting;
+  }
   const heldForBalance = await holdForBalance(deps, team, requestId, now);
   if (heldForBalance) return heldForBalance;
   const claim = await deps.db.transaction((tx) => claimSend(tx, team, requestId, now));

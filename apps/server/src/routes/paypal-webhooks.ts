@@ -2,7 +2,7 @@ import type { PayPalServices } from "@jendal-workspace/api/context";
 import type { JsonValue } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { type PayPalWebhookEventInput, recordWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
-import { parseWebhookEvent, PayPalError } from "@jendal-workspace/paypal";
+import { parseDisputeWebhookEvent, parseWebhookEvent, PayPalError, type PayPalDisputeWebhook } from "@jendal-workspace/paypal";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 
@@ -13,6 +13,9 @@ export type PayPalWebhookRouteDeps = {
   webhookId: string;
   enqueue: (eventId: string, options: { delaySeconds?: number }) => Promise<void>;
   record?: (db: Database, event: PayPalWebhookEventInput) => ReturnType<typeof recordWebhookEvent>;
+  // Dispute events are handled inline: their payload only exists in this request's body. Absent
+  // means disputes are only stored.
+  onDispute?: (dispute: PayPalDisputeWebhook) => Promise<string>;
 };
 
 const HEADER_NAMES = {
@@ -103,6 +106,14 @@ export function createPayPalWebhookRoute(deps: PayPalWebhookRouteDeps): Hono<App
         event.id,
         event.eventType === "CHECKOUT.ORDER.APPROVED" ? { delaySeconds: APPROVAL_DELAY_SECONDS } : {},
       );
+      // Disputes carry their case in the body this request already holds; handle them once, here.
+      if (deps.onDispute) {
+        const dispute = parseDisputeWebhookEvent(body);
+        if (dispute) {
+          const note = await deps.onDispute(dispute);
+          log.set({ paypalWebhook: { dispute: note } });
+        }
+      }
     }
     log.set({ paypalWebhook: { stored: status } });
     return c.json({ ok: true }, 200);

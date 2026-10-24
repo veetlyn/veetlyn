@@ -37,6 +37,9 @@ export const OUTBOX_EVENT_TYPES = [
   "review.remind",
   "project.auto_completed",
   "project.abandoned",
+  "dispute.opened",
+  "dispute.updated",
+  "dispute.resolved",
 ] as const;
 
 export type OutboxEventType = (typeof OUTBOX_EVENT_TYPES)[number];

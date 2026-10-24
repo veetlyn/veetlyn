@@ -23,6 +23,7 @@ import { BRIDGE_PATH, bridgeResponse, createMcpRoute, widgetOriginsFor } from ".
 import { noStoreByDefault } from "./no-store";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
+import { handlePayPalDisputeWebhook } from "@jendal-workspace/api/use-cases/disputes";
 import { deliverDueOutboxDeliveries } from "@jendal-workspace/api/use-cases/outbox-dispatcher";
 import { runDueScheduleItems } from "@jendal-workspace/api/use-cases/scheduler-sweep";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
@@ -143,6 +144,7 @@ app.route(
     paypal: getPayPalServices(),
     webhookId: ENV.PAYPAL_WEBHOOK_ID,
     enqueue: (eventId, options) => ENV.PAYPAL_WEBHOOKS.send({ eventId }, options).then(() => undefined),
+    onDispute: (dispute) => handlePayPalDisputeWebhook({ db: getDb(), alertEmail: `disputes@${ENV.PLATFORM_DOMAIN}`, dashOrigin: ENV.BETTER_AUTH_URL }, dispute),
   }),
 );
 
