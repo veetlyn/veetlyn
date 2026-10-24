@@ -34,9 +34,11 @@ import {
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import type { UnitOfWork } from "@jendal-workspace/db/repositories/unit-of-work";
+import { armProjectSchedule } from "./projects";
+import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
 import { project } from "@jendal-workspace/db/schema/projects";
 import { servicesOffering } from "@jendal-workspace/db/schema/services-catalog";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { fail, type ProjectActor, runProjectTransaction } from "./projects";
 
@@ -155,6 +157,31 @@ function cleanBody(body: string): string {
   return trimmed;
 }
 
+const MESSAGE_RATE_LIMIT = 10;
+const MESSAGE_RATE_WINDOW_MS = 60_000;
+
+// One author's flood, whichever surface it arrives from, stops here instead of being relayed.
+// Only people's messages count (surface is set); the platform's event rows never do.
+async function requireWithinMessageRate(db: Database, author: ConversationAuthor, projectId: string): Promise<void> {
+  const since = new Date(Date.now() - MESSAGE_RATE_WINDOW_MS).toISOString();
+  const byAuthor =
+    author.kind === "client" ? eq(conversationMessage.authorContactId, author.contactId) : eq(conversationMessage.authorUserId, author.actor.actorId);
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int`.mapWith(Number) })
+    .from(conversationMessage)
+    .where(
+      and(
+        eq(conversationMessage.projectId, projectId),
+        byAuthor,
+        sql`${conversationMessage.createdAt} >= ${since}`,
+        sql`${conversationMessage.surface} is not null`,
+      ),
+    );
+  if ((row?.count ?? 0) >= MESSAGE_RATE_LIMIT) {
+    fail("TOO_MANY_REQUESTS", "You are sending messages too quickly. Wait a moment and try again.");
+  }
+}
+
 async function requireReadable(db: Database, author: ConversationAuthor, projectId: string) {
   const row = await findProjectById(db, projectId);
   if (!row) fail("NOT_FOUND", NOT_FOUND);
@@ -181,7 +208,9 @@ export async function postConversationMessage(
   // The client's request-space reply is a relay: the client writes the project space and the freelancers read it.
   const writable = author.kind === "client" ? access.write.includes("project") : access.write.includes(space);
   if (!writable) fail("BAD_REQUEST", closedReason(row, space));
-  return runProjectTransaction(db, async (tx, uow) => {
+  // Backlog row 43: at most 10 messages per author per minute, whichever surface they come from.
+  await requireWithinMessageRate(db, author, input.projectId);
+  const posted = await runProjectTransaction(db, async (tx, uow) => {
     await requireUnchangedStatus(tx, row);
     return postInTransaction(tx, uow, row, {
       space,
@@ -193,6 +222,12 @@ export async function postConversationMessage(
         : { authorKind: "member", authorUserId: author.actor.actorId }),
     });
   });
+  // A member's message while quoting is the seller's answer: the response window closes (AGT-37).
+  if (author.kind === "member" && row.status === "quoting") {
+    const current = await findProjectById(db, row.id);
+    if (current) await armProjectSchedule(db, current, new Date(), { memberActivityAt: new Date() });
+  }
+  return posted;
 }
 
 // The client's answer sits next to its question: in the request space while the team is still quoting a

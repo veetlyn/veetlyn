@@ -331,6 +331,9 @@ importers:
       '@opmodel/engine-rules':
         specifier: workspace:*
         version: link:../oss/engine-rules
+      '@opmodel/engine-scheduler':
+        specifier: workspace:*
+        version: link:../oss/engine-scheduler
       '@trpc/client':
         specifier: 'catalog:'
         version: 11.19.0(@trpc/server@11.19.0(typescript@6.0.3))(typescript@6.0.3)

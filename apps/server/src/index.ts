@@ -24,6 +24,7 @@ import { noStoreByDefault } from "./no-store";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
 import { deliverDueOutboxDeliveries } from "@jendal-workspace/api/use-cases/outbox-dispatcher";
+import { runDueScheduleItems } from "@jendal-workspace/api/use-cases/scheduler-sweep";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
@@ -190,6 +191,7 @@ export default {
           if (!email) return Promise.resolve({ sent: 0, failed: 0, skipped: 0 });
           return deliverDueOutboxDeliveries({ db, email, secret: ENV.BETTER_AUTH_SECRET });
         },
+        runScheduler: () => runDueScheduleItems({ db, now: () => new Date() }),
       });
     } finally {
       ctx.waitUntil(db.$client.end());

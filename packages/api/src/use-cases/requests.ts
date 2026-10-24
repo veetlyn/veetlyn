@@ -16,6 +16,8 @@ import {
 } from "@jendal-workspace/db/repositories/contacts";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { ensurePublishedRulebook, recordRulebookAcceptance } from "@jendal-workspace/db/repositories/operating-model";
+import { findProjectById } from "@jendal-workspace/db/repositories/projects";
+import { armProjectSchedule } from "./projects";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import {
   findServicesTeamBySlug,
@@ -159,6 +161,9 @@ export async function requestQuote(
     });
     return { projectId: row.id };
   });
+  // The response window starts with the request (AGT-37).
+  const created = await findProjectById(db, result.projectId);
+  if (created) await armProjectSchedule(db, created, new Date());
   return { ...result, teamName: team.name, serviceName, supportEmail: contact?.supportEmail ?? null };
 }
 

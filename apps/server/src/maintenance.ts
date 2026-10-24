@@ -34,6 +34,8 @@ export type MaintenanceDeps = {
   settlePayouts?: () => Promise<{ checked: number; settled: number }>;
   // The outbox notice retry sweep (AGT-16); absent when email is not configured on this server.
   deliverOutboxNotices?: () => Promise<{ sent: number; failed: number; skipped: number }>;
+  // The 10-minute rule scheduler (AGT-37); absent when rules are not served on this server.
+  runScheduler?: () => Promise<{ fired: number; failed: number }>;
   now?: () => Date;
 };
 
@@ -46,7 +48,8 @@ export type MaintenanceSweep =
   | "projectPayouts"
   | "payoutSends"
   | "payouts"
-  | "outboxNotices";
+  | "outboxNotices"
+  | "schedule";
 
 export type MaintenanceReport = {
   webhookEventsRequeued: number;
@@ -61,6 +64,8 @@ export type MaintenanceReport = {
   payoutsSettled: number;
   outboxNoticesSent: number;
   outboxNoticesFailed: number;
+  scheduleFired: number;
+  scheduleFailed: number;
   errors: MaintenanceSweep[];
 };
 
@@ -80,6 +85,8 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     payoutsSettled: 0,
     outboxNoticesSent: 0,
     outboxNoticesFailed: 0,
+    scheduleFired: 0,
+    scheduleFailed: 0,
     errors: [],
   };
 
@@ -184,6 +191,17 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
       report.outboxNoticesSent = sent;
       report.outboxNoticesFailed = failed;
       return { sent, failed, skipped };
+    });
+  }
+
+  // The timed rules due now (AGT-37): reminders, expiry, marks and the client silence ladder.
+  const runScheduler = deps.runScheduler;
+  if (runScheduler) {
+    await sweep("schedule", async () => {
+      const { fired, failed } = await runScheduler();
+      report.scheduleFired = fired;
+      report.scheduleFailed = failed;
+      return { fired, failed };
     });
   }
 

@@ -159,6 +159,12 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
       };
     case "expired":
       return { text: "Nobody answered the request in time. Offer to search again.", card: "This request expired.", actions: ["search"] };
+    case "abandoned":
+      return {
+        text: "The review window closed without an answer, so the project ended per the terms the client accepted.",
+        card: "This project ended.",
+        actions: ["search"],
+      };
     case "awaiting_deposit":
     case "awaiting_balance":
       return payable
