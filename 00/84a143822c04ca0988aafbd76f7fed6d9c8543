@@ -1,0 +1,53 @@
+apps/server/src/index.ts
+  s_2f463c64952183::t_996789eaffb25e 27,194
+apps/server/src/maintenance.test.ts
+  s_2f463c64952183::t_0543484bb83b00 137-138
+apps/server/src/maintenance.ts
+  s_2f463c64952183::t_6af2afd65fd6d6 37-38,51-52,67-68,88-89,197-207
+apps/server/src/mcp/tools.ts
+  s_2f463c64952183::t_6108bd29db2c48 162-167
+apps/web/src/lib/status-labels.ts
+  s_2f463c64952183::t_49cc7eaf814568 36,49
+packages/api/package.json
+  s_2f463c64952183::t_b4d2c435540ec2 18
+packages/api/src/__tests__/enforced-rules.test.ts
+  s_2f463c64952183::t_d82ad02523d1f5 1-176
+packages/api/src/use-cases/conversations.ts
+  s_2f463c64952183::t_b3f00bded9b1a2 37-38,41,160-184,211-213,225-230
+packages/api/src/use-cases/payments.ts
+  s_2f463c64952183::t_26f42bc551f7ea 128-129
+packages/api/src/use-cases/projects.ts
+  s_2f463c64952183::t_1a257765550d32 52,63,65-67,92-93,237,284-286,304-307,312,318-326,361-392,676,713-715,757-774
+packages/api/src/use-cases/requests.ts
+  s_2f463c64952183::t_85c37d88bab9dd 19-20,164-166
+packages/api/src/use-cases/scheduler-sweep.ts
+  s_2f463c64952183::t_8e00266f9bc73d 1-182
+packages/core/src/ledger/postings.ts
+  s_2f463c64952183::t_12fa6ecc750acb 2-3,151-153,155-161,163-172,178
+packages/core/src/projects/events.ts
+  s_2f463c64952183::t_42ab44cd3cb602 32-39
+packages/core/src/projects/pricing.ts
+  s_2f463c64952183::t_f1ae965ae31c73 38-40,42,44
+packages/core/src/projects/state-machine.test.ts
+  s_2f463c64952183::t_7687d5ab92a3b9 31-32,35,40
+packages/core/src/projects/state-machine.ts
+  s_2f463c64952183::t_0f5046c4bae92b 11,35-36,102-109,155
+pnpm-lock.yaml
+  s_2f463c64952183::t_280850e1b3b6e0 334-336
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0084a143822c04ca0988aafbd76f7fed6d9c8543",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
