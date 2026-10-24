@@ -209,6 +209,8 @@ async function buildMessage(
       ...base,
       sender: "stores",
       onBehalfOf: teamName,
+      replyTo: readString.parse(event.data.supportEmail) || undefined,
+      tag: "order-download",
       ...orderDownloadEmail({
         platformName: deps.email.platformName,
         teamName,

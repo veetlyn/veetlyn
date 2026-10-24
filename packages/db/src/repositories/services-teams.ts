@@ -29,6 +29,8 @@ const servicesTeamColumns = {
 const settingsColumns = {
   teamId: servicesTeamSettings.teamId,
   solo: servicesTeamSettings.solo,
+  kind: servicesTeamSettings.kind,
+  managerCutBps: servicesTeamSettings.managerCutBps,
   storeEnabled: servicesTeamSettings.storeEnabled,
   bio: servicesTeamSettings.bio,
   currency: servicesTeamSettings.currency,

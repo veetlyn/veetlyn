@@ -17,6 +17,8 @@ describe("defaultServicesTeamSettings", () => {
     expect(defaultServicesTeamSettings("t1")).toEqual({
       teamId: "t1",
       solo: false,
+      kind: "agency",
+      managerCutBps: 0,
       storeEnabled: false,
       bio: "",
       currency: "USD",
