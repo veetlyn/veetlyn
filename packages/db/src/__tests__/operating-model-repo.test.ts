@@ -144,8 +144,8 @@ describe.skipIf(!hasTestDatabase)("operating model repository", () => {
       .returning();
     if (!event) throw new Error("no outbox row");
 
-    expect(await insertOutboxDeliveries(db, [{ outboxId: event.id, channel: "email_member", recipient: "member@example.com" }])).toBe(1);
-    expect(await insertOutboxDeliveries(db, [{ outboxId: event.id, channel: "email_member", recipient: "member@example.com" }])).toBe(0);
+    expect((await insertOutboxDeliveries(db, [{ outboxId: event.id, channel: "email_member", recipient: "member@example.com" }])).length).toBe(1);
+    expect(await insertOutboxDeliveries(db, [{ outboxId: event.id, channel: "email_member", recipient: "member@example.com" }])).toEqual([]);
     expect(await db.select().from(outboxDelivery)).toHaveLength(1);
 
     const claimed = await claimDueOutboxDeliveries(db, new Date(), 10);

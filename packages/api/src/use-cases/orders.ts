@@ -44,6 +44,7 @@ import {
   useDownload,
 } from "@jendal-workspace/db/repositories/orders";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
+import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { productVariants, products } from "@jendal-workspace/db/schema/catalog";
@@ -64,6 +65,7 @@ import { log } from "evlog";
 import type { EmailServices, PayPalServices } from "../context";
 import { captureFees, capturesIn, isRefundedCaptureStatus, postOnce, returnedFees } from "./paypal-amounts";
 import { CaptureFactConflict, databaseErrorFields, unconfirmedCapture } from "./payments";
+import { deliverDueOutboxDeliveries, fanOutOutboxEvents } from "./outbox-dispatcher";
 
 export type OrderDeps = { db: Database; paypal: PayPalServices; email?: EmailServices };
 
@@ -334,9 +336,60 @@ export async function applyOrderCaptureFact(
     log.error({ action: "order.fees", order: { id: fact.orderId }, error: databaseErrorFields(error) });
   }
   if (applied.result === "applied") {
-    await sendDownloadEmail(deps, { order: applied.order, team: applied.team, token: applied.emailToken });
+    await queueOrderPaidNotice(deps, { order: applied.order, team: applied.team, token: applied.emailToken });
   }
   return applied.result;
+}
+
+// The buyer's confirmation goes through the outbox (backlog row 15): a transient send failure retries
+// on the 10-minute cron instead of being lost, and an admin can resend it from the order view.
+async function queueOrderPaidNotice(
+  deps: { db: Database; email?: EmailServices },
+  input: { order: Pick<OrderRow, "id" | "teamId" | "buyerEmail" | "productTitle">; team: OrderEmailTeam; token: string },
+): Promise<void> {
+  const { email } = deps;
+  if (!email) {
+    log.warn({ action: "order.email", order: { id: input.order.id }, email: { configured: false } });
+    return;
+  }
+  const url = `${email.storeOrigin(input.team.slug)}/orders/${input.token}`;
+  try {
+    const events = await runInTransaction(deps.db, (_tx, uow) =>
+      uow.appendTeamOutbox(
+        { teamId: input.order.teamId },
+        [
+          {
+            type: "order.paid",
+            data: {
+              orderId: input.order.id,
+              buyerEmail: input.order.buyerEmail,
+              productTitle: input.order.productTitle,
+              teamName: input.team.name,
+              url,
+            },
+          },
+        ],
+      ),
+    );
+    await fanOutOutboxEvents({ db: deps.db }, events);
+    await deliverDueOutboxDeliveries({ db: deps.db, email });
+  } catch (error) {
+    // The capture is already committed; the cron sweep picks the delivery up.
+    log.error({ action: "order.email", order: { id: input.order.id }, error: { name: errorName(error) } });
+  }
+}
+
+// The admin's Resend button: a fresh grant and a direct send, so it does not wait for the sweep.
+export async function resendOrderEmail(deps: { db: Database; email?: EmailServices }, input: { orderId: string; teamId: string }): Promise<boolean> {
+  const { email } = deps;
+  if (!email) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email is not configured on this server." });
+  const [order] = await deps.db.select().from(orders).where(eq(orders.id, input.orderId)).limit(1);
+  if (!order || order.teamId !== input.teamId) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+  if (order.status !== "paid") throw new TRPCError({ code: "BAD_REQUEST", message: "Only a paid order can be resent." });
+  const team = await findOrderEmailTeam(deps.db, order.teamId);
+  if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+  const token = await issueGrant(deps.db, order.id);
+  return sendDownloadEmail(deps, { order, team, token });
 }
 
 // Records PayPal's fee and the platform's fee for a paid order, once: the first fact that carries the breakdown wins.

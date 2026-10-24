@@ -203,17 +203,17 @@ export function countMemberMarks(
   });
 }
 
+// Idempotent fan-out: returns only the rows this call created, so callers can act on fresh ones.
 export async function insertOutboxDeliveries(
   db: DbExecutor,
   rows: { outboxId: string; channel: DeliveryChannel; recipient: string }[],
-): Promise<number> {
-  if (rows.length === 0) return 0;
-  const inserted = await db
+): Promise<OutboxDeliveryRow[]> {
+  if (rows.length === 0) return [];
+  return db
     .insert(outboxDelivery)
     .values(rows.map((row) => ({ ...row, dedupeKey: `${row.outboxId}:${row.channel}:${row.recipient}` })))
     .onConflictDoNothing()
-    .returning({ id: outboxDelivery.id });
-  return inserted.length;
+    .returning();
 }
 
 export type OutboxDeliveryRow = typeof outboxDelivery.$inferSelect;
@@ -233,9 +233,10 @@ export async function applyDeliveryOutcome(
   db: DbExecutor,
   input: { record: OutboxDeliveryRecord; providerMessageId?: string; error?: string; at: Date },
 ): Promise<void> {
-  const next = input.providerMessageId
-    ? recordDeliverySuccess(input.record, input.providerMessageId, input.at)
-    : recordDeliveryFailure(input.record, input.error ?? "send failed", input.at);
+  const next =
+    input.providerMessageId !== undefined || input.error === undefined
+      ? recordDeliverySuccess(input.record, input.providerMessageId ?? null, input.at)
+      : recordDeliveryFailure(input.record, input.error, input.at);
   await db
     .update(outboxDelivery)
     .set({
