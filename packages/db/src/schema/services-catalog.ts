@@ -63,6 +63,8 @@ export const servicesOffering = pgTable(
     active: boolean("active").notNull().default(true),
     // "List in AI assistants": default on, so a seller opts out rather than in (plugin design §3).
     listed: boolean("listed").notNull().default(true),
+    // Who delivers this offering: people, automation, or both (AGT-19).
+    fulfilment: text("fulfilment", { enum: ["people", "automated", "both"] }).notNull().default("people"),
     position: integer("position").notNull().default(0),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
