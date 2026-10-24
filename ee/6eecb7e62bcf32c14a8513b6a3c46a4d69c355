@@ -1,0 +1,23 @@
+apps/server/src/mcp/tools.ts
+  s_2f463c64952183::t_973f19ef99d5f3 13,18-20,200-210,229-233,293-296
+packages/api/src/routers/index.ts
+  s_2f463c64952183::t_eb64d9f4cbd6a3 13,33
+packages/api/src/routers/rules.ts
+  s_2f463c64952183::t_4c3ad595e3225b 1-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee6eecb7e62bcf32c14a8513b6a3c46a4d69c355",
+  "prompts": {},
+  "sessions": {
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
