@@ -172,6 +172,7 @@ export async function memberAcceptedRulebook(db: DbExecutor, input: { teamId: st
         eq(rulebookAcceptance.teamId, input.teamId),
         eq(rulebookAcceptance.userId, input.userId),
         eq(rulebookAcceptance.rulebookId, input.rulebookId),
+        eq(rulebookAcceptance.actorKind, "member"),
       ),
     )
     .limit(1);

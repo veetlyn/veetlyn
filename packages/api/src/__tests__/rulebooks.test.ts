@@ -1,5 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { fromPartial } from "@total-typescript/shoehorn";
 
 import { recordRulebookAcceptance } from "@jendal-workspace/db/repositories/operating-model";
 import { createServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
@@ -22,7 +23,6 @@ import { searchOfferings } from "../use-cases/offerings";
 import { startProject } from "../use-cases/projects";
 import { requestQuote } from "../use-cases/requests";
 import {
-  acceptMemberRulebook,
   getTeamRulebookState,
   giveMemberLeavingNotice,
   publishRulebook,
@@ -30,6 +30,8 @@ import {
   saveRulebookDraft,
   setMemberNoticePreference,
 } from "../use-cases/rulebooks";
+import { appRouter } from "../routers";
+import type { Context } from "../context";
 
 describe.skipIf(!hasTestDatabase)("rulebook use cases", () => {
   const db = createTestDb();
@@ -90,18 +92,41 @@ describe.skipIf(!hasTestDatabase)("rulebook use cases", () => {
     expect(settings).toMatchObject({ teamCutBps: 2500, managerCutBps: 1000 });
   });
 
-  it("records member agreement acceptance and answers the query", async () => {
+  it("records only the explicitly accepted current member agreement and deduplicates retries", async () => {
+    const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
+    const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const caller = appRouter.createCaller(fromPartial<Context>({ db, session: { user: { id: memberId } } }));
+
+    const before = await caller.rules.state({ teamSlug: "team" });
+    expect(before.memberAccepted).toBe(false);
+    await expect(caller.rules.acceptMember({ teamSlug: "team", termsAccepted: false, acceptedRulebookId: before.published.id })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await db.select().from(rulebookAcceptance)).toEqual([]);
+
+    await saveRulebookDraft(db, { teamId, userId, preset: "custom", spec: { ...before.published.rules, revisions: { freeCount: 4, paidRevisionPriceMinor: 5000 } } });
+    await publishRulebook(db, { teamId, userId });
+    await expect(caller.rules.acceptMember({ teamSlug: "team", termsAccepted: true, acceptedRulebookId: before.published.id })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await db.select().from(rulebookAcceptance)).toEqual([]);
+
+    const current = await caller.rules.state({ teamSlug: "team" });
+    const input = { teamSlug: "team", termsAccepted: true, acceptedRulebookId: current.published.id };
+    const accepted = await caller.rules.acceptMember(input);
+    expect(accepted.version).toBe(2);
+    await caller.rules.acceptMember(input);
+    expect(await db.select().from(rulebookAcceptance)).toEqual([
+      expect.objectContaining({ teamId, userId: memberId, actorKind: "member", rulebookId: current.published.id }),
+    ]);
+
+    const after = await caller.rules.state({ teamSlug: "team" });
+    expect(after.memberAccepted).toBe(true);
+  });
+
+  it("does not treat a former client's terms acceptance as a member agreement", async () => {
     const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
-
     const before = await getTeamRulebookState(db, { teamId, currency: "USD", userId: memberId });
-    expect(before.memberAccepted).toBe(false);
-
-    const accepted = await acceptMemberRulebook(db, { teamId, userId: memberId });
-    expect(accepted.version).toBe(1);
-
-    const after = await getTeamRulebookState(db, { teamId, currency: "USD", userId: memberId });
-    expect(after.memberAccepted).toBe(true);
+    await recordRulebookAcceptance(db, { teamId, rulebookId: before.published.id, userId: memberId, actorKind: "client" });
+    const caller = appRouter.createCaller(fromPartial<Context>({ db, session: { user: { id: memberId } } }));
+    expect((await caller.rules.state({ teamSlug: "team" })).memberAccepted).toBe(false);
   });
 
   it("toggles the member notice preference", async () => {

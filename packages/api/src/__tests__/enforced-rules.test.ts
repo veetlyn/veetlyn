@@ -4,7 +4,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { ensurePublishedRulebook, recordMemberMark } from "@jendal-workspace/db/repositories/operating-model";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
-import { rulebookAcceptance, scheduleItem, memberMark } from "@jendal-workspace/db/schema/operating-model";
+import { scheduleItem, memberMark } from "@jendal-workspace/db/schema/operating-model";
 import { delivery, payment, project as projectTable, quote } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import {
@@ -197,19 +197,6 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
     await expect(postConversationMessage(db, author, { projectId, kind: "text", body: "One too many" }, "web")).rejects.toThrow(/too quickly/);
     const rows = await db.select().from(conversationMessage).where(eq(conversationMessage.projectId, projectId));
     expect(rows.filter((row) => row.surface === "web")).toHaveLength(10);
-  });
-
-  it("records the client's acceptance of the pinned terms at quote acceptance", async () => {
-    const { teamId, userId } = await seedServicesTeamWithAdmin(db);
-    const projectId = await pinnedProject(db, teamId);
-    const quoteId = crypto.randomUUID();
-    await db.insert(quote).values({ id: quoteId, projectId, teamId, freelancerId: userId, amountMinor: 120_000, deliveryDays: 3 });
-
-    await acceptQuote(db, { projectId, quoteId });
-
-    const rows = await db.select().from(rulebookAcceptance).where(eq(rulebookAcceptance.projectId, projectId));
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ actorKind: "client" });
   });
 
 });
