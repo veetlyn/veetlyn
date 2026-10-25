@@ -1,0 +1,21 @@
+packages/api/src/use-cases/scheduler-sweep.test.ts
+  s_f8e86e9087bb2f::t_19fca7c39cb56e 1-2,4,8-10,105-201
+packages/api/src/use-cases/scheduler-sweep.ts
+  s_f8e86e9087bb2f::t_1dcef65c16a8c7 13,16,18,37-44,50,52-53,67-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "339acb536633528c6744255ce050dd7ff7d583f4",
+  "prompts": {},
+  "sessions": {
+    "s_f8e86e9087bb2f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1716f-9c88-75e2-b2fd-ceb896bf56d8",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
