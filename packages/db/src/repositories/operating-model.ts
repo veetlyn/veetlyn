@@ -178,16 +178,33 @@ export async function memberAcceptedRulebook(db: DbExecutor, input: { teamId: st
   return row !== undefined;
 }
 
+export async function lockMemberWork(db: DbExecutor, input: { teamId: string; memberUserId: string }): Promise<void> {
+  await db.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`member-work:${input.teamId}:${input.memberUserId}`}, 0))`);
+}
+
+export async function memberHasLeavingNotice(db: DbExecutor, input: { teamId: string; memberUserId: string }): Promise<boolean> {
+  const [row] = await db.select({ id: memberMark.id }).from(memberMark).where(and(
+    eq(memberMark.teamId, input.teamId),
+    eq(memberMark.memberUserId, input.memberUserId),
+    eq(memberMark.kind, "warning"),
+    eq(memberMark.note, "leaving notice"),
+  )).limit(1);
+  return row !== undefined;
+}
+
 export async function recordMemberMark(
   db: DbExecutor,
   input: { teamId: string; memberUserId: string; projectId?: string | null; kind: "late_update" | "late_delivery" | "quality_refund" | "warning"; note?: string | null },
 ): Promise<void> {
-  await db.insert(memberMark).values({
-    teamId: input.teamId,
-    memberUserId: input.memberUserId,
-    projectId: input.projectId ?? null,
-    kind: input.kind,
-    note: input.note ?? null,
+  await db.transaction(async (tx) => {
+    await lockMemberWork(tx, input);
+    await tx.insert(memberMark).values({
+      teamId: input.teamId,
+      memberUserId: input.memberUserId,
+      projectId: input.projectId ?? null,
+      kind: input.kind,
+      note: input.note ?? null,
+    });
   });
 }
 

@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { recordRulebookAcceptance } from "@jendal-workspace/db/repositories/operating-model";
 import { createServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
-import { rulebookAcceptance } from "@jendal-workspace/db/schema/operating-model";
+import { memberMark, rulebookAcceptance } from "@jendal-workspace/db/schema/operating-model";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { project as projectTable } from "@jendal-workspace/db/schema/projects";
@@ -124,6 +124,18 @@ describe.skipIf(!hasTestDatabase)("rulebook use cases", () => {
 
     const [event] = await db.select().from(outbox).where(eq(outbox.type, "member.leaving_notice"));
     expect(event).toMatchObject({ teamId, projectId: null });
+  });
+
+  it("rolls back a leaving restriction when its durable notice cannot be written", async () => {
+    const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
+    const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    await db.execute(sql`alter table outbox add constraint reject_leaving_notice check (type <> 'member.leaving_notice')`);
+    try {
+      await expect(giveMemberLeavingNotice(db, { teamId, userId: memberId, rulebook: { leavingNotice: { days: 14 } } })).rejects.toThrow();
+      expect(await db.select().from(memberMark).where(eq(memberMark.teamId, teamId))).toEqual([]);
+    } finally {
+      await db.execute(sql`alter table outbox drop constraint reject_leaving_notice`);
+    }
   });
 
   it("accepts and returns offering fulfilment through the public search", async () => {

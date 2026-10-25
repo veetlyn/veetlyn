@@ -96,13 +96,13 @@ export async function giveMemberLeavingNotice(
 ): Promise<{ effectiveAt: Date }> {
   const now = (input.now ?? (() => new Date()))();
   const effectiveAt = new Date(now.getTime() + input.rulebook.leavingNotice.days * 86_400_000);
-  await recordMemberMark(db, { teamId: input.teamId, memberUserId: input.userId, kind: "warning", note: "leaving notice" });
-  await runInTransaction(db, (_tx, uow) =>
-    uow.appendTeamOutbox(
+  await runInTransaction(db, async (tx, uow) => {
+    await recordMemberMark(tx, { teamId: input.teamId, memberUserId: input.userId, kind: "warning", note: "leaving notice" });
+    await uow.appendTeamOutbox(
       { teamId: input.teamId },
       [{ type: "member.leaving_notice", data: { memberUserId: input.userId, effectiveAt: effectiveAt.toISOString() } }],
-    ),
-  );
+    );
+  });
   return { effectiveAt };
 }
 
