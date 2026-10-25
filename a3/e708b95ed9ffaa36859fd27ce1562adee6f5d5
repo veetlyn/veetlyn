@@ -1,0 +1,67 @@
+packages/api/src/actions/requests.ts
+  s_61eb3b18f6f591::t_b831a68dc19801 6,12,19,23-35,41
+plugins/payleor/README.md
+  s_61eb3b18f6f591::t_4dabd0d9d35d14 10
+packages/api/src/use-cases/requests.ts
+  s_61eb3b18f6f591::t_b831a68dc19801 33,42-43,52-59,110-112,159
+  s_61eb3b18f6f591::t_6bf9cb7a0064d7 69
+packages/api/src/actions/registry.ts
+  s_61eb3b18f6f591::t_b831a68dc19801 29,33
+plugins/payleor/skills/hire-a-professional/SKILL.md
+  s_61eb3b18f6f591::t_4dabd0d9d35d14 17-18
+packages/api/src/actions/trpc.ts
+  s_61eb3b18f6f591::t_18e8ad53230c7f 134-143
+packages/api/src/routers/project-types.test.ts
+  s_61eb3b18f6f591::t_fec13102673403 52-53
+packages/api/src/__tests__/rulebooks.test.ts
+  s_61eb3b18f6f591::t_fec13102673403 61
+packages/api/src/routers/checkout.test.ts
+  s_61eb3b18f6f591::t_fec13102673403 1,469
+packages/api/src/use-cases/timer-lifecycle.test.ts
+  s_61eb3b18f6f591::t_fec13102673403 18,40
+apps/server/src/notice-wakeup.test.ts
+  s_61eb3b18f6f591::t_572f5bfc1a3a30 9,40
+apps/server/src/mcp/server.ts
+  s_61eb3b18f6f591::t_fca1b26164a4bd 7,25,109,126-138,145-146,149-150
+apps/web/src/app/store/request/request-form.tsx
+  s_61eb3b18f6f591::t_18e8ad53230c7f 75,164
+  s_61eb3b18f6f591::t_fca1b26164a4bd 6,10,37,41-46,56,65-66,166-187,209
+packages/api/src/routers/project.test.ts
+  s_61eb3b18f6f591::t_906e0b0e8840e5 31-32,1757,1766-1767,1779-1780,1821,1827,1834-1835,1855-1856,1867,1869-1886,1897
+  s_61eb3b18f6f591::t_6bf9cb7a0064d7 1825-1826,1828-1833
+  s_61eb3b18f6f591::t_4028dfffc6e398 1857-1866
+  s_61eb3b18f6f591::t_572f5bfc1a3a30 1817,1822,1868,1887-1896
+  s_61eb3b18f6f591::t_e49d2aeb3a5c55 13,30,1786,1790,1836-1854
+  s_61eb3b18f6f591::t_ff88525916068e 1898
+apps/server/src/mcp/tools.ts
+  s_61eb3b18f6f591::t_fca1b26164a4bd 8,401,407-412,415,429-430
+packages/api/src/__tests__/outbox-dispatcher.test.ts
+  s_61eb3b18f6f591::t_fec13102673403 28,77,108
+packages/api/src/actions/requests.test.ts
+  s_61eb3b18f6f591::t_fec13102673403 5,25,29,37,73-74,87-89
+packages/api/src/routers/project.ts
+  s_61eb3b18f6f591::t_18e8ad53230c7f 35,71
+  s_61eb3b18f6f591::t_b831a68dc19801 34,72
+apps/server/src/mcp/tools.test.ts
+  s_61eb3b18f6f591::t_572f5bfc1a3a30 10
+  s_61eb3b18f6f591::t_fec13102673403 103-107,125,144,153,167,189
+  s_61eb3b18f6f591::t_c81ca67121af5d 131-143
+packages/api/src/use-cases/projects.ts
+  s_61eb3b18f6f591::t_6bf9cb7a0064d7 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3e708b95ed9ffaa36859fd27ce1562adee6f5d5",
+  "prompts": {},
+  "sessions": {
+    "s_61eb3b18f6f591": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16eb4-ea47-7a23-aaea-4865d8c2c8b4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
