@@ -58,7 +58,7 @@ describe.skipIf(!hasTestDatabase)("rulebook use cases", () => {
     const v1State = await getTeamRulebookState(db, { teamId, currency: "USD" });
     const create = async (suffix: string) => [
       await startProject(db, { teamId, actorId: userId, role: "admin" }, { title: "Logo design", clientEmail: `admin-${suffix}@example.com` }),
-      await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: `client-${suffix}@example.com`, description: "Design a bakery logo", answers: [] }),
+      await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: `client-${suffix}@example.com`, description: "Design a bakery logo", answers: [], termsAccepted: true, acceptedRulebookId: (await publishedClientTerms(db, { teamId, currency: "USD" })).rulebookId }),
     ];
     const before = await create("before");
     const snapshots = await Promise.all(before.map(async ({ projectId }) => {

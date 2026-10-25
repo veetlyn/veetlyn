@@ -2,6 +2,7 @@ import { createFakeFileStore } from "@jendal-workspace/core";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { user } from "@jendal-workspace/db/schema/auth";
 import { clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
+import { rulebookAcceptance } from "@jendal-workspace/db/schema/operating-model";
 import {
   createTestDb,
   hasTestDatabase,
@@ -21,9 +22,11 @@ import { perform } from "./perform";
 import { createRequest } from "./requests";
 import type { EmailServices } from "../context";
 import { deliverDueOutboxDeliveries } from "../use-cases/outbox-dispatcher";
+import { quoteRequestTerms } from "../use-cases/requests";
 
 describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () => {
   const db = createTestDb();
+  let acceptedRulebookId = "";
 
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
@@ -31,6 +34,7 @@ describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () =
   async function setup() {
     const { organizationId, userId: ownerId } = await seedOrganization(db);
     const team = await seedServicesTeam(db, { organizationId, slug: "walk-crew", name: "Walk Crew", status: "active" });
+    acceptedRulebookId = (await quoteRequestTerms(db, { slug: "walk-crew" })).rulebookId;
     const clientId = await seedUser(db, "Ann");
     await db.update(user).set({ email: "Ann@Example.com", emailVerified: true }).where(eq(user.id, clientId));
     return { organizationId, teamId: team.id, clientId, ownerId };
@@ -66,6 +70,8 @@ describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () =
           description: "A logo for my bakery, warm colours, ready in a week.",
           answers: [],
           website: "",
+          termsAccepted: true,
+          acceptedRulebookId,
         },
       );
     return { run, mailer, email };
@@ -78,6 +84,9 @@ describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () =
     if (!projectId) throw new Error("no project id for a signed-in requester");
     expect(await findProjectById(db, projectId)).toMatchObject({ teamId, clientHomeSurface: "mcp", source: "web" });
     const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, projectId));
+    expect(await db.select().from(rulebookAcceptance)).toEqual([
+      expect.objectContaining({ rulebookId: acceptedRulebookId, teamId, userId: clientId, contactId: attached?.contactId, actorKind: "client", projectId }),
+    ]);
     const identities = await db.select().from(clientIdentity).where(eq(clientIdentity.contactId, attached?.contactId ?? ""));
     expect(identities.map((i) => [i.kind, i.value, i.source, i.verifiedAt !== null]).sort()).toEqual([
       ["email", "ann@example.com", "account", true],

@@ -6,7 +6,7 @@ import { project } from "@jendal-workspace/db/schema/projects";
 import { team } from "@jendal-workspace/db/schema/organization";
 import { eq } from "drizzle-orm";
 import { createFakeMailer } from "@jendal-workspace/email/fake";
-import { requestQuote } from "@jendal-workspace/api/use-cases/requests";
+import { quoteRequestTerms, requestQuote } from "@jendal-workspace/api/use-cases/requests";
 import { deliverDueOutboxDeliveries } from "@jendal-workspace/api/use-cases/outbox-dispatcher";
 
 import { wakeNoticesAfterMutation } from "./notice-wakeup";
@@ -37,7 +37,7 @@ describe.skipIf(!hasTestDatabase)("request notice wake-up", () => {
     app.get("/trpc/request.list", (c) => c.json({ ok: true }));
     app.post("/trpc/request.refused", (c) => c.json({ error: "refused" }, 403));
     app.post("/trpc/request.create", async (c) => {
-      const result = await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: "client@example.com", description: "A bakery logo please", answers: [] });
+      const result = await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: "client@example.com", description: "A bakery logo please", answers: [], termsAccepted: true, acceptedRulebookId: (await quoteRequestTerms(db, { slug: "team" })).rulebookId });
       return c.json(result);
     });
     await app.request("/trpc/request.list", {}, {}, execution);

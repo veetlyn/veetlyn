@@ -49,7 +49,7 @@ import {
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
 import { createProjectRefund } from "@jendal-workspace/db/repositories/project-refunds";
-import { countMemberMarks, ensurePublishedRulebook, lockMemberWork, memberHasLeavingNotice, pauseProjectSchedule, projectHasOpenDispute, recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
+import { countMemberMarks, ensurePublishedRulebook, lockMemberWork, memberHasLeavingNotice, pauseProjectSchedule, projectHasOpenDispute, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -333,15 +333,6 @@ export async function acceptQuote(
         { type: "payment.created", data: { paymentId, kind: "deposit", amountMinor: deposit.totalMinor } },
       ],
     });
-    if (row.rulebookId) {
-      // Accepting the quote accepts the terms the request already pinned (AGT-47).
-      await recordRulebookAcceptance(tx, {
-        rulebookId: row.rulebookId,
-        teamId: row.teamId,
-        actorKind: "client",
-        projectId: row.id,
-      });
-    }
     await tx.update(quote).set({ status: "accepted", acceptedAt: new Date() }).where(eq(quote.id, found.id));
     await tx
       .update(quote)

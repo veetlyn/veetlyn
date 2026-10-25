@@ -15,7 +15,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { answerQuestion, declineRequest, postConversationMessage } from "./conversations";
 import { applyCaptureFact } from "./payments";
 import { acceptAmendment, acceptDelivery, acceptQuote, addQuote, assignFreelancer, proposeAmendment, requestChanges, submitDelivery, type ProjectActor } from "./projects";
-import { requestQuote } from "./requests";
+import { quoteRequestTerms, requestQuote } from "./requests";
 import { runDueScheduleItems } from "./scheduler-sweep";
 
 const START = new Date("2026-10-25T12:00:00Z");
@@ -37,6 +37,7 @@ describe.skipIf(!hasTestDatabase)("transactional timer lifecycle", () => {
     const { projectId } = await requestQuote(db, {
       slug: "team", offeringId: null, name: "Client", email: "client@example.com",
       description: "Please design a bakery logo", answers: [],
+      termsAccepted: true, acceptedRulebookId: (await quoteRequestTerms(db, { slug: "team" })).rulebookId,
     });
     const contact = await primaryContactFor(db, projectId);
     if (!contact) throw new Error("Missing request contact");

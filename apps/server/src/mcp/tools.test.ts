@@ -7,6 +7,7 @@ import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { user } from "@jendal-workspace/db/schema/auth";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
 import { member } from "@jendal-workspace/db/schema/organization";
+import { project } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import {
   createTestDb,
@@ -99,6 +100,11 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
   const tool = (userId: string, name: string, args: JsonObject) =>
     call(mcpRequestHandler(depsFor(userId), origins), "tools/call", { name, arguments: args });
 
+  async function consent(userId: string, offeringId: string) {
+    const terms = await tool(userId, "get_request_terms", { offeringId });
+    return { termsAccepted: true, acceptedRulebookId: z.string().parse(terms.result?.structuredContent?.rulebookId) };
+  }
+
   async function setup() {
     const { organizationId } = await seedOrganization(db);
     const team = await seedServicesTeam(db, { organizationId, slug: "walk-crew", name: "Walk Crew", status: "active" });
@@ -116,12 +122,26 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const sent = await tool(fixture.clientId, "request_quote", {
       offeringId: fixture.offeringId,
       brief: "A warm logo for my bakery, files at drive.google.com/x",
+      ...await consent(fixture.clientId, fixture.offeringId),
     });
     const projectId = z.string().parse(sent.result?.structuredContent?.project?.id);
     return { ...fixture, projectId };
   }
 
-  it("lists eight tools and keeps the two accepts for the widget", async () => {
+  it("shows current terms before a request and refuses unchecked consent", async () => {
+    const { clientId, offeringId } = await setup();
+    const terms = await tool(clientId, "get_request_terms", { offeringId });
+    expect(terms.result?.isError).not.toBe(true);
+    expect(textOf(terms)).toContain("upfront");
+    const acceptedRulebookId = z.string().parse(terms.result?.structuredContent?.rulebookId);
+    const refused = await tool(clientId, "request_quote", {
+      offeringId, brief: "A warm logo for my bakery, ready in a week.", acceptedRulebookId, termsAccepted: false,
+    });
+    expect(refused.result?.isError).toBe(true);
+    expect(await db.select().from(project)).toEqual([]);
+  });
+
+  it("lists the tools and keeps the two accepts for the widget", async () => {
     const { clientId } = await setup();
     const listed = await call(mcpRequestHandler(depsFor(clientId), origins), "tools/list", {});
     const visibility = Object.fromEntries((listed.result?.tools ?? []).map((t) => [t.name, t._meta?.ui?.visibility]));
@@ -130,6 +150,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
       "accept_delivery",
       "accept_quote",
       "get_project",
+      "get_request_terms",
       "list_my_projects",
       "reply",
       "request_changes",
@@ -143,7 +164,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const found = await tool(clientId, "search_offerings", { query: "logo for a bakery", maxPrice: 400 });
     expect(found.result?.structuredContent?.offerings).toEqual([expect.objectContaining({ id: offeringId })]);
     expect(textOf(found)).toContain("«Logo refresh» by «Walk Crew»");
-    const sent = await tool(clientId, "request_quote", { offeringId, brief: "A warm logo for my bakery, ready in a week." });
+    const sent = await tool(clientId, "request_quote", { offeringId, brief: "A warm logo for my bakery, ready in a week.", ...await consent(clientId, offeringId) });
     const projectId = z.string().parse(sent.result?.structuredContent?.project?.id);
     expect(await findProjectById(db, projectId)).toMatchObject({ clientHomeSurface: "mcp", status: "quoting" });
     // Seller text reaches the model framed in the text only; structuredContent, which some hosts show the model,
@@ -165,7 +186,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     );
     const sent = [];
     for (const offeringId of offerings) {
-      for (let n = 0; n < 3; n++) sent.push(await tool(clientId, "request_quote", { offeringId, brief: `A logo for shop ${n}` }));
+      for (let n = 0; n < 3; n++) sent.push(await tool(clientId, "request_quote", { offeringId, brief: `A logo for shop ${n}`, ...await consent(clientId, offeringId) }));
     }
     expect(sent.slice(0, 20).filter((r) => r.result?.isError).map(textOf)).toEqual([]);
     expect(sent[20]?.result?.isError).toBe(true);

@@ -10,6 +10,7 @@ import {
   seedServicesOffering,
   seedServicesTeamMember,
   seedStore,
+  seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
@@ -26,7 +27,9 @@ import {
 } from "@jendal-workspace/db/repositories/projects";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
-import { outboxDelivery } from "@jendal-workspace/db/schema/operating-model";
+import { user } from "@jendal-workspace/db/schema/auth";
+import { outboxDelivery, rulebookAcceptance } from "@jendal-workspace/db/schema/operating-model";
+import { ensurePublishedRulebook, publishRulebook, saveRulebookDraft } from "@jendal-workspace/db/repositories/operating-model";
 import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
@@ -1751,6 +1754,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
   // Sellers design §4.2: the public quote request form.
   describe("requestQuote", () => {
+    let displayedRulebookId = "";
     type RequestInput = {
       slug: string;
       offeringId: string | null;
@@ -1759,6 +1763,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       description: string;
       answers: { question: string; answer: string }[];
       website: string;
+      termsAccepted: boolean;
+      acceptedRulebookId: string;
     };
 
     function validRequest(overrides: Partial<RequestInput> = {}): RequestInput {
@@ -1770,16 +1776,18 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         description: "I need a landing page for my shop.",
         answers: [{ question: "Colors?", answer: "Blue" }],
         website: "",
+        termsAccepted: true,
+        acceptedRulebookId: displayedRulebookId,
         ...overrides,
       };
     }
 
     // A caller with the email port wired to a fake mailer, unless `email: false`.
-    function requestCaller(options: { headers?: Headers; email?: boolean } = {}) {
+    function requestCaller(options: { headers?: Headers; email?: boolean; userId?: string } = {}) {
       const mailer = createFakeMailer();
       const context: Context = {
         db,
-        session: null,
+        session: options.userId ? makeSession(options.userId) : null,
         environment: "sandbox",
         platformName: "Platform",
         auth,
@@ -1806,12 +1814,87 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     // An active services team with a support email and one active offering.
     async function setupSeller() {
-      const { organizationId } = await seedOrganization(db);
+      const { organizationId, userId } = await seedOrganization(db);
       const team = await seedServicesTeam(db, { organizationId, slug: "seller", name: "Walk Crew", status: "active" });
       await db.update(teamTable).set({ supportEmail: "support@walkcrew.test" }).where(eq(teamTable.id, team.id));
       const offeringId = await seedServicesOffering(db, { teamId: team.id, name: "Landing page" });
-      return { organizationId, team, offeringId };
+      displayedRulebookId = (await ensurePublishedRulebook(db, team.id)).id;
+      return { organizationId, team, offeringId, userId };
     }
+
+    it.each(["unchecked", "foreign rulebook"])("refuses a request without explicit acceptance of this team's rules: %s", async (consent) => {
+      const { organizationId } = await setupSeller();
+      const { caller } = requestCaller();
+      const input = validRequest({ termsAccepted: consent !== "unchecked" });
+      if (consent === "foreign rulebook") {
+        const other = await seedServicesTeam(db, { organizationId, slug: "other-seller", status: "active" });
+        input.acceptedRulebookId = (await ensurePublishedRulebook(db, other.id)).id;
+      }
+      await expect(caller.project.requestQuote(input)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      expect(await db.select().from(project)).toEqual([]);
+      expect(await db.select().from(rulebookAcceptance)).toEqual([]);
+    });
+
+    it("binds signed-in web consent and notices to the account instead of the submitted address", async () => {
+      const { team } = await setupSeller();
+      const clientId = await seedUser(db, "Client");
+      await db.update(user).set({ email: "account@example.com", emailVerified: true }).where(eq(user.id, clientId));
+      const { caller, mailer, flushNotices } = requestCaller({ userId: clientId });
+      const result = await caller.project.requestQuote(validRequest({ email: "different@example.com" }));
+      expect(result.projectId).toEqual(expect.any(String));
+      const [attached] = await db.select().from(projectClient);
+      expect(await db.select().from(rulebookAcceptance)).toEqual([
+        expect.objectContaining({ teamId: team.id, userId: clientId, contactId: attached?.contactId, projectId: result.projectId, rulebookId: displayedRulebookId }),
+      ]);
+      expect(await db.select().from(clientIdentity).where(eq(clientIdentity.contactId, attached!.contactId))).toContainEqual(
+        expect.objectContaining({ kind: "user", value: clientId, verifiedAt: expect.any(Date) }),
+      );
+      await flushNotices();
+      expect(mailer.sent.map((message) => message.to)).toContain("account@example.com");
+      expect(mailer.sent.map((message) => message.to)).not.toContain("different@example.com");
+    });
+
+    it.each(["unverified", "team member"])("refuses an %s account through the public web request route", async (kind) => {
+      const { userId: ownerId } = await setupSeller();
+      const userId = kind === "team member" ? ownerId : await seedUser(db, "Client");
+      await db.update(user).set({ emailVerified: kind === "team member" }).where(eq(user.id, userId));
+      const { caller } = requestCaller({ userId });
+      await expect(caller.project.requestQuote(validRequest())).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(await db.select().from(project)).toEqual([]);
+      expect(await db.select().from(rulebookAcceptance)).toEqual([]);
+    });
+
+    it("requires renewed consent when the published terms change", async () => {
+      const { team, userId } = await setupSeller();
+      const { caller } = requestCaller();
+      const published = await ensurePublishedRulebook(db, team.id);
+      await saveRulebookDraft(db, { teamId: team.id, userId: null, preset: "custom", spec: {
+        ...published.spec, revisions: { ...published.spec.revisions, freeCount: 4 },
+      } });
+      const latest = await publishRulebook(db, { teamId: team.id, userId: null });
+      await expect(caller.project.requestQuote(validRequest())).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      expect(await db.select().from(rulebookAcceptance)).toEqual([]);
+      const terms = await caller.project.requestTerms({ slug: "seller" });
+      expect(terms).toMatchObject({ rulebookId: latest.id, version: latest.version });
+      expect(terms.terms).toContain("4");
+      await caller.project.requestQuote(validRequest({ acceptedRulebookId: terms.rulebookId }));
+      const [created] = await db.select().from(project);
+      const [client] = await db.select().from(projectClient);
+      expect(created?.rulebookId).toBe(terms.rulebookId);
+      expect(await db.select().from(rulebookAcceptance)).toEqual([
+        expect.objectContaining({ rulebookId: terms.rulebookId, teamId: team.id, actorKind: "client", contactId: client?.contactId, projectId: created?.id }),
+      ]);
+      if (!created) throw new Error("Request did not create a project");
+      const accepted = await db.select().from(rulebookAcceptance);
+      const owner = callerFor(userId);
+      await owner.project.assign({ teamSlug: "seller", projectId: created.id, freelancerId: userId });
+      const { quoteId } = await owner.project.addQuote({
+        teamSlug: "seller", projectId: created.id, freelancerId: userId, deliveryDays: 3,
+        items: [{ description: "Landing page", amountMinor: 10000, extraDays: 0 }],
+      });
+      await caller.project.clientAcceptQuote({ token: await clientToken(db, created.id), quoteId });
+      expect(await db.select().from(rulebookAcceptance)).toEqual(accepted);
+    });
 
     it("creates a quoting project from a public request and emails the client and the team", async () => {
       const { team, offeringId } = await setupSeller();
