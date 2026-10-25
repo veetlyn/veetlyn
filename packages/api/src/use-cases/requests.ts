@@ -125,7 +125,8 @@ export async function requestQuote(
         clientHomeSurface: signedIn?.homeSurface ?? "web",
         currency: settings.currency,
         managementFeeBps: settings.managementFeeBps,
-        teamCutBps: settings.teamCutBps,
+        teamCutBps: rulebook.spec.split.teamCutBps,
+        managerCutBps: rulebook.spec.split.managerCutBps,
         // The request pins the team's published rulebook: its rules govern this project even if the
         // team publishes a new version while it runs (AGT-46).
         rulebookId: rulebook.id,
