@@ -1,8 +1,7 @@
 import type { JsonObject, LedgerTransferDraft, OutboxEventType, ProjectStatus } from "@jendal-workspace/core";
 import { and, eq, isNull, sql } from "drizzle-orm";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import type { ProjectRelations, Transaction } from "../executor";
+import type { DbExecutor, Transaction } from "../executor";
 import { createPostgresLedger } from "./ledger";
 import { outbox } from "../schema/outbox";
 import { project } from "../schema/projects";
@@ -50,7 +49,7 @@ export type UnitOfWork = {
 // for its own reads and writes and the unit of work for the compare-and-set + ledger + outbox part.
 // Throwing (or tx.rollback()) rolls back everything.
 export async function runInTransaction<T>(
-  db: PostgresJsDatabase<ProjectRelations>,
+  db: DbExecutor,
   run: (tx: Transaction, uow: UnitOfWork) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {

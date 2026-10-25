@@ -12,6 +12,7 @@ export type SqlExecutor = PgAsyncDatabase<PgQueryResultHKT>;
 const scheduleRowSchema = z.object({
   id: z.string(),
   subject_id: z.string(),
+  team_id: z.string(),
   kind: z.string(),
   run_at: z.coerce.date(),
   attempts: z.number().nullable().catch(0),
@@ -52,7 +53,7 @@ export async function reconcileScheduleRows(db: SqlExecutor, table: string, plan
       insert into ${sql.identifier(table)} (id, team_id, subject_id, kind, run_at, status)
       values (${crypto.randomUUID()}, ${plan.teamId}, ${plan.subjectId}, ${item.kind}, ${item.runAt.toISOString()}, 'pending')
       on conflict (subject_id, kind) where status in ('pending', 'paused')
-      do update set run_at = excluded.run_at, status = 'pending'
+      do update set run_at = excluded.run_at
     `);
   }
   if (plan.cancel.length > 0) {
@@ -69,14 +70,14 @@ export async function reconcileScheduleRows(db: SqlExecutor, table: string, plan
 // claimed row done or failed in the same transaction.
 export async function claimDueScheduleRows(db: SqlExecutor, table: string, now: Date, limit: number): Promise<ClaimedScheduleRow[]> {
   const result = await db.execute(sql`
-    select id, subject_id, kind, run_at, attempts, payload
+    select id, team_id, subject_id, kind, run_at, attempts, payload
     from ${sql.identifier(table)}
     where status = 'pending' and run_at <= ${now.toISOString()}
     order by run_at
     limit ${limit}
     for update skip locked
   `);
-  return queryRows.parse(result).map((row) => scheduleRowSchema.parse(row));
+  return queryRows.removeCatch().parse(result).map((row) => scheduleRowSchema.parse(row));
 }
 
 export async function completeScheduleRows(
@@ -91,7 +92,7 @@ export async function completeScheduleRows(
     set status = ${outcome.status}, completed_at = now(),
         attempts = coalesce(attempts, 0) + 1,
         last_error = ${outcome.error ?? null}
-    where id in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})
+    where status = 'pending' and id in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})
   `);
 }
 

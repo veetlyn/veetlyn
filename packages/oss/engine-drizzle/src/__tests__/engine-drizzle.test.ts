@@ -1,8 +1,9 @@
+import { fromPartial } from "@total-typescript/shoehorn";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { claimDueDeliveryRows, claimDueScheduleRows, completeScheduleRows, countMarksInWindow, reconcileScheduleRows, setSchedulePaused } from "../index";
+import { claimDueDeliveryRows, claimDueScheduleRows, completeScheduleRows, countMarksInWindow, reconcileScheduleRows, setSchedulePaused, type SqlExecutor } from "../index";
 
 const hasDb = Boolean(process.env.TEST_DATABASE_URL);
 
@@ -78,7 +79,7 @@ describe.skipIf(!hasDb)("engine-drizzle storage helpers", () => {
     });
 
     const claimed = await claimDueScheduleRows(db, SCHEDULE_TABLE, T("2026-10-04T00:00:00Z"), 10);
-    expect(claimed).toEqual([{ id: expect.any(String), subject_id: "p1", kind: "request.remind", run_at: T("2026-10-02T18:00:00Z"), attempts: 0, payload: null }]);
+    expect(claimed).toEqual([{ id: expect.any(String), team_id: "team1", subject_id: "p1", kind: "request.remind", run_at: T("2026-10-02T18:00:00Z"), attempts: 0, payload: null }]);
   });
 
   it("claims only due pending rows in run_at order", async () => {
@@ -132,11 +133,44 @@ describe.skipIf(!hasDb)("engine-drizzle storage helpers", () => {
       cancel: [],
     });
     await setSchedulePaused(db, SCHEDULE_TABLE, "p1", true);
+    await reconcileScheduleRows(db, SCHEDULE_TABLE, {
+      teamId: "team1", subjectId: "p1",
+      schedule: [{ kind: "member.updateRemind", runAt: T("2026-10-03T12:00:00Z") }], cancel: [],
+    });
     expect(await claimDueScheduleRows(db, SCHEDULE_TABLE, T("2026-10-05T00:00:00Z"), 10)).toEqual([]);
 
     await setSchedulePaused(db, SCHEDULE_TABLE, "p1", false);
     const claimed = await claimDueScheduleRows(db, SCHEDULE_TABLE, T("2026-10-05T00:00:00Z"), 10);
     expect(claimed.map((row) => row.kind)).toEqual(["member.updateRemind", "member.updateLate"]);
+  });
+
+  it("recovers rolled-back claims and refuses to complete inactive or already completed occurrences", async () => {
+    await reconcileScheduleRows(db, SCHEDULE_TABLE, {
+      teamId: "team1", subjectId: "p1",
+      schedule: [{ kind: "request.remind", runAt: T("2026-10-02T00:00:00Z") }], cancel: [],
+    });
+    const now = T("2026-10-04T00:00:00Z");
+    await expect(db.transaction(async (tx) => {
+      const claimed = await claimDueScheduleRows(tx, SCHEDULE_TABLE, now, 1);
+      expect(claimed).toHaveLength(1);
+      await completeScheduleRows(tx, SCHEDULE_TABLE, claimed.map((row) => row.id), { status: "done" });
+      throw new Error("interrupted occurrence");
+    })).rejects.toThrow("interrupted occurrence");
+    await db.transaction(async (tx) => {
+      const claimed = await claimDueScheduleRows(tx, SCHEDULE_TABLE, now, 1);
+      expect(claimed).toHaveLength(1);
+      const ids = claimed.map((row) => row.id);
+      await setSchedulePaused(tx, SCHEDULE_TABLE, "p1", true);
+      await completeScheduleRows(tx, SCHEDULE_TABLE, ids, { status: "done" });
+      expect(await claimDueScheduleRows(tx, SCHEDULE_TABLE, now, 1)).toEqual([]);
+      await setSchedulePaused(tx, SCHEDULE_TABLE, "p1", false);
+      expect(await claimDueScheduleRows(tx, SCHEDULE_TABLE, now, 1)).toHaveLength(1);
+      await completeScheduleRows(tx, SCHEDULE_TABLE, ids, { status: "done" });
+      await completeScheduleRows(tx, SCHEDULE_TABLE, ids, { status: "failed", error: "stale completion" });
+    });
+    expect(await client.unsafe(`select status, attempts, last_error from ${SCHEDULE_TABLE}`)).toEqual([
+      expect.objectContaining({ status: "done", attempts: 1, last_error: null }),
+    ]);
   });
 
   it("claims due deliveries and counts marks inside a rolling window", async () => {
@@ -157,4 +191,9 @@ describe.skipIf(!hasDb)("engine-drizzle storage helpers", () => {
     });
     expect(count).toBe(1);
   });
+});
+
+it("rejects an undecodable scheduler driver result instead of reporting empty work", async () => {
+  const db = fromPartial<SqlExecutor>({ execute: () => fromPartial<ReturnType<SqlExecutor["execute"]>>(Promise.resolve({})) });
+  await expect(claimDueScheduleRows(db, "schedule_item", new Date(), 1)).rejects.toThrow();
 });

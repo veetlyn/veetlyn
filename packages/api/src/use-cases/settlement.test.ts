@@ -6,7 +6,7 @@ import { scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { amendment, delivery, payment, project, quote } from "@jendal-workspace/db/schema/projects";
 import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamMember, seedServicesTeamWithAdmin, truncateAll } from "@jendal-workspace/db/testing/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { applyCaptureFact } from "./payments";
@@ -129,6 +129,25 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     await settled(fixture, price, team, manager, member);
   });
 
+
+  it.each([{ price: 20_000, held: 20_000 }, { price: 120_000, held: 60_000 }])("rolls back settlement for $price cents when its occurrence cannot complete", async ({ price, held }) => {
+    const fixture = await delivered(price);
+    await db.execute(sql`alter table schedule_item add constraint settlement_test_completion check (kind <> 'project.autoComplete' or status <> 'done')`);
+    try {
+      expect(await runDueScheduleItems({ db })).toEqual({ fired: 0, failed: 1, held: 0 });
+      expect(await findProjectById(db, fixture.projectId)).toMatchObject({ status: "delivered", finalPriceMinor: null });
+      expect(await balance(`client_held:${fixture.projectId}`)).toBe(held);
+      expect((await db.select().from(payment)).filter((row) => row.kind === "balance")).toEqual([]);
+      expect((await db.select().from(ledgerTransfer)).filter((row) => row.kind === "completion")).toEqual([]);
+      expect(await db.select().from(delivery)).toEqual([expect.objectContaining({ status: "submitted" })]);
+      expect((await db.select().from(outbox)).filter((row) => row.type === "delivery.accepted" || row.type === "project.completed")).toEqual([]);
+      expect((await db.select().from(scheduleItem)).filter((row) => row.kind === "project.autoComplete")).toEqual([
+        expect.objectContaining({ status: "failed", attempts: 1, lastError: expect.any(String) }),
+      ]);
+    } finally {
+      await db.execute(sql`alter table schedule_item drop constraint settlement_test_completion`);
+    }
+  });
 
   it("keeps abandonment separate from acceptance and settlement", async () => {
     const fixture = await delivered(20_000);
