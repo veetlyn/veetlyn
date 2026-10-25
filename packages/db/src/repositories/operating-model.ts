@@ -9,8 +9,8 @@ import {
   reconcileScheduleRows,
   setSchedulePaused,
 } from "@opmodel/engine-drizzle";
-import { type DeliveryChannel, recordDeliveryFailure, recordDeliverySuccess, type OutboxDeliveryRecord } from "@opmodel/engine-outbox";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { type DeliveryChannel, recordDeliveryFailure, recordDeliverySuccess } from "@opmodel/engine-outbox";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { dispute, memberMark, memberNoticePreference, outboxDelivery, rulebook, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
@@ -218,40 +218,47 @@ export async function insertOutboxDeliveries(
 
 export type OutboxDeliveryRow = typeof outboxDelivery.$inferSelect;
 
-// Claims due deliveries under a row lock and returns them as engine records, so the caller applies
-// the engine's pure transitions and writes them back.
-export async function claimDueOutboxDeliveries(db: DbExecutor, now: Date, limit: number): Promise<OutboxDeliveryRow[]> {
-  const claimed = await claimDueDeliveryRows(db, DELIVERY_TABLE, now, limit);
+// The atomic claim persists ownership before any external send; a stale owner cannot record its outcome.
+export async function claimDueOutboxDeliveries(db: DbExecutor, now: Date, limit: number, outboxIds?: readonly string[]): Promise<OutboxDeliveryRow[]> {
+  const claimed = await claimDueDeliveryRows(db, DELIVERY_TABLE, now, limit, outboxIds);
   if (claimed.length === 0) return [];
   return db
     .select()
     .from(outboxDelivery)
-    .where(inArray(outboxDelivery.id, claimed.map((row: ClaimedDeliveryRow) => row.id)));
+    .where(or(...claimed.map((row: ClaimedDeliveryRow) => and(eq(outboxDelivery.id, row.id), eq(outboxDelivery.claimToken, row.claim_token)))));
 }
 
 export async function applyDeliveryOutcome(
   db: DbExecutor,
-  input: { record: OutboxDeliveryRecord; providerMessageId?: string; error?: string; at: Date },
-): Promise<void> {
+  input: { record: OutboxDeliveryRow; providerMessageId?: string; error?: string; at: Date; requireConfirmation?: boolean },
+): Promise<boolean> {
+  if (!input.record.claimToken) throw new Error("Delivery outcome requires claim ownership");
   const next =
     input.providerMessageId !== undefined || input.error === undefined
       ? recordDeliverySuccess(input.record, input.providerMessageId ?? null, input.at)
       : recordDeliveryFailure(input.record, input.error, input.at);
-  await db
+  const updated = await db
     .update(outboxDelivery)
     .set({
-      status: next.status,
+      status: input.requireConfirmation ? "failed" : next.status,
       attempts: next.attempts,
-      nextAttemptAt: next.nextAttemptAt,
+      nextAttemptAt: input.requireConfirmation || next.status === "sent" ? null : next.nextAttemptAt,
       sentAt: next.sentAt,
       lastError: next.lastError,
       providerMessageId: next.providerMessageId,
+      claimToken: null,
+      claimExpiresAt: null,
     })
-    .where(eq(outboxDelivery.id, input.record.id));
+    .where(and(eq(outboxDelivery.id, input.record.id), eq(outboxDelivery.status, "pending"), eq(outboxDelivery.claimToken, input.record.claimToken)))
+    .returning({ id: outboxDelivery.id });
+  return updated.length > 0;
 }
 
-export async function skipOutboxDelivery(db: DbExecutor, id: string): Promise<void> {
-  await db.update(outboxDelivery).set({ status: "skipped" }).where(eq(outboxDelivery.id, id));
+export async function skipOutboxDelivery(db: DbExecutor, id: string, claimToken?: string | null): Promise<void> {
+  await db.update(outboxDelivery).set({ status: "skipped", claimToken: null, claimExpiresAt: null, nextAttemptAt: null }).where(and(
+    eq(outboxDelivery.id, id), eq(outboxDelivery.status, "pending"),
+    claimToken ? eq(outboxDelivery.claimToken, claimToken) : isNull(outboxDelivery.claimToken),
+  ));
 }
 
 export async function getMemberNoticeEnabled(db: DbExecutor, teamId: string, userId: string): Promise<boolean> {

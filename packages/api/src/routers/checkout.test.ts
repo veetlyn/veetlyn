@@ -1,3 +1,8 @@
+import { requestQuote } from "../use-cases/requests";
+import { outbox } from "@jendal-workspace/db/schema/outbox";
+import { outboxDelivery } from "@jendal-workspace/db/schema/operating-model";
+import { deliverDueOutboxDeliveries } from "../use-cases/outbox-dispatcher";
+import { resendOrderEmail } from "../use-cases/orders";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore, hashToken, type JsonObject } from "@jendal-workspace/core";
 import { setServicesTeamStoreEnabled } from "@jendal-workspace/db/repositories/services-teams";
@@ -17,7 +22,7 @@ import {
 import { createFakeMailer, type FakeMailer } from "@jendal-workspace/email/fake";
 import { createPayPalClient } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { PayPalServices } from "../context";
@@ -457,6 +462,60 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
         message: "This order was refunded.",
       });
       expect(await grantsOf(order.id)).toHaveLength(2);
+    });
+
+    it("dispatches only this order without consuming unrelated client-notice retries", async () => {
+      const { caller, secret, mailer } = await started();
+      await requestQuote(db, { slug: "pixels", offeringId: null, name: "Other client", email: "waiting@example.com", description: "A custom bakery logo please", answers: [] });
+      await caller.checkout.capture({ orderId: "ORDER1", secret });
+      expect(mailer.sent.map((message) => message.to)).toEqual(["jo@example.com"]);
+      const pending = await db.select().from(outboxDelivery).where(eq(outboxDelivery.recipient, "waiting@example.com"));
+      expect(pending).toEqual([expect.objectContaining({ status: "pending", attempts: 0 })]);
+    });
+
+    it("persists a buyer notice with the capture even when email is not configured", async () => {
+      const { secret, fetch } = await started();
+      await callerFor({ paypal: makePayPal(fetch) }).checkout.capture({ orderId: "ORDER1", secret });
+      expect((await onlyOrder()).status).toBe("paid");
+      expect(await db.select().from(outbox)).toEqual([expect.objectContaining({
+        type: "order.paid", data: expect.objectContaining({ buyerEmail: "jo@example.com", storeSlug: "pixels", token: expect.any(String) }),
+      })]);
+    });
+
+    it("rolls back paid state, grant and ledger when the durable buyer event cannot be written", async () => {
+      const { caller, secret, teamId } = await started();
+      await db.execute(sql`alter table outbox add constraint reject_order_notice check (type <> 'order.paid')`);
+      try {
+        await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).rejects.toThrow();
+        const order = await onlyOrder();
+        expect(order.status).toBe("pending");
+        expect(await grantsOf(order.id)).toEqual([]);
+        expect(await transfersOf(teamId)).toEqual([]);
+      } finally {
+        await db.execute(sql`alter table outbox drop constraint reject_order_notice`);
+      }
+      await expect(caller.checkout.capture({ orderId: "ORDER1", secret })).resolves.toMatchObject({ outcome: "captured" });
+      expect(await db.select().from(outbox)).toHaveLength(1);
+    });
+
+    it("retains an admin resend for retry with a fresh grant when the email provider fails", async () => {
+      const { caller, secret, teamId } = await started();
+      await caller.checkout.capture({ orderId: "ORDER1", secret });
+      const order = await onlyOrder();
+      const email = {
+        mailer: { send: async () => { throw new Error("provider down"); } },
+        platformName: "Platform", siteOrigin: "https://platform.test", dashOrigin: "https://dash.platform.test",
+        storeOrigin: (slug: string) => `https://${slug}.platform.test`,
+      };
+      expect(await resendOrderEmail({ db, email }, { orderId: order.id, teamId })).toBe(false);
+      expect(await db.select().from(outbox)).toHaveLength(2);
+      expect(await db.select().from(outboxDelivery)).toEqual(expect.arrayContaining([expect.objectContaining({ status: "pending", attempts: 1 })]));
+      expect(await grantsOf(order.id)).toHaveLength(3);
+      const recovered = createFakeMailer();
+      await deliverDueOutboxDeliveries({ db, email: { ...email, mailer: recovered }, now: () => new Date(Date.now() + 120_000) });
+      expect(recovered.sent).toHaveLength(1);
+      expect(recovered.sent[0]?.text).toContain("/orders/");
+      expect(await db.select().from(outboxDelivery)).toEqual(expect.arrayContaining([expect.objectContaining({ status: "sent", attempts: 2 })]));
     });
 
     it("still captures when the buyer email fails, and reports the failure", async () => {

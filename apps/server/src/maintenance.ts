@@ -183,6 +183,17 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     });
   }
 
+  // The timed rules due now (AGT-37): reminders, expiry, marks and the client silence ladder.
+  const runScheduler = deps.runScheduler;
+  if (runScheduler) {
+    await sweep("schedule", async () => {
+      const { fired, failed } = await runScheduler();
+      report.scheduleFired = fired;
+      report.scheduleFailed = failed;
+      return { fired, failed };
+    });
+  }
+
   // Notice deliveries whose send failed retry here on the 10-minute cadence (AGT-16).
   const deliverOutboxNotices = deps.deliverOutboxNotices;
   if (deliverOutboxNotices) {
@@ -194,16 +205,6 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     });
   }
 
-  // The timed rules due now (AGT-37): reminders, expiry, marks and the client silence ladder.
-  const runScheduler = deps.runScheduler;
-  if (runScheduler) {
-    await sweep("schedule", async () => {
-      const { fired, failed } = await runScheduler();
-      report.scheduleFired = fired;
-      report.scheduleFailed = failed;
-      return { fired, failed };
-    });
-  }
 
   return report;
 }

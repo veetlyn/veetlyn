@@ -15,17 +15,17 @@ export type OutboxDeliveryRecord = {
   providerMessageId: string | null;
 };
 
-export const MAX_ATTEMPTS = 5;
-
 // 1 min, 5 min, 15 min, 1 h, 6 h: one entry per attempt index.
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000, 6 * 60 * 60_000];
+
+export const MAX_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 
 export function computeNextAttemptAt(attempts: number, baseTime: Date): Date | null {
   const delayMs = RETRY_DELAYS_MS[attempts];
   return delayMs === undefined ? null : new Date(baseTime.getTime() + delayMs);
 }
 
-// A delivery is delivered at most once per (event, channel, recipient).
+// One durable delivery identity per (event, channel, recipient).
 export function deliveryDedupeKey(outboxId: string, channel: DeliveryChannel, recipient: string): string {
   return `${outboxId}:${channel}:${recipient}`;
 }

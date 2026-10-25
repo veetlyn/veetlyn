@@ -25,6 +25,6 @@ const sent = recordDeliverySuccess(retried, "re_abc", now); // sent, providerMes
 
 ## Semantics
 
-- A delivery is keyed by `(outboxId, channel, recipient)` — deliver at most once per key.
-- `MAX_ATTEMPTS = 5`: the fifth failure marks the record `failed` with no next attempt.
+- A delivery is keyed by `(outboxId, channel, recipient)` — use one durable delivery identity per key. The host must retain ownership and use its transport's idempotency contract to prevent duplicate external sends.
+- `MAX_ATTEMPTS = 6`: the initial send plus five retries; the sixth failure marks the record `failed` with no next attempt.
 - Transitions are pure: they return a new record and never mutate.

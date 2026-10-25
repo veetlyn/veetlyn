@@ -3,7 +3,6 @@ import { listTeamsPayingCompletedProjects } from "@jendal-workspace/db/repositor
 import { log } from "evlog";
 
 import { decisionRules } from "./payout-rules";
-import { appendPayoutOutboxEvent } from "./outbox-dispatcher";
 import { createProjectPayout, holdEndsBefore, type PayoutDeps, type RequestPayoutDeps, sendPayout } from "./payouts";
 import { payPalErrorLog } from "./paypal-amounts";
 
@@ -35,18 +34,7 @@ export async function createProjectPayouts(
     for (const project of projects) {
       try {
         const row = await createProjectPayout(deps, { team, rules, project, now: input.now });
-        if (row) {
-          created++;
-          await appendPayoutOutboxEvent(deps.db, {
-            type: "payout.requested",
-            teamId: team.id,
-            teamName: team.name,
-            memberUserId: row.userId,
-            amountMinor: row.amountMinor,
-            currency: row.currency,
-            payoutRequestId: row.id,
-          });
-        }
+        if (row) created++;
       } catch (error) {
         log.error({
           action: "payout.project_sweep",

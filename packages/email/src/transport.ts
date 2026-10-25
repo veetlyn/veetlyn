@@ -1,7 +1,7 @@
 import { createEmailClient } from "@opencoredev/email-sdk";
 import { resend } from "@opencoredev/email-sdk/resend";
 
-import type { Mailer } from "./mailer";
+import type { EmailDelivery, EmailMessage, EmailReceipt, EmailSendOptions, Mailer } from "./mailer";
 import { type SenderAddress, senderAddress } from "./senders";
 
 export type MailerConfig = {
@@ -11,7 +11,7 @@ export type MailerConfig = {
   EMAIL_REPLY_TO: string;
 };
 
-export type OutgoingTag = { name: "sender" | "kind"; value: string };
+export type OutgoingTag = EmailDelivery["tags"][number];
 
 export type OutgoingEmail = {
   from: SenderAddress;
@@ -25,7 +25,7 @@ export type OutgoingEmail = {
 
 export type Transport = {
   name: string;
-  send(email: OutgoingEmail): Promise<void>;
+  send(email: OutgoingEmail, options?: EmailSendOptions): Promise<EmailReceipt | void>;
 };
 
 export class EmailNotConfiguredError extends Error {
@@ -56,8 +56,9 @@ function resendTransport(apiKey: string): Transport {
   const client = createEmailClient({ adapters: [resend({ apiKey })], telemetry: false });
   return {
     name: "resend",
-    async send(email) {
-      await client.send(email);
+    async send(email, options) {
+      const receipt = await client.send(email, { ...options, signal: AbortSignal.timeout(30_000) });
+      return { providerMessageId: receipt.id };
     },
   };
 }
@@ -66,27 +67,34 @@ export function mailerWithTransports(
   config: Pick<MailerConfig, "EMAIL_DOMAIN" | "EMAIL_REPLY_TO" | "PLATFORM_NAME">,
   transports: readonly Transport[],
 ): Mailer {
+  function prepare(message: EmailMessage): EmailMessage & { delivery: EmailDelivery } {
+    if (message.delivery) return { ...message, delivery: message.delivery };
+    const tags: OutgoingTag[] = [{ name: "sender", value: message.sender }];
+    if (message.tag) tags.push({ name: "kind", value: tagValue(message.tag) });
+    return { ...message, delivery: {
+      from: senderAddress(message.sender, config.EMAIL_DOMAIN, config.PLATFORM_NAME, message.onBehalfOf),
+      replyTo: message.replyTo ?? config.EMAIL_REPLY_TO,
+      tags,
+    } };
+  }
   return {
-    async send(message) {
+    prepare,
+    async send(message, options) {
       if (transports.length === 0) throw new EmailNotConfiguredError();
-      const tags: OutgoingTag[] = [{ name: "sender", value: message.sender }];
-      if (message.tag) tags.push({ name: "kind", value: tagValue(message.tag) });
+      const prepared = prepare(message);
       const email: OutgoingEmail = {
-        from: senderAddress(message.sender, config.EMAIL_DOMAIN, config.PLATFORM_NAME, message.onBehalfOf),
-        to: message.to,
-        replyTo: message.replyTo ?? config.EMAIL_REPLY_TO,
-        subject: message.subject,
-        text: message.text,
-        html: message.html,
-        tags,
+        ...prepared.delivery,
+        to: prepared.to,
+        subject: prepared.subject,
+        text: prepared.text,
+        html: prepared.html,
       };
       // A transport that fails after the provider accepted the message would make the next one send a duplicate;
       // for account emails a duplicate is better than none.
       const failures: Array<{ transport: string; error: unknown }> = [];
       for (const transport of transports) {
         try {
-          await transport.send(email);
-          return;
+          return await transport.send(email, options);
         } catch (error) {
           failures.push({ transport: transport.name, error });
         }

@@ -85,7 +85,7 @@ export async function accessFactsForRows(
   );
 }
 
-export async function accessFactsFor(db: Database, row: ProjectRow): Promise<AccessFacts> {
+export async function accessFactsFor(db: DbExecutor, row: ProjectRow): Promise<AccessFacts> {
   const [settings, departmentId, shortlist] = await Promise.all([
     getServicesTeamSettings(db, row.teamId),
     offeringDepartment(db, row.offeringId),

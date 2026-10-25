@@ -10,6 +10,9 @@ export type ClientNoticeKey =
   | "payment_requested"
   | "delivery_submitted"
   | "seller_replied"
+  | "question_asked"
+  | "request_declined"
+  | "refund_pending"
   | "request_expired"
   | "review_reminder"
   | "project_auto_completed"
@@ -21,6 +24,9 @@ type NoticeText = { subject: string; intro: string; action: string };
 type NoticeBuilder = (ctx: NoticeContext) => NoticeText;
 
 const CLIENT_NOTICES = new Map<ClientNoticeKey, NoticeBuilder>([
+  ["question_asked", (c) => ({ subject: `A question from ${c.teamName}`, intro: `${c.teamName} has a question about "${c.projectTitle}". Answer it from your page:`, action: "Answer the question" })],
+  ["request_declined", (c) => ({ subject: `Your request to ${c.teamName} was declined`, intro: `${c.teamName} declined the request for "${c.projectTitle}". Read the explanation on your page:`, action: "Read the reply" })],
+  ["refund_pending", (c) => ({ subject: `Refund recorded for "${c.projectTitle}"`, intro: `${c.teamName} recorded a refund for "${c.projectTitle}". Check its status on your page; this notice does not confirm that it has been sent:`, action: "See the refund" })],
   ["quote_sent", (c) => ({
     subject: `Your quote from ${c.teamName}`,
     intro: `${c.teamName} sent a quote for "${c.projectTitle}"${c.detail ? `: ${c.detail}` : ""}. Read it and accept it, or ask for changes, on your page:`,
@@ -100,6 +106,7 @@ export function clientNoticeEmail(input: {
 
 export type MemberNoticeKey =
   | "quote_request"
+  | "client_message"
   | "client_question"
   | "quote_accepted"
   | "payment_paid"
@@ -114,6 +121,7 @@ export type MemberNoticeKey =
   | "dispute_opened";
 
 const MEMBER_NOTICES = new Map<MemberNoticeKey, NoticeBuilder>([
+  ["client_message", (c) => ({ subject: `A client reply on "${c.projectTitle}"`, intro: `The client posted a message on "${c.projectTitle}". Read it from the project page:`, action: "Read the reply" })],
   ["quote_request", (c) => ({
     subject: `New request: "${c.projectTitle}"`,
     intro: `${c.teamName} received a request${c.detail ? ` (${c.detail})` : ""}. Quote it before the response window closes:`,

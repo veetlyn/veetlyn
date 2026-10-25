@@ -25,15 +25,10 @@ import {
 } from "@jendal-workspace/db/repositories/services-teams";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { project } from "@jendal-workspace/db/schema/projects";
-import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspace/email";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
-import { ActionError } from "../actions/errors";
-import { type LinkSecretSource, linkSecret } from "../client-links";
 import type { EmailServices } from "../context";
-import { primaryClientPath } from "./clients";
-import { clientPageUrl } from "./link-hosts";
 import { fail, runProjectTransaction } from "./projects";
 
 export type QuoteRequestInput = {
@@ -166,10 +161,10 @@ export async function requestQuote(
 }
 
 // The public quote request form (sellers design §4.2): no account, a honeypot, and per-IP, per-account and
-// per-email limits before a project row and the two emails. The honeypot check runs first so bots
+// per-email limits before creating a project and its durable notice event. The honeypot check runs first so bots
 // never touch the limit budget; the per-email limit lives in requestQuote, after validation.
 export async function createQuoteRequest(
-  deps: { db: Database; auth: LinkSecretSource; email?: EmailServices },
+  deps: { db: Database; email?: EmailServices },
   request: { ip: string | null },
   input: QuoteRequestInput & { website: string },
   signedIn?: RequestAccount,
@@ -192,47 +187,7 @@ export async function createQuoteRequest(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Requests are not available right now." });
   }
 
-  const { projectId, teamName, serviceName, supportEmail } = await requestQuote(db, input, signedIn);
-  const to = signedIn?.account.email ?? input.email.trim().toLowerCase();
-  const clientUrl = clientPageUrl(
-    emailServices.storeOrigin,
-    input.slug,
-    await primaryClientPath(db, linkSecret(deps.auth), projectId),
-  );
-  const linkContent = quoteRequestLinkEmail({ platformName: emailServices.platformName, clientName: input.name.trim(), teamName, url: clientUrl });
-  // The client's mail proves the address, so its failure is the request's failure. The caller gets a
-  // generic message; the provider's error text stays server-side.
-  try {
-    await emailServices.mailer.send({
-      sender: "invoices",
-      onBehalfOf: teamName,
-      replyTo: supportEmail ?? undefined,
-      tag: "quote-request",
-      to: to,
-      ...linkContent,
-    });
-  } catch (error) {
-    await emailServices.onError?.(error, { kind: "quote-request", to: to });
-    throw new ActionError("internal", "We could not send the email. Try again in a moment.", { expose: true });
-  }
-  if (supportEmail) {
-    const notice = quoteRequestNoticeEmail({
-      platformName: emailServices.platformName,
-      teamName,
-      clientName: input.name.trim(),
-      clientEmail: to,
-      serviceName,
-      description: input.description.trim(),
-      // Trimmed, as stored on the project.
-      answers: input.answers.map(({ question, answer }) => ({ question: question.trim(), answer: answer.trim() })),
-      url: `${emailServices.dashOrigin}/${input.slug}/projects/${projectId}`,
-    });
-    const send = emailServices.mailer
-      .send({ sender: "invoices", onBehalfOf: teamName, tag: "quote-request-notice", to: supportEmail, ...notice })
-      .catch((cause: unknown) => emailServices.onError?.(cause, { kind: "quote-request-notice", to: supportEmail }));
-    if (emailServices.waitUntil) emailServices.waitUntil(send);
-    else await send;
-  }
+  const { projectId } = await requestQuote(db, input, signedIn);
   // Only a signed-in requester learns the project's id: it opens nothing without their session.
   return { ok: true as const, projectId: signedIn ? projectId : null };
 }

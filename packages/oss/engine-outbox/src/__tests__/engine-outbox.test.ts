@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_ATTEMPTS, computeNextAttemptAt, deliveryDedupeKey, recordDeliveryFailure, recordDeliverySuccess } from "../index";
+import { type OutboxDeliveryRecord, computeNextAttemptAt, deliveryDedupeKey, recordDeliveryFailure, recordDeliverySuccess } from "../index";
 
 const T = (iso: string) => new Date(iso);
 const NOW = T("2026-10-01T12:00:00Z");
@@ -32,7 +32,6 @@ describe("computeNextAttemptAt", () => {
   });
 
   it("offers no further attempt once the maximum is reached", () => {
-    expect(MAX_ATTEMPTS).toBe(5);
     expect(computeNextAttemptAt(5, NOW)).toBeNull();
   });
 });
@@ -45,16 +44,17 @@ describe("recordDeliverySuccess", () => {
 });
 
 describe("recordDeliveryFailure", () => {
-  it("schedules the next retry after a transient failure", () => {
-    const record = recordDeliveryFailure(pendingDelivery(0), "network down", NOW);
-    expect(record).toMatchObject({ status: "pending", attempts: 1, lastError: "network down" });
-    expect(record.nextAttemptAt).toEqual(new Date(NOW.getTime() + 1 * MINUTE));
-  });
-
-  it("marks the delivery failed after the final attempt", () => {
-    const record = recordDeliveryFailure(pendingDelivery(4), "gave up", NOW);
-    expect(record).toMatchObject({ status: "failed", attempts: 5, lastError: "gave up" });
-    expect(record.nextAttemptAt).toBeNull();
+  it("uses every retry delay before requiring intervention after the sixth failed send", () => {
+    let record: OutboxDeliveryRecord = pendingDelivery();
+    let at = NOW;
+    for (const minutes of [1, 5, 15, 60, 360]) {
+      record = recordDeliveryFailure(record, "network down", at);
+      expect(record.status).toBe("pending");
+      expect(record.nextAttemptAt).toEqual(new Date(at.getTime() + minutes * MINUTE));
+      at = record.nextAttemptAt ?? at;
+    }
+    record = recordDeliveryFailure(record, "gave up", at);
+    expect(record).toMatchObject({ status: "failed", attempts: 6, nextAttemptAt: null, lastError: "gave up" });
   });
 });
 

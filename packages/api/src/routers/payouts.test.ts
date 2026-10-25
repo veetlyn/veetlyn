@@ -1,3 +1,4 @@
+import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import {
   ANY_AMOUNT_MINOR,
@@ -593,6 +594,39 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       .sort();
   }
 
+  it("keeps the payout reservation and its requested notice atomic", async () => {
+    const { member, teamId, memberId, paypal } = await payoutTeam();
+    await db.execute(sql`alter table outbox add constraint reject_payout_notice check (type <> 'payout.requested')`);
+    try {
+      await expect(member.payouts.request({ ...TEAM, amount: "500.00" })).rejects.toThrow();
+      expect(await db.select().from(payoutRequest)).toEqual([]);
+      expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 85_000, reserved: 0 });
+      expect(paypal.requests.filter((request) => request.url.endsWith("/v1/payments/payouts"))).toEqual([]);
+    } finally {
+      await db.execute(sql`alter table outbox drop constraint reject_payout_notice`);
+    }
+    const requested = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    expect(await db.select().from(outbox)).toEqual([expect.objectContaining({ type: "payout.requested", data: expect.objectContaining({ payoutRequestId: requested.id }) })]);
+  });
+
+  it("recovers the same PayPal batch when persisting its sent notice fails", async () => {
+    const { member, admin, paypal } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    await db.execute(sql`alter table outbox add constraint reject_sent_notice check (type <> 'payout.sent')`);
+    try {
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject({ code: "BAD_GATEWAY" });
+      const [row] = await db.select().from(payoutRequest).where(eq(payoutRequest.id, id));
+      expect(row).toMatchObject({ status: "sending", paypalBatchId: null, uncertainAt: expect.any(Date) });
+    } finally {
+      await db.execute(sql`alter table outbox drop constraint reject_sent_notice`);
+    }
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "sent", paypalBatchId: "BATCH1" });
+    const posts = paypal.requests.filter((request) => request.url.endsWith("/v1/payments/payouts"));
+    expect(posts).toHaveLength(2);
+    expect(batchIdsOf(posts)[0]).toEqual(batchIdsOf(posts)[1]);
+    expect(await db.select().from(outbox).where(eq(outbox.type, "payout.sent"))).toHaveLength(1);
+  });
+
   it("pays an approved request less PayPal's estimated fee from the team's PayPal account and settles it once", async () => {
     const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
 
@@ -1061,6 +1095,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       paypalFees: 0,
     });
     expect(await payoutReferences(teamId)).toEqual([`payout_released:${id}`, `payout_requested:${id}`]);
+    expect(await db.select().from(outbox).where(eq(outbox.type, "payout.failed"))).toEqual([expect.objectContaining({ data: expect.objectContaining({ payoutRequestId: id }) })]);
   });
 
   it.each([

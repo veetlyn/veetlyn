@@ -19,6 +19,7 @@ export const OUTBOX_EVENT_TYPES = [
   "delivery.accepted",
   "project.completed",
   "refund.requested",
+  "refund.issued",
   "project.cancelled",
   "project.declined",
   "message.posted",
