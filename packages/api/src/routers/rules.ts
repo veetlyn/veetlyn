@@ -62,8 +62,17 @@ export const rulesRouter = router({
     return publishRulebook(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id });
   }),
 
-  acceptMember: servicesTeamProcedure.mutation(async ({ ctx }) => {
-    return acceptMemberRulebook(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id });
+  acceptMember: servicesTeamProcedure.input(z.strictObject({
+    teamSlug: z.string().trim().toLowerCase().min(1).max(63),
+    termsAccepted: z.boolean(),
+    acceptedRulebookId: z.string().min(1).max(128),
+  })).mutation(async ({ ctx, input }) => {
+    return acceptMemberRulebook(ctx.db, {
+      teamId: ctx.servicesTeam.id,
+      userId: ctx.session.user.id,
+      termsAccepted: input.termsAccepted,
+      acceptedRulebookId: input.acceptedRulebookId,
+    });
   }),
 
   setNoticePreference: servicesTeamProcedure

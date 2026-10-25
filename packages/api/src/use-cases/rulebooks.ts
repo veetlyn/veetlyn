@@ -5,6 +5,7 @@ import {
   getMemberNoticeEnabled,
   getPublishedRulebook,
   memberAcceptedRulebook,
+  lockMemberWork,
   recordMemberMark,
   recordRulebookAcceptance,
   publishRulebook,
@@ -16,6 +17,7 @@ import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work
 import { rulebook } from "@jendal-workspace/db/schema/operating-model";
 import { formatClientTermsSummary, formatCompactRuleSummary, formatMemberAgreementSummary, type RulebookRules } from "@opmodel/engine-rules";
 import { eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 // The team-facing rulebook state (AGT-46, AGT-47): what is published, what is drafted, whether the
 // signed-in member accepted it, and the plain-English documents people read. Seeding v1 from the
@@ -70,15 +72,24 @@ export async function compactSummaryFor(db: Database, input: { rulebookId: strin
 }
 
 // Members accept the latest published version at sign-in or from the rules page (AGT-47).
-export async function acceptMemberRulebook(db: Database, input: { teamId: string; userId: string }): Promise<{ version: number }> {
-  const published = await ensurePublishedRulebook(db, input.teamId);
-  await recordRulebookAcceptance(db, {
-    rulebookId: published.id,
-    teamId: input.teamId,
-    actorKind: "member",
-    userId: input.userId,
+export async function acceptMemberRulebook(db: Database, input: { teamId: string; userId: string; termsAccepted: boolean; acceptedRulebookId: string }): Promise<{ version: number }> {
+  if (input.termsAccepted !== true) throw new TRPCError({ code: "BAD_REQUEST", message: "Accept the member agreement before continuing." });
+  return db.transaction(async (tx) => {
+    await lockMemberWork(tx, { teamId: input.teamId, memberUserId: input.userId });
+    const published = await ensurePublishedRulebook(tx, input.teamId);
+    if (published.id !== input.acceptedRulebookId) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "The member agreement has changed. Read and accept the current version." });
+    }
+    if (!(await memberAcceptedRulebook(tx, { teamId: input.teamId, userId: input.userId, rulebookId: published.id }))) {
+      await recordRulebookAcceptance(tx, {
+        rulebookId: published.id,
+        teamId: input.teamId,
+        actorKind: "member",
+        userId: input.userId,
+      });
+    }
+    return { version: published.version };
   });
-  return { version: published.version };
 }
 
 export async function setMemberNoticePreference(
