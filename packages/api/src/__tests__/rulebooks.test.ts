@@ -19,6 +19,8 @@ import {
 import { COLLECTIVE_RULEBOOK_SPEC, formatCompactRuleSummary, AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
 
 import { searchOfferings } from "../use-cases/offerings";
+import { startProject } from "../use-cases/projects";
+import { requestQuote } from "../use-cases/requests";
 import {
   acceptMemberRulebook,
   getTeamRulebookState,
@@ -50,24 +52,40 @@ describe.skipIf(!hasTestDatabase)("rulebook use cases", () => {
     expect(terms.rulebookId).toBe(state.published.id);
   });
 
-  it("publishes v2 with synced cuts while existing projects stay pinned to v1", async () => {
+  it("pins rules and split defaults through both creation paths without changing existing projects on publish", async () => {
     const { teamId, userId } = await seedServicesTeamWithAdmin(db);
+    await db.update(teamTable).set({ status: "active" }).where(eq(teamTable.id, teamId));
     const v1State = await getTeamRulebookState(db, { teamId, currency: "USD" });
-    const projectId = await seedProject(db, { teamId });
-    await db.update(projectTable).set({ rulebookId: v1State.published.id }).where(eq(projectTable.id, projectId));
+    const create = async (suffix: string) => [
+      await startProject(db, { teamId, actorId: userId, role: "admin" }, { title: "Logo design", clientEmail: `admin-${suffix}@example.com` }),
+      await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: `client-${suffix}@example.com`, description: "Design a bakery logo", answers: [] }),
+    ];
+    const before = await create("before");
+    const snapshots = await Promise.all(before.map(async ({ projectId }) => {
+      const [row] = await db.select().from(projectTable).where(eq(projectTable.id, projectId));
+      expect(row).toMatchObject({ rulebookId: v1State.published.id, revisions: v1State.published.rules.revisions.freeCount, upfrontBps: v1State.published.rules.upfront.defaultBps, managerCutBps: v1State.published.rules.split.managerCutBps });
+      return row;
+    }));
 
     await saveRulebookDraft(db, {
       teamId,
       userId,
       preset: "custom",
-      spec: { ...AGENCY_RULEBOOK_SPEC.rules, split: { teamCutBps: 2500, managerCutBps: 1000, memberCutBps: 6500 } },
+      spec: { ...AGENCY_RULEBOOK_SPEC.rules, upfront: { defaultBps: 3000 }, revisions: { freeCount: 4, paidRevisionPriceMinor: 9000 }, split: { teamCutBps: 2500, managerCutBps: 1000, memberCutBps: 6500 } },
     });
     const v2 = await publishRulebook(db, { teamId, userId });
 
     const state = await getTeamRulebookState(db, { teamId, currency: "USD" });
     expect(state.published.version).toBe(v2.version);
-    const [pinned] = await db.select({ rulebookId: projectTable.rulebookId }).from(projectTable).where(eq(projectTable.id, projectId));
-    expect(pinned).toEqual({ rulebookId: v1State.published.id });
+    for (const snapshot of snapshots) {
+      if (!snapshot) throw new Error("Missing created project");
+      const [pinned] = await db.select().from(projectTable).where(eq(projectTable.id, snapshot.id));
+      expect(pinned).toEqual(snapshot);
+    }
+    for (const { projectId } of await create("after")) {
+      const [pinned] = await db.select().from(projectTable).where(eq(projectTable.id, projectId));
+      expect(pinned).toMatchObject({ teamId, rulebookId: state.published.id, revisions: 4, upfrontBps: 3000, teamCutBps: 2500, managerCutBps: 1000 });
+    }
     const [settings] = await db.select().from(servicesTeamSettings).where(eq(servicesTeamSettings.teamId, teamId));
     expect(settings).toMatchObject({ teamCutBps: 2500, managerCutBps: 1000 });
   });

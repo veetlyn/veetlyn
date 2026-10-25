@@ -3,6 +3,7 @@ import * as operatingModel from "@jendal-workspace/db/repositories/operating-mod
 import { ensurePublishedRulebook } from "@jendal-workspace/db/repositories/operating-model";
 import { memberMark, rulebook, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
+import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { project } from "@jendal-workspace/db/schema/projects";
 import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, truncateAll } from "@jendal-workspace/db/testing/db";
 import { fromPartial } from "@total-typescript/shoehorn";
@@ -44,6 +45,12 @@ describe.skipIf(!hasTestDatabase)("scheduler occurrences", () => {
       expect(await runDueScheduleItems({ db, now: () => at })).toEqual({ fired: 0, failed: 0, held: 0 });
     }
     expect((await db.select().from(outbox)).filter((row) => row.type === "member.update_late")).toHaveLength(2);
+    const logs = await db.select().from(actionLog);
+    expect(logs).toHaveLength(3);
+    expect(logs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: "member.updateLate", actorKind: "system", actorId: "project-scheduler", surface: "cron", outcome: "ok", teamId, projectId }),
+      expect.objectContaining({ action: "member.updateRemind", actorKind: "system", actorId: "project-scheduler", surface: "cron", outcome: "ok", teamId, projectId }),
+    ]));
   });
 
   it("retains holds, inactive and future rows, and refuses a timer from another team", async () => {
@@ -152,7 +159,8 @@ describe.skipIf(!hasTestDatabase)("scheduler occurrences", () => {
       expect.soft(await db.select().from(scheduleItem).where(eq(scheduleItem.kind, "member.updateLate")))
         .toEqual([expect.objectContaining({ status: "pending", attempts: 0, lastError: null, completedAt: null })]);
       expect(results[0]).toEqual({ status: "fulfilled", value: { fired: 1, failed: 0, held: 0 } });
-      expect(results[1]).toMatchObject({ status: "rejected", reason: { name: "DrizzleQueryError", cause: { name: "PostgresError", code: "40P01" } } });
+      expect(results[1]).toMatchObject({ status: "rejected", reason: { name: "ActionError", cause: { name: "DrizzleQueryError", cause: { name: "PostgresError", code: "40P01" } } } });
+      expect(await db.select().from(actionLog)).toEqual([expect.objectContaining({ action: "member.updateRemind", outcome: "ok" })]);
       expect(await db.select().from(memberMark)).toEqual([]);
       expect(await db.select().from(outbox)).toEqual([expect.objectContaining({ type: "member.update_remind" })]);
       expect(await runDueScheduleItems({ db, now: () => now })).toEqual({ fired: 1, failed: 0, held: 0 });
@@ -215,6 +223,10 @@ describe.skipIf(!hasTestDatabase)("scheduler occurrences", () => {
       expect(rows).toEqual(expect.arrayContaining([
         expect.objectContaining({ kind: "member.updateLate", status: "failed", attempts: 1, lastError: expect.any(String) }),
         expect.objectContaining({ kind: "member.updateRemind", status: "done", attempts: 1 }),
+      ]));
+      expect(await db.select().from(actionLog)).toEqual(expect.arrayContaining([
+        expect.objectContaining({ action: "member.updateLate", actorKind: "system", outcome: "internal", teamId, projectId }),
+        expect.objectContaining({ action: "member.updateRemind", actorKind: "system", outcome: "ok", teamId, projectId }),
       ]));
     } finally {
       await db.execute(sql`alter table schedule_item drop constraint scheduler_test_completion`);

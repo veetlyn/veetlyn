@@ -16,6 +16,8 @@ import { and, eq, lte } from "drizzle-orm";
 import { log } from "evlog";
 import { z } from "zod";
 
+import type { ActionDefinition } from "../actions/define";
+import { perform } from "../actions/perform";
 import { armProjectSchedule, autoAcceptDelivery, checkTransition } from "./projects";
 
 // The 10-minute scheduler (AGT-37, AGT-51, AGT-52): claims due schedule items under a row lock and
@@ -24,6 +26,8 @@ import { armProjectSchedule, autoAcceptDelivery, checkTransition } from "./proje
 // the ladder from re-notifying after someone acted.
 
 export type SchedulerReport = { fired: number; failed: number; held: number };
+const scheduleActionInput = z.strictObject({ projectId: z.string().min(1), teamId: z.string().min(1) });
+type ScheduleActionInput = z.output<typeof scheduleActionInput>;
 
 export async function runDueScheduleItems(deps: { db: Database; now?: () => Date; limit?: number }): Promise<SchedulerReport> {
   const now = (deps.now ?? (() => new Date()))();
@@ -32,26 +36,48 @@ export async function runDueScheduleItems(deps: { db: Database; now?: () => Date
     const report: SchedulerReport = { fired: 0, failed: 0, held: 0 };
     for (const item of claimed) {
       try {
-        const outcome = await tx.transaction(async (occurrence) => {
-          // Earlier effects in this batch may have rearmed this same row.
-          const [current] = await occurrence.select({ id: scheduleItem.id }).from(scheduleItem).where(and(
-            eq(scheduleItem.id, item.id),
-            eq(scheduleItem.status, "pending"),
-            eq(scheduleItem.runAt, item.run_at),
-            lte(scheduleItem.runAt, now),
-          ));
-          if (!current) return "stale";
-          const outcome = await fireItem(occurrence, item, now);
-          if (outcome !== "held") {
-            await completeScheduleItems(occurrence, [item.id], { status: "done" });
-            const row = await findProjectById(occurrence, item.subject_id);
-            if (row && row.teamId === item.team_id && ["awaiting_balance", "completed", "cancelled", "declined", "expired", "abandoned"].includes(row.status)) {
-              // Retire the firing occurrence before cancelling the phase's remaining steps.
-              await armProjectSchedule(occurrence, row, now);
+        // Earlier effects in this batch may have rearmed this same locked row.
+        const [current] = await tx.select({ id: scheduleItem.id }).from(scheduleItem).where(and(
+          eq(scheduleItem.id, item.id),
+          eq(scheduleItem.status, "pending"),
+          eq(scheduleItem.runAt, item.run_at),
+          lte(scheduleItem.runAt, now),
+        ));
+        if (!current) continue;
+        const owner = await findProjectById(tx, item.subject_id);
+        if (!owner || owner.teamId !== item.team_id) {
+          report.held += 1;
+          continue;
+        }
+        const action: ActionDefinition<ScheduleActionInput, "fired" | "held", ScheduleActionInput, { db: DbExecutor }> = {
+          name: item.kind,
+          kind: "action",
+          summary: "Apply one due project timer.",
+          input: scheduleActionInput,
+          output: null,
+          scope: (input) => ({ teamId: input.teamId, projectId: input.projectId }),
+          allow: [{ grant: "system" }],
+          surfaces: ["cron"],
+          run: ({ deps: runtime }) => runtime.db.transaction(async (occurrence) => {
+            const outcome = await fireItem(occurrence, item, now);
+            if (outcome !== "held") {
+              await completeScheduleItems(occurrence, [item.id], { status: "done" });
+              const row = await findProjectById(occurrence, item.subject_id);
+              if (row && row.teamId === item.team_id && ["awaiting_balance", "completed", "cancelled", "declined", "expired", "abandoned"].includes(row.status)) {
+                // Retire the firing occurrence before cancelling the phase's remaining steps.
+                await armProjectSchedule(occurrence, row, now);
+              }
             }
-          }
-          return outcome;
-        });
+            return outcome;
+          }),
+        };
+        const outcome = await perform({
+          deps: { db: tx },
+          actor: { kind: "system", job: "project-scheduler" },
+          surface: "cron",
+          request: { requestId: item.id, ip: null },
+          team: { id: item.team_id },
+        }, action, { projectId: item.subject_id, teamId: item.team_id });
         if (outcome === "held") report.held += 1;
         else if (outcome === "fired") report.fired += 1;
       } catch (error) {

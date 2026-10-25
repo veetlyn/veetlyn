@@ -49,7 +49,7 @@ import {
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
 import { createProjectRefund } from "@jendal-workspace/db/repositories/project-refunds";
-import { pauseProjectSchedule, projectHasOpenDispute, recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
+import { ensurePublishedRulebook, pauseProjectSchedule, projectHasOpenDispute, recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -157,6 +157,7 @@ export async function startProject(
   }
 
   return runProjectTransaction(db, async (tx, uow) => {
+    const published = await ensurePublishedRulebook(tx, actor.teamId);
     const [row] = await tx
       .insert(project)
       .values({
@@ -168,7 +169,11 @@ export async function startProject(
         source: "admin",
         currency: settings.currency,
         managementFeeBps: settings.managementFeeBps,
-        teamCutBps: settings.teamCutBps,
+        rulebookId: published.id,
+        revisions: published.spec.revisions.freeCount,
+        upfrontBps: published.spec.upfront.defaultBps,
+        teamCutBps: published.spec.split.teamCutBps,
+        managerCutBps: published.spec.split.managerCutBps,
         createdById: actor.actorId,
       })
       .returning();
@@ -192,6 +197,7 @@ export async function startProject(
         },
       ],
     });
+    await armProjectSchedule(tx, row, new Date());
     return { projectId: row.id };
   });
 }
@@ -785,7 +791,7 @@ export async function requestChanges(
     }
     await uow.apply({
       project: row,
-      set: { status, revisions: row.revisions + 1 },
+      set: { status, revisions: row.rulebookId ? row.revisions : row.revisions + 1 },
       events: [{ type: "delivery.changes_requested", data: { deliveryId: found.id } }],
     });
     await tx

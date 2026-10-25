@@ -836,7 +836,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       ]);
     });
 
-    it("sends the work back when the client requests changes, counting a revision", async () => {
+    it("consumes the pinned free rounds without increasing the allowance and then requires a paid revision", async () => {
       const { freelancer, projectId, token } = await workingProject();
       const { deliveryId } = await deliver(freelancer, projectId);
 
@@ -845,7 +845,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Say what should change." });
 
       await callerFor(null).project.clientRequestChanges({ token, deliveryId, note: "Make the logo bigger" });
-      expect(await findProjectById(db, projectId)).toMatchObject({ status: "in_progress", revisions: 1 });
+      expect(await findProjectById(db, projectId)).toMatchObject({ status: "in_progress", revisions: 2 });
       expect(await listProjectDeliveries(db, projectId)).toEqual([
         expect.objectContaining({
           id: deliveryId,
@@ -858,6 +858,12 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
       const second = await deliver(freelancer, projectId);
       expect(second.deliveryId).not.toBe(deliveryId);
+      await callerFor(null).project.clientRequestChanges({ token, deliveryId: second.deliveryId, note: "Use a different colour" });
+      const third = await deliver(freelancer, projectId);
+      await expect(callerFor(null).project.clientRequestChanges({ token, deliveryId: third.deliveryId, note: "Again" }))
+        .rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(/REVISION_LIMIT_REACHED.*\$75\.00/) });
+      expect((await listProjectDeliveries(db, projectId)).filter((row) => row.status === "changes_requested")).toHaveLength(2);
+      expect((await findProjectById(db, projectId))?.revisions).toBe(2);
       expect((await findProjectById(db, projectId))?.status).toBe("delivered");
     });
 
