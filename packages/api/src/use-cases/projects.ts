@@ -49,7 +49,7 @@ import {
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
 import { createProjectRefund } from "@jendal-workspace/db/repositories/project-refunds";
-import { recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
+import { pauseProjectSchedule, projectHasOpenDispute, recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -234,7 +234,7 @@ export async function addQuote(
     fail("BAD_REQUEST", `Delivery time must be a whole number of days from 1 to ${MAX_DELIVERY_DAYS}.`);
   }
 
-  const quoted = await runProjectTransaction(db, async (tx, uow) => {
+  return runProjectTransaction(db, async (tx, uow) => {
     const row = await requireTeamProject(tx, actor, input.projectId);
     checkTransition(row.status, "add_quote");
     const author = quoteAuthor({
@@ -279,11 +279,9 @@ export async function addQuote(
       refType: "quote",
       refId: quoteId,
     });
+    await armProjectSchedule(tx, row, new Date(), { memberActivityAt: new Date() });
     return { quoteId };
   });
-  // The seller answered, so the response window closes (AGT-37).
-  await armProjectSchedule(db, await findProjectById(db, input.projectId), new Date(), { memberActivityAt: new Date() });
-  return quoted;
 }
 
 // Services spec §5.2 step 3: only the project's client accepts a quote (the router checks the client
@@ -347,6 +345,7 @@ export async function acceptQuote(
       refType: "quote",
       refId: found.id,
     });
+    await armProjectSchedule(tx, { ...row, status }, new Date());
     return { paymentId, amountMinor: deposit.totalMinor };
   });
 }
@@ -367,27 +366,39 @@ async function pinnedRulebookRules(db: DbExecutor, rulebookId: string | null): P
 }
 
 // Arms, moves or cancels the project's timed rules for its current status (AGT-37, AGT-51, AGT-52).
-// Called after a transition or a member's action; `memberActivityAt` marks the seller's reply that
-// closes the response window, `deliveredAt` the delivery that opens the review ladder.
+// Activity anchors belong only to the action being committed; rereading a phase must not restart
+// a completed window or recreate a review ladder after the client has replied.
 export async function armProjectSchedule(
   db: DbExecutor,
   row: ProjectRow | null,
-  now: Date,
-  anchors: { memberActivityAt?: Date; deliveredAt?: Date } = {},
+  _now: Date,
+  anchors: { memberActivityAt?: Date; deliveredAt?: Date; workStartedAt?: Date; clientActivity?: boolean } = {},
 ): Promise<void> {
   if (!row) return;
   const rules = await pinnedRulebookRules(db, row.rulebookId);
   if (!rules) return;
+  const held = await projectHasOpenDispute(db, { teamId: row.teamId, projectId: row.id });
+  // Keep the current phase ready for resume, but commit its steps as paused under a persisted hold.
   const plan = planProjectSchedule({
     projectStatus: row.status,
     requestedAt: row.createdAt,
-    workStartedAt: row.status === "in_progress" ? now : null,
+    workStartedAt: anchors.workStartedAt ?? null,
     lastMemberActivityAt: anchors.memberActivityAt ?? null,
     deliveredAt: anchors.deliveredAt ?? null,
     pausedByDispute: false,
     rules,
   });
-  await upsertPendingScheduleItems(db, { teamId: row.teamId, subjectId: row.id, schedule: plan.schedule, cancel: [...plan.cancel] });
+  const reviewKinds = ["client.reviewRemind1", "client.reviewRemind2", "project.autoComplete", "project.abandon"];
+  if (row.status === "quoting" && anchors.memberActivityAt) {
+    plan.schedule = [];
+    plan.cancel.push("request.remind", "request.expire");
+  }
+  const cancel = new Set<string>(plan.cancel);
+  if (row.status === "in_progress" || anchors.clientActivity) {
+    for (const kind of reviewKinds) cancel.add(kind);
+  }
+  await upsertPendingScheduleItems(db, { teamId: row.teamId, subjectId: row.id, schedule: plan.schedule, cancel: [...cancel] });
+  if (held) await pauseProjectSchedule(db, { teamId: row.teamId, projectId: row.id });
 }
 
 // Services spec §5.5: the assigned freelancer or a manager proposes an amendment in in_progress or
@@ -673,7 +684,7 @@ export async function submitDelivery(
   const { note, link } = deliveryInput(input);
   const { fileUploadId } = input;
   if (fileUploadId) await requireUploadedFile(db, files, actor, { projectId: input.projectId, fileUploadId });
-  const submitted = await runProjectTransaction(db, async (tx, uow) => {
+  return runProjectTransaction(db, async (tx, uow) => {
     const row = await requireTeamProject(tx, actor, input.projectId);
     if (!canSubmitDelivery({ role: actor.role, actorId: actor.actorId, assignedFreelancerId: row.assignedFreelancerId })) {
       fail("FORBIDDEN", SUBMIT_DELIVERY_REFUSAL);
@@ -685,6 +696,7 @@ export async function submitDelivery(
     ) {
       fail("BAD_REQUEST", FILE_UNUSABLE);
     }
+    const deliveredAt = new Date();
     const deliveryId = crypto.randomUUID();
     await uow.apply({
       project: row,
@@ -699,6 +711,7 @@ export async function submitDelivery(
       note,
       link,
       fileUploadId: fileUploadId ?? null,
+      createdAt: deliveredAt,
     });
     if (fileUploadId) await markFileUploadAttached(tx, fileUploadId);
     await insertEventMessage(tx, {
@@ -708,11 +721,9 @@ export async function submitDelivery(
       refType: "delivery",
       refId: deliveryId,
     });
+    await armProjectSchedule(tx, { ...row, status }, deliveredAt, { deliveredAt });
     return { deliveryId };
   });
-  // The review ladder starts at the delivery (AGT-52).
-  await armProjectSchedule(db, await findProjectById(db, input.projectId), new Date(), { deliveredAt: new Date() });
-  return submitted;
 }
 
 // Callers check access to the project first; the link names the file so the browser saves it under that name.
@@ -788,6 +799,8 @@ export async function requestChanges(
       refType: "delivery",
       refId: found.id,
     });
+    const workStartedAt = new Date();
+    await armProjectSchedule(tx, { ...row, status }, workStartedAt, { clientActivity: true, workStartedAt });
   });
 }
 
@@ -919,6 +932,7 @@ async function settleDelivery(
       refType: "delivery",
       refId: found.id,
     });
+    if (event === "accept_delivery") await armProjectSchedule(tx, { ...row, status }, new Date());
     return { status, balancePaymentId };
   });
 }

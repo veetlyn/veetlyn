@@ -147,6 +147,12 @@ async function postInTransaction(
   await uow.appendEvents(row, [
     { type: "message.posted", data: { messageId: created.id, space: created.space, kind: created.kind } },
   ]);
+  if (message.authorKind === "member" && (row.status === "quoting" || row.status === "in_progress")) {
+    await armProjectSchedule(tx, row, new Date(), { memberActivityAt: new Date() });
+  }
+  if (message.authorKind === "client" && row.status === "delivered") {
+    await armProjectSchedule(tx, row, new Date(), { clientActivity: true });
+  }
   return { messageId: created.id, space: created.space };
 }
 
@@ -222,11 +228,6 @@ export async function postConversationMessage(
         : { authorKind: "member", authorUserId: author.actor.actorId }),
     });
   });
-  // A member's message while quoting is the seller's answer: the response window closes (AGT-37).
-  if (author.kind === "member" && row.status === "quoting") {
-    const current = await findProjectById(db, row.id);
-    if (current) await armProjectSchedule(db, current, new Date(), { memberActivityAt: new Date() });
-  }
   return posted;
 }
 
@@ -286,6 +287,7 @@ export async function declineRequest(
       refType: "decline",
       refId: row.id,
     });
+    await armProjectSchedule(tx, { ...row, status: result.to }, new Date());
   });
   return null;
 }

@@ -37,6 +37,7 @@ import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { PayPalServices } from "../context";
+import { armProjectSchedule } from "./projects";
 import { captureFees, isRefundedCaptureStatus } from "./paypal-amounts";
 
 // One capture as PayPal reports it: from a capture response, an order lookup or a webhook (R1c).
@@ -220,6 +221,11 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
           ...change.events,
         ],
       });
+      if (change.set.status) {
+        await armProjectSchedule(tx, { ...projectRow, ...change.set }, capturedAt, {
+          workStartedAt: change.set.status === "in_progress" ? capturedAt : undefined,
+        });
+      }
       return "applied";
     }
 

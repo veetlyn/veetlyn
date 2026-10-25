@@ -13,7 +13,7 @@ import { type DeliveryChannel, recordDeliveryFailure, recordDeliverySuccess, typ
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
-import { dispute, memberMark, memberNoticePreference, outboxDelivery, rulebook, rulebookAcceptance } from "../schema/operating-model";
+import { dispute, memberMark, memberNoticePreference, outboxDelivery, rulebook, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
 import { servicesTeamSettings } from "../schema/services-teams";
 
 export type RulebookRow = typeof rulebook.$inferSelect;
@@ -319,6 +319,23 @@ export async function findOpenDisputeForProject(db: DbExecutor, projectId: strin
     .where(and(eq(dispute.projectId, projectId), inArray(dispute.status, ["open", "waiting_for_seller", "under_review"])))
     .limit(1);
   return row ?? null;
+}
+
+export async function projectHasOpenDispute(db: DbExecutor, input: { teamId: string; projectId: string }): Promise<boolean> {
+  const [row] = await db.select({ id: dispute.id }).from(dispute).where(and(
+    eq(dispute.teamId, input.teamId),
+    eq(dispute.projectId, input.projectId),
+    inArray(dispute.status, ["open", "waiting_for_seller", "under_review"]),
+  )).limit(1);
+  return row !== undefined;
+}
+
+export async function pauseProjectSchedule(db: DbExecutor, input: { teamId: string; projectId: string }): Promise<void> {
+  await db.update(scheduleItem).set({ status: "paused" }).where(and(
+    eq(scheduleItem.teamId, input.teamId),
+    eq(scheduleItem.subjectId, input.projectId),
+    eq(scheduleItem.status, "pending"),
+  ));
 }
 
 export async function teamHasOpenDispute(db: DbExecutor, teamId: string): Promise<boolean> {

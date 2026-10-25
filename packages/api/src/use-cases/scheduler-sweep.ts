@@ -6,18 +6,17 @@ import {
   completeScheduleItems,
   countMemberMarks,
   recordMemberMark,
-  upsertPendingScheduleItems,
+  projectHasOpenDispute,
 } from "@jendal-workspace/db/repositories/operating-model";
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { runInTransaction, type OutboxEventInput } from "@jendal-workspace/db/repositories/unit-of-work";
 import { rulebook, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import type { RulebookRules } from "@opmodel/engine-rules";
-import { planProjectSchedule } from "@opmodel/engine-scheduler";
 import { and, eq, lte } from "drizzle-orm";
 import { log } from "evlog";
 import { z } from "zod";
 
-import { autoAcceptDelivery, checkTransition } from "./projects";
+import { armProjectSchedule, autoAcceptDelivery, checkTransition } from "./projects";
 
 // The 10-minute scheduler (AGT-37, AGT-51, AGT-52): claims due schedule items under a row lock and
 // fires each once, through the same project transactions people's actions use. A failing item is
@@ -43,7 +42,14 @@ export async function runDueScheduleItems(deps: { db: Database; now?: () => Date
           ));
           if (!current) return "stale";
           const outcome = await fireItem(occurrence, item, now);
-          if (outcome !== "held") await completeScheduleItems(occurrence, [item.id], { status: "done" });
+          if (outcome !== "held") {
+            await completeScheduleItems(occurrence, [item.id], { status: "done" });
+            const row = await findProjectById(occurrence, item.subject_id);
+            if (row && row.teamId === item.team_id && ["awaiting_balance", "completed", "cancelled", "declined", "expired", "abandoned"].includes(row.status)) {
+              // Retire the firing occurrence before cancelling the phase's remaining steps.
+              await armProjectSchedule(occurrence, row, now);
+            }
+          }
           return outcome;
         });
         if (outcome === "held") report.held += 1;
@@ -81,6 +87,15 @@ function isDatabaseDeadlock(cause: unknown): boolean {
 async function fireItem(db: DbExecutor, item: { id: string; team_id: string; subject_id: string; kind: string }, now: Date): Promise<"fired" | "held"> {
   const row = await findProjectById(db, item.subject_id);
   if (!row || row.teamId !== item.team_id) return "held";
+  if (await projectHasOpenDispute(db, { teamId: row.teamId, projectId: row.id })) {
+    await db.update(scheduleItem).set({ status: "paused" }).where(and(
+      eq(scheduleItem.id, item.id),
+      eq(scheduleItem.teamId, row.teamId),
+      eq(scheduleItem.subjectId, row.id),
+      eq(scheduleItem.status, "pending"),
+    ));
+    return "held";
+  }
 
   switch (item.kind) {
     case "request.expire": {
@@ -130,7 +145,7 @@ async function fireItem(db: DbExecutor, item: { id: string; team_id: string; sub
       }
       // Retire this occurrence before reconciliation can insert its successor.
       await completeScheduleItems(db, [item.id], { status: "done" });
-      await armUpdateCycle(db, row, rules, now);
+      await armProjectSchedule(db, row, now, { workStartedAt: now });
       return "fired";
     }
 
@@ -170,18 +185,4 @@ async function rulesFor(db: DbExecutor, rulebookId: string | null): Promise<Rule
   if (!rulebookId) return null;
   const [row] = await db.select({ spec: rulebook.spec }).from(rulebook).where(eq(rulebook.id, rulebookId)).limit(1);
   return row?.spec ?? null;
-}
-
-async function armUpdateCycle(db: DbExecutor, row: ProjectRow, rules: RulebookRules | null, now: Date): Promise<void> {
-  if (!rules) return;
-  const plan = planProjectSchedule({
-    projectStatus: "in_progress",
-    requestedAt: row.createdAt,
-    workStartedAt: now,
-    lastMemberActivityAt: null,
-    deliveredAt: null,
-    pausedByDispute: false,
-    rules,
-  });
-  await upsertPendingScheduleItems(db, { teamId: row.teamId, subjectId: row.id, schedule: plan.schedule, cancel: [...plan.cancel] });
 }
