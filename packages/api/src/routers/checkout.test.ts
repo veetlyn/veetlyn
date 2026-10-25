@@ -1,4 +1,4 @@
-import { requestQuote } from "../use-cases/requests";
+import { quoteRequestTerms, requestQuote } from "../use-cases/requests";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { outboxDelivery } from "@jendal-workspace/db/schema/operating-model";
 import { deliverDueOutboxDeliveries } from "../use-cases/outbox-dispatcher";
@@ -466,7 +466,7 @@ describe.skipIf(!hasTestDatabase)("checkout router", () => {
 
     it("dispatches only this order without consuming unrelated client-notice retries", async () => {
       const { caller, secret, mailer } = await started();
-      await requestQuote(db, { slug: "pixels", offeringId: null, name: "Other client", email: "waiting@example.com", description: "A custom bakery logo please", answers: [] });
+      await requestQuote(db, { slug: "pixels", offeringId: null, name: "Other client", email: "waiting@example.com", description: "A custom bakery logo please", answers: [], termsAccepted: true, acceptedRulebookId: (await quoteRequestTerms(db, { slug: "pixels" })).rulebookId });
       await caller.checkout.capture({ orderId: "ORDER1", secret });
       expect(mailer.sent.map((message) => message.to)).toEqual(["jo@example.com"]);
       const pending = await db.select().from(outboxDelivery).where(eq(outboxDelivery.recipient, "waiting@example.com"));

@@ -30,6 +30,7 @@ import { eq } from "drizzle-orm";
 
 import type { EmailServices } from "../context";
 import { fail, runProjectTransaction } from "./projects";
+import { publishedClientTerms } from "./rulebooks";
 
 export type QuoteRequestInput = {
   slug: string;
@@ -38,6 +39,8 @@ export type QuoteRequestInput = {
   email: string;
   description: string;
   answers: QuoteRequestAnswer[];
+  termsAccepted: boolean;
+  acceptedRulebookId: string;
 };
 
 const HOUR_MS = 3_600_000;
@@ -45,6 +48,14 @@ const HOUR_MS = 3_600_000;
 // A signed-in requester (the client's AI assistant): their account is the contact, and the project follows them
 // on that surface.
 export type RequestAccount = { account: ClientAccount; homeSurface: "web" | "mcp" };
+
+export async function quoteRequestTerms(db: Database, input: { slug: string }) {
+  const team = await findServicesTeamBySlug(db, input.slug);
+  if (!team || !isStorePublic({ ...team, product: "services" })) fail("NOT_FOUND", "Seller not found.");
+  const settings = await getServicesTeamSettings(db, team.id);
+  if (!settings) fail("NOT_FOUND", "Services team settings not found.");
+  return publishedClientTerms(db, { teamId: team.id, currency: settings.currency });
+}
 
 // Sellers design §4.2: a public request becomes a project in quoting, source "web". The per-email
 // limit is spent only by valid requests, so typos never lock a client out.
@@ -55,6 +66,7 @@ export async function requestQuote(
 ): Promise<{ projectId: string; teamName: string; serviceName: string; supportEmail: string | null }> {
   const team = await findServicesTeamBySlug(db, input.slug);
   if (!team || !isStorePublic({ ...team, product: "services" })) fail("NOT_FOUND", "Seller not found.");
+  if (input.termsAccepted !== true) fail("BAD_REQUEST", "Accept the client terms before sending your request.");
   const account = signedIn?.account;
   if (account) {
     // A member of the team is never its client (action catalog design §5.4).
@@ -95,6 +107,9 @@ export async function requestQuote(
     // Serialises requests per (team, email) so two at once cannot both pass the open-request count.
     await lockClientIdentity(tx, { teamId: team.id, key: email });
     const rulebook = await ensurePublishedRulebook(tx, team.id);
+    if (input.acceptedRulebookId !== rulebook.id) {
+      fail("BAD_REQUEST", "The team's terms have changed. Read and accept the current terms before sending your request.");
+    }
     const accountContactId = account ? await matchOrCreateAccountContact(tx, { teamId: team.id, account }) : null;
     const open = accountContactId
       ? await countOpenRequestsForContact(tx, { teamId: team.id, contactId: accountContactId })
@@ -136,12 +151,12 @@ export async function requestQuote(
       (await matchOrCreateContact(tx, { teamId: team.id, email, discordId: null, name: clientName, source: "request" }));
     // The link is emailed to this address right after the transaction.
     await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: null, linkEmail: email });
-    // Requesting work accepts the team's terms at the pinned version (AGT-47).
     await recordRulebookAcceptance(tx, {
       rulebookId: rulebook.id,
       teamId: team.id,
       actorKind: "client",
       contactId,
+      userId: account?.userId ?? null,
       projectId: row.id,
     });
     await uow.apply({

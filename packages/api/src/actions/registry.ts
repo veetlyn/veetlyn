@@ -26,10 +26,11 @@ import {
 } from "./projects";
 import { offeringSearch } from "./offerings";
 import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
-import { createRequest } from "./requests";
+import { createRequest, requestTerms } from "./requests";
 
 export const ACTIONS: readonly AnyActionDefinition[] = [
   createRequest,
+  requestTerms,
   projectStart,
   projectAssign,
   projectRefundClient,

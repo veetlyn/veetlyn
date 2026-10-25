@@ -5,7 +5,7 @@ import { offeringSearch } from "@jendal-workspace/api/actions/offerings";
 import { type ActionDeps, perform } from "@jendal-workspace/api/actions/perform";
 import { projectClientList, projectClientView } from "@jendal-workspace/api/actions/projects";
 import { quoteAccept } from "@jendal-workspace/api/actions/quotes";
-import { createRequest } from "@jendal-workspace/api/actions/requests";
+import { createRequest, requestTerms } from "@jendal-workspace/api/actions/requests";
 import type { Actor } from "@jendal-workspace/api/actions/actors";
 import { linkSecret, signAccountClientLink } from "@jendal-workspace/api/client-links";
 import { resolveClient } from "@jendal-workspace/api/use-cases/clients";
@@ -398,15 +398,21 @@ export async function searchOfferings(
           (o) =>
             `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}, ${fulfilmentLabel[o.fulfilment]}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
         ),
-        "To hire one, agree on a short brief with the user and call request_quote.",
+        "To hire one, call get_request_terms, show the terms to the user, and obtain their agreement to the terms and brief before calling request_quote.",
       ].join("\n")
     : `No ${deps.platformName} offering matches ${quoted(input.query, 80)}${input.maxPrice ? ` under $${input.maxPrice}` : ""}. Try broader words, or tell the user nothing fits.`;
   return { text, offerings };
 }
 
+export async function getRequestTerms(deps: McpDeps, input: { offeringId: string }) {
+  const offering = await findListedOffering(deps.actions.db, input.offeringId);
+  if (!offering) throw new ToolRefusal("That offering is not listed any more. Search again.");
+  return perform(request(deps, asUser(deps)), requestTerms, { slug: offering.sellerSlug });
+}
+
 export async function requestQuote(
   deps: McpDeps,
-  input: { offeringId: string; brief: string; answers: { question: string; answer: string }[] },
+  input: { offeringId: string; brief: string; answers: { question: string; answer: string }[]; termsAccepted: boolean; acceptedRulebookId: string },
 ): Promise<{ projectId: string; seller: string }> {
   const offering = await findListedOffering(deps.actions.db, input.offeringId);
   if (!offering) throw new ToolRefusal("That offering is not listed any more. Search again.");
@@ -420,6 +426,8 @@ export async function requestQuote(
     description: input.brief,
     answers: input.answers,
     website: "",
+    termsAccepted: input.termsAccepted,
+    acceptedRulebookId: input.acceptedRulebookId,
   });
   if (!projectId) throw new Error("A signed-in request returned no project id");
   return { projectId, seller: plain(offering.sellerName, 80) };

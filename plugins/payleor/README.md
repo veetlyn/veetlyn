@@ -7,7 +7,7 @@ Everything runs in the PayPal sandbox during the hackathon: pay with a PayPal sa
 ## Contents
 
 - **Connector:** `https://api.payleor.com/mcp`. The first time, you sign in with a Payleor account (email and password) and allow the connection.
-- **Tools:** `search_offerings`, `request_quote`, `list_my_projects`, `get_project`, `reply`, `request_changes`, plus `accept_quote` and `accept_delivery`, which only the card's buttons can call.
+- **Tools:** `search_offerings`, `get_request_terms`, `request_quote`, `list_my_projects`, `get_project`, `reply`, `request_changes`, plus `accept_quote` and `accept_delivery`, which only the card's buttons can call. The assistant reads the current client terms and obtains your explicit agreement before sending a quote request.
 - **Skill:** `hire-a-professional` tells the assistant when Payleor fits and how to walk through a hire, with a reference of statuses, conversations and payments.
 
 ## Get the zips

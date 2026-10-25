@@ -131,6 +131,16 @@ export function publicProcedureFor(definition: LooseDefinition) {
   return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
 }
 
+export function optionalSessionProcedureFor<Schema extends z.ZodType, Result, Kind extends "action" | "query">(
+  definition: Definition<Schema, Result, Kind>,
+): Procedure<Kind, z.input<Schema>, Result>;
+export function optionalSessionProcedureFor(definition: LooseDefinition) {
+  const procedure = publicProcedure.input(definition.input);
+  const resolve = ({ ctx, input }: { ctx: Context; input: Loose }) =>
+    performOnWeb(ctx, ctx.session ? { kind: "user", userId: ctx.session.user.id } : { kind: "anonymous" }, definition, input);
+  return definition.kind === "query" ? procedure.query(resolve) : procedure.mutation(resolve);
+}
+
 // For signed-in actions that are not about one team: the session's user is the actor.
 export function signedInProcedureFor<Schema extends z.ZodType, Result, Kind extends "action" | "query">(
   definition: Definition<Schema, Result, Kind>,

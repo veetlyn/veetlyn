@@ -25,7 +25,7 @@ import type { EmailServices } from "../context";
 import { appendPayoutOutboxEvent, deliverDueOutboxDeliveries, fanOutOutboxEvents } from "../use-cases/outbox-dispatcher";
 import { addQuote, assignFreelancer, startProject, type ProjectActor } from "../use-cases/projects";
 import { postConversationMessage } from "../use-cases/conversations";
-import { requestQuote } from "../use-cases/requests";
+import { quoteRequestTerms, requestQuote } from "../use-cases/requests";
 import { giveMemberLeavingNotice } from "../use-cases/rulebooks";
 
 function emailServices(mailer: Mailer): EmailServices {
@@ -74,7 +74,7 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
     const actor: ProjectActor = { teamId, actorId: userId, role: "admin" };
     await startProject(db, actor, { title: "First", clientEmail: "first@example.com", clientDiscordId: "shared-discord" });
     await startProject(db, actor, { title: "Second", clientEmail: "second@example.com", clientDiscordId: "shared-discord" });
-    const { projectId } = await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: "first@example.com", description: "A bakery logo please", answers: [] });
+    const { projectId } = await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: "first@example.com", description: "A bakery logo please", answers: [], termsAccepted: true, acceptedRulebookId: (await quoteRequestTerms(db, { slug: "team" })).rulebookId });
     const first = createFakeMailer();
     const at = new Date(Date.now() + 1000);
     await deliverDueOutboxDeliveries({ db, secret: "test-secret", now: () => at, email: emailServices({
@@ -105,7 +105,7 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
     const picked = await seedServicesTeamMember(db, { teamId, organizationId, role: "freelancer" });
     await seedServicesTeamMember(db, { teamId, organizationId, role: "freelancer" });
     await seedServicesTeamWithAdmin(db, { slug: "stranger" });
-    const { projectId } = await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: "client@example.com", description: "A bakery logo please", answers: [] });
+    const { projectId } = await requestQuote(db, { slug: "team", offeringId: null, name: "Client", email: "client@example.com", description: "A bakery logo please", answers: [], termsAccepted: true, acceptedRulebookId: (await quoteRequestTerms(db, { slug: "team" })).rulebookId });
     await replaceShortlist(db, { projectId, userIds: [picked] });
     const mailer = createFakeMailer();
     await deliverDueOutboxDeliveries({ db, email: emailServices(mailer), secret: "test-secret" });
