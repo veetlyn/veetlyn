@@ -1,0 +1,103 @@
+packages/api/src/actions/requests.test.ts
+  s_61eb3b18f6f591::t_b215b38cad6353 22-23,32,36,41-44,53,71,75-76,86-87
+  s_61eb3b18f6f591::t_da86e8f5956e21 88
+packages/db/src/migrations/20261025092315_durable_notice_delivery/migration.sql
+  s_61eb3b18f6f591::t_b1d1027a4a7a7c 1-9
+packages/oss/engine-drizzle/src/__tests__/engine-drizzle.test.ts
+  s_61eb3b18f6f591::t_b1d1027a4a7a7c 41-43,184
+packages/email/src/notices.ts
+  s_61eb3b18f6f591::t_d4cf152228bcf1 13-15,27-29,109,124
+packages/db/src/schema/outbox.ts
+  s_61eb3b18f6f591::t_e44d1008561073 22,28
+packages/oss/engine-drizzle/src/index.ts
+  s_61eb3b18f6f591::t_d4488123c1759c 29-32,118-121,123-134
+  s_61eb3b18f6f591::t_651128cdc058f3 135,137
+packages/db/src/repositories/operating-model.ts
+  s_61eb3b18f6f591::t_d4488123c1759c 12-13,221-223,228,233-235,240,243,245,249-250,252-254,257-261
+packages/email/src/mailer.ts
+  s_61eb3b18f6f591::t_e44d1008561073 28,30-32
+  s_61eb3b18f6f591::t_a10e79fbb4021a 1-7,22-23,27
+packages/db/src/schema/operating-model.ts
+  s_61eb3b18f6f591::t_d4488123c1759c 1,146-150,199
+packages/api/src/__tests__/outbox-dispatcher.test.ts
+  s_61eb3b18f6f591::t_d7bd433c34a838 1-4,6,9-11,20-21,26,59-60,62-105,110-113,115,132-136,138-147,220
+  s_61eb3b18f6f591::t_1ee3c06c277583 106-107
+  s_61eb3b18f6f591::t_a33f1a68f91bd1 114,116-131
+  s_61eb3b18f6f591::t_d12b25ac856b41 53,55-58,148-197
+  s_61eb3b18f6f591::t_b7889ad53811f0 108-109,224-230
+  s_61eb3b18f6f591::t_05bb81fe525fc4 137,219,236-252,256
+  s_61eb3b18f6f591::t_df6e54a1bc5a34 199-218
+  s_61eb3b18f6f591::t_4fd8c1df3a0f61 27-29,198,221-223,231-235,253-255,260-266,272-273,275,286-288,338-374,393
+packages/api/src/use-cases/conversations.ts
+  s_61eb3b18f6f591::t_d4cf152228bcf1 88
+packages/email/src/transport.ts
+  s_61eb3b18f6f591::t_a10e79fbb4021a 4,14,70-79,81,84,86-90
+  s_61eb3b18f6f591::t_e44d1008561073 28,59-61,82,97
+packages/email/src/transport.test.ts
+  s_61eb3b18f6f591::t_d12b25ac856b41 54,59-60
+  s_61eb3b18f6f591::t_541d08b8dbde24 76-88
+packages/db/src/repositories/services-teams.ts
+  s_61eb3b18f6f591::t_d4cf152228bcf1 53,205
+packages/api/src/use-cases/outbox-dispatcher.ts
+  s_61eb3b18f6f591::t_a10e79fbb4021a 10,15,54,231-235,249,256,294-300,305-306,311,319-334,355-358,512,514,517,526-531
+  s_61eb3b18f6f591::t_d4cf152228bcf1 1,21-24,30,39,53,55,64-66,93-151,153-164,189,193-194,197,199-202,208
+  s_61eb3b18f6f591::t_b7889ad53811f0 237-241,253,266-275,277-281,288-292,312-314,335,350,410-418,421,424,429-431,435,438-440,451,457
+  s_61eb3b18f6f591::t_9dde242aa71b3b 3,19,34,83,89-90,167,172,179,203,215-230,236,242-245,251,254-255,257-258,260-265,301-304,307-310,315-318,336,338,434
+  s_61eb3b18f6f591::t_1ee3c06c277583 276,282-287,293
+apps/server/src/index.ts
+  s_61eb3b18f6f591::t_7cced2348876df 5,12,15,24,59-72,190
+apps/server/src/maintenance.test.ts
+  s_61eb3b18f6f591::t_e50f3bcc82009c 1-6,179-195
+apps/server/src/maintenance.ts
+  s_61eb3b18f6f591::t_e3361ea3f262f9 186-196
+apps/server/src/notice-wakeup.test.ts
+  s_61eb3b18f6f591::t_99ed81f9804062 1-53
+apps/server/src/notice-wakeup.ts
+  s_61eb3b18f6f591::t_80f60b41a62322 1-13
+packages/api/src/routers/checkout.test.ts
+  s_61eb3b18f6f591::t_30974a9ca7c944 1-5,25,467-520
+packages/api/src/routers/payouts.test.ts
+  s_61eb3b18f6f591::t_2ff42022b62c11 1,597-629,1098
+packages/api/src/use-cases/orders.ts
+  s_61eb3b18f6f591::t_0550f9bffea9cf 47,262,304,308,312,338,343-344,346-360,362,365-367,369-370,372,376-386
+packages/api/src/use-cases/payment-refunds.ts
+  s_61eb3b18f6f591::t_c35350c6fa1261 21,118-121,139,144-149
+packages/api/src/use-cases/payout-sweeps.ts
+  s_61eb3b18f6f591::t_c03d4d11782493 37
+packages/api/src/use-cases/payouts-web.ts
+  s_61eb3b18f6f591::t_85c33f3233bc2f 18,204,213-214
+packages/api/src/use-cases/payouts.ts
+  s_61eb3b18f6f591::t_23489451d6d644 60,398,400-402,480,482-484,552,748-758,794-796,809,827-828,833-836,848,965,979-981
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_61eb3b18f6f591::t_36918ca4fed900 1,587-589
+packages/api/src/use-cases/requests.ts
+  s_61eb3b18f6f591::t_64c9c10374f159 164,167,190
+packages/core/src/projects/events.ts
+  s_61eb3b18f6f591::t_40fdaaef56e715 22
+packages/db/src/migrations/20261025092315_durable_notice_delivery/snapshot.json
+  s_61eb3b18f6f591::t_ba0360377a0de0 1-14488
+packages/oss/engine-drizzle/README.md
+  s_61eb3b18f6f591::t_34442833cb9750 14,24-29,35-36,43
+packages/oss/engine-outbox/README.md
+  s_61eb3b18f6f591::t_da02a73d1bf572 28-29
+packages/oss/engine-outbox/src/__tests__/engine-outbox.test.ts
+  s_61eb3b18f6f591::t_69efaf20c44c24 3,47-57
+packages/oss/engine-outbox/src/index.ts
+  s_61eb3b18f6f591::t_38edcce2514910 21-22,28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0104cc17e273b6621042f6ef326a7311725f458e",
+  "prompts": {},
+  "sessions": {
+    "s_61eb3b18f6f591": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16eb4-ea47-7a23-aaea-4865d8c2c8b4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
