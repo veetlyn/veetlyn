@@ -1,10 +1,13 @@
+import type { Database } from "@jendal-workspace/db";
+import * as operatingModel from "@jendal-workspace/db/repositories/operating-model";
 import { ensurePublishedRulebook } from "@jendal-workspace/db/repositories/operating-model";
-import { memberMark, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
+import { memberMark, rulebook, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { project } from "@jendal-workspace/db/schema/projects";
 import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, truncateAll } from "@jendal-workspace/db/testing/db";
-import { eq, sql } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { fromPartial } from "@total-typescript/shoehorn";
+import { and, eq, sql } from "drizzle-orm";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { runDueScheduleItems } from "./scheduler-sweep";
 
@@ -96,6 +99,103 @@ describe.skipIf(!hasTestDatabase)("scheduler occurrences", () => {
     } finally {
       await Promise.allSettled([first, second]);
       await Promise.all([firstDb.$client.end(), secondDb.$client.end()]);
+    }
+  });
+
+  it("rolls back a deadlocked late timer and recovers it on the next sweep", async () => {
+    const { teamId, projectId } = await workingProject();
+    const now = new Date("2026-10-25T12:00:00Z");
+    await db.insert(scheduleItem).values([
+      { teamId, subjectId: projectId, kind: "member.updateRemind", runAt: new Date(0) },
+      { teamId, subjectId: projectId, kind: "member.updateLate", runAt: new Date(1) },
+    ]);
+    const firstDb = createTestDb();
+    const secondDb = createTestDb();
+    const rearm = operatingModel.upsertPendingScheduleItems;
+    const deadlocks: Error[] = [];
+    const observedRearm = vi.spyOn(operatingModel, "upsertPendingScheduleItems").mockImplementation(async (...args) => {
+      try {
+        await rearm(...args);
+      } catch (error) {
+        if (error instanceof Error) deadlocks.push(error);
+        throw error;
+      }
+    });
+    const reminderLocked = Promise.withResolvers<void>();
+    const projectLocked = Promise.withResolvers<void>();
+    const firstTransaction: Database["transaction"] = (callback, config) => firstDb.transaction(async (tx) => {
+      await tx.select().from(scheduleItem).where(eq(scheduleItem.kind, "member.updateRemind")).for("update");
+      reminderLocked.resolve();
+      await projectLocked.promise;
+      return callback(tx);
+    }, config);
+    const secondTransaction: Database["transaction"] = (callback, config) => secondDb.transaction(async (tx) => {
+      await reminderLocked.promise;
+      await tx.select().from(project).where(eq(project.id, projectId)).for("update");
+      // Keep detection enabled; make the late consumer detect the cycle first.
+      await tx.execute(sql`set local deadlock_timeout = '50ms'`);
+      projectLocked.resolve();
+      const deadline = Date.now() + 8000;
+      while (true) {
+        const [blocked] = await db.select({ count: sql<number>`count(*)::int` }).from(sql`pg_stat_activity`)
+          .where(sql`datname = current_database() and cardinality(pg_blocking_pids(pid)) > 0`);
+        if (blocked?.count === 1) break;
+        if (Date.now() > deadline) throw new Error("Reminder consumer did not wait on the project lock");
+      }
+      return callback(tx);
+    }, config);
+    const first = runDueScheduleItems({ db: fromPartial<Database>({ transaction: firstTransaction }), now: () => now, limit: 1 });
+    const second = runDueScheduleItems({ db: fromPartial<Database>({ transaction: secondTransaction }), now: () => now, limit: 1 });
+    try {
+      const results = await Promise.allSettled([first, second]);
+      expect(deadlocks).toEqual([expect.objectContaining({ name: "DrizzleQueryError", cause: expect.objectContaining({ name: "PostgresError", code: "40P01" }) })]);
+      expect.soft(await db.select().from(scheduleItem).where(eq(scheduleItem.kind, "member.updateLate")))
+        .toEqual([expect.objectContaining({ status: "pending", attempts: 0, lastError: null, completedAt: null })]);
+      expect(results[0]).toEqual({ status: "fulfilled", value: { fired: 1, failed: 0, held: 0 } });
+      expect(results[1]).toMatchObject({ status: "rejected", reason: { name: "DrizzleQueryError", cause: { name: "PostgresError", code: "40P01" } } });
+      expect(await db.select().from(memberMark)).toEqual([]);
+      expect(await db.select().from(outbox)).toEqual([expect.objectContaining({ type: "member.update_remind" })]);
+      expect(await runDueScheduleItems({ db, now: () => now })).toEqual({ fired: 1, failed: 0, held: 0 });
+      expect(await runDueScheduleItems({ db, now: () => now })).toEqual({ fired: 0, failed: 0, held: 0 });
+      expect(await db.select().from(memberMark)).toEqual([expect.objectContaining({ kind: "late_update" })]);
+      expect((await db.select().from(outbox)).filter((row) => row.type === "member.update_late")).toHaveLength(1);
+      expect(await db.select().from(scheduleItem).where(eq(scheduleItem.status, "pending"))).toHaveLength(2);
+    } finally {
+      await Promise.allSettled([first, second]);
+      observedRearm.mockRestore();
+      await Promise.all([firstDb.$client.end(), secondDb.$client.end()]);
+    }
+  });
+
+  it("preserves both future steps when equal deadlines are claimed late-first", async () => {
+    const { teamId, projectId, rules } = await workingProject();
+    await db.update(rulebook).set({ spec: { ...rules, updateWindow: { ...rules.updateWindow, remindBeforeHours: 0 } } }).where(eq(rulebook.teamId, teamId));
+    const now = new Date("2026-10-25T12:00:00Z");
+    await db.insert(scheduleItem).values([
+      { teamId, subjectId: projectId, kind: "member.updateLate", runAt: now },
+      { teamId, subjectId: projectId, kind: "member.updateRemind", runAt: now },
+    ]);
+    const claim = operatingModel.claimDueScheduleItems;
+    // Exercise a legal tie order while retaining the real query, locks and snapshots.
+    const orderedClaim = vi.spyOn(operatingModel, "claimDueScheduleItems").mockImplementation(async (...args) =>
+      (await claim(...args)).sort((a, b) => Number(b.kind === "member.updateLate") - Number(a.kind === "member.updateLate")));
+    try {
+      expect.soft(await runDueScheduleItems({ db, now: () => now })).toEqual({ fired: 1, failed: 0, held: 0 });
+      const future = new Date(now.getTime() + rules.updateWindow.hours * 3_600_000);
+      expect(await db.select().from(scheduleItem).where(eq(scheduleItem.status, "pending"))).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: "member.updateRemind", runAt: future, attempts: 0 }),
+        expect.objectContaining({ kind: "member.updateLate", runAt: future, attempts: 0 }),
+      ]));
+      expect(await db.select().from(scheduleItem).where(eq(scheduleItem.status, "done")))
+        .toEqual([expect.objectContaining({ kind: "member.updateLate", attempts: 1 })]);
+      expect(await db.select().from(outbox)).toEqual([expect.objectContaining({ type: "member.update_late" })]);
+      expect(await runDueScheduleItems({ db, now: () => now })).toEqual({ fired: 0, failed: 0, held: 0 });
+      expect(await runDueScheduleItems({ db, now: () => future })).toEqual({ fired: 1, failed: 0, held: 0 });
+      expect(await db.select().from(scheduleItem).where(and(eq(scheduleItem.status, "pending"), eq(scheduleItem.kind, "member.updateRemind"))))
+        .toEqual([expect.objectContaining({ runAt: new Date(future.getTime() + rules.updateWindow.hours * 3_600_000), attempts: 0 })]);
+      expect(await db.select().from(memberMark)).toHaveLength(2);
+    } finally {
+      orderedClaim.mockRestore();
     }
   });
 
