@@ -1,0 +1,57 @@
+packages/api/src/routers/project.test.ts
+  s_61eb3b18f6f591::t_6075f5c2d510ce 1112
+packages/db/src/repositories/paypal-webhooks.ts
+  s_61eb3b18f6f591::t_c44c32c54cab27 1,16
+apps/server/src/routes/paypal-webhooks.ts
+  s_61eb3b18f6f591::t_c44c32c54cab27 5,18-19,101
+apps/server/src/index.ts
+  s_61eb3b18f6f591::t_c44c32c54cab27 182
+packages/api/src/use-cases/disputes.ts
+  s_61eb3b18f6f591::t_a066399f41d459 48,59-66,70-71,73-74,93,95,98-99,115-119,123-124,128-129,131,150-151,156-157
+  s_61eb3b18f6f591::t_c44c32c54cab27 3,9,18,29,38-41,67-69,72,162
+  s_61eb3b18f6f591::t_e2443291d3da98 75-81
+  s_61eb3b18f6f591::t_c8dfc241f3615d 87
+packages/api/src/__tests__/disputes-webhook.test.ts
+  s_61eb3b18f6f591::t_6075f5c2d510ce 90-91,99,106,110,168-190
+  s_61eb3b18f6f591::t_766adcf11faa5f 120-151
+  s_61eb3b18f6f591::t_d795ed87bc8c79 191
+packages/db/src/schema/paypal-webhooks.ts
+  s_61eb3b18f6f591::t_c44c32c54cab27 1-2,8-9,22
+packages/api/src/use-cases/paypal-webhooks.ts
+  s_61eb3b18f6f591::t_c44c32c54cab27 3-4,8,24,27-28,82,101-115
+  s_61eb3b18f6f591::t_d1fd87f2c1d023 116-117
+apps/server/src/dispute-delivery.test.ts
+  s_61eb3b18f6f591::t_7f2fd0b9576796 1-74
+apps/server/src/paypal-webhook-queue.test.ts
+  s_61eb3b18f6f591::t_9a9f659f624c27 23
+packages/api/src/use-cases/paypal-webhooks.test.ts
+  s_61eb3b18f6f591::t_a64c884aa66cad 122
+packages/db/src/migrations/20261025150414_durable_dispute_input/migration.sql
+  s_61eb3b18f6f591::t_006284459fb04a 1
+packages/db/src/migrations/20261025150414_durable_dispute_input/snapshot.json
+  s_61eb3b18f6f591::t_0ed402b4bc991a 1-14501
+packages/db/src/migrations/20261025150914_retain_unknown_dispute_amounts/migration.sql
+  s_61eb3b18f6f591::t_bf355aa7187741 1-2
+packages/db/src/migrations/20261025150914_retain_unknown_dispute_amounts/snapshot.json
+  s_61eb3b18f6f591::t_85eb1011ec3c18 1-14501
+packages/db/src/repositories/operating-model.ts
+  s_61eb3b18f6f591::t_768371e74769e2 1,299-300,302,314-315
+packages/db/src/schema/operating-model.ts
+  s_61eb3b18f6f591::t_ed8dd3aec14622 176-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b7c3f76f7330237d8a63f7ec3a3c96b13ac56a5e",
+  "prompts": {},
+  "sessions": {
+    "s_61eb3b18f6f591": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16eb4-ea47-7a23-aaea-4865d8c2c8b4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
