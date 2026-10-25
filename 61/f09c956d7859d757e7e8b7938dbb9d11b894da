@@ -1,0 +1,31 @@
+packages/api/src/use-cases/projects.ts
+  s_44115798f7398a::t_91cadd71f18ec9 79,804,821
+packages/api/src/use-cases/scheduler-sweep.test.ts
+  s_44115798f7398a::t_3274fcb66da501 1-123
+packages/api/src/use-cases/scheduler-sweep.ts
+  s_44115798f7398a::t_a4fae517b8a9f0 3,30-49,52-53,56,58,106-107,140,144,150
+packages/api/src/use-cases/settlement.test.ts
+  s_44115798f7398a::t_ff1b2cc4f87a56 9,133-151
+packages/db/src/repositories/unit-of-work.ts
+  s_44115798f7398a::t_8411f55b355577 4,52
+packages/oss/engine-drizzle/src/__tests__/engine-drizzle.test.ts
+  s_44115798f7398a::t_05dfefd74f63cc 1,6,82,136-139,147-175,195-199
+packages/oss/engine-drizzle/src/index.ts
+  s_44115798f7398a::t_35a800f0f565e6 15,56,73,80,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61f09c956d7859d757e7e8b7938dbb9d11b894da",
+  "prompts": {},
+  "sessions": {
+    "s_44115798f7398a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1705e-1331-75c1-8b5e-8c5b7c800fbd",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
