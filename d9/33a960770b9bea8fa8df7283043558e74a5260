@@ -1,0 +1,36 @@
+packages/api/src/use-cases/scheduler-sweep.ts
+  s_61eb3b18f6f591::t_db18bb775f3ca9 19-20,29-30,39-69,71-80
+packages/api/src/actions/define.ts
+  s_61eb3b18f6f591::t_34d25916d66222 4,17,29
+packages/api/src/__tests__/rulebooks.test.ts
+  s_61eb3b18f6f591::t_40cece02962bbe 22-23,55,57,59-68,74,80-88
+packages/api/src/actions/perform.ts
+  s_61eb3b18f6f591::t_34d25916d66222 3,14-19,31-32,42,101,145-147
+packages/api/src/routers/project.test.ts
+  s_61eb3b18f6f591::t_eb66d89a6caa3d 839,848,861-866
+packages/api/src/use-cases/projects.ts
+  s_61eb3b18f6f591::t_0f96c9daad2f73 794
+  s_61eb3b18f6f591::t_b340ce067da78b 52,160,172-176,200
+packages/api/src/use-cases/requests.ts
+  s_61eb3b18f6f591::t_b340ce067da78b 128-129
+packages/api/src/use-cases/scheduler-sweep.test.ts
+  s_61eb3b18f6f591::t_c8e095f66f8706 162-163
+  s_61eb3b18f6f591::t_82b05194036bc3 6,48-53,227-229
+  s_61eb3b18f6f591::t_8afe73e86a81c0 230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d933a960770b9bea8fa8df7283043558e74a5260",
+  "prompts": {},
+  "sessions": {
+    "s_61eb3b18f6f591": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16eb4-ea47-7a23-aaea-4865d8c2c8b4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
