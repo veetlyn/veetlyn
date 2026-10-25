@@ -1,3 +1,4 @@
+import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
 import { ledgerAccounts, createFakeFileStore, hashToken, orderFeesTransfer, type JsonObject } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
@@ -583,6 +584,9 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         { reference: "refund_confirmed:R1", account: ledgerAccounts.clientRefunds, amountMinor: -16_000 },
         { reference: "refund_confirmed:R1", account: ledgerAccounts.paypalClearing, amountMinor: 16_000 },
       ]);
+      expect(await db.select().from(outbox).where(eq(outbox.type, "refund.issued"))).toEqual([expect.objectContaining({
+        projectId, data: expect.objectContaining({ paymentId, refundId: "R1", amountMinor: 16_000, currency: "USD" }),
+      })]);
       expect(await postingsOf("refund_fees")).toHaveLength(3);
       expect(await postingsOf("payment_refunded")).toEqual([]);
       expect(await balanceOf(ledgerAccounts.clientRefunds)).toBe(0);

@@ -1,3 +1,4 @@
+import type { JsonObject } from "@jendal-workspace/core";
 import type { RulebookRules } from "@opmodel/engine-rules";
 import type { ScheduleItemKind } from "@opmodel/engine-scheduler";
 import { sql } from "drizzle-orm";
@@ -142,6 +143,11 @@ export const outboxDelivery = pgTable(
     sentAt: timestamp("sent_at"),
     lastError: text("last_error"),
     providerMessageId: text("provider_message_id"),
+    claimToken: text("claim_token"),
+    claimExpiresAt: timestamp("claim_expires_at"),
+    firstAttemptAt: timestamp("first_attempt_at"),
+    // Retries must present the same message to the provider's idempotency key.
+    message: jsonb("message").$type<JsonObject>(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [

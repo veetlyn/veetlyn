@@ -44,7 +44,7 @@ import {
   useDownload,
 } from "@jendal-workspace/db/repositories/orders";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
-import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
+import { runInTransaction, type OutboxRow } from "@jendal-workspace/db/repositories/unit-of-work";
 import { findServicesTeamBySlug, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { productVariants, products } from "@jendal-workspace/db/schema/catalog";
@@ -259,7 +259,7 @@ export async function findOrderEmailTeam(db: DbExecutor, teamId: string): Promis
 }
 
 type AppliedCompletion =
-  | { result: "applied"; order: OrderRow; team: OrderEmailTeam; emailToken: string }
+  | { result: "applied"; order: OrderRow; events: OutboxRow[] }
   | { result: "already_applied" };
 
 async function lockOrderOrThrow(tx: Transaction, orderId: string): Promise<OrderRow> {
@@ -301,16 +301,15 @@ function applyCompletion(db: Database, fact: OrderCaptureFact): Promise<AppliedC
     checkCaptureFact(row, fact);
     if (row.status !== "pending") return { result: "already_applied" as const };
     const paid = await markLockedOrderPaid(tx, row, fact);
-    // One grant for the buyer email; the browser's capture call issues its own. The email's team is read here
-    // too, so nothing between the commit and the send can fail and lose the email.
+    // The buyer grant and its durable notice must commit with the payment.
     const emailToken = await issueGrant(tx, row.id);
     const team = await findOrderEmailTeam(tx, row.teamId);
     if (!team) throw new Error(`Order ${row.id} has no team`);
+    const events = await appendOrderPaidNotice(tx, { order: paid, team, token: emailToken });
     return {
       result: "applied" as const,
       order: paid,
-      team,
-      emailToken,
+      events,
     };
   });
 }
@@ -336,75 +335,55 @@ export async function applyOrderCaptureFact(
     log.error({ action: "order.fees", order: { id: fact.orderId }, error: databaseErrorFields(error) });
   }
   if (applied.result === "applied") {
-    await queueOrderPaidNotice(deps, { order: applied.order, team: applied.team, token: applied.emailToken });
+    await deliverOrderNotices(deps, applied.order, applied.events);
   }
   return applied.result;
 }
 
-// The buyer's confirmation goes through the outbox (backlog row 15): a transient send failure retries
-// on the 10-minute cron instead of being lost, and an admin can resend it from the order view.
-async function queueOrderPaidNotice(
-  deps: { db: Database; email?: EmailServices },
+async function appendOrderPaidNotice(
+  db: DbExecutor,
   input: { order: Pick<OrderRow, "id" | "teamId" | "buyerEmail" | "productTitle">; team: OrderEmailTeam; token: string },
-): Promise<void> {
-  const { email } = deps;
-  if (!email) {
-    log.warn({ action: "order.email", order: { id: input.order.id }, email: { configured: false } });
-    return;
-  }
-  const url = `${email.storeOrigin(input.team.slug)}/orders/${input.token}`;
-  try {
-    const events = await runInTransaction(deps.db, (_tx, uow) =>
-      uow.appendTeamOutbox(
-        { teamId: input.order.teamId },
-        [
-          {
-            type: "order.paid",
-            data: {
-              orderId: input.order.id,
-              buyerEmail: input.order.buyerEmail,
-              productTitle: input.order.productTitle,
-              teamName: input.team.name,
-              supportEmail: input.team.supportEmail,
-              url,
-            },
-          },
-        ],
-      ),
-    );
-    await fanOutOutboxEvents({ db: deps.db }, events);
-    const outcome = await deliverDueOutboxDeliveries({ db: deps.db, email });
-    if (outcome.failed > 0) {
-      // The delivery row carries the retry; the reporter hears it now, as with the direct send.
-      try {
-        await email.onError?.(new Error("order email send failed"), { kind: "order-download", to: input.order.buyerEmail });
-      } catch {
-        // A failing error reporter must not turn a lost email into a failed capture.
-      }
-    }
-  } catch (error) {
-    // The capture is already committed; the cron sweep picks the delivery up, and the failure is
-    // reported the same way the direct send reported it.
-    log.error({ action: "order.email", order: { id: input.order.id }, error: { name: errorName(error) } });
-    try {
-      await email.onError?.(error, { kind: "order-download", to: input.order.buyerEmail });
-    } catch {
-      // A failing error reporter must not turn a lost email into a failed capture.
-    }
-  }
+): Promise<OutboxRow[]> {
+  return runInTransaction(db, (_tx, uow) => uow.appendTeamOutbox({ teamId: input.order.teamId }, [{
+    type: "order.paid",
+    data: {
+      orderId: input.order.id, buyerEmail: input.order.buyerEmail, productTitle: input.order.productTitle,
+      teamName: input.team.name, supportEmail: input.team.supportEmail, storeSlug: input.team.slug, token: input.token,
+    },
+  }]));
 }
 
-// The admin's Resend button: a fresh grant and a direct send, so it does not wait for the sweep.
-export async function resendOrderEmail(deps: { db: Database; email?: EmailServices }, input: { orderId: string; teamId: string }): Promise<boolean> {
+async function deliverOrderNotices(
+  deps: { db: Database; email?: EmailServices },
+  order: Pick<OrderRow, "id" | "buyerEmail">,
+  events: OutboxRow[],
+): Promise<boolean> {
   const { email } = deps;
-  if (!email) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email is not configured on this server." });
-  const [order] = await deps.db.select().from(orders).where(eq(orders.id, input.orderId)).limit(1);
-  if (!order || order.teamId !== input.teamId) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
-  if (order.status !== "paid") throw new TRPCError({ code: "BAD_REQUEST", message: "Only a paid order can be resent." });
-  const team = await findOrderEmailTeam(deps.db, order.teamId);
-  if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
-  const token = await issueGrant(deps.db, order.id);
-  return sendDownloadEmail(deps, { order, team, token });
+  if (!email) return false;
+  try {
+    await fanOutOutboxEvents({ db: deps.db }, events);
+    const outcome = await deliverDueOutboxDeliveries({ db: deps.db, email, outboxIds: events.map((event) => event.id) });
+    if (outcome.failed === 0) return outcome.sent > 0;
+    await email.onError?.(new Error("order email send failed"), { kind: "order-download", to: order.buyerEmail });
+  } catch (error) {
+    // The committed event remains recoverable even when dispatch or its error reporter fails.
+    log.error({ action: "order.email", order: { id: order.id }, error: { name: errorName(error) } });
+  }
+  return false;
+}
+
+export async function resendOrderEmail(deps: { db: Database; email?: EmailServices }, input: { orderId: string; teamId: string }): Promise<boolean> {
+  const { order, events } = await deps.db.transaction(async (tx) => {
+    const [row] = await tx.select().from(orders).where(and(eq(orders.id, input.orderId), eq(orders.teamId, input.teamId))).limit(1).for("update");
+    if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+    if (row.status !== "paid") throw new TRPCError({ code: "BAD_REQUEST", message: "Only a paid order can be resent." });
+    const team = await findOrderEmailTeam(tx, row.teamId);
+    if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+    const token = await issueGrant(tx, row.id);
+    const events = await appendOrderPaidNotice(tx, { order: row, team, token });
+    return { order: row, events };
+  });
+  return deliverOrderNotices(deps, order, events);
 }
 
 // Records PayPal's fee and the platform's fee for a paid order, once: the first fact that carries the breakdown wins.

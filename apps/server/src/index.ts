@@ -2,17 +2,17 @@ import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
 import { createProjectPayouts, sendDuePayouts } from "@jendal-workspace/api/use-cases/payout-sweeps";
 import { processPayPalWebhookEvent } from "@jendal-workspace/api/use-cases/paypal-webhooks";
-import type { TenantEnvironment } from "@jendal-workspace/core";
+import { errorName, type TenantEnvironment } from "@jendal-workspace/core";
 import {
   findWebhookEvent,
   finishWebhookEvent,
   noteWebhookAttempt,
 } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { createStoreDirectory } from "@jendal-workspace/db/repositories/stores";
-import { initLogger } from "evlog";
+import { initLogger, log } from "evlog";
 import { createAuthMiddleware } from "evlog/better-auth";
 import { evlog } from "evlog/hono";
-import { Hono } from "hono";
+import { Hono, type ExecutionContext } from "hono";
 
 import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
@@ -21,6 +21,7 @@ import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
 import { BRIDGE_PATH, bridgeResponse, createMcpRoute, widgetOriginsFor } from "./mcp/route";
 import { noStoreByDefault } from "./no-store";
+import { wakeNoticesAfterMutation } from "./notice-wakeup";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
 import { handlePayPalDisputeWebhook } from "@jendal-workspace/api/use-cases/disputes";
@@ -55,6 +56,20 @@ const app = new Hono<AppEnv>();
 
 app.use(evlog());
 app.use(noStoreByDefault);
+app.use(wakeNoticesAfterMutation(deliverNotices));
+
+async function deliverNotices(execution: ExecutionContext): Promise<void> {
+  // Request connections can already be closing when background work begins.
+  const db = getDb();
+  try {
+    await deliverDueOutboxDeliveries({ db, email: getEmailServices(execution), secret: ENV.BETTER_AUTH_SECRET, limit: 5 });
+  } catch (error) {
+    log.error({ action: "notices.wake", error: { name: errorName(error) } });
+  } finally {
+    await db.$client.end();
+  }
+}
+
 
 app.use("*", async (c, next) => {
   const db = getDb();
@@ -172,6 +187,7 @@ export default {
         noteAttempt: (eventId, error) => noteWebhookAttempt(db, eventId, error),
       });
     } finally {
+      ctx.waitUntil(deliverNotices(ctx));
       ctx.waitUntil(db.$client.end());
     }
   },

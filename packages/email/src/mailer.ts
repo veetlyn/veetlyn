@@ -1,4 +1,10 @@
-import type { SenderKey } from "./senders";
+import type { SenderAddress, SenderKey } from "./senders";
+
+export type EmailDelivery = {
+  from: SenderAddress;
+  replyTo: string;
+  tags: { name: "sender" | "kind"; value: string }[];
+};
 
 export interface EmailMessage {
   sender: SenderKey;
@@ -13,8 +19,14 @@ export interface EmailMessage {
   subject: string;
   text: string;
   html: string;
+  // Resolve configuration before persisting a message for idempotent delivery.
+  delivery?: EmailDelivery;
 }
 
 export interface Mailer {
-  send(message: EmailMessage): Promise<void>;
+  prepare?(message: EmailMessage): EmailMessage;
+  send(message: EmailMessage, options?: EmailSendOptions): Promise<EmailReceipt | void>;
 }
+
+export type EmailSendOptions = { idempotencyKey?: string };
+export type EmailReceipt = { providerMessageId?: string };

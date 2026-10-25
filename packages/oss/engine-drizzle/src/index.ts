@@ -26,7 +26,10 @@ const deliveryRowSchema = z.object({
   outbox_id: z.string(),
   channel: z.string(),
   recipient: z.string(),
-  attempts: z.number().nullable().catch(0),
+  attempts: z.number().int().nonnegative(),
+  claim_token: z.string().min(1),
+  claim_expires_at: z.coerce.date(),
+  first_attempt_at: z.coerce.date(),
 });
 
 export type ClaimedDeliveryRow = z.output<typeof deliveryRowSchema>;
@@ -112,16 +115,26 @@ export async function setSchedulePaused(
   `);
 }
 
-export async function claimDueDeliveryRows(db: SqlExecutor, table: string, now: Date, limit: number): Promise<ClaimedDeliveryRow[]> {
+export async function claimDueDeliveryRows(db: SqlExecutor, table: string, now: Date, limit: number, outboxIds?: readonly string[]): Promise<ClaimedDeliveryRow[]> {
+  if (outboxIds?.length === 0) return [];
+  const scope = outboxIds ? sql`and outbox_id in (${sql.join(outboxIds.map((id) => sql`${id}`), sql`, `)})` : sql``;
+  const expiresAt = new Date(now.getTime() + 5 * 60_000);
   const result = await db.execute(sql`
-    select id, outbox_id, channel, recipient, attempts
-    from ${sql.identifier(table)}
-    where status = 'pending' and next_attempt_at <= ${now.toISOString()}
-    order by next_attempt_at
-    limit ${limit}
-    for update skip locked
+    update ${sql.identifier(table)}
+    set claim_token = gen_random_uuid()::text, claim_expires_at = ${expiresAt.toISOString()},
+        first_attempt_at = coalesce(first_attempt_at, ${now.toISOString()})
+    where id in (
+      select id from ${sql.identifier(table)}
+      where status = 'pending' and next_attempt_at <= ${now.toISOString()}
+        and (claim_expires_at is null or claim_expires_at <= ${now.toISOString()})
+        ${scope}
+      order by next_attempt_at, id
+      limit ${limit}
+      for update skip locked
+    )
+    returning id, outbox_id, channel, recipient, attempts, claim_token, claim_expires_at, first_attempt_at
   `);
-  return queryRows.parse(result).map((row) => deliveryRowSchema.parse(row));
+  return queryRows.removeCatch().parse(result).map((row) => deliveryRowSchema.parse(row));
 }
 
 // Marks in a rolling window: the strike rule's count.

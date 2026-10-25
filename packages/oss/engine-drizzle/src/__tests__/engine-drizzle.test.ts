@@ -38,6 +38,9 @@ describe.skipIf(!hasDb)("engine-drizzle storage helpers", () => {
       status text not null default 'pending',
       attempts integer not null default 0,
       next_attempt_at timestamptz not null default now(),
+      claim_token text,
+      claim_expires_at timestamptz,
+      first_attempt_at timestamptz,
       created_at timestamptz not null default now()
     )`);
     await client.unsafe(`create table if not exists ${MARK_TABLE} (
@@ -178,7 +181,7 @@ describe.skipIf(!hasDb)("engine-drizzle storage helpers", () => {
       `insert into ${DELIVERY_TABLE} (outbox_id, channel, recipient, next_attempt_at) values ('ob1', 'email_client', 'a@example.com', now() - interval '1 minute'), ('ob2', 'email_client', 'b@example.com', now() + interval '1 hour')`,
     );
     const claimed = await claimDueDeliveryRows(db, DELIVERY_TABLE, new Date(), 10);
-    expect(claimed).toEqual([{ id: expect.any(String), outbox_id: "ob1", channel: "email_client", recipient: "a@example.com", attempts: 0 }]);
+    expect(claimed).toEqual([{ id: expect.any(String), outbox_id: "ob1", channel: "email_client", recipient: "a@example.com", attempts: 0, claim_token: expect.any(String), claim_expires_at: expect.any(Date), first_attempt_at: expect.any(Date) }]);
 
     await client.unsafe(
       `insert into ${MARK_TABLE} (team_id, member_user_id, kind, created_at) values ('team1', 'u1', 'late_update', now() - interval '2 days'), ('team1', 'u1', 'late_delivery', now() - interval '10 days'), ('team1', 'u1', 'warning', now() - interval '1 day'), ('team1', 'u2', 'late_update', now())`,

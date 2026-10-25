@@ -50,7 +50,7 @@ export async function findServicesTeamBySlug(db: Database, slug: string): Promis
   return row ?? null;
 }
 
-export async function getServicesTeamSettings(db: Database, teamId: string): Promise<ServicesTeamSettings | null> {
+export async function getServicesTeamSettings(db: DbExecutor, teamId: string): Promise<ServicesTeamSettings | null> {
   const [row] = await db
     .select(settingsColumns)
     .from(servicesTeamSettings)
@@ -202,7 +202,7 @@ export type ServicesTeamMemberRow = {
 };
 
 export async function listServicesTeamMembers(
-  db: Database,
+  db: DbExecutor,
   servicesTeam: Pick<ServicesTeamRecord, "id" | "organizationId">,
 ): Promise<ServicesTeamMemberRow[]> {
   const rows = await db

@@ -57,7 +57,7 @@ import {
 } from "@jendal-workspace/db/repositories/services-teams";
 import { type PayoutBatch, type PayoutItem, type PayPalClient, PayPalError } from "@jendal-workspace/paypal";
 import { payoutRequest } from "@jendal-workspace/db/schema/payouts";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
@@ -395,16 +395,14 @@ export async function requestPayout(
       if (!message) throw error;
       throw new TRPCError({ code: "BAD_REQUEST", message, cause: error });
     }
+    await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.requested", inserted, team));
     if (decision.kind !== "approved") return { row: inserted, sendNow: false };
-    return markApproved(tx, inserted, { now, sendAfter: decision.sendAfter });
+    const approved = await markApproved(tx, inserted, { now, sendAfter: decision.sendAfter });
+    await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.approved", approved.row, team));
+    return approved;
   });
 
   const row = await sendDecided(deps, team, decided, now);
-  await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.requested", row, team));
-  // A fresh queued row here means the request was auto-approved for a later payday (row 45).
-  if (row.status === "queued" && decided.sendNow === false) {
-    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.approved", row, team));
-  }
   return { ...payoutRequestView(row), teamName: team.name, teamSlug: team.slug, projectTitle: null };
 }
 
@@ -479,8 +477,11 @@ export async function createProjectPayout(
     });
     if (!inserted) throw new Error(`Payout for project ${project.projectId} was not inserted`);
     await ledger.post([payoutRequestedTransfer(postingFor(inserted))]);
+    await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.requested", inserted, team));
     if (decision.kind !== "approved") return { row: inserted, sendNow: false };
-    return markApproved(tx, inserted, { now, sendAfter: decision.sendAfter });
+    const approved = await markApproved(tx, inserted, { now, sendAfter: decision.sendAfter });
+    await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.approved", approved.row, team));
+    return approved;
   });
   return decided && sendDecided(deps, team, decided, now);
 }
@@ -548,11 +549,9 @@ export async function approvePayoutRequest(
       return { row: request, sendNow: false, approvalsNeeded: decision.approvalsNeeded };
     }
     const approved = await markApproved(tx, request, { now, sendAfter: decision.sendAfter, decidedByUserId: input.deciderId });
+    await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.approved", approved.row, input.team));
     return { ...approved, approvalsNeeded: 0 };
   });
-  if (decided.approvalsNeeded === 0) {
-    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.approved", decided.row, input.team));
-  }
   const row = decided.sendNow ? await sendPayout(deps, input.team, input.requestId) : decided.row;
   return { ...payoutRequestView(row), approvalsNeeded: decided.approvalsNeeded };
 }
@@ -746,20 +745,17 @@ async function recordForClaim(
 }
 
 // A batch id is PayPal's word that it holds this payout, whichever attempt it answered.
-async function recordBatch(db: Database, requestId: string, batchId: string): Promise<PayoutRequestRow> {
-  return underRequestLock(db, requestId, (tx, locked) =>
-    locked.status === "sending" || locked.status === "queued"
-      ? updatePayoutRequest(tx, locked.id, {
-          status: "sent",
-          paypalBatchId: batchId,
-          sentAt: new Date(),
-          uncertainAt: null,
-          failureMessage: null,
-          waitCount: 0,
-          nextAttemptAt: null,
-        })
-      : Promise.resolve(locked),
-  );
+async function recordBatch(db: Database, team: PayoutTeam, requestId: string, batchId: string): Promise<PayoutRequestRow> {
+  return underRequestLock(db, requestId, async (tx, locked) => {
+    if (locked.teamId !== team.id) throw notFound();
+    if (locked.status !== "sending" && locked.status !== "queued") return locked;
+    const sent = await updatePayoutRequest(tx, locked.id, {
+      status: "sent", paypalBatchId: batchId, sentAt: new Date(), uncertainAt: null,
+      failureMessage: null, waitCount: 0, nextAttemptAt: null,
+    });
+    await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.sent", sent, team));
+    return sent;
+  });
 }
 
 // Checked before every fresh send, before the claim so no lock is held while PayPal answers. An unconfirmed send
@@ -795,8 +791,9 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
   const now = nowOf(deps);
   // An open case holds the team's payouts (AGT-54); the sweep retries after it resolves.
   if (await teamHasOpenDispute(deps.db, team.id)) {
-    const [waiting] = await deps.db.select().from(payoutRequest).where(eq(payoutRequest.id, requestId)).limit(1);
-    if (waiting) return waiting;
+    const [waiting] = await deps.db.select().from(payoutRequest).where(and(eq(payoutRequest.id, requestId), eq(payoutRequest.teamId, team.id))).limit(1);
+    if (!waiting) throw notFound();
+    return waiting;
   }
   const heldForBalance = await holdForBalance(deps, team, requestId, now);
   if (heldForBalance) return heldForBalance;
@@ -809,8 +806,7 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
   if (request.uncertainAt !== null && outcome.kind !== "sent") outcome = { kind: "uncertain", cause: outcome.cause };
   if (outcome.kind === "sent") {
     try {
-      const sent = await recordBatch(deps.db, request.id, outcome.batchId);
-      await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.sent", sent, team));
+      const sent = await recordBatch(deps.db, team, request.id, outcome.batchId);
       return sent;
     } catch (cause) {
       // PayPal made the batch; a retry gets it back under the same ids and records it.
@@ -828,15 +824,16 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
   if (outcome.kind === "held") {
     const message = outcome.message;
     // The next attempt gets fresh ids: PayPal made no payout under these, and might replay this refusal for them.
-    const queued = await recordForClaim(deps.db, request, (tx, locked) =>
-      updatePayoutRequest(tx, locked.id, {
+    const queued = await recordForClaim(deps.db, request, async (tx, locked) => {
+      const queued = await updatePayoutRequest(tx, locked.id, {
         status: "queued",
         failureMessage: message,
         sendAttempt: locked.sendAttempt + 1,
         ...backoff(locked, now),
-      }),
-    );
-    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.queued", queued, team));
+      });
+      await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.queued", queued, team));
+      return queued;
+    });
     return queued;
   }
   if (outcome.kind === "refused") {
@@ -848,9 +845,9 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
         settledAt: new Date(),
       });
       await postIfNew(tx, locked.teamId, payoutReleasedTransfer(postingFor(locked)));
+      await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.failed", failed, team));
       return failed;
     });
-    await appendPayoutOutboxEvent(deps.db, payoutNoticeInput("payout.failed", failed, team));
     return failed;
   }
   try {
@@ -965,6 +962,7 @@ export async function applySettlement(
       settledAt: new Date(),
     });
     await postIfNew(tx, request.teamId, payoutReleasedTransfer(postingFor(request)));
+    await appendPayoutOutboxEvent(tx, { type: "payout.failed", teamId: request.teamId, memberUserId: request.userId, amountMinor: request.amountMinor, currency: request.currency, payoutRequestId: request.id });
     return failed;
   }
   const { feeMinor, reviewReason } = outcome.fee;
@@ -978,6 +976,9 @@ export async function applySettlement(
     reviewReason,
     settledAt: new Date(),
   });
+  if (request.status !== "sent") {
+    await appendPayoutOutboxEvent(tx, { type: "payout.sent", teamId: request.teamId, memberUserId: request.userId, amountMinor: request.amountMinor, currency: request.currency, payoutRequestId: request.id });
+  }
   // The team's balance paid PayPal's fee; the member bears it up to the estimate kept back from their payout. A
   // lower fee releases the rest of the estimate to them, and the team absorbs a higher one. Without a usable fee
   // the estimate stands in for it, and the review reason says so.
