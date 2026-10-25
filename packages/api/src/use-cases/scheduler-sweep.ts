@@ -1,5 +1,6 @@
 import type { JsonObject } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import type { DbExecutor } from "@jendal-workspace/db/executor";
 import {
   claimDueScheduleItems,
   completeScheduleItems,
@@ -26,33 +27,35 @@ export type SchedulerReport = { fired: number; failed: number; held: number };
 
 export async function runDueScheduleItems(deps: { db: Database; now?: () => Date; limit?: number }): Promise<SchedulerReport> {
   const now = (deps.now ?? (() => new Date()))();
-  const claimed = await claimDueScheduleItems(deps.db, now, deps.limit ?? 50);
-  const report: SchedulerReport = { fired: 0, failed: 0, held: 0 };
-  for (const item of claimed) {
-    try {
-      const outcome = await fireItem(deps.db, item, now);
-      if (outcome === "held") {
-        report.held += 1;
-      } else {
-        await completeScheduleItems(deps.db, [item.id], { status: "done" });
-        report.fired += 1;
+  return deps.db.transaction(async (tx) => {
+    const claimed = await claimDueScheduleItems(tx, now, deps.limit ?? 50);
+    const report: SchedulerReport = { fired: 0, failed: 0, held: 0 };
+    for (const item of claimed) {
+      try {
+        const outcome = await tx.transaction(async (occurrence) => {
+          const outcome = await fireItem(occurrence, item, now);
+          if (outcome !== "held") await completeScheduleItems(occurrence, [item.id], { status: "done" });
+          return outcome;
+        });
+        if (outcome === "held") report.held += 1;
+        else report.fired += 1;
+      } catch (error) {
+        log.error({
+          action: "scheduler.item",
+          scheduleItem: { id: item.id, kind: item.kind, subject: item.subject_id },
+          error: { name: error instanceof Error ? error.name : "fire failed" },
+        });
+        await completeScheduleItems(tx, [item.id], { status: "failed", error: error instanceof Error ? error.message : "fire failed" });
+        report.failed += 1;
       }
-    } catch (error) {
-      report.failed += 1;
-      log.error({
-        action: "scheduler.item",
-        scheduleItem: { id: item.id, kind: item.kind, subject: item.subject_id },
-        error: { name: error instanceof Error ? error.name : "fire failed" },
-      });
-      await completeScheduleItems(deps.db, [item.id], { status: "failed", error: error instanceof Error ? error.message : "fire failed" });
     }
-  }
-  return report;
+    return report;
+  });
 }
 
-async function fireItem(db: Database, item: { subject_id: string; kind: string }, now: Date): Promise<"fired" | "held"> {
+async function fireItem(db: DbExecutor, item: { id: string; team_id: string; subject_id: string; kind: string }, now: Date): Promise<"fired" | "held"> {
   const row = await findProjectById(db, item.subject_id);
-  if (!row) return "held";
+  if (!row || row.teamId !== item.team_id) return "held";
 
   switch (item.kind) {
     case "request.expire": {
@@ -100,7 +103,8 @@ async function fireItem(db: Database, item: { subject_id: string; kind: string }
           await notice(db, row, "member.warning", { marks });
         }
       }
-      // The next update window starts now (AGT-51's next cycle).
+      // Retire this occurrence before reconciliation can insert its successor.
+      await completeScheduleItems(db, [item.id], { status: "done" });
       await armUpdateCycle(db, row, rules, now);
       return "fired";
     }
@@ -133,17 +137,17 @@ async function fireItem(db: Database, item: { subject_id: string; kind: string }
   }
 }
 
-async function notice(db: Database, row: Pick<ProjectRow, "id" | "teamId">, type: OutboxEventInput["type"], data: JsonObject): Promise<void> {
+async function notice(db: DbExecutor, row: Pick<ProjectRow, "id" | "teamId">, type: OutboxEventInput["type"], data: JsonObject): Promise<void> {
   await runInTransaction(db, (_tx, uow) => uow.appendEvents({ id: row.id, teamId: row.teamId }, [{ type, data }]));
 }
 
-async function rulesFor(db: Database, rulebookId: string | null): Promise<RulebookRules | null> {
+async function rulesFor(db: DbExecutor, rulebookId: string | null): Promise<RulebookRules | null> {
   if (!rulebookId) return null;
   const [row] = await db.select({ spec: rulebook.spec }).from(rulebook).where(eq(rulebook.id, rulebookId)).limit(1);
   return row?.spec ?? null;
 }
 
-async function armUpdateCycle(db: Database, row: ProjectRow, rules: RulebookRules | null, now: Date): Promise<void> {
+async function armUpdateCycle(db: DbExecutor, row: ProjectRow, rules: RulebookRules | null, now: Date): Promise<void> {
   if (!rules) return;
   const plan = planProjectSchedule({
     projectStatus: "in_progress",

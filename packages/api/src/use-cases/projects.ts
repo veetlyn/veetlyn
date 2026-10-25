@@ -76,7 +76,7 @@ export function fail(code: "NOT_FOUND" | "FORBIDDEN" | "BAD_REQUEST" | "TOO_MANY
 
 // A lost compare-and-set race is a client-visible conflict, not a server error.
 export async function runProjectTransaction<T>(
-  db: Database,
+  db: DbExecutor,
   run: (tx: Transaction, uow: UnitOfWork) => Promise<T>,
 ): Promise<T> {
   try {
@@ -801,7 +801,7 @@ export async function acceptDelivery(
 }
 
 // Timed system acceptance shares settlement, while client adapters retain their access checks.
-export async function autoAcceptDelivery(db: Database, projectId: string): Promise<void> {
+export async function autoAcceptDelivery(db: DbExecutor, projectId: string): Promise<void> {
   const row = await findProjectById(db, projectId);
   if (!row || row.status !== "delivered") return;
   try {
@@ -818,7 +818,7 @@ export async function autoAcceptDelivery(db: Database, projectId: string): Promi
 }
 
 async function settleDelivery(
-  db: Database,
+  db: DbExecutor,
   input: { projectId: string; deliveryId: string },
   event: "accept_delivery" | "auto_complete",
 ): Promise<{ status: "awaiting_balance" | "completed"; balancePaymentId: string | null }> {
