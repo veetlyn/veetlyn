@@ -1,0 +1,28 @@
+packages/api/src/use-cases/rulebooks.ts
+  s_61eb3b18f6f591::t_7d81f84481680e 8,20,75-91
+packages/db/src/repositories/operating-model.ts
+  s_61eb3b18f6f591::t_7d81f84481680e 175
+packages/api/src/__tests__/rulebooks.test.ts
+  s_61eb3b18f6f591::t_76760d895f44bb 3,33-34,95-96,98,100,102-119,123-129
+  s_61eb3b18f6f591::t_b703596471c731 130-131
+packages/api/src/routers/rules.ts
+  s_61eb3b18f6f591::t_7d81f84481680e 65-75
+packages/api/src/__tests__/enforced-rules.test.ts
+  s_61eb3b18f6f591::t_18f3fae16f42f6 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cea9626e3d1bc5a6e2704a786ec25d0bd21dcde6",
+  "prompts": {},
+  "sessions": {
+    "s_61eb3b18f6f591": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16eb4-ea47-7a23-aaea-4865d8c2c8b4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
