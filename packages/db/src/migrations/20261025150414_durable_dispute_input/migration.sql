@@ -1,0 +1,1 @@
+ALTER TABLE "paypal_webhook_event" ADD COLUMN "dispute_payload" jsonb;

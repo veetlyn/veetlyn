@@ -20,6 +20,7 @@ function eventRow(overrides: Partial<PayPalWebhookEventRow> = {}): PayPalWebhook
     orderId: "ORDER-1",
     captureId: null,
     merchantId: "SELLER1",
+    disputePayload: null,
     status: "received",
     attempts: 0,
     note: null,

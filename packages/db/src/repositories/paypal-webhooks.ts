@@ -1,3 +1,4 @@
+import type { JsonValue } from "@jendal-workspace/core";
 import { and, asc, eq, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
@@ -12,6 +13,7 @@ export type PayPalWebhookEventInput = {
   orderId: string | null;
   captureId: string | null;
   merchantId: string | null;
+  disputePayload?: JsonValue;
 };
 
 export type PayPalWebhookEventRow = typeof paypalWebhookEvent.$inferSelect;
