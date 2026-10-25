@@ -10,11 +10,12 @@ import {
 } from "@jendal-workspace/db/repositories/operating-model";
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { runInTransaction, type OutboxEventInput } from "@jendal-workspace/db/repositories/unit-of-work";
-import { rulebook } from "@jendal-workspace/db/schema/operating-model";
+import { rulebook, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import type { RulebookRules } from "@opmodel/engine-rules";
 import { planProjectSchedule } from "@opmodel/engine-scheduler";
-import { eq } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 import { log } from "evlog";
+import { z } from "zod";
 
 import { autoAcceptDelivery, checkTransition } from "./projects";
 
@@ -33,13 +34,23 @@ export async function runDueScheduleItems(deps: { db: Database; now?: () => Date
     for (const item of claimed) {
       try {
         const outcome = await tx.transaction(async (occurrence) => {
+          // Earlier effects in this batch may have rearmed this same row.
+          const [current] = await occurrence.select({ id: scheduleItem.id }).from(scheduleItem).where(and(
+            eq(scheduleItem.id, item.id),
+            eq(scheduleItem.status, "pending"),
+            eq(scheduleItem.runAt, item.run_at),
+            lte(scheduleItem.runAt, now),
+          ));
+          if (!current) return "stale";
           const outcome = await fireItem(occurrence, item, now);
           if (outcome !== "held") await completeScheduleItems(occurrence, [item.id], { status: "done" });
           return outcome;
         });
         if (outcome === "held") report.held += 1;
-        else report.fired += 1;
+        else if (outcome === "fired") report.fired += 1;
       } catch (error) {
+        // Contention must roll back the whole claim transaction for a later sweep.
+        if (isDatabaseDeadlock(error)) throw error;
         log.error({
           action: "scheduler.item",
           scheduleItem: { id: item.id, kind: item.kind, subject: item.subject_id },
@@ -51,6 +62,20 @@ export async function runDueScheduleItems(deps: { db: Database; now?: () => Date
     }
     return report;
   });
+}
+
+const databaseErrorSchema = z.object({ code: z.string().optional(), cause: z.unknown().optional() });
+
+function isDatabaseDeadlock(cause: unknown): boolean {
+  const seen = new Set<unknown>();
+  while (!seen.has(cause)) {
+    seen.add(cause);
+    const decoded = databaseErrorSchema.safeParse(cause);
+    if (!decoded.success) return false;
+    if (decoded.data.code === "40P01") return true;
+    cause = decoded.data.cause;
+  }
+  return false;
 }
 
 async function fireItem(db: DbExecutor, item: { id: string; team_id: string; subject_id: string; kind: string }, now: Date): Promise<"fired" | "held"> {
