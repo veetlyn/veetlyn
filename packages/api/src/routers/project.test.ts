@@ -1109,6 +1109,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
             note: null,
             receivedAt: new Date(),
             processedAt: null,
+            disputePayload: null,
           },
         );
       }

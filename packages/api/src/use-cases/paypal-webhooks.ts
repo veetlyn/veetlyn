@@ -1,10 +1,11 @@
 import { orderIdFromCustomId } from "@jendal-workspace/core";
 import { findOrderByCaptureId, findOrderById, type OrderRow } from "@jendal-workspace/db/repositories/orders";
-import type { PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
+import { finishWebhookEvent, type PayPalWebhookEventRow } from "@jendal-workspace/db/repositories/paypal-webhooks";
+import { paypalWebhookEvent } from "@jendal-workspace/db/schema/paypal-webhooks";
 import type { PaymentRow } from "@jendal-workspace/db/repositories/projects";
 import { findTeamById } from "@jendal-workspace/db/repositories/teams";
 import { payment } from "@jendal-workspace/db/schema/projects";
-import { captureFromOrder, type PayPalOrder } from "@jendal-workspace/paypal";
+import { captureFromOrder, DISPUTE_WEBHOOK_EVENT_TYPES, parseDisputeWebhookEvent, type PayPalOrder } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
@@ -20,9 +21,11 @@ import {
   recordCaptureFees,
 } from "./payments";
 import { isRefundedCaptureStatus, isSettledPayPalRefusal } from "./paypal-amounts";
+import { handlePayPalDisputeWebhook } from "./disputes";
 
 export type WebhookOutcome = { status: "processed" | "ignored" | "parked"; note: string };
-export type WebhookDeps = PaymentDeps & { email?: EmailServices };
+export type WebhookDeps = PaymentDeps & { email?: EmailServices; disputes?: { alertEmail: string; dashOrigin: string } };
+const DISPUTE_EVENTS = new Set<string>(DISPUTE_WEBHOOK_EVENT_TYPES);
 
 const CAPTURE_EVENTS = new Set([
   "PAYMENT.CAPTURE.COMPLETED",
@@ -76,6 +79,7 @@ async function teamMerchant(deps: PaymentDeps, teamId: string, event: PayPalWebh
 // look at; the PayPal order is re-fetched and its current state applied through the same idempotent steps as
 // the browser. Store orders carry an "order:" custom id; refunds carry neither id and are found by capture id.
 export async function processPayPalWebhookEvent(deps: WebhookDeps, event: PayPalWebhookEventRow): Promise<WebhookOutcome> {
+  if (DISPUTE_EVENTS.has(event.eventType)) return processDisputeEvent(deps, event.id);
   const isRefund = REFUND_EVENTS.has(event.eventType);
   if (!CAPTURE_EVENTS.has(event.eventType) && event.eventType !== "CHECKOUT.ORDER.APPROVED" && !isRefund) {
     return { status: "ignored", note: "event type not handled" };
@@ -92,6 +96,23 @@ export async function processPayPalWebhookEvent(deps: WebhookDeps, event: PayPal
     if (refunded) return processPaymentEvent(deps, event, refunded);
   }
   return processPaymentEvent(deps, event);
+}
+
+async function processDisputeEvent(deps: WebhookDeps, eventId: string): Promise<WebhookOutcome> {
+  const notices = deps.disputes;
+  if (!notices) throw new Error("Dispute processing is not configured");
+  return deps.db.transaction(async (tx) => {
+    const [stored] = await tx.select().from(paypalWebhookEvent).where(eq(paypalWebhookEvent.id, eventId)).limit(1).for("update");
+    if (!stored) throw new Error("Stored dispute event is missing");
+    if (stored.status !== "received") return { status: "processed", note: "already_applied" };
+    const dispute = parseDisputeWebhookEvent(stored.disputePayload);
+    const outcome: WebhookOutcome = !dispute || dispute.id !== stored.id || dispute.eventType !== stored.eventType
+      ? { status: "parked", note: "Missing or invalid durable dispute input; reconciliation required." }
+      : { status: "processed", note: await handlePayPalDisputeWebhook({ db: tx, ...notices }, dispute) };
+    // Case state, timers, notices and the receipt commit together, before Queue acknowledgement.
+    await finishWebhookEvent(tx, eventId, outcome);
+    return outcome;
+  });
 }
 
 async function processOrderEvent(deps: WebhookDeps, order: OrderRow, event: PayPalWebhookEventRow): Promise<WebhookOutcome> {

@@ -1,3 +1,4 @@
+import type { JsonValue } from "@jendal-workspace/core";
 import { PRESET_RULEBOOKS, type RulePreset, type RulebookRules } from "@opmodel/engine-rules";
 import {
   claimDueDeliveryRows,
@@ -295,10 +296,10 @@ export async function upsertDispute(
     reason: string;
     status: DisputeStatus;
     outcome?: string | null;
-    amountMinor: number;
-    currency: string;
+    amountMinor: number | null;
+    currency: string | null;
     resolvedAt?: Date | null;
-    rawPayload?: unknown;
+    rawPayload?: JsonValue;
   },
 ): Promise<DisputeRow> {
   const [row] = await db
@@ -310,6 +311,8 @@ export async function upsertDispute(
         status: input.status,
         outcome: input.outcome ?? null,
         reason: input.reason,
+        amountMinor: input.amountMinor ?? sql`${dispute.amountMinor}`,
+        currency: input.currency ?? sql`${dispute.currency}`,
         resolvedAt: input.resolvedAt ?? null,
         rawPayload: input.rawPayload ?? null,
       },

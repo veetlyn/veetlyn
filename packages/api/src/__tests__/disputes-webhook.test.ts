@@ -87,7 +87,8 @@ describe.skipIf(!hasTestDatabase)("dispute webhooks", () => {
 
   it("updates the case status from PayPal's answer", async () => {
     const { teamId } = await capturedProject();
-    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent());
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ amountMinor: null, currency: null }));
+    expect(await db.select().from(dispute)).toEqual([expect.objectContaining({ amountMinor: null, currency: null })]);
 
     const note = await handlePayPalDisputeWebhook(
       { db, ...DEPS },
@@ -95,23 +96,56 @@ describe.skipIf(!hasTestDatabase)("dispute webhooks", () => {
     );
     expect(note).toBe("dispute waiting_for_seller");
     const [row] = await db.select().from(dispute);
-    expect(row).toMatchObject({ status: "waiting_for_seller", teamId });
+    expect(row).toMatchObject({ status: "waiting_for_seller", teamId, amountMinor: 12050, currency: "USD" });
     expect(await payoutsHeldForDispute(db, teamId)).toBe(true);
   });
 
   it("resolves seller-favourably: timers resume and payouts unblock", async () => {
     const { teamId } = await capturedProject();
     await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent());
+    await db.update(payment).set({ status: "refunded", refundedMinor: 12050 }).where(eq(payment.teamId, teamId));
 
     await handlePayPalDisputeWebhook(
       { db, ...DEPS },
-      disputeEvent({ eventType: "CUSTOMER.DISPUTE.RESOLVED", status: "RESOLVED", outcomeCode: "RESOLVED_SELLER_FAVOUR" }),
+      disputeEvent({ eventType: "CUSTOMER.DISPUTE.RESOLVED", status: "RESOLVED", outcomeCode: "RESOLVED_SELLER_FAVOUR", sellerTransactionIds: [] }),
     );
 
     const [row] = await db.select().from(dispute);
     expect(row).toMatchObject({ status: "resolved_seller", outcome: "RESOLVED_SELLER_FAVOUR", resolvedAt: expect.any(Date) });
     const [timer] = await db.select().from(scheduleItem);
     expect(timer?.status).toBe("pending");
+    expect(await payoutsHeldForDispute(db, teamId)).toBe(false);
+  });
+
+  it("enriches missing resolved-case money from late events without reopening or alerting", async () => {
+    const { teamId } = await capturedProject();
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({
+      eventType: "CUSTOMER.DISPUTE.RESOLVED",
+      outcomeCode: "RESOLVED_SELLER_FAVOUR",
+      amountMinor: null,
+      currency: null,
+    }));
+    const [resolved] = await db.select().from(dispute);
+    expect(resolved).toMatchObject({ status: "resolved_seller", amountMinor: null, currency: null });
+    const timers = await db.select().from(scheduleItem);
+    const events = await db.select().from(outbox);
+    const alerts = await db.select().from(outboxDelivery);
+
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent());
+    expect(await db.select().from(dispute)).toEqual([
+      { ...resolved, amountMinor: 12050, currency: "USD" },
+    ]);
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({
+      eventType: "CUSTOMER.DISPUTE.UPDATED",
+      amountMinor: 99999,
+      currency: "EUR",
+    }));
+    expect(await db.select().from(dispute)).toEqual([
+      { ...resolved, amountMinor: 12050, currency: "USD" },
+    ]);
+    expect(await db.select().from(scheduleItem)).toEqual(timers);
+    expect(await db.select().from(outbox)).toEqual(events);
+    expect(await db.select().from(outboxDelivery)).toEqual(alerts);
     expect(await payoutsHeldForDispute(db, teamId)).toBe(false);
   });
 
@@ -129,6 +163,30 @@ describe.skipIf(!hasTestDatabase)("dispute webhooks", () => {
     const timers = await db.select().from(scheduleItem);
     expect(timers.filter((timer) => timer.status === "pending")).toEqual([]);
     expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
+  });
+
+  it("keeps timers paused until every case resolves and ignores a late reopening event", async () => {
+    const { teamId } = await capturedProject();
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ disputeId: "CASE-A" }));
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ disputeId: "CASE-B" }));
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ disputeId: "CASE-A", eventType: "CUSTOMER.DISPUTE.RESOLVED", outcomeCode: "RESOLVED_SELLER_FAVOUR" }));
+    expect(await db.select().from(scheduleItem)).toEqual([expect.objectContaining({ status: "paused" })]);
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ disputeId: "CASE-A" }));
+    expect(await db.select().from(dispute).where(eq(dispute.paypalDisputeId, "CASE-A"))).toEqual([expect.objectContaining({ status: "resolved_seller" })]);
+    expect(await payoutsHeldForDispute(db, teamId)).toBe(true);
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ disputeId: "CASE-B", eventType: "CUSTOMER.DISPUTE.RESOLVED", outcomeCode: "RESOLVED_SELLER_FAVOUR" }));
+    expect(await db.select().from(scheduleItem)).toEqual([expect.objectContaining({ status: "pending" })]);
+    expect(await payoutsHeldForDispute(db, teamId)).toBe(false);
+  });
+
+  it("holds a case whose update arrived first and whose resolution outcome is unknown", async () => {
+    const { teamId } = await capturedProject();
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ eventType: "CUSTOMER.DISPUTE.UPDATED", status: "UNDER_REVIEW" }));
+    expect(await db.select().from(scheduleItem)).toEqual([expect.objectContaining({ status: "paused" })]);
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ eventType: "CUSTOMER.DISPUTE.RESOLVED", outcomeCode: "RESOLVED_WITH_PAYOUT" }));
+    expect(await db.select().from(dispute)).toEqual([expect.objectContaining({ status: "under_review", resolvedAt: null })]);
+    expect(await payoutsHeldForDispute(db, teamId)).toBe(true);
+    expect(await db.select().from(scheduleItem)).toEqual([expect.objectContaining({ status: "paused" })]);
   });
 
   it("ignores a dispute that names none of this platform's captures", async () => {
