@@ -49,7 +49,7 @@ import {
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
 import { createProjectRefund } from "@jendal-workspace/db/repositories/project-refunds";
-import { ensurePublishedRulebook, pauseProjectSchedule, projectHasOpenDispute, recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
+import { countMemberMarks, ensurePublishedRulebook, lockMemberWork, memberHasLeavingNotice, pauseProjectSchedule, projectHasOpenDispute, recordRulebookAcceptance, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -202,6 +202,17 @@ export async function startProject(
   });
 }
 
+async function requireMemberAvailableForNewWork(db: DbExecutor, teamId: string, memberUserId: string): Promise<void> {
+  const member = { teamId, memberUserId };
+  await lockMemberWork(db, member);
+  if (await memberHasLeavingNotice(db, member)) fail("FORBIDDEN", "This member has given leaving notice and cannot take new requests.");
+  const published = await ensurePublishedRulebook(db, teamId);
+  const { threshold, windowDays } = published.spec.strikes;
+  if (threshold > 0 && await countMemberMarks(db, { ...member, windowDays, now: new Date() }) >= threshold) {
+    fail("FORBIDDEN", "This member is suspended from new requests under the team's strike rules.");
+  }
+}
+
 // Managers assign the freelancer before quoting in `assigned` mode (services spec §4.3).
 export async function assignFreelancer(
   db: Database,
@@ -216,6 +227,7 @@ export async function assignFreelancer(
     const row = await requireTeamProject(tx, actor, input.projectId);
     checkTransition(row.status, "assign_freelancer");
     await requireTeamMember(tx, actor.teamId, input.freelancerId);
+    await requireMemberAvailableForNewWork(tx, actor.teamId, input.freelancerId);
     await uow.apply({
       project: row,
       set: { assignedFreelancerId: input.freelancerId },
@@ -255,6 +267,7 @@ export async function addQuote(
       fail(author.reason === "not_allowed" ? "FORBIDDEN" : "BAD_REQUEST", quoteAuthorRefusalMessage(author.reason));
     }
     if (author.freelancerId !== actor.actorId) await requireTeamMember(tx, actor.teamId, author.freelancerId);
+    await requireMemberAvailableForNewWork(tx, actor.teamId, author.freelancerId);
     const quoteId = crypto.randomUUID();
     const amountMinor = quoteTotalMinor(items);
     await uow.apply({
@@ -305,6 +318,7 @@ export async function acceptQuote(
       .where(and(eq(quote.id, input.quoteId), eq(quote.projectId, row.id)))
       .limit(1);
     if (!found || found.status !== "proposed") fail("BAD_REQUEST", "This quote is not waiting for an answer.");
+    await requireMemberAvailableForNewWork(tx, row.teamId, found.freelancerId);
     // The pinned rulebook's upfront rule (flat or tiered) fixes the deposit here (AGT-48).
     const rules = await pinnedRulebookRules(tx, row.rulebookId);
     const upfrontBps = rules ? computeUpfrontBps(rules, found.amountMinor) : row.upfrontBps;

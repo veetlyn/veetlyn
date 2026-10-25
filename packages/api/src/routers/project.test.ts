@@ -26,6 +26,7 @@ import {
 } from "@jendal-workspace/db/repositories/projects";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
+import { outboxDelivery } from "@jendal-workspace/db/schema/operating-model";
 import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
@@ -46,6 +47,7 @@ import type { Context, EmailServices, PayPalServices } from "../context";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact } from "../use-cases/payments";
 import { processPayPalWebhookEvent } from "../use-cases/paypal-webhooks";
+import { deliverDueOutboxDeliveries } from "../use-cases/outbox-dispatcher";
 import { appRouter } from "./index";
 
 type SessionValue = NonNullable<Context["session"]>;
@@ -1795,7 +1797,11 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         };
       }
       const caller = appRouter.createCaller(context);
-      return { caller, mailer };
+      const flushNotices = () => {
+        if (!context.email) throw new Error("Missing test email services");
+        return deliverDueOutboxDeliveries({ db, email: context.email, secret: TEST_AUTH_CONFIG.BETTER_AUTH_SECRET });
+      };
+      return { caller, mailer, flushNotices };
     }
 
     // An active services team with a support email and one active offering.
@@ -1809,7 +1815,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     it("creates a quoting project from a public request and emails the client and the team", async () => {
       const { team, offeringId } = await setupSeller();
-      const { caller, mailer } = requestCaller();
+      const { caller, mailer, flushNotices } = requestCaller();
 
       const result = await caller.project.requestQuote(validRequest({ offeringId }));
       expect(result).toEqual({ ok: true, projectId: null });
@@ -1845,15 +1851,17 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         }),
       ]);
 
-      expect(mailer.sent).toHaveLength(2);
-      const [toClient, toTeam] = mailer.sent;
+      expect(mailer.sent).toHaveLength(0);
+      await flushNotices();
+      const toClient = mailer.sent.find((message) => message.to === "jo@x.com");
+      const toTeam = mailer.sent.find((message) => message.to === "support@walkcrew.test");
       expect(toClient).toMatchObject({
         to: "jo@x.com",
         subject: "Your request to Walk Crew",
         replyTo: "support@walkcrew.test",
       });
       expect(toClient!.html).toContain("https://seller.platform.test/c/");
-      expect(toTeam).toMatchObject({ to: "support@walkcrew.test", subject: "New request from Jo" });
+      expect(toTeam).toMatchObject({ to: "support@walkcrew.test", subject: 'New request: "Landing page"' });
 
       const match = /https:\/\/seller\.platform\.test\/c\/(\S+)/.exec(toClient!.text);
       expect(match).toBeTruthy();
@@ -1870,14 +1878,16 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const clientProject = await seedProject(db, { teamId: team.id, clientEmail: "jo@x.com" });
       await db.update(clientIdentity).set({ verifiedAt: new Date() });
       const [verified] = await db.select().from(projectClient).where(eq(projectClient.projectId, clientProject));
-      const { caller, mailer } = requestCaller();
+      const { caller, mailer, flushNotices } = requestCaller();
 
       await caller.project.requestQuote(validRequest({ offeringId }));
 
       const requested = (await db.select().from(project)).find((p) => p.id !== clientProject)!;
       const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, requested.id));
       expect(attached!.contactId).not.toBe(verified!.contactId);
-      const token = /https:\/\/seller\.platform\.test\/c\/(\S+)/.exec(mailer.sent[0]!.text)![1]!;
+      await flushNotices();
+      const toClient = mailer.sent.find((message) => message.to === "jo@x.com");
+      const token = /https:\/\/seller\.platform\.test\/c\/(\S+)/.exec(toClient!.text)![1]!;
       expect(await verifyClientLink(TEST_AUTH_CONFIG.BETTER_AUTH_SECRET, token)).toMatchObject({
         projectId: requested.id,
         contactId: attached!.contactId,
@@ -1955,7 +1965,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     it("rate limits valid requests per email and team; invalid ones do not use the budget", async () => {
       const { offeringId } = await setupSeller();
-      const { caller, mailer } = requestCaller();
+      const { caller } = requestCaller();
       for (let i = 0; i < 5; i += 1) {
         await expect(
           caller.project.requestQuote(validRequest({ offeringId, description: "short" })),
@@ -1971,7 +1981,6 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         message: "Too many requests. Wait a little and try again.",
       });
       expect(await db.select().from(project)).toHaveLength(1);
-      expect(mailer.sent).toHaveLength(2);
     });
 
     it("rate limits requests per IP and skips the IP limit when there is no IP", async () => {
@@ -2017,7 +2026,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       expect(await db.select().from(project)).toEqual([]);
     });
 
-    it("answers a generic error when the client email cannot be sent", async () => {
+    it("keeps the request accepted and notices retryable when the email provider fails", async () => {
       const { offeringId } = await setupSeller();
       const send = vi.fn().mockRejectedValue(new Error("resend: 422 invalid address"));
       const email: EmailServices = {
@@ -2039,16 +2048,13 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         email,
       });
 
-      // The provider's error text must not leak to the caller.
-      await expect(caller.project.requestQuote(validRequest({ offeringId }))).rejects.toMatchObject({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "We could not send the email. Try again in a moment.",
-      });
-
-      // The use case committed before the send.
+      await expect(caller.project.requestQuote(validRequest({ offeringId }))).resolves.toEqual({ ok: true, projectId: null });
       expect(await db.select().from(project)).toHaveLength(1);
-      // The team notice is skipped after the client's mail failed.
-      expect(send).toHaveBeenCalledTimes(1);
+      expect(send).not.toHaveBeenCalled();
+      const report = await deliverDueOutboxDeliveries({ db, email, secret: TEST_AUTH_CONFIG.BETTER_AUTH_SECRET });
+      expect(report.failed).toBeGreaterThan(0);
+      const deliveries = await db.select().from(outboxDelivery);
+      expect(deliveries).toContainEqual(expect.objectContaining({ channel: "email_client", recipient: "jo@x.com", status: "pending", attempts: 1, nextAttemptAt: expect.any(Date) }));
     });
   });
 });
