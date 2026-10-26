@@ -1,0 +1,29 @@
+packages/db/src/repositories/services-catalog.ts
+  s_263bdab18b3756::t_aeca766464907b 17
+apps/web/src/app/dash/[storeSlug]/services/offering-form.tsx
+  s_263bdab18b3756::t_5a86fe963ad632 25,30-31,42,56,130,162,229-243
+  s_263bdab18b3756::t_0740b1ef3e21cd 244
+apps/web/src/components/seller-page/seller-page.tsx
+  s_263bdab18b3756::t_5a86fe963ad632 4,15,53
+apps/web/src/lib/server-api.ts
+  s_263bdab18b3756::t_aeca766464907b 62
+apps/web/src/lib/offering-labels.ts
+  s_263bdab18b3756::t_6a1f4b2a02ddc4 16,20
+  s_263bdab18b3756::t_5a86fe963ad632 13-15,17-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d91f7a18f23caab21015b73c03aabb10e7f2c953",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
