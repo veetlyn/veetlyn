@@ -193,6 +193,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
   const assign = useMutation(trpc.project.assign.mutationOptions({ onSuccess: refresh }));
   const addQuote = useMutation(trpc.project.addQuote.mutationOptions({ onSuccess: refresh }));
   const proposeAmendment = useMutation(trpc.project.proposeAmendment.mutationOptions({ onSuccess: refresh }));
+  const offerPaidRevision = useMutation(trpc.project.offerPaidRevision.mutationOptions({ onSuccess: refresh }));
   function removeDeliveryFile() {
     setDeliveryFile(null);
     setFileInputKey((key) => key + 1);
@@ -244,6 +245,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
     refund,
     dispute,
     marks,
+    revisionRounds,
     role,
     quotingMode,
     solo,
@@ -453,6 +455,26 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Amendments</h2>
+        {revisionRounds && revisionRounds.used >= revisionRounds.allowed && revisionRounds.paidPriceMinor > 0 && project.status === "delivered" && !pendingAmendment ? (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              The client used {revisionRounds.used} of {revisionRounds.allowed} free rounds of changes.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={offerPaidRevision.isPending}
+              onClick={() => offerPaidRevision.mutate({ teamSlug, projectId })}
+            >
+              Offer paid revision (+{formatMoney(money(currency, revisionRounds.paidPriceMinor))}, +1 revision)
+            </Button>
+            {offerPaidRevision.error ? (
+              <p role="alert" className="text-sm text-destructive">
+                {offerPaidRevision.error.message}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {amendments.length === 0 ? <p className="text-sm text-muted-foreground">No amendments.</p> : null}
         {amendments.map((amendment) => (
           <div key={amendment.id} className="panel p-4 text-sm">

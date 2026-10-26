@@ -27,7 +27,7 @@ import { TRPCError } from "@trpc/server";
 import { type LinkSecretSource, linkSecret, signPayLink } from "../client-links";
 import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
-import { deliveryFileUrl, type ProjectActor } from "./projects";
+import { deliveryFileUrl, pinnedRulebookRules, type ProjectActor } from "./projects";
 import { projectRuleSummary } from "./rulebooks";
 import { findOpenDisputeForProject, listProjectMemberMarks } from "@jendal-workspace/db/repositories/operating-model";
 
@@ -102,6 +102,7 @@ export async function getTeamProjectView(
   const payeeId = row.assignedFreelancerId ?? (viewer.role === "freelancer" ? viewer.actorId : null);
   const seesPayee = viewer.role === "admin" || payeeId === viewer.actorId;
   const seesMarks = viewer.role === "admin" || viewer.role === "manager";
+  const rules = await pinnedRulebookRules(db, row.rulebookId);
   const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee, openDispute, marks] = await Promise.all([
     listProjectContacts(db, row.id),
     listProjectQuotes(db, row.id),
@@ -133,6 +134,12 @@ export async function getTeamProjectView(
     payments,
     deliveries: await withDeliveryFiles(db, deliveries),
     refund,
+    // The free rounds of changes and the paid revision price (AGT-49); null for projects without team rules.
+    revisionRounds: rules && {
+      allowed: row.revisions,
+      used: deliveries.filter((d) => d.status === "changes_requested").length,
+      paidPriceMinor: rules.revisions.paidRevisionPriceMinor,
+    },
     dispute: openDispute && { paypalDisputeId: openDispute.paypalDisputeId, reason: openDispute.reason, status: openDispute.status },
     marks,
     role: viewer.role,
@@ -206,7 +213,7 @@ export async function getClientProjectView(
   const { db } = deps;
   const row = await findProjectById(db, projectId);
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-  const [quotes, amendments, payments, deliveries, refund, conversation, rules] = await Promise.all([
+  const [quotes, amendments, payments, deliveries, refund, conversation, rules, pinned] = await Promise.all([
     listProjectQuotes(db, projectId),
     listProjectAmendments(db, projectId),
     listProjectPayments(db, projectId),
@@ -214,6 +221,7 @@ export async function getClientProjectView(
     getClientRefundView(db, projectId),
     conversationFor(db, { kind: "client" }, row, deps.platformName),
     projectRuleSummary(db, { projectId, currency: row.currency }),
+    pinnedRulebookRules(db, row.rulebookId),
   ]);
   const freelancers = await clientFacingFreelancers(db, quotes, conversation.messages);
   const secret = linkSecret(deps.auth);
@@ -245,6 +253,11 @@ export async function getClientProjectView(
       declinedReason: row.declinedReason,
       declinedAt: row.declinedAt,
       rules,
+      revisionRounds: pinned && {
+        allowed: row.revisions,
+        used: deliveries.filter((d) => d.status === "changes_requested").length,
+        paidPriceMinor: pinned.revisions.paidRevisionPriceMinor,
+      },
     },
     quotes: quotes.map((q) => ({
       id: q.id,

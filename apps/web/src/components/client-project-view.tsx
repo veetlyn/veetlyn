@@ -317,6 +317,15 @@ export function ClientProjectView({
                     </div>
                   </form>
                 ) : (
+                  <div className="space-y-2">
+                  {project.revisionRounds && project.revisionRounds.used >= project.revisionRounds.allowed ? (
+                    <p className="text-sm text-muted-foreground">
+                      You used your {project.revisionRounds.allowed} free rounds of changes.
+                      {project.revisionRounds.paidPriceMinor > 0
+                        ? ` Ask the team for a paid revision (${formatMoney(money(currency, project.revisionRounds.paidPriceMinor))}); it arrives as a change to the quote.`
+                        : ""}
+                    </p>
+                  ) : null}
                   <div className="flex gap-2">
                     <Button disabled={deliveryBusy} onClick={() => actions?.acceptDelivery(delivery.id)}>
                       Accept delivery
@@ -331,6 +340,7 @@ export function ClientProjectView({
                     >
                       Request changes
                     </Button>
+                  </div>
                   </div>
                 )
               ) : null}
