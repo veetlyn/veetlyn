@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   MessagesSquare,
   Package,
+  ScrollText,
   Settings,
   Tag,
   Users,
@@ -78,6 +79,7 @@ export default function TeamShell({
   const team_: NavItem[] = [
     { href: `/${slug}/payouts`, label: "Payouts", icon: ArrowUpFromLine, show: kind === "services" && !solo },
     { href: `/${slug}/members`, label: "Members", icon: Users, show: kind === "services" && !solo },
+    { href: `/${slug}/rules`, label: "Rules", icon: ScrollText, show: kind === "services" },
     { href: `/${slug}/discord`, label: "Discord", icon: MessagesSquare, show: kind === "services" && admin },
     { href: `/${slug}/settings`, label: "Settings", icon: Settings, show: kind === "services" },
   ];

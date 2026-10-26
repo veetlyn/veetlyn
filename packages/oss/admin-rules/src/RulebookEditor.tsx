@@ -1,14 +1,28 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import { defineRegistry, JSONUIProvider, Renderer } from "@json-render/react";
 import { z } from "zod";
 
 import { RULEBOOK_CATALOG, rulebookToSpec, type RulebookRules, type RulebookSpec } from "@opmodel/engine-rules";
 
-import { switchPreset, updateRulebook, type RulebookChanges, type TeamPreset } from "./editor-state";
+import {
+  switchPreset,
+  updateRulebook,
+  updateSplitRule,
+  updateUpfrontTier,
+  majorUnitsToMinor,
+  type RulebookChanges,
+  type TeamPreset,
+} from "./editor-state";
 
 // Cards edit through this context so the editor owns validation: every change re-validates the whole
 // rulebook (updateRulebook) and invalid edits never reach the editor's parent.
-type EditContextValue = { edit: (changes: RulebookChanges) => void; currency: string };
+type EditContextValue = {
+  edit: (changes: RulebookChanges) => void;
+  editSplit: (field: keyof RulebookRules["split"], value: number) => void;
+  rejectEdit: () => void;
+  currency: string;
+  rules: RulebookRules;
+};
 const EditContext = createContext<EditContextValue | null>(null);
 
 type FieldKind = "percent" | "count" | "money" | "hours" | "days" | "outcome";
@@ -128,6 +142,7 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
       <label>
         {field.label}
         <select
+          className="h-10 rounded-md border bg-background px-3 text-sm"
           value={cardText.parse(value)}
           disabled={!meta.editable || !context}
           onChange={(event) => context?.edit({ [meta.ruleKey]: { silenceOutcome: event.target.value === "abandon" ? "abandon" : "accept_and_complete" } })}
@@ -140,21 +155,42 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
   }
   const number = cardNumber.parse(value);
   const inMajorUnits = field.kind === "money";
+  const inPercent = field.kind === "percent";
   return (
-    <label>
+    <label className="grid gap-1 text-sm font-medium">
       {field.label}
       <input
         type="number"
         min={0}
-        step={inMajorUnits ? 0.01 : 1}
-        value={inMajorUnits ? number / 100 : number}
+        max={inPercent ? 100 : undefined}
+        step={inMajorUnits || inPercent ? 0.01 : 1}
+        value={inMajorUnits || inPercent ? number / 100 : number}
         disabled={!meta.editable || !context}
+        className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
         onChange={(event) => {
           const parsed = z.coerce.number().nonnegative().catch(0).parse(event.target.value);
-          context?.edit({ [meta.ruleKey]: { [field.prop]: inMajorUnits ? Math.round(parsed * 100) : Math.round(parsed) } });
+          const decimalValue = inMajorUnits || inPercent ? majorUnitsToMinor(event.target.value) : null;
+          if ((inMajorUnits || inPercent) && decimalValue === null) {
+            context?.rejectEdit();
+            return;
+          }
+          const valueInRuleUnits = inMajorUnits || inPercent ? decimalValue ?? 0 : Math.round(parsed);
+          if (
+            meta.ruleKey === "split" &&
+            (field.prop === "teamCutBps" || field.prop === "managerCutBps" || field.prop === "memberCutBps")
+          ) {
+            try {
+              context?.editSplit(field.prop, valueInRuleUnits);
+            } catch {
+              return;
+            }
+            return;
+          }
+          context?.edit({ [meta.ruleKey]: { [field.prop]: valueInRuleUnits } });
         }}
       />
       {inMajorUnits && context ? <span>{context.currency}</span> : null}
+      {inPercent ? <span>%</span> : null}
     </label>
   );
 }
@@ -162,8 +198,8 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
 function ruleCard(meta: CardMeta) {
   return function RuleCard({ props }: { props: Record<string, CardPropValue> }) {
     return (
-      <fieldset className="opm-rule-card" data-rule={meta.ruleKey}>
-        <legend>{meta.title}</legend>
+      <fieldset className="opm-rule-card grid gap-3 rounded-xl border p-4" data-rule={meta.ruleKey}>
+        <legend className="px-1 text-sm font-semibold">{meta.title}</legend>
         {meta.fields.map((field) => (
           <FieldInput key={field.prop} meta={meta} field={field} value={props[field.prop] ?? null} />
         ))}
@@ -174,9 +210,10 @@ function ruleCard(meta: CardMeta) {
 
 const { registry } = defineRegistry(RULEBOOK_CATALOG, {
   components: {
-    Rulebook: ({ children }) => <div className="opm-rulebook">{children}</div>,
+    Rulebook: ({ children }) => <div className="opm-rulebook grid gap-3 md:grid-cols-2">{children}</div>,
     UpfrontPaymentRule: ruleCard(CARD_META.UpfrontPaymentRule),
-    UpfrontTierRule: ruleCard(CARD_META.UpfrontTierRule),
+    // Tier controls live below so edits can validate the complete tier list together.
+    UpfrontTierRule: () => null,
     RevisionsRule: ruleCard(CARD_META.RevisionsRule),
     ResponseWindowRule: ruleCard(CARD_META.ResponseWindowRule),
     UpdateWindowRule: ruleCard(CARD_META.UpdateWindowRule),
@@ -200,16 +237,50 @@ export type RulebookEditorProps = {
   publishDisabled?: boolean;
 };
 
-// The dash rules page: preset buttons, the twelve rule cards rendered through json-render, and a
-// publish action. Any field edit marks the rulebook custom and re-validates it whole.
+// The dash rules page: presets, rule cards rendered through json-render, editable tiers, and publishing.
+// Any field edit marks the rulebook custom and re-validates it whole.
 export function RulebookEditor({ spec, currency, onChange, onPublish, publishDisabled = false }: RulebookEditorProps) {
-  const edit = (changes: RulebookChanges) => onChange({ preset: "custom", rules: updateRulebook(spec.rules, changes) });
+  const [validationMessage, setValidationMessage] = useState("");
+  const edit = (changes: RulebookChanges) => {
+    try {
+      onChange({ preset: "custom", rules: updateRulebook(spec.rules, changes) });
+      setValidationMessage("");
+    } catch {
+      setValidationMessage("That value would make the rulebook invalid. The last valid value is still in place.");
+    }
+  };
+  const editSplit = (field: keyof RulebookRules["split"], value: number) => {
+    try {
+      edit({ split: updateSplitRule(spec.rules, field, value).split });
+    } catch {
+      setValidationMessage("Those split amounts must add up to 100%.");
+    }
+  };
+  const updateTier = (index: number, field: "minQuoteMinor" | "maxQuoteMinor" | "bps", value: number | null) => {
+    try {
+      onChange({
+        preset: "custom",
+        rules: updateUpfrontTier(spec.rules, index, { [field]: value }),
+      });
+    } catch {
+      setValidationMessage("That tier value would make the rulebook invalid. The last valid value is still in place.");
+    }
+  };
   return (
-    <EditContext.Provider value={{ edit, currency }}>
-      <div className="opm-rulebook-editor">
-        <div className="opm-presets" role="group" aria-label="Preset">
+    <EditContext.Provider value={{ edit, editSplit, rejectEdit: () => setValidationMessage("Use up to two decimal places and a value within the rule limits."), currency, rules: spec.rules }}>
+      <div className="opm-rulebook-editor grid gap-5">
+        <div className="opm-presets flex flex-wrap gap-2" role="group" aria-label="Preset">
           {TEAM_PRESETS.map((preset) => (
-            <button key={preset} type="button" aria-pressed={spec.preset === preset} onClick={() => onChange(switchPreset(preset))}>
+            <button
+              key={preset}
+              type="button"
+              aria-pressed={spec.preset === preset}
+              className="rounded-full border px-4 py-2 text-sm font-medium aria-pressed:bg-foreground aria-pressed:text-background"
+              onClick={() => {
+                setValidationMessage("");
+                onChange(switchPreset(preset));
+              }}
+            >
               {preset === "solo" ? "Solo" : preset === "agency" ? "Agency" : "Collective"}
             </button>
           ))}
@@ -217,7 +288,78 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
         <JSONUIProvider registry={registry}>
           <Renderer spec={rulebookToSpec(spec.rules, spec.preset)} registry={registry} />
         </JSONUIProvider>
-        <button type="button" className="opm-publish" disabled={publishDisabled} onClick={onPublish}>
+        {validationMessage ? <p role="alert" className="text-sm text-destructive">{validationMessage}</p> : null}
+        {spec.rules.upfrontTiers.tiers.length > 0 ? (
+          <section className="mt-5 space-y-3" aria-label="Upfront payment tiers">
+            <h3 className="font-medium">Upfront payment tiers</h3>
+            <p className="text-sm text-muted-foreground">
+              Set the quote range and upfront rate for each tier. Leave the upper amount empty for no limit. When ranges overlap, the first matching tier applies.
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {spec.rules.upfrontTiers.tiers.map((tier, index) => (
+                <fieldset key={`${tier.minQuoteMinor}-${index}`} className="grid gap-3 rounded-xl border p-4">
+                  <legend className="px-1 text-sm font-medium">Tier {index + 1}</legend>
+                  <label className="grid gap-1 text-sm">
+                    From quote ({currency})
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={tier.minQuoteMinor / 100}
+                      onChange={(event) => {
+                        const minor = majorUnitsToMinor(event.target.value);
+                        if (minor === null) setValidationMessage("Enter a quote amount with no more than two decimal places.");
+                        else updateTier(index, "minQuoteMinor", minor);
+                      }}
+                      className="h-10 rounded-md border bg-background px-3"
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    Up to quote ({currency})
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={tier.maxQuoteMinor === null ? "" : tier.maxQuoteMinor / 100}
+                      onChange={(event) => {
+                        if (event.target.value === "") {
+                          updateTier(index, "maxQuoteMinor", null);
+                          return;
+                        }
+                        const minor = majorUnitsToMinor(event.target.value);
+                        if (minor === null) setValidationMessage("Enter a quote amount with no more than two decimal places.");
+                        else updateTier(index, "maxQuoteMinor", minor);
+                      }}
+                      className="h-10 rounded-md border bg-background px-3"
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    Upfront rate (%)
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.01"
+                      value={tier.bps / 100}
+                      onChange={(event) => {
+                        const bps = majorUnitsToMinor(event.target.value);
+                        if (bps === null) setValidationMessage("Enter a rate with no more than two decimal places.");
+                        else updateTier(index, "bps", bps);
+                      }}
+                      className="h-10 rounded-md border bg-background px-3"
+                    />
+                  </label>
+                </fieldset>
+              ))}
+            </div>
+          </section>
+        ) : null}
+        <button
+          type="button"
+          className="opm-publish h-10 justify-self-start rounded-md bg-foreground px-4 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={publishDisabled}
+          onClick={onPublish}
+        >
           Publish new version
         </button>
       </div>
