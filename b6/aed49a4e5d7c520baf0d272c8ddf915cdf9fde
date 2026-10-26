@@ -1,0 +1,33 @@
+packages/api/src/use-cases/project-views.ts
+  s_263bdab18b3756::t_1a2af188ecb90d 32,104-105,114-115,136-137
+packages/db/src/repositories/operating-model.ts
+  s_263bdab18b3756::t_1a2af188ecb90d 18,213-220
+  s_263bdab18b3756::t_3e4e965aeef88e 221-222
+apps/web/src/app/dash/[storeSlug]/orders/orders-list.tsx
+  s_263bdab18b3756::t_1e44cbb33eb782 4-5,15-34,69
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_e9030d98b0b3eb 150-162,330
+  s_263bdab18b3756::t_a184c3a1e0903e 141-149,163-170,249-250,326-329,331-333,649-663
+  s_263bdab18b3756::t_24d362520c8f18 664
+packages/api/src/routers/project.test.ts
+  s_263bdab18b3756::t_42a1122722d983 31,253-257,259-261,263-268,270
+  s_263bdab18b3756::t_eb927b645288af 258,269
+  s_263bdab18b3756::t_1fb8d5fc2f7fcc 262
+  s_263bdab18b3756::t_3c038e064d41e9 271-272
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b6aed49a4e5d7c520baf0d272c8ddf915cdf9fde",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
