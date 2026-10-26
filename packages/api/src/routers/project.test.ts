@@ -270,6 +270,23 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).dispute).toBeNull();
   });
 
+  it("lets only an admin record a warning on the project's member", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Aïcha" });
+    const manager = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
+    const { projectId } = await callerFor(userId).project.create({ teamSlug: "team", title: "Site", clientEmail: "c@example.com" });
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+
+    await expect(
+      callerFor(manager).project.recordWarning({ teamSlug: "team", projectId, note: "Rude to the client" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await callerFor(userId).project.recordWarning({ teamSlug: "team", projectId, note: "  Rude to the client " });
+
+    expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).marks).toMatchObject([
+      { kind: "warning", note: "Rude to the client", memberName: "Aïcha" },
+    ]);
+  });
+
   it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {
     const { userId, organizationId } = await seedOrganization(db);
     const soloTeam = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });

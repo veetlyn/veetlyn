@@ -825,6 +825,9 @@ export async function setQualityRefund(
       set: { qualityRefundMinor: amountMinor, qualityRefundSetBy: actor.actorId, qualityRefundSetAt: new Date() },
       events: [{ type: "project.quality_refund_set", data: { amountMinor: input.amountMinor } }],
     });
+    if (amountMinor !== null && row.qualityRefundMinor === null && row.assignedFreelancerId) {
+      await recordMemberMark(tx, { teamId: row.teamId, memberUserId: row.assignedFreelancerId, projectId: row.id, kind: "quality_refund" });
+    }
     await insertEventMessage(tx, {
       projectId: row.id,
       space: "project",
@@ -835,6 +838,20 @@ export async function setQualityRefund(
       refId: row.id,
     });
   });
+}
+
+// An admin's warning to the project's member, kept with the project; it does not count toward strikes.
+export async function recordProjectWarning(
+  db: Database,
+  actor: ProjectActor,
+  input: { projectId: string; note: string },
+): Promise<void> {
+  if (!canServicesTeam(actor.role, "resolve_cases")) fail("FORBIDDEN", "Only an admin can record a warning.");
+  const note = input.note.trim();
+  if (note.length === 0) fail("BAD_REQUEST", "Say what the warning is for.");
+  const row = await requireTeamProject(db, actor, input.projectId);
+  if (!row.assignedFreelancerId) fail("BAD_REQUEST", "This project has no member to warn yet.");
+  await recordMemberMark(db, { teamId: row.teamId, memberUserId: row.assignedFreelancerId, projectId: row.id, kind: "warning", note });
 }
 
 // Callers check access to the project first; the link names the file so the browser saves it under that name.

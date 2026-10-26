@@ -31,6 +31,7 @@ import {
   projectQualityRefundSet,
   projectRefundClient,
   projectStart,
+  projectWarningRecord,
 } from "../actions/projects";
 import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "../actions/quotes";
 import { createRequest, requestTerms } from "../actions/requests";
@@ -61,6 +62,7 @@ export const projectRouter = router({
   refundClient: teamProcedureFor(projectRefundClient),
   decideLateRefund: teamProcedureFor(projectLateRefundDecide),
   setQualityRefund: teamProcedureFor(projectQualityRefundSet),
+  recordWarning: teamProcedureFor(projectWarningRecord),
   deliveryFileUrl: teamProcedureFor(deliveryFile),
   clientAdd: teamProcedureFor(projectClientAdd),
   clientRemove: teamProcedureFor(projectClientRemove),

@@ -160,7 +160,13 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     // After delivery the agency rules cap it at 25% of the $200.00 price.
     await expect(set(5_001)).rejects.toThrow(/REFUND_EXCEEDS_RULEBOOK_CAP.*\$50\.00/);
     await set(5_000);
+    await set(4_000);
     expect(await balance(`client_held:${fixture.projectId}`)).toBe(20_000);
+    // The member's quality mark is recorded once, however often the amount changes.
+    expect(await db.select().from(memberMark).where(eq(memberMark.projectId, fixture.projectId))).toEqual([
+      expect.objectContaining({ memberUserId: fixture.freelancerId, kind: "quality_refund" }),
+    ]);
+    await set(5_000);
 
     await acceptDelivery(db, { projectId: fixture.projectId, deliveryId: fixture.deliveryId });
     await settled(fixture, 15_000, 5_000, 1_500, 10_500);

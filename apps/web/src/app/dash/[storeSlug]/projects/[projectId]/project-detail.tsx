@@ -46,6 +46,7 @@ import { ProjectProgress } from "@/components/project-progress";
 import { ClientsSection } from "./clients-section";
 import { ConversationSection } from "./conversation-section";
 import { QuoteCalculator } from "./quote-calculator";
+import { MemberMarks } from "./member-marks";
 import { LateRefundNotice, QualityRefundForm } from "./price-adjustments";
 import { RefundSection } from "./refund-section";
 
@@ -162,12 +163,6 @@ const DISPUTE_REASON_LABELS = new Map([
   ["OTHER", "Other"],
 ]);
 
-const MARK_KIND_LABELS = {
-  late_update: "Late update",
-  late_delivery: "Late delivery",
-  quality_refund: "Quality refund",
-  warning: "Warning",
-} as const satisfies Record<string, string>;
 
 export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: string; projectId: string }) {
   const queryClient = useQueryClient();
@@ -651,21 +646,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
 
       <QualityRefundForm teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
 
-      {marks.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Member marks</h2>
-          <ul className="space-y-2 text-sm">
-            {marks.map((mark) => (
-              <li key={mark.id}>
-                <span className="font-medium">{mark.memberName}</span>
-                <span className="text-muted-foreground">
-                  {" "}· {MARK_KIND_LABELS[mark.kind]}{mark.note ? ` · ${mark.note}` : ""} · {new Date(mark.createdAt).toLocaleDateString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} />
       </aside>
     </main>
   );
