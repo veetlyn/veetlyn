@@ -73,6 +73,11 @@ function noOpenAmendmentMoney(facts: ProjectFacts): TransitionRefusal | null {
   return null;
 }
 
+// A paid revision's round, like any increase's work, waits for its top-up.
+function noUnpaidTopUp(facts: ProjectFacts): TransitionRefusal | null {
+  return facts.unpaidTopUp ? "unpaid_top_up" : null;
+}
+
 function hasPendingAmendment(facts: ProjectFacts): TransitionRefusal | null {
   return facts.pendingAmendment ? null : "no_pending_amendment";
 }
@@ -84,7 +89,7 @@ export const PROJECT_TRANSITIONS = {
   accept_quote: { from: ["quoting"], to: () => "awaiting_deposit" },
   deposit_captured: { from: ["awaiting_deposit"], to: () => "in_progress" },
   submit_delivery: { from: ["in_progress"], to: () => "delivered" },
-  request_changes: { from: ["delivered"], to: () => "in_progress" },
+  request_changes: { from: ["delivered"], to: () => "in_progress", guard: noUnpaidTopUp },
   propose_amendment: { from: WORKING, to: () => "unchanged", guard: noOpenAmendmentMoney },
   accept_amendment: { from: WORKING, to: () => "unchanged", guard: hasPendingAmendment },
   decline_amendment: { from: WORKING, to: () => "unchanged", guard: hasPendingAmendment },
