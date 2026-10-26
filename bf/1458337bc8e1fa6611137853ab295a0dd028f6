@@ -1,0 +1,22 @@
+packages/api/src/__tests__/disputes-webhook.test.ts
+  s_263bdab18b3756::t_b8559d848d6fb3 46,55,62,192-198
+  s_263bdab18b3756::t_c0c4fb4c7e4d4d 199-200
+packages/api/src/use-cases/disputes.ts
+  s_263bdab18b3756::t_edebc3fb1e2657 1,36-37,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf1458337bc8e1fa6611137853ab295a0dd028f6",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
