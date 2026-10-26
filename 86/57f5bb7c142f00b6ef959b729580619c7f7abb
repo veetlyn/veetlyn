@@ -1,0 +1,21 @@
+apps/web/src/components/page-sections-nav.tsx
+  s_263bdab18b3756::t_af7128442b2c6a 56-58,71
+apps/web/src/components/team-shell.tsx
+  s_263bdab18b3756::t_af7128442b2c6a 179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8657f5bb7c142f00b6ef959b729580619c7f7abb",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
