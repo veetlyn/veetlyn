@@ -214,12 +214,18 @@ export const RULE_SECTIONS: { ruleKey: string; title: string }[] = Object.values
 function ruleCard(meta: CardMeta) {
   return function RuleCard({ props }: { props: Record<string, CardPropValue> }) {
     return (
-      <fieldset id={ruleAnchor(meta.ruleKey)} className="opm-rule-card grid scroll-mt-20 content-start gap-3 rounded-xl border p-4" data-rule={meta.ruleKey}>
-        <legend className="px-1 text-sm font-semibold">{meta.title}</legend>
+      <div
+        id={ruleAnchor(meta.ruleKey)}
+        role="group"
+        aria-labelledby={`${ruleAnchor(meta.ruleKey)}-title`}
+        className="opm-rule-card grid scroll-mt-20 content-start gap-3 rounded-lg bg-muted/50 p-4"
+        data-rule={meta.ruleKey}
+      >
+        <h3 id={`${ruleAnchor(meta.ruleKey)}-title`} className="text-sm font-semibold">{meta.title}</h3>
         {meta.fields.map((field) => (
           <FieldInput key={field.prop} meta={meta} field={field} value={props[field.prop] ?? null} />
         ))}
-      </fieldset>
+      </div>
     );
   };
 }
@@ -292,7 +298,7 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
               key={preset}
               type="button"
               aria-pressed={spec.preset === preset}
-              className="rounded-full border px-4 py-2 text-sm font-medium aria-pressed:bg-foreground aria-pressed:text-background"
+              className="rounded-full border px-4 py-2 text-sm font-medium aria-pressed:border-foreground aria-pressed:bg-foreground aria-pressed:text-background"
               onClick={() => {
                 setValidationMessage("");
                 onChange(switchPreset(preset));
@@ -314,8 +320,8 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               {spec.rules.upfrontTiers.tiers.map((tier, index) => (
-                <fieldset key={index} className="grid gap-3 rounded-xl border p-4">
-                  <legend className="px-1 text-sm font-medium">Tier {index + 1}</legend>
+                <div key={index} role="group" aria-label={`Tier ${index + 1}`} className="grid gap-3 rounded-lg bg-muted/50 p-4">
+                  <p className="text-sm font-semibold">Tier {index + 1}</p>
                   <label className="grid gap-1 text-sm">
                     From quote ({currency})
                     <input
@@ -366,7 +372,7 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
                       className="h-10 rounded-md border bg-background px-3"
                     />
                   </label>
-                </fieldset>
+                </div>
               ))}
             </div>
           </section>

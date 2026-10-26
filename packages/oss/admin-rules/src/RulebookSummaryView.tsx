@@ -28,7 +28,7 @@ export function RulebookSummaryView({ rules, currency, version, initialTab = "cl
         ? memberAgreementLines(rules, currency)
         : [formatCompactRuleSummary(rules, currency)];
   return (
-    <section className="opm-rulebook-summary space-y-3 rounded-xl border p-4" aria-label="Rulebook preview">
+    <section className="opm-rulebook-summary space-y-3 rounded-lg bg-muted/50 p-4" aria-label="Rulebook preview">
       <header className="space-y-3">
         {version !== undefined ? <h3 className="text-sm font-semibold text-muted-foreground">Version {version}</h3> : null}
         <div className="flex flex-wrap gap-1" role="tablist" aria-label="Summary">

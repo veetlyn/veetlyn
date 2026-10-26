@@ -111,7 +111,7 @@ export default function TeamShell({
           aria-current={isActive(href) ? "page" : undefined}
           className={cn(
             "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-            "aria-[current=page]:bg-card aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_0_0_1px_var(--input),var(--raise)]",
+            "aria-[current=page]:bg-card aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_0_0_1px_var(--input)]",
           )}
         >
           <Icon className="size-4" aria-hidden="true" />

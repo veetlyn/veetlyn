@@ -202,7 +202,7 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* Surfaces: a tray holds panels; panels are raised; fields are wells. */
+/* Surfaces: a tray holds panels; panels and buttons have one edge and no shadow; fields are wells. */
 @utility tray {
   padding: 4px;
   border-radius: 14px;
@@ -211,21 +211,20 @@
 }
 @utility panel {
   border-radius: 10px;
-  border: 1px solid var(--input);
-  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
-  box-shadow: var(--raise);
+  border: 1px solid var(--border);
+  background: var(--surface-top);
 }
 @utility raised {
-  background: linear-gradient(180deg, var(--surface-top), var(--secondary));
-  box-shadow: 0 0 0 1px var(--input), inset 0 1px 0 var(--edge-hi), var(--drop);
+  background: var(--surface-top);
+  box-shadow: 0 0 0 1px var(--input);
 }
 @utility well {
   box-shadow: var(--well);
 }
 @utility main-surface {
   color: var(--primary-foreground);
-  background: linear-gradient(180deg, var(--main-top), var(--main-bottom));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.18), 0 0 0 1px var(--main-edge), 0 1px 2px rgb(0 0 0 / 0.2), 0 6px 14px -6px rgb(0 0 0 / 0.35);
+  background: var(--main-bottom);
+  box-shadow: 0 0 0 1px var(--main-edge);
 }
 /* Headings: Cal Sans UI at semibold with its geometric shapes, slightly tight. Never bold or black. */
 @utility font-heading {

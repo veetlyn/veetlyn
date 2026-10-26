@@ -88,7 +88,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
               <Link
                 key={section.href}
                 href={section.href}
-                className="group panel grid content-start gap-1 p-4 transition-shadow hover:shadow-[0_0_0_1px_var(--input),var(--raise)]"
+                className="group panel grid content-start gap-1 p-4 transition-shadow hover:shadow-[0_0_0_1px_var(--input)]"
               >
                 <span className="flex items-center justify-between font-semibold">
                   {section.title}

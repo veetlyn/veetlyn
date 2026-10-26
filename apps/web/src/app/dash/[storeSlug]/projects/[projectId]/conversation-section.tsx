@@ -163,7 +163,7 @@ export function ConversationSection({
                 role="tab"
                 aria-selected={tab === space}
                 onClick={() => setTab(space)}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-[0_0_0_1px_var(--input),var(--raise)]"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-[0_0_0_1px_var(--input)]"
               >
                 {TAB_LABELS[space]}
               </button>
