@@ -352,7 +352,7 @@ export async function acceptQuote(
       quotePartMinor: deposit.quotePartMinor,
       managementFeeMinor: deposit.managementFeeMinor,
       amountMinor: deposit.totalMinor,
-      lines: paymentLines("deposit", deposit, row.managementFeeBps),
+      lines: paymentLines("deposit", deposit, row.managementFeeBps, upfrontBps),
     });
     await insertEventMessage(tx, {
       projectId: row.id,
@@ -588,7 +588,7 @@ export async function acceptAmendment(
         quotePartMinor: effect.topUp.quotePartMinor,
         managementFeeMinor: effect.topUp.managementFeeMinor,
         amountMinor: effect.topUp.totalMinor,
-        lines: paymentLines("top_up", effect.topUp, row.managementFeeBps),
+        lines: paymentLines("top_up", effect.topUp, row.managementFeeBps, row.upfrontBps),
       });
     }
     await insertEventMessage(tx, {
