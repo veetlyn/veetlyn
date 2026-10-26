@@ -1,0 +1,44 @@
+packages/db/src/migrations/20261026090916_paid_revision/snapshot.json
+  s_263bdab18b3756::t_19b93dc3fcf418 1-14570
+packages/api/src/actions/quotes.ts
+  s_263bdab18b3756::t_0ed1f81d590e20 4,63-71
+  s_263bdab18b3756::t_96f94c003e979a 72-73
+packages/db/src/schema/projects.ts
+  s_263bdab18b3756::t_19b93dc3fcf418 175-176
+packages/api/src/__tests__/enforced-rules.test.ts
+  s_263bdab18b3756::t_19b93dc3fcf418 8,22,187-211
+  s_263bdab18b3756::t_5ec8760df5df38 212-213
+packages/api/src/actions/registry.ts
+  s_263bdab18b3756::t_0ed1f81d590e20 31,55
+packages/db/src/migrations/20261026090916_paid_revision/migration.sql
+  s_263bdab18b3756::t_19b93dc3fcf418 1
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_0ed1f81d590e20 196,248,458-477
+packages/api/src/routers/project.ts
+  s_263bdab18b3756::t_0ed1f81d590e20 36,60
+packages/api/src/use-cases/project-views.ts
+  s_263bdab18b3756::t_86baa654043dd5 216,224,256-260
+  s_263bdab18b3756::t_0ed1f81d590e20 30,105,137-142
+packages/api/src/use-cases/projects.ts
+  s_263bdab18b3756::t_25fd12d175340c 425,461,474-493,538
+  s_263bdab18b3756::t_0ed1f81d590e20 378
+apps/web/src/components/client-project-view.tsx
+  s_263bdab18b3756::t_86baa654043dd5 320-328
+  s_263bdab18b3756::t_28c31931633f32 344
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc222339bef0e5b7779ea3fef096ea9eae41d1f3",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
