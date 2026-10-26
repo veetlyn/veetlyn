@@ -252,7 +252,8 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
     expect(seen).toHaveLength(2);
     expect(seen[0]?.key).toBe(`delivery/${record.id}`);
     expect(seen[1]).toEqual(seen[0]);
-    expect(await db.select().from(outboxDelivery)).toEqual([expect.objectContaining({ status: "sent", attempts: 2, providerMessageId: "accepted-receipt" })]);
+    // Once sent, the rendered snapshot (which can hold a signed client link) is not kept.
+    expect(await db.select().from(outboxDelivery)).toEqual([expect.objectContaining({ status: "sent", attempts: 2, providerMessageId: "accepted-receipt", message: null })]);
   });
 
   it("delivers a client notice for a project event, once, with the client page link", async () => {
