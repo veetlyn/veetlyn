@@ -1,0 +1,22 @@
+packages/db/src/__tests__/operating-model-repo.test.ts
+  s_263bdab18b3756::t_b998d12c40fad7 2-3,28,73-112
+  s_263bdab18b3756::t_5947ba20997127 113-114
+packages/db/src/repositories/operating-model.ts
+  s_263bdab18b3756::t_4a230d9ae0f258 98-99,109,136-150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b75d5dd3fd3696815a08ce3e733ece73d71c23cb",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
