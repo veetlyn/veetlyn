@@ -84,7 +84,9 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
       <header className="mb-6 space-y-2">
         <h1 className="font-heading text-3xl">Team rules</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Read the current agreement, see the rules attached to new projects, and manage a draft if you are an admin.
+          {isAdmin
+            ? "Edit a draft of the team's rules and publish it; new projects take the published version."
+            : "The agreement you work under in this team, and the terms clients accept with every new project."}
         </p>
       </header>
 
@@ -133,7 +135,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
               <h2 id="published-rules-heading" className="text-xl font-semibold">Published agreement</h2>
               <p className="text-sm text-muted-foreground">Version {published.version}</p>
             </div>
-            <RulebookSummaryView rules={published.rules} currency={currency} version={published.version} initialTab="member" />
+            <RulebookSummaryView rules={published.rules} currency={currency} initialTab="member" tabs={["member", "client"]} />
             {acceptedCurrentVersion ? (
               <p className="text-sm font-medium">You accepted this member agreement.</p>
             ) : (
@@ -166,7 +168,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
             <label className="flex items-center gap-3 text-sm">
               <input
                 type="checkbox"
-                checked={state.data.projectNoticesEnabled}
+                checked={notice.isPending ? notice.variables.projectNoticesEnabled : state.data.projectNoticesEnabled}
                 disabled={notice.isPending}
                 onChange={(event) => notice.mutate({ teamSlug, projectNoticesEnabled: event.target.checked })}
                 className="size-4 accent-current"
