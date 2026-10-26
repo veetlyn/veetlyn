@@ -7,7 +7,7 @@ const currencySymbols = new Map([
 
 function formatMinor(currency: string, minor: number): string {
   const symbol = currencySymbols.get(currency) ?? `${currency} `;
-  return `${symbol}${(minor / 100).toFixed(2)}`;
+  return `${symbol}${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatBps(bps: number): string {
@@ -15,8 +15,8 @@ function formatBps(bps: number): string {
   return `${Number.isInteger(percent) ? percent : percent.toFixed(2).replace(/0$/, "")}%`;
 }
 
-function joinSentences(sentences: string[]): string {
-  return sentences.map((sentence) => (sentence.endsWith(".") ? sentence : `${sentence}.`)).join(" ");
+function asSentences(sentences: (string | null)[]): string[] {
+  return sentences.filter((sentence) => sentence !== null).map((sentence) => (sentence.endsWith(".") ? sentence : `${sentence}.`));
 }
 
 function tierSentence(currency: string, rules: RulebookRules): string | null {
@@ -37,8 +37,8 @@ function freeRevisions(count: number): string {
   return count === 1 ? "1 free revision" : `${count} free revisions`;
 }
 
-// What the client reads before requesting work.
-export function formatClientTermsSummary(rules: RulebookRules, currency: string): string {
+// What the client reads before requesting work, one rule per sentence.
+export function clientTermsLines(rules: RulebookRules, currency: string): string[] {
   const tiers = tierSentence(currency, rules) ?? "";
   const sentences = [
     `${formatBps(rules.upfront.defaultBps)} upfront to start${tiers}`,
@@ -57,11 +57,15 @@ export function formatClientTermsSummary(rules: RulebookRules, currency: string)
       rules.qualityRefund.inProgressCapBps,
     )} during work and ${formatBps(rules.qualityRefund.afterDeliveryCapBps)} after delivery`,
   ];
-  return joinSentences(sentences.filter((sentence) => sentence !== null));
+  return asSentences(sentences);
 }
 
-// What a team member reads before accepting the team's agreement.
-export function formatMemberAgreementSummary(rules: RulebookRules, currency: string): string {
+export function formatClientTermsSummary(rules: RulebookRules, currency: string): string {
+  return clientTermsLines(rules, currency).join(" ");
+}
+
+// What a team member reads before accepting the team's agreement, one rule per sentence.
+export function memberAgreementLines(rules: RulebookRules, currency: string): string[] {
   const sentences = [
     `On completion the price splits ${formatBps(rules.split.teamCutBps)} to the team, ${formatBps(rules.split.managerCutBps)} to your manager and ${formatBps(
       rules.split.memberCutBps,
@@ -73,9 +77,13 @@ export function formatMemberAgreementSummary(rules: RulebookRules, currency: str
       ? `Late delivery proposes a refund of ${formatBps(rules.lateDelivery.ratePerDayBps)} per day (up to ${formatBps(rules.lateDelivery.capBps)}) from your share`
       : null,
     rules.leavingNotice.days > 0 ? `To leave the team, give ${rules.leavingNotice.days} days of notice` : null,
-    `Each paid revision beyond the ${rules.revisions.freeCount} free rounds pays you ${formatMinor(currency, rules.revisions.paidRevisionPriceMinor)}`,
+    `Each paid revision beyond the ${rules.revisions.freeCount === 1 ? "free round" : `${rules.revisions.freeCount} free rounds`} pays you ${formatMinor(currency, rules.revisions.paidRevisionPriceMinor)}`,
   ];
-  return joinSentences(sentences.filter((sentence) => sentence !== null));
+  return asSentences(sentences);
+}
+
+export function formatMemberAgreementSummary(rules: RulebookRules, currency: string): string {
+  return memberAgreementLines(rules, currency).join(" ");
 }
 
 // The one-line card summary shown on client, pay and plugin surfaces.

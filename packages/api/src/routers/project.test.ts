@@ -1923,6 +1923,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       const terms = await caller.project.requestTerms({ slug: "seller" });
       expect(terms).toMatchObject({ rulebookId: latest.id, version: latest.version });
       expect(terms.terms).toContain("4");
+      expect(terms.termLines).toContain("You get 4 free revisions; further revisions cost $75.00 each.");
       await caller.project.requestQuote(validRequest({ acceptedRulebookId: terms.rulebookId }));
       const [created] = await db.select().from(project);
       const [client] = await db.select().from(projectClient);

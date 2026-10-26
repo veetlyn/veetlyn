@@ -172,7 +172,13 @@ export default function RequestForm({
               <Button type="button" variant="outline" onClick={() => { void terms.refetch(); }}>Try again</Button>
             </div>
           ) : null}
-          {terms.data ? <p className="whitespace-pre-line text-sm text-muted-foreground">{terms.data.terms}</p> : null}
+          {terms.data ? (
+            <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground marker:text-muted-foreground">
+              {terms.data.termLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
           <div className="flex items-start gap-3">
             <Checkbox
               id="request-terms"

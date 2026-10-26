@@ -1,11 +1,6 @@
 import { useState } from "react";
 
-import {
-  formatClientTermsSummary,
-  formatCompactRuleSummary,
-  formatMemberAgreementSummary,
-  type RulebookRules,
-} from "@opmodel/engine-rules";
+import { clientTermsLines, formatCompactRuleSummary, memberAgreementLines, type RulebookRules } from "@opmodel/engine-rules";
 
 export type SummaryTab = "client" | "member" | "compact";
 
@@ -26,12 +21,12 @@ export type RulebookSummaryViewProps = {
 // the client terms, the member agreement and the one-line card summary.
 export function RulebookSummaryView({ rules, currency, version, initialTab = "client" }: RulebookSummaryViewProps) {
   const [tab, setTab] = useState<SummaryTab>(initialTab);
-  const text =
+  const lines =
     tab === "client"
-      ? formatClientTermsSummary(rules, currency)
+      ? clientTermsLines(rules, currency)
       : tab === "member"
-        ? formatMemberAgreementSummary(rules, currency)
-        : formatCompactRuleSummary(rules, currency);
+        ? memberAgreementLines(rules, currency)
+        : [formatCompactRuleSummary(rules, currency)];
   return (
     <section className="opm-rulebook-summary space-y-3 rounded-xl border p-4" aria-label="Rulebook preview">
       <header className="space-y-3">
@@ -51,7 +46,15 @@ export function RulebookSummaryView({ rules, currency, version, initialTab = "cl
           ))}
         </div>
       </header>
-      <p className="text-sm leading-6">{text}</p>
+      {lines.length === 1 ? (
+        <p className="text-sm leading-6">{lines[0]}</p>
+      ) : (
+        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 marker:text-muted-foreground">
+          {lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

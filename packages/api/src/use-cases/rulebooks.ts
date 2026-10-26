@@ -16,7 +16,7 @@ import {
 import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { rulebook } from "@jendal-workspace/db/schema/operating-model";
 import { project } from "@jendal-workspace/db/schema/projects";
-import { formatClientTermsSummary, formatCompactRuleSummary, formatMemberAgreementSummary, type RulebookRules } from "@opmodel/engine-rules";
+import { clientTermsLines, formatClientTermsSummary, formatCompactRuleSummary, formatMemberAgreementSummary, type RulebookRules } from "@opmodel/engine-rules";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -55,12 +55,13 @@ export async function getTeamRulebookState(db: Database, input: { teamId: string
 export async function publishedClientTerms(
   db: Database,
   input: { teamId: string; currency: string },
-): Promise<{ rulebookId: string; version: number; terms: string; compact: string }> {
+): Promise<{ rulebookId: string; version: number; terms: string; termLines: string[]; compact: string }> {
   const rulebook = (await getPublishedRulebook(db, input.teamId)) ?? (await ensurePublishedRulebook(db, input.teamId));
   return {
     rulebookId: rulebook.id,
     version: rulebook.version,
     terms: formatClientTermsSummary(rulebook.spec, input.currency),
+    termLines: clientTermsLines(rulebook.spec, input.currency),
     compact: formatCompactRuleSummary(rulebook.spec, input.currency),
   };
 }
