@@ -120,8 +120,9 @@ export default function TeamShell({
       ));
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[248px_minmax(0,1fr)]">
-      <aside className="hidden flex-col gap-1 border-r bg-sidebar px-3 py-4 md:flex">
+    // The window stays still: the sidebar and the top bar hold their place and only the page content scrolls.
+    <div data-app-shell className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[248px_minmax(0,1fr)]">
+      <aside className="hidden min-h-0 flex-col gap-1 overflow-y-auto border-r bg-sidebar px-3 py-4 md:flex">
         <Link href="/" className="mb-3 flex items-center gap-2 px-1.5 text-sm text-muted-foreground hover:text-foreground">
           <BrandMark className="size-5 text-foreground" />
           <span className="font-heading text-base text-foreground">
@@ -150,8 +151,8 @@ export default function TeamShell({
           </>
         ) : null}
       </aside>
-      <div className="flex min-w-0 flex-col">
-        <div className="flex h-14 items-center gap-2 border-b px-4 md:px-7">
+      <div className="flex min-h-0 min-w-0 flex-col">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-7">
           <Link href="/" className="md:hidden">
             <BrandMark className="size-6 text-foreground" />
             <span className="sr-only">All workspaces</span>
@@ -175,7 +176,7 @@ export default function TeamShell({
             <UserMenu />
           </div>
         </div>
-        <nav aria-label="Sections" className="flex gap-1 overflow-x-auto border-b px-3 py-2 md:hidden">
+        <nav aria-label="Sections" className="flex shrink-0 gap-1 overflow-x-auto border-b px-3 py-2 md:hidden">
           {[...work, ...team_]
             .filter((item) => item.show !== false)
             .map(({ href, label }) => (
@@ -189,6 +190,7 @@ export default function TeamShell({
               </Link>
             ))}
         </nav>
+        <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
         {rules.data?.memberAccepted === false && pathname !== `/${slug}/rules` ? (
           <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 panel p-4 md:mx-7" role="status">
             <p className="text-sm">Read and accept member agreement version {rules.data.published.version} before taking new work.</p>
@@ -196,6 +198,7 @@ export default function TeamShell({
           </div>
         ) : null}
         {children}
+        </div>
       </div>
     </div>
   );

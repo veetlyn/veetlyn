@@ -193,6 +193,8 @@ describe("summaries", () => {
     expect(summary).toContain("2 free revisions");
     expect(summary).toContain("$75.00");
     expect(summary).toContain("48 hours");
+    const oneRound = { ...AGENCY_RULEBOOK_SPEC.rules, revisions: { ...AGENCY_RULEBOOK_SPEC.rules.revisions, freeCount: 1 } };
+    expect(formatClientTermsSummary(oneRound, "USD")).toContain("You get 1 free revision;");
   });
 
   it("writes the member agreement with the split, strikes and notice", () => {

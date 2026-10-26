@@ -33,12 +33,16 @@ function tierSentence(currency: string, rules: RulebookRules): string | null {
   return parts.length > 0 ? ` (${parts.join("; ")})` : null;
 }
 
+function freeRevisions(count: number): string {
+  return count === 1 ? "1 free revision" : `${count} free revisions`;
+}
+
 // What the client reads before requesting work.
 export function formatClientTermsSummary(rules: RulebookRules, currency: string): string {
   const tiers = tierSentence(currency, rules) ?? "";
   const sentences = [
     `${formatBps(rules.upfront.defaultBps)} upfront to start${tiers}`,
-    `You get ${rules.revisions.freeCount} free revisions; further revisions cost ${formatMinor(currency, rules.revisions.paidRevisionPriceMinor)} each`,
+    `You get ${freeRevisions(rules.revisions.freeCount)}; further revisions cost ${formatMinor(currency, rules.revisions.paidRevisionPriceMinor)} each`,
     `The team replies within ${rules.responseWindow.hours} hours of your request`,
     `While work is under way you hear from the team at least every ${rules.updateWindow.hours} hours`,
     rules.lateDelivery.ratePerDayBps > 0
@@ -76,7 +80,7 @@ export function formatMemberAgreementSummary(rules: RulebookRules, currency: str
 
 // The one-line card summary shown on client, pay and plugin surfaces.
 export function formatCompactRuleSummary(rules: RulebookRules, currency: string): string {
-  return `${formatBps(rules.upfront.defaultBps)} upfront · ${rules.revisions.freeCount} free revisions (${formatMinor(
+  return `${formatBps(rules.upfront.defaultBps)} upfront · ${freeRevisions(rules.revisions.freeCount)} (${formatMinor(
     currency,
     rules.revisions.paidRevisionPriceMinor,
   )} each after) · ${rules.clientSilence.finalDays}-day review window`;
