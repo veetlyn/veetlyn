@@ -145,6 +145,7 @@ export type RequestPayoutDeps = Omit<PayoutDeps, "payouts"> & { payouts?: Payout
 
 const NO_CREDENTIALS = "Turn on automatic payouts to pay requests.";
 export const WAITING_FOR_EXPORT = "Waiting for export or for automatic payouts.";
+export const DISPUTE_PAUSE = "An open PayPal dispute pauses this team's payouts.";
 const OTHER_ACCOUNT =
   "Automatic payouts are on for another PayPal account than the one connected to this team. Turn them on again.";
 const SEALED_SECRET_UNREADABLE = "The team's automatic payouts connection could not be read. Turn on automatic payouts again.";
@@ -334,7 +335,7 @@ export async function requestPayout(
   if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found." });
   // An open PayPal case can claw paid money back, so payouts wait until it resolves (AGT-54).
   if (await teamHasOpenDispute(db, team.id)) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "An open PayPal dispute pauses this team's payouts." });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: DISPUTE_PAUSE });
   }
   const settings = await getServicesTeamSettings(db, team.id);
   if (settings?.solo) {
@@ -623,6 +624,9 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string, a
       }),
     };
   }
+  // A dispute takes the credentials row before it opens a case, so a case that opened since sendPayout's first check
+  // is seen here, and none can open between this check and the claim's commit.
+  if (await teamHasOpenDispute(tx, team.id)) return { kind: "held", request };
   // updated_at identifies this claim when its answer is recorded, so it must differ from every earlier claim's.
   const claimedAt = new Date(Math.max(now, request.updatedAt.getTime() + 1));
   const claimed = await updatePayoutRequest(tx, request.id, {

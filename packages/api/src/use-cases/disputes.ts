@@ -1,6 +1,6 @@
 import type { JsonObject } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
-import type { DbExecutor } from "@jendal-workspace/db/executor";
+import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
   findOpenDisputeForProject,
   pauseScheduleItemsForSubject,
@@ -10,6 +10,7 @@ import {
   upsertDispute,
   upsertPendingScheduleItems,
 } from "@jendal-workspace/db/repositories/operating-model";
+import { lockTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { orders } from "@jendal-workspace/db/schema/orders";
 import { project as projectTable } from "@jendal-workspace/db/schema/projects";
@@ -38,7 +39,7 @@ export async function handlePayPalDisputeWebhook(deps: DisputeNoticeDeps, disput
   return deps.db.transaction((tx) => applyDispute({ ...deps, db: tx }, dispute));
 }
 
-async function applyDispute(deps: DisputeNoticeDeps, dispute: PayPalDisputeWebhook): Promise<string> {
+async function applyDispute(deps: DisputeNoticeDeps & { db: Transaction }, dispute: PayPalDisputeWebhook): Promise<string> {
   const captureIds = dispute.sellerTransactionIds;
   const [projectPayment] =
     captureIds.length > 0
@@ -70,6 +71,8 @@ async function applyDispute(deps: DisputeNoticeDeps, dispute: PayPalDisputeWebho
   } else if (orderId) {
     await deps.db.select({ id: orders.id }).from(orders).where(and(eq(orders.id, orderId), eq(orders.teamId, teamId))).for("update");
   }
+  // A payout send claim shares this row, so a claim either commits before the case opens or sees it.
+  await lockTeamPayoutCredentials(deps.db, teamId);
   const [existing] = await deps.db.select().from(disputeTable).where(eq(disputeTable.paypalDisputeId, dispute.disputeId)).limit(1).for("update");
   if (existing && (existing.teamId !== teamId || existing.projectId !== projectId || existing.orderId !== orderId)) throw new Error("Dispute ownership changed");
   if (existing?.status === "resolved_seller" || existing?.status === "resolved_buyer") {

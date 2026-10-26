@@ -13,6 +13,7 @@ import {
 } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { getTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
+import { upsertDispute } from "@jendal-workspace/db/repositories/operating-model";
 import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
 import { deletePayoutDestination, savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { getTeamPayPalCountry, markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
@@ -72,7 +73,7 @@ type TeamPayPalAnswers = {
   teamToken?: () => Response;
   payout?: () => Response;
   batch?: () => Response;
-  balances?: () => Response;
+  balances?: () => Response | Promise<Response>;
 };
 
 function balancesAnswer(value = "5000.00"): Response {
@@ -1821,6 +1822,23 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "sent" });
     });
 
+    it("holds a payout when a dispute opens while its send reads the balance", async () => {
+      const { teamId, admin, member, paypal } = await payoutTeam("US", {
+        teamToken: readsBalance,
+        // The case lands after sendPayout's first dispute check and before its claim.
+        balances: async () => {
+          await upsertDispute(db, { teamId, paypalDisputeId: "PP-D-1", reason: "Not received", status: "open", amountMinor: null, currency: null });
+          return balancesAnswer("6000.00");
+        },
+      });
+      await admin.payouts.saveRules({ ...MANUAL, balanceFloor: "100.00" });
+      const { id } = await member.payouts.request({ ...TEAM, amount: "100.00" });
+
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "queued" });
+      expect(paypal.requests.map((r) => `${r.method} ${pathOf(r)}`)).toContain("GET /v1/reporting/balances");
+      expect(payoutPosts(paypal.requests)).toEqual([]);
+    });
+
     it("creates a project payout the rules leave for an admin, and sends it once approved", async () => {
       const { projectId, admin, paypal, services } = await payoutTeam("US", {}, { ...PROJECT_RULES, autoApproveUpTo: null });
 
@@ -1979,6 +1997,16 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         code: "BAD_REQUEST",
         message: "Automatic payouts send these for you.",
       });
+    });
+
+    it("refuses to export while a PayPal dispute is open, and exports nothing", async () => {
+      const { teamId, adminId, adaPayoutId, services } = await exportTeam();
+      await upsertDispute(db, { teamId, paypalDisputeId: "PP-D-1", reason: "Not received", status: "open", amountMinor: null, currency: null });
+
+      await expect(
+        callerFor(adminId, services, atWednesday).payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId] }),
+      ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: "An open PayPal dispute pauses this team's payouts." });
+      expect(await rowOf(adaPayoutId)).toMatchObject({ status: "queued", offlineReference: null, offlineBatchId: null });
     });
 
     it("settles exported payouts from PayPal's log with the automatic payouts' postings, once", async () => {
