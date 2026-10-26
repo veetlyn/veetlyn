@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clientTermsLines,
   AGENCY_RULEBOOK_SPEC,
   COLLECTIVE_RULEBOOK_SPEC,
   RULEBOOK_CATALOG,
@@ -180,6 +181,8 @@ describe("summaries", () => {
       upfrontTiers: { tiers: [{ minQuoteMinor: 10000, maxQuoteMinor: 30000, bps: 10000 }] },
     };
     expect(formatClientTermsSummary(rules, "USD")).toContain("100% for quotes from $100.00 to under $300.00");
+    const large = { ...rules, upfrontTiers: { tiers: [{ minQuoteMinor: 100_000, maxQuoteMinor: null, bps: 5000 }] } };
+    expect(clientTermsLines(large, "USD")[0]).toBe("50% upfront to start (50% for quotes $1,000.00 and up).");
     expect(computeUpfrontBps(rules, 5000)).toBe(5000);
     expect(computeUpfrontBps(rules, 10000)).toBe(10000);
     expect(computeUpfrontBps(rules, 30000)).toBe(5000);

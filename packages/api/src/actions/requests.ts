@@ -29,7 +29,7 @@ export const requestTerms = defineAction({
   kind: "query",
   summary: "Read the seller's current client terms and rulebook version before explicitly accepting them in a quote request.",
   input: z.strictObject({ slug: z.string().min(1).max(63) }),
-  output: z.object({ rulebookId: z.string(), version: z.int(), terms: z.string(), compact: z.string() }),
+  output: z.object({ rulebookId: z.string(), version: z.int(), terms: z.string(), termLines: z.array(z.string()), compact: z.string() }),
   scope: () => ({}),
   allow: [{ grant: "anyone" }],
   run: ({ deps }, input) => quoteRequestTerms(deps.db, input),
