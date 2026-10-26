@@ -1,0 +1,63 @@
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/price-adjustments.tsx
+  s_263bdab18b3756::t_9fa45a20aeec38 1-17,21-142,144-148
+  s_263bdab18b3756::t_07c601e8e0199b 18-20,143
+packages/core/src/ledger/postings.ts
+  s_263bdab18b3756::t_4e20fb47efef8b 161-162,165-167,169-170,172-177
+packages/db/src/migrations/20261026083246_quality_refund/snapshot.json
+  s_263bdab18b3756::t_341ac909d3c2b3 1-14557
+packages/core/src/projects/events.ts
+  s_263bdab18b3756::t_fd823b6d400936 44-46
+packages/api/src/use-cases/projects.ts
+  s_263bdab18b3756::t_2146931ea43ad1 8,53,66,717-719,722-725,727-730,754-795,798-833,836-839,954-955,1012
+  s_263bdab18b3756::t_fcb2afb994f6d1 796-797,834-835
+packages/api/src/actions/registry.ts
+  s_263bdab18b3756::t_febf16257a9fa8 23,25,39-40
+packages/api/src/use-cases/outbox-dispatcher.ts
+  s_263bdab18b3756::t_672b962d71b351 76,129-131
+packages/api/src/use-cases/payments.ts
+  s_263bdab18b3756::t_fcb2afb994f6d1 40,132
+packages/api/src/__tests__/outbox-dispatcher.test.ts
+  s_263bdab18b3756::t_672b962d71b351 274-291
+packages/core/src/projects/completion.ts
+  s_263bdab18b3756::t_4e20fb47efef8b 23,38
+packages/db/src/migrations/20261026083246_quality_refund/migration.sql
+  s_263bdab18b3756::t_341ac909d3c2b3 1-4
+packages/api/src/actions/projects.ts
+  s_263bdab18b3756::t_febf16257a9fa8 17,88-116
+  s_263bdab18b3756::t_f4b92007338c12 117
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_07c601e8e0199b 49,327,652
+  s_263bdab18b3756::t_1085cd8204da1e 653
+packages/core/src/projects/completion.test.ts
+  s_263bdab18b3756::t_cc5d225a73b316 47-67
+packages/api/src/actions/registry.test.ts
+  s_263bdab18b3756::t_febf16257a9fa8 42-44
+packages/api/src/routers/project.ts
+  s_263bdab18b3756::t_febf16257a9fa8 30-31,62-63
+packages/email/src/notices.ts
+  s_263bdab18b3756::t_672b962d71b351 121-122,186-189
+  s_263bdab18b3756::t_27a833aaeea16e 190
+packages/api/src/use-cases/settlement.test.ts
+  s_263bdab18b3756::t_8d357e5e632dd2 5-6,35,47-50,55,58-59,109-124,128-136,138-152,154-157,159-165,167-181
+  s_263bdab18b3756::t_5550aa7a2593de 14,158
+  s_263bdab18b3756::t_a10cff3a206b22 125-127,137,153,166
+  s_263bdab18b3756::t_e65ebefe59d06a 182
+packages/db/src/schema/projects.ts
+  s_263bdab18b3756::t_a6266cc0430c50 77-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc2d076d9b993e4776360adb7198525cdc1a4678",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
