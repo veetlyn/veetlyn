@@ -73,12 +73,12 @@ export function MemberMarks({
       )}
       {canWarn ? (
         <form onSubmit={handleSubmit} className="space-y-2">
-          <Label htmlFor="warning-note">Record a warning</Label>
+          <Label htmlFor="warning-note">Warn the assigned member</Label>
           <Input
             id="warning-note"
             value={note}
             maxLength={500}
-            placeholder="What happened"
+            placeholder="What happened, in a sentence"
             onChange={(e) => {
               record.reset();
               setNote(e.target.value);
