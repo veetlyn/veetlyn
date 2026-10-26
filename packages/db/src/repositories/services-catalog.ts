@@ -14,6 +14,7 @@ export type ServicesOfferingRow = OfferingDraft & {
   departmentId: string | null;
   active: boolean;
   listed: boolean;
+  fulfilment: "people" | "automated" | "both";
   position: number;
 };
 

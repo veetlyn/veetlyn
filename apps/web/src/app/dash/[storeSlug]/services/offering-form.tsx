@@ -22,9 +22,12 @@ import { type FormEvent, useState } from "react";
 import Loader from "@/components/loader";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { minorToPriceInput, parsePriceInput } from "@/lib/money";
+import { FULFILMENT_LABELS, type Fulfilment } from "@/lib/offering-labels";
 import { trpc } from "@/utils/trpc";
 
 const SELECT_CLASS = `w-full ${nativeSelectClass}`;
+
+const FULFILMENT_OPTIONS: Fulfilment[] = ["people", "automated", "both"];
 
 type OfferingFormState = {
   name: string;
@@ -36,6 +39,7 @@ type OfferingFormState = {
   daysMax: string;
   active: boolean;
   listed: boolean;
+  fulfilment: Fulfilment;
   questions: string[];
 };
 
@@ -49,6 +53,7 @@ const EMPTY_FORM: OfferingFormState = {
   daysMax: "7",
   active: true,
   listed: true,
+  fulfilment: "people",
   questions: [],
 };
 
@@ -122,6 +127,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         daysMax: String(offering.daysMax),
         active: offering.active,
         listed: offering.listed,
+        fulfilment: offering.fulfilment,
         questions: offering.intakeQuestions,
       }
     : EMPTY_FORM;
@@ -153,6 +159,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
       teamSlug,
       departmentId: values.departmentId === "" ? null : values.departmentId,
       listed: values.listed,
+      fulfilment: values.fulfilment,
       ...normalizeOfferingDraft(draft),
     };
     if (!offeringId) {
@@ -218,6 +225,22 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
               </option>
             ))}
           </select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="offering-fulfilment">Fulfilment</Label>
+          <select
+            id="offering-fulfilment"
+            className={SELECT_CLASS}
+            value={values.fulfilment}
+            onChange={(e) => patch({ fulfilment: FULFILMENT_OPTIONS.find((option) => option === e.target.value) ?? "people" })}
+          >
+            {FULFILMENT_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {FULFILMENT_LABELS[option]}
+              </option>
+            ))}
+          </select>
+          <p className="text-sm text-muted-foreground">Who does the work. Clients see it on your seller page and in AI assistants.</p>
         </div>
         <section className="grid gap-3">
           <h2 className="font-medium">Usually costs</h2>

@@ -10,3 +10,11 @@ export function daysLabel(offering: { daysMin: number; daysMax: number }): strin
   if (offering.daysMin !== offering.daysMax) return `${offering.daysMin}–${offering.daysMax} days`;
   return offering.daysMin === 1 ? "1 day" : `${offering.daysMin} days`;
 }
+
+export type Fulfilment = "people" | "automated" | "both";
+
+export const FULFILMENT_LABELS = {
+  people: "By people",
+  automated: "Automated",
+  both: "People + Automated",
+} as const satisfies Record<Fulfilment, string>;
