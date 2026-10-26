@@ -19,6 +19,7 @@ const MARK_KIND_LABELS = {
   late_delivery: "Late delivery",
   quality_refund: "Quality refund",
   warning: "Warning",
+  leaving_notice: "Leaving notice",
 } as const satisfies Record<Detail["marks"][number]["kind"], string>;
 
 // Staff see the project's marks; admins also record a warning on the project's member.

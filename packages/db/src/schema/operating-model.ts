@@ -116,7 +116,7 @@ export const memberMark = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     projectId: text("project_id").references(() => project.id, { onDelete: "set null" }),
-    kind: text("kind", { enum: ["late_update", "late_delivery", "quality_refund", "warning"] }).notNull(),
+    kind: text("kind", { enum: ["late_update", "late_delivery", "quality_refund", "warning", "leaving_notice"] }).notNull(),
     note: text("note"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
