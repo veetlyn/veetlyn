@@ -1,6 +1,6 @@
 import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
-import { eq } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { eq, sql } from "drizzle-orm";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   applyDeliveryOutcome,
@@ -25,7 +25,7 @@ import {
   upsertPendingScheduleItems,
 } from "../repositories/operating-model";
 import { runInTransaction } from "../repositories/unit-of-work";
-import { memberMark, outboxDelivery, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
+import { memberMark, outboxDelivery, rulebook, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
 import { servicesTeamSettings } from "../schema/services-teams";
 import { outbox } from "../schema/outbox";
 import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, seedUser, truncateAll } from "../testing/db";
@@ -68,6 +68,48 @@ describe.skipIf(!hasTestDatabase)("operating model repository", () => {
     expect(v2).toMatchObject({ version: 2, status: "published" });
     expect(await getDraftRulebook(db, teamId)).toBeNull();
     expect(await getPublishedRulebook(db, teamId)).toMatchObject({ id: v2.id });
+  });
+
+  it("starts the next draft when a save loses a race with the publish of the draft it read", async () => {
+    const { teamId, userId } = await seedServicesTeamWithAdmin(db);
+    await ensurePublishedRulebook(db, teamId);
+    const accepted = { ...AGENCY_RULEBOOK_SPEC.rules, split: { teamCutBps: 2500, managerCutBps: 1000, memberCutBps: 6500 } };
+    const draft = await saveRulebookDraft(db, { teamId, userId, preset: "custom", spec: accepted });
+    const late = { ...accepted, split: { teamCutBps: 4000, managerCutBps: 1000, memberCutBps: 5000 } };
+    // Each test database has one connection: the publishing admin and the lock watch need their own.
+    const [other, watch] = [createTestDb(), createTestDb()];
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const holding = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    try {
+      const publishing = other.transaction(async (tx) => {
+        await tx.select({ id: rulebook.id }).from(rulebook).where(eq(rulebook.id, draft.id)).for("update");
+        locked();
+        await released;
+        await publishRulebook(tx, { teamId, userId });
+      });
+      await holding;
+      // The save reads the draft, then waits on its row until the publish commits.
+      const saving = saveRulebookDraft(db, { teamId, userId, preset: "custom", spec: late });
+      await vi.waitFor(async () => {
+        const waiting = await watch.execute(sql`select 1 from pg_stat_activity where wait_event_type = 'Lock'`);
+        expect(waiting.length).toBeGreaterThan(0);
+      });
+      release();
+      await publishing;
+      const saved = await saving;
+
+      expect(await getPublishedRulebook(db, teamId)).toMatchObject({ id: draft.id, version: 2, spec: { split: accepted.split } });
+      expect(saved).toMatchObject({ version: 3, status: "draft", spec: { split: late.split } });
+    } finally {
+      release();
+      await Promise.all([other.$client.end(), watch.$client.end()]);
+    }
   });
 
   it("records client and member acceptances and answers the member query", async () => {

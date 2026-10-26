@@ -95,7 +95,8 @@ export async function getDraftRulebook(db: DbExecutor, teamId: string): Promise<
   return row ?? null;
 }
 
-// A draft is one row per team: saving again edits it until it is published.
+// A draft is one row per team: saving again edits it until it is published. The write re-checks the status, so a
+// save that loses a race with a publish starts the next draft instead of rewriting terms people have accepted.
 export async function saveRulebookDraft(
   db: DbExecutor,
   input: { teamId: string; preset: RulePreset; spec: RulebookRules; userId: string | null },
@@ -105,7 +106,7 @@ export async function saveRulebookDraft(
     const [row] = await db
       .update(rulebook)
       .set({ preset: input.preset, spec: input.spec, createdById: input.userId })
-      .where(eq(rulebook.id, draft.id))
+      .where(and(eq(rulebook.id, draft.id), eq(rulebook.status, "draft")))
       .returning();
     if (row) return row;
   }
@@ -132,15 +133,21 @@ export async function saveRulebookDraft(
 
 // Publishing stamps the version and syncs the settings' cuts, so both places always agree.
 export async function publishRulebook(db: DbExecutor, input: { teamId: string; userId: string | null }): Promise<RulebookRow> {
-  const draft = await getDraftRulebook(db, input.teamId);
-  if (!draft) throw new Error("There is no draft to publish");
-  const [row] = await db.update(rulebook).set({ status: "published", publishedAt: new Date() }).where(eq(rulebook.id, draft.id)).returning();
-  if (!row) throw new Error("The draft could not be published");
-  await db
-    .update(servicesTeamSettings)
-    .set({ teamCutBps: row.spec.split.teamCutBps, managerCutBps: row.spec.split.managerCutBps, settingsSavedAt: new Date() })
-    .where(eq(servicesTeamSettings.teamId, input.teamId));
-  return row;
+  return db.transaction(async (tx) => {
+    const draft = await getDraftRulebook(tx, input.teamId);
+    if (!draft) throw new Error("There is no draft to publish");
+    const [row] = await tx
+      .update(rulebook)
+      .set({ status: "published", publishedAt: new Date() })
+      .where(and(eq(rulebook.id, draft.id), eq(rulebook.status, "draft")))
+      .returning();
+    if (!row) throw new Error("The draft could not be published");
+    await tx
+      .update(servicesTeamSettings)
+      .set({ teamCutBps: row.spec.split.teamCutBps, managerCutBps: row.spec.split.managerCutBps, settingsSavedAt: new Date() })
+      .where(eq(servicesTeamSettings.teamId, input.teamId));
+    return row;
+  });
 }
 
 export async function recordRulebookAcceptance(
