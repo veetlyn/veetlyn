@@ -1,3 +1,4 @@
+import { acceptCurrentMemberAgreement, seedAgreedServicesTeamMember, seedServicesTeamWithAgreedAdmin } from "../testing/rulebooks";
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
 import { paymentCapturedTransfer, createFakeFileStore, type FileStore, type JsonObject } from "@jendal-workspace/core";
 import {
@@ -6,9 +7,7 @@ import {
   seedOrganization,
   seedProject,
   seedServicesTeam,
-  seedServicesTeamWithAdmin,
   seedServicesOffering,
-  seedServicesTeamMember,
   seedStore,
   seedUser,
   truncateAll,
@@ -114,7 +113,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   }
 
   it("starts a project with a project.created outbox event and hands the team no client link", async () => {
-    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     const started = await createProject(userId);
     const { projectId } = started;
 
@@ -133,15 +132,15 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("refuses freelancers and anonymous callers to start projects, and projects without a client", async () => {
-    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     await expect(
       callerFor(freelancer).project.create({ teamSlug: "team", title: "Nope", clientEmail: "c@example.com" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(
       callerFor(null).project.create({ teamSlug: "team", title: "Nope", clientEmail: "c@example.com" }),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-    const { userId } = await seedServicesTeamWithAdmin(db, { slug: "other" });
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db, { slug: "other" });
     await expect(callerFor(userId).project.create({ teamSlug: "other", title: "No client" })).rejects.toMatchObject({
       code: "BAD_REQUEST",
       message: "Add the client's email or Discord user.",
@@ -149,7 +148,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("stores the team's own active offering and the admin source", async () => {
-    const { userId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { userId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const offeringId = await seedServicesOffering(db, { teamId, name: "Logo design" });
 
     const caller = callerFor(userId);
@@ -165,8 +164,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("refuses another team's offering and the team's own inactive offering", async () => {
-    const { userId, teamId } = await seedServicesTeamWithAdmin(db);
-    const { teamId: otherTeamId } = await seedServicesTeamWithAdmin(db, { slug: "other" });
+    const { userId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const { teamId: otherTeamId } = await seedServicesTeamWithAgreedAdmin(db, { slug: "other" });
     const foreignOfferingId = await seedServicesOffering(db, { teamId: otherTeamId, name: "Their service" });
     const inactiveOfferingId = await seedServicesOffering(db, { teamId, name: "Paused service", active: false });
 
@@ -185,7 +184,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("starts a project without an offering, recording a null offering and the admin source", async () => {
-    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await createProject(userId);
 
     const row = await findProjectById(db, projectId);
@@ -193,8 +192,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("quotes in assigned mode only through the assigned freelancer", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await createProject(userId);
 
     await expect(
@@ -224,8 +223,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
   it("tells the project page whether the seller is solo and what the quote calculator needs", async () => {
     const { userId, organizationId } = await seedOrganization(db);
-    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    const soloTeam = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    await acceptCurrentMemberAgreement(db, soloTeam.id, userId);
     const studioTeam = await seedServicesTeam(db, { organizationId, slug: "studio" });
+    await acceptCurrentMemberAgreement(db, studioTeam.id, userId);
     await db.update(teamTable).set({ paypalCountry: "US" }).where(eq(teamTable.id, studioTeam.id));
     await savePayoutDestination(db, userId, { paypalPayerId: "G83JXTJ5EHCQ2", paypalEmail: null, paypalCountry: "FR" }, null);
     const caller = callerFor(userId);
@@ -243,7 +244,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
       quoteCalculator: { platformFeeBps: 50, senderCountry: "US", receiverCountry: "FR" },
     });
     // Only admins and the payee see the payee's country.
-    const manager = await seedServicesTeamMember(db, { organizationId, teamId: studioTeam.id, role: "manager" });
+    const manager = await seedAgreedServicesTeamMember(db, { organizationId, teamId: studioTeam.id, role: "manager" });
     await expect(callerFor(manager).project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
       quoteCalculator: { senderCountry: "US", receiverCountry: null },
     });
@@ -251,7 +252,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
   it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {
     const { userId, organizationId } = await seedOrganization(db);
-    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    const soloTeam = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    await acceptCurrentMemberAgreement(db, soloTeam.id, userId);
     const soloCaller = callerFor(userId);
 
     const { projectId } = await soloCaller.project.create({
@@ -266,7 +268,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     // Solo quotes do not assign the freelancer; accepting the quote does (§5.2 step 3).
     expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBeNull();
 
-    const team = await seedServicesTeamWithAdmin(db);
+    const team = await seedServicesTeamWithAgreedAdmin(db);
     const teamCaller = callerFor(team.userId);
     const teamProject = await teamCaller.project.create({
       teamSlug: "team",
@@ -283,7 +285,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
   it("refuses assignment on a solo team, while the client's acceptance still assigns the seller", async () => {
     const { userId, organizationId } = await seedOrganization(db);
-    await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    const soloTeam = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+    await acceptCurrentMemberAgreement(db, soloTeam.id, userId);
     const caller = callerFor(userId);
     const { projectId } = await caller.project.create({
       teamSlug: "solo",
@@ -303,7 +306,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("lets the workspace owner be assigned and quote without a services team member row", async () => {
-    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await createProject(userId);
 
     const members = await callerFor(userId).project.members({ teamSlug: "team" });
@@ -319,9 +322,9 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("lets any freelancer quote in open mode, and staff quote for a named freelancer in team mode", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await createProject(userId);
     const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 7 });
     expect(quoteId).toBeTruthy();
@@ -343,9 +346,9 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("lists and shows projects only to members who may see them", async () => {
-    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await createProject(userId);
-    const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+    const outsider = await seedServicesTeamWithAgreedAdmin(db, { slug: "other" });
 
     await expect(callerFor(outsider.userId).project.list({ teamSlug: "team" })).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(callerFor(outsider.userId).project.get({ teamSlug: "team", projectId })).rejects.toMatchObject({
@@ -362,7 +365,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("shows the team its project's contacts, and never a client link", async () => {
-    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await createProject(userId);
     const { contactId } = await callerFor(userId).project.clientAdd({
       teamSlug: "team",
@@ -387,8 +390,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("previews the client page for the team without a link, and without pay links", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await createProject(userId);
     await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
     const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
@@ -402,14 +405,14 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     await expect(callerFor(freelancer).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+    const outsider = await seedServicesTeamWithAgreedAdmin(db, { slug: "other" });
     await expect(callerFor(outsider.userId).project.clientPreview({ teamSlug: "team", projectId })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
 
   it("lists projects in the shape the project.list output schema describes once on the wire", async () => {
-    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     await createProject(userId);
 
     const list = await callerFor(userId).project.list({ teamSlug: "team" });
@@ -419,7 +422,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("shows a web request's client name and answers in the project detail", async () => {
-    const { userId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { userId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const projectId = await seedProject(db, {
       teamId,
       clientEmail: "web@example.com",
@@ -445,8 +448,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("accepts a quote through the client link and creates the $600 deposit payment (§5.3)", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await createProject(userId);
     await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
     const { quoteId } = await callerFor(freelancer).project.addQuote({
@@ -489,7 +492,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("rejects a forged or missing client token", async () => {
-    const { userId } = await seedServicesTeamWithAdmin(db);
+    const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await createProject(userId);
     await expect(callerFor(null).project.clientGet({ token: `${projectId}.forged` })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -500,9 +503,9 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("refuses a signed-in team member who opens the client link", async () => {
-    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const projectId = await seedProject(db, { teamId });
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const token = await clientToken(db, projectId);
     await expect(callerFor(freelancer).project.clientGet({ token })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -512,9 +515,9 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("logs a team member's refused client action", async () => {
-    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const projectId = await seedProject(db, { teamId });
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const token = await clientToken(db, projectId);
     await expect(
       callerFor(freelancer).project.clientAcceptQuote({ token, quoteId: crypto.randomUUID() }),
@@ -542,8 +545,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("logs the client's acceptance from the web, and not the team's page views", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await createProject(userId);
     await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
     const { quoteId } = await callerFor(freelancer).project.addQuote({
@@ -571,8 +574,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("assigns the freelancer the quote names when the client accepts (open and team modes)", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
 
     // Open mode: the quoting freelancer.
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
@@ -595,10 +598,10 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect((await findProjectById(db, second))?.assignedFreelancerId).toBe(freelancer);
   });
   it("rolls everything back when the client accepts a quote on a project that changed underneath", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await createProject(userId);
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { quoteId } = await callerFor(freelancer).project.addQuote({
       teamSlug: "team",
       projectId,
@@ -618,7 +621,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   async function projectInProgress(userId: string, organizationId: string, teamId: string, items = ITEMS) {
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await createProject(userId);
     await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
     const { quoteId } = await callerFor(freelancer).project.addQuote({
@@ -653,7 +656,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   }
 
   it("runs an increase amendment: top-up payment, new quote version (§5.5 +$400)", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await projectInProgress(userId, organizationId, teamId);
 
     const { amendmentId } = await callerFor(userId).project.proposeAmendment({
@@ -688,7 +691,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("runs the §5.5 decrease amendment: −$300 on the $1,000 quote credits the $30 fee", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     // §5.5's example: a $1,000 quote (Design $300 + Build $700) loses the $300 item.
     const { projectId } = await projectInProgress(userId, organizationId, teamId, [
       { description: "Design", amountMinor: 30_000, extraDays: 0 },
@@ -727,7 +730,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   });
 
   it("blocks a second pending amendment and declines the first", async () => {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await projectInProgress(userId, organizationId, teamId);
     const input = {
       teamSlug: "team",
@@ -753,8 +756,8 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
   describe("deliveries", () => {
     // A $1,000 quote with its $600 deposit ($500 + the 10% management fee) captured through the capture path.
     async function workingProject() {
-      const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-      const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+      const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+      const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
       const { projectId } = await createProject(userId);
       await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
       const { quoteId } = await callerFor(freelancer).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14 });
@@ -819,7 +822,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     it("lets only the assigned freelancer or a manager deliver, with a note or an https link", async () => {
       const { organizationId, teamId, freelancer, projectId } = await workingProject();
-      const other = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+      const other = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
       await expect(deliver(other, projectId)).rejects.toMatchObject({ code: "FORBIDDEN" });
 
       await expect(
@@ -834,7 +837,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Use an https link." });
       }
 
-      const manager = await seedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
+      const manager = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
       const { deliveryId } = await callerFor(manager).project.deliver({ teamSlug: "team", projectId, note: "From the manager" });
       expect(await listProjectDeliveries(db, projectId)).toEqual([
         expect.objectContaining({ id: deliveryId, submittedById: manager, note: "From the manager", link: null }),
@@ -1420,7 +1423,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
       it("lets only the team's admins refund, and only a project with a refund", async () => {
         const { userId, organizationId, teamId, freelancer, projectId } = await overpaidProject();
-        const manager = await seedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
+        const manager = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
         const { paypal, refundCalls } = fakePayPalRefunds(() => "COMPLETED");
         for (const someone of [freelancer, manager]) {
           await expect(
@@ -1575,7 +1578,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         ] as const) {
           await expect(startUpload(freelancer, projectId, files, file)).rejects.toMatchObject({ code: "BAD_REQUEST", message });
         }
-        const other = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+        const other = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
         await expect(startUpload(other, projectId, files)).rejects.toMatchObject({ code: "FORBIDDEN" });
 
         await deliver(freelancer, projectId);
@@ -1663,7 +1666,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         await expect(deliverFile(otherProject.id)).rejects.toMatchObject(cannotUse);
 
         // An upload of another team.
-        const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+        const outsider = await seedServicesTeamWithAgreedAdmin(db, { slug: "other" });
         const otherTeam = await insertFileUpload(db, {
           teamId: outsider.teamId,
           projectId: null,
@@ -1708,7 +1711,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           deliveryId,
         });
         expect(staff).toEqual({ url: `https://files.test/${upload.r2Key}?op=get` });
-        const manager = await seedServicesTeamMember(db, {
+        const manager = await seedAgreedServicesTeamMember(db, {
           organizationId: first.organizationId,
           teamId: first.teamId,
           role: "manager",
@@ -1735,7 +1738,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
           callerFor(null, files).project.clientDeliveryFileUrl({ token: "nope", deliveryId }),
         ).rejects.toMatchObject({ code: "NOT_FOUND" });
 
-        const other = await seedServicesTeamMember(db, {
+        const other = await seedAgreedServicesTeamMember(db, {
           organizationId: first.organizationId,
           teamId: first.teamId,
           role: "freelancer",
@@ -1743,7 +1746,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         await expect(
           callerFor(other, files).project.deliveryFileUrl({ teamSlug: "team", projectId: first.projectId, deliveryId }),
         ).rejects.toMatchObject({ code: "NOT_FOUND" });
-        const outsider = await seedServicesTeamWithAdmin(db, { slug: "other" });
+        const outsider = await seedServicesTeamWithAgreedAdmin(db, { slug: "other" });
         await expect(
           callerFor(outsider.userId, files).project.deliveryFileUrl({ teamSlug: "team", projectId: first.projectId, deliveryId }),
         ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -1885,6 +1888,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
         expect.objectContaining({ rulebookId: terms.rulebookId, teamId: team.id, actorKind: "client", contactId: client?.contactId, projectId: created?.id }),
       ]);
       if (!created) throw new Error("Request did not create a project");
+      await acceptCurrentMemberAgreement(db, team.id, userId);
       const accepted = await db.select().from(rulebookAcceptance);
       const owner = callerFor(userId);
       await owner.project.assign({ teamSlug: "seller", projectId: created.id, freelancerId: userId });

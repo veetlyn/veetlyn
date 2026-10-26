@@ -160,6 +160,33 @@ describe("computeCompletionSplit", () => {
 });
 
 describe("summaries", () => {
+  it.each([
+    { bps: 1, percentage: "0.01%" }, { bps: 101, percentage: "1.01%" },
+    { bps: 1010, percentage: "10.1%" }, { bps: 10000, percentage: "100%" },
+  ])("preserves $bps basis points in every consent summary", ({ bps, percentage }) => {
+    const rules = {
+      ...AGENCY_RULEBOOK_SPEC.rules,
+      upfront: { defaultBps: bps },
+      lateDelivery: { ratePerDayBps: bps, capBps: 10000 },
+    };
+    expect(formatClientTermsSummary(rules, "USD")).toContain(`${percentage} upfront`);
+    expect(formatMemberAgreementSummary(rules, "USD")).toContain(`${percentage} per day`);
+    expect(formatCompactRuleSummary(rules, "USD")).toContain(`${percentage} upfront`);
+  });
+
+  it("describes the actual lower and exclusive upper bounds of editable upfront tiers", () => {
+    const rules = {
+      ...AGENCY_RULEBOOK_SPEC.rules,
+      upfrontTiers: { tiers: [{ minQuoteMinor: 10000, maxQuoteMinor: 30000, bps: 10000 }] },
+    };
+    expect(formatClientTermsSummary(rules, "USD")).toContain("100% for quotes from $100.00 to under $300.00");
+    expect(computeUpfrontBps(rules, 5000)).toBe(5000);
+    expect(computeUpfrontBps(rules, 10000)).toBe(10000);
+    expect(computeUpfrontBps(rules, 30000)).toBe(5000);
+    expect(formatClientTermsSummary({ ...rules, upfrontTiers: { tiers: [{ minQuoteMinor: 0, maxQuoteMinor: null, bps: 10000 }] } }, "USD"))
+      .toContain("100% for all quotes");
+  });
+
   it("writes client terms in plain English with the team's numbers", () => {
     const summary = formatClientTermsSummary(AGENCY_RULEBOOK_SPEC.rules, "USD");
     expect(summary).toContain("50% upfront");

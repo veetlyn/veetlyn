@@ -1,3 +1,4 @@
+import { acceptCurrentMemberAgreement, seedAgreedServicesTeamMember, seedServicesTeamWithAgreedAdmin } from "../testing/rulebooks";
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
 import { ledgerAccounts, createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
@@ -10,8 +11,6 @@ import {
   hasTestDatabase,
   seedOrganization,
   seedServicesTeam,
-  seedServicesTeamMember,
-  seedServicesTeamWithAdmin,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { buildAuthAssertion, createPayPalClient, PayPalError } from "@jendal-workspace/paypal";
@@ -118,8 +117,8 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
   // A $1,000 quote accepted by the client: a pending $600 deposit ($500 + the 10% management fee).
   async function pendingDeposit() {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await callerFor(userId).project.create({
       teamSlug: "team",
       title: "Website redesign",
@@ -417,6 +416,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     it("creates an order for a solo seller with the platform's 1% Solo fee", async () => {
       const { userId, organizationId } = await seedOrganization(db);
       const { id: soloTeamId } = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+      await acceptCurrentMemberAgreement(db, soloTeamId, userId);
       const caller = callerFor(userId);
       const { projectId } = await caller.project.create({
         teamSlug: "solo",

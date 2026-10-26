@@ -17,6 +17,7 @@ import { applyCaptureFact } from "./payments";
 import { acceptAmendment, acceptDelivery, acceptQuote, addQuote, assignFreelancer, proposeAmendment, requestChanges, submitDelivery, type ProjectActor } from "./projects";
 import { quoteRequestTerms, requestQuote } from "./requests";
 import { runDueScheduleItems } from "./scheduler-sweep";
+import { acceptCurrentMemberAgreement } from "../testing/rulebooks";
 
 const START = new Date("2026-10-25T12:00:00Z");
 const hoursAfter = (hours: number) => new Date(START.getTime() + hours * 3_600_000);
@@ -33,6 +34,7 @@ describe.skipIf(!hasTestDatabase)("transactional timer lifecycle", () => {
 
   async function requested() {
     const { teamId, userId } = await seedServicesTeamWithAdmin(db);
+    await acceptCurrentMemberAgreement(db, teamId, userId);
     await db.update(team).set({ status: "active" }).where(eq(team.id, teamId));
     const { projectId } = await requestQuote(db, {
       slug: "team", offeringId: null, name: "Client", email: "client@example.com",

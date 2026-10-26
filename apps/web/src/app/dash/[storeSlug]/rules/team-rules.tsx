@@ -74,13 +74,16 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
               Published version {published.version}. Changes stay in a draft until an admin publishes them.
             </p>
           </div>
-          <RulebookEditor
-            spec={editable}
-            currency={currency}
-            onChange={setDraft}
-            onPublish={() => void publishDraft()}
-            publishDisabled={(!draft && !data.draft) || save.isPending || publish.isPending}
-          />
+          <fieldset disabled={save.isPending || publish.isPending} className="min-w-0">
+            <legend className="sr-only">Draft rules</legend>
+            <RulebookEditor
+              spec={editable}
+              currency={currency}
+              onChange={setDraft}
+              onPublish={() => void publishDraft()}
+              publishDisabled={(!draft && !data.draft) || save.isPending || publish.isPending}
+            />
+          </fieldset>
           <RulebookSummaryView rules={editable.rules} currency={currency} version={data.draft?.version ?? published.version} />
           <div className="flex flex-wrap items-center gap-3">
             <Button

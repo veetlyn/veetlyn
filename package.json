@@ -36,6 +36,7 @@
     "@oxlint/plugins": "1.87.0",
     "@total-typescript/shoehorn": "^0.1.2",
     "@types/node": "catalog:",
+    "happy-dom": "^21.0.1",
     "oxlint": "1.87.0",
     "turbo": "^2.10.12",
     "typescript": "catalog:",

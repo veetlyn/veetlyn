@@ -26,7 +26,7 @@ import { appendPayoutOutboxEvent, deliverDueOutboxDeliveries, fanOutOutboxEvents
 import { addQuote, assignFreelancer, startProject, type ProjectActor } from "../use-cases/projects";
 import { postConversationMessage } from "../use-cases/conversations";
 import { quoteRequestTerms, requestQuote } from "../use-cases/requests";
-import { giveMemberLeavingNotice } from "../use-cases/rulebooks";
+import { acceptMemberRulebook, giveMemberLeavingNotice } from "../use-cases/rulebooks";
 
 function emailServices(mailer: Mailer): EmailServices {
   return {
@@ -61,6 +61,8 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
 
   async function quotedClient() {
     const { teamId, userId } = await seedServicesTeamWithAdmin(db);
+    const published = await ensurePublishedRulebook(db, teamId);
+    await acceptMemberRulebook(db, { teamId, userId, termsAccepted: true, acceptedRulebookId: published.id });
     const actor: ProjectActor = { teamId, actorId: userId, role: "admin" };
     const { projectId } = await startProject(db, actor, { title: "Brand refresh", clientEmail: "client@example.com", clientName: "Amadou" });
     await assignFreelancer(db, actor, { projectId, freelancerId: userId });
