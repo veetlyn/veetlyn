@@ -1,0 +1,32 @@
+packages/api/src/routers/rules.ts
+  s_263bdab18b3756::t_969321cac0998f 8,53-57,62
+packages/core/src/services-teams/types.test.ts
+  s_263bdab18b3756::t_317cbf67023e0e 37
+packages/db/src/testing/db.ts
+  s_263bdab18b3756::t_5f1536a8cbf03c 140
+packages/db/src/repositories/services-teams.ts
+  s_263bdab18b3756::t_5f1536a8cbf03c 69,118
+apps/server/src/mcp/tools.test.ts
+  s_263bdab18b3756::t_317cbf67023e0e 3,113-114
+packages/api/src/routers/services-team.test.ts
+  s_263bdab18b3756::t_1979ac9a6ce8e7 15,98-107,190,194-205
+  s_263bdab18b3756::t_ca244813ed074d 206-207
+packages/core/src/services-teams/types.ts
+  s_263bdab18b3756::t_ba9a54d3ee7997 80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4a0414133fd3401f01b979d0e825d4551b91468",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
