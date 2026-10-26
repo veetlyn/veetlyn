@@ -1,0 +1,55 @@
+packages/oss/admin-rules/src/editor-state.ts
+  s_61eb3b18f6f591::t_06669082f537bc 2,15-24
+  s_61eb3b18f6f591::t_669ccd83f75a50 45-72
+  s_61eb3b18f6f591::t_47a6e63b2f8644 25
+apps/web/package.json
+  s_61eb3b18f6f591::t_e1051795851ded 16
+  s_61eb3b18f6f591::t_cf98f88e88471d 17-18
+packages/oss/admin-rules/src/__tests__/admin-rules.test.ts
+  s_61eb3b18f6f591::t_e1d7e6b04312ac 68
+  s_61eb3b18f6f591::t_0307f3ae734d7d 41-42,51-59,61-67,69
+  s_61eb3b18f6f591::t_99dcbf8e866c90 60
+  s_61eb3b18f6f591::t_c4f0b130a14c35 11,43-50
+  s_61eb3b18f6f591::t_8fca15b272d060 70
+apps/web/src/app/dash/[storeSlug]/rules/team-rules.tsx
+  s_61eb3b18f6f591::t_7c775a940adc9f 52-57
+  s_61eb3b18f6f591::t_edae4446cda33b 106
+  s_61eb3b18f6f591::t_e1051795851ded 20,41-43,45,51,82,84,95,156
+  s_61eb3b18f6f591::t_5b253d3e67423c 1-19,21-40,44,46-50,58-81,83,85-94,96-105,107-155,157-166
+apps/web/src/app/dash/[storeSlug]/rules/page.tsx
+  s_61eb3b18f6f591::t_5b253d3e67423c 1-12
+packages/ui/src/styles/globals.css
+  s_61eb3b18f6f591::t_10f7b5a4ca8b24 5
+apps/web/src/components/team-shell.tsx
+  s_61eb3b18f6f591::t_cf98f88e88471d 13,82
+packages/oss/admin-rules/src/RulebookEditor.tsx
+  s_61eb3b18f6f591::t_edae4446cda33b 158,166-167,193
+  s_61eb3b18f6f591::t_286d744781258a 12,22,172-177,270,309-313,324-332,344-348
+  s_61eb3b18f6f591::t_5e4abd87b0839d 1,19-21,23-25,183,243,247-254,256,266,279-282,291
+  s_61eb3b18f6f591::t_4e4d64eec98faa 7-11,13-15,178-181,187-189,259-265,267-268,292-294,298-308,314-323,333-343,349-356
+  s_61eb3b18f6f591::t_eed480c3d3ba78 165,182,184-186,244-246,255,257-258
+  s_61eb3b18f6f591::t_e1d7e6b04312ac 145,160,169,201-202,213,271-272,274-278,283,357-362
+  s_61eb3b18f6f591::t_c222be6e804f5a 215,240-241,295-297
+  s_61eb3b18f6f591::t_e251a262e29eea 216
+packages/oss/admin-rules/src/RulebookSummaryView.tsx
+  s_61eb3b18f6f591::t_e1d7e6b04312ac 36-39,41-48,54
+  s_61eb3b18f6f591::t_edae4446cda33b 10,22,27-28
+pnpm-lock.yaml
+  s_61eb3b18f6f591::t_9f04906cd5be60 210-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "67595905a63b86d3e8ec6100f6c1f224b8409a20",
+  "prompts": {},
+  "sessions": {
+    "s_61eb3b18f6f591": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16eb4-ea47-7a23-aaea-4865d8c2c8b4",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
