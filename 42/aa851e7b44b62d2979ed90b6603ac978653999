@@ -1,0 +1,29 @@
+packages/api/src/use-cases/disputes.ts
+  s_263bdab18b3756::t_bbc031ec989926 13,74-75
+  s_263bdab18b3756::t_a43bcea6fed851 3,42
+packages/api/src/routers/payouts.test.ts
+  s_263bdab18b3756::t_dd000110e1b755 16,76,1825-1841,2002-2010
+  s_263bdab18b3756::t_6c16dd3b733ebe 2011
+packages/api/src/use-cases/payouts-web.ts
+  s_263bdab18b3756::t_bbc031ec989926 12,25,89-92
+packages/paypal/src/testing.ts
+  s_263bdab18b3756::t_dd000110e1b755 7
+packages/api/src/use-cases/payouts.ts
+  s_263bdab18b3756::t_bbc031ec989926 148,338,627-629
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "42aa851e7b44b62d2979ed90b6603ac978653999",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
