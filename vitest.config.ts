@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 if (existsSync(".env.test.local")) {
@@ -6,6 +7,10 @@ if (existsSync(".env.test.local")) {
 }
 
 export default defineConfig({
+  resolve: { alias: {
+    "@": fileURLToPath(new URL("./apps/web/src", import.meta.url)),
+    "next/link": "vinext/shims/link",
+  } },
   test: {
     include: [
       "packages/*/src/**/*.test.ts",

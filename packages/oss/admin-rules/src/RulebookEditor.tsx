@@ -297,7 +297,7 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               {spec.rules.upfrontTiers.tiers.map((tier, index) => (
-                <fieldset key={`${tier.minQuoteMinor}-${index}`} className="grid gap-3 rounded-xl border p-4">
+                <fieldset key={index} className="grid gap-3 rounded-xl border p-4">
                   <legend className="px-1 text-sm font-medium">Tier {index + 1}</legend>
                   <label className="grid gap-1 text-sm">
                     From quote ({currency})

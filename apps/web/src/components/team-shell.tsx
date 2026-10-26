@@ -59,6 +59,12 @@ export default function TeamShell({
     retry: false,
     meta: { silent: true },
   });
+  const rules = useQuery({
+    ...trpc.rules.state.queryOptions({ teamSlug: slug }),
+    enabled: kind === "services" && team.isSuccess,
+    retry: false,
+    meta: { silent: true },
+  });
 
   const data = team.data;
   const solo = data?.settings?.solo ?? false;
@@ -183,6 +189,12 @@ export default function TeamShell({
               </Link>
             ))}
         </nav>
+        {rules.data?.memberAccepted === false && pathname !== `/${slug}/rules` ? (
+          <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 panel p-4 md:mx-7" role="status">
+            <p className="text-sm">Read and accept member agreement version {rules.data.published.version} before taking new work.</p>
+            <Link href={`/${slug}/rules`} className="text-sm font-semibold underline underline-offset-4">Review team rules</Link>
+          </div>
+        ) : null}
         {children}
       </div>
     </div>

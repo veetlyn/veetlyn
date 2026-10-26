@@ -12,6 +12,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { applyCaptureFact } from "./payments";
 import { acceptDelivery, acceptQuote, submitDelivery } from "./projects";
 import { runDueScheduleItems } from "./scheduler-sweep";
+import { acceptCurrentMemberAgreement } from "../testing/rulebooks";
 
 describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
   const db = createTestDb();
@@ -35,6 +36,7 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     const freelancerId = await seedServicesTeamMember(db, { teamId, organizationId, role: "freelancer" });
     const managerId = manager === "other" ? userId : manager === "self" ? freelancerId : null;
     const rb = await ensurePublishedRulebook(db, teamId);
+    await acceptCurrentMemberAgreement(db, teamId, freelancerId);
     const projectId = await seedProject(db, { teamId });
     await db.update(project).set({ rulebookId: rb.id, ...split, managerId }).where(eq(project.id, projectId));
     const quoteId = crypto.randomUUID();

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { ensurePublishedRulebook, recordMemberMark } from "@jendal-workspace/db/repositories/operating-model";
+import { ensurePublishedRulebook, recordMemberMark, recordRulebookAcceptance } from "@jendal-workspace/db/repositories/operating-model";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
 import { scheduleItem, memberMark } from "@jendal-workspace/db/schema/operating-model";
@@ -20,7 +20,7 @@ import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
 
 import { postConversationMessage } from "../use-cases/conversations";
 import { acceptQuote, addQuote, armProjectSchedule, assignFreelancer, requestChanges } from "../use-cases/projects";
-import { giveMemberLeavingNotice } from "../use-cases/rulebooks";
+import { acceptMemberRulebook, giveMemberLeavingNotice, publishRulebook, saveRulebookDraft } from "../use-cases/rulebooks";
 import { runDueScheduleItems } from "../use-cases/scheduler-sweep";
 
 const H = 3_600_000;
@@ -38,16 +38,23 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
 
-  it.each(["strike", "leaving"])("refuses new assignments and quotes for a member on %s restriction", async (restriction) => {
+  it.each(["strike", "leaving", "agreement"])("refuses new assignments and quotes for a member on %s restriction", async (restriction) => {
     const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const projectId = await pinnedProject(db, teamId);
+    const published = await ensurePublishedRulebook(db, teamId);
+    if (restriction !== "agreement") {
+      await acceptMemberRulebook(db, { teamId, userId: memberId, termsAccepted: true, acceptedRulebookId: published.id });
+    } else {
+      await acceptMemberRulebook(db, { teamId, userId, termsAccepted: true, acceptedRulebookId: published.id });
+      await recordRulebookAcceptance(db, { teamId, userId: memberId, actorKind: "client", rulebookId: published.id });
+    }
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
     if (restriction === "strike") {
       for (let count = 0; count < 3; count++) {
         await recordMemberMark(db, { teamId, memberUserId: memberId, kind: "late_update" });
       }
-    } else {
+    } else if (restriction === "leaving") {
       await giveMemberLeavingNotice(db, { teamId, userId: memberId, rulebook: { leavingNotice: { days: 14 } } });
     }
     const actor = { teamId, actorId: userId, role: "admin" } as const;
@@ -57,33 +64,53 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
       items: [{ description: "Logo", amountMinor: 10000, extraDays: 0 }],
     }).then(() => "allowed", () => "refused");
     expect([assignment, quoting]).toEqual(["refused", "refused"]);
+    if (restriction === "agreement") {
+      await expect(addQuote(db, actor, {
+        projectId, freelancerId: memberId, deliveryDays: 3,
+        items: [{ description: "Logo", amountMinor: 10000, extraDays: 0 }],
+      })).rejects.toThrow(/member agreement/);
+    }
     expect((await findProjectById(db, projectId))?.assignedFreelancerId).toBeNull();
     expect(await db.select().from(quote)).toEqual([]);
   });
 
-  it.each(["strike", "leaving"])("refuses accepting an older quote after a %s restriction", async (restriction) => {
-    const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
+  it.each(["strike", "leaving", "agreement"])("refuses accepting an older quote after a %s restriction", async (restriction) => {
+    const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const projectId = await pinnedProject(db, teamId);
+    const published = await ensurePublishedRulebook(db, teamId);
+    await acceptMemberRulebook(db, { teamId, userId: memberId, termsAccepted: true, acceptedRulebookId: published.id });
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
     const { quoteId } = await addQuote(db, { teamId, actorId: memberId, role: "freelancer" }, {
       projectId, deliveryDays: 3, items: [{ description: "Logo", amountMinor: 10000, extraDays: 0 }],
     });
     if (restriction === "strike") {
       for (let count = 0; count < 3; count++) await recordMemberMark(db, { teamId, memberUserId: memberId, kind: "late_update" });
-    } else {
+    } else if (restriction === "leaving") {
       await giveMemberLeavingNotice(db, { teamId, userId: memberId, rulebook: { leavingNotice: { days: 14 } } });
+    } else {
+      await saveRulebookDraft(db, { teamId, userId, preset: "custom", spec: { ...published.spec, leavingNotice: { days: 15 } } });
+      await publishRulebook(db, { teamId, userId });
     }
-    await expect(acceptQuote(db, { projectId, quoteId })).rejects.toThrow(/suspended|leaving notice/);
+    await expect(acceptQuote(db, { projectId, quoteId })).rejects.toThrow(/suspended|leaving notice|member agreement/);
     expect((await findProjectById(db, projectId))?.status).toBe("quoting");
     expect(await db.select().from(payment)).toEqual([]);
     expect(await db.select().from(quote)).toEqual([expect.objectContaining({ id: quoteId, status: "proposed" })]);
+    if (restriction === "agreement") {
+      const current = await ensurePublishedRulebook(db, teamId);
+      await acceptMemberRulebook(db, { teamId, userId: memberId, termsAccepted: true, acceptedRulebookId: current.id });
+      await acceptQuote(db, { projectId, quoteId });
+      expect(await findProjectById(db, projectId)).toMatchObject({ status: "awaiting_deposit", rulebookId: published.id });
+      expect(await db.select().from(payment)).toHaveLength(1);
+    }
   });
 
   it("ignores expired and foreign-team marks when accepting new work", async () => {
     const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const projectId = await pinnedProject(db, teamId);
+    const published = await ensurePublishedRulebook(db, teamId);
+    await acceptMemberRulebook(db, { teamId, userId: memberId, termsAccepted: true, acceptedRulebookId: published.id });
     for (let count = 0; count < 3; count++) {
       await recordMemberMark(db, { teamId, memberUserId: memberId, kind: "late_update" });
     }
@@ -118,6 +145,8 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
   it("collects a tiered upfront deposit and stores the rate on the project", async () => {
     const { teamId, userId } = await seedServicesTeamWithAdmin(db);
     const projectId = await pinnedProject(db, teamId);
+    const published = await ensurePublishedRulebook(db, teamId);
+    await acceptMemberRulebook(db, { teamId, userId, termsAccepted: true, acceptedRulebookId: published.id });
     await db.update(projectTable).set({ managementFeeBps: 1000 }).where(eq(projectTable.id, projectId));
     const quoteId = crypto.randomUUID();
     await db.insert(quote).values({ id: quoteId, projectId, teamId, freelancerId: userId, amountMinor: 20_000, deliveryDays: 3 });

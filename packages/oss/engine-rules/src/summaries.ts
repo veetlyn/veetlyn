@@ -12,7 +12,7 @@ function formatMinor(currency: string, minor: number): string {
 
 function formatBps(bps: number): string {
   const percent = bps / 100;
-  return `${Number.isInteger(percent) ? percent : percent.toFixed(1)}%`;
+  return `${Number.isInteger(percent) ? percent : percent.toFixed(2).replace(/0$/, "")}%`;
 }
 
 function joinSentences(sentences: string[]): string {
@@ -21,12 +21,16 @@ function joinSentences(sentences: string[]): string {
 
 function tierSentence(currency: string, rules: RulebookRules): string | null {
   const parts = rules.upfrontTiers.tiers.map((tier) => {
-    if (tier.maxQuoteMinor !== null) return `${formatBps(tier.bps)} for quotes under ${formatMinor(currency, tier.maxQuoteMinor)}`;
+    if (tier.maxQuoteMinor !== null) {
+      const range = tier.minQuoteMinor > 0
+        ? `from ${formatMinor(currency, tier.minQuoteMinor)} to under ${formatMinor(currency, tier.maxQuoteMinor)}`
+        : `under ${formatMinor(currency, tier.maxQuoteMinor)}`;
+      return `${formatBps(tier.bps)} for quotes ${range}`;
+    }
     if (tier.minQuoteMinor > 0) return `${formatBps(tier.bps)} for quotes ${formatMinor(currency, tier.minQuoteMinor)} and up`;
-    return null;
+    return `${formatBps(tier.bps)} for all quotes`;
   });
-  const meaningful = parts.filter((part) => part !== null);
-  return meaningful.length > 0 ? ` (${meaningful.join("; ")})` : null;
+  return parts.length > 0 ? ` (${parts.join("; ")})` : null;
 }
 
 // What the client reads before requesting work.
