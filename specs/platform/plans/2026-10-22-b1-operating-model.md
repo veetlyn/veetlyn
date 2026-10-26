@@ -549,4 +549,13 @@ _Built 2026-10-23/24 on `b1-operating-model` (base `4f5cd89`, plan `2a6f90a`), 1
 
 **Follow-up security review** (`~/security-audit-skill/payleor/run-4/session-2026-10-26-review.md`): manual review of `fd07b1d..84a3d43`, since Mimosa and the `security-audit` skill are not installed in the Claude Code session. Two confirmed findings from the commit hook, both fixed with regressions: the leaving-notice sentinel (`1b2f99e`) and the paid revision taken before its top-up (`a51cda4`). No other finding; no dynamic testing or dependency audit claimed.
 
+**Security audit, run 5** (`security-audit` skill, full audit mode, `quick` profile, scoped to `origin/main...b1-operating-model`, output `~/security-audit-skill/payleor/run-5`): a partial pass, marked incomplete. The budget of 20 agents, raised from 15 by Mouhamed after five launches hit provider limits, was all spent, and one verifier's record came back malformed. No sandbox with a disposable Postgres was available, so no candidate could be confirmed. Four records are `needs_validation`, and the fifth candidate stayed unvalidated. All five were fixed or recorded:
+- Payouts Web export skipped the open-dispute hold: fixed with a regression test (`42aa851`).
+- An automatic send checked for a dispute only before reading the balance: the claim now checks again under the credentials row, which the dispute webhook takes first (`42aa851`, unvalidated in the audit).
+- A rulebook draft save could rewrite a version published under it: both writes now require the row to still be a draft, and publish runs in one transaction (`b75d5dd`).
+- A dispute on a capture still pending on the platform was finalized as not ours: pending payments with the capture id now match (`bf14583`). Still open: a capture PayPal completed that the platform has not recorded yet (backlog).
+- `request_quote` takes the client's acceptance of the rules from the model: left for Mouhamed, since a card-only request reopens the plugin design (backlog).
+
+The final critic deferred three units: the scheduler sweep lifecycle, notice delivery wakeup and order-email resend.
+
 **Not done:** staging walkthrough of AGT-16/19/37/46–54, the spec-library updates that accompany the merge (PROGRESS, BACKLOG moves, stories, architecture doc), and the merge itself.
