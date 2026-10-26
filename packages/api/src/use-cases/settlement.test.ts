@@ -106,6 +106,26 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     await settled(fixture, 120_000, 36_000, manager === "other" ? 12_000 : 0, manager === "other" ? 84_000 : 96_000);
   });
 
+  it("starts the member's update window when the deposit is captured", async () => {
+    const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
+    const freelancerId = await seedServicesTeamMember(db, { teamId, organizationId, role: "freelancer" });
+    const rb = await ensurePublishedRulebook(db, teamId);
+    await acceptCurrentMemberAgreement(db, teamId, freelancerId);
+    const projectId = await seedProject(db, { teamId });
+    await db.update(project).set({ rulebookId: rb.id }).where(eq(project.id, projectId));
+    const quoteId = crypto.randomUUID();
+    await db.insert(quote).values({ id: quoteId, teamId, projectId, freelancerId, amountMinor: 20_000, deliveryDays: 3 });
+    const deposit = await acceptQuote(db, { projectId, quoteId });
+    expect((await db.select().from(scheduleItem).where(eq(scheduleItem.subjectId, projectId))).map((row) => row.kind)).not.toContain("member.updateLate");
+
+    const before = Date.now();
+    await capture(deposit.paymentId);
+    const pending = (await db.select().from(scheduleItem).where(eq(scheduleItem.subjectId, projectId))).filter((row) => row.status === "pending");
+    const late = pending.find((row) => row.kind === "member.updateLate");
+    expect(pending.map((row) => row.kind)).toEqual(expect.arrayContaining(["member.updateRemind", "member.updateLate"]));
+    expect(late!.runAt.getTime()).toBeGreaterThanOrEqual(before + rb.spec.updateWindow.hours * 3_600_000 - 1_000);
+  });
+
   it("proposes a late-delivery refund without moving money, and a confirmed one comes out of the member's share", async () => {
     const fixture = await delivered(20_000, "other", undefined, 3);
     // The agency rules: 2% a day for 3 days on $200.00.
