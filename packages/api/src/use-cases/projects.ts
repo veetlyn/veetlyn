@@ -5,6 +5,7 @@ import {
   balanceDue,
   canAssignFreelancer,
   canProposeAmendment,
+  canServicesTeam,
   canStartProject,
   canSubmitDelivery,
   checkUploadFile,
@@ -49,7 +50,7 @@ import {
   markFileUploadAttached,
 } from "@jendal-workspace/db/repositories/files";
 import { createProjectRefund } from "@jendal-workspace/db/repositories/project-refunds";
-import { countMemberMarks, ensurePublishedRulebook, lockMemberWork, memberAcceptedRulebook, memberHasLeavingNotice, pauseProjectSchedule, projectHasOpenDispute, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
+import { countMemberMarks, ensurePublishedRulebook, lockMemberWork, memberAcceptedRulebook, memberHasLeavingNotice, pauseProjectSchedule, projectHasOpenDispute, recordMemberMark, upsertPendingScheduleItems } from "@jendal-workspace/db/repositories/operating-model";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -62,7 +63,7 @@ import {
 import { fileUpload } from "@jendal-workspace/db/schema/files";
 import { rulebook } from "@jendal-workspace/db/schema/operating-model";
 import { amendment, delivery, payment, project, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
-import { computeUpfrontBps, type RulebookRules } from "@opmodel/engine-rules";
+import { checkQualityRefundCap, computeLateDeliveryRefundProposal, computeUpfrontBps, type RulebookRules } from "@opmodel/engine-rules";
 import { planProjectSchedule } from "@opmodel/engine-scheduler";
 import { and, eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -713,11 +714,20 @@ export async function submitDelivery(
     }
     const deliveredAt = new Date();
     const deliveryId = crypto.randomUUID();
+    const late = await lateRefundProposal(tx, row, deliveredAt);
+    const events: OutboxEventInput[] = [{ type: "delivery.submitted", data: { deliveryId } }];
+    if (late) events.push({ type: "project.late_refund_proposed", data: { amountMinor: late.proposedRefundMinor, daysLate: late.daysLate } });
     await uow.apply({
       project: row,
-      set: { status },
-      events: [{ type: "delivery.submitted", data: { deliveryId } }],
+      set: late
+        ? { status, lateRefundStatus: "pending", lateRefundProposedMinor: late.proposedRefundMinor, lateRefundDaysLate: late.daysLate }
+        : { status },
+      events,
     });
+    // A redelivery updates a waiting proposal; the mark is recorded once.
+    if (late && row.lateRefundStatus === null && row.assignedFreelancerId) {
+      await recordMemberMark(tx, { teamId: row.teamId, memberUserId: row.assignedFreelancerId, projectId: row.id, kind: "late_delivery" });
+    }
     await tx.insert(delivery).values({
       id: deliveryId,
       projectId: row.id,
@@ -738,6 +748,92 @@ export async function submitDelivery(
     });
     await armProjectSchedule(tx, { ...row, status }, deliveredAt, { deliveredAt });
     return { deliveryId };
+  });
+}
+
+// The late-delivery refund a delivery after the deadline proposes under the pinned rules; null when on time, when
+// the rules charge nothing, or once an admin decided an earlier proposal.
+async function lateRefundProposal(tx: Transaction, row: ProjectRow, deliveredAt: Date) {
+  if (!row.deadlineAt || row.lateRefundStatus === "confirmed" || row.lateRefundStatus === "waived") return null;
+  const rules = await pinnedRulebookRules(tx, row.rulebookId);
+  if (!rules) return null;
+  const current = await requireCurrentQuote(tx, row);
+  const proposal = computeLateDeliveryRefundProposal(rules, current.amountMinor, row.deadlineAt, deliveredAt);
+  return proposal.proposedRefundMinor > 0 ? proposal : null;
+}
+
+// Only a confirmed proposal changes the price; the member's share pays it at completion.
+export function confirmedLateRefundMinor(row: Pick<ProjectRow, "lateRefundStatus" | "lateRefundProposedMinor">): number {
+  return row.lateRefundStatus === "confirmed" ? (row.lateRefundProposedMinor ?? 0) : 0;
+}
+
+// Decisions on refunds stay open until the client accepts the delivery, which fixes the final price.
+const PRICE_OPEN_STATUSES: readonly ProjectStatus[] = ["in_progress", "delivered"];
+
+// An admin's press confirms or waives a late-delivery refund proposal; nothing moves until the price is fixed.
+export async function decideLateDeliveryRefund(
+  db: Database,
+  actor: ProjectActor,
+  input: { projectId: string; decision: "confirm" | "waive" },
+): Promise<void> {
+  if (!canServicesTeam(actor.role, "resolve_cases")) fail("FORBIDDEN", "Only an admin can decide a late-delivery refund.");
+  await runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireTeamProject(tx, actor, input.projectId);
+    if (row.lateRefundStatus !== "pending") fail("BAD_REQUEST", "There is no late-delivery refund waiting for a decision.");
+    if (!PRICE_OPEN_STATUSES.includes(row.status)) fail("BAD_REQUEST", "The client already accepted the delivery, so the price is fixed.");
+    const confirmed = input.decision === "confirm";
+    const amountMinor = row.lateRefundProposedMinor ?? 0;
+    await uow.apply({
+      project: row,
+      set: { lateRefundStatus: confirmed ? "confirmed" : "waived", lateRefundDecidedBy: actor.actorId, lateRefundDecidedAt: new Date() },
+      events: [{ type: "project.late_refund_decided", data: { decision: input.decision, amountMinor } }],
+    });
+    if (confirmed) {
+      await insertEventMessage(tx, {
+        projectId: row.id,
+        space: "project",
+        body: `The team confirmed a late-delivery refund of ${formatMoney(money(row.currency, amountMinor))}. It comes off the final price.`,
+        refType: "late_refund",
+        refId: row.id,
+      });
+    }
+  });
+}
+
+// A quality refund lowers the price within the pinned rulebook's cap for the project's phase; 0 clears it.
+export async function setQualityRefund(
+  db: Database,
+  actor: ProjectActor,
+  input: { projectId: string; amountMinor: number },
+): Promise<void> {
+  if (!canServicesTeam(actor.role, "resolve_cases")) fail("FORBIDDEN", "Only an admin can set a quality refund.");
+  if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor < 0) fail("BAD_REQUEST", "Enter a refund of zero or more.");
+  await runProjectTransaction(db, async (tx, uow) => {
+    const row = await requireTeamProject(tx, actor, input.projectId);
+    if (!PRICE_OPEN_STATUSES.includes(row.status)) fail("BAD_REQUEST", "A quality refund can be set while the work is in progress or delivered.");
+    const rules = await pinnedRulebookRules(tx, row.rulebookId);
+    if (!rules) fail("BAD_REQUEST", "This project started before team rules, so it has no refund caps.");
+    const current = await requireCurrentQuote(tx, row);
+    const phase = row.status === "in_progress" ? "in_progress" : "after_delivery";
+    const { allowed, capMinor } = checkQualityRefundCap(rules, phase, input.amountMinor, current.amountMinor);
+    if (!allowed) {
+      fail("BAD_REQUEST", `REFUND_EXCEEDS_RULEBOOK_CAP: the team rules allow up to ${formatMoney(money(row.currency, capMinor))} at this stage.`);
+    }
+    const amountMinor = input.amountMinor === 0 ? null : input.amountMinor;
+    await uow.apply({
+      project: row,
+      set: { qualityRefundMinor: amountMinor, qualityRefundSetBy: actor.actorId, qualityRefundSetAt: new Date() },
+      events: [{ type: "project.quality_refund_set", data: { amountMinor: input.amountMinor } }],
+    });
+    await insertEventMessage(tx, {
+      projectId: row.id,
+      space: "project",
+      body: amountMinor
+        ? `The team set a quality refund of ${formatMoney(money(row.currency, amountMinor))}. It comes off the final price.`
+        : "The team removed the quality refund.",
+      refType: "quality_refund",
+      refId: row.id,
+    });
   });
 }
 
@@ -855,7 +951,8 @@ async function settleDelivery(
     const found = await requireOpenDelivery(tx, row.id, input.deliveryId);
     const current = await requireCurrentQuote(tx, row);
     const facts = await getProjectFacts(tx, row.id);
-    const finalPrice = finalPriceMinor(current.amountMinor, 0);
+    const priceAfterQuality = finalPriceMinor(current.amountMinor, row.qualityRefundMinor ?? 0);
+    const finalPrice = finalPriceMinor(priceAfterQuality, confirmedLateRefundMinor(row));
     const balance = balanceDue({
       quoteMinor: current.amountMinor,
       managementFeeBps: row.managementFeeBps,
@@ -912,6 +1009,7 @@ async function settleDelivery(
         teamCutBps: row.teamCutBps,
         managerId: row.managerId,
         managerCutBps: row.managerCutBps,
+        memberBearsMinor: priceAfterQuality - finalPrice,
         balance,
       });
       const events: OutboxEventInput[] = [...acceptanceEvents, { type: "project.completed", data: { finalPriceMinor: finalPrice } }];

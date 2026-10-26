@@ -2,7 +2,8 @@ import { createFakeFileStore } from "@jendal-workspace/core";
 import { ensurePublishedRulebook } from "@jendal-workspace/db/repositories/operating-model";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
-import { scheduleItem } from "@jendal-workspace/db/schema/operating-model";
+import { memberMark, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
+import { projectRefund } from "@jendal-workspace/db/schema/project-refunds";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { amendment, delivery, payment, project, quote } from "@jendal-workspace/db/schema/projects";
 import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamMember, seedServicesTeamWithAdmin, truncateAll } from "@jendal-workspace/db/testing/db";
@@ -10,7 +11,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { applyCaptureFact } from "./payments";
-import { acceptDelivery, acceptQuote, submitDelivery } from "./projects";
+import { acceptDelivery, acceptQuote, decideLateDeliveryRefund, type ProjectActor, setQualityRefund, submitDelivery } from "./projects";
 import { runDueScheduleItems } from "./scheduler-sweep";
 import { acceptCurrentMemberAgreement } from "../testing/rulebooks";
 
@@ -31,7 +32,7 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     })).toBe("applied");
   }
 
-  async function delivered(amountMinor: number, manager: "other" | "self" | "none" = "other", split = { teamCutBps: 2000, managerCutBps: 1000 }) {
+  async function delivered(amountMinor: number, manager: "other" | "self" | "none" = "other", split = { teamCutBps: 2000, managerCutBps: 1000 }, daysLate = 0) {
     const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
     const freelancerId = await seedServicesTeamMember(db, { teamId, organizationId, role: "freelancer" });
     const managerId = manager === "other" ? userId : manager === "self" ? freelancerId : null;
@@ -43,12 +44,18 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     await db.insert(quote).values({ id: quoteId, teamId, projectId, freelancerId, amountMinor, deliveryDays: 3 });
     const deposit = await acceptQuote(db, { projectId, quoteId });
     await capture(deposit.paymentId);
+    if (daysLate > 0) {
+      // An hour into the last late day, so the started day counts.
+      await db.update(project).set({ deadlineAt: new Date(Date.now() - (daysLate - 1) * 86_400_000 - 3_600_000) }).where(eq(project.id, projectId));
+    }
     const { deliveryId } = await submitDelivery(db, createFakeFileStore(), { teamId, actorId: freelancerId, role: "freelancer" }, { projectId, note: "Ready", link: "https://example.com/work" });
     // Only the terminal review timer is due in this test.
     await db.update(scheduleItem).set({ runAt: new Date(Date.now() + 86_400_000) }).where(eq(scheduleItem.subjectId, projectId));
     await db.update(scheduleItem).set({ runAt: new Date(0) }).where(eq(scheduleItem.kind, "project.autoComplete"));
-    return { teamId, projectId, quoteId, deliveryId, freelancerId, managerId };
+    return { teamId, projectId, quoteId, deliveryId, freelancerId, managerId, adminId: userId };
   }
+
+  const admin = (fixture: { teamId: string; adminId: string }) => ({ teamId: fixture.teamId, actorId: fixture.adminId, role: "admin" as const });
 
   async function balance(account: string) {
     const rows = await db.select().from(ledgerBalance).where(eq(ledgerBalance.account, account));
@@ -97,6 +104,80 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     const invoice = invoices[0]!;
     await capture(invoice.id);
     await settled(fixture, 120_000, 36_000, manager === "other" ? 12_000 : 0, manager === "other" ? 84_000 : 96_000);
+  });
+
+  it("proposes a late-delivery refund without moving money, and a confirmed one comes out of the member's share", async () => {
+    const fixture = await delivered(20_000, "other", undefined, 3);
+    // The agency rules: 2% a day for 3 days on $200.00.
+    expect(await findProjectById(db, fixture.projectId)).toMatchObject({ lateRefundStatus: "pending", lateRefundDaysLate: 3, lateRefundProposedMinor: 1_200 });
+    expect(await db.select().from(memberMark).where(eq(memberMark.projectId, fixture.projectId))).toEqual([
+      expect.objectContaining({ memberUserId: fixture.freelancerId, kind: "late_delivery" }),
+    ]);
+    expect(await balance(`client_held:${fixture.projectId}`)).toBe(20_000);
+
+    await expect(
+      decideLateDeliveryRefund(db, { teamId: fixture.teamId, actorId: fixture.freelancerId, role: "freelancer" }, { projectId: fixture.projectId, decision: "confirm" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await decideLateDeliveryRefund(db, admin(fixture), { projectId: fixture.projectId, decision: "confirm" });
+    await expect(decideLateDeliveryRefund(db, admin(fixture), { projectId: fixture.projectId, decision: "waive" })).rejects.toThrow(/no late-delivery refund waiting/i);
+
+    await acceptDelivery(db, { projectId: fixture.projectId, deliveryId: fixture.deliveryId });
+    // The team and manager keep 20% and 10% of $200.00 (team revenue also holds the $20.00 fee); the member's
+    // $140.00 pays the $12.00.
+    await settled(fixture, 18_800, 6_000, 2_000, 12_800);
+    expect(await db.select().from(projectRefund).where(eq(projectRefund.projectId, fixture.projectId))).toEqual([
+      expect.objectContaining({ amountMinor: 1_200 }),
+    ]);
+  });
+
+  it("keeps the full price when the late refund is waived, and proposes nothing for an on-time delivery", async () => {
+    const late = await delivered(20_000, "other", undefined, 3);
+    await decideLateDeliveryRefund(db, admin(late), { projectId: late.projectId, decision: "waive" });
+    await acceptDelivery(db, { projectId: late.projectId, deliveryId: late.deliveryId });
+    await settled(late, 20_000, 6_000, 2_000, 14_000);
+
+    await truncateAll(db);
+    const onTime = await delivered(20_000);
+    expect(await findProjectById(db, onTime.projectId)).toMatchObject({ lateRefundStatus: null, lateRefundProposedMinor: null });
+    expect(await db.select().from(memberMark)).toEqual([]);
+  });
+
+  it("takes a confirmed late refund from the balance and the member's share when the balance completes the project", async () => {
+    const fixture = await delivered(120_000, "other", undefined, 2);
+    await decideLateDeliveryRefund(db, admin(fixture), { projectId: fixture.projectId, decision: "confirm" });
+    await acceptDelivery(db, { projectId: fixture.projectId, deliveryId: fixture.deliveryId });
+    // 4% of $1,200.00 is $48.00 off the $600.00 balance.
+    const [invoice] = (await db.select().from(payment).where(eq(payment.projectId, fixture.projectId))).filter((row) => row.kind === "balance");
+    expect(invoice).toMatchObject({ amountMinor: 55_200 });
+    await capture(invoice!.id);
+    await settled(fixture, 115_200, 36_000, 12_000, 79_200);
+  });
+
+  it("refuses a quality refund above the phase cap and lowers the final price for everyone within it", async () => {
+    const fixture = await delivered(20_000);
+    const set = (amountMinor: number, actor: ProjectActor = admin(fixture)) => setQualityRefund(db, actor, { projectId: fixture.projectId, amountMinor });
+    await expect(set(5_000, { teamId: fixture.teamId, actorId: fixture.freelancerId, role: "freelancer" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // After delivery the agency rules cap it at 25% of the $200.00 price.
+    await expect(set(5_001)).rejects.toThrow(/REFUND_EXCEEDS_RULEBOOK_CAP.*\$50\.00/);
+    await set(5_000);
+    expect(await balance(`client_held:${fixture.projectId}`)).toBe(20_000);
+
+    await acceptDelivery(db, { projectId: fixture.projectId, deliveryId: fixture.deliveryId });
+    await settled(fixture, 15_000, 5_000, 1_500, 10_500);
+  });
+
+  it("caps a quality refund during the work at the in-progress share", async () => {
+    const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    const rb = await ensurePublishedRulebook(db, teamId);
+    await db.update(project).set({ rulebookId: rb.id, status: "in_progress" }).where(eq(project.id, projectId));
+    const freelancerId = await seedServicesTeamMember(db, { teamId, organizationId, role: "freelancer" });
+    await db.insert(quote).values({ teamId, projectId, freelancerId, amountMinor: 20_000, deliveryDays: 3, status: "accepted" });
+    const actor = { teamId, actorId: userId, role: "admin" as const };
+
+    await expect(setQualityRefund(db, actor, { projectId, amountMinor: 10_001 })).rejects.toThrow(/REFUND_EXCEEDS_RULEBOOK_CAP.*\$100\.00/);
+    await setQualityRefund(db, actor, { projectId, amountMinor: 10_000 });
+    expect(await findProjectById(db, projectId)).toMatchObject({ qualityRefundMinor: 10_000, qualityRefundSetBy: userId });
   });
 
   it.each(["other", "self"] as const)("immediate human acceptance settles manager=%s equivalently", async (manager) => {

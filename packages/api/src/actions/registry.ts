@@ -20,7 +20,9 @@ import {
   projectClientList,
   projectClientView,
   projectGet,
+  projectLateRefundDecide,
   projectList,
+  projectQualityRefundSet,
   projectRefundClient,
   projectStart,
 } from "./projects";
@@ -34,6 +36,8 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   projectStart,
   projectAssign,
   projectRefundClient,
+  projectLateRefundDecide,
+  projectQualityRefundSet,
   projectList,
   projectGet,
   projectClientView,

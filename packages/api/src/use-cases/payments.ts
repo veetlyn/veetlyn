@@ -37,7 +37,7 @@ import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { PayPalServices } from "../context";
-import { armProjectSchedule } from "./projects";
+import { armProjectSchedule, confirmedLateRefundMinor } from "./projects";
 import { captureFees, isRefundedCaptureStatus } from "./paypal-amounts";
 import { projectRuleSummary } from "./rulebooks";
 
@@ -129,6 +129,7 @@ async function projectChangeOnCapture(
       teamCutBps: row.teamCutBps,
       managerId: row.managerId,
       managerCutBps: row.managerCutBps,
+      memberBearsMinor: confirmedLateRefundMinor(row),
     });
     return {
       set: { status: result.to },
