@@ -195,10 +195,20 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
   );
 }
 
+// Each rule card is a link target, so a page can list the rules and jump to one.
+export function ruleAnchor(ruleKey: string): string {
+  return `rule-${ruleKey}`;
+}
+
+// The rules in the order the editor shows them, for a page's section list.
+export const RULE_SECTIONS: { ruleKey: string; title: string }[] = Object.values(CARD_META)
+  .filter((meta) => meta.ruleKey !== "upfrontTiers")
+  .map(({ ruleKey, title }) => ({ ruleKey, title }));
+
 function ruleCard(meta: CardMeta) {
   return function RuleCard({ props }: { props: Record<string, CardPropValue> }) {
     return (
-      <fieldset className="opm-rule-card grid gap-3 rounded-xl border p-4" data-rule={meta.ruleKey}>
+      <fieldset id={ruleAnchor(meta.ruleKey)} className="opm-rule-card grid scroll-mt-20 gap-3 rounded-xl border p-4" data-rule={meta.ruleKey}>
         <legend className="px-1 text-sm font-semibold">{meta.title}</legend>
         {meta.fields.map((field) => (
           <FieldInput key={field.prop} meta={meta} field={field} value={props[field.prop] ?? null} />
@@ -233,7 +243,8 @@ export type RulebookEditorProps = {
   spec: RulebookSpec;
   currency: string;
   onChange: (next: RulebookSpec) => void;
-  onPublish: () => void;
+  // Without it the host page places its own publish control.
+  onPublish?: () => void;
   publishDisabled?: boolean;
 };
 
@@ -290,7 +301,7 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
         </JSONUIProvider>
         {validationMessage ? <p role="alert" className="text-sm text-destructive">{validationMessage}</p> : null}
         {spec.rules.upfrontTiers.tiers.length > 0 ? (
-          <section className="mt-5 space-y-3" aria-label="Upfront payment tiers">
+          <section id={ruleAnchor("upfrontTiers")} className="mt-5 scroll-mt-20 space-y-3" aria-label="Upfront payment tiers">
             <h3 className="font-medium">Upfront payment tiers</h3>
             <p className="text-sm text-muted-foreground">
               Set the quote range and upfront rate for each tier. Leave the upper amount empty for no limit. When ranges overlap, the first matching tier applies.
@@ -354,6 +365,7 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
             </div>
           </section>
         ) : null}
+        {onPublish ? (
         <button
           type="button"
           className="opm-publish h-10 justify-self-start rounded-md bg-foreground px-4 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-50"
@@ -362,6 +374,7 @@ export function RulebookEditor({ spec, currency, onChange, onPublish, publishDis
         >
           Publish new version
         </button>
+        ) : null}
       </div>
     </EditContext.Provider>
   );

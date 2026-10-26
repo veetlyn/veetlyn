@@ -30,7 +30,7 @@ export default function RootLayout({
         <link rel="stylesheet" href={FONTS} />
         <link rel="preload" href="/fonts/CalSansUI-Variable.woff2" as="font" type="font/woff2" crossOrigin="" />
       </head>
-      <body className="flex min-h-svh flex-col antialiased">
+      <body className="flex min-h-svh flex-col antialiased has-[[data-app-shell]]:h-svh has-[[data-app-shell]]:overflow-hidden">
         <PwaRegistration />
         <SandboxBanner />
         <PlatformNameProvider name={platformName()} domain={platformDomain()} storeDomain={storeDomain()}>
