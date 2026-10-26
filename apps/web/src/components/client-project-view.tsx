@@ -175,6 +175,7 @@ export function ClientProjectView({
         </p>
         {refund ? <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p> : null}
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
+        {project.rules ? <p className="text-sm text-muted-foreground">Team rules: {project.rules}</p> : null}
       </div>
       {closedRequest ? (
         <section className="panel space-y-2 p-4">

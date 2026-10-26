@@ -39,6 +39,7 @@ import { log } from "evlog";
 import type { PayPalServices } from "../context";
 import { armProjectSchedule } from "./projects";
 import { captureFees, isRefundedCaptureStatus } from "./paypal-amounts";
+import { projectRuleSummary } from "./rulebooks";
 
 // One capture as PayPal reports it: from a capture response, an order lookup or a webhook (R1c).
 export type CaptureFact = {
@@ -341,7 +342,11 @@ async function requireSeller(db: Database, teamId: string): Promise<{ merchantId
 
 export async function getPayPage(deps: { db: Database; paypal: PayPalServices | undefined }, paymentId: string) {
   const row = await requirePayment(deps.db, paymentId);
-  const [projectRow, team] = await Promise.all([findProjectById(deps.db, row.projectId), findTeamById(deps.db, row.teamId)]);
+  const [projectRow, team, rules] = await Promise.all([
+    findProjectById(deps.db, row.projectId),
+    findTeamById(deps.db, row.teamId),
+    projectRuleSummary(deps.db, { projectId: row.projectId, currency: row.currency }),
+  ]);
   if (!projectRow || !team) throw new Error(`Payment ${row.id} has no project or team`);
   return {
     payment: {
@@ -354,7 +359,7 @@ export async function getPayPage(deps: { db: Database; paypal: PayPalServices | 
       lines: row.lines,
       capturedAt: row.capturedAt,
     },
-    project: { id: projectRow.id, title: projectRow.title },
+    project: { id: projectRow.id, title: projectRow.title, rules },
     team: { name: team.name },
     // Null until the server has PayPal configured and the team has connected its account.
     paypal: deps.paypal && team.paypalMerchantId ? { ...deps.paypal.sdk, merchantId: team.paypalMerchantId } : null,
