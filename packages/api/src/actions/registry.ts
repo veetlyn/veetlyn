@@ -28,7 +28,7 @@ import {
   projectWarningRecord,
 } from "./projects";
 import { offeringSearch } from "./offerings";
-import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
+import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
 import { createRequest, requestTerms } from "./requests";
 
 export const ACTIONS: readonly AnyActionDefinition[] = [
@@ -52,6 +52,7 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   quoteCreate,
   quoteAccept,
   amendmentPropose,
+  amendmentOfferPaidRevision,
   amendmentAccept,
   amendmentDecline,
   deliveryUploadStart,

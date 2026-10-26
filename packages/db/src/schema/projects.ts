@@ -172,6 +172,8 @@ export const amendment = pgTable(
     managementFeeCreditMinor: minor("management_fee_credit_minor").notNull().default(0),
     newAmountMinor: minor("new_amount_minor").notNull(),
     extraDays: integer("extra_days").notNull().default(0),
+    // A paid revision adds rounds of changes once the client accepts it.
+    revisionsAdded: integer("revisions_added").notNull().default(0),
     resultingQuoteId: text("resulting_quote_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     decidedAt: timestamp("decided_at"),

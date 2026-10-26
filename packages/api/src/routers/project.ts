@@ -33,7 +33,7 @@ import {
   projectStart,
   projectWarningRecord,
 } from "../actions/projects";
-import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "../actions/quotes";
+import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "../actions/quotes";
 import { createRequest, requestTerms } from "../actions/requests";
 import { clientProcedureFor, optionalSessionProcedureFor, publicProcedureFor, signedInProcedureFor, teamProcedureFor } from "../actions/trpc";
 import { TRPCError } from "@trpc/server";
@@ -57,6 +57,7 @@ export const projectRouter = router({
   assign: teamProcedureFor(projectAssign),
   addQuote: teamProcedureFor(quoteCreate),
   proposeAmendment: teamProcedureFor(amendmentPropose),
+  offerPaidRevision: teamProcedureFor(amendmentOfferPaidRevision),
   deliveryUploadStart: teamProcedureFor(deliveryUploadStart),
   deliver: teamProcedureFor(deliverySubmit),
   refundClient: teamProcedureFor(projectRefundClient),

@@ -1,7 +1,7 @@
 import { MAX_QUOTE_ITEMS } from "@jendal-workspace/core";
 import { z } from "zod";
 
-import { acceptAmendment, acceptQuote, addQuote, declineAmendment, proposeAmendment } from "../use-cases/projects";
+import { acceptAmendment, acceptQuote, addQuote, declineAmendment, offerPaidRevision, proposeAmendment } from "../use-cases/projects";
 import { defineAction } from "./define";
 import { projectIdInput } from "./projects";
 import { teamActorOf } from "./team-actor";
@@ -58,6 +58,17 @@ export const amendmentPropose = defineAction({
   scope: (input) => ({ projectId: input.projectId }),
   allow: [{ grant: "member" }],
   run: (context, input) => proposeAmendment(context.deps.db, teamActorOf(context), input),
+});
+
+export const amendmentOfferPaidRevision = defineAction({
+  name: "amendment.offer_paid_revision",
+  kind: "action",
+  summary: "Offer the client one more round of changes at the team rules' paid revision price, as an amendment they accept and pay.",
+  input: z.object({ projectId: z.uuid() }),
+  output: z.object({ amendmentId: z.uuid() }),
+  scope: (input) => ({ projectId: input.projectId }),
+  allow: [{ grant: "member" }],
+  run: (context, input) => offerPaidRevision(context.deps.db, teamActorOf(context), input),
 });
 
 export const amendmentAccept = defineAction({

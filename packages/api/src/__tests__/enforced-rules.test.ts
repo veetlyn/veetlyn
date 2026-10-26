@@ -5,7 +5,7 @@ import { ensurePublishedRulebook, recordMemberMark, recordRulebookAcceptance } f
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
 import { scheduleItem, memberMark } from "@jendal-workspace/db/schema/operating-model";
-import { delivery, payment, project as projectTable, quote } from "@jendal-workspace/db/schema/projects";
+import { amendment, delivery, payment, project as projectTable, quote, quoteItem } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import {
   createTestDb,
@@ -19,7 +19,7 @@ import {
 import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
 
 import { postConversationMessage } from "../use-cases/conversations";
-import { acceptQuote, addQuote, armProjectSchedule, assignFreelancer, requestChanges } from "../use-cases/projects";
+import { acceptAmendment, acceptQuote, addQuote, armProjectSchedule, assignFreelancer, offerPaidRevision, requestChanges } from "../use-cases/projects";
 import { acceptMemberRulebook, giveMemberLeavingNotice, publishRulebook, saveRulebookDraft } from "../use-cases/rulebooks";
 import { runDueScheduleItems } from "../use-cases/scheduler-sweep";
 
@@ -182,6 +182,33 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
     const [openDelivery] = await db.select().from(delivery).where(eq(delivery.status, "submitted")).limit(1);
 
     await expect(requestChanges(db, { projectId, deliveryId: openDelivery!.id, note: "Again" })).rejects.toThrow(/REVISION_LIMIT_REACHED.*\$75\.00/);
+  });
+
+  it("offers a paid revision at the rulebook price that adds a round once the client accepts it", async () => {
+    const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
+    const freelancerId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const projectId = await pinnedProject(db, teamId);
+    await db.update(projectTable).set({ status: "delivered", revisions: 2, assignedFreelancerId: freelancerId, managementFeeBps: 0 }).where(eq(projectTable.id, projectId));
+    const [current] = await db.insert(quote).values({ projectId, teamId, freelancerId, amountMinor: 20_000, deliveryDays: 3, status: "accepted" }).returning();
+    await db.insert(quoteItem).values({ quoteId: current!.id, position: 0, description: "Logo", amountMinor: 20_000 });
+    await db.insert(delivery).values([
+      { projectId, teamId, note: "first", status: "changes_requested", decidedAt: new Date() },
+      { projectId, teamId, note: "second", status: "changes_requested", decidedAt: new Date() },
+    ]);
+    const [open] = await db.insert(delivery).values({ projectId, teamId, note: "third" }).returning();
+    const freelancer = { teamId, actorId: freelancerId, role: "freelancer" } as const;
+
+    await expect(offerPaidRevision(db, { teamId, actorId: userId, role: "admin" }, { projectId: crypto.randomUUID() })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const { amendmentId } = await offerPaidRevision(db, freelancer, { projectId });
+    expect(await db.select().from(amendment)).toEqual([
+      expect.objectContaining({ id: amendmentId, newAmountMinor: 27_500, revisionsAdded: 1, addItems: [{ description: "Paid revision", amountMinor: 7_500, extraDays: 0 }] }),
+    ]);
+    await expect(offerPaidRevision(db, freelancer, { projectId })).rejects.toThrow();
+
+    await acceptAmendment(db, { projectId, amendmentId });
+    expect((await findProjectById(db, projectId))?.revisions).toBe(3);
+    await requestChanges(db, { projectId, deliveryId: open!.id, note: "One more pass" });
+    expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
   });
 
   it("expires an unanswered request through the scheduler", async () => {

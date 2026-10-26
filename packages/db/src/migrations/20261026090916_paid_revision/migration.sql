@@ -1,0 +1,1 @@
+ALTER TABLE "amendment" ADD COLUMN "revisions_added" integer DEFAULT 0 NOT NULL;

@@ -375,7 +375,7 @@ async function requireCurrentQuote(tx: Transaction, row: ProjectRow): Promise<Qu
 
 // The rules a project runs under: its pinned rulebook's spec, or null for projects that predate
 // rulebooks (the platform defaults then apply).
-async function pinnedRulebookRules(db: DbExecutor, rulebookId: string | null): Promise<RulebookRules | null> {
+export async function pinnedRulebookRules(db: DbExecutor, rulebookId: string | null): Promise<RulebookRules | null> {
   if (!rulebookId) return null;
   const [row] = await db.select({ spec: rulebook.spec }).from(rulebook).where(eq(rulebook.id, rulebookId)).limit(1);
   return row?.spec ?? null;
@@ -422,7 +422,7 @@ export async function armProjectSchedule(
 export async function proposeAmendment(
   db: Database,
   actor: ProjectActor,
-  input: { projectId: string; add: QuoteItemDraft[]; removeItemIds: string[]; note?: string },
+  input: { projectId: string; add: QuoteItemDraft[]; removeItemIds: string[]; note?: string; revisionsAdded?: number },
 ): Promise<{ amendmentId: string }> {
   return runProjectTransaction(db, async (tx, uow) => {
     const row = await requireTeamProject(tx, actor, input.projectId);
@@ -458,6 +458,7 @@ export async function proposeAmendment(
       deltaMinor: newAmountMinor - current.amountMinor,
       newAmountMinor,
       extraDays: amended.extraDays,
+      revisionsAdded: input.revisionsAdded ?? 0,
     });
     await insertEventMessage(tx, {
       projectId: row.id,
@@ -467,6 +468,26 @@ export async function proposeAmendment(
       refId: amendmentId,
     });
     return { amendmentId };
+  });
+}
+
+// Past the free rounds (AGT-49) the team offers one more at the pinned rulebook's price, as an amendment the
+// client accepts and pays like any other.
+export async function offerPaidRevision(
+  db: Database,
+  actor: ProjectActor,
+  input: { projectId: string },
+): Promise<{ amendmentId: string }> {
+  const row = await requireTeamProject(db, actor, input.projectId);
+  const rules = await pinnedRulebookRules(db, row.rulebookId);
+  const priceMinor = rules?.revisions.paidRevisionPriceMinor ?? 0;
+  if (priceMinor === 0) fail("BAD_REQUEST", "The team rules set no price for a paid revision.");
+  return proposeAmendment(db, actor, {
+    projectId: row.id,
+    add: [{ description: "Paid revision", amountMinor: priceMinor, extraDays: 0 }],
+    removeItemIds: [],
+    note: "One more round of changes.",
+    revisionsAdded: 1,
   });
 }
 
@@ -514,7 +535,7 @@ export async function acceptAmendment(
     }
     await uow.apply({
       project: row,
-      set: {},
+      set: found.revisionsAdded > 0 ? { revisions: row.revisions + found.revisionsAdded } : {},
       transfers:
         effect.kind === "decrease" && effect.managementFeeCreditMinor > 0
           ? [
