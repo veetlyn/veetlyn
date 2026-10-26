@@ -1,5 +1,5 @@
 import { assertBps, MAX_AMOUNT_MINOR } from "../money/money";
-import type { PaymentSplit } from "./pricing";
+import { DEPOSIT_BPS, type PaymentSplit } from "./pricing";
 
 export const QUOTE_STATUSES = ["proposed", "accepted", "superseded", "rejected"] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
@@ -102,17 +102,25 @@ export function amendmentProblemMessage(problem: "no_change" | "unknown_item" | 
 export type PaymentLineKind = PaymentKind | "management_fee";
 export type PaymentLine = { kind: PaymentLineKind; label: string; amountMinor: number };
 
-const QUOTE_PART_LABELS = {
-  deposit: "Deposit (50% of the quote)",
-  top_up: "Top-up (50% of the increase)",
-  balance: "Balance",
-} satisfies Record<PaymentKind, string>;
+function quotePartLabel(kind: PaymentKind, upfrontBps: number): string {
+  if (kind === "balance") return "Balance";
+  const percent = `${upfrontBps / 100}%`;
+  if (kind === "top_up") return upfrontBps === 10_000 ? "Top-up (the whole increase)" : `Top-up (${percent} of the increase)`;
+  return upfrontBps === 10_000 ? "Full payment upfront" : `Deposit (${percent} of the quote)`;
+}
 
-// The lines shown on the client page and the pay page; zero lines are left out.
-export function paymentLines(kind: PaymentKind, split: PaymentSplit, managementFeeBps: number): PaymentLine[] {
+// The lines shown on the client page and the pay page; zero lines are left out. upfrontBps is the share the
+// project's rules took up front, which names the deposit and top-up lines.
+export function paymentLines(
+  kind: PaymentKind,
+  split: PaymentSplit,
+  managementFeeBps: number,
+  upfrontBps: number = DEPOSIT_BPS,
+): PaymentLine[] {
   assertBps(managementFeeBps, "management fee");
+  assertBps(upfrontBps, "upfront rate");
   const lines: PaymentLine[] = [
-    { kind, label: QUOTE_PART_LABELS[kind], amountMinor: split.quotePartMinor },
+    { kind, label: quotePartLabel(kind, upfrontBps), amountMinor: split.quotePartMinor },
     { kind: "management_fee", label: `Management fee (${managementFeeBps / 100}%)`, amountMinor: split.managementFeeMinor },
   ];
   return lines.filter((line) => line.amountMinor > 0);

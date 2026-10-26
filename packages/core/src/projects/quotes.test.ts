@@ -72,6 +72,11 @@ describe("paymentLines", () => {
     ]);
   });
 
+  it("names the deposit by the share the rules took up front", () => {
+    expect(paymentLines("deposit", depositDue(20_000, 1_000, 10_000), 1_000, 10_000)[0]?.label).toBe("Full payment upfront");
+    expect(paymentLines("deposit", depositDue(100_000, 1_000, 3_000), 1_000, 3_000)[0]?.label).toBe("Deposit (30% of the quote)");
+  });
+
   it("labels top-ups and leaves out zero lines", () => {
     expect(paymentLines("top_up", { quotePartMinor: 20_000, managementFeeMinor: 0, totalMinor: 20_000 }, 1_250)).toEqual([
       { kind: "top_up", label: "Top-up (50% of the increase)", amountMinor: 20_000 },
