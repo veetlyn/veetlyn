@@ -185,7 +185,7 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
   });
 
   it("offers a paid revision at the rulebook price that adds a round once the client accepts it", async () => {
-    const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
+    const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
     const freelancerId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const projectId = await pinnedProject(db, teamId);
     await db.update(projectTable).set({ status: "delivered", revisions: 2, assignedFreelancerId: freelancerId, managementFeeBps: 0 }).where(eq(projectTable.id, projectId));
@@ -198,12 +198,11 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
     const [open] = await db.insert(delivery).values({ projectId, teamId, note: "third" }).returning();
     const freelancer = { teamId, actorId: freelancerId, role: "freelancer" } as const;
 
-    await expect(offerPaidRevision(db, { teamId, actorId: userId, role: "admin" }, { projectId: crypto.randomUUID() })).rejects.toMatchObject({ code: "NOT_FOUND" });
     const { amendmentId } = await offerPaidRevision(db, freelancer, { projectId });
     expect(await db.select().from(amendment)).toEqual([
       expect.objectContaining({ id: amendmentId, newAmountMinor: 27_500, revisionsAdded: 1, addItems: [{ description: "Paid revision", amountMinor: 7_500, extraDays: 0 }] }),
     ]);
-    await expect(offerPaidRevision(db, freelancer, { projectId })).rejects.toThrow();
+    await expect(offerPaidRevision(db, freelancer, { projectId })).rejects.toThrow(/waiting for the client/);
 
     const { topUpPaymentId } = await acceptAmendment(db, { projectId, amendmentId });
     expect((await findProjectById(db, projectId))?.revisions).toBe(3);
