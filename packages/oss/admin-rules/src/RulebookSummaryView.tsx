@@ -7,7 +7,7 @@ import {
   type RulebookRules,
 } from "@opmodel/engine-rules";
 
-type SummaryTab = "client" | "member" | "compact";
+export type SummaryTab = "client" | "member" | "compact";
 
 const TABS: { key: SummaryTab; label: string }[] = [
   { key: "client", label: "Client terms" },
@@ -19,12 +19,13 @@ export type RulebookSummaryViewProps = {
   rules: RulebookRules;
   currency: string;
   version?: number;
+  initialTab?: SummaryTab;
 };
 
 // Live plain-English preview of what the team is about to publish, in the three shapes readers see:
 // the client terms, the member agreement and the one-line card summary.
-export function RulebookSummaryView({ rules, currency, version }: RulebookSummaryViewProps) {
-  const [tab, setTab] = useState<SummaryTab>("client");
+export function RulebookSummaryView({ rules, currency, version, initialTab = "client" }: RulebookSummaryViewProps) {
+  const [tab, setTab] = useState<SummaryTab>(initialTab);
   const text =
     tab === "client"
       ? formatClientTermsSummary(rules, currency)
@@ -32,18 +33,25 @@ export function RulebookSummaryView({ rules, currency, version }: RulebookSummar
         ? formatMemberAgreementSummary(rules, currency)
         : formatCompactRuleSummary(rules, currency);
   return (
-    <section className="opm-rulebook-summary" aria-label="Rulebook preview">
-      <header>
-        {version !== undefined ? <h3>Version {version}</h3> : null}
-        <div role="tablist" aria-label="Summary">
+    <section className="opm-rulebook-summary space-y-3 rounded-xl border p-4" aria-label="Rulebook preview">
+      <header className="space-y-3">
+        {version !== undefined ? <h3 className="text-sm font-semibold text-muted-foreground">Version {version}</h3> : null}
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Summary">
           {TABS.map((entry) => (
-            <button key={entry.key} type="button" role="tab" aria-selected={tab === entry.key} onClick={() => setTab(entry.key)}>
+            <button
+              key={entry.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === entry.key}
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground aria-selected:bg-accent aria-selected:text-foreground"
+              onClick={() => setTab(entry.key)}
+            >
               {entry.label}
             </button>
           ))}
         </div>
       </header>
-      <p>{text}</p>
+      <p className="text-sm leading-6">{text}</p>
     </section>
   );
 }

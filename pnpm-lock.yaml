@@ -207,6 +207,15 @@ importers:
       '@jendal-workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@json-render/react':
+        specifier: 'catalog:'
+        version: 0.21.0(react@19.3.0)(zod@4.6.5)
+      '@opmodel/admin-rules':
+        specifier: workspace:*
+        version: link:../../packages/oss/admin-rules
+      '@opmodel/engine-rules':
+        specifier: workspace:*
+        version: link:../../packages/oss/engine-rules
       '@paypal/paypal-js':
         specifier: ^11.2.1
         version: 11.2.1
