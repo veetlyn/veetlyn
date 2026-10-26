@@ -1,4 +1,4 @@
-import type { JsonObject } from "@jendal-workspace/core";
+import type { JsonObject, PaymentStatus } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
@@ -33,6 +33,8 @@ export type DisputeNoticeDeps = {
   dashOrigin: string;
 };
 
+// A pending payment already holds the capture id PayPal reported, so a case on it is still this team's money.
+const DISPUTABLE_PAYMENTS: PaymentStatus[] = ["pending", "captured", "refunded"];
 const SELLER_FAVOURABLE_OUTCOMES = new Set(["RESOLVED_SELLER_FAVOUR", "CANCELED_BY_BUYER"]);
 
 export async function handlePayPalDisputeWebhook(deps: DisputeNoticeDeps, dispute: PayPalDisputeWebhook): Promise<string> {
@@ -46,7 +48,7 @@ async function applyDispute(deps: DisputeNoticeDeps & { db: Transaction }, dispu
       ? await deps.db
           .select({ projectId: payment.projectId, teamId: payment.teamId, captureId: payment.paypalCaptureId })
           .from(payment)
-          .where(and(inArray(payment.paypalCaptureId, captureIds), inArray(payment.status, ["captured", "refunded"])))
+          .where(and(inArray(payment.paypalCaptureId, captureIds), inArray(payment.status, DISPUTABLE_PAYMENTS)))
           .limit(1)
       : [];
   const [storeOrder] =

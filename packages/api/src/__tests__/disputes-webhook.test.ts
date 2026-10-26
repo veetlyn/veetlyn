@@ -43,7 +43,7 @@ describe.skipIf(!hasTestDatabase)("dispute webhooks", () => {
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
 
-  async function capturedProject(): Promise<{ teamId: string; projectId: string }> {
+  async function capturedProject(status: "captured" | "pending" = "captured"): Promise<{ teamId: string; projectId: string }> {
     const { teamId, userId } = await seedServicesTeamWithAdmin(db);
     await ensurePublishedRulebook(db, teamId);
     const projectId = await seedProject(db, { teamId, status: "in_progress" });
@@ -52,14 +52,14 @@ describe.skipIf(!hasTestDatabase)("dispute webhooks", () => {
       projectId,
       teamId,
       kind: "deposit",
-      status: "captured",
+      status,
       currency: "USD",
       quotePartMinor: 12050,
       managementFeeMinor: 0,
       amountMinor: 12050,
       lines: [],
       paypalCaptureId: "CAP-1",
-      capturedAt: new Date(),
+      capturedAt: status === "captured" ? new Date() : null,
     });
     await db.insert(scheduleItem).values({ teamId, subjectId: projectId, kind: "member.updateLate", runAt: new Date(Date.now() + 86_400_000) });
     return { teamId, projectId };
@@ -187,6 +187,15 @@ describe.skipIf(!hasTestDatabase)("dispute webhooks", () => {
     expect(await db.select().from(dispute)).toEqual([expect.objectContaining({ status: "under_review", resolvedAt: null })]);
     expect(await payoutsHeldForDispute(db, teamId)).toBe(true);
     expect(await db.select().from(scheduleItem)).toEqual([expect.objectContaining({ status: "paused" })]);
+  });
+
+  it("opens a case on a capture PayPal reported as pending", async () => {
+    const { teamId, projectId } = await capturedProject("pending");
+
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent());
+
+    expect(await db.select().from(dispute)).toEqual([expect.objectContaining({ teamId, projectId, status: "open" })]);
+    expect(await payoutsHeldForDispute(db, teamId)).toBe(true);
   });
 
   it("ignores a dispute that names none of this platform's captures", async () => {
