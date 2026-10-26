@@ -1,7 +1,8 @@
 "use client";
 
 import { Badge } from "@jendal-workspace/ui/components/badge";
-import { useQuery } from "@tanstack/react-query";
+import { Button } from "@jendal-workspace/ui/components/button";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
@@ -9,6 +10,26 @@ import { trpc } from "@/utils/trpc";
 
 function formatDate(value: string | null): string {
   return value ? new Date(value).toLocaleDateString() : "";
+}
+
+// The buyer's confirmation email, with a fresh download link, sent again through the outbox.
+function ResendEmail({ teamSlug, orderId }: { teamSlug: string; orderId: string }) {
+  const resend = useMutation(trpc.store.resendOrderEmail.mutationOptions());
+  return (
+    <div className="flex items-center justify-end gap-2">
+      {resend.isSuccess ? <p className="text-sm text-muted-foreground">Email sent again.</p> : null}
+      {resend.error ? <p role="alert" className="text-sm text-destructive">{resend.error.message}</p> : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={resend.isPending}
+        onClick={() => resend.mutate({ storeSlug: teamSlug, orderId })}
+      >
+        {resend.isPending ? "Sending…" : "Resend confirmation email"}
+      </Button>
+    </div>
+  );
 }
 
 export default function OrdersList({ teamSlug }: { teamSlug: string }) {
@@ -45,6 +66,7 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
                     <Badge tone="warn">Needs review</Badge>
                   ) : null}
                 </div>
+                {order.status === "paid" ? <ResendEmail teamSlug={teamSlug} orderId={order.id} /> : null}
               </div>
             </li>
           ))}
