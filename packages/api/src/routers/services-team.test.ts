@@ -12,6 +12,7 @@ import {
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { member, team } from "@jendal-workspace/db/schema/organization";
+import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -94,7 +95,16 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
     expect(soloMembers).toHaveLength(1);
 
     const got = await caller.servicesTeam.get({ teamSlug: "acme-solo" });
-    expect(got.settings).toMatchObject({ solo: true, teamCutBps: 10_000, managementFeeBps: 0, settingsSavedAt: null });
+    expect(got.settings).toMatchObject({ solo: true, kind: "solo", teamCutBps: 10_000, managementFeeBps: 0, settingsSavedAt: null });
+
+    // The first rulebook comes from the solo preset: no late refunds or strikes, and the seller keeps the price.
+    const rules = await caller.rules.state({ teamSlug: "acme-solo" });
+    expect(rules.published.preset).toBe("solo");
+    expect(rules.published.rules).toMatchObject({
+      lateDelivery: { ratePerDayBps: 0, capBps: 0 },
+      strikes: { threshold: 0 },
+      split: { teamCutBps: 10_000, managerCutBps: 0, memberCutBps: 0 },
+    });
 
     // Later teams and stores stay out of the solo seller's workspace.
     await caller.servicesTeam.create({ name: "Zed Studio", slug: "zed-studio" });
@@ -177,8 +187,22 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
     });
 
     const switched = await callerFor(ownerId).servicesTeam.switchToTeam({ teamSlug: "acme-solo" });
-    expect(switched).toMatchObject({ solo: false, teamCutBps: 1500, managementFeeBps: 1000 });
+    expect(switched).toMatchObject({ solo: false, kind: "agency", teamCutBps: 1500, managementFeeBps: 1000 });
     expect(switched?.settingsSavedAt).toBeNull();
+  });
+
+  it("keeps a solo seller's rulebook split on the solo rates whatever preset it saves", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "acme-solo", solo: true });
+    const caller = callerFor(userId);
+
+    await caller.rules.saveDraft({ teamSlug: "acme-solo", preset: "agency", rules: AGENCY_RULEBOOK_SPEC.rules });
+    await caller.rules.publish({ teamSlug: "acme-solo" });
+
+    const rules = await caller.rules.state({ teamSlug: "acme-solo" });
+    expect(rules.published.rules.split).toEqual({ teamCutBps: 10_000, managerCutBps: 0, memberCutBps: 0 });
+    const got = await caller.servicesTeam.get({ teamSlug: "acme-solo" });
+    expect(got.settings).toMatchObject({ teamCutBps: 10_000, managerCutBps: 0 });
   });
 
   it("keeps a solo seller on the solo rates when it saves its settings", async () => {

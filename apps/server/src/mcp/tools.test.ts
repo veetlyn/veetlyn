@@ -1,5 +1,6 @@
 import { addQuote } from "@jendal-workspace/api/use-cases/projects";
 import { postConversationMessage } from "@jendal-workspace/api/use-cases/conversations";
+import { seedAgreedServicesTeamMember } from "@jendal-workspace/api/testing/rulebooks";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { createDb, type Database } from "@jendal-workspace/db";
@@ -15,7 +16,6 @@ import {
   seedOrganization,
   seedServicesOffering,
   seedServicesTeam,
-  seedServicesTeamMember,
   seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
@@ -110,8 +110,8 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const team = await seedServicesTeam(db, { organizationId, slug: "walk-crew", name: "Walk Crew", status: "active" });
     await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, team.id));
     const offeringId = await seedServicesOffering(db, { teamId: team.id, name: "Logo refresh" });
-    const aicha = await seedServicesTeamMember(db, { organizationId, teamId: team.id, role: "freelancer", name: "Aïcha" });
-    const ben = await seedServicesTeamMember(db, { organizationId, teamId: team.id, role: "freelancer", name: "Ben" });
+    const aicha = await seedAgreedServicesTeamMember(db, { organizationId, teamId: team.id, role: "freelancer", name: "Aïcha" });
+    const ben = await seedAgreedServicesTeamMember(db, { organizationId, teamId: team.id, role: "freelancer", name: "Ben" });
     const clientId = await seedUser(db, "Ann");
     await db.update(user).set({ email: "ann@example.com", emailVerified: true }).where(eq(user.id, clientId));
     return { organizationId, teamId: team.id, offeringId, aicha, ben, clientId };

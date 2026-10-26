@@ -77,6 +77,7 @@ export function soloServicesTeamSettings(teamId: string): ServicesTeamSettings {
   return {
     ...defaultServicesTeamSettings(teamId),
     solo: true,
+    kind: "solo",
     teamCutBps: SOLO_TEAM_CUT_BPS,
     managementFeeBps: SOLO_MANAGEMENT_FEE_BPS,
   };

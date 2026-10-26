@@ -137,7 +137,7 @@ export async function seedServicesTeam(
   if (!row) throw new Error("Insert into team returned no row");
   if (input.withSettings ?? true) {
     await db.insert(servicesTeamSettings).values(
-      input.solo ? { teamId: row.id, solo: true, teamCutBps: 10_000, managementFeeBps: 0 } : { teamId: row.id },
+      input.solo ? { teamId: row.id, solo: true, kind: "solo", teamCutBps: 10_000, managementFeeBps: 0 } : { teamId: row.id },
     );
   }
   return row;
