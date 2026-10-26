@@ -138,6 +138,36 @@ function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; curre
   );
 }
 
+
+const DISPUTE_STATUS_LABELS = {
+  open: "Open",
+  waiting_for_seller: "Waiting for your answer",
+  under_review: "Under review by PayPal",
+  resolved_buyer: "Resolved for the client",
+  resolved_seller: "Resolved for you",
+} as const satisfies Record<string, string>;
+
+// PayPal's reason codes; an unknown one shows as sent.
+const DISPUTE_REASON_LABELS = new Map([
+  ["MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "Not received"],
+  ["MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "Not as described"],
+  ["UNAUTHORISED", "Unauthorised payment"],
+  ["CREDIT_NOT_PROCESSED", "Refund not processed"],
+  ["DUPLICATE_TRANSACTION", "Duplicate payment"],
+  ["INCORRECT_AMOUNT", "Incorrect amount"],
+  ["PAYMENT_BY_OTHER_MEANS", "Paid by other means"],
+  ["CANCELED_RECURRING_BILLING", "Cancelled recurring billing"],
+  ["PROBLEM_WITH_REMITTANCE", "Problem with remittance"],
+  ["OTHER", "Other"],
+]);
+
+const MARK_KIND_LABELS = {
+  late_update: "Late update",
+  late_delivery: "Late delivery",
+  quality_refund: "Quality refund",
+  warning: "Warning",
+} as const satisfies Record<string, string>;
+
 export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: string; projectId: string }) {
   const queryClient = useQueryClient();
   const detail = useQuery({
@@ -216,6 +246,8 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
     payments,
     deliveries,
     refund,
+    dispute,
+    marks,
     role,
     quotingMode,
     solo,
@@ -291,6 +323,14 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
+        {dispute ? (
+          <section role="status" className="panel space-y-1 p-4">
+            <p className="font-medium text-destructive">PayPal dispute open. Timers and payouts are paused.</p>
+            <p className="text-sm text-muted-foreground">
+              Dispute {dispute.paypalDisputeId} · {DISPUTE_REASON_LABELS.get(dispute.reason) ?? dispute.reason} · {DISPUTE_STATUS_LABELS[dispute.status]}
+            </p>
+          </section>
+        ) : null}
         {project.source === "web" ? (
           <section className="space-y-3 pt-3">
             <h2 className="text-lg font-semibold">Request</h2>
@@ -605,6 +645,22 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           clientName={primary?.name ?? "the client"}
           onRefunded={refresh}
         />
+      ) : null}
+
+      {marks.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Member marks</h2>
+          <ul className="space-y-2 text-sm">
+            {marks.map((mark) => (
+              <li key={mark.id}>
+                <span className="font-medium">{mark.memberName}</span>
+                <span className="text-muted-foreground">
+                  {" "}· {MARK_KIND_LABELS[mark.kind]}{mark.note ? ` · ${mark.note}` : ""} · {new Date(mark.createdAt).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
       </aside>
     </main>

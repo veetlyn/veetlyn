@@ -15,6 +15,7 @@ import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { dispute, memberMark, memberNoticePreference, outboxDelivery, rulebook, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
+import { user } from "../schema/auth";
 import { servicesTeamSettings } from "../schema/services-teams";
 
 export type RulebookRow = typeof rulebook.$inferSelect;
@@ -207,6 +208,16 @@ export async function recordMemberMark(
       note: input.note ?? null,
     });
   });
+}
+
+// The marks recorded on one project, oldest first, with the member's name for the team's project page.
+export function listProjectMemberMarks(db: DbExecutor, input: { teamId: string; projectId: string }) {
+  return db
+    .select({ id: memberMark.id, kind: memberMark.kind, note: memberMark.note, createdAt: memberMark.createdAt, memberName: user.name })
+    .from(memberMark)
+    .innerJoin(user, eq(user.id, memberMark.memberUserId))
+    .where(and(eq(memberMark.teamId, input.teamId), eq(memberMark.projectId, input.projectId)))
+    .orderBy(memberMark.createdAt);
 }
 
 export function countMemberMarks(

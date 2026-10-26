@@ -29,6 +29,7 @@ import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
 import { deliveryFileUrl, type ProjectActor } from "./projects";
 import { projectRuleSummary } from "./rulebooks";
+import { findOpenDisputeForProject, listProjectMemberMarks } from "@jendal-workspace/db/repositories/operating-model";
 
 // The team's projects the viewer may see: staff see all, freelancers what is assigned to them and the requests
 // the conversation audience rule opens to them.
@@ -100,7 +101,8 @@ export async function getTeamProjectView(
   // international estimate.
   const payeeId = row.assignedFreelancerId ?? (viewer.role === "freelancer" ? viewer.actorId : null);
   const seesPayee = viewer.role === "admin" || payeeId === viewer.actorId;
-  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee] = await Promise.all([
+  const seesMarks = viewer.role === "admin" || viewer.role === "manager";
+  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee, openDispute, marks] = await Promise.all([
     listProjectContacts(db, row.id),
     listProjectQuotes(db, row.id),
     listProjectAmendments(db, row.id),
@@ -109,6 +111,8 @@ export async function getTeamProjectView(
     getStaffRefundView(db, row.id),
     getTeamPayPalCountry(db, viewer.teamId),
     payeeId && seesPayee ? getPayoutDestination(db, payeeId) : null,
+    findOpenDisputeForProject(db, row.id),
+    seesMarks ? listProjectMemberMarks(db, { teamId: viewer.teamId, projectId: row.id }) : [],
   ]);
   // The legacy client columns stay server-side: the contacts say who the client is.
   const { clientEmail: _email, clientName: _name, clientDiscordId: _discord, ...project } = row;
@@ -129,6 +133,8 @@ export async function getTeamProjectView(
     payments,
     deliveries: await withDeliveryFiles(db, deliveries),
     refund,
+    dispute: openDispute && { paypalDisputeId: openDispute.paypalDisputeId, reason: openDispute.reason, status: openDispute.status },
+    marks,
     role: viewer.role,
     quotingMode: settings?.quotingMode ?? "assigned",
     solo: settings?.solo ?? false,

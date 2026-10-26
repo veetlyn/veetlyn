@@ -28,7 +28,7 @@ import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limit
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { user } from "@jendal-workspace/db/schema/auth";
 import { outboxDelivery, rulebookAcceptance } from "@jendal-workspace/db/schema/operating-model";
-import { ensurePublishedRulebook, publishRulebook, saveRulebookDraft } from "@jendal-workspace/db/repositories/operating-model";
+import { ensurePublishedRulebook, publishRulebook, recordMemberMark, saveRulebookDraft, upsertDispute } from "@jendal-workspace/db/repositories/operating-model";
 import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
@@ -248,6 +248,26 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     await expect(callerFor(manager).project.get({ teamSlug: "studio", projectId: studio.projectId })).resolves.toMatchObject({
       quoteCalculator: { senderCountry: "US", receiverCountry: null },
     });
+  });
+
+  it("shows an open PayPal dispute to the whole team and the project's member marks only to staff", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Aïcha" });
+    const { projectId } = await callerFor(userId).project.create({ teamSlug: "team", title: "Site", clientEmail: "c@example.com" });
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
+    await upsertDispute(db, { teamId, projectId, paypalDisputeId: "PP-D-1", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", status: "open", amountMinor: null, currency: null });
+    await recordMemberMark(db, { teamId, memberUserId: freelancer, projectId, kind: "late_update" });
+
+    const admin = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    expect(admin.dispute).toEqual({ paypalDisputeId: "PP-D-1", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", status: "open" });
+    expect(admin.marks).toMatchObject([{ kind: "late_update", memberName: "Aïcha" }]);
+
+    const member = await callerFor(freelancer).project.get({ teamSlug: "team", projectId });
+    expect(member.dispute).toMatchObject({ paypalDisputeId: "PP-D-1" });
+    expect(member.marks).toEqual([]);
+
+    await upsertDispute(db, { teamId, projectId, paypalDisputeId: "PP-D-1", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", status: "resolved_seller", amountMinor: null, currency: null });
+    expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).dispute).toBeNull();
   });
 
   it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {
