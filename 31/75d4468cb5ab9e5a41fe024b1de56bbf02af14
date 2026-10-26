@@ -1,0 +1,35 @@
+packages/api/src/routers/project.test.ts
+  s_263bdab18b3756::t_380d35dcdbf6a9 273-289
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_60ba4086056c51 49,649
+packages/api/src/routers/project.ts
+  s_263bdab18b3756::t_ae8aa0afbae67c 34,65
+packages/api/src/use-cases/projects.ts
+  s_263bdab18b3756::t_ae8aa0afbae67c 828-830,843-854
+  s_263bdab18b3756::t_844a33312db9ae 855-856
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/member-marks.tsx
+  s_263bdab18b3756::t_60ba4086056c51 1-98
+packages/api/src/actions/projects.ts
+  s_263bdab18b3756::t_ae8aa0afbae67c 17,118-128
+  s_263bdab18b3756::t_69f8c38add5a6d 129-132
+packages/api/src/use-cases/settlement.test.ts
+  s_263bdab18b3756::t_380d35dcdbf6a9 163,165-169
+packages/api/src/actions/registry.ts
+  s_263bdab18b3756::t_ae8aa0afbae67c 28,42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3175d4468cb5ab9e5a41fe024b1de56bbf02af14",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
