@@ -14,7 +14,7 @@ import { z } from "zod";
 
 import { refundClient } from "../use-cases/client-refunds";
 import { getClientProjectView, getTeamProjectView, listVisibleProjects } from "../use-cases/project-views";
-import { assignFreelancer, decideLateDeliveryRefund, MAX_TITLE, MIN_TITLE, setQualityRefund, startProject } from "../use-cases/projects";
+import { assignFreelancer, decideLateDeliveryRefund, MAX_TITLE, MIN_TITLE, recordProjectWarning, setQualityRefund, startProject } from "../use-cases/projects";
 import { listClientProjects } from "../use-cases/client-home";
 import { defineAction } from "./define";
 import { ActionError } from "./errors";
@@ -111,6 +111,21 @@ export const projectQualityRefundSet = defineAction({
   agent: "never",
   run: async (context, input) => {
     await setQualityRefund(context.deps.db, teamActorOf(context), input);
+    return null;
+  },
+});
+
+export const projectWarningRecord = defineAction({
+  name: "project.warning.record",
+  kind: "action",
+  summary: "Record a warning with a note on the project's assigned member, shown to the team's staff; admins only.",
+  input: projectIdInput.extend({ note: z.string().max(500) }),
+  output: z.null(),
+  scope: (input) => ({ projectId: input.projectId }),
+  allow: [{ grant: "member" }],
+  agent: "never",
+  run: async (context, input) => {
+    await recordProjectWarning(context.deps.db, teamActorOf(context), input);
     return null;
   },
 });

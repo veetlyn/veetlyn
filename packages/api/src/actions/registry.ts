@@ -25,6 +25,7 @@ import {
   projectQualityRefundSet,
   projectRefundClient,
   projectStart,
+  projectWarningRecord,
 } from "./projects";
 import { offeringSearch } from "./offerings";
 import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
@@ -38,6 +39,7 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   projectRefundClient,
   projectLateRefundDecide,
   projectQualityRefundSet,
+  projectWarningRecord,
   projectList,
   projectGet,
   projectClientView,
