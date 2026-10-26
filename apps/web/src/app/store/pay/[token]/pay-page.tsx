@@ -72,6 +72,7 @@ export default function PayPage({ token }: { token: string }) {
             <p className="text-sm text-muted-foreground">{team.name}</p>
             <h1 className="font-heading text-2xl">{project.title}</h1>
             <p className="text-sm text-muted-foreground">{paymentKindLabel(payment.kind)}</p>
+            {project.rules ? <p className="text-sm text-muted-foreground">Team rules: {project.rules}</p> : null}
           </div>
           <p className="font-tabular text-4xl font-semibold tracking-tight">{formatMoney(money(currency, payment.amountMinor))}</p>
           <ul className="grid gap-2 border-t pt-4 text-sm">

@@ -15,6 +15,7 @@ import {
 } from "@jendal-workspace/db/repositories/operating-model";
 import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { rulebook } from "@jendal-workspace/db/schema/operating-model";
+import { project } from "@jendal-workspace/db/schema/projects";
 import { formatClientTermsSummary, formatCompactRuleSummary, formatMemberAgreementSummary, type RulebookRules } from "@opmodel/engine-rules";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -65,9 +66,13 @@ export async function publishedClientTerms(
 }
 
 // The compact summary for a project's pinned rulebook; null when the project predates rulebooks.
-export async function compactSummaryFor(db: Database, input: { rulebookId: string | null; currency: string }): Promise<string | null> {
-  if (!input.rulebookId) return null;
-  const [row] = await db.select().from(rulebook).where(eq(rulebook.id, input.rulebookId)).limit(1);
+export async function projectRuleSummary(db: Database, input: { projectId: string; currency: string }): Promise<string | null> {
+  const [row] = await db
+    .select({ spec: rulebook.spec })
+    .from(project)
+    .innerJoin(rulebook, eq(rulebook.id, project.rulebookId))
+    .where(eq(project.id, input.projectId))
+    .limit(1);
   return row ? formatCompactRuleSummary(row.spec, input.currency) : null;
 }
 

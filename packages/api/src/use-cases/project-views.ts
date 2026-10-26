@@ -28,6 +28,7 @@ import { type LinkSecretSource, linkSecret, signPayLink } from "../client-links"
 import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
 import { deliveryFileUrl, type ProjectActor } from "./projects";
+import { projectRuleSummary } from "./rulebooks";
 
 // The team's projects the viewer may see: staff see all, freelancers what is assigned to them and the requests
 // the conversation audience rule opens to them.
@@ -199,13 +200,14 @@ export async function getClientProjectView(
   const { db } = deps;
   const row = await findProjectById(db, projectId);
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-  const [quotes, amendments, payments, deliveries, refund, conversation] = await Promise.all([
+  const [quotes, amendments, payments, deliveries, refund, conversation, rules] = await Promise.all([
     listProjectQuotes(db, projectId),
     listProjectAmendments(db, projectId),
     listProjectPayments(db, projectId),
     listProjectDeliveries(db, projectId),
     getClientRefundView(db, projectId),
     conversationFor(db, { kind: "client" }, row, deps.platformName),
+    projectRuleSummary(db, { projectId, currency: row.currency }),
   ]);
   const freelancers = await clientFacingFreelancers(db, quotes, conversation.messages);
   const secret = linkSecret(deps.auth);
@@ -236,6 +238,7 @@ export async function getClientProjectView(
       finalPriceMinor: row.finalPriceMinor,
       declinedReason: row.declinedReason,
       declinedAt: row.declinedAt,
+      rules,
     },
     quotes: quotes.map((q) => ({
       id: q.id,

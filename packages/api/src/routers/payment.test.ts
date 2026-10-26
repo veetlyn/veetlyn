@@ -15,6 +15,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { buildAuthAssertion, createPayPalClient, PayPalError } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
+import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -24,6 +25,7 @@ import type { PayPalServices } from "../context";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact, type CaptureFact, CaptureFactConflict } from "../use-cases/payments";
+import { publishRulebook, saveRulebookDraft } from "../use-cases/rulebooks";
 import { appRouter } from "./index";
 
 const SECRET = TEST_AUTH_CONFIG.BETTER_AUTH_SECRET;
@@ -739,6 +741,24 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.reference, `completion:${projectId}`))).toHaveLength(1);
       expect(await db.select().from(outbox).where(eq(outbox.type, "project.completed"))).toHaveLength(1);
     });
+  });
+
+  it("shows the project's pinned rules on the pay page and the client page, not a later version", async () => {
+    const { projectId, teamId, token } = await connectedDeposit();
+    const clientToken = await clientTokenFor(db, SECRET, projectId);
+    const pinned = (await callerFor(null).payment.payGet({ token })).project.rules;
+    expect(pinned).toContain("2 free revisions");
+
+    await saveRulebookDraft(db, {
+      teamId,
+      preset: "custom",
+      spec: { ...AGENCY_RULEBOOK_SPEC.rules, revisions: { freeCount: 5, paidRevisionPriceMinor: 1_000 } },
+      userId: null,
+    });
+    await publishRulebook(db, { teamId, userId: null });
+
+    expect((await callerFor(null).payment.payGet({ token })).project.rules).toBe(pinned);
+    expect((await callerFor(null).project.clientGet({ token: clientToken })).project.rules).toBe(pinned);
   });
 
   it("gives the client page a pay path for a payment that can be paid, and none once it is paid", async () => {

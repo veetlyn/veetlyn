@@ -10,14 +10,11 @@ import type { Actor } from "@jendal-workspace/api/actions/actors";
 import { linkSecret, signAccountClientLink } from "@jendal-workspace/api/client-links";
 import { resolveClient } from "@jendal-workspace/api/use-cases/clients";
 import { clientPageUrl, teamForProject } from "@jendal-workspace/api/use-cases/link-hosts";
-import { compactSummaryFor } from "@jendal-workspace/api/use-cases/rulebooks";
+import { projectRuleSummary } from "@jendal-workspace/api/use-cases/rulebooks";
 import type { Auth } from "@jendal-workspace/auth";
 import { projectStatusLabel } from "@jendal-workspace/core";
 import { findClientAccount, projectContactLink } from "@jendal-workspace/db/repositories/contacts";
 import { findListedOffering } from "@jendal-workspace/db/repositories/services-catalog";
-import type { Database } from "@jendal-workspace/db";
-import { project as projectTable } from "@jendal-workspace/db/schema/projects";
-import { eq } from "drizzle-orm";
 import type { RequestLogger } from "evlog";
 
 import { type ConfirmationAction, issueConfirmation, verifyConfirmation } from "./confirmation";
@@ -226,11 +223,6 @@ export type CardMeta = {
   };
 };
 
-async function pinnedRulebookId(db: Database, projectId: string): Promise<string | null> {
-  const [row] = await db.select({ rulebookId: projectTable.rulebookId }).from(projectTable).where(eq(projectTable.id, projectId)).limit(1);
-  return row?.rulebookId ?? null;
-}
-
 export async function projectCard(
   deps: McpDeps,
   projectId: string,
@@ -290,10 +282,7 @@ export async function projectCard(
       statusLabel: projectStatusLabel(project.status),
       currency: project.currency,
       brief: plain(project.brief, 600),
-      rules: await compactSummaryFor(deps.actions.db, {
-        rulebookId: await pinnedRulebookId(deps.actions.db, project.id),
-        currency: project.currency,
-      }),
+      rules: await projectRuleSummary(deps.actions.db, { projectId: project.id, currency: project.currency }),
     },
     declinedReason: project.declinedReason ? plain(project.declinedReason, 600) : null,
     freelancers: slides,
