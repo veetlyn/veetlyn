@@ -1,0 +1,33 @@
+packages/oss/engine-rules/src/summaries.ts
+  s_263bdab18b3756::t_cab06aa3abc5fb 89-96,99
+apps/server/src/mcp/tools.ts
+  s_263bdab18b3756::t_4e545ba7e38d8c 23-24,119,183,312
+packages/api/src/use-cases/projects.ts
+  s_263bdab18b3756::t_cab06aa3abc5fb 302
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_3a9f11b6c55f17 138
+  s_263bdab18b3756::t_e77508010242ca 194-203
+packages/oss/engine-rules/src/__tests__/engine-rules.test.ts
+  s_263bdab18b3756::t_cab06aa3abc5fb 187-188
+  s_263bdab18b3756::t_a237f8ea60858a 171,214
+apps/server/src/mcp/widget.ts
+  s_263bdab18b3756::t_3a9f11b6c55f17 175
+apps/web/src/components/client-project-view.tsx
+  s_263bdab18b3756::t_4e545ba7e38d8c 109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0e8a043d7099e26a0a185a4e1ff550a4cc96928b",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
