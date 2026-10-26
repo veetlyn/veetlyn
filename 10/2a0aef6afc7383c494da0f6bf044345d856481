@@ -1,0 +1,31 @@
+apps/web/src/app/store/request/request-form.tsx
+  s_263bdab18b3756::t_77a9b4e30310b5 175-181
+packages/api/src/use-cases/rulebooks.ts
+  s_263bdab18b3756::t_77a9b4e30310b5 19,58,64
+packages/api/src/routers/project.test.ts
+  s_263bdab18b3756::t_5dc6df24dd26e9 1926
+packages/oss/admin-rules/src/RulebookSummaryView.tsx
+  s_263bdab18b3756::t_77a9b4e30310b5 3,24,26,28-29,49-57
+packages/oss/engine-rules/src/summaries.ts
+  s_263bdab18b3756::t_1ff90b3cc9bc33 10,18-19,40-41,60,63-68,80,82-86
+packages/oss/engine-rules/src/__tests__/engine-rules.test.ts
+  s_263bdab18b3756::t_5dc6df24dd26e9 4,184-185
+packages/api/src/actions/requests.ts
+  s_263bdab18b3756::t_6106db8a5c421f 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "102a0aef6afc7383c494da0f6bf044345d856481",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
