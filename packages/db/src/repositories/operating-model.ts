@@ -275,6 +275,8 @@ export async function applyDeliveryOutcome(
       sentAt: next.sentAt,
       lastError: next.lastError,
       providerMessageId: next.providerMessageId,
+      // The rendered snapshot holds the client's signed link; it is kept only while a retry may need it.
+      ...(next.status === "sent" && !input.requireConfirmation ? { message: null } : {}),
       claimToken: null,
       claimExpiresAt: null,
     })
@@ -284,7 +286,7 @@ export async function applyDeliveryOutcome(
 }
 
 export async function skipOutboxDelivery(db: DbExecutor, id: string, claimToken?: string | null): Promise<void> {
-  await db.update(outboxDelivery).set({ status: "skipped", claimToken: null, claimExpiresAt: null, nextAttemptAt: null }).where(and(
+  await db.update(outboxDelivery).set({ status: "skipped", message: null, claimToken: null, claimExpiresAt: null, nextAttemptAt: null }).where(and(
     eq(outboxDelivery.id, id), eq(outboxDelivery.status, "pending"),
     claimToken ? eq(outboxDelivery.claimToken, claimToken) : isNull(outboxDelivery.claimToken),
   ));
