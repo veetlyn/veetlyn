@@ -176,7 +176,7 @@ export default function TeamShell({
             <UserMenu />
           </div>
         </div>
-        <nav aria-label="Sections" className="flex shrink-0 gap-1 overflow-x-auto border-b px-3 py-2 md:hidden">
+        <nav aria-label="Sections" className="flex shrink-0 gap-1 overflow-x-auto [scrollbar-width:none] border-b px-3 py-2 md:hidden">
           {[...work, ...team_]
             .filter((item) => item.show !== false)
             .map(({ href, label }) => (

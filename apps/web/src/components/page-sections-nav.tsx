@@ -53,7 +53,9 @@ export function PageSectionsRail({ sections }: { sections: PageSection[] }) {
       }}
       className={cn(
         "block rounded-md py-1 text-sm text-muted-foreground transition-colors hover:text-foreground",
-        nested ? "pl-5 text-[13px]" : "px-2 font-medium",
+        nested
+          ? "-ml-px border-l border-transparent pl-4 text-[13px] aria-[current=location]:border-foreground aria-[current=location]:font-medium"
+          : "px-2 font-medium",
         "aria-[current=location]:text-foreground",
         !nested && "aria-[current=location]:bg-accent",
       )}
@@ -66,7 +68,7 @@ export function PageSectionsRail({ sections }: { sections: PageSection[] }) {
     <>
       <nav
         aria-label="On this page"
-        className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto border-b bg-background/95 px-4 py-2 backdrop-blur md:-mx-7 md:px-7 lg:hidden"
+        className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto [scrollbar-width:none] border-b bg-background/95 px-4 py-2 backdrop-blur md:-mx-7 md:px-7 lg:hidden"
       >
         {sections.map((section) => (
           <a
