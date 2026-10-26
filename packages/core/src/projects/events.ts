@@ -41,6 +41,9 @@ export const OUTBOX_EVENT_TYPES = [
   "dispute.opened",
   "dispute.updated",
   "dispute.resolved",
+  "project.late_refund_proposed",
+  "project.late_refund_decided",
+  "project.quality_refund_set",
 ] as const;
 
 export type OutboxEventType = (typeof OUTBOX_EVENT_TYPES)[number];

@@ -73,6 +73,7 @@ const MEMBER_NOTICE_EVENTS = new Map<string, MemberNoticeKey>([
   ["member.update_remind", "update_reminder"],
   ["member.update_late", "late_update_mark"],
   ["member.warning", "strike_warning"],
+  ["project.late_refund_proposed", "late_refund_proposed"],
 ]);
 
 const PAYOUT_EVENTS = new Set(["payout.requested", "payout.approved", "payout.queued", "payout.sent", "payout.failed"]);
@@ -125,7 +126,9 @@ function memberNoticeKey(event: OutboxRow, message: EventMessage): MemberNoticeK
 
 async function memberRecipients(db: DbExecutor, event: OutboxRow): Promise<string[]> {
   if (PAYOUT_EVENTS.has(event.type)) return userEmails(db, readString.parse(event.data.memberUserId));
-  if (DISPUTE_EVENTS.has(event.type) || event.type === "member.leaving_notice") return adminEmails(db, event.teamId);
+  if (DISPUTE_EVENTS.has(event.type) || event.type === "member.leaving_notice" || event.type === "project.late_refund_proposed") {
+    return adminEmails(db, event.teamId);
+  }
   if (!event.projectId) return [];
   const row = await findProjectById(db, event.projectId);
   if (!row || row.teamId !== event.teamId) return [];

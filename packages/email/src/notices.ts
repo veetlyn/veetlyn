@@ -118,7 +118,8 @@ export type MemberNoticeKey =
   | "strike_warning"
   | "leaving_notice"
   | "payout_update"
-  | "dispute_opened";
+  | "dispute_opened"
+  | "late_refund_proposed";
 
 const MEMBER_NOTICES = new Map<MemberNoticeKey, NoticeBuilder>([
   ["client_message", (c) => ({ subject: `A client reply on "${c.projectTitle}"`, intro: `The client posted a message on "${c.projectTitle}". Read it from the project page:`, action: "Read the reply" })],
@@ -181,6 +182,11 @@ const MEMBER_NOTICES = new Map<MemberNoticeKey, NoticeBuilder>([
     subject: `Your payout ${c.detail ?? "updated"}`,
     intro: `Your payout${c.projectTitle ? ` for "${c.projectTitle}"` : ""} changed status${c.detail ? `: ${c.detail}` : ""}.`,
     action: "See your payouts",
+  })],
+  ["late_refund_proposed", (c) => ({
+    subject: `Late delivery on "${c.projectTitle}"`,
+    intro: `"${c.projectTitle}" was delivered after its deadline${c.detail ? ` (${c.detail})` : ""}. The team rules propose a refund to the client; nothing moves until an admin confirms or waives it before the client accepts the delivery.`,
+    action: "Decide the refund",
   })],
   ["dispute_opened", (c) => ({
     subject: `PayPal dispute on "${c.projectTitle}"`,

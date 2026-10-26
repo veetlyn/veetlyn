@@ -74,6 +74,10 @@ export const project = pgTable(
     lateRefundStatus: text("late_refund_status", { enum: ["pending", "confirmed", "waived"] }),
     lateRefundDecidedBy: text("late_refund_decided_by").references(() => user.id, { onDelete: "set null" }),
     lateRefundDecidedAt: timestamp("late_refund_decided_at"),
+    // A quality refund an admin set within the pinned rulebook's cap; it lowers the final price at acceptance.
+    qualityRefundMinor: minor("quality_refund_minor"),
+    qualityRefundSetBy: text("quality_refund_set_by").references(() => user.id, { onDelete: "set null" }),
+    qualityRefundSetAt: timestamp("quality_refund_set_at"),
     deadlineAt: timestamp("deadline_at"),
     // The price the client accepted the delivery at (services spec §5.3); null until then.
     finalPriceMinor: minor("final_price_minor"),

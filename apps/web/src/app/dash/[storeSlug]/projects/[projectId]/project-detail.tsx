@@ -46,6 +46,7 @@ import { ProjectProgress } from "@/components/project-progress";
 import { ClientsSection } from "./clients-section";
 import { ConversationSection } from "./conversation-section";
 import { QuoteCalculator } from "./quote-calculator";
+import { LateRefundNotice, QualityRefundForm } from "./price-adjustments";
 import { RefundSection } from "./refund-section";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
@@ -323,6 +324,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
+        <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {dispute ? (
           <section role="status" className="panel space-y-1 p-4">
             <p className="font-medium text-destructive">PayPal dispute open. Timers and payouts are paused.</p>
@@ -646,6 +648,8 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           onRefunded={refresh}
         />
       ) : null}
+
+      <QualityRefundForm teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
 
       {marks.length > 0 ? (
         <section className="space-y-3">

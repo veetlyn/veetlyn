@@ -271,6 +271,24 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
     expect(await deliverDueOutboxDeliveries({ db, email: emailServices(createFakeMailer()), secret: "test-secret" })).toMatchObject({ sent: 0 });
   });
 
+  it("asks the team's admins, not the late member, to decide a late-delivery refund", async () => {
+    const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
+    const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const projectId = await seedProject(db, { teamId, status: "delivered", title: "Brand refresh" });
+    await db.update(projectTable).set({ assignedFreelancerId: memberId }).where(eq(projectTable.id, projectId));
+
+    const events = await runInTransaction(db, (_tx, uow) =>
+      uow.appendEvents({ id: projectId, teamId }, [{ type: "project.late_refund_proposed", data: { amountMinor: 1_200, daysLate: 3 } }]),
+    );
+    await fanOutOutboxEvents({ db }, events);
+
+    const mailer = createFakeMailer();
+    await deliverDueOutboxDeliveries({ db, email: emailServices(mailer), secret: "test-secret" });
+    expect(mailer.sent.map((message) => message.to)).toEqual([`${userId}@example.com`]);
+    expect(mailer.sent[0]?.subject).toBe('Late delivery on "Brand refresh"');
+    expect(mailer.sent[0]?.text).toContain(`/team/projects/${projectId}`);
+  });
+
   it("skips an opted-out member while still notifying the eligible workspace admin", async () => {
     const { teamId, organizationId, userId } = await seedServicesTeamWithAdmin(db);
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });

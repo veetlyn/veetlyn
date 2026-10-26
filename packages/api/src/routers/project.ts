@@ -27,6 +27,8 @@ import {
   projectClientView,
   projectGet,
   projectList,
+  projectLateRefundDecide,
+  projectQualityRefundSet,
   projectRefundClient,
   projectStart,
 } from "../actions/projects";
@@ -57,6 +59,8 @@ export const projectRouter = router({
   deliveryUploadStart: teamProcedureFor(deliveryUploadStart),
   deliver: teamProcedureFor(deliverySubmit),
   refundClient: teamProcedureFor(projectRefundClient),
+  decideLateRefund: teamProcedureFor(projectLateRefundDecide),
+  setQualityRefund: teamProcedureFor(projectQualityRefundSet),
   deliveryFileUrl: teamProcedureFor(deliveryFile),
   clientAdd: teamProcedureFor(projectClientAdd),
   clientRemove: teamProcedureFor(projectClientRemove),

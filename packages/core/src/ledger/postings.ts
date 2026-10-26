@@ -158,13 +158,23 @@ export function completionTransfer(
     teamCutBps: number;
     managerId?: string | null;
     managerCutBps?: number;
+    // A confirmed late-delivery refund: the cuts stay on the price before it, and the member's share pays it.
+    memberBearsMinor?: number;
   },
 ): LedgerTransferDraft {
-  const teamCut = teamCutMinor(input.finalPriceMinor, input.teamCutBps);
+  const memberBears = input.memberBearsMinor ?? 0;
+  const cutBase = input.finalPriceMinor + memberBears;
+  let teamCut = teamCutMinor(cutBase, input.teamCutBps);
   // Independently rounded cuts can exceed a tiny price by one cent; allocate the team cut first.
-  const managerCut = input.managerId && input.managerId !== input.freelancerId && input.managerCutBps
-    ? Math.min(input.finalPriceMinor - teamCut, bpsOf(input.finalPriceMinor, input.managerCutBps))
+  let managerCut = input.managerId && input.managerId !== input.freelancerId && input.managerCutBps
+    ? Math.min(cutBase - teamCut, bpsOf(cutBase, input.managerCutBps))
     : 0;
+  // What the member's share cannot cover comes off the manager's cut, then the team's.
+  let shortfall = Math.max(0, teamCut + managerCut - input.finalPriceMinor);
+  const fromManager = Math.min(shortfall, managerCut);
+  managerCut -= fromManager;
+  shortfall -= fromManager;
+  teamCut -= shortfall;
   const memberShare = input.finalPriceMinor - teamCut - managerCut;
   const moves = [
     { from: a.clientHeld(input.projectId), to: a.teamRevenue, amountMinor: teamCut },
