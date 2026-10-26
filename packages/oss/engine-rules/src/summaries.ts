@@ -86,9 +86,17 @@ export function formatMemberAgreementSummary(rules: RulebookRules, currency: str
   return memberAgreementLines(rules, currency).join(" ");
 }
 
+// With tiers the share depends on the quote, so the one-line summary gives the range rather than a rate a quote may not get.
+function compactUpfront(rules: RulebookRules): string {
+  const rates = [rules.upfront.defaultBps, ...rules.upfrontTiers.tiers.map((tier) => tier.bps)];
+  const [low, high] = [Math.min(...rates), Math.max(...rates)];
+  if (rules.upfrontTiers.tiers.length === 0 || low === high) return `${formatBps(rules.upfront.defaultBps)} upfront`;
+  return `${formatBps(low).replace("%", "")}–${formatBps(high)} upfront by quote size`;
+}
+
 // The one-line card summary shown on client, pay and plugin surfaces.
 export function formatCompactRuleSummary(rules: RulebookRules, currency: string): string {
-  return `${formatBps(rules.upfront.defaultBps)} upfront · ${freeRevisions(rules.revisions.freeCount)} (${formatMinor(
+  return `${compactUpfront(rules)} · ${freeRevisions(rules.revisions.freeCount)} (${formatMinor(
     currency,
     rules.revisions.paidRevisionPriceMinor,
   )} each after) · ${rules.clientSilence.finalDays}-day review window`;

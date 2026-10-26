@@ -168,6 +168,7 @@ describe("summaries", () => {
     const rules = {
       ...AGENCY_RULEBOOK_SPEC.rules,
       upfront: { defaultBps: bps },
+      upfrontTiers: { tiers: [] },
       lateDelivery: { ratePerDayBps: bps, capBps: 10000 },
     };
     expect(formatClientTermsSummary(rules, "USD")).toContain(`${percentage} upfront`);
@@ -183,6 +184,8 @@ describe("summaries", () => {
     expect(formatClientTermsSummary(rules, "USD")).toContain("100% for quotes from $100.00 to under $300.00");
     const large = { ...rules, upfrontTiers: { tiers: [{ minQuoteMinor: 100_000, maxQuoteMinor: null, bps: 5000 }] } };
     expect(clientTermsLines(large, "USD")[0]).toBe("50% upfront to start (50% for quotes $1,000.00 and up).");
+    expect(formatCompactRuleSummary({ ...rules, upfrontTiers: { tiers: [{ minQuoteMinor: 0, maxQuoteMinor: 30_000, bps: 10_000 }] } }, "USD"))
+      .toMatch(/^50–100% upfront by quote size · /);
     expect(computeUpfrontBps(rules, 5000)).toBe(5000);
     expect(computeUpfrontBps(rules, 10000)).toBe(10000);
     expect(computeUpfrontBps(rules, 30000)).toBe(5000);
@@ -208,6 +211,6 @@ describe("summaries", () => {
   });
 
   it("writes the compact card summary", () => {
-    expect(formatCompactRuleSummary(AGENCY_RULEBOOK_SPEC.rules, "USD")).toBe("50% upfront · 2 free revisions ($75.00 each after) · 14-day review window");
+    expect(formatCompactRuleSummary(AGENCY_RULEBOOK_SPEC.rules, "USD")).toBe("50–100% upfront by quote size · 2 free revisions ($75.00 each after) · 14-day review window");
   });
 });
