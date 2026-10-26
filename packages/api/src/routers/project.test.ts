@@ -285,6 +285,12 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).marks).toMatchObject([
       { kind: "warning", note: "Rude to the client", memberName: "Aïcha" },
     ]);
+
+    // A warning's note never reads as a leaving notice, so the member can still take new work.
+    await callerFor(userId).project.recordWarning({ teamSlug: "team", projectId, note: "leaving notice" });
+    const next = await callerFor(userId).project.create({ teamSlug: "team", title: "Next", clientEmail: "c@example.com" });
+    await callerFor(userId).project.assign({ teamSlug: "team", projectId: next.projectId, freelancerId: freelancer });
+    expect((await callerFor(userId).project.get({ teamSlug: "team", projectId: next.projectId })).project.assignedFreelancerId).toBe(freelancer);
   });
 
   it("lets a solo seller quote as themselves with no assignment, while a team seller still needs one", async () => {

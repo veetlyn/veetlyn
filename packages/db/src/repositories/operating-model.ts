@@ -188,15 +188,14 @@ export async function memberHasLeavingNotice(db: DbExecutor, input: { teamId: st
   const [row] = await db.select({ id: memberMark.id }).from(memberMark).where(and(
     eq(memberMark.teamId, input.teamId),
     eq(memberMark.memberUserId, input.memberUserId),
-    eq(memberMark.kind, "warning"),
-    eq(memberMark.note, "leaving notice"),
+    eq(memberMark.kind, "leaving_notice"),
   )).limit(1);
   return row !== undefined;
 }
 
 export async function recordMemberMark(
   db: DbExecutor,
-  input: { teamId: string; memberUserId: string; projectId?: string | null; kind: "late_update" | "late_delivery" | "quality_refund" | "warning"; note?: string | null },
+  input: { teamId: string; memberUserId: string; projectId?: string | null; kind: "late_update" | "late_delivery" | "quality_refund" | "warning" | "leaving_notice"; note?: string | null },
 ): Promise<void> {
   await db.transaction(async (tx) => {
     await lockMemberWork(tx, input);
