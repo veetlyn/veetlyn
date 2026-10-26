@@ -1,0 +1,35 @@
+packages/api/src/routers/payment.test.ts
+  s_263bdab18b3756::t_22a8c6e3f8c828 28,746-748,751-761
+  s_263bdab18b3756::t_40d2246c424808 18,749-750
+  s_263bdab18b3756::t_97d886c25abf78 762-763
+apps/web/src/components/client-project-view.tsx
+  s_263bdab18b3756::t_2bc50e79d6a2bb 178
+apps/server/src/mcp/tools.ts
+  s_263bdab18b3756::t_bcd164d8963be6 13,285
+apps/web/src/app/store/pay/[token]/pay-page.tsx
+  s_263bdab18b3756::t_2bc50e79d6a2bb 75
+packages/api/src/use-cases/payments.ts
+  s_263bdab18b3756::t_67ee44da9083a9 42
+  s_263bdab18b3756::t_bcd164d8963be6 345-349,362
+packages/api/src/use-cases/project-views.ts
+  s_263bdab18b3756::t_67ee44da9083a9 31
+  s_263bdab18b3756::t_bcd164d8963be6 203,210,241
+packages/api/src/use-cases/rulebooks.ts
+  s_263bdab18b3756::t_bcd164d8963be6 18,69-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee75831d7b597d01dd3f7ce155b088ebe8657ccf",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
