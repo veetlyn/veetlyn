@@ -1,0 +1,23 @@
+packages/oss/admin-rules/src/RulebookSummaryView.tsx
+  s_263bdab18b3756::t_09795b1d4c2d90 25
+  s_263bdab18b3756::t_1fab5a5dc2f2c8 18-19,24,38
+apps/web/src/app/dash/[storeSlug]/rules/team-rules.tsx
+  s_263bdab18b3756::t_6fe72f40baac1b 171
+  s_263bdab18b3756::t_1fab5a5dc2f2c8 87-89,138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b84a0d333af0f2319c3041526ee4d9194e5eb6cd",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
