@@ -34,6 +34,7 @@ describe("defaultServicesTeamSettings", () => {
     expect(soloServicesTeamSettings("t1")).toEqual({
       ...defaultServicesTeamSettings("t1"),
       solo: true,
+      kind: "solo",
       teamCutBps: 10_000,
       managementFeeBps: 0,
     });

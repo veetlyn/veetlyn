@@ -5,6 +5,7 @@ import {
   SOLO_RULEBOOK_SPEC,
   type RulebookSpec,
 } from "@opmodel/engine-rules";
+import { SOLO_TEAM_CUT_BPS } from "@jendal-workspace/core";
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -49,11 +50,16 @@ export const rulesRouter = router({
 
   saveDraft: servicesTeamProcedure.input(draftInput).mutation(async ({ ctx, input }) => {
     requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ADMINS_ONLY);
+    const settings = await getServicesTeamSettings(ctx.db, ctx.servicesTeam.id);
+    // A solo seller keeps the whole price and has no members to pay, whatever preset it starts from.
+    const spec = settings?.solo
+      ? { ...input.rules, split: { teamCutBps: SOLO_TEAM_CUT_BPS, managerCutBps: 0, memberCutBps: 0 } }
+      : input.rules;
     return saveRulebookDraft(ctx.db, {
       teamId: ctx.servicesTeam.id,
       userId: ctx.session.user.id,
       preset: input.preset,
-      spec: input.rules,
+      spec,
     });
   }),
 

@@ -66,7 +66,7 @@ export async function createServicesTeamSettings(db: Database, teamId: string): 
 // Sellers design §3.1: a solo seller keeps the whole price. Written right after createTeam, which made the
 // row with the team defaults; settings_saved_at stays null so the setup checklist still asks for the rates.
 export async function applySoloTeamDefaults(db: Database, teamId: string): Promise<void> {
-  const values = { solo: true, teamCutBps: SOLO_TEAM_CUT_BPS, managementFeeBps: SOLO_MANAGEMENT_FEE_BPS };
+  const values = { solo: true, kind: "solo" as const, teamCutBps: SOLO_TEAM_CUT_BPS, managementFeeBps: SOLO_MANAGEMENT_FEE_BPS };
   await db
     .insert(servicesTeamSettings)
     .values({ teamId, ...values })
@@ -115,6 +115,7 @@ export async function switchToTeam(db: Database, teamId: string): Promise<void> 
     .update(servicesTeamSettings)
     .set({
       solo: false,
+      kind: "agency",
       teamCutBps: sql`case when ${servicesTeamSettings.teamCutBps} = ${SOLO_TEAM_CUT_BPS} then 1500 else ${servicesTeamSettings.teamCutBps} end`,
       managementFeeBps: sql`case when ${servicesTeamSettings.managementFeeBps} = ${SOLO_MANAGEMENT_FEE_BPS} then 1000 else ${servicesTeamSettings.managementFeeBps} end`,
       // Rates a solo seller saved were never a team's choice, so the checklist asks the team to confirm them.
