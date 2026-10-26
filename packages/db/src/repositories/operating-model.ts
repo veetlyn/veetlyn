@@ -276,7 +276,7 @@ export async function applyDeliveryOutcome(
       lastError: next.lastError,
       providerMessageId: next.providerMessageId,
       // The rendered snapshot holds the client's signed link; it is kept only while a retry may need it.
-      ...(next.status === "sent" && !input.requireConfirmation ? { message: null } : {}),
+      message: next.status === "sent" && !input.requireConfirmation ? null : sql`${outboxDelivery.message}`,
       claimToken: null,
       claimExpiresAt: null,
     })
