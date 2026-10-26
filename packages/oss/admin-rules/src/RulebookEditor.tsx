@@ -139,10 +139,10 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
   const context = useContext(EditContext);
   if (field.kind === "outcome") {
     return (
-      <label>
+      <label className="grid gap-1 text-sm font-medium">
         {field.label}
         <select
-          className="h-10 rounded-md border bg-background px-3 text-sm"
+          className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
           value={cardText.parse(value)}
           disabled={!meta.editable || !context}
           onChange={(event) => context?.edit({ [meta.ruleKey]: { silenceOutcome: event.target.value === "abandon" ? "abandon" : "accept_and_complete" } })}
@@ -156,9 +156,11 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
   const number = cardNumber.parse(value);
   const inMajorUnits = field.kind === "money";
   const inPercent = field.kind === "percent";
+  const unit = inPercent ? "%" : inMajorUnits ? context?.currency : undefined;
   return (
     <label className="grid gap-1 text-sm font-medium">
       {field.label}
+      <span className="relative block">
       <input
         type="number"
         min={0}
@@ -166,7 +168,7 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
         step={inMajorUnits || inPercent ? 0.01 : 1}
         value={inMajorUnits || inPercent ? number / 100 : number}
         disabled={!meta.editable || !context}
-        className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
+        className={`h-10 w-full rounded-md border bg-background px-3 text-sm font-normal ${unit ? "pr-14" : ""}`}
         onChange={(event) => {
           const parsed = z.coerce.number().nonnegative().catch(0).parse(event.target.value);
           const decimalValue = inMajorUnits || inPercent ? majorUnitsToMinor(event.target.value) : null;
@@ -189,8 +191,12 @@ function FieldInput({ meta, field, value }: { meta: CardMeta; field: CardField; 
           context?.edit({ [meta.ruleKey]: { [field.prop]: valueInRuleUnits } });
         }}
       />
-      {inMajorUnits && context ? <span>{context.currency}</span> : null}
-      {inPercent ? <span>%</span> : null}
+      {unit ? (
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-normal text-muted-foreground">
+          {unit}
+        </span>
+      ) : null}
+      </span>
     </label>
   );
 }
@@ -208,7 +214,7 @@ export const RULE_SECTIONS: { ruleKey: string; title: string }[] = Object.values
 function ruleCard(meta: CardMeta) {
   return function RuleCard({ props }: { props: Record<string, CardPropValue> }) {
     return (
-      <fieldset id={ruleAnchor(meta.ruleKey)} className="opm-rule-card grid scroll-mt-20 gap-3 rounded-xl border p-4" data-rule={meta.ruleKey}>
+      <fieldset id={ruleAnchor(meta.ruleKey)} className="opm-rule-card grid scroll-mt-20 content-start gap-3 rounded-xl border p-4" data-rule={meta.ruleKey}>
         <legend className="px-1 text-sm font-semibold">{meta.title}</legend>
         {meta.fields.map((field) => (
           <FieldInput key={field.prop} meta={meta} field={field} value={props[field.prop] ?? null} />

@@ -11,7 +11,7 @@ import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
 import TeamNotFound from "@/components/services-team/team-not-found";
-import { daysLabel, priceLabel } from "@/lib/offering-labels";
+import { daysLabel, FULFILMENT_LABELS, priceLabel } from "@/lib/offering-labels";
 import { trpc } from "@/utils/trpc";
 
 // One input per row: its own local state so invalidating the list does not clobber what the admin is typing.
@@ -147,7 +147,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
             {offering.active && !offering.listed ? <Badge>Not in AI assistants</Badge> : null}
           </p>
           <p className="text-sm text-muted-foreground">
-            {priceLabel(offering, currency)} · {daysLabel(offering)}
+            {priceLabel(offering, currency)} · {daysLabel(offering)} · {FULFILMENT_LABELS[offering.fulfilment]}
             {questionCount > 0 ? ` · ${questionCount} ${questionCount === 1 ? "question" : "questions"}` : ""}
           </p>
         </Link>

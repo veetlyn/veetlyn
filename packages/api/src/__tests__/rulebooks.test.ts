@@ -120,6 +120,19 @@ describe.skipIf(!hasTestDatabase)("rulebook use cases", () => {
     expect(after.memberAccepted).toBe(true);
   });
 
+  it("counts publishing as the publishing admin's acceptance, and only theirs", async () => {
+    const { organizationId, teamId, userId } = await seedServicesTeamWithAdmin(db);
+    const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const admin = appRouter.createCaller(fromPartial<Context>({ db, session: { user: { id: userId } } }));
+    const { published } = await admin.rules.state({ teamSlug: "team" });
+
+    await admin.rules.saveDraft({ teamSlug: "team", preset: "custom", rules: { ...published.rules, revisions: { freeCount: 1, paidRevisionPriceMinor: 5000 } } });
+    await admin.rules.publish({ teamSlug: "team" });
+
+    expect((await admin.rules.state({ teamSlug: "team" })).memberAccepted).toBe(true);
+    expect((await getTeamRulebookState(db, { teamId, currency: "USD", userId: memberId })).memberAccepted).toBe(false);
+  });
+
   it("does not treat a former client's terms acceptance as a member agreement", async () => {
     const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });

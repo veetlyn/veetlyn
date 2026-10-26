@@ -192,9 +192,9 @@ export default function TeamShell({
         </nav>
         <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
         {rules.data?.memberAccepted === false && pathname !== `/${slug}/rules` ? (
-          <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3 panel p-4 md:mx-7" role="status">
-            <p className="text-sm">Read and accept member agreement version {rules.data.published.version} before taking new work.</p>
-            <Link href={`/${slug}/rules`} className="text-sm font-semibold underline underline-offset-4">Review team rules</Link>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7" role="status">
+            <p className="text-sm">Accept version {rules.data.published.version} of the member agreement before taking new work.</p>
+            <Link href={`/${slug}/rules#published-rules`} className="text-sm font-semibold underline underline-offset-4">Review team rules</Link>
           </div>
         ) : null}
         {children}

@@ -65,7 +65,15 @@ export const rulesRouter = router({
 
   publish: servicesTeamProcedure.mutation(async ({ ctx }) => {
     requireAction(ctx.servicesTeamRole, "manage_settings", SETTINGS_ADMINS_ONLY);
-    return publishRulebook(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id });
+    const published = await publishRulebook(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id });
+    // The admin who publishes a version has agreed to it, so they are not asked to accept it again.
+    await acceptMemberRulebook(ctx.db, {
+      teamId: ctx.servicesTeam.id,
+      userId: ctx.session.user.id,
+      termsAccepted: true,
+      acceptedRulebookId: published.id,
+    });
+    return published;
   }),
 
   acceptMember: servicesTeamProcedure.input(z.strictObject({
