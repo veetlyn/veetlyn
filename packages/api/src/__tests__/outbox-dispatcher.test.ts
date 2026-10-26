@@ -206,7 +206,7 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
 
   it("recovers an interrupted delivery lease and fences the previous owner's outcome", async () => {
     await buyerDelivery();
-    const now = new Date();
+    const now = new Date(Date.now() + 60_000);
     const [first] = await claimDueOutboxDeliveries(db, now, 1);
     if (!first) throw new Error("Missing first claim");
     expect(await claimDueOutboxDeliveries(db, new Date(now.getTime() + 30_000), 1)).toEqual([]);
@@ -222,7 +222,7 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
 
   it("requires confirmation instead of resending an uncertain delivery beyond provider key retention", async () => {
     await buyerDelivery();
-    const now = new Date();
+    const now = new Date(Date.now() + 60_000);
     expect(await claimDueOutboxDeliveries(db, now, 1)).toHaveLength(1);
     const mailer = createFakeMailer();
     expect(await deliverDueOutboxDeliveries({ db, email: emailServices(mailer), now: () => new Date(now.getTime() + 25 * 3_600_000) }))
@@ -241,7 +241,8 @@ describe.skipIf(!hasTestDatabase)("outbox dispatcher", () => {
     } };
     const config = { PLATFORM_NAME: "Platform", EMAIL_DOMAIN: "platform.test", EMAIL_REPLY_TO: "support@platform.test" };
     const mailer = mailerWithTransports(config, [transport]);
-    const now = new Date();
+    // The delivery is due from the database's clock, which can run a little ahead of this process's.
+    const now = new Date(Date.now() + 60_000);
     expect(await deliverDueOutboxDeliveries({ db, email: emailServices(mailer), now: () => now })).toEqual({ sent: 0, failed: 1, skipped: 0 });
     const [record] = await db.select().from(outboxDelivery);
     if (!record) throw new Error("Missing retry delivery");
