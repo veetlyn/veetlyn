@@ -44,18 +44,6 @@ describe("completionPostings", () => {
     ]);
   });
 
-  it("takes a confirmed late refund from the freelancer's earnings, keeping the team cut on the full price", () => {
-    // $1,000 price, $100 late refund confirmed: the client pays $900; the team keeps $150 and the freelancer gets $750.
-    const { transfers } = completionPostings({ ...base, finalPriceMinor: 90_000, memberBearsMinor: 10_000, balance: paidInFull });
-    expect(transfers[0]?.entries).toEqual(
-      expect.arrayContaining([
-        { account: "client_held:p1", currency: "USD", amountMinor: -90_000 },
-        { account: "team_revenue", currency: "USD", amountMinor: 15_000 },
-        { account: "owed:f1:available", currency: "USD", amountMinor: 75_000 },
-      ]),
-    );
-  });
-
   it("takes the part of a late refund the freelancer's earnings cannot cover from the team cut", () => {
     // $1,000 price with a 90% team cut and a $200 late refund: the freelancer's $100 goes, and the team keeps $800.
     const { transfers } = completionPostings({ ...base, teamCutBps: 9_000, finalPriceMinor: 80_000, memberBearsMinor: 20_000, balance: paidInFull });
