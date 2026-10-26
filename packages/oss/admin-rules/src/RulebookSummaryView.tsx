@@ -15,11 +15,14 @@ export type RulebookSummaryViewProps = {
   currency: string;
   version?: number;
   initialTab?: SummaryTab;
+  // Which summaries to offer; readers of a published agreement do not need the card preview.
+  tabs?: SummaryTab[];
 };
 
 // Live plain-English preview of what the team is about to publish, in the three shapes readers see:
 // the client terms, the member agreement and the one-line card summary.
-export function RulebookSummaryView({ rules, currency, version, initialTab = "client" }: RulebookSummaryViewProps) {
+export function RulebookSummaryView({ rules, currency, version, initialTab = "client", tabs }: RulebookSummaryViewProps) {
+  const shown = tabs ? tabs.flatMap((key) => TABS.filter((entry) => entry.key === key)) : TABS;
   const [tab, setTab] = useState<SummaryTab>(initialTab);
   const lines =
     tab === "client"
@@ -32,7 +35,7 @@ export function RulebookSummaryView({ rules, currency, version, initialTab = "cl
       <header className="space-y-3">
         {version !== undefined ? <h3 className="text-sm font-semibold text-muted-foreground">Version {version}</h3> : null}
         <div className="flex flex-wrap gap-1" role="tablist" aria-label="Summary">
-          {TABS.map((entry) => (
+          {shown.map((entry) => (
             <button
               key={entry.key}
               type="button"
