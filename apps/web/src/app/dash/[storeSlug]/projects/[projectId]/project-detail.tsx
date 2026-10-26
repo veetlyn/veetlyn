@@ -135,7 +135,7 @@ function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; curre
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-sm text-muted-foreground">Delivery in {quote.deliveryDays} days after the deposit.</p>
+      <p className="mt-2 text-sm text-muted-foreground">Delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`} after the deposit.</p>
     </div>
   );
 }
@@ -191,7 +191,16 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const assign = useMutation(trpc.project.assign.mutationOptions({ onSuccess: refresh }));
-  const addQuote = useMutation(trpc.project.addQuote.mutationOptions({ onSuccess: refresh }));
+  const addQuote = useMutation(
+    trpc.project.addQuote.mutationOptions({
+      // A sent quote clears the form, so a second click cannot send it again.
+      onSuccess: async () => {
+        setQuoteRows([{ ...EMPTY_ROW }]);
+        setDeliveryDays("14");
+        await refresh();
+      },
+    }),
+  );
   const proposeAmendment = useMutation(trpc.project.proposeAmendment.mutationOptions({ onSuccess: refresh }));
   const offerPaidRevision = useMutation(trpc.project.offerPaidRevision.mutationOptions({ onSuccess: refresh }));
   function removeDeliveryFile() {

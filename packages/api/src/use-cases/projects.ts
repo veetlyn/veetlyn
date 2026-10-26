@@ -299,7 +299,7 @@ export async function addQuote(
     await insertEventMessage(tx, {
       projectId: row.id,
       space: "request",
-      body: `${await userDisplayName(tx, author.freelancerId)} sent a quote: ${formatMoney(money(row.currency, amountMinor))}, delivered in ${input.deliveryDays} days.`,
+      body: `${await userDisplayName(tx, author.freelancerId)} sent a quote: ${formatMoney(money(row.currency, amountMinor))}, delivered in ${input.deliveryDays === 1 ? "1 day" : `${input.deliveryDays} days`}.`,
       refType: "quote",
       refId: quoteId,
     });

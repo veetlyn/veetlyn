@@ -20,6 +20,8 @@ import type { RequestLogger } from "evlog";
 import { type ConfirmationAction, issueConfirmation, verifyConfirmation } from "./confirmation";
 import { daysLabel, money, plain, quoted } from "./text";
 
+
+const daysText = (days: number) => (days === 1 ? "1 day" : `${days} days`);
 export type McpDeps = {
   actions: ActionDeps;
   auth: Auth;
@@ -114,7 +116,7 @@ function summaryLine(slides: readonly Slide[], currency: string, frame: Framing)
     const said: string[] = [];
     if (s.quote) {
       const lost = s.quote.status === "superseded" || s.quote.status === "rejected";
-      said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${s.quote.deliveryDays} days${lost ? ", not chosen" : ""}`);
+      said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${daysText(s.quote.deliveryDays)}${lost ? ", not chosen" : ""}`);
     }
     const open = s.questions.filter((q) => !q.answered);
     if (open.length > 0) said.push(`asked ${frame.text(open[0]?.body ?? "")}`);
@@ -178,7 +180,7 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
       return payable
         ? { text: `Pay the top-up of ${money(payable.amountMinor, project.currency)} so the extra work can start.`, actions: ["pay", "open"] }
         : {
-            text: `${seller} is working on it${accepted ? `; delivery is planned within ${accepted.deliveryDays} days of the deposit` : ""}.`,
+            text: `${seller} is working on it${accepted ? `; delivery is planned within ${daysText(accepted.deliveryDays)} of the deposit` : ""}.`,
             actions: ["reply", "open"],
           };
     case "delivered":
@@ -307,7 +309,7 @@ export async function projectCard(
     ...slides.flatMap((s) =>
       s.quote
         ? [
-            `- Quote from ${quoted(s.name, 60)} (quote id ${s.quote.id}, ${s.quote.status}): ${money(s.quote.amountMinor, project.currency)}, ${s.quote.deliveryDays} days; items: ${s.quote.items.map((i) => `${quoted(i.description, 80)} ${money(i.amountMinor, project.currency)}`).join(", ")}.`,
+            `- Quote from ${quoted(s.name, 60)} (quote id ${s.quote.id}, ${s.quote.status}): ${money(s.quote.amountMinor, project.currency)}, ${daysText(s.quote.deliveryDays)}; items: ${s.quote.items.map((i) => `${quoted(i.description, 80)} ${money(i.amountMinor, project.currency)}`).join(", ")}.`,
           ]
         : [],
     ),

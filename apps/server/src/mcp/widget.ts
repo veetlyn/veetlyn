@@ -172,7 +172,7 @@ function freelancerSlide(data, f, tokens, notice) {
   if (q) {
     slide.append(
       el("div", { class: "amount num" }, money(q.amountMinor, p.currency)),
-      el("div", { class: "cap" }, "Delivery in " + q.deliveryDays + " days"),
+      el("div", { class: "cap" }, "Delivery in " + q.deliveryDays + (q.deliveryDays === 1 ? " day" : " days")),
       q.items.length > 1 ? el("ul", { class: "items" }, q.items.map((i) => el("li", {}, el("span", {}, i.description), el("span", { class: "num" }, money(i.amountMinor, p.currency))))) : null);
   }
   for (const question of f.questions) {
