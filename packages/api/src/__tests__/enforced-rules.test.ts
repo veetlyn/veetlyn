@@ -205,8 +205,11 @@ describe.skipIf(!hasTestDatabase)("enforced rules", () => {
     ]);
     await expect(offerPaidRevision(db, freelancer, { projectId })).rejects.toThrow();
 
-    await acceptAmendment(db, { projectId, amendmentId });
+    const { topUpPaymentId } = await acceptAmendment(db, { projectId, amendmentId });
     expect((await findProjectById(db, projectId))?.revisions).toBe(3);
+    // The extra round waits for its top-up, like any increase's work.
+    await expect(requestChanges(db, { projectId, deliveryId: open!.id, note: "One more pass" })).rejects.toThrow(/top-up/i);
+    await db.update(payment).set({ status: "captured" }).where(eq(payment.id, topUpPaymentId!));
     await requestChanges(db, { projectId, deliveryId: open!.id, note: "One more pass" });
     expect((await findProjectById(db, projectId))?.status).toBe("in_progress");
   });

@@ -913,7 +913,7 @@ export async function requestChanges(
   await runProjectTransaction(db, async (tx, uow) => {
     const row = await requireProject(tx, input.projectId);
     const found = await requireOpenDelivery(tx, row.id, input.deliveryId);
-    const status = checkTransition(row.status, "request_changes");
+    const status = checkTransition(row.status, "request_changes", await getProjectFacts(tx, row.id));
     // The free rounds the pinned rulebook allows; past them the client is pointed at a paid
     // revision amendment (AGT-49). Projects that predate rulebooks keep the old behavior.
     if (row.rulebookId) {
