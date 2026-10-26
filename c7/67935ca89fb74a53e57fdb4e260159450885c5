@@ -1,0 +1,19 @@
+.gitignore
+  s_263bdab18b3756::t_40704d1eba1e4a 62-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c767935ca89fb74a53e57fdb4e260159450885c5",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
