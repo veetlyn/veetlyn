@@ -1,0 +1,30 @@
+apps/web/src/lib/client-refund.ts
+  s_263bdab18b3756::t_b58e82521a7c25 7-8,14
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/refund-section.tsx
+  s_263bdab18b3756::t_b58e82521a7c25 54
+apps/web/src/components/client-project-view.tsx
+  s_263bdab18b3756::t_91ea228f79afa5 18,375
+apps/web/src/lib/client-refund.test.ts
+  s_263bdab18b3756::t_b58e82521a7c25 9
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_91ea228f79afa5 37,625
+apps/web/src/lib/status-labels.ts
+  s_263bdab18b3756::t_91ea228f79afa5 1,19-23
+  s_263bdab18b3756::t_af106a17ab55dc 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "11136eec7d47c8d300e4a2efca2832cab18a9a2b",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
