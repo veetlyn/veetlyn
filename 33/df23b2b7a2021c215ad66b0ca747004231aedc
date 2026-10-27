@@ -1,0 +1,21 @@
+apps/server/src/mcp/server.ts
+  s_263bdab18b3756::t_e1fc113bc285ef 134-138
+apps/server/src/mcp/tools.test.ts
+  s_263bdab18b3756::t_e1fc113bc285ef 136,138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "33df23b2b7a2021c215ad66b0ca747004231aedc",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
