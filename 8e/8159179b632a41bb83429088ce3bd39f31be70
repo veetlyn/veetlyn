@@ -1,0 +1,24 @@
+packages/core/src/projects/amendments.ts
+  s_263bdab18b3756::t_70a726213da3ca 10-11,16,22,25,39
+packages/api/src/routers/project.test.ts
+  s_263bdab18b3756::t_85b73936520c0e 736-760
+packages/api/src/use-cases/projects.ts
+  s_263bdab18b3756::t_03f41e0a77433f 518
+  s_263bdab18b3756::t_4684bc457d5f28 931-932
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8e8159179b632a41bb83429088ce3bd39f31be70",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
