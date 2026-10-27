@@ -1,0 +1,33 @@
+packages/paypal/src/orders.ts
+  s_263bdab18b3756::t_7af1d2a1abfdfb 34,40,59-63
+packages/core/src/projects/quotes.ts
+  s_263bdab18b3756::t_13eba2fec23ed1 1,128-159
+  s_263bdab18b3756::t_b4e8c0a982096c 160
+packages/api/src/routers/payment.test.ts
+  s_263bdab18b3756::t_9602ba664e89c5 719
+  s_263bdab18b3756::t_f6de0608586eaf 411-418
+packages/core/src/projects/quotes.test.ts
+  s_263bdab18b3756::t_049ddb6c7502e6 6
+  s_263bdab18b3756::t_9602ba664e89c5 68-91
+  s_263bdab18b3756::t_b89156cb9a6938 92-93
+packages/api/src/use-cases/payments.ts
+  s_263bdab18b3756::t_67f9e0a060f299 4-5
+  s_263bdab18b3756::t_7af1d2a1abfdfb 443-453,464-467,480-481
+  s_263bdab18b3756::t_0d811fe9ace921 482-483
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1ab5e32ae5e360055dc871018c68e6ab3a2c10f4",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
