@@ -34,7 +34,7 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { paymentRefundLabel } from "@/lib/client-refund";
-import { AMENDMENT_STATUS_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
+import { AMENDMENT_STATUS_LABELS, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { minorToPriceInput } from "@/lib/money";
 import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
@@ -622,7 +622,7 @@ export default function ProjectDetail({
         {payments.map((payment) => (
           <div key={payment.id} className="panel p-4 text-sm">
             <div className="flex items-center justify-between gap-4">
-              <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
+              <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (
                   <Badge tone="warn">Needs review</Badge>

@@ -51,7 +51,7 @@ export function RefundSection({
           Refunded {amount} on {new Date(refund.completedAt).toLocaleDateString()}
         </p>
       ) : (
-        <p className="text-sm">The client overpaid by {amount}.</p>
+        <p className="text-sm">The client paid {amount} more than the final price. Send it back to them through PayPal.</p>
       )}
       {refund.parts.length > 0 ? (
         <ul className="space-y-2 text-sm">

@@ -15,7 +15,7 @@ import { ProjectProgress } from "@/components/project-progress";
 import { DeliveryLink } from "@/components/delivery-link";
 import { clientRefundLabel, paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
-import { AMENDMENT_STATUS_LABELS, CLIENT_PROJECT_TONES, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
+import { AMENDMENT_STATUS_LABELS, CLIENT_PROJECT_TONES, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
 
 export type ClientProjectData = inferRouterOutputs<AppRouter>["project"]["clientGet"];
 
@@ -372,7 +372,7 @@ export function ClientProjectView({
             return (
               <div key={payment.id} className="space-y-3 panel p-4">
                 <div className="flex items-center justify-between text-sm">
-                  <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
+                  <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
                   <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</span>
                 </div>
                 <ul className="space-y-1 text-sm">
