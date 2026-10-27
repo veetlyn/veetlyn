@@ -12,7 +12,7 @@ import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositor
 import { runInTransaction, type OutboxEventInput } from "@jendal-workspace/db/repositories/unit-of-work";
 import { rulebook, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import type { RulebookRules } from "@opmodel/engine-rules";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, lte, sql } from "drizzle-orm";
 import { log } from "evlog";
 import { z } from "zod";
 
@@ -36,11 +36,12 @@ export async function runDueScheduleItems(deps: { db: Database; now?: () => Date
     const report: SchedulerReport = { fired: 0, failed: 0, held: 0 };
     for (const item of claimed) {
       try {
-        // Earlier effects in this batch may have rearmed this same locked row.
+        // Earlier effects in this batch may have rearmed this same locked row. The claimed time went through a
+        // millisecond Date, so the stored time is compared at that precision or a finer one would never match.
         const [current] = await tx.select({ id: scheduleItem.id }).from(scheduleItem).where(and(
           eq(scheduleItem.id, item.id),
           eq(scheduleItem.status, "pending"),
-          eq(scheduleItem.runAt, item.run_at),
+          sql`date_trunc('milliseconds', ${scheduleItem.runAt}) = ${item.run_at.toISOString()}::timestamp`,
           lte(scheduleItem.runAt, now),
         ));
         if (!current) continue;

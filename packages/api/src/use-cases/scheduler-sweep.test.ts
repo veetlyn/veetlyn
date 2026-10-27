@@ -53,6 +53,18 @@ describe.skipIf(!hasTestDatabase)("scheduler occurrences", () => {
     ]));
   });
 
+  it("fires a due timer whose stored time is finer than a millisecond", async () => {
+    const { teamId, projectId } = await workingProject();
+    const now = new Date("2026-10-25T12:00:00Z");
+    await db.insert(scheduleItem).values({ teamId, subjectId: projectId, kind: "member.updateRemind", runAt: now });
+    await db.execute(sql`update schedule_item set run_at = run_at - interval '0.000123 seconds'`);
+
+    expect(await runDueScheduleItems({ db, now: () => now })).toEqual({ fired: 1, failed: 0, held: 0 });
+    expect(await db.select().from(scheduleItem).where(eq(scheduleItem.kind, "member.updateRemind"))).toEqual([
+      expect.objectContaining({ status: "done" }),
+    ]);
+  });
+
   it("retains holds, inactive and future rows, and refuses a timer from another team", async () => {
     const { teamId, projectId } = await workingProject();
     const other = await seedServicesTeamWithAdmin(db, { slug: "other" });
