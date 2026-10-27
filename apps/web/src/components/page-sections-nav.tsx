@@ -85,7 +85,7 @@ export function PageSectionsRail({ sections }: { sections: PageSection[] }) {
           </a>
         ))}
       </nav>
-      <nav aria-label="On this page" className="sticky top-8 hidden max-h-[calc(100svh-8rem)] self-start overflow-y-auto lg:col-start-2 lg:row-start-1 lg:block">
+      <nav aria-label="On this page" className="sticky top-8 hidden self-start lg:col-start-2 lg:row-start-1 lg:block">
         <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">On this page</p>
         <div className="grid gap-0.5">
           {sections.map((section) => (
