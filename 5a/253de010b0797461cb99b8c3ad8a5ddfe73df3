@@ -1,0 +1,19 @@
+specs/platform/plans/2026-10-27-b1-staging-walkthrough.md
+  s_263bdab18b3756::t_24f8ee82c9f360 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a253de010b0797461cb99b8c3ad8a5ddfe73df3",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
