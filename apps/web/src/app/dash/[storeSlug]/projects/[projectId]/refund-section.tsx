@@ -10,6 +10,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 
 import { refundPartStatusLabel, staffRefundAction } from "@/lib/client-refund";
 import { formatMinor } from "@/lib/money";
+import { PAYMENT_KIND_LABELS } from "@/lib/status-labels";
 import { trpc } from "@/utils/trpc";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
@@ -36,7 +37,7 @@ export function RefundSection({
 
   const amount = formatMinor(refund.amountMinor, refund.currency);
   const action = canServicesTeam(role, "resolve_cases") ? staffRefundAction(refund) : null;
-  const kindOf = new Map(payments.map((payment) => [payment.id, payment.kind.replace("_", "-")]));
+  const kindOf = new Map(payments.map((payment) => [payment.id, PAYMENT_KIND_LABELS[payment.kind]]));
 
   function send() {
     dialogRef.current?.close();
@@ -58,7 +59,7 @@ export function RefundSection({
           {refund.parts.map((part) => (
             <li key={part.paymentId} className="panel p-3">
               <div className="flex items-center justify-between gap-4">
-                <span className="capitalize">
+                <span>
                   {kindOf.get(part.paymentId) ?? "Payment"} · {formatMinor(part.amountMinor, refund.currency)}
                 </span>
                 <span className="text-muted-foreground">{refundPartStatusLabel(part.status)}</span>
