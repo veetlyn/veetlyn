@@ -11,6 +11,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { applyCaptureFact } from "./payments";
+import { getTeamProjectView } from "./project-views";
 import { acceptDelivery, acceptQuote, decideLateDeliveryRefund, type ProjectActor, setQualityRefund, submitDelivery } from "./projects";
 import { runDueScheduleItems } from "./scheduler-sweep";
 import { acceptCurrentMemberAgreement } from "../testing/rulebooks";
@@ -177,7 +178,9 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     const fixture = await delivered(20_000);
     const set = (amountMinor: number, actor: ProjectActor = admin(fixture)) => setQualityRefund(db, actor, { projectId: fixture.projectId, amountMinor });
     await expect(set(5_000, { teamId: fixture.teamId, actorId: fixture.freelancerId, role: "freelancer" })).rejects.toMatchObject({ code: "FORBIDDEN" });
-    // After delivery the agency rules cap it at 25% of the $200.00 price.
+    // After delivery the agency rules cap it at 25% of the $200.00 price, and the project page says so.
+    const view = await getTeamProjectView({ db, auth: { options: { secret: "test-secret-at-least-32-characters-long" } }, platformName: "Platform" }, admin(fixture), fixture.projectId);
+    expect(view.qualityRefundCapMinor).toBe(5_000);
     await expect(set(5_001)).rejects.toThrow(/REFUND_EXCEEDS_RULEBOOK_CAP.*\$50\.00/);
     await set(5_000);
     await set(4_000);

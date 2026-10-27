@@ -255,6 +255,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
     dispute,
     marks,
     revisionRounds,
+    qualityRefundCapMinor,
     role,
     quotingMode,
     solo,
@@ -633,7 +634,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
       </div>
 
       <aside className="grid min-w-0 gap-8">
-      <ProjectProgress status={project.status} />
+      <ProjectProgress status={project.status} paidUpfront={project.upfrontBps === 10_000} />
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
@@ -675,7 +676,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
         />
       ) : null}
 
-      <QualityRefundForm teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
+      <QualityRefundForm teamSlug={teamSlug} project={project} role={role} capMinor={qualityRefundCapMinor} onChanged={refresh} />
 
       <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} />
       </aside>
