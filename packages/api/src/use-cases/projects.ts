@@ -515,6 +515,7 @@ export async function acceptAmendment(
       previousQuoteMinor: current.amountMinor,
       newQuoteMinor: found.newAmountMinor,
       managementFeeBps: row.managementFeeBps,
+      upfrontBps: row.upfrontBps,
     });
     const amended = amendQuoteItems(current.items, { add: found.addItems, removeItemIds: found.removeItemIds });
     if (!amended.ok) throw new Error(`Amendment ${found.id} no longer applies: ${amended.problem}`);
@@ -927,8 +928,8 @@ export async function requestChanges(
         fail(
           "BAD_REQUEST",
           priceMinor > 0
-            ? `REVISION_LIMIT_REACHED: the free rounds are used; a paid revision costs ${formatMoney(money(row.currency, priceMinor))}.`
-            : "REVISION_LIMIT_REACHED: the free rounds are used.",
+            ? `REVISION_LIMIT_REACHED: The free rounds of changes are used. A paid revision costs ${formatMoney(money(row.currency, priceMinor))}.`
+            : "REVISION_LIMIT_REACHED: The free rounds of changes are used.",
         );
       }
     }

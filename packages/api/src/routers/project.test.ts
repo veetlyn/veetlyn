@@ -733,6 +733,31 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect((await db.select().from(outbox)).map((e) => e.type)).toContain("amendment.accepted");
   });
 
+  it("takes the project's whole increase up front when its rules took the whole price", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const { projectId } = await projectInProgress(userId, organizationId, teamId);
+    await db.update(project).set({ upfrontBps: 10_000 }).where(eq(project.id, projectId));
+
+    const { amendmentId } = await callerFor(userId).project.proposeAmendment({
+      teamSlug: "team",
+      projectId,
+      add: [{ description: "Blog", amountMinor: 40_000, extraDays: 3 }],
+      removeItemIds: [],
+    });
+    await callerFor(null).project.clientAcceptAmendment({ token: await clientToken(db, projectId), amendmentId });
+
+    const topUp = (await db.select().from(payment).where(eq(payment.projectId, projectId))).find((p) => p.kind === "top_up");
+    expect(topUp).toMatchObject({
+      quotePartMinor: 40_000,
+      managementFeeMinor: 4_000,
+      amountMinor: 44_000,
+      lines: [
+        { kind: "top_up", label: "Top-up (the whole increase)", amountMinor: 40_000 },
+        { kind: "management_fee", label: "Management fee (10%)", amountMinor: 4_000 },
+      ],
+    });
+  });
+
   it("runs the §5.5 decrease amendment: −$300 on the $1,000 quote credits the $30 fee", async () => {
     const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     // §5.5's example: a $1,000 quote (Design $300 + Build $700) loses the $300 item.
