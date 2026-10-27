@@ -16,6 +16,8 @@ import {
 
 type Dispute = NonNullable<inferRouterOutputs<AppRouter>["project"]["get"]["dispute"]>;
 
+const DATE_TIME: Intl.DateTimeFormatOptions = { dateStyle: "medium", timeStyle: "short" };
+
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-0.5">
@@ -53,8 +55,8 @@ export function DisputeCard({
         <Row label="Amount">
           {dispute.amountMinor !== null ? formatMoney(money(currency, dispute.amountMinor)) : "Not reported yet"}
         </Row>
-        <Row label="Opened">{new Date(dispute.openedAt).toLocaleString()}</Row>
-        {dispute.resolvedAt ? <Row label="Closed">{new Date(dispute.resolvedAt).toLocaleString()}</Row> : null}
+        <Row label="Opened">{new Date(dispute.openedAt).toLocaleString(undefined, DATE_TIME)}</Row>
+        {dispute.resolvedAt ? <Row label="Closed">{new Date(dispute.resolvedAt).toLocaleString(undefined, DATE_TIME)}</Row> : null}
         {dispute.outcome ? <Row label="Outcome">{DISPUTE_OUTCOME_LABELS.get(dispute.outcome) ?? dispute.outcome}</Row> : null}
       </dl>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
