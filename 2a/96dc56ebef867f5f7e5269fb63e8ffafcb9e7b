@@ -1,0 +1,34 @@
+packages/api/src/use-cases/settlement.test.ts
+  s_263bdab18b3756::t_deed284b529a15 182
+  s_263bdab18b3756::t_35407bcfbf3624 14,181,183
+apps/web/src/components/client-project-view.tsx
+  s_263bdab18b3756::t_cc4bb489ba6973 191
+packages/api/src/use-cases/projects.ts
+  s_263bdab18b3756::t_3bc2b67eeb6dd3 841
+packages/api/src/use-cases/project-views.ts
+  s_263bdab18b3756::t_f630ec39d4713b 6-7,9
+  s_263bdab18b3756::t_3bc2b67eeb6dd3 36-40,150-151
+  s_263bdab18b3756::t_cc4bb489ba6973 261
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/price-adjustments.tsx
+  s_263bdab18b3756::t_f630ec39d4713b 86,92,120,123
+apps/web/src/components/project-progress.tsx
+  s_263bdab18b3756::t_9b3d82fd455f54 13-24,29-33
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_9b3d82fd455f54 258,637,679
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a96dc56ebef867f5f7e5269fb63e8ffafcb9e7b",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
