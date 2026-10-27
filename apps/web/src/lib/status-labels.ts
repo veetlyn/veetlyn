@@ -1,4 +1,4 @@
-import type { AmendmentStatus, PaymentStatus, ProjectStatus, QuoteStatus } from "@jendal-workspace/core";
+import type { AmendmentStatus, PaymentKind, PaymentStatus, ProjectStatus, QuoteStatus } from "@jendal-workspace/core";
 
 // The words people see for record states; the enums stay as they are in core.
 export const QUOTE_STATUS_LABELS = {
@@ -15,6 +15,12 @@ export const PAYMENT_STATUS_LABELS = {
   cancelled: "Cancelled",
   refunded: "Refunded",
 } as const satisfies Record<PaymentStatus, string>;
+
+export const PAYMENT_KIND_LABELS = {
+  deposit: "Deposit",
+  top_up: "Top-up",
+  balance: "Balance",
+} as const satisfies Record<PaymentKind, string>;
 
 export const AMENDMENT_STATUS_LABELS = {
   pending: "Waiting",

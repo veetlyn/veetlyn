@@ -6,7 +6,7 @@ const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 
 describe("clientRefundLabel", () => {
   it.each([
-    ["requested", null, "Refund of $12.50: on its way"],
+    ["requested", null, "Refund of $12.50 due: the team sends it through PayPal"],
     ["issuing", null, "Refund of $12.50: on its way"],
     ["failed", null, "Refund of $12.50: on its way"],
     ["completed", new Date("2026-10-12T09:00:00Z"), "Refunded $12.50 on 2026-10-12"],
