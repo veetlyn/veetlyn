@@ -164,6 +164,22 @@ describe.skipIf(!hasTestDatabase)("rulebook use cases", () => {
     expect(event).toMatchObject({ teamId, projectId: null });
   });
 
+  it("gives leaving notice once and shows it to the member afterwards", async () => {
+    const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
+    const { published } = await getTeamRulebookState(db, { teamId, currency: "USD" });
+    const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    expect((await getTeamRulebookState(db, { teamId, currency: "USD", userId: memberId })).leavingNoticeEffectiveAt).toBeNull();
+
+    const first = await giveMemberLeavingNotice(db, { teamId, userId: memberId, rulebook: published.rules });
+    const again = await giveMemberLeavingNotice(db, { teamId, userId: memberId, rulebook: published.rules, now: () => new Date(Date.now() + 86_400_000) });
+
+    expect(again.effectiveAt).toEqual(first.effectiveAt);
+    const state = await getTeamRulebookState(db, { teamId, currency: "USD", userId: memberId });
+    expect(state.leavingNoticeEffectiveAt).toBe(first.effectiveAt.toISOString());
+    expect(await db.select().from(memberMark).where(eq(memberMark.memberUserId, memberId))).toHaveLength(1);
+    expect(await db.select().from(outbox).where(eq(outbox.type, "member.leaving_notice"))).toHaveLength(1);
+  });
+
   it("rolls back a leaving restriction when its durable notice cannot be written", async () => {
     const { teamId, organizationId } = await seedServicesTeamWithAdmin(db);
     const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });

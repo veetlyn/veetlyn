@@ -82,6 +82,7 @@ it("locks the draft editor during a deferred first save and permits edits after 
     memberAccepted: true,
     summaries: { clientTerms: "", memberAgreement: "", compact: "" },
     projectNoticesEnabled: true,
+    leavingNoticeEffectiveAt: null,
   };
   queryClient.setQueryData(trpc.rules.state.queryKey({ teamSlug: "team" }), serverState);
   queryClient.setQueryData(trpc.servicesTeam.get.queryKey({ teamSlug: "team" }), fromPartial<Outputs["servicesTeam"]["get"]>({

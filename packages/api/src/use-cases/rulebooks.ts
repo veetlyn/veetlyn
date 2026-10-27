@@ -1,6 +1,7 @@
 import type { Database } from "@jendal-workspace/db";
 import {
   ensurePublishedRulebook,
+  findLeavingNoticeGivenAt,
   getDraftRulebook,
   getMemberNoticeEnabled,
   getPublishedRulebook,
@@ -30,6 +31,8 @@ export type TeamRulebookState = {
   memberAccepted: boolean | null;
   summaries: { clientTerms: string; memberAgreement: string; compact: string };
   projectNoticesEnabled: boolean;
+  // The end of the notice the viewer gave, or null when they have not given any.
+  leavingNoticeEffectiveAt: string | null;
 };
 
 export async function getTeamRulebookState(db: Database, input: { teamId: string; currency: string; userId?: string }): Promise<TeamRulebookState> {
@@ -38,11 +41,13 @@ export async function getTeamRulebookState(db: Database, input: { teamId: string
   const memberAccepted =
     input.userId === undefined ? null : await memberAcceptedRulebook(db, { teamId: input.teamId, userId: input.userId, rulebookId: published.id });
   const projectNoticesEnabled = input.userId === undefined ? true : await getMemberNoticeEnabled(db, input.teamId, input.userId);
+  const noticeGivenAt = input.userId === undefined ? null : await findLeavingNoticeGivenAt(db, { teamId: input.teamId, memberUserId: input.userId });
   return {
     published: { id: published.id, version: published.version, preset: published.preset, rules: published.spec },
     draft: draft ? { id: draft.id, version: draft.version, preset: draft.preset, rules: draft.spec } : null,
     memberAccepted,
     projectNoticesEnabled,
+    leavingNoticeEffectiveAt: noticeGivenAt && leavingNoticeEnd(noticeGivenAt, published.spec.leavingNotice.days).toISOString(),
     summaries: {
       clientTerms: formatClientTermsSummary(published.spec, input.currency),
       memberAgreement: formatMemberAgreementSummary(published.spec, input.currency),
@@ -112,15 +117,26 @@ export async function giveMemberLeavingNotice(
   input: { teamId: string; userId: string; rulebook: { leavingNotice: { days: number } }; now?: () => Date },
 ): Promise<{ effectiveAt: Date }> {
   const now = (input.now ?? (() => new Date()))();
-  const effectiveAt = new Date(now.getTime() + input.rulebook.leavingNotice.days * 86_400_000);
-  await runInTransaction(db, async (tx, uow) => {
-    await recordMemberMark(tx, { teamId: input.teamId, memberUserId: input.userId, kind: "leaving_notice" });
+  return db.transaction(async (locked) => {
+    await lockMemberWork(locked, { teamId: input.teamId, memberUserId: input.userId });
+    // Notice is given once: asking again returns the notice already running instead of restarting it.
+    const givenAt = await findLeavingNoticeGivenAt(locked, { teamId: input.teamId, memberUserId: input.userId });
+    if (givenAt) return { effectiveAt: leavingNoticeEnd(givenAt, input.rulebook.leavingNotice.days) };
+    const effectiveAt = leavingNoticeEnd(now, input.rulebook.leavingNotice.days);
+    return runInTransaction(locked, async (tx, uow) => {
+    // The mark's time is the notice's start, so a later read gives the same end date.
+    await recordMemberMark(tx, { teamId: input.teamId, memberUserId: input.userId, kind: "leaving_notice", createdAt: now });
     await uow.appendTeamOutbox(
       { teamId: input.teamId },
       [{ type: "member.leaving_notice", data: { memberUserId: input.userId, effectiveAt: effectiveAt.toISOString() } }],
     );
+    return { effectiveAt };
+    });
   });
-  return { effectiveAt };
+}
+
+function leavingNoticeEnd(givenAt: Date, days: number): Date {
+  return new Date(givenAt.getTime() + days * 86_400_000);
 }
 
 export { ensurePublishedRulebook, publishRulebook, saveRulebookDraft };
