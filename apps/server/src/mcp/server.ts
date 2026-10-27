@@ -131,7 +131,11 @@ export function buildServer(deps: McpDeps, origins: WidgetOrigins): McpServer {
   }, async (input) => guarded("get_request_terms", async () => {
     const terms = await getRequestTerms(deps, input);
     return {
-      content: [{ type: "text", text: `Client terms, version ${terms.version}: ${quoted(terms.terms, 10000)}\nAsk the user to agree before calling request_quote. If the rules change, read and confirm the new terms.` }],
+      // Claude shows the model only the text, so the id request_quote needs is in it too.
+      content: [{
+        type: "text",
+        text: `Client terms, version ${terms.version} (rulebookId ${terms.rulebookId}): ${quoted(terms.terms, 10000)}\nAsk the user to agree, then pass rulebookId ${terms.rulebookId} as acceptedRulebookId to request_quote. If the rules change, read and confirm the new terms.`,
+      }],
       structuredContent: { rulebookId: terms.rulebookId, version: terms.version },
     };
   }));

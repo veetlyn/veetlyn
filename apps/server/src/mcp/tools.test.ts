@@ -133,7 +133,9 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     const terms = await tool(clientId, "get_request_terms", { offeringId });
     expect(terms.result?.isError).not.toBe(true);
     expect(textOf(terms)).toContain("upfront");
+    // Claude shows the model only the text content, so the id must be readable there.
     const acceptedRulebookId = z.string().parse(terms.result?.structuredContent?.rulebookId);
+    expect(textOf(terms)).toContain(`rulebookId ${acceptedRulebookId}`);
     const refused = await tool(clientId, "request_quote", {
       offeringId, brief: "A warm logo for my bakery, ready in a week.", acceptedRulebookId, termsAccepted: false,
     });
