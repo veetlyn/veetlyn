@@ -1,0 +1,19 @@
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/refund-section.tsx
+  s_263bdab18b3756::t_a2c33e370b8b9d 13,40,62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d7158da242d783e0e3be25215a86da9f3384a41e",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
