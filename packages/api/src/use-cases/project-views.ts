@@ -31,7 +31,7 @@ import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
 import { deliveryFileUrl, pinnedRulebookRules, type ProjectActor } from "./projects";
 import { projectRuleSummary } from "./rulebooks";
-import { findOpenDisputeForProject, listProjectMemberMarks } from "@jendal-workspace/db/repositories/operating-model";
+import { findLatestDisputeForProject, listProjectMemberMarks } from "@jendal-workspace/db/repositories/operating-model";
 
 
 function qualityRefundCap(rules: RulebookRules | null, status: ProjectStatus, quoteMinor: number | undefined): number | null {
@@ -110,7 +110,7 @@ export async function getTeamProjectView(
   const seesPayee = viewer.role === "admin" || payeeId === viewer.actorId;
   const seesMarks = viewer.role === "admin" || viewer.role === "manager";
   const rules = await pinnedRulebookRules(db, row.rulebookId);
-  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee, openDispute, marks] = await Promise.all([
+  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee, latestDispute, marks] = await Promise.all([
     listProjectContacts(db, row.id),
     listProjectQuotes(db, row.id),
     listProjectAmendments(db, row.id),
@@ -119,7 +119,7 @@ export async function getTeamProjectView(
     getStaffRefundView(db, row.id),
     getTeamPayPalCountry(db, viewer.teamId),
     payeeId && seesPayee ? getPayoutDestination(db, payeeId) : null,
-    findOpenDisputeForProject(db, row.id),
+    findLatestDisputeForProject(db, row.id),
     seesMarks ? listProjectMemberMarks(db, { teamId: viewer.teamId, projectId: row.id }) : [],
   ]);
   // The legacy client columns stay server-side: the contacts say who the client is.
@@ -149,7 +149,16 @@ export async function getTeamProjectView(
     },
     // The most a quality refund may take at the project's current stage (AGT-53); null when none can be set.
     qualityRefundCapMinor: qualityRefundCap(rules, row.status, quotes.find((q) => q.status === "accepted")?.amountMinor),
-    dispute: openDispute && { paypalDisputeId: openDispute.paypalDisputeId, reason: openDispute.reason, status: openDispute.status },
+    dispute: latestDispute && {
+      paypalDisputeId: latestDispute.paypalDisputeId,
+      reason: latestDispute.reason,
+      status: latestDispute.status,
+      outcome: latestDispute.outcome,
+      amountMinor: latestDispute.amountMinor,
+      currency: latestDispute.currency,
+      openedAt: latestDispute.openedAt,
+      resolvedAt: latestDispute.resolvedAt,
+    },
     marks,
     role: viewer.role,
     quotingMode: settings?.quotingMode ?? "assigned",

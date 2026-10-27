@@ -45,6 +45,7 @@ import { ProjectProgress } from "@/components/project-progress";
 
 import { ClientsSection } from "./clients-section";
 import { ConversationSection } from "./conversation-section";
+import { DisputeCard } from "./dispute-card";
 import { QuoteCalculator } from "./quote-calculator";
 import { MemberMarks } from "./member-marks";
 import { LateRefundNotice, QualityRefundForm } from "./price-adjustments";
@@ -141,30 +142,17 @@ function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; curre
 }
 
 
-const DISPUTE_STATUS_LABELS = {
-  open: "Open",
-  waiting_for_seller: "Waiting for your answer",
-  under_review: "Under review by PayPal",
-  resolved_buyer: "Resolved for the client",
-  resolved_seller: "Resolved for you",
-} as const satisfies Record<string, string>;
-
-// PayPal's reason codes; an unknown one shows as sent.
-const DISPUTE_REASON_LABELS = new Map([
-  ["MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "Not received"],
-  ["MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "Not as described"],
-  ["UNAUTHORISED", "Unauthorised payment"],
-  ["CREDIT_NOT_PROCESSED", "Refund not processed"],
-  ["DUPLICATE_TRANSACTION", "Duplicate payment"],
-  ["INCORRECT_AMOUNT", "Incorrect amount"],
-  ["PAYMENT_BY_OTHER_MEANS", "Paid by other means"],
-  ["CANCELED_RECURRING_BILLING", "Cancelled recurring billing"],
-  ["PROBLEM_WITH_REMITTANCE", "Problem with remittance"],
-  ["OTHER", "Other"],
-]);
 
 
-export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: string; projectId: string }) {
+export default function ProjectDetail({
+  teamSlug,
+  projectId,
+  paypalEnvironment,
+}: {
+  teamSlug: string;
+  projectId: string;
+  paypalEnvironment: string | undefined;
+}) {
   const queryClient = useQueryClient();
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ teamSlug, projectId }),
@@ -331,15 +319,7 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
-        {dispute ? (
-          <section role="status" className="panel space-y-1 p-4">
-            <p className="font-medium text-destructive">PayPal dispute open. Timers and payouts are paused until PayPal closes the case.</p>
-            <p className="text-sm text-muted-foreground">
-              Dispute {dispute.paypalDisputeId} · {DISPUTE_REASON_LABELS.get(dispute.reason) ?? dispute.reason} · {DISPUTE_STATUS_LABELS[dispute.status]}
-            </p>
-            <p className="text-sm text-muted-foreground">Answer the case in PayPal's Resolution Center, from the team's PayPal account.</p>
-          </section>
-        ) : null}
+        {dispute ? <DisputeCard dispute={dispute} currency={currency} paypalEnvironment={paypalEnvironment} /> : null}
         <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {project.source === "web" ? (
           <section className="space-y-3 pt-3">

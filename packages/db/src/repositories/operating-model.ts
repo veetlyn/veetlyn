@@ -386,6 +386,17 @@ export async function findOpenDisputeForProject(db: DbExecutor, projectId: strin
   return row ?? null;
 }
 
+// The case the project page shows: an open one first, else the most recently opened.
+export async function findLatestDisputeForProject(db: DbExecutor, projectId: string): Promise<DisputeRow | null> {
+  const [row] = await db
+    .select()
+    .from(dispute)
+    .where(eq(dispute.projectId, projectId))
+    .orderBy(sql`${dispute.resolvedAt} is null desc`, desc(dispute.openedAt))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function projectHasOpenDispute(db: DbExecutor, input: { teamId: string; projectId: string }): Promise<boolean> {
   const [row] = await db.select({ id: dispute.id }).from(dispute).where(and(
     eq(dispute.teamId, input.teamId),

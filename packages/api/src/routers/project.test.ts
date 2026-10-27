@@ -250,24 +250,42 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     });
   });
 
-  it("shows an open PayPal dispute to the whole team and the project's member marks only to staff", async () => {
+  it("shows the project's PayPal dispute to the whole team, an open one first, and the member marks only to staff", async () => {
     const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
     const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Aïcha" });
     const { projectId } = await callerFor(userId).project.create({ teamSlug: "team", title: "Site", clientEmail: "c@example.com" });
     await callerFor(userId).project.assign({ teamSlug: "team", projectId, freelancerId: freelancer });
-    await upsertDispute(db, { teamId, projectId, paypalDisputeId: "PP-D-1", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", status: "open", amountMinor: null, currency: null });
+    await upsertDispute(db, { teamId, projectId, paypalDisputeId: "PP-D-1", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", status: "open", amountMinor: 22000, currency: "USD" });
     await recordMemberMark(db, { teamId, memberUserId: freelancer, projectId, kind: "late_update" });
 
     const admin = await callerFor(userId).project.get({ teamSlug: "team", projectId });
-    expect(admin.dispute).toEqual({ paypalDisputeId: "PP-D-1", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", status: "open" });
+    expect(admin.dispute).toEqual({
+      paypalDisputeId: "PP-D-1",
+      reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+      status: "open",
+      outcome: null,
+      amountMinor: 22000,
+      currency: "USD",
+      openedAt: expect.any(Date),
+      resolvedAt: null,
+    });
     expect(admin.marks).toMatchObject([{ kind: "late_update", memberName: "Aïcha" }]);
 
     const member = await callerFor(freelancer).project.get({ teamSlug: "team", projectId });
     expect(member.dispute).toMatchObject({ paypalDisputeId: "PP-D-1" });
     expect(member.marks).toEqual([]);
 
-    await upsertDispute(db, { teamId, projectId, paypalDisputeId: "PP-D-1", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", status: "resolved_seller", amountMinor: null, currency: null });
-    expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).dispute).toBeNull();
+    // A newer case that is already closed does not hide the open one.
+    const closed = { reason: "OTHER", status: "resolved_seller", outcome: "CANCELED_BY_BUYER", amountMinor: null, currency: null, resolvedAt: new Date() } as const;
+    await upsertDispute(db, { teamId, projectId, paypalDisputeId: "PP-D-2", ...closed });
+    expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).dispute).toMatchObject({ paypalDisputeId: "PP-D-1", status: "open" });
+
+    await upsertDispute(db, { teamId, projectId, paypalDisputeId: "PP-D-1", ...closed, reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED" });
+    expect((await callerFor(userId).project.get({ teamSlug: "team", projectId })).dispute).toMatchObject({
+      paypalDisputeId: "PP-D-2",
+      outcome: "CANCELED_BY_BUYER",
+      resolvedAt: expect.any(Date),
+    });
   });
 
   it("lets only an admin record a warning on the project's member", async () => {
