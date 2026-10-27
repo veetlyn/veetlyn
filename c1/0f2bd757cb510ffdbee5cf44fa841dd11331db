@@ -1,0 +1,21 @@
+apps/web/src/app/dash/[storeSlug]/rules/team-rules.tsx
+  s_263bdab18b3756::t_e6b805da4f83b3 83-86,95
+apps/web/src/components/page-sections-nav.tsx
+  s_263bdab18b3756::t_e6b805da4f83b3 88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c10f2bd757cb510ffdbee5cf44fa841dd11331db",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
