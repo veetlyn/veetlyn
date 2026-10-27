@@ -1,0 +1,20 @@
+apps/web/src/components/client-project-view.tsx
+  s_263bdab18b3756::t_4684bc457d5f28 325,327-329,337-348,355
+  s_263bdab18b3756::t_a176a06305dd0e 132-134,155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81be39577d7e8da616ab739294bf45b9baa61345",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
