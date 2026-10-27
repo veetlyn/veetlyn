@@ -1,0 +1,35 @@
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  s_263bdab18b3756::t_f76e9d2d0de5e3 48
+  s_263bdab18b3756::t_09920befa9fd97 147-155,322
+packages/api/src/routers/project.test.ts
+  s_263bdab18b3756::t_dfb466b54b8f2b 253,258,262-271,278-288
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/dispute-card.tsx
+  s_263bdab18b3756::t_25627ef955dd58 1-28,39-41,43-53,55-73
+  s_263bdab18b3756::t_c2e5961790eb20 29-38,42,54
+apps/web/src/lib/dispute.test.ts
+  s_263bdab18b3756::t_6f93567aac60f9 1-18
+packages/api/src/use-cases/project-views.ts
+  s_263bdab18b3756::t_b389a389785b43 34,113,122,152-161
+apps/web/src/lib/dispute.ts
+  s_263bdab18b3756::t_6f93567aac60f9 1-49
+packages/db/src/repositories/operating-model.ts
+  s_263bdab18b3756::t_11f08469ae6fb5 389-399
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/page.tsx
+  s_263bdab18b3756::t_09920befa9fd97 1-2,10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c7b61e7c8f829e2c619fe3d930a090bc0ed6d25",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
