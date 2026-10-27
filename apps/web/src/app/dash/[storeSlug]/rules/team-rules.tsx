@@ -80,8 +80,10 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6 md:px-7 md:py-8">
-      <header className="mb-6 space-y-2">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-6 md:px-7 md:py-8 lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-10">
+      <PageSectionsRail sections={sections} />
+      <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-1">
+      <header className="space-y-2">
         <h1 className="font-heading text-3xl">Team rules</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
           {isAdmin
@@ -90,9 +92,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
         </p>
       </header>
 
-      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-10">
-        <PageSectionsRail sections={sections} />
-        <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-1">
+        <div className="contents">
           {isAdmin ? (
             <section id="manage-rules" className="scroll-mt-16 panel" aria-labelledby="manage-rules-heading">
               <div className="space-y-5 p-5">
