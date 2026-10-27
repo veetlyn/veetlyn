@@ -129,6 +129,9 @@ function QuoteSummary({
   );
 }
 
+// The api prefixes rule refusals with a code for agents; people read the sentence after it.
+const ERROR_CODE_PREFIX = /^[A-Z_]+: /;
+
 export function ClientProjectView({
   data,
   actions,
@@ -149,6 +152,7 @@ export function ClientProjectView({
   const awaitingDelivery = project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
   const deliveryBusy = !actions || actions.deliveryBusy;
   const changesNoteTooLong = changesNote.trim().length > MAX_DELIVERY_NOTE;
+  const roundsUsed = project.revisionRounds !== null && project.revisionRounds.used >= project.revisionRounds.allowed;
 
   async function handleRequestChanges(event: FormEvent<HTMLFormElement>, deliveryId: string) {
     event.preventDefault();
@@ -318,11 +322,11 @@ export function ClientProjectView({
                   </form>
                 ) : (
                   <div className="space-y-2">
-                  {project.revisionRounds && project.revisionRounds.used >= project.revisionRounds.allowed ? (
+                  {roundsUsed ? (
                     <p className="text-sm text-muted-foreground">
-                      You used your {project.revisionRounds.allowed} free rounds of changes.
-                      {project.revisionRounds.paidPriceMinor > 0
-                        ? ` Ask the team for a paid revision (${formatMoney(money(currency, project.revisionRounds.paidPriceMinor))}); it arrives as a change to the quote.`
+                      You used your {project.revisionRounds?.allowed === 1 ? "free round" : `${project.revisionRounds?.allowed} free rounds`} of changes.
+                      {project.revisionRounds && project.revisionRounds.paidPriceMinor > 0
+                        ? ` For more, ask the team for a paid revision (${formatMoney(money(currency, project.revisionRounds.paidPriceMinor))}) in a message; it arrives as a change to the quote.`
                         : ""}
                     </p>
                   ) : null}
@@ -330,23 +334,25 @@ export function ClientProjectView({
                     <Button disabled={deliveryBusy} onClick={() => actions?.acceptDelivery(delivery.id)}>
                       Accept delivery
                     </Button>
-                    <Button
-                      variant="outline"
-                      disabled={deliveryBusy}
-                      onClick={() => {
-                        actions?.resetDelivery();
-                        setChangesOpen(true);
-                      }}
-                    >
-                      Request changes
-                    </Button>
+                    {roundsUsed ? null : (
+                      <Button
+                        variant="outline"
+                        disabled={deliveryBusy}
+                        onClick={() => {
+                          actions?.resetDelivery();
+                          setChangesOpen(true);
+                        }}
+                      >
+                        Request changes
+                      </Button>
+                    )}
                   </div>
                   </div>
                 )
               ) : null}
               {awaitingDelivery?.id === delivery.id && actions?.deliveryError ? (
                 <p role="alert" className="text-sm text-destructive">
-                  {actions.deliveryError.message}
+                  {actions.deliveryError.message.replace(ERROR_CODE_PREFIX, "")}
                 </p>
               ) : null}
             </div>
