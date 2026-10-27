@@ -331,15 +331,16 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
-        <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {dispute ? (
           <section role="status" className="panel space-y-1 p-4">
-            <p className="font-medium text-destructive">PayPal dispute open. Timers and payouts are paused.</p>
+            <p className="font-medium text-destructive">PayPal dispute open. Timers and payouts are paused until PayPal closes the case.</p>
             <p className="text-sm text-muted-foreground">
               Dispute {dispute.paypalDisputeId} · {DISPUTE_REASON_LABELS.get(dispute.reason) ?? dispute.reason} · {DISPUTE_STATUS_LABELS[dispute.status]}
             </p>
+            <p className="text-sm text-muted-foreground">Answer the case in PayPal's Resolution Center, from the team's PayPal account.</p>
           </section>
         ) : null}
+        <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {project.source === "web" ? (
           <section className="space-y-3 pt-3">
             <h2 className="text-lg font-semibold">Request</h2>
