@@ -1,0 +1,32 @@
+specs/platform/plans/2026-10-22-b1-operating-model.md
+  s_61eb3b18f6f591::t_288215f7ec7f80 561-562,565
+  s_61eb3b18f6f591::t_32ad6e168e0e06 563-564
+specs/platform/plans/2026-10-27-b1-staging-walkthrough.md
+  s_61eb3b18f6f591::t_32ad6e168e0e06 39-51
+  s_61eb3b18f6f591::t_288215f7ec7f80 1-38
+  s_263bdab18b3756::t_ae2f9853b4bcc3 52-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "52b7ec4b91a3a7d41f8c06bb37dac9cc1b190f54",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_61eb3b18f6f591": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16eb4-ea47-7a23-aaea-4865d8c2c8b4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
