@@ -191,6 +191,16 @@ export async function lockMemberWork(db: DbExecutor, input: { teamId: string; me
   await db.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`member-work:${input.teamId}:${input.memberUserId}`}, 0))`);
 }
 
+// When the member gave leaving notice to the team, or null; a member gives it once.
+export async function findLeavingNoticeGivenAt(db: DbExecutor, input: { teamId: string; memberUserId: string }): Promise<Date | null> {
+  const [row] = await db.select({ createdAt: memberMark.createdAt }).from(memberMark).where(and(
+    eq(memberMark.teamId, input.teamId),
+    eq(memberMark.memberUserId, input.memberUserId),
+    eq(memberMark.kind, "leaving_notice"),
+  )).orderBy(memberMark.createdAt).limit(1);
+  return row?.createdAt ?? null;
+}
+
 export async function memberHasLeavingNotice(db: DbExecutor, input: { teamId: string; memberUserId: string }): Promise<boolean> {
   const [row] = await db.select({ id: memberMark.id }).from(memberMark).where(and(
     eq(memberMark.teamId, input.teamId),
@@ -202,7 +212,14 @@ export async function memberHasLeavingNotice(db: DbExecutor, input: { teamId: st
 
 export async function recordMemberMark(
   db: DbExecutor,
-  input: { teamId: string; memberUserId: string; projectId?: string | null; kind: "late_update" | "late_delivery" | "quality_refund" | "warning" | "leaving_notice"; note?: string | null },
+  input: {
+    teamId: string;
+    memberUserId: string;
+    projectId?: string | null;
+    kind: "late_update" | "late_delivery" | "quality_refund" | "warning" | "leaving_notice";
+    note?: string | null;
+    createdAt?: Date;
+  },
 ): Promise<void> {
   await db.transaction(async (tx) => {
     await lockMemberWork(tx, input);
@@ -212,6 +229,7 @@ export async function recordMemberMark(
       projectId: input.projectId ?? null,
       kind: input.kind,
       note: input.note ?? null,
+      createdAt: input.createdAt ?? new Date(),
     });
   });
 }

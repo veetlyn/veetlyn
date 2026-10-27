@@ -18,7 +18,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
   const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const [draft, setDraft] = useState<RulebookSpec | null>(null);
   const [acceptedId, setAcceptedId] = useState("");
-  const [effectiveAt, setEffectiveAt] = useState<string | null>(null);
+  const [confirmingNotice, setConfirmingNotice] = useState(false);
 
   useEffect(() => setDraft(null), [state.data?.draft?.id, state.data?.draft?.version, state.data?.published.id, state.data?.published.version]);
 
@@ -27,14 +27,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
   const publish = useMutation(trpc.rules.publish.mutationOptions({ onSuccess: refresh }));
   const accept = useMutation(trpc.rules.acceptMember.mutationOptions({ onSuccess: refresh }));
   const notice = useMutation(trpc.rules.setNoticePreference.mutationOptions({ onSuccess: refresh }));
-  const leaving = useMutation(
-    trpc.rules.giveLeavingNotice.mutationOptions({
-      onSuccess: async (result) => {
-        setEffectiveAt(result.effectiveAt);
-        await refresh();
-      },
-    }),
-  );
+  const leaving = useMutation(trpc.rules.giveLeavingNotice.mutationOptions({ onSuccess: refresh }));
 
   if (state.isPending || team.isPending) return <Loader />;
   if (state.isError || team.isError) return <TeamNotFound />;
@@ -49,6 +42,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
   const draftError = save.error ?? publish.error;
   const memberError = accept.error ?? notice.error ?? leaving.error;
   const hasLeavingNotice = published.rules.leavingNotice.days > 0;
+  const noticeEnd = data.leavingNoticeEffectiveAt;
   const sections: PageSection[] = [
     ...(isAdmin
       ? [
@@ -185,10 +179,29 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
                   The published agreement asks members to give {published.rules.leavingNotice.days} days’ notice before leaving.
                 </p>
               </div>
-              {effectiveAt ? <p className="text-sm">Your notice is recorded through {new Date(effectiveAt).toLocaleDateString()}.</p> : null}
-              <Button type="button" variant="secondary" disabled={leaving.isPending || Boolean(effectiveAt)} onClick={() => leaving.mutate({ teamSlug })}>
-                {leaving.isPending ? "Recording…" : "Give leaving notice"}
-              </Button>
+              {noticeEnd ? (
+                <p className="text-sm">
+                  You gave notice. You take no new requests, and your notice ends on {new Date(noticeEnd).toLocaleDateString()}.
+                </p>
+              ) : confirmingNotice ? (
+                <div className="space-y-3">
+                  <p className="text-sm">
+                    From now on you take no new requests; your current projects continue. This cannot be undone here.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="destructive" disabled={leaving.isPending} onClick={() => leaving.mutate({ teamSlug })}>
+                      {leaving.isPending ? "Recording…" : "Confirm leaving notice"}
+                    </Button>
+                    <Button type="button" variant="outline" disabled={leaving.isPending} onClick={() => setConfirmingNotice(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button type="button" variant="secondary" onClick={() => setConfirmingNotice(true)}>
+                  Give leaving notice
+                </Button>
+              )}
             </section>
           ) : null}
 
