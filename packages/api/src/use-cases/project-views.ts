@@ -3,8 +3,10 @@ import {
   type FileStore,
   isProjectStaff,
   maskContactDetails,
-    sellerPlanFor,
+  type ProjectStatus,
+  sellerPlanFor,
 } from "@jendal-workspace/core";
+import { checkQualityRefundCap, type RulebookRules } from "@opmodel/engine-rules";
 import { memberDepartmentIds, userDisplayName } from "@jendal-workspace/db/repositories/conversations";
 import type { ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import type { Database } from "@jendal-workspace/db";
@@ -31,6 +33,11 @@ import { deliveryFileUrl, pinnedRulebookRules, type ProjectActor } from "./proje
 import { projectRuleSummary } from "./rulebooks";
 import { findOpenDisputeForProject, listProjectMemberMarks } from "@jendal-workspace/db/repositories/operating-model";
 
+
+function qualityRefundCap(rules: RulebookRules | null, status: ProjectStatus, quoteMinor: number | undefined): number | null {
+  if (!rules || quoteMinor === undefined || (status !== "in_progress" && status !== "delivered")) return null;
+  return checkQualityRefundCap(rules, status === "in_progress" ? "in_progress" : "after_delivery", 0, quoteMinor).capMinor;
+}
 // The team's projects the viewer may see: staff see all, freelancers what is assigned to them and the requests
 // the conversation audience rule opens to them.
 async function visibleProjects(db: Database, viewer: ProjectActor, rows: ProjectRow[]): Promise<ProjectRow[]> {
@@ -140,6 +147,8 @@ export async function getTeamProjectView(
       used: deliveries.filter((d) => d.status === "changes_requested").length,
       paidPriceMinor: rules.revisions.paidRevisionPriceMinor,
     },
+    // The most a quality refund may take at the project's current stage (AGT-53); null when none can be set.
+    qualityRefundCapMinor: qualityRefundCap(rules, row.status, quotes.find((q) => q.status === "accepted")?.amountMinor),
     dispute: openDispute && { paypalDisputeId: openDispute.paypalDisputeId, reason: openDispute.reason, status: openDispute.status },
     marks,
     role: viewer.role,
@@ -249,6 +258,7 @@ export async function getClientProjectView(
       status: row.status,
       currency: row.currency,
       managementFeeBps: row.managementFeeBps,
+      upfrontBps: row.upfrontBps,
       finalPriceMinor: row.finalPriceMinor,
       declinedReason: row.declinedReason,
       declinedAt: row.declinedAt,

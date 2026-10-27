@@ -838,7 +838,7 @@ export async function setQualityRefund(
     const phase = row.status === "in_progress" ? "in_progress" : "after_delivery";
     const { allowed, capMinor } = checkQualityRefundCap(rules, phase, input.amountMinor, current.amountMinor);
     if (!allowed) {
-      fail("BAD_REQUEST", `REFUND_EXCEEDS_RULEBOOK_CAP: the team rules allow up to ${formatMoney(money(row.currency, capMinor))} at this stage.`);
+      fail("BAD_REQUEST", `REFUND_EXCEEDS_RULEBOOK_CAP: The team rules allow up to ${formatMoney(money(row.currency, capMinor))} at this stage.`);
     }
     const amountMinor = input.amountMinor === 0 ? null : input.amountMinor;
     await uow.apply({

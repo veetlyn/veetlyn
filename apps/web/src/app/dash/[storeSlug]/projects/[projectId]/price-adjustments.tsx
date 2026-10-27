@@ -83,11 +83,13 @@ export function QualityRefundForm({
   teamSlug,
   project,
   role,
+  capMinor,
   onChanged,
 }: {
   teamSlug: string;
   project: Detail["project"];
   role: Detail["role"];
+  capMinor: Detail["qualityRefundCapMinor"];
   onChanged: () => Promise<void>;
 }) {
   const [amount, setAmount] = useState<string | null>(null);
@@ -115,9 +117,10 @@ export function QualityRefundForm({
       <h2 className="text-lg font-semibold">Quality refund</h2>
       <p className="text-sm text-muted-foreground">
         {current === null
-          ? "Lower the final price when the work falls short, within the team rules' cap for this stage."
+          ? "Lower the final price when the work falls short."
           : `${formatMinor(current, project.currency)} comes off the final price.`}{" "}
         The team, manager and member shares shrink with it.
+        {capMinor !== null ? ` The team rules allow up to ${formatMinor(capMinor, project.currency)} at this stage.` : ""}
       </p>
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
         <div className="space-y-2">

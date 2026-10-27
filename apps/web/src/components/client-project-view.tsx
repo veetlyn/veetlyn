@@ -188,7 +188,7 @@ export function ClientProjectView({
           </a>
         </section>
       ) : project.status !== "cancelled" ? (
-        <ProjectProgress status={project.status} layout="row" />
+        <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
       ) : null}
 
       {responses.length > 0 ? (
