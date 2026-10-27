@@ -1,0 +1,21 @@
+packages/api/src/use-cases/scheduler-sweep.ts
+  s_263bdab18b3756::t_9e82829c362200 15,39-40,44
+packages/api/src/use-cases/scheduler-sweep.test.ts
+  s_263bdab18b3756::t_d31a111e5eaf0b 56-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "420dd463415b57d50d8eaf4dfe67fa7a7aca0b88",
+  "prompts": {},
+  "sessions": {
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
