@@ -408,8 +408,14 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         payee: { merchant_id: "SELLER1" },
         payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "3.00" } }] },
         items: [
-          { name: "Deposit (50% of the quote)", quantity: "1", unit_amount: { currency_code: "USD", value: "500.00" } },
-          { name: "Management fee (10%)", quantity: "1", unit_amount: { currency_code: "USD", value: "100.00" } },
+          // The buyer reads the work and the fee, not the platform's line names.
+          {
+            name: "Website redesign: 50% deposit",
+            description: "Quote total $1,000.00",
+            quantity: "1",
+            unit_amount: { currency_code: "USD", value: "500.00" },
+          },
+          { name: "Project management fee", description: "10% of the quote", quantity: "1", unit_amount: { currency_code: "USD", value: "100.00" } },
         ],
       });
       expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 300, status: "pending" });
@@ -710,7 +716,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       const [create] = calls(requests, "/v2/checkout/orders");
       expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
         amount: { currency_code: "USD", value: "500.00" },
-        items: [{ name: "Balance", unit_amount: { currency_code: "USD", value: "500.00" } }],
+        items: [{ name: "Website redesign: balance", description: "Quote total $1,000.00", unit_amount: { currency_code: "USD", value: "500.00" } }],
       });
 
       expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });

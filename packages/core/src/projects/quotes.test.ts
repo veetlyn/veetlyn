@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { depositDue } from "./pricing";
 import {
   amendmentProblemMessage,
+  checkoutItems,
   amendQuoteItems,
   paymentLines,
   type QuoteItem,
@@ -61,6 +62,32 @@ describe("amendQuoteItems", () => {
     expect(amendQuoteItems(base, { add: [], removeItemIds: ["nope"] })).toEqual({ ok: false, problem: "unknown_item" });
     expect(amendQuoteItems(base, { add: [], removeItemIds: ["i1", "i1"] })).toEqual({ ok: false, problem: "unknown_item" });
     expect(amendQuoteItems(base, { add: [], removeItemIds: ["i1", "i2"] })).toEqual({ ok: false, problem: "empty" });
+  });
+});
+
+describe("checkoutItems", () => {
+  const base = { title: "Logo refresh", currency: "USD" as const, managementFeeBps: 1_000 };
+  const quoteItems = [
+    { description: "Logo mark", amountMinor: 15_000 },
+    { description: "Wordmark", amountMinor: 5_000 },
+  ];
+
+  it("lists the quote's own lines when the whole price is paid up front", () => {
+    const lines = paymentLines("deposit", depositDue(20_000, 1_000, 10_000), 1_000, 10_000);
+    expect(checkoutItems({ ...base, kind: "deposit", lines, quoteItems, quoteMinor: 20_000, upfrontBps: 10_000 })).toEqual([
+      { name: "Logo mark", amountMinor: 15_000 },
+      { name: "Wordmark", amountMinor: 5_000 },
+      { name: "Project management fee", description: "10% of the quote", amountMinor: 2_000 },
+    ]);
+  });
+
+  it("names a part payment after the project with the quote total beside it", () => {
+    const lines = paymentLines("deposit", depositDue(20_000, 1_000), 1_000);
+    expect(checkoutItems({ ...base, kind: "deposit", lines, quoteItems, quoteMinor: 20_000, upfrontBps: 5_000 })[0]).toEqual({
+      name: "Logo refresh: 50% deposit",
+      description: "Quote total $200.00",
+      amountMinor: 10_000,
+    });
   });
 });
 
