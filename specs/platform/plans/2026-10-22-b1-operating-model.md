@@ -558,4 +558,8 @@ _Built 2026-10-23/24 on `b1-operating-model` (base `4f5cd89`, plan `2a6f90a`), 1
 
 The final critic deferred three units: the scheduler sweep lifecycle, notice delivery wakeup and order-email resend.
 
-**Not done:** staging walkthrough of AGT-16/19/37/46–54, the spec-library updates that accompany the merge (PROGRESS, BACKLOG moves, stories, architecture doc), and the merge itself.
+**Staging walkthrough, 2026-10-27:** results and explicit limits are recorded in the [walkthrough evidence](2026-10-27-b1-staging-walkthrough.md). Web, email, real sandbox dispute and refund checks have run, the plugin request expired on schedule and Claude reported it expired, and the exposed client link was revoked. ChatGPT's embedded card label and the rendered Expired card were not captured. Local full suite: 2,043 tests in 186 files before the final MCP text fix, with its eight focused tests passing afterwards. CI on `33df23b`, workspace types, lint and boundaries pass. This does not upgrade the incomplete security audit to a clean result.
+
+**Incremental test audit (`84a3d43..33df23b`):** reviewed the 15 changed test files after the earlier sweep. Kept the distinct persistence, concurrency, provider transport, host-visible MCP text and presentation contracts; no further duplicates removed. Rationale and evidence limits are in the walkthrough evidence.
+
+**Not done:** the spec-library updates that accompany the merge (PROGRESS, BACKLOG moves, stories, architecture doc), and the merge itself.
