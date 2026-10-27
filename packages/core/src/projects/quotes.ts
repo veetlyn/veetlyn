@@ -1,4 +1,4 @@
-import { assertBps, MAX_AMOUNT_MINOR } from "../money/money";
+import { assertBps, formatMoney, MAX_AMOUNT_MINOR, money, type MoneyCurrency } from "../money/money";
 import { DEPOSIT_BPS, type PaymentSplit } from "./pricing";
 
 export const QUOTE_STATUSES = ["proposed", "accepted", "superseded", "rejected"] as const;
@@ -124,4 +124,37 @@ export function paymentLines(
     { kind: "management_fee", label: `Management fee (${managementFeeBps / 100}%)`, amountMinor: split.managementFeeMinor },
   ];
   return lines.filter((line) => line.amountMinor > 0);
+}
+
+export type CheckoutItem = { name: string; description?: string; amountMinor: number };
+
+// What the buyer reads in PayPal's checkout and receipt: the work they pay for, named the way a client would, not the
+// platform's internal line names. A whole price paid up front lists the quote's own lines.
+export function checkoutItems(input: {
+  title: string;
+  kind: PaymentKind;
+  currency: MoneyCurrency;
+  lines: readonly PaymentLine[];
+  quoteItems: readonly { description: string; amountMinor: number }[];
+  quoteMinor: number;
+  upfrontBps: number;
+  managementFeeBps: number;
+}): CheckoutItem[] {
+  const total = formatMoney(money(input.currency, input.quoteMinor));
+  return input.lines.flatMap((line): CheckoutItem[] => {
+    if (line.kind === "management_fee") {
+      return [{ name: "Project management fee", description: `${input.managementFeeBps / 100}% of the quote`, amountMinor: line.amountMinor }];
+    }
+    const wholeQuote = quoteTotalMinor(input.quoteItems) === line.amountMinor;
+    if (line.kind === "deposit" && input.upfrontBps === 10_000 && wholeQuote) {
+      return input.quoteItems.map((item) => ({ name: item.description, amountMinor: item.amountMinor }));
+    }
+    if (line.kind === "deposit") {
+      return [{ name: `${input.title}: ${input.upfrontBps / 100}% deposit`, description: `Quote total ${total}`, amountMinor: line.amountMinor }];
+    }
+    if (line.kind === "top_up") {
+      return [{ name: `${input.title}: change to the quote`, description: `New quote total ${total}`, amountMinor: line.amountMinor }];
+    }
+    return [{ name: `${input.title}: balance`, description: `Quote total ${total}`, amountMinor: line.amountMinor }];
+  });
 }

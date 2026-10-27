@@ -1,6 +1,8 @@
 import {
   captureReviewReason,
   type CaptureReviewReason,
+  type CheckoutItem,
+  checkoutItems,
   completionTransfer,
   errorName,
   type LedgerTransferDraft,
@@ -438,6 +440,17 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
     }
   }
   const fee = platformFeeMinor(row.amountMinor, sellerPlanFor({ id: row.teamId, solo: seller.solo }).feeBps);
+  const currentQuote = await getCurrentQuote(deps.db, row.projectId);
+  const items = checkoutItems({
+    title: projectRow.title,
+    kind: row.kind,
+    currency: row.currency,
+    lines: row.lines,
+    quoteItems: currentQuote?.items ?? [],
+    quoteMinor: currentQuote?.amountMinor ?? 0,
+    upfrontBps: projectRow.upfrontBps,
+    managementFeeBps: projectRow.managementFeeBps,
+  });
   const order = await deps.paypal.client.orders.create({
     // A new key per start: each start is a new order, while the client's own retries reuse this key.
     requestId: `order:${row.id}:${crypto.randomUUID()}`,
@@ -448,11 +461,10 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
     customId: row.id,
     description: projectRow.title,
     brandName: seller.name,
-    // The lines always add up to the amount (core paymentLines); the check keeps a bad row from failing the order.
-    items:
-      row.lines.reduce((sum, line) => sum + line.amountMinor, 0) === row.amountMinor
-        ? row.lines.map((line) => ({ name: line.label, value: toPayPalValue(line.amountMinor) }))
-        : undefined,
+    // The items always add up to the amount (core paymentLines); the check keeps a bad row from failing the order.
+    items: itemsAddUp(items, row.amountMinor)
+      ? items.map((item) => ({ name: item.name, description: item.description, value: toPayPalValue(item.amountMinor) }))
+      : undefined,
   });
   const updated = await deps.db
     .update(payment)
@@ -463,6 +475,10 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
     throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });
   }
   return { orderId: order.id };
+}
+
+function itemsAddUp(items: readonly CheckoutItem[], amountMinor: number): boolean {
+  return items.length > 0 && items.reduce((sum, item) => sum + item.amountMinor, 0) === amountMinor;
 }
 
 export type CaptureOutcome = "captured" | "pending" | "declined";
