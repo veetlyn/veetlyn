@@ -59,7 +59,7 @@ export default function VisibilityPage() {
               <div className="feature" data-in><p className="tag">Speed <span className="soon">Coming soon</span></p><h3>Fast, clean pages</h3><p>One page per offer, with clear titles and links that last.</p></div>
               <div className="feature" data-in><p className="tag">Discover <span className="soon">Coming soon</span></p><h3>Listed on Discover</h3><p>People browse the same catalog your clients' AI searches.</p></div>
               <div className="feature" data-in><p className="tag">{name} Network</p><h3>Found in Claude and ChatGPT</h3><p>By every client who adds {name} Network.</p></div>
-              <div className="feature" data-in><p className="tag">Your domain</p><h3>On your own address</h3><p>On Team, Agency, Grow and Scale.</p></div>
+              <div className="feature" data-in><p className="tag">Your domain <span className="soon">Coming soon</span></p><h3>On your own address</h3><p>On Team, Agency, Grow and Scale.</p></div>
             </div>
           </div>
         </section>

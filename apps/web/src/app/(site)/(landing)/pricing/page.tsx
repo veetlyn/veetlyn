@@ -81,7 +81,7 @@ export default async function PricingPage() {
               <li>The payer approves every payment</li>
               <li>Each share is paid once</li>
               <li>Every fee shows before you confirm</li>
-              <li>Export everything, any time</li>
+              <li>Export everything, any time (coming soon)</li>
               <li>{TRIAL_DAYS} days free, no setup fee</li>
             </ul>
           </div>

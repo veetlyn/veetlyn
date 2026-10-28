@@ -22,7 +22,7 @@ export const indexFaq = (name: string): readonly Faq[] => [
     a: "Yes. One workspace, one link. Run both and the cheaper plan is half price.",
   },
   { q: `Can an AI sell on ${name}?`, a: "Yes. Connect it through our API. Buyers see that the work is automated." },
-  { q: "Can I leave with my data?", a: "Yes. Export everything at any time. The code is open source under AGPL-3.0." },
+  { q: "Can I leave with my data?", a: "Yes. A full export is coming soon. The code is open source under AGPL-3.0." },
 ];
 
 export const networkFaq = (name: string): readonly Faq[] => [
