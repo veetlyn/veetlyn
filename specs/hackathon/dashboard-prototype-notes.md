@@ -29,3 +29,14 @@ Updated 2026-10-28 after the independent [use-case review](../platform/2026-10-2
 The prototypes do not implement business authorization, payments, messages, shared-call audiences, persistent context, file/voice tools or model calls. Unimplemented file/mention/voice controls are disabled. Bring in is only a preview of its privacy explanation; the project link returns to the call fixture. The other existing navigation/actions remain visual samples.
 
 No phone-width, full keyboard-flow, screen-reader, reduced-motion, loading/error, event-timing or deployed-runtime audit was performed. Do not mark AGT runtime stories verified from these pages. Source findings on rival quote projection, payout routing, pinned deadlines and abandoned conversations remain open in BACKLOG.
+
+## Context panel and hierarchy (2026-10-28)
+
+From the screenshot study (`/tmp/payleor-seeds-screen-distillation.md`, 87 references) and Mouhamed's "no card at all" for the right panel:
+
+- The panel's top is unboxed: a heading, one state line and two or three facts that decide the action. No background, border or shadow.
+- Everything else sits below in plain sections. History and secondary rules ("Done so far", "Operating model", the money breakdown) are behind named disclosures.
+- The panel closes from its head and reopens from the top bar, so the work gets the width back.
+- Payouts shows one lead figure (the amount awaiting approval) and a quiet line for the rest, instead of a strip of four figures above the table.
+- A figure appears large once per screen; the panel repeats it at body size.
+- Table rows are 44px.

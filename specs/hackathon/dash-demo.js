@@ -147,3 +147,5 @@
   updateSelection(); render();
   window.lucide?.createIcons();
 })();
+
+document.querySelectorAll('[data-ctx-toggle]').forEach(b => b.addEventListener('click', () => document.body.classList.toggle('ctx-off')));

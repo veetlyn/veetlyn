@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-<link rel="stylesheet" href="dash-ds.css?v=operating-model-1">
+<link rel="stylesheet" href="dash-ds.css?v=ctx4">
 </head>
 <body>
 <div class="shell">
@@ -44,6 +44,7 @@
         <button class="crumb here">Baobab<i data-lucide="chevrons-up-down" class="i-sm t-3"></i></button>
       </div>
       <div class="tools">
+        <button class="btn btn-ghost btn-sm btn-icon ctx-open" data-ctx-toggle aria-label="Show details"><i data-lucide="panel-right-open" class="i-sm"></i></button>
         <a class="btn btn-secondary" href="agentic-dash-mock.html">Bring into a call</a>
         <button class="btn btn-ghost" data-focus-composer>Ask about this</button>
       </div>
@@ -54,7 +55,7 @@
         <div class="page-head">
           <div class="row1"><h1 class="t-page">Baobab</h1><span class="t-2">Client review</span></div>
           <p class="t-2" style="margin:0">Brand kit for Lina</p>
-          <div class="facts"><span>Client Lina Haddad</span><span>Lead Aicha Diallo</span><details class="t-sm"><summary>Project details</summary><p>PRJ-1042<br>Started Oct 14<br>Operating model v3, accepted Oct 14</p></details></div>
+          <div class="facts"><span>Client Lina Haddad</span><span>Lead Aicha Diallo</span><details class="more t-sm"><summary>Project details</summary><p>PRJ-1042<br>Started Oct 14<br>Operating model v3, accepted Oct 14</p></details></div>
         </div>
 
         <div class="content">
@@ -112,18 +113,23 @@
       </div>
     </div>
     <aside class="context" aria-label="About this project">
-      <div class="head">About this project</div>
+      <div class="head">About this project<button class="btn btn-ghost btn-sm btn-icon" data-ctx-toggle aria-label="Hide details"><i data-lucide="panel-right-close" class="i-sm"></i></button></div>
       <div class="body scroll">
-        <div class="focus">
-          <div class="top"><div class="r1"><h2 class="t-title">Money</h2><span class="t-sm t-2" style="margin-left:auto">No balance due</span></div></div>
-          <dl class="kv">
-            <div><dt>Work</dt><dd class="data">$300.00</dd></div>
-            <div><dt>Management fee</dt><dd class="data">$30.00</dd></div>
-            <div><dt>Total captured</dt><dd class="data">$330.00</dd></div>
-            <div><dt>Balance due</dt><dd class="data">$0.00</dd></div>
-            <div><dt>Refund owed</dt><dd class="data">$0.00</dd></div>
+        <div class="ctx-top">
+          <h2>Money</h2>
+          <p class="state">Paid in full. No balance due.</p>
+          <dl class="facts-grid">
+            <dt>Work</dt><dd class="data">$300.00</dd>
+            <dt>Captured</dt><dd class="data">$330.00</dd>
           </dl>
-          <div class="foot">Aicha’s expected share is $180.00. It becomes available after completion and the agreed hold.</div>
+          <details class="more"><summary>Breakdown</summary><div class="inner">
+            <dl class="facts-grid" style="margin-top:2px">
+              <dt>Management fee</dt><dd class="data">$30.00</dd>
+              <dt>Refund owed</dt><dd class="data">$0.00</dd>
+              <dt>Aicha's share</dt><dd class="data">$180.00</dd>
+            </dl>
+            <p class="state" style="font-size:12px;line-height:16px;color:var(--text-3)">Her share is paid after completion and the agreed hold.</p>
+          </div></details>
         </div>
         <section class="block">
           <div class="block-head"><span>People</span></div>
@@ -135,11 +141,11 @@
             <div class="irow"><i data-lucide="bell"></i><div><div class="t">Final notice to Lina</div><div class="s">Nov 1, on its own</div></div><span></span></div>
             <div class="irow"><i data-lucide="flag"></i><div><div class="t">Completes if she stays silent</div><div class="s">Nov 3, on its own</div></div><span></span></div>
         </section>
-        <section class="block">
-          <div class="block-head"><span>Operating model</span></div>
+        <section class="block"><details class="more"><summary>Operating model<span class="n">3</span></summary><div class="inner">
             <div class="irow"><i data-lucide="book-open"></i><div><div class="t">Operating model v3</div><div class="s">Pinned Oct 14</div></div><span></span></div>
             <div class="irow"><i data-lucide="pencil"></i><div><div class="t">Free changes</div><div class="s">2, both used</div></div><span></span></div>
             <div class="irow"><i data-lucide="timer"></i><div><div class="t">Review period</div><div class="s">Reminders, then 8 days</div></div><span></span></div>
+        </div></details>
         </section>
       </div>
     </aside>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-<link rel="stylesheet" href="dash-ds.css?v=operating-model-1">
+<link rel="stylesheet" href="dash-ds.css?v=ctx4">
 </head>
 <body>
 <div class="shell">
@@ -44,7 +44,8 @@
         <span class="crumb-sep">/</span>
         <span class="crumb here">Payouts</span>
       </div>
-      <div class="tools"><span class="t-sm t-2" title="Payleor prepares changes for you to review. Existing scheduled payouts continue under the operating model.">Prepares for approval</span></div>
+      <div class="tools">
+        <button class="btn btn-ghost btn-sm btn-icon ctx-open" data-ctx-toggle aria-label="Show details"><i data-lucide="panel-right-open" class="i-sm"></i></button><span class="t-sm t-2" title="Payleor prepares changes for you to review. Existing scheduled payouts continue under the operating model.">Prepares for approval</span></div>
     </header>
 
     <div class="main">
@@ -52,12 +53,11 @@
         <div class="page-head">
           <div class="row1"><h1 class="t-page">Payouts</h1></div>
           <div class="t-2">What Walk Crew pays its freelancers, and when.</div>
-          <div class="stats">
-            <div class="stat"><span class="k">Awaiting approval</span><span class="v">$468.00</span></div>
-            <div class="stat"><span class="k">Held</span><span class="v warn">$172.00</span></div>
-            <div class="stat"><span class="k">Other request</span><span class="v">$95.00</span></div>
-            <div class="stat"><span class="k">Paid in October</span><span class="v" data-paid-total>$2,140.00</span></div>
+          <div class="lead-figure">
+            <span class="v">$468.00</span>
+            <span class="k">awaiting your approval</span>
           </div>
+          <p class="t-sm t-3" style="margin:0">$172.00 held, $95.00 requested, <span data-paid-total>$2,140.00</span> paid in October.</p>
         </div>
 
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 var(--gutter) 12px">
@@ -96,14 +96,14 @@
       </div>
     </div>
     <aside class="context" aria-label="Selection">
-      <div class="head">Selection</div>
+      <div class="head">Selection<button class="btn btn-ghost btn-sm btn-icon" data-ctx-toggle aria-label="Hide details"><i data-lucide="panel-right-close" class="i-sm"></i></button></div>
       <div class="body scroll">
-        <div class="focus">
-          <div class="top"><div class="r1"><h2 class="t-title" data-selection-count aria-live="polite">2 payouts</h2><span class="data strong" style="margin-left:auto" data-selection-amount>$468.00</span></div><p class="desc" data-selection-names>Aicha Diallo and Yaw Mensah</p></div>
-          <dl class="kv">
-            <div><dt>Sending</dt><dd>After both approvals</dd></div>
-            <div><dt>Who acts</dt><dd>You, as admin</dd></div>
-            <div><dt>Operating model</dt><dd>Two approvers</dd></div>
+        <div class="ctx-top">
+          <h2 aria-live="polite"><span data-selection-count>2 payouts</span> selected</h2>
+          <p class="state"><span class="data medium" style="color:var(--text-1)" data-selection-amount>$468.00</span> for <span data-selection-names>Aicha Diallo and Yaw Mensah</span></p>
+          <dl class="facts-grid">
+            <dt>Sending</dt><dd>After both approvals</dd>
+            <dt>Who acts</dt><dd>You, as admin</dd>
           </dl>
           <div class="acts"><button class="btn btn-primary btn-sm" data-review-approval>Review approval</button></div>
         </div>

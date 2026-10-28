@@ -87,6 +87,9 @@ svg.lucide { width: 16px; height: 16px; stroke-width: 1.75; flex: none; }
 /* Page header: the one h1, its status, its facts and stats. */
 .page-head { display: grid; gap: 6px; padding: 24px var(--gutter) 20px; }
 .page-head .row1 { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lead-figure { display: flex; align-items: baseline; gap: 10px; padding-top: 14px; }
+.lead-figure .v { font: 600 30px/36px var(--f-text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.lead-figure .k { font-size: 14px; color: var(--text-2); }
 .stats { display: flex; flex-wrap: wrap; gap: 16px 48px; padding-top: 16px; }
 .stat { display: grid; gap: 2px; }
 .stat .k { font-size: 12px; line-height: 16px; color: var(--text-3); }
@@ -159,7 +162,7 @@ svg.lucide { width: 16px; height: 16px; stroke-width: 1.75; flex: none; }
 /* Tables */
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table th { height: 36px; padding: 0 12px; text-align: left; font-size: 12px; font-weight: 500; color: var(--text-3); white-space: nowrap; border-bottom: 3px double var(--line); }
-.table td { height: var(--row); padding: 8px 12px; border-bottom: 1px solid var(--hair); white-space: nowrap; }
+.table td { height: 44px; padding: 8px 12px; border-bottom: 1px solid var(--hair); white-space: nowrap; }
 .table th:first-child, .table td:first-child { padding-left: var(--gutter); width: 1px; }
 .table th:last-child, .table td:last-child { padding-right: var(--gutter); }
 .table .r { text-align: right; }
@@ -199,17 +202,31 @@ svg.lucide { width: 16px; height: 16px; stroke-width: 1.75; flex: none; }
 
 /* Context panel: a small label, one focus card, then lists of icon rows. */
 .context .head { display: flex; align-items: center; gap: 8px; padding: 0 20px; border-bottom: 3px double var(--line); font-size: 12px; font-weight: 500; color: var(--text-3); }
-.context .body { display: grid; grid-auto-rows: max-content; gap: 24px; padding: 16px 16px 24px; align-content: start; }
-.focus { display: grid; border-radius: var(--r-frame); background: #fff; box-shadow: var(--ring); margin: 5px; overflow: hidden; }
-.focus .top { display: grid; gap: 4px; padding: 14px 16px 12px; }
-.focus .top .r1 { display: flex; align-items: baseline; gap: 8px; }
-.focus .desc { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 0; }
-.kv { display: grid; margin: 0; padding: 4px 16px; border-top: 1px solid var(--hair); }
-.kv > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 13px; line-height: 18px; }
-.kv dt { color: var(--text-3); white-space: nowrap; }
-.kv dd { margin: 0; text-align: right; }
-.focus .acts { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--hair); }
-.focus .foot { padding: 10px 16px; border-top: 1px solid var(--hair); font-size: 12px; line-height: 16px; color: var(--text-3); }
+.context .body { display: grid; grid-auto-rows: max-content; gap: 28px; padding: 16px 16px 24px; align-content: start; }
+/* Context top: unboxed. A heading, one state line, two or three facts that decide the action. */
+.ctx-top { display: grid; gap: 4px; padding: 4px 5px 0; }
+.ctx-top h2 { font: 600 15px/20px var(--f-text); letter-spacing: -0.005em; margin: 0; }
+.ctx-top .state { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 0; }
+.ctx-top .figure { font: 600 24px/30px var(--f-text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.facts-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 10px 0 0; font-size: 13px; line-height: 18px; }
+.facts-grid dt { color: var(--text-3); }
+.facts-grid dd { margin: 0; }
+.ctx-top .acts { display: flex; gap: 8px; margin-top: 14px; }
+/* Secondary detail behind a named disclosure. */
+details.more > summary { display: flex; align-items: center; gap: 6px; height: 24px; list-style: none; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--text-3); }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); margin: 0 3px 0 1px; transition: transform 120ms; }
+details.more[open] > summary::before { transform: rotate(45deg); }
+details.more > summary:hover { color: var(--text-2); }
+details.more > summary .n { margin-left: auto; font-variant-numeric: tabular-nums; }
+details.more > .inner { display: grid; gap: 4px; padding-top: 4px; }
+.ctx-top details.more { margin-top: 8px; }
+/* Closing the panel gives the width back to the work. */
+.ctx-open { display: none; }
+.ctx-off .surface { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "main"; }
+.ctx-off .context { display: none; }
+.ctx-off .ctx-open { display: inline-flex; }
+.context .head .btn { margin-left: auto; margin-right: -6px; }
 .block { display: grid; gap: 4px; padding: 0 5px; }
 .block-head { display: flex; align-items: center; justify-content: space-between; height: 24px; font-size: 12px; font-weight: 500; color: var(--text-3); }
 .irow { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 6px 0; font-size: 13px; line-height: 18px; }

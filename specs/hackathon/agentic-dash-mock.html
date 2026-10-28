@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-<link rel="stylesheet" href="dash-ds.css?v=operating-model-1">
+<link rel="stylesheet" href="dash-ds.css?v=ctx4">
 </head>
 <body>
 <div class="shell">
@@ -44,7 +44,8 @@
         <span class="crumb-sep">/</span>
         <span class="crumb here">Payouts this week</span>
       </div>
-      <div class="tools"><span class="t-sm t-2" title="Payleor prepares changes for you to review. Existing scheduled payouts continue under the operating model.">Prepares for approval</span></div>
+      <div class="tools">
+        <button class="btn btn-ghost btn-sm btn-icon ctx-open" data-ctx-toggle aria-label="Show details"><i data-lucide="panel-right-open" class="i-sm"></i></button><span class="t-sm t-2" title="Payleor prepares changes for you to review. Existing scheduled payouts continue under the operating model.">Prepares for approval</span></div>
     </header>
 
     <div class="main">
@@ -58,7 +59,7 @@
               <table class="table" aria-label="Requests in this approval review"><tbody data-call-payouts></tbody></table>
               <div class="frame-foot">
                 <button class="btn btn-primary" data-review-approval>Review approval</button>
-                <details class="t-sm t-2" style="margin-left:auto"><summary>How this was checked</summary><p>Released earnings, current payout destination and the required approvals are checked again before sending.</p></details>
+                <details class="more t-sm" style="margin-left:auto"><summary>How this was checked</summary><p>Released earnings, current payout destination and the required approvals are checked again before sending.</p></details>
               </div>
             </div>
           </div>
@@ -92,16 +93,15 @@
       </div>
     </div>
     <aside class="context" aria-label="What this call is about">
-      <div class="head">Working on</div>
+      <div class="head">Working on<button class="btn btn-ghost btn-sm btn-icon" data-ctx-toggle aria-label="Hide details"><i data-lucide="panel-right-close" class="i-sm"></i></button></div>
       <div class="body scroll">
-        <div class="focus">
-          <div class="top"><h2 class="t-title">Reviewing 3 requests</h2><p class="desc">2 ready for approval, 1 held.</p></div>
-          <dl class="kv">
-            <div><dt>Next step</dt><dd>Your approval</dd></div>
-            <div><dt>Sending</dt><dd>After both approvals</dd></div>
-            <div><dt>Operating model</dt><dd>Two approvers</dd></div>
+        <div class="ctx-top">
+          <h2>Reviewing 3 payout requests</h2>
+          <p class="state">2 ready for approval, 1 held. You were called as <span class="good">@payouts</span>.</p>
+          <dl class="facts-grid">
+            <dt>Next step</dt><dd>Your approval</dd>
+            <dt>Sending</dt><dd>After both approvals</dd>
           </dl>
-          <div class="foot">You were called as <span class="good">@payouts</span></div>
         </div>
         <section class="block">
           <div class="block-head"><span>On the table</span><button class="link" data-bring-in>Bring in</button></div>
@@ -109,11 +109,11 @@
             <div class="irow"><i data-lucide="landmark"></i><div><div class="t">Payout balance</div><div class="s">$1,240.00 available before sending</div></div><span></span></div>
             <div class="irow"><i data-lucide="folder"></i><div><div class="t">Baobab</div><div class="s">Separate project, waiting for Lina</div></div><span></span></div>
         </section>
-        <section class="block">
-          <div class="block-head"><span>Done so far</span></div>
+        <section class="block"><details class="more"><summary>Done so far<span class="n">3</span></summary><div class="inner">
             <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Checked each project for open PayPal cases and refunds</div></div><span></span></div>
             <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Worked out each share from the accepted quotes</div></div><span></span></div>
             <div class="irow"><i data-lucide="circle-pause" style="color:var(--warn-text)"></i><div><div class="t">Held Kofi’s payout after his destination changed</div></div><span></span></div>
+        </div></details>
         </section>
         <section class="block">
           <div class="block-head"><span>Coming up</span></div>
