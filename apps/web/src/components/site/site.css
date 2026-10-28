@@ -151,14 +151,13 @@
   .site-root .step h3 { color: var(--foreground); }
 }
 .site-root .terms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 40px; }
+.site-root .terms.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .site-root .term { display: grid; grid-template-rows: auto 1fr; border-radius: 20px; overflow: hidden; }
 .site-root .term .via { padding: 12px 22px; background: var(--tray); font-size: 15px; font-weight: 500; color: var(--muted-foreground); }
 .site-root .term .coat { display: flex; gap: 14px; align-items: flex-start; padding: 22px; background: var(--band); color: var(--band-ink); font: 600 clamp(19px, 1.7vw, 23px)/1.3 var(--site-display); letter-spacing: -0.015em; font-variation-settings: "GEOM" 100; }
 .site-root .term .coat svg { flex: none; width: 22px; height: 22px; margin-top: 2px; }
-.site-root .rails-note { margin-top: 20px; font-size: 17px; color: var(--muted-foreground); }
-.site-root .rails-note b { color: var(--foreground); font-weight: 600; }
 @media (max-width: 760px) {
-  .site-root .terms { grid-template-columns: minmax(0, 1fr); }
+  .site-root .terms, .site-root .terms.three { grid-template-columns: minmax(0, 1fr); }
 }
 .site-root .everywhere { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: center; }
 .site-root .chans { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
