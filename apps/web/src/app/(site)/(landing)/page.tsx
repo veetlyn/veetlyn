@@ -61,7 +61,7 @@ function Terms() {
   );
 }
 
-function Seen({ storeDomain }: { storeDomain: string }) {
+function Seen({ name, storeDomain }: { name: string; storeDomain: string }) {
   return (
     <section id="seen" aria-labelledby="seen-h">
       <div className="wrap">
@@ -73,17 +73,35 @@ function Seen({ storeDomain }: { storeDomain: string }) {
             <p className="serp-title">Pedicure in Brooklyn · Maison Lune</p>
             <p className="s">Service · $45 · 45 min</p>
             <p className="s">Request a pedicure and shop hair care from the same page.</p>
+            <div className="serp-offers">
+              <p><span>Pedicure</span><span className="num">$45 · 45 min</span></p>
+              <p><span>Manicure</span><span className="num">$35 · 30 min</span></p>
+              <p><span>Argan shampoo</span><span className="num">$18</span></p>
+            </div>
+            <p className="s">Offers labelled with structured data</p>
           </div>
           <div className="ui" data-in>
             <p className="src">ChatGPT</p>
+            <p className="ask-bubble">A pedicure in Brooklyn this Saturday?</p>
             <p className="answer">Maison Lune does pedicures for $45. Want me to request Saturday?</p>
-            <span className="chip">
-              <PMark />Maison Lune · Pedicure · $45
-            </span>
+            <div className="widget">
+              <p className="wtop"><PMark /><b>{name} Network</b> · Maison Lune</p>
+              <div className="wrow"><span><span className="t">Pedicure</span><br /><span className="s">Service · 45 min · Saturday</span></span><span className="num t">$45</span><span className="act">Request</span></div>
+            </div>
           </div>
           <div className="ui report" data-in>
             <p className="src">AI visibility report · <span className="soon">For members</span></p>
+            <div className="widget">
+              <p className="wtop"><PMark /><b>This week</b> · Maison Lune</p>
+              <div className="kpis num">
+                <div><span className="s">Shown by AI</span><b>128</b></div>
+                <div><span className="s">Requests</span><b>9</b></div>
+                <div><span className="s">Orders</span><b>4</b></div>
+              </div>
+              <div className="bars" aria-hidden="true"><span style={{ height: "34%" }}></span><span style={{ height: "46%" }}></span><span style={{ height: "40%" }}></span><span style={{ height: "62%" }}></span><span style={{ height: "58%" }}></span><span style={{ height: "80%" }}></span><span style={{ height: "100%" }}></span></div>
+            </div>
             <ul className="report-list"><li>How often AI agents showed you</li><li>The requests that came from it</li><li>The orders that came from it</li></ul>
+            <p className="s">Example</p>
           </div>
         </div>
         <p className="term-line" data-in>
@@ -214,7 +232,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        </section><Terms /> <Seen storeDomain={storeDomain} /><section aria-labelledby="price-h">
+        </section><Terms /> <Seen name={name} storeDomain={storeDomain} /><section aria-labelledby="price-h">
           <div className="wrap">
             <h2 id="price-h" data-in>Your clients stay yours. We charge when we bring you one.</h2>
             <div className="model" data-in>
