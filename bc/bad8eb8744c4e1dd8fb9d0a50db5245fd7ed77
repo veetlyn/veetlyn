@@ -1,0 +1,23 @@
+LICENSE
+  s_22e9e82f1423d1::t_97911654ac1030 1-662
+LICENSING.md
+  s_22e9e82f1423d1::t_19fbda099f70cb 1-11
+package.json
+  s_22e9e82f1423d1::t_9a27f21f1d00cf 46-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bcbad8eb8744c4e1dd8fb9d0a50db5245fd7ed77",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
