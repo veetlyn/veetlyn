@@ -52,7 +52,7 @@ Outside the dash, the same nodes are reached from the client's AI plugin (`api.p
 | My purchases | `me/projects` | Projects where they are a verified client; store orders are link-only **today** | The person through verified client relationships |
 | My earnings | `me/payouts` | Payouts owed and sent to them across teams | The person as payee |
 | Workspace | none **today**: a workspace's teams are listed on `/` | Organization, memberships | Owner and admins |
-| Seller | `[storeSlug]` (Overview), `settings`, `preview`, `discord` | The team or store, its settings and integrations | Members by role |
+| Seller | `[storeSlug]` (Overview), `settings`, `preview`, `discord` (server link, to become the agent's channel setting) | The team or store, its settings and integrations | Members by role |
 | Requests | `[storeSlug]/requests` | Open requests, shortlists, request conversations | Admins, managers, freelancers in the department |
 | A request | inside `requests`, and `projects/[projectId]` once quoting | Brief, questions, quotes in competition | Same, plus the client from their side |
 | Projects | `[storeSlug]/projects`, `projects/new` | Projects with status | Members by role and assignment |
@@ -69,25 +69,25 @@ Outside the dash, the same nodes are reached from the client's AI plugin (`api.p
 
 ### 2.1 The same nodes on every surface
 
-The dash is one surface. The stories (`stories/`, 196 of them) reach the same nodes from five others. A node's environment does not change with the surface; what changes is who stands there (the team, a client, a buyer, a visitor) and which of the node's tools that side may use.
+The dash is one surface. The stories (`stories/`, 196 of them) reach the same nodes from the seller site, the client's AI plugin and email. **Discord as a product surface is dropped** (run E cancelled, Mouhamed 2026-10-28): Discord, like Slack, is only a channel the agent can talk through (calls and agent §8, Chat SDK). A channel adds no node and no tool: it carries the calls of whatever node the agent stands on, so it has no column here. The DIS stories and Discord sign-in stay as built, outside this graph. A node's environment does not change with the surface; what changes is who stands there (the team, a client, a buyer, a visitor) and which of the node's tools that side may use.
 
-| Node | Dash | Seller site (`{seller}`) | Client's AI plugin | Email | Discord | Stories |
-|---|---|---|---|---|---|---|
-| Account | home, account, sign-up and log-in, consent | | OAuth consent | verification, reset | sign in with Discord | ACC-04–10, DIS-01–02, AGT-09 |
-| My purchases (client) | `me/projects` | client page `c/<token>`, pay page | search, request, quote, delivery and pay widgets | client notices | client buttons (cancelled with E) | QUO-01–03, QUO-13, PAY-01–13, DEL-04–09, AGT-09–16, AGT-31–36, AGT-61 |
-| My purchases (buyer) | none **today** (link-only orders) | checkout, order page | cart and checkout (cancelled with M) | download email | | STO-06–11, STO-15–16, AGT-63 |
-| My earnings | `me/payouts` | | | payout notices | `/payouts setup` | OUT-01–03, OUT-07, OUT-14, OUT-23, OUT-28, DIS-06 |
-| Workspace | `/` lists sellers | | | | | ACC-10, AGT-55, AGT-62 |
-| Seller | Overview checklist, settings, preview, Discord | public seller page, policies | offering cards | | server link | ACC-08–14, CAT-05–11, STO-01, STO-05, STO-14, DIS-03–05 |
-| Requests, a request | requests, project page while quoting | request form | request and questions | new request, expiry | request thread (cancelled) | QUO-01–09, AGT-11, AGT-26, AGT-31–34, AGT-37 |
-| Projects, a project | projects, project page | client page | quote and delivery widgets | project notices | project channel (cancelled) | QUO-10–16, DEL-01–11, AGT-01–06, AGT-47–54 |
-| Money: payments | inside projects | pay page | pay from widget | receipts | | PAY-01–16, DEL-08–11 |
-| Money: payouts | payouts, payout rules | | | | | OUT-04–27, OUT-29, AGT-56–58 |
-| Money: PayPal cases | dispute card on a project | | | dispute notices | | AGT-54 |
-| Storefront | services, products, orders, preview | seller page, store section, checkout | offering search | | | CAT-01–04, STO-01–17, AGT-19 |
-| Team, a member | members | | | member notices | | ACC-15–16, AGT-47, AGT-51 |
-| Operating model | rules | rule summary on client and pay pages | terms before a request | | | AGT-46–53 |
-| Outside the tenant | | `{site}` pages, Discover | | | | ACC-01–03 |
+| Node | Dash | Seller site (`{seller}`) | Client's AI plugin | Email | Stories |
+|---|---|---|---|---|---|
+| Account | home, account, sign-up and log-in, consent | | OAuth consent | verification, reset | ACC-04–10, DIS-01–02, AGT-09 |
+| My purchases (client) | `me/projects` | client page `c/<token>`, pay page | search, request, quote, delivery and pay widgets | client notices | QUO-01–03, QUO-13, PAY-01–13, DEL-04–09, AGT-09–16, AGT-31–36, AGT-61 |
+| My purchases (buyer) | none **today** (link-only orders) | checkout, order page | cart and checkout (cancelled with M) | download email | STO-06–11, STO-15–16, AGT-63 |
+| My earnings | `me/payouts` | | | payout notices | OUT-01–03, OUT-07, OUT-14, OUT-23, OUT-28, DIS-06 |
+| Workspace | `/` lists sellers | | | | ACC-10, AGT-55, AGT-62 |
+| Seller | Overview checklist, settings, preview, Discord | public seller page, policies | offering cards | | ACC-08–14, CAT-05–11, STO-01, STO-05, STO-14, DIS-03–05 |
+| Requests, a request | requests, project page while quoting | request form | request and questions | new request, expiry | QUO-01–09, AGT-11, AGT-26, AGT-31–34, AGT-37 |
+| Projects, a project | projects, project page | client page | quote and delivery widgets | project notices | QUO-10–16, DEL-01–11, AGT-01–06, AGT-47–54 |
+| Money: payments | inside projects | pay page | pay from widget | receipts | PAY-01–16, DEL-08–11 |
+| Money: payouts | payouts, payout rules | | | | OUT-04–27, OUT-29, AGT-56–58 |
+| Money: PayPal cases | dispute card on a project | | | dispute notices | AGT-54 |
+| Storefront | services, products, orders, preview | seller page, store section, checkout | offering search | | CAT-01–04, STO-01–17, AGT-19 |
+| Team, a member | members | | | member notices | ACC-15–16, AGT-47, AGT-51 |
+| Operating model | rules | rule summary on client and pay pages | terms before a request | | AGT-46–53 |
+| Outside the tenant | | `{site}` pages, Discover | | | ACC-01–03 |
 
 The contextual agent's own stories (AGT-26, AGT-28, AGT-55–63, "D: one contextual agent" and "Contextual agent: planned walkthroughs" in `stories/09-agentic.md`) test this graph directly: AGT-55 the environment following the context, AGT-61 a customer with no seller working from My purchases, AGT-62 one consultant who buys, sells and works in three contexts, AGT-63 a store order exception seen by both sides.
 
@@ -132,7 +132,7 @@ What the inventory shows:
 
 - **The top of the tree has no screens.** Account, personal workspace and workspace exist in the data but the dash starts at a seller. The agent's widest contexts have nowhere to live.
 - **Money is split across places.** Payments and PayPal cases have no node of their own; they surface inside projects and orders.
-- **The seller nav is flat.** Eleven items sit side by side (`team-shell.tsx`), mixing sections (Projects), records views (Orders) and configuration (Rules, Settings, Discord).
+- **The seller nav is flat.** Eleven items sit side by side (`team-shell.tsx`), mixing sections (Projects), records views (Orders) and configuration (Rules, Settings, Discord, which becomes a channel setting).
 
 ## 3. The environment at each node
 
@@ -164,8 +164,8 @@ Tool names in `code` are registry actions (`packages/api/src/actions/`), which g
 
 ### Seller (team or store)
 
-- **Context:** settings, enabled capabilities (services, store, payouts, Discord), the current operating model version, counts per section.
-- **Tools:** *update settings*, *update bio*, *enable store*, *switch to team*, *Discord link code*, *seller publish and unpublish*, *PayPal onboarding*.
+- **Context:** settings, enabled capabilities (services, store, payouts), chat channels connected for the agent, the current operating model version, counts per section.
+- **Tools:** *update settings*, *update bio*, *enable store*, *switch to team*, *connect a chat channel* (today *Discord link code*), *seller publish and unpublish*, *PayPal onboarding*.
 - **Skills:** explaining what the team's operating model does; setup checklists (PayPal connected, page published, rules accepted).
 - **Opens calls:** setup incomplete, PayPal onboarding needed.
 
