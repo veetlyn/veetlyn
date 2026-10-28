@@ -1,0 +1,29 @@
+apps/web/src/app/(site)/(landing)/freelancers/page.tsx
+  s_73e10f9d158414::t_c885fcfd1b14f1 145
+apps/web/src/app/(site)/(landing)/visibility/page.tsx
+  s_73e10f9d158414::t_c885fcfd1b14f1 62
+apps/web/src/content/site/faqs.ts
+  s_73e10f9d158414::t_c885fcfd1b14f1 25
+apps/web/src/components/site/tiers.tsx
+  s_73e10f9d158414::t_c885fcfd1b14f1 86,104,106,181,183
+apps/web/src/app/(site)/(landing)/stores/page.tsx
+  s_73e10f9d158414::t_c885fcfd1b14f1 159
+apps/web/src/app/(site)/(landing)/pricing/page.tsx
+  s_73e10f9d158414::t_c885fcfd1b14f1 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "29f5129ee7c0ee7c137f545512be149428581f02",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
