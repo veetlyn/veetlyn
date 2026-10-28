@@ -50,6 +50,15 @@ export async function findServicesTeamBySlug(db: Database, slug: string): Promis
   return row ?? null;
 }
 
+export async function findServicesTeamById(db: DbExecutor, id: string): Promise<ServicesTeamRecord | null> {
+  const [row] = await db
+    .select(servicesTeamColumns)
+    .from(team)
+    .where(and(eq(team.id, id), eq(team.product, "services")))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function getServicesTeamSettings(db: DbExecutor, teamId: string): Promise<ServicesTeamSettings | null> {
   const [row] = await db
     .select(settingsColumns)

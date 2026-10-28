@@ -6,7 +6,7 @@ import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositor
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 
 import type { LinkSecretSource } from "../client-links";
-import type { EmailServices, PayPalServices } from "../context";
+import type { EmailServices, PayoutServices, PayPalServices } from "../context";
 import { type Actor, isClientActor, type RequestMeta, type Surface } from "./actors";
 import type { ActionDefinition, Grant, ScopeRequest } from "./define";
 import { ActionError, type ActionErrorCode, toActionError } from "./errors";
@@ -22,6 +22,7 @@ export type ActionDeps = ActionRuntime & {
   files: FileStore;
   auth: LinkSecretSource;
   paypal?: PayPalServices;
+  payouts?: PayoutServices;
   email?: EmailServices;
   now?: () => Date;
 };
