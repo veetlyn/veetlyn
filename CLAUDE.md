@@ -1,6 +1,6 @@
-# Payleor (code name jendal)
+# Veetlyn (code name jendal)
 
-Payleor is the money flow and the trust around paid work: freelancers, teams and AI sellers quote, get paid through PayPal, deliver and pay their members. It is being built for the PayPal AI Hackathon. Code is finished by **Oct 31, 2026**; submission is due **Nov 12, 2026, 12:00 pm PST**.
+Veetlyn is the money flow and the trust around paid work: freelancers, teams and AI sellers quote, get paid through PayPal, deliver and pay their members. It is being built for the PayPal AI Hackathon. Code is finished by **Oct 31, 2026**; submission is due **Nov 12, 2026, 12:00 pm PST**.
 
 ## Read first, in this order
 
