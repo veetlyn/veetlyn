@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AgentArt, SeoArt } from "@/components/site/art/visibility";
 import CloseCta from "@/components/site/close-cta";
 import FaqList, { faqStructuredData } from "@/components/site/faq-list";
 import JsonLd from "@/components/site/json-ld";
@@ -53,13 +54,13 @@ export default function VisibilityPage() {
           <div className="wrap">
             <h2 id="inc-h" data-in>Web SEO for every plan</h2>
             <p className="lead-dark" data-in>Before an AI can name you, it has to read you. Seller pages will be built to be read; {domain} already is.</p>
-            <div className="features">
-              <div className="feature" data-in><p className="tag">Structured data <span className="soon">Coming soon</span></p><h3>Your offers, labelled</h3><p>Services, products, prices and questions, written for search engines and AI tools.</p></div>
-              <div className="feature" data-in><p className="tag">Crawlers <span className="soon">Coming soon</span></p><h3>Open to AI crawlers</h3><p>A sitemap, an llms.txt and robots rules that let AI assistants read you.</p></div>
-              <div className="feature" data-in><p className="tag">Speed <span className="soon">Coming soon</span></p><h3>Fast, clean pages</h3><p>One page per offer, with clear titles and links that last.</p></div>
-              <div className="feature" data-in><p className="tag">Discover <span className="soon">Coming soon</span></p><h3>Listed on Discover</h3><p>People browse the same catalog your clients' AI searches.</p></div>
-              <div className="feature" data-in><p className="tag">{name} Network</p><h3>Found in Claude and ChatGPT</h3><p>By every client who adds {name} Network.</p></div>
-              <div className="feature" data-in><p className="tag">Your domain <span className="soon">Coming soon</span></p><h3>On your own address</h3><p>On Team, Agency, Grow and Scale.</p></div>
+            <div className="bento">
+              <div className="tile wide" data-in><p className="tag">Structured data <span className="soon">Coming soon</span></p><h3>Your offers, labelled</h3><p>Services, products, prices and questions, written for search engines and AI tools.</p><SeoArt name="labelled" /></div>
+              <div className="tile" data-in><p className="tag">Crawlers <span className="soon">Coming soon</span></p><h3>Open to AI crawlers</h3><p>A sitemap, an llms.txt and robots rules that let AI assistants read you.</p><SeoArt name="crawlers" /></div>
+              <div className="tile" data-in><p className="tag">Speed <span className="soon">Coming soon</span></p><h3>Fast, clean pages</h3><p>One page per offer, with clear titles and links that last.</p><SeoArt name="speed" /></div>
+              <div className="tile" data-in><p className="tag">Discover <span className="soon">Coming soon</span></p><h3>Listed on Discover</h3><p>People browse the same catalog your clients' AI searches.</p><SeoArt name="discover" /></div>
+              <div className="tile wide dark" data-in><p className="tag">{name} Network</p><h3>Found in Claude and ChatGPT</h3><p>By every client who adds {name} Network.</p><SeoArt name="found" /></div>
+              <div className="tile" data-in><p className="tag">Your domain <span className="soon">Coming soon</span></p><h3>On your own address</h3><p>On Team, Agency, Grow and Scale.</p><SeoArt name="domain" /></div>
             </div>
           </div>
         </section>
@@ -67,16 +68,19 @@ export default function VisibilityPage() {
           <div className="wrap">
             <h2 id="ai-h" data-in>AI visibility, for Network members <span className="soon">Planned</span></h2>
             <p className="lead-dark" data-in>Each day, the visibility agent does what will get you named most. It drafts. You approve. Over a month, it adds up to all of this.</p>
-            <div className="features">
-              <div className="feature agent" data-in><p className="tag">Mentions</p><h3>AI mention tracking</h3><p>Ask ChatGPT, Claude, Perplexity and Gemini about your field, and fix what they get wrong.</p></div>
-              <div className="feature agent" data-in><p className="tag">Research</p><h3>The questions clients ask</h3><p>What your clients search and ask, and who shows up for it today.</p></div>
-              <div className="feature agent" data-in><p className="tag">Map</p><h3>One question per page</h3><p>Every page gets the searches it should win, so no two pages compete.</p></div>
-              <div className="feature" data-in><p className="tag">Articles</p><h3>Guides, drafted for you</h3><p>Answers better than the page on top, published only after your yes.</p></div>
-              <div className="feature" data-in><p className="tag">Comparisons</p><h3>"Which one" pages</h3><p>For the moment a client picks between you and someone else.</p></div>
-              <div className="feature" data-in><p className="tag">Fixes</p><h3>Sharper pages</h3><p>Clearer titles, copy and links on the pages you already have.</p></div>
-              <div className="feature" data-in><p className="tag">Index</p><h3>Index checks</h3><p>Make sure search engines and AI crawlers find and keep every page.</p></div>
-              <div className="feature" data-in><p className="tag">Facts</p><h3>Fact checks</h3><p>Your prices, hours and claims stay right everywhere they are quoted.</p></div>
-              <div className="feature" data-in><p className="tag">Report</p><h3>A weekly report</h3><p>What changed, what moved, and what it brought you.</p></div>
+            <div className="zigzag">
+              <div className="zig">
+                <div className="zig-art" data-in><AgentArt name="track" /></div>
+                <div className="zig-text" data-in><p className="tag">Track</p><h3>See where you are named</h3><ul><li><b>AI mention tracking.</b> Ask ChatGPT, Claude, Perplexity and Gemini about your field, and fix what they get wrong</li><li><b>The questions clients ask.</b> What your clients search and ask, and who shows up for it today</li><li><b>One question per page.</b> Every page gets the searches it should win, so no two pages compete</li></ul></div>
+              </div>
+              <div className="zig">
+                <div className="zig-art" data-in><AgentArt name="write" /></div>
+                <div className="zig-text" data-in><p className="tag">Write</p><h3>Drafts that wait for your yes</h3><ul><li><b>Guides, drafted for you.</b> Answers better than the page on top, published only after your yes</li><li><b>"Which one" pages.</b> For the moment a client picks between you and someone else</li><li><b>Sharper pages.</b> Clearer titles, copy and links on the pages you already have</li></ul></div>
+              </div>
+              <div className="zig">
+                <div className="zig-art" data-in><AgentArt name="keep" /></div>
+                <div className="zig-text" data-in><p className="tag">Keep</p><h3>Stay right, and see what it brought</h3><ul><li><b>Index checks.</b> Make sure search engines and AI crawlers find and keep every page</li><li><b>Fact checks.</b> Your prices, hours and claims stay right everywhere they are quoted</li><li><b>A weekly report.</b> What changed, what moved, and what it brought you</li></ul></div>
+              </div>
             </div>
             <p className="note" data-in>Plus listings where it counts, such as your Google Business Profile and Trustpilot page.</p>
           </div>
@@ -84,12 +88,12 @@ export default function VisibilityPage() {
         <section aria-labelledby="flow-h">
           <div className="wrap">
             <h2 id="flow-h" data-in>Nothing ships without your yes</h2>
-            <div className="story-flow">
-              <div className="feature" data-in><p className="tag">1</p><h3>The agent finds a gap</h3><p>A question you should answer, a fact that is wrong, a page that is slow.</p></div>
-              <div className="feature" data-in><p className="tag">2</p><h3>It drafts the change</h3><p>A new article, a fixed title, a corrected price.</p></div>
-              <div className="feature agent" data-in><p className="tag">3</p><h3>You approve it</h3><p>In the dash or your team chat, with one press.</p></div>
-              <div className="feature" data-in><p className="tag">4</p><h3>It ships and is tracked</h3><p>The weekly report shows what moved.</p></div>
-            </div>
+            <ol className="timeline">
+              <li className="tl-step" data-in><p className="tag">Step 1</p><h3>The agent finds a gap</h3><p>A question you should answer, a fact that is wrong, a page that is slow.</p></li>
+              <li className="tl-step" data-in><p className="tag">Step 2</p><h3>It drafts the change</h3><p>A new article, a fixed title, a corrected price.</p></li>
+              <li className="tl-step agent" data-in><p className="tag">Step 3</p><h3>You approve it</h3><p>In the dash or your team chat, with one press.</p></li>
+              <li className="tl-step" data-in><p className="tag">Step 4</p><h3>It ships and is tracked</h3><p>The weekly report shows what moved.</p></li>
+            </ol>
             <p className="term-line" data-in><PMark />We report what happened. We never promise rankings.</p>
           </div>
         </section>
