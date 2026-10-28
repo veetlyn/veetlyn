@@ -30,7 +30,7 @@ function Terms({ name }: { name: string }) {
         <div className="terms">
           <div className="term" data-in>
             <span className="via">Claude and ChatGPT, through {name} Network</span><p className="coat">
-              <PMark />The client's AI finds, asks and fills carts. It never pays.
+              <PMark />The client's AI finds, asks and requests quotes. It never pays.
             </p>
           </div>
           <div className="term" data-in>
@@ -44,7 +44,7 @@ function Terms({ name }: { name: string }) {
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">Discord</span><p className="coat">
+            <span className="via">Your dash and team chat</span><p className="coat">
               <PMark />Agent drafts wait for a person to confirm them.
             </p>
           </div>
@@ -71,7 +71,7 @@ function Seen({ storeDomain }: { storeDomain: string }) {
     <section id="seen" aria-labelledby="seen-h">
       <div className="wrap">
         <h2 id="seen-h" data-in>Get found on search and in AI answers</h2>
-        <p className="note" data-in>Web SEO comes to every seller page with run V. Network members will also get AI visibility, run by an agent with their approval.</p>
+        <p className="note" data-in>Web SEO is coming to every seller page. Network members will also get AI visibility, run by an agent with their approval.</p>
         <div className="seen">
           <div className="ui" data-in>
             <p className="src">maisonlune.{storeDomain} › pedicure</p>
@@ -135,7 +135,7 @@ export default function HomePage() {
             <p className="reply frame" data-at="5100">Accepted. Pay the deposit on {name}, with PayPal.</p>
           </ChatDemo>
         </div>
-        <div className="wrap"><LogoStrip /></div>
+        <div className="wrap"><LogoStrip channels /></div>
       </div>
       <div>
         <section aria-labelledby="sides-h">
@@ -145,7 +145,7 @@ export default function HomePage() {
               <div className="side theirs" data-in>
                 <p className="for">Their agents</p>
                 <h3>Claude and ChatGPT, through {name} Network</h3>
-                <ul><li>Find your offers</li><li>Ask your questions</li><li>Request quotes</li><li>Fill carts across stores</li></ul>
+                <ul><li>Find your offers</li><li>Ask your questions</li><li>Request quotes</li><li>Follow the project</li></ul>
                 <p className="foot-line">They never pay.</p>
               </div>
               <div className="side middle" data-in>
@@ -178,7 +178,7 @@ export default function HomePage() {
           <div className="wrap">
             <h2 id="stories-h" data-in>For anyone who sells</h2>
             <ul className="wall" data-in>
-              <li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Discord teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li>
+              <li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Remote teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li>
             </ul>
             <div className="stories">
               <Link className="story-card is-dark" href="/freelancers" data-in>
@@ -188,13 +188,13 @@ export default function HomePage() {
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card" href="/agencies" data-in>
                 <p className="for">Agencies</p>
-                <h3>Walk Crew runs its agency from Discord</h3>
-                <div className="ui"><p className="row"><span className="t">#requests</span><span className="s">Discord</span></p><p className="row num"><span>Draft quote, by the intake agent</span><span className="t">$640</span></p></div>
+                <h3>Walk Crew answers requests with an agent</h3>
+                <div className="ui"><p className="row"><span className="t">New request</span><span className="s">Logo and brand kit</span></p><p className="row num"><span>Draft quote, by the intake agent</span><span className="t">$640</span></p></div>
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card" href="/stores" data-in>
                 <p className="for">Stores</p>
-                <h3>Clay Room sells mugs and a course in AI carts</h3>
-                <div className="ui"><p className="row num"><span>Two mugs · Clay Room</span><span>$36</span></p><p className="row num"><span>Glazing course · Clay Room</span><span>$29</span></p><p className="row num"><span>Coffee beans · Roast House</span><span>$24</span></p></div>
+                <h3>Clay Room sells a course from one page</h3>
+                <div className="ui"><p className="row num"><span>Glazing course · Download</span><span>$29</span></p><p className="row"><span>Paid with PayPal</span><span className="ok">Sent at once</span></p></div>
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card is-dark" href="/studios" data-in>
                 <p className="for">Studios</p>

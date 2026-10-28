@@ -50,8 +50,8 @@ export default function DiscoverPage() {
                 <p className="tag">Sellers</p>
                 <h3>{PRICE_FACTS.network} once, then they are yours</h3>
                 <p>
-                  A new client from the network costs {PRICE_FACTS.network} of the first project. Discover sales join
-                  with run V.
+                  A new client from the network costs {PRICE_FACTS.network} of the first project. Sales from Discover
+                  count the same way soon.
                 </p>
               </div>
             </div>
