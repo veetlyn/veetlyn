@@ -133,9 +133,9 @@ jendal-workspace/
 
 ## Launch access and deployments
 
-`main` is production; `dev` is staging for demos and hackathons. Changes reach `main` through pull requests. Successful push CI deploys `dev` to staging and `main` to production. Manual deployments accept only those matching branch/environment pairs. GitHub branch protection must enforce the pull-request policy: workflow files alone cannot forbid direct pushes.
+`dev` is the GitHub default branch and the target for feature pull requests; it deploys to staging for demos and hackathons. Release pull requests merge `dev` into `main`, which deploys to production. Successful push CI deploys `dev` to staging and `main` to production. Manual deployments accept only those matching branch/environment pairs. GitHub branch protection must enforce the pull-request policy: workflow files alone cannot forbid direct pushes.
 
-`PUBLIC_ACCESS=waitlist` disables authentication HTTP endpoints, redirects dashboard visitors to `/waitlist`, and replaces account calls to action with the launch mailing list. `PUBLIC_ACCESS=open` enables normal access. Defaults are `waitlist` for production and `open` for staging/local; GitHub environment variables can override them. Both Workers receive the same flag. Changing it requires redeployment.
+`PUBLIC_ACCESS=waitlist` disables authentication HTTP endpoints, redirects dashboard visitors to `/waitlist`, and replaces account calls to action with the launch mailing list. `PUBLIC_ACCESS=open` enables normal access. Defaults are `waitlist` for production and `open` for staging/local; GitHub environment variables can override them. Both Workers receive the same flag. Merging a branch does not itself open access: the target environment’s flag decides. Changing it requires redeployment.
 
 The launch list stores a normalized unique email and join timestamp in `launch_waitlist`, separately from accounts, after explicit launch-notification consent. The endpoint validates origin/input, rate-limits submissions, and never exposes existing membership. It does not send mail. Launch notification is a later deliberate mailing operation, not an automatic campaign. Use the privacy-policy contact for removal requests and remove waitlist-only addresses after the launch campaign.
 
