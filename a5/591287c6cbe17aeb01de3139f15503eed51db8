@@ -1,0 +1,36 @@
+specs/hackathon/dash-ds.css
+  s_73e10f9d158414::t_ba9812b29cc132 205-229
+  s_73e10f9d158414::t_7d63ee5db37d52 90-92,165
+specs/hackathon/agentic-dash-record.html
+  s_73e10f9d158414::t_9286323ae82470 11
+  s_73e10f9d158414::t_84ed5adb26b239 58
+  s_73e10f9d158414::t_ba9812b29cc132 47,116,118-123,125-132,144,148
+specs/hackathon/dash-demo.js
+  s_73e10f9d158414::t_ba9812b29cc132 150-151
+specs/hackathon/agentic-dash-payouts.html
+  s_73e10f9d158414::t_9286323ae82470 11,102-103
+  s_73e10f9d158414::t_ba9812b29cc132 47-48,99,101,104-106
+  s_73e10f9d158414::t_7d63ee5db37d52 56-58,60
+specs/hackathon/agentic-dash-mock.html
+  s_73e10f9d158414::t_84ed5adb26b239 62
+  s_73e10f9d158414::t_9286323ae82470 11
+  s_73e10f9d158414::t_ba9812b29cc132 47-48,96,98-103,112,116
+specs/hackathon/dashboard-prototype-notes.md
+  s_73e10f9d158414::t_1eeb329aaedddd 32-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a5591287c6cbe17aeb01de3139f15503eed51db8",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
