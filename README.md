@@ -133,7 +133,7 @@ jendal-workspace/
 
 ## Product name
 
-The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The current payleor.com/payleor.app domains, GitHub repository and plugin identifiers remain in place until a separate migration. The unpublished marketing drafts use Veetlyn too.
+The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The repository is `veetlyn/veetlyn`. The current payleor.com/payleor.app domains and installed plugin identifiers remain in place until a separate migration. The unpublished marketing drafts use Veetlyn too.
 
 ## Launch access and deployments
 
@@ -147,4 +147,4 @@ The launch list stores a normalized unique email and join timestamp in `launch_w
 
 AGPL-3.0-only or a separate commercial agreement. Commercial deployments are private-network deployments by default; Veetlyn Network membership is an optional add-on. See [LICENSING.md](LICENSING.md), including the MIT package exceptions.
 
-Main protection configuration is saved in [.github/main-protection.json](.github/main-protection.json). GitHub rejected enforcement on the current private repository plan (HTTP 403). Once the plan supports it, apply with `gh api --method PUT repos/payleor/payleor/branches/main/protection --input .github/main-protection.json`. It restricts pushes/merges to `Mouhamed-B`, requires a pull request and successful `check` (including for administrators), and forbids force pushes/deletion. Until applied, direct pushes are **not** technically blocked.
+Main protection configuration is saved in [.github/main-protection.json](.github/main-protection.json). GitHub rejected enforcement on the current private repository plan (HTTP 403). Once the plan supports it, apply with `gh api --method PUT repos/veetlyn/veetlyn/branches/main/protection --input .github/main-protection.json`. It restricts pushes/merges to `Mouhamed-B`, requires a pull request and successful `check` (including for administrators), and forbids force pushes/deletion. Until applied, direct pushes are **not** technically blocked.
