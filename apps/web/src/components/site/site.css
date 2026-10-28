@@ -154,6 +154,9 @@
 .site-root .terms.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .site-root .term { display: grid; grid-template-rows: auto 1fr; border-radius: 20px; overflow: hidden; }
 .site-root .term .via { padding: 12px 22px; background: var(--tray); font-size: 15px; font-weight: 500; color: var(--muted-foreground); }
+.site-root .term .via { display: flex; align-items: center; gap: 12px; }
+.site-root .term .via .logos { margin-left: auto; display: inline-flex; gap: 10px; color: var(--foreground); }
+.site-root .term .via .logos svg { width: 18px; height: 18px; fill: currentColor; flex: none; }
 .site-root .term .coat { display: flex; gap: 14px; align-items: flex-start; padding: 22px; background: var(--band); color: var(--band-ink); font: 600 clamp(19px, 1.7vw, 23px)/1.3 var(--site-display); letter-spacing: -0.015em; font-variation-settings: "GEOM" 100; }
 .site-root .term .coat svg { flex: none; width: 22px; height: 22px; margin-top: 2px; }
 @media (max-width: 760px) {

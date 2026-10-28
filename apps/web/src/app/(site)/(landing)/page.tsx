@@ -8,6 +8,7 @@ import { NetworkArt, SideArt } from "@/components/site/art/home";
 import LogoStrip from "@/components/site/logo-strip";
 import PMark from "@/components/site/p-mark";
 import { indexFaq } from "@/content/site/faqs";
+import { LOGO_PATHS } from "@/content/site/logos";
 import { platformSite } from "@/lib/platform";
 import { agencyExample, usd, walkCrewDepositMinor } from "@/lib/site/examples";
 import { PRICE_FACTS } from "@/lib/site/fees";
@@ -23,6 +24,23 @@ export function generateMetadata() {
   });
 }
 
+const API_GLYPH = "M8.5 5 3 12l5.5 7m7-14L21 12l-5.5 7";
+
+// The services a term rides on, as small marks after its label.
+function ViaLogos({ names }: { names: readonly (keyof typeof LOGO_PATHS | "api")[] }) {
+  return (
+    <span className="logos">
+      {names.map((n) =>
+        n === "api" ? (
+          <svg key={n} viewBox="0 0 24 24" aria-hidden="true"><path d={API_GLYPH} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        ) : (
+          <svg key={n} viewBox="0 0 24 24" aria-hidden="true"><path d={LOGO_PATHS[n]} /></svg>
+        ),
+      )}
+    </span>
+  );
+}
+
 function Terms() {
   return (
     <section id="terms" aria-labelledby="terms-h">
@@ -30,27 +48,27 @@ function Terms() {
         <h2 id="terms-h" data-in>Our terms, on top of every integration</h2>
         <div className="terms three">
           <div className="term" data-in>
-            <span className="via">Claude and ChatGPT</span><p className="coat">
+            <span className="via">Claude and ChatGPT<ViaLogos names={["claude", "openai"]} /></span><p className="coat">
               <PMark />The client's AI finds, asks and requests quotes. It never pays.
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">PayPal checkout</span><p className="coat">
+            <span className="via">PayPal checkout<ViaLogos names={["paypal"]} /></span><p className="coat">
               <PMark />The price on the page is the price charged.
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">PayPal Payouts</span><p className="coat">
+            <span className="via">PayPal Payouts<ViaLogos names={["paypal"]} /></span><p className="coat">
               <PMark />Each share is sent once, after a person or your rule says yes.
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">Your dash and team chat</span><p className="coat">
+            <span className="via">Your dash and team chat<ViaLogos names={["slack", "discord", "googlechat"]} /></span><p className="coat">
               <PMark />Agent drafts wait for a person to confirm them.
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">Your own agents, through our API</span><p className="coat">
+            <span className="via">Your own agents, through our API<ViaLogos names={["api"]} /></span><p className="coat">
               <PMark />The same approvals and payout rules as your team.
             </p>
           </div>
