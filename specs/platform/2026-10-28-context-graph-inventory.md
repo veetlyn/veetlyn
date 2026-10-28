@@ -1,6 +1,6 @@
 # Context graph: inventory and agent environment per node
 
-**Date:** 2026-10-28. **Status:** draft for Mouhamed's review. Step 1 and 2 of three: (1) list every screen as a node in the context tree, from the tenant down; (2) infer the agent's environment at each node (context, tools, skills); (3) design the dash from that graph. Step 3 is not started; it waits for this graph to be agreed.
+**Date:** 2026-10-28. **Status:** tree agreed with Mouhamed 2026-10-28 (§5). Step 1 and 2 of three: (1) list every screen as a node in the context tree, from the tenant down; (2) infer the agent's environment at each node (context, tools, skills); (3) design the dash from that graph. Step 3 is not started; it waits for this graph to be agreed.
 
 **Sources:** the stories in `stories/` (every actor and surface), the dash routes in `apps/web/src/app/dash/`, the action registry in `packages/api/src/actions/`, the tRPC routers in `packages/api/src/routers/`, the levels in [calls and agent §2](2026-10-27-calls-and-agent-design.md) and the vocabulary in [the use-case review §3.1](2026-10-28-contextual-agent-use-cases-review.md). Facts about today's code are marked **today**; everything else is proposed.
 
@@ -22,7 +22,7 @@ graph TD
   S --> M["Money"]
   S --> F["Storefront"]
   S --> T["Team"]
-  S --> O["Operating model"]
+  S --> ST["Settings"]
   R --> R1["A request"]
   J --> J1["A project"]
   M --> M1["Payments"]
@@ -36,6 +36,8 @@ graph TD
   F2 --> F21["A product"]
   F3 --> F31["An order"]
   T --> T1["A member"]
+  ST --> O["Operating model"]
+  ST --> SC["PayPal and chat channels"]
   O --> O1["A rulebook version"]
   J1 --> J11["Quote, amendment, delivery, conversation"]
   V["Visitor, outside the tenant<br/>(site, Discover, seller pages)"] -. signs up .-> A
@@ -52,7 +54,7 @@ Outside the dash, the same nodes are reached from the client's AI plugin (`api.p
 | My purchases | `me/projects` | Projects where they are a verified client; store orders are link-only **today** | The person through verified client relationships |
 | My earnings | `me/payouts` | Payouts owed and sent to them across teams | The person as payee |
 | Workspace | none **today**: a workspace's teams are listed on `/` | Organization, memberships | Owner and admins |
-| Seller | `[storeSlug]` (Overview), `settings`, `preview`, `discord` (server link, to become the agent's channel setting) | The team or store, its settings and integrations | Members by role |
+| Seller | `[storeSlug]` (Overview) | The team or store, its settings and integrations | Members by role |
 | Requests | `[storeSlug]/requests` | Open requests, shortlists, request conversations | Admins, managers, freelancers in the department |
 | A request | inside `requests`, and `projects/[projectId]` once quoting | Brief, questions, quotes in competition | Same, plus the client from their side |
 | Projects | `[storeSlug]/projects`, `projects/new` | Projects with status | Members by role and assignment |
@@ -64,8 +66,9 @@ Outside the dash, the same nodes are reached from the client's AI plugin (`api.p
 | Storefront: products | `[storeSlug]/products`, `products/new`, `products/[productId]` | Products, variants, digital files | Admins |
 | Storefront: orders | `[storeSlug]/orders` | Store orders, download grants | Admins |
 | Storefront: seller page | `preview`, and the public page | Bio, listing, publish state | Admins |
+| Settings | `[storeSlug]/settings`, `discord` (server link, to become the agent's channel setting) | Seller settings, PayPal connection, chat channels | Admins |
 | Team | `[storeSlug]/members` | Members, roles, titles, departments, marks | Admins; members see themselves |
-| Operating model | `[storeSlug]/rules` | Rulebook drafts and versions, member agreement, notice preferences | Admins edit; members accept |
+| Settings: operating model | `[storeSlug]/rules` | Rulebook drafts and versions, member agreement, notice preferences | Admins edit; members accept |
 
 ### 2.1 The same nodes on every surface
 
@@ -86,7 +89,7 @@ The dash is one surface. The stories (`stories/`, 196 of them) reach the same no
 | Money: PayPal cases | dispute card on a project | | | dispute notices | AGT-54 |
 | Storefront | services, products, orders, preview | seller page, store section, checkout | offering search | | CAT-01–04, STO-01–17, AGT-19 |
 | Team, a member | members | | | member notices | ACC-15–16, AGT-47, AGT-51 |
-| Operating model | rules | rule summary on client and pay pages | terms before a request | | AGT-46–53 |
+| Settings: operating model | rules | rule summary on client and pay pages | terms before a request | | AGT-46–53 |
 | Outside the tenant | | `{site}` pages, Discover | | | ACC-01–03 |
 
 The contextual agent's own stories (AGT-26, AGT-28, AGT-55–63, "D: one contextual agent" and "Contextual agent: planned walkthroughs" in `stories/09-agentic.md`) test this graph directly: AGT-55 the environment following the context, AGT-61 a customer with no seller working from My purchases, AGT-62 one consultant who buys, sells and works in three contexts, AGT-63 a store order exception seen by both sides.
@@ -108,7 +111,7 @@ From `apps/web/src/app` on B1 (`00ad399`). Three apps share one Worker, picked b
 | Storefront | `services` (departments and offerings), `products` (with lookup from a URL or a photo), `orders`; seller site: seller page with offerings and store section, request form, product checkout (`store/buy`), order page, policies | Ratings, reviews and portfolio (run P); the mall (cancelled with M) |
 | Client side of a project | Seller site: client page `c/<token>` and pay page `pay/<token>` (`client-project-view.tsx`); the same two also on the platform host under `(site)/(docs)` | |
 | Team | `members`: members, roles, titles, departments | Marks and agreements per member as a record page |
-| Operating model | `rules`: editor, presets, publish, member agreement, notice preference, leaving notice | Which records are pinned to which version |
+| Settings: operating model | `rules`: editor, presets, publish, member agreement, notice preference, leaving notice | Which records are pinned to which version |
 
 What this adds to the graph:
 
@@ -207,7 +210,7 @@ Tool names in `code` are registry actions (`packages/api/src/actions/`), which g
 - **Opens calls:** member agreement pending, a third mark, leaving notice given.
 - **Gate:** role changes stay with an admin.
 
-### Operating model and a rulebook version
+### Settings: operating model and a rulebook version
 
 - **Context:** the draft, published versions and what each record is pinned to; the presets (solo, agency, collective).
 - **Tools:** procedures only: *save draft*, *publish*, *apply preset*, *accept member agreement*, *notice preference*, *leaving notice*.
@@ -217,19 +220,17 @@ Tool names in `code` are registry actions (`packages/api/src/actions/`), which g
 
 ## 4. What the graph tells us
 
-1. **The agent can act at only part of the tree.** The registry covers requests, quotes, projects, deliveries, clients and conversations. Money, the storefront, the team and the operating model are tRPC procedures the agent cannot reach. Moving the actions the demo touches (payout approve, reject, batch) into the registry comes first.
+1. **The agent can act at only part of the tree.** The registry covers requests, quotes, projects, deliveries, clients and conversations. Money, the storefront, the team and settings are tRPC procedures the agent cannot reach. Every procedure moves into the registry (§5, decision 3), payouts first.
 2. **Tools are not tied to states yet.** No action declares the statuses it fires from, so "what can happen now" at a record cannot be listed without running guards (calls and agent §11). The graph needs `from` on each action to give each record node its live tool list.
-3. **Skills follow the nodes, not the screens.** About a dozen playbooks cover the tree: orientation, client hiring, intake triage, quote drafting, project lifecycle, refunds and disputes, payout review, product listing, offering writing, member onboarding, operating model explanation, setup. Each loads only at its node and below.
+3. **Skills follow the nodes, not the screens.** Twelve playbooks cover the tree, all in scope (§5): orientation, client hiring, intake triage, quote drafting, project lifecycle, refunds and disputes, payout review, product listing, offering writing, member onboarding, operating model explanation, setup. Each loads only at its node and below.
 4. **The top three levels need screens.** Account, personal workspace and workspace are where the agent's widest view lives (what needs me across everything) and where a client's purchases belong.
 5. **Money wants its own node** with payments, payouts and cases together, matching the calls design's sections.
 
-## 5. Next: the design from the graph
+## 5. Decisions (Mouhamed, 2026-10-28)
 
-Not written yet. Questions to settle on this graph first:
+1. **The tree** stands as drawn: account, personal workspace and workspace above the seller. The seller has five sections (Requests, Projects, Money, Storefront, Team) and Settings.
+2. **Operating model lives under the seller's Settings**, beside PayPal and chat channels. It is configuration, not a place where work happens; its calls (a draft to publish, members to accept) still reach people.
+3. **Skills: all twelve**, every playbook that covers a feature we have: orientation, client hiring, intake triage, quote drafting, project lifecycle, refunds and disputes, payout review, product listing, offering writing, member onboarding, operating model explanation, setup.
+4. **Every procedure becomes a registry action.** Authorization is RBAC plus ACL: the grant names who may act by role (member, client, signed in, anyone), the record's relationship decides on which records (assigned member, verified client, payee), and the agent policy (`free`, `confirm`, `never`) sits on top. There is no separate path for the agent; payouts move first, then storefront, team and settings.
 
-1. Is the tree right: account, personal workspace and workspace above the seller, with six sections under it (Requests, Projects, Money, Storefront, Team, Operating model)?
-2. Does Operating model sit beside the sections, or under the seller's settings?
-3. Which skills are in scope before Nov 4: payout review, intake triage and project lifecycle (the demo's three), or more?
-4. Which procedures move into the registry for the demo: payouts first?
-
-Then the design takes each node and gives it one screen shape (list, record, or summary), its right-panel context, its tool list and its calls, from this table rather than from the mockups.
+Next: the design takes each node and gives it one screen shape (list, record, or summary), its right-panel context, its tool list and its calls, from this graph rather than from the mockups.
