@@ -16,6 +16,11 @@ describe("sandboxBannerContent", () => {
     expect(sandboxBannerContent("default", all)).toEqual({ kind: "notice", text: SANDBOX_NOTICE });
   });
 
+  it("hides the global banner in production while retaining it for staging demos", () => {
+    expect(sandboxBannerContent("default", { ...all, DEPLOY_STAGE: "production" })).toBeNull();
+    expect(sandboxBannerContent("default", { ...all, DEPLOY_STAGE: "staging" })).toEqual({ kind: "notice", text: SANDBOX_NOTICE });
+  });
+
   it("adds the buyer login and test card on checkout pages", () => {
     expect(sandboxBannerContent("checkout", all)).toEqual({
       kind: "checkout",
