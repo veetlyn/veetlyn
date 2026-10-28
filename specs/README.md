@@ -45,6 +45,7 @@ Start with the live documents below. For the current contextual-agent review, re
 | [Agentic surfaces program](platform/2026-10-13-agentic-surfaces-program.md) | Revised 2026-10-28: M, E and AG Studio cancelled; V, P and contextual-agent work retained |
 | [Agentic dash design](platform/2026-10-16-agentic-dash-design.md) | Supporting reference; the current calls/contextual-agent design takes precedence |
 | [Calls and the contextual agent](platform/2026-10-27-calls-and-agent-design.md) | Current product direction; design and mockups in review, not implemented. One agent, changing environment, business transitions, RBAC/ACL; Meta Startup track |
+| [Contextual-agent use-case review](platform/2026-10-28-contextual-agent-use-cases-review.md) | Independent high-effort proposal, with parent operating-model/harness synthesis; current use-case and implementation recommendations |
 | [Contextual dash](platform/2026-10-18-contextual-dash-ontology-design.md) | Resumed 2026-10-27 through Calls and the contextual agent; older sessions-free model superseded |
 | [Action catalog design](platform/2026-10-13-action-catalog-design.md) | Approved; A1 and A2 built; run C builds on the client contacts (§5) |
 | [Conversations design](platform/2026-10-14-conversations-design.md) | Web/plugin built across C/B; dedicated Discord portion E cancelled |

@@ -725,3 +725,24 @@ Plan: not written. Design: [Calls and the agent](../platform/2026-10-27-calls-an
 - **Steps:** show an event-driven call, the prepared action, context composition, authorized confirmation and the refreshed outcome; contrast an eligible payout with a held one, then an intake proposal in the same agent.
 - **Expected:** video and evidence distinguish pre-existing PayPal/B1 foundations from new agentic work. Actual model/tool use, business transitions, rule/permission enforcement and the action log are observable; static mockups are not presented as implemented behavior.
 - **Edge cases:** if Auto is not implemented/verified, do not claim it; record the missing coverage rather than scripting a fake outcome.
+
+### AGT-61: A customer works from My purchases
+
+- **Actor:** verified customer with no seller · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
+- **Steps:** open Personal, view purchases from two sellers, ask what needs a decision, then use the explicit client acceptance/payment path.
+- **Expected:** own projects and permitted fields only; no seller setup, staff notes, member earnings or payout approval. Guest orders remain link-only until verified claiming exists. Existing no-account links retain their narrow grants.
+- **Edge cases:** matching a typed email never imports another buyer's order. Personal seller collaboration does not share private purchases.
+
+### AGT-62: One consultant buys, sells and works in different contexts
+
+- **Actor:** consultant owning a solo seller, assigned/bidding in two teams and buying from a third · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
+- **Steps:** switch between My purchases, solo Projects and team My work/Earnings; prepare a draft, switch context and return.
+- **Expected:** one agent, each capacity's operating-model permissions and record relationships; only own bids/earnings as a worker, no team assignment or payouts in solo mode. Sender and audience remain attached to the original draft.
+- **Edge cases:** deny rival quotes, private counts and cross-seller grant pooling before retrieval. Downgrade/revoke membership and resume: inaccessible context and derived summaries are removed or sealed.
+
+### AGT-63: The same agent helps with a store order exception
+
+- **Actor:** store operator and the order's customer · **Surface:** contextual dash/order page · **Delivered by:** D / contextual agent · **Status:** Planned (D)
+- **Steps:** inspect a paid digital order whose notice failed, review a resend to its exact recipient, then inspect valid/expired download access and a refund.
+- **Expected:** customer and operator see their respective authorized projections; reading uses no download allowance. Resend respects its existing action, refund stays human and revokes grants under existing behavior. No invented shipping, mall cart or service-delivery transitions.
+- **Edge cases:** guest email is not proof of order ownership; retries use the original effect identity. An agency/studio enabling both capabilities keeps order and project relationships distinct.

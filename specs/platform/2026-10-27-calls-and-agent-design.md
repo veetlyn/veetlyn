@@ -1,4 +1,4 @@
-# Calls and the agent
+# Calls, the operating model and the agent harness
 
 **Date:** 2026-10-27; reconciled 2026-10-28. **Status:** current product direction; detailed design and mockups remain in review. No agent runtime, calls schema or dynamic-permission migration is claimed shipped. Choices marked *(call)* remain proposals.
 
@@ -6,7 +6,7 @@
 
 ## 1. Intent
 
-Payleor is an applied AI agent operating in the business environment, whose available context, tools and widgets change as records transition through the existing business state machine. The server owns those transitions, permissions and rules. The interaction borrows how a team on Discord works: when something needs someone, they get mentioned, and they act where they were mentioned. Here the mention opens a **call**, and the call shows what can be done, as widgets, with the work already prepared when the team allows it.
+Payleor is an applied AI agent operating in the business environment, whose available context, tools and widgets change as records transition through the existing business state machine. The **operating model** defines RBAC, ACL and the business behavior it covers; server-side evaluation remains authoritative. The **harness** assembles the authorized environment, exposes eligible tools, governs model execution and refreshes from resulting events. These are facets of one business system, not separate permission frameworks invented by the model. The interaction borrows how a team on Discord works: when something needs someone, they get mentioned, and they act where they were mentioned. Here the mention opens a **call**, and the call shows what can be done, as widgets, with the work already prepared when the team allows it.
 
 - **One agent, Payleor.** What it can see and do depends on where it works (§2).
 - **Handles** name who gets called: roles the team owner defines, like Discord roles, and people (§3).
@@ -22,12 +22,13 @@ The account is the root of everything a person has. Below it are levels:
 | Level | What it is | Payleor sees |
 |---|---|---|
 | Account | The person: their workspaces, roles, subscription, and what they buy as a client | Each workspace's summary, never inside it; their own client records *(call)* |
-| Workspace | A team or the personal workspace (every account has one; the subscription sets its type) | Everything in the workspace the person may see |
+| Workspace | An organization and its memberships, or the mandatory personal workspace; the subscription enables supported business capabilities | Authorized projections for its sellers and records |
+| Seller, when needed | The owning team/store within a workspace; keep existing seller and workspace identities distinct | Only this seller's authorized records and fields |
 | Section | Requests, Projects, Money, Storefront, Team | The section's records |
 | Record | A request, project, payment, payout, PayPal case, member | The record and records one link away |
 
 - **Scope of a call or chat:** the level it was opened at. Bringing in a record from elsewhere widens it to the **lowest level that holds everything on the table**: a project plus a member of the same team is the workspace; records from two workspaces is the account. The widening is said in "Working on" (§6).
-- **Reading:** everything under the scope, plus records one link away, read-only.
+- **Reading:** permitted record and field projections only, including links, summaries, search counts and files. Context expresses relevance, never an access grant. A linked member may expose a display name without exposing their payout destination or earnings.
 - **Acting:** only actions under the scope, always through `perform`, so the person's role, the section's mode and the action log apply. Money never moves without a person except under an Auto rule the team chose (PayPal rules).
 - **Tools:** the action registry filtered by scope. At the account level few tools and much summary; at a record many tools on few records.
 - **Model:** Claude Agent SDK on Meta Model API's Messages endpoint, `muse-spark-1.3`; the base URL, key and model are environment values, so another provider is a configuration change (§9).
@@ -37,8 +38,8 @@ The account is the root of everything a person has. Below it are levels:
 - **Role handles** are created by the team owner, like Discord roles: a name and its members. A team starts with `@admins`, `@payouts` and `@sales`, seeded from the team's kind; the owner renames, adds or removes them. A member can hold several.
 - **Person handles:** every member is callable by name (`@aicha`).
 - **Record handles** resolve from the record: `@lead` is the project's lead, `@assignee` the freelancer on it *(call)*.
-- A team of one: every handle is the owner.
-- Handles route attention and permissions. Show the relevant one once in “You were called as …” when it explains a call; do not repeat handles in every call row, header, person footer or action subtitle.
+- A team of one may route its staff handles to the owner; this never permits self-approval or creates member-payout features for a solo seller.
+- Handles address people and route attention; permission bundles and record relationships are defined/evaluated by the operating model. Renaming or joining an attention group does not create a grant. Show the relevant one once in “You were called as …” when it explains a call; do not repeat handles in every call row, header, person footer or action subtitle.
 
 ## 4. What an event does
 
@@ -69,7 +70,7 @@ Defaults:
 
 - **Always a person:** accepting a member, answering a PayPal case, executing a refund and anything that breaks a rule open a call in every mode. A routing/mode rule never overrides an action marked `never` for agents.
 - **Batches:** the team sets the period (default weekly, Friday 17:00 in the team's time zone *(call)*) or a total that sends early.
-- **Where it lives:** the routing table and the modes are one rule kind, "Calls", in the team's rulebook: a json-render component with an editor and a summary, versioned like every other rule, so members can see why they were called *(call)*.
+- **Where it lives:** routing, automation and authority belong to the operating model. Preserve distinct revision lifetimes for pinned accepted business terms, current permissions/delegation, and current operational automation. A mode change cannot rewrite a project's accepted terms or restore revoked access. Existing `engine-rules` is a foundation, not a shipped dynamic-permissions implementation.
 
 ## 5. Inside a call
 
@@ -81,7 +82,7 @@ Defaults:
 
 ## 6. The dash
 
-Mockups: [call](../hackathon/agentic-dash-mock.html), [record](../hackathon/agentic-dash-record.html), [payouts](../hackathon/agentic-dash-payouts.html). Shared rules: [stylesheet](../hackathon/dash-ds.css), [design sheet](../hackathon/dash-ds.html). These are prototypes with unresolved content and accessibility findings, not production components.
+Mockups: [call](../hackathon/agentic-dash-mock.html), [record](../hackathon/agentic-dash-record.html), [payouts](../hackathon/agentic-dash-payouts.html). Shared rules: [stylesheet](../hackathon/dash-ds.css), [design sheet](../hackathon/dash-ds.html). These are prototypes, not production components. The [current correction/verification notes](../hackathon/dashboard-prototype-notes.md) distinguish fixed fixture/control issues from remaining accessibility and runtime work.
 
 - **Design base:** Quartz structure, hierarchy and sizing, with Mouhamed's overrides: landing colours only; restrained light skeuomorphism, light gradient controls, small radii and sparse relief. Cal Sans UI for display/titles, Inter for body, labels, controls and tabular amounts. No Google Sans Flex or Montserrat.
 - **Hierarchy:** one raised main working surface. The right context panel is flat inside it. Only meaningful data/actions and the first context card get the shared light double-ring treatment; explanatory text, figures and secondary lists breathe on the surface. Frames and double rules mark a real hierarchy change, never every nested section.
@@ -129,9 +130,9 @@ Calls, handles and levels are three views of one model (Mouhamed, 2026-10-27): a
 | Part | Today | Change |
 |---|---|---|
 | **States** | Status enums on each record (`PROJECT_STATUSES`, quotes, payments, deliveries, refunds, payouts, disputes) | none |
-| **Actions (transitions)** | The registry (`packages/api/src/actions/define.ts`); which status an action is valid from is checked inside each `run` | Each action declares `from` (the statuses it may fire from) and the event it emits, so the actions open on a record can be listed without running them |
+| **Actions (transitions)** | Project state-machine metadata and guards already exist; registry and payout router/use-case paths are not yet one tool interface | Reuse existing domain evaluators. Add full actor/record/operating-model eligibility and required-decision projections, and register demo payout actions through `perform` before agent exposure; do not duplicate transition tables |
 | **Events** | B1's outbox | none; routing (§4) reads them |
-| **Roles (RBAC)** | Three fixed roles and a fixed table (`canServicesTeam`, `packages/core/src/services-teams/permissions.ts`); `allow` grants are coarse (member, client) | Roles become the team's handles: a name, members and a set of permissions the owner edits, like Discord roles; each action names the permission it needs; the fixed roles become the seeded handles |
+| **Roles (RBAC)** | Fixed roles and current workspace inheritance; coarse action grants with deeper checks | Evaluate roles/permissions as an operating-model facet. Adapt fixed roles first; editable bundles can follow. Handles reference an authorized audience and do not become permission grants |
 | **Access (ACL)** | `Scope` is a team and a project (`perform.ts`) | The scope is a node in the account tree (§2); reading is the subtree plus one link; record rules stay (a freelancer sees only their own quote) |
 | **Conditions** | Rule checks inside actions (refund caps, response windows) | Unchanged; they also decide when Auto must call a person instead (§4) |
 | **Who fires** | `agent: free \| confirm \| never` per action; agents refused in `perform` | The section's mode and the "Calls" rule say whether Payleor may fire it on its own; `never` stays never |
@@ -180,4 +181,20 @@ Calls are for acting; people also browse, search and read numbers. Both live in 
 - **Built foundation:** B1's rulebook, outbox, scheduler, project transitions and action checks. See its [staging evidence](plans/2026-10-27-b1-staging-walkthrough.md) for actual verified paths and gaps. This design's `from` declarations, call routing, scope graph and editable permission handles are additions still to plan.
 - **Environment contract:** on every turn, resolve actor and authorized scope, load permitted record state and pinned rules, derive eligible tools/widgets, execute only through `perform`, then refresh state after the resulting event. Revalidate at execution: a stale card or widened context cannot bypass a hold, role, record ACL, rule limit or changed status. One-link reading remains permission-filtered; the account root is not a cross-team administrator.
 - **Two demos:** the PayPal submission retains the service/payment story on its shipped foundation; the Meta Startup-track demo shows work built during Oct 27–Nov 4, specifically the contextual agentic dash. Meta credits fund Muse Spark through the Claude Agent SDK, with compatibility to validate. Existing PayPal code is background to the Meta demo, not claimed as newly built during that window.
-- **Critic findings still open:** reconcile $640 requested / $468 eligible / $172 held, project/payment/payout states across screens, approve-for-batch versus pay-now labels, raw provider IDs, filter counts and selection eligibility; use real accessible controls and check muted-text contrast. Keep Calls and the approved mint selection tint. Do not mistake the screenshots for proof that these are fixed.
+- **Critic follow-up:** the [prototype notes](../hackathon/dashboard-prototype-notes.md) record the corrected money fixtures, action labels, controls and scoped contrast checks. Production data consistency, full accessibility, actual eligibility/approval execution and the contextual runtime remain unverified. Keep Calls and the mint selection tint; screenshots never prove business execution.
+
+## 15. Use cases and operating-model evaluation
+
+The [high-effort use-case review](2026-10-28-contextual-agent-use-cases-review.md) supplies matrices and recommended implementation slices. The current design adopts these constraints; detailed schema/runtime choices remain proposals.
+
+- **People hold capacities, not global user-type privileges.** A customer sees My purchases; a solo consultant sees requests, projects and incoming money; an assigned worker sees eligible requests, My work and own Earnings; a merchant sees Products and Orders; an agency/studio composes the supported services/store/team capabilities. Agency versus studio does not create a new state machine. One person may occupy all these capacities across different records/workspaces.
+- **Personal purchases remain private.** Prefer Personal › My purchases as a view over seller-owned records, retaining existing client identities and narrow link grants. Seller administration never confers customer acceptance rights. Guest orders need a verified claim before joining signed-in history; matching a typed email is insufficient. No existing sellers are reparented by a navigation change.
+- **One operating-model evaluation, several consumers.** The conceptual interface is inspect → prepare → perform → inspect. It resolves trusted ownership, current role/grants and record/field relationships, complete business facts and pinned terms, required approvals and execution policy. Browsing, tool exposure, widgets, Next step and triage share those evaluators; execution revalidates. The model receives authorized projections rather than raw admin responses.
+- **Attention differs from obligation.** Episode/outcome identity and event deduplication are independent of a handle name. Required decisions differ from optional allowed actions. Triage is per viewer: after one of two approvals, the first approver waits while the second still sees Needs you. Settlement, terminal refusal/failure and a closed private question have distinct labels.
+- **Safe shared work.** Seller-local Calls may be shared only with an audience authorized for all source records and derived content. Mixed-capacity/mixed-workspace questions stay private initially. Bringing in a sensitive record cannot publish it to a broader audience. On resume, re-resolve access before loading copied summaries or old messages into the model.
+- **Execution policy is harness configuration inside the operating model.** Supervised / accept routine edits / auto within limits / full permitted access are engineering policy concepts. No setting grants RBAC/ACL authority or overrides a mandatory human gate. Present business effects such as “Prepare for my approval” and “Send permitted follow-ups” rather than developer jargon. Existing scheduled engine actions stay visible with their own executor until an explicit migration is approved.
+- **Unattended authority proposal:** a named runtime identity with a bounded, revocable delegation from one currently authorized human per seller; action/record selectors, limits, expiry and revisions are persisted. No shared team password, model-chosen admin or silent fallback. Human confirmations execute as the signed-in person with proposal attribution. New automatic effects require an approved action-specific grant; `never` remains human-only.
+- **Version and effect discipline:** accepted project terms stay pinned; access/delegation is current; operational policy has its own current revision. Current deny/hold wins. Mixed project versions are evaluated per item, one seller/currency/compatible policy per actionable group; freeze selection, beneficiary and amount, then revalidate at final claim. An uncertain provider result is reconciled with its original identity, never resent as a fresh model attempt.
+- **Business language:** the UI uses purchases, work, requests, orders, earnings, approvals, responsibilities and Operating model. Technical terms stay in engineering docs; show the required person, next effect, time and a plain reason when blocked. Technical IDs/version details are secondary disclosure.
+
+**Source prerequisites before widening agent access:** verify/fix worker quote-field filtering, payout actions currently outside `perform`, pinned response deadlines and terminal abandoned-conversation behavior. These review findings are tracked in BACKLOG; they are not declared fixed here. The first implementation uses existing capabilities and fixed-role evaluation, human-confirmed decisions and read-only money answers. No full editable RBAC, new commerce/shipping flow or external B2 credentials are prerequisites for that slice.

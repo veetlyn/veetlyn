@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-<link rel="stylesheet" href="dash-ds.css?v=q5">
+<link rel="stylesheet" href="dash-ds.css?v=operating-model-1">
 <style>
   .sheet { display: grid; gap: 40px; padding: 32px var(--gutter) 48px; }
   .sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); gap: 16px; }
@@ -34,7 +34,7 @@
         <div><div class="chip-c" style="background:var(--ink-2)"></div><b>Ink</b><span class="t-3">Text, the one primary button, checked boxes.</span></div>
         <div><div class="chip-c" style="background:var(--accent-mark)"></div><b>Mint accent</b><span class="t-3">Payleor, progress, good states, focus, Bring in.</span></div>
         <div><div class="chip-c" style="background:var(--accent-wash)"></div><b>Mint wash</b><span class="t-3">Selected table rows only.</span></div>
-        <div><div class="chip-c" style="background:var(--warn-text)"></div><b>Warn</b><span class="t-3">Held, blocked, you must act. Never decoration.</span></div>
+        <div><div class="chip-c" style="background:var(--warn-text)"></div><b>Warn</b><span class="t-3">Held and blocked. Never decoration.</span></div>
         <div><div class="chip-c" style="background:var(--fail-text)"></div><b>Fail</b><span class="t-3">Failed or refused. Never decoration.</span></div>
       </div>
     </section>
@@ -53,12 +53,12 @@
     <section class="section">
       <h2 class="t-title">Controls</h2>
       <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
-        <button class="btn btn-primary">Approve $468.00</button>
-        <button class="btn btn-secondary">Pay now</button>
+        <button class="btn btn-primary">Review approval</button>
+        <button class="btn btn-secondary">Review message</button>
         <button class="btn btn-ghost">Show it first</button>
         <button class="btn btn-secondary btn-sm">Extend</button>
-        <div class="seg"><span>Manual</span><span class="on">Ask me</span><span>Auto</span></div>
-        <div class="input" style="width:14rem"><i data-lucide="search" class="i-sm"></i>Search</div>
+        <span class="t-sm t-2">Prepares for approval</span>
+        <label class="input"><i data-lucide="search" class="i-sm"></i><input type="search" aria-label="Search example" placeholder="Search"></label>
         <span class="scope"><i data-lucide="map-pin" class="i-sm"></i>This page</span>
         <span class="check on"><i data-lucide="check"></i></span><span class="check"></span>
         <span class="good">Ready</span><span class="warn">Held</span><span class="fail">Failed</span>
