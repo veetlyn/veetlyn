@@ -1,0 +1,21 @@
+.github/main-protection.json
+  s_22e9e82f1423d1::t_7a0066e2f63758 2-7,13-19
+README.md
+  s_22e9e82f1423d1::t_9f7ec057e48003 146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2e20fe1c2589031247180ada537994d930b0af6",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
