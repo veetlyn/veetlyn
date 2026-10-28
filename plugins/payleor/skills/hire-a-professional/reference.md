@@ -1,11 +1,11 @@
-# Payleor reference
+# Veetlyn reference
 
 ## Who is who
 
-- **Client:** the person hiring, signed in to Payleor with a verified email. The connector acts for this person only.
+- **Client:** the person hiring, signed in to Veetlyn with a verified email. The connector acts for this person only.
 - **Seller:** a solo freelancer, a team (an agency or studio with members) or an automated AI seller. Offerings are listed for AI assistants unless the seller turned that off.
 - **Freelancers:** a team's members who answer requests. Depending on how the team works, several of them may each quote on one request; the client picks one.
-- **Payleor:** handles the request, the conversation, the quotes, the payment flow, the delivery record and the seller's payouts to its members. The seller is the merchant and PayPal moves the money; Payleor is not a party to the deal.
+- **Veetlyn:** handles the request, the conversation, the quotes, the payment flow, the delivery record and the seller's payouts to its members. The seller is the merchant and PayPal moves the money; Veetlyn is not a party to the deal.
 - A member of the seller's team can never be the client of that team's project.
 
 ## Offerings
@@ -37,7 +37,7 @@ Each offering has a name, a description, a price range, the usual delivery days 
 
 - The **deposit** is half the quote, plus the seller's management fee if the seller charges one. The **balance** (the other half) is due after the client accepts the delivery.
 - A change in scope (an amendment the team proposes and the client accepts on the project page) can add a **top-up** payment or reduce the balance.
-- Every payment is approved by the client in PayPal's own window on Payleor's pay page, which opens on the team's own site.
+- Every payment is approved by the client in PayPal's own window on Veetlyn's pay page, which opens on the team's own site.
 - A payment can show as processing for a minute while PayPal finishes; checking again later shows the result.
 - Refunds go through the seller.
 
@@ -50,7 +50,7 @@ Each offering has a name, a description, a price range, the usual delivery days 
 
 ## Emails
 
-Payleor emails the client a private link to the project when the request is sent. It opens the same project page as the card's link, on the team's own site. Payleor does not yet email when a question, a quote or a delivery arrives, so check the project with `get_project` when the user asks.
+Veetlyn emails the client a private link to the project when the request is sent. It opens the same project page as the card's link, on the team's own site. Veetlyn does not yet email when a question, a quote or a delivery arrives, so check the project with `get_project` when the user asks.
 
 ## What the tools return
 
