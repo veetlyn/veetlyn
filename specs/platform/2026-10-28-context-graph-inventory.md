@@ -91,7 +91,33 @@ The dash is one surface. The stories (`stories/`, 196 of them) reach the same no
 
 The contextual agent's own stories (AGT-26, AGT-28, AGT-55–63, "D: one contextual agent" and "Contextual agent: planned walkthroughs" in `stories/09-agentic.md`) test this graph directly: AGT-55 the environment following the context, AGT-61 a customer with no seller working from My purchases, AGT-62 one consultant who buys, sells and works in three contexts, AGT-63 a store order exception seen by both sides.
 
-### 2.2 Gaps the backlog already names on this graph
+### 2.2 What the web app has today, node by node
+
+From `apps/web/src/app` on B1 (`00ad399`). Three apps share one Worker, picked by host (`lib/host-routing.ts`): the site (`(site)/`), the dash (`dash/`, on `dash.`) and the seller site (`store/`, rewritten from `{team}.payleor.app`). There is **no agent, chat, call or "needs you" surface anywhere** in the web app today; the agent exists only as the client's AI plugin on the API.
+
+| Node | There | Not there |
+|---|---|---|
+| Visitor | Site: home, pricing, network, Discover, visibility, audience pages (freelancers, agencies, stores, studios), contact, blog, legal, `llms.txt`, sitemap, robots | Discover lists sample listings, not the network's search (run V) |
+| Account | Sign-up, log-in (email, PayPal, Discord), verify, reset, `account` (profile, linked Discord), OAuth consent, user menu | Any summary of what needs the person across workspaces |
+| Personal workspace | Nothing as a place. `me/projects` ("Your projects", client home across teams) and `me/payouts` (payout destination, request, history) are reached from links | A personal home; store orders for a signed-in buyer (orders are link-only); subscription and workspace type |
+| Workspace | `/` "Your workspace": each organization with its stores and services teams, status and role; create a store or a team | Anything inside the workspace above one seller: totals, members across sellers, calls |
+| Seller | `[slug]` Overview: setup checklist, PayPal connect card, publish card, store toggle; `settings`, `preview`, `discord`. The shell has a flat nav of eleven items split into "work" and "team", and a breadcrumb | What needs attention, counts per section, activity; a store and a services team are two seller kinds with two dashboards (`StoreDashboard`, `ServicesTeamDashboard`) |
+| Requests | `requests` "Open requests" list | Deadline from the pinned schedule (fixed 48 h, backlog), intake drafts |
+| A project | `projects/[id]`: one long page (`project-detail.tsx`, 30k) with progress, quote calculator, price adjustments, clients, conversation, refunds, member marks, dispute card, in-page section nav | The lifecycle with "what can happen now" from declared states; the agent's preparation |
+| Money | `payouts`: credentials card, requests table, Payouts Web export and import; `payouts/rules` | Payments and PayPal cases as their own pages; a batch as an object; the ledger |
+| Storefront | `services` (departments and offerings), `products` (with lookup from a URL or a photo), `orders`; seller site: seller page with offerings and store section, request form, product checkout (`store/buy`), order page, policies | Ratings, reviews and portfolio (run P); the mall (cancelled with M) |
+| Client side of a project | Seller site: client page `c/<token>` and pay page `pay/<token>` (`client-project-view.tsx`); the same two also on the platform host under `(site)/(docs)` | |
+| Team | `members`: members, roles, titles, departments | Marks and agreements per member as a record page |
+| Operating model | `rules`: editor, presets, publish, member agreement, notice preference, leaving notice | Which records are pinned to which version |
+
+What this adds to the graph:
+
+- **The web app is organised by seller, not by context.** Everything below `/` hangs off `[slug]`, and the store and the services team are two dashboards rather than capabilities of one seller.
+- **The upper nodes exist only as lists or links:** `/` lists sellers, `me/*` are two pages without a home. The account, personal workspace and workspace nodes have no environment to stand in.
+- **The richest node is one page.** A project is a single 30k component holding every section; in the graph it is a record node with child records (quote, amendment, delivery, conversation, refund, dispute), each of which the agent will act on separately.
+- **The client side of a node is a separate app.** The client page and pay page are the client's view of the same project node; they share `client-project-view.tsx` with the plugin's data, which is how the agent's client-side environment should be built too.
+
+### 2.3 Gaps the backlog already names on this graph
 
 From `BACKLOG.md`, owner "Contextual agent prerequisite" and related rows:
 
