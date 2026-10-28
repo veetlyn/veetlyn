@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-28. **Status:** draft for Mouhamed's review. Step 1 and 2 of three: (1) list every screen as a node in the context tree, from the tenant down; (2) infer the agent's environment at each node (context, tools, skills); (3) design the dash from that graph. Step 3 is not started; it waits for this graph to be agreed.
 
-**Sources:** the dash routes in `apps/web/src/app/dash/`, the action registry in `packages/api/src/actions/`, the tRPC routers in `packages/api/src/routers/`, the levels in [calls and agent §2](2026-10-27-calls-and-agent-design.md) and the vocabulary in [the use-case review §3.1](2026-10-28-contextual-agent-use-cases-review.md). Facts about today's code are marked **today**; everything else is proposed.
+**Sources:** the stories in `stories/` (every actor and surface), the dash routes in `apps/web/src/app/dash/`, the action registry in `packages/api/src/actions/`, the tRPC routers in `packages/api/src/routers/`, the levels in [calls and agent §2](2026-10-27-calls-and-agent-design.md) and the vocabulary in [the use-case review §3.1](2026-10-28-contextual-agent-use-cases-review.md). Facts about today's code are marked **today**; everything else is proposed.
 
 ## 1. The tree
 
@@ -38,6 +38,7 @@ graph TD
   T --> T1["A member"]
   O --> O1["A rulebook version"]
   J1 --> J11["Quote, amendment, delivery, conversation"]
+  V["Visitor, outside the tenant<br/>(site, Discover, seller pages)"] -. signs up .-> A
 ```
 
 Outside the dash, the same nodes are reached from the client's AI plugin (`api.payleor.com/mcp`), the client and pay pages on `{team}.payleor.app`, and later chat channels. Those surfaces see the client's side of the same records.
@@ -65,6 +66,41 @@ Outside the dash, the same nodes are reached from the client's AI plugin (`api.p
 | Storefront: seller page | `preview`, and the public page | Bio, listing, publish state | Admins |
 | Team | `[storeSlug]/members` | Members, roles, titles, departments, marks | Admins; members see themselves |
 | Operating model | `[storeSlug]/rules` | Rulebook drafts and versions, member agreement, notice preferences | Admins edit; members accept |
+
+### 2.1 The same nodes on every surface
+
+The dash is one surface. The stories (`stories/`, 196 of them) reach the same nodes from five others. A node's environment does not change with the surface; what changes is who stands there (the team, a client, a buyer, a visitor) and which of the node's tools that side may use.
+
+| Node | Dash | Seller site (`{seller}`) | Client's AI plugin | Email | Discord | Stories |
+|---|---|---|---|---|---|---|
+| Account | home, account, sign-up and log-in, consent | | OAuth consent | verification, reset | sign in with Discord | ACC-04–10, DIS-01–02, AGT-09 |
+| My purchases (client) | `me/projects` | client page `c/<token>`, pay page | search, request, quote, delivery and pay widgets | client notices | client buttons (cancelled with E) | QUO-01–03, QUO-13, PAY-01–13, DEL-04–09, AGT-09–16, AGT-31–36, AGT-61 |
+| My purchases (buyer) | none **today** (link-only orders) | checkout, order page | cart and checkout (cancelled with M) | download email | | STO-06–11, STO-15–16, AGT-63 |
+| My earnings | `me/payouts` | | | payout notices | `/payouts setup` | OUT-01–03, OUT-07, OUT-14, OUT-23, OUT-28, DIS-06 |
+| Workspace | `/` lists sellers | | | | | ACC-10, AGT-55, AGT-62 |
+| Seller | Overview checklist, settings, preview, Discord | public seller page, policies | offering cards | | server link | ACC-08–14, CAT-05–11, STO-01, STO-05, STO-14, DIS-03–05 |
+| Requests, a request | requests, project page while quoting | request form | request and questions | new request, expiry | request thread (cancelled) | QUO-01–09, AGT-11, AGT-26, AGT-31–34, AGT-37 |
+| Projects, a project | projects, project page | client page | quote and delivery widgets | project notices | project channel (cancelled) | QUO-10–16, DEL-01–11, AGT-01–06, AGT-47–54 |
+| Money: payments | inside projects | pay page | pay from widget | receipts | | PAY-01–16, DEL-08–11 |
+| Money: payouts | payouts, payout rules | | | | | OUT-04–27, OUT-29, AGT-56–58 |
+| Money: PayPal cases | dispute card on a project | | | dispute notices | | AGT-54 |
+| Storefront | services, products, orders, preview | seller page, store section, checkout | offering search | | | CAT-01–04, STO-01–17, AGT-19 |
+| Team, a member | members | | | member notices | | ACC-15–16, AGT-47, AGT-51 |
+| Operating model | rules | rule summary on client and pay pages | terms before a request | | | AGT-46–53 |
+| Outside the tenant | | `{site}` pages, Discover | | | | ACC-01–03 |
+
+The contextual agent's own stories (AGT-26, AGT-28, AGT-55–63, "D: one contextual agent" and "Contextual agent: planned walkthroughs" in `stories/09-agentic.md`) test this graph directly: AGT-55 the environment following the context, AGT-61 a customer with no seller working from My purchases, AGT-62 one consultant who buys, sells and works in three contexts, AGT-63 a store order exception seen by both sides.
+
+### 2.2 Gaps the backlog already names on this graph
+
+From `BACKLOG.md`, owner "Contextual agent prerequisite" and related rows:
+
+- **Read projection:** project responses return rival quote details to worker-facing callers; the agent must read only authorized fields (node: a request).
+- **Action interface:** payout decisions, retries and exports use router checks outside `perform` (node: payouts). Same finding as §4.1 below.
+- **Deadline projection:** the open-request deadline shows a fixed 48 hours, not the pinned schedule (node: a request).
+- **Conversation access:** `abandoned` projects are missing from conversation closure checks (node: a project).
+- **Execution contract:** an approval does not prove the approver still has authority at send time (node: a payout or batch).
+- **Authorization design:** reconcile the account and workspace scope graph and team-defined handles with today's fixed roles and `perform` scope (every node).
 
 What the inventory shows:
 
