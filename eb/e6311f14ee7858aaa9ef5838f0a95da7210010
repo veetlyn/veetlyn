@@ -1,0 +1,39 @@
+CLAUDE.md
+  s_22e9e82f1423d1::t_b9a329d1deccea 1,3
+LICENSING.md
+  s_22e9e82f1423d1::t_3aef3e8bb980ac 5
+README.md
+  s_22e9e82f1423d1::t_6ef7e4d674caed 1,3,134-137,148
+plugins/payleor/.claude-plugin/plugin.json
+  s_22e9e82f1423d1::t_8ffc442ba513a9 3-4,6-9
+plugins/payleor/README.md
+  s_22e9e82f1423d1::t_81b25f0a1b1219 1,3,9,11,21,29,44,50-51
+plugins/payleor/plugin.json
+  s_22e9e82f1423d1::t_65e2e7219e31d0 4,6-9,12-18,22,24-26
+plugins/payleor/skills/hire-a-professional/SKILL.md
+  s_22e9e82f1423d1::t_93d699abaddd72 3,6,8,15,17-18,27,31,37
+plugins/payleor/skills/hire-a-professional/reference.md
+  s_22e9e82f1423d1::t_1ea2d68626c881 1,5,8,40,53
+scripts/check-no-brand.mjs
+  s_22e9e82f1423d1::t_8a7d78d83a3aa2 9
+specs/PROGRESS.md
+  s_22e9e82f1423d1::t_cc01e9c9f9ab11 7-8
+specs/README.md
+  s_22e9e82f1423d1::t_6415b7da957e2c 3,7-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ebe6311f14ee7858aaa9ef5838f0a95da7210010",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
