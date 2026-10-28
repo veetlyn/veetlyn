@@ -1,6 +1,6 @@
-# jendal-workspace
+# Veetlyn
 
-Payleor's designs, plans, backlog and progress tracking live in [`specs/`](specs/README.md). Start with [`specs/PROGRESS.md`](specs/PROGRESS.md).
+Veetlyn's designs, plans, backlog and progress tracking live in [`specs/`](specs/README.md). Start with [`specs/PROGRESS.md`](specs/PROGRESS.md).
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Hono, TRPC, and more.
 
@@ -131,6 +131,10 @@ jendal-workspace/
 - `pnpm run db:studio`: Open database studio UI
 - `cd apps/web && pnpm run generate-pwa-assets`: Generate PWA assets
 
+## Product name
+
+The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The current payleor.com/payleor.app domains, GitHub repository and plugin identifiers remain in place until a separate migration. The unpublished marketing drafts use Veetlyn too.
+
 ## Launch access and deployments
 
 `dev` is the GitHub default branch and the target for feature pull requests; it deploys to staging for demos and hackathons. Release pull requests merge `dev` into `main`, which deploys to production. Successful push CI deploys `dev` to staging and `main` to production. Manual deployments accept only those matching branch/environment pairs. GitHub branch protection must enforce the pull-request policy: workflow files alone cannot forbid direct pushes.
@@ -141,6 +145,6 @@ The launch list stores a normalized unique email and join timestamp in `launch_w
 
 ## License
 
-AGPL-3.0-only or a separate commercial agreement. Commercial deployments are private-network deployments by default; Payleor Network membership is an optional add-on. See [LICENSING.md](LICENSING.md), including the MIT package exceptions.
+AGPL-3.0-only or a separate commercial agreement. Commercial deployments are private-network deployments by default; Veetlyn Network membership is an optional add-on. See [LICENSING.md](LICENSING.md), including the MIT package exceptions.
 
 Main protection configuration is saved in [.github/main-protection.json](.github/main-protection.json). GitHub rejected enforcement on the current private repository plan (HTTP 403). Once the plan supports it, apply with `gh api --method PUT repos/payleor/payleor/branches/main/protection --input .github/main-protection.json`. It restricts pushes/merges to `Mouhamed-B`, requires a pull request and successful `check` (including for administrators), and forbids force pushes/deletion. Until applied, direct pushes are **not** technically blocked.

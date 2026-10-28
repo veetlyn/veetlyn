@@ -4,6 +4,8 @@ Where the build stands, what comes next, and how work is done. Each run's plan l
 
 ## Now
 
+- **Public name (2026-10-28):** Veetlyn, formerly Payleor. Private commercial deployments remain the base offering; Veetlyn Network is an optional add-on. No new domain is selected. Keep the existing hosts and account/connector identifiers until a separate cutover.
+
 - **Date:** 2026-10-28. A1, A2, H, L, C and Prep are merged and deployed. B1 is built on `b1-operating-model`; its [Oct 27 staging evidence](platform/plans/2026-10-27-b1-staging-walkthrough.md) records both passing paths and coverage gaps. B1 is not yet recorded as merged or verified on production.
 - **Current work:** apply the [use-case review](platform/2026-10-28-contextual-agent-use-cases-review.md), correct the prototype fixtures/controls, then plan the narrow contextual harness. The [calls design](platform/2026-10-27-calls-and-agent-design.md) and HTML mockups are design work, not shipped UI or an implemented agent runtime.
 - **Product direction:** one applied AI agent. Its environment changes with account → workspace → section → record context and the record's business state. The operating model defines RBAC/ACL and relevant business behavior; valid tools and widgets follow its server-side evaluation, with the harness controlling execution independence; conversation does not become a separate source of business state.
