@@ -115,7 +115,7 @@ What this adds to the graph:
 - **The web app is organised by seller, not by context.** Everything below `/` hangs off `[slug]`, and the store and the services team are two dashboards rather than capabilities of one seller.
 - **The upper nodes exist only as lists or links:** `/` lists sellers, `me/*` are two pages without a home. The account, personal workspace and workspace nodes have no environment to stand in.
 - **The richest node is one page.** A project is a single 30k component holding every section; in the graph it is a record node with child records (quote, amendment, delivery, conversation, refund, dispute), each of which the agent will act on separately.
-- **The client side of a node is a separate app.** The client page and pay page are the client's view of the same project node; they share `client-project-view.tsx` with the plugin's data, which is how the agent's client-side environment should be built too.
+- **The client side of a node is a separate app.** The client page and pay page (`client-project-view.tsx`) are the client's view of the same project node; the plugin is a third view of it. The agent's client-side environment is the same node seen from that side, not a new set of pages.
 
 ### 2.3 Gaps the backlog already names on this graph
 
