@@ -83,7 +83,7 @@ const TIERS = {
         <b>Web SEO</b> built into every page {SEO_LATER}
       </>,
       `${solo.storageGb} GB of files`,
-      "Export everything",
+      <>Export everything {SEO_LATER}</>,
     ],
   },
   team: {
@@ -101,9 +101,9 @@ const TIERS = {
         <b>Team copilot</b> with charts
       </>,
       "Payouts by approval or by rule",
-      "Team chat and the public API, soon",
+      <>Team chat and the public API {SEO_LATER}</>,
       <>
-        Your own domain, no <PlatformName /> badge
+        Your own domain, no <PlatformName /> badge {SEO_LATER}
       </>,
       `${team.storageGb} GB of files`,
     ],
@@ -178,9 +178,9 @@ const TIERS = {
     btn: "btn-ink",
     plusLine: "Everything in Starter, plus:",
     features: [
-      <b key="a">Admin agent</b>,
+      <span key="a"><b>Admin agent</b> {SEO_LATER}</span>,
       "More AI credits",
-      "Your own domain",
+      <>Your own domain {SEO_LATER}</>,
       `${getPlan("grow").staffSeats} staff accounts`,
     ],
   },

@@ -156,7 +156,7 @@ export default async function StoresPage() {
               <div className="feature" data-in><p className="tag">PayPal</p><h3>PayPal checkout</h3><p>Clients pay on your page. The money goes into your PayPal.</p></div>
               <div className="feature" data-in><p className="tag">Digital</p><h3>Courses and downloads</h3><p>Files delivered at once, with expiring links.</p></div>
               <div className="feature" data-in><p className="tag">Shipping <span className="soon">Coming soon</span></p><h3>Shipped goods</h3><p>Physical products with shipping and tracking.</p></div>
-              <div className="feature" data-in><p className="tag">Your page</p><h3>Your own domain</h3><p>On Grow and Scale. One link for your bio.</p></div>
+              <div className="feature" data-in><p className="tag">Your page <span className="soon">Coming soon</span></p><h3>Your own domain</h3><p>On Grow and Scale. One link for your bio.</p></div>
             </div>
           </div>
         </section>
