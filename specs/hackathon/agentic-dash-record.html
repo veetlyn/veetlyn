@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payleor dash: a project</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="dash-ds.css?v=q12">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="side" aria-label="Navigation">
+    <button class="ws">
+      <span class="mark">WC</span>
+      <span style="flex:1;min-width:0"><span class="strong" style="display:block">Walk Crew</span><span class="t-label t-3">Services team</span></span>
+      <i data-lucide="chevrons-up-down" class="i-sm t-3"></i>
+    </button>
+    <nav class="nav scroll">
+      <a class="nav-item"><i data-lucide="arrow-left"></i>Projects</a>
+      <div style="height:6px"></div>
+      <a class="nav-item on" aria-current="page"><i data-lucide="layout-panel-top"></i>Overview</a>
+      <a class="nav-item"><i data-lucide="messages-square"></i>Conversation<span class="n">3</span></a>
+      <a class="nav-item"><i data-lucide="wallet"></i>Money</a>
+      <a class="nav-item"><i data-lucide="users"></i>People</a>
+      <a class="nav-item"><i data-lucide="paperclip"></i>Files</a>
+
+      <div class="nav-head"><span>Calls</span><button class="btn btn-ghost btn-sm btn-icon" aria-label="Start a call"><i data-lucide="plus" class="i-sm"></i></button></div>
+      <button class="group"><i data-lucide="chevron-down" class="i-sm"></i>In progress<span class="n">1</span></button>
+      <a class="call"><span class="r1"><span class="title">Lina asked for changes</span><span class="when">Mon</span></span><span class="sub">Waiting on Lina</span></a>
+      <button class="group"><i data-lucide="chevron-right" class="i-sm"></i>Done<span class="n">2</span></button>
+    </nav>
+    <div class="me"><span class="avatar">MB</span><span class="medium">Mouhamed</span><button class="btn btn-ghost btn-icon" style="margin-left:auto" aria-label="Settings"><i data-lucide="settings" class="i-sm"></i></button></div>
+  </aside>
+
+  <main class="surface">
+    <header class="topbar">
+      <div class="crumbs">
+        <a class="crumb">Projects</a>
+        <span class="crumb-sep">/</span>
+        <button class="crumb here">Baobab<i data-lucide="chevrons-up-down" class="i-sm t-3"></i></button>
+      </div>
+      <div class="tools">
+        <button class="btn btn-secondary">Bring into a call</button>
+        <button class="btn btn-primary">Ask about this</button>
+      </div>
+    </header>
+
+    <div class="main">
+      <div class="scroll">
+        <div class="page-head">
+          <div class="row1"><h1 class="t-page">Brand kit for Lina</h1><span class="good">Client review</span></div>
+          <div class="facts"><span>Client Lina Haddad</span><span>Lead Aicha Diallo</span><span>Started Oct 14</span><span>Rulebook v3</span></div>
+        </div>
+
+        <div class="content">
+          <section class="section">
+            <div class="steps">
+              <div class="step done"><span class="node"><i data-lucide="check"></i></span><span class="lbl">Requested<span class="d">Oct 14</span></span></div>
+              <div class="step done"><span class="node"><i data-lucide="check"></i></span><span class="lbl">Quoted<span class="d">Oct 15</span></span></div>
+              <div class="step done"><span class="node"><i data-lucide="check"></i></span><span class="lbl">Deposit paid<span class="d">Oct 16</span></span></div>
+              <div class="step done"><span class="node"><i data-lucide="check"></i></span><span class="lbl">In progress<span class="d">Oct 16</span></span></div>
+              <div class="step done"><span class="node"><i data-lucide="check"></i></span><span class="lbl">Delivered<span class="d">Oct 26</span></span></div>
+              <div class="step now"><span class="node"></span><span class="lbl">Client review<span class="d">Since Oct 26</span></span></div>
+              <div class="step next"><span class="node"></span><span class="lbl">Done<span class="d">By Nov 3</span></span></div>
+            </div>
+            <div class="note t-sm"><i data-lucide="timer" class="i-sm"></i><span><span class="medium" style="color:var(--text-1)">Waiting on Lina to accept the delivery.</span> She got a reminder on Oct 26 and gets a final notice on Nov 1. If she stays silent, the project completes on Nov 3 under rule 6.1.</span></div>
+          </section>
+
+          <section class="section">
+            <div class="section-head"><h2 class="t-title">What can happen now</h2></div>
+            <div class="frame rows">
+              <div class="item"><div><div class="medium">Remind Lina to review</div><div class="sub">Her last reminder was yesterday.</div></div><button class="btn btn-secondary btn-sm">Send reminder</button></div>
+              <div class="item"><div><div class="medium">Give Lina 3 more days</div><div class="sub">Moves the end of the review to Nov 6.</div></div><button class="btn btn-secondary btn-sm">Extend</button></div>
+              <div class="item"><div><div class="medium">Accept the delivery</div><div class="sub">Only Lina can do this, from her project page.</div></div><span class="t-sm t-3">Lina's step</span></div>
+              <div class="item"><div><div class="medium">Close the project</div><div class="sub"><span class="warn">Blocked</span> until Lina accepts, or Nov 3 if she stays silent.</div></div><span class="t-sm t-3">Opens Nov 3</span></div>
+              <div class="item"><div><div class="medium">Start a free change</div><div class="sub"><span class="warn">Blocked</span> because Lina used her 2 free changes.</div></div><button class="btn btn-secondary btn-sm">Offer a paid change</button></div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head"><h2 class="t-title">What happened</h2><span class="t-sm t-3">Every step, who took it and under which rule</span></div>
+            <div>
+              <div class="tl"><span class="when">11:21</span><span class="mark" style="width:28px;height:28px;border-radius:999px"><i data-lucide="sparkles" class="i-sm"></i></span><div class="body">Payleor resumed 3 timers when the case closed<div class="meta">On its own under rule 7.4</div></div></div>
+              <div class="tl"><span class="when">11:20</span><span class="avatar ext">PP</span><div class="body">PayPal closed case <span class="mono">PP-R-TYE-10194759</span> in your favour<div class="meta">Cancelled by the buyer</div></div></div>
+              <div class="tl"><span class="when">08:33</span><span class="avatar ext">PP</span><div class="body">Lina opened a PayPal case for an item not received<div class="meta">Timers and payouts paused under rule 7.4</div></div></div>
+              <div class="tl"><span class="when">Oct 26</span><span class="avatar">AD</span><div class="body">Aicha delivered Brand kit v2 and the project moved to <span class="good">Client review</span><div class="meta">By Aicha Diallo</div></div></div>
+              <div class="tl"><span class="when">Oct 24</span><span class="avatar">LH</span><div class="body">Lina paid $82.50 for the change to the quote<div class="meta">PayPal capture <span class="mono">4KD90231PL5520147</span></div></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="composer-wrap">
+        <label class="composer">
+          <textarea rows="2" placeholder="Ask Payleor about Baobab"></textarea>
+          <div class="composer-foot">
+            <span class="scope"><i data-lucide="map-pin" class="i-sm"></i>This page</span>
+            <span class="tools-l">
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Attach a file"><i data-lucide="paperclip" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Mention a record"><i data-lucide="at-sign" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Dictate"><i data-lucide="mic" class="i-sm"></i></button>
+            </span>
+            <span class="hint">Enter to send, Shift Enter for a new line</span>
+            <button type="button" class="btn btn-primary btn-icon send" aria-label="Send"><i data-lucide="arrow-up" class="i-sm"></i></button>
+          </div>
+        </label>
+      </div>
+    </div>
+    <aside class="context" aria-label="About this project">
+      <div class="head">About this project</div>
+      <div class="body scroll">
+        <div class="focus">
+          <div class="top"><div class="r1"><h2 class="t-title">Money</h2><span class="good t-sm" style="margin-left:auto">Paid in full</span></div></div>
+          <dl class="kv">
+            <div><dt>Quote</dt><dd class="data">$300.00</dd></div>
+            <div><dt>Paid</dt><dd class="data">$302.50</dd></div>
+            <div><dt>Aicha's share</dt><dd class="data">$180.00</dd></div>
+            <div><dt>Payout</dt><dd>Fri 17:00 batch</dd></div>
+          </dl>
+        </div>
+        <section class="block">
+          <div class="block-head"><span>People</span></div>
+            <div class="irow"><span class="avatar">LH</span><div><div class="t">Lina Haddad</div><div class="s">Client</div></div><span></span></div>
+            <div class="irow"><span class="avatar">AD</span><div><div class="t">Aicha Diallo</div><div class="s">Lead</div></div><span></span></div>
+        </section>
+        <section class="block">
+          <div class="block-head"><span>Coming up</span></div>
+            <div class="irow"><i data-lucide="bell"></i><div><div class="t">Final notice to Lina</div><div class="s">Nov 1, on its own</div></div><span></span></div>
+            <div class="irow"><i data-lucide="flag"></i><div><div class="t">Completes if she stays silent</div><div class="s">Nov 3, on its own</div></div><span></span></div>
+        </section>
+        <section class="block">
+          <div class="block-head"><span>Rules it runs under</span></div>
+            <div class="irow"><i data-lucide="book-open"></i><div><div class="t">Rulebook v3</div><div class="s">Pinned Oct 14</div></div><span></span></div>
+            <div class="irow"><i data-lucide="pencil"></i><div><div class="t">Free changes</div><div class="s">2, both used</div></div><span></span></div>
+            <div class="irow"><i data-lucide="timer"></i><div><div class="t">Client silence</div><div class="s">Reminders, then 8 days</div></div><span></span></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payleor dash: a call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="dash-ds.css?v=q12">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="side" aria-label="Navigation">
+    <button class="ws">
+      <span class="mark">WC</span>
+      <span style="flex:1;min-width:0"><span class="strong" style="display:block">Walk Crew</span><span class="t-label t-3">Services team</span></span>
+      <i data-lucide="chevrons-up-down" class="i-sm t-3"></i>
+    </button>
+    <nav class="nav scroll">
+      <a class="nav-item"><i data-lucide="layout-panel-top"></i>Overview</a>
+      <a class="nav-item"><i data-lucide="arrow-down-to-line"></i>Payments</a>
+      <a class="nav-item"><i data-lucide="arrow-up-from-line"></i>Payouts</a>
+      <a class="nav-item"><i data-lucide="undo-2"></i>Refunds</a>
+      <a class="nav-item"><i data-lucide="shield-check"></i>PayPal cases</a>
+
+      <div class="nav-head"><span>Calls</span><button class="btn btn-ghost btn-sm btn-icon" aria-label="Start a call"><i data-lucide="plus" class="i-sm"></i></button></div>
+      <button class="group hot"><i data-lucide="chevron-down" class="i-sm"></i>Needs you<span class="n">3</span></button>
+      <a class="call on" aria-current="page"><span class="r1"><span class="title">Payouts this week</span><span class="when">11:24</span></span><span class="sub">3 requests, batch on Friday</span></a>
+      <a class="call new"><span class="r1"><span class="title">New request from Kojo</span><span class="when">11:02</span></span><span class="sub">Answer within 20 hours</span></a>
+      <a class="call new"><span class="r1"><span class="title">Ama wants to join</span><span class="when">09:40</span></span><span class="sub">Freelancer application</span></a>
+      <button class="group"><i data-lucide="chevron-right" class="i-sm"></i>In progress<span class="n">2</span></button>
+      <button class="group"><i data-lucide="chevron-right" class="i-sm"></i>Done<span class="n">4</span></button>
+    </nav>
+    <div class="me"><span class="avatar">MB</span><span class="medium">Mouhamed</span><button class="btn btn-ghost btn-icon" style="margin-left:auto" aria-label="Settings"><i data-lucide="settings" class="i-sm"></i></button></div>
+  </aside>
+
+  <main class="surface">
+    <header class="topbar">
+      <div class="crumbs">
+        <button class="crumb">Money<i data-lucide="chevrons-up-down" class="i-sm t-3"></i></button>
+        <span class="crumb-sep">/</span>
+        <span class="crumb here">Payouts this week</span>
+      </div>
+      <div class="tools">
+        <span class="t-sm t-3">Payouts mode</span>
+        <div class="seg" role="radiogroup" aria-label="Payouts mode"><span>Manual</span><span class="on">Ask me</span><span>Auto</span></div>
+      </div>
+    </header>
+
+    <div class="main">
+      <div class="scroll">
+        <div class="thread">
+          <div class="turn">
+            <div class="who"><span class="mark xs"><i data-lucide="sparkles"></i></span>Payleor<span class="t-3">11:24</span></div>
+            <p>Three freelancers asked to be paid since Monday. Two are ready. Kofi's payout waits until Lina accepts his delivery.</p>
+            <div class="frame" style="max-width:46rem">
+              <div class="frame-head"><span class="t-title">Payout batch</span><span class="t-sm t-3">Goes out Friday 17:00</span><span class="data strong" style="margin-left:auto">$640.00</span></div>
+              <table class="table">
+                <tbody>
+                <tr class="sel"><td><span class="check on"><i data-lucide="check"></i></span></td><td><span class="medium">Aicha Diallo</span><div class="t-sm t-3">Baobab</div></td><td><span class="good">Ready</span></td><td class="r data">$180.00</td></tr>
+                <tr class="sel"><td><span class="check on"><i data-lucide="check"></i></span></td><td><span class="medium">Yaw Mensah</span><div class="t-sm t-3">Shopify theme fixes</div></td><td><span class="good">Ready</span></td><td class="r data">$288.00</td></tr>
+                <tr><td><span class="check"></span></td><td><span class="medium">Kofi Boateng</span><div class="t-sm t-3">Product photos</div></td><td><span class="warn">Held</span><div class="t-sm t-3">Waiting on Lina</div></td><td class="r data t-3">$172.00</td></tr>
+                </tbody>
+              </table>
+              <div class="frame-foot">
+                <button class="btn btn-primary">Approve $468.00</button>
+                <button class="btn btn-secondary">Pay now</button>
+                <button class="btn btn-ghost btn-sm" style="margin-left:auto">How this was checked</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="turn mine"><div class="bubble">Can Lina be nudged so Kofi gets paid this week too?</div></div>
+
+          <div class="turn">
+            <div class="who"><span class="mark xs"><i data-lucide="sparkles"></i></span>Payleor<span class="t-3">11:25</span></div>
+            <p>She got a reminder yesterday. I can send her a short note now. If she accepts before Friday 17:00, Kofi joins this batch.</p>
+            <div style="display:flex;gap:8px"><button class="btn btn-secondary">Send the note</button><button class="btn btn-ghost">Show it first</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer-wrap">
+        <label class="composer">
+          <textarea rows="2" placeholder="Reply to Payleor, or type @ to bring in a record"></textarea>
+          <div class="composer-foot">
+            <span class="scope"><i data-lucide="phone-incoming" class="i-sm"></i>This call</span> <button type="button" class="link">Bring in</button>
+            <span class="tools-l">
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Attach a file"><i data-lucide="paperclip" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Mention a record"><i data-lucide="at-sign" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" aria-label="Dictate"><i data-lucide="mic" class="i-sm"></i></button>
+            </span>
+            <span class="hint">Enter to send, Shift Enter for a new line</span>
+            <button type="button" class="btn btn-primary btn-icon send" aria-label="Send"><i data-lucide="arrow-up" class="i-sm"></i></button>
+          </div>
+        </label>
+      </div>
+    </div>
+    <aside class="context" aria-label="What this call is about">
+      <div class="head">Working on</div>
+      <div class="body scroll">
+        <div class="focus">
+          <div class="top"><h2 class="t-title">Paying 3 freelancers</h2><p class="desc">They asked to be paid this week.</p></div>
+          <dl class="kv">
+            <div><dt>Who acts</dt><dd class="warn">You approve</dd></div>
+            <div><dt>Due</dt><dd>Fri 17:00</dd></div>
+            <div><dt>Rule</dt><dd>4.2, admin over $100</dd></div>
+          </dl>
+          <div class="foot">You were called as <span class="good">@payouts</span></div>
+        </div>
+        <section class="block">
+          <div class="block-head"><span>On the table</span><button class="link">Bring in</button></div>
+            <div class="irow"><i data-lucide="hand-coins"></i><div><div class="t">3 payout requests</div><div class="s">$640.00 in total</div></div><span></span></div>
+            <div class="irow"><i data-lucide="landmark"></i><div><div class="t">Team balance</div><div class="s">$1,240.00 available</div></div><span></span></div>
+            <div class="irow"><i data-lucide="folder"></i><div><div class="t">Product photos</div><div class="s">Waiting on Lina's review</div></div><span></span></div>
+        </section>
+        <section class="block">
+          <div class="block-head"><span>Done so far</span></div>
+            <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Checked each project for open PayPal cases and refunds</div></div><span></span></div>
+            <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Worked out each share from the accepted quotes</div></div><span></span></div>
+            <div class="irow"><i data-lucide="circle-pause" style="color:var(--warn-text)"></i><div><div class="t">Held Kofi's payout until Lina accepts</div></div><span></span></div>
+        </section>
+        <section class="block">
+          <div class="block-head"><span>Coming up</span></div>
+            <div class="irow"><i data-lucide="calendar-clock"></i><div><div class="t">Lina's second review reminder</div><div class="s">Thursday 09:00, on its own</div></div><span></span></div>
+            <div class="irow"><i data-lucide="send"></i><div><div class="t">Batch goes out</div><div class="s">Friday 17:00</div></div><span></span></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

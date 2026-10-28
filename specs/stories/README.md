@@ -50,7 +50,7 @@ Each area file holds stories in this shape:
 ```
 
 - **ID:** area prefix and number, never reused.
-- **Status:** `Built` (merged, walked through once in dev), `Built (not walked through)` (merged and covered by tests, never exercised in a walkthrough; edge cases inside a Built story are flagged the same way), `Verified <date> on <host> at <commit>` (last passing check), `Failing <date>: <backlog row>`, `In progress (<run>)` while the named run builds it, or `Planned (<run>)` for stories a run of the program will deliver.
+- **Status:** `Built` (merged, walked through once in dev), `Built (not walked through)` (merged and covered by tests, never exercised in a walkthrough; edge cases inside a Built story are flagged the same way), `Verified <date> on <host> at <commit>` (last passing check), `Failing <date>: <backlog row>`, `In progress (<run>)` while the named run builds it, `Built on branch (<run>; evidence)` for unmerged work with explicitly linked staging observations and remaining coverage, `Planned (<run>)` for stories a run will deliver, or `Cancelled for this delivery (<date>)` for retained IDs whose run was cut. A cancelled story is not a failing built feature and is excluded from the current freeze unless reapproved.
 - **[human]** marks a step an agent must not do: logging in to PayPal and approving a payment, uploading a Payouts Web file, connecting the plugin in Claude or ChatGPT, anything on a real Discord account.
 - **Expected** lists observable results: page text, emails, links, states. Quote UI text only as it appears in the code. Results no page shows (ledger postings, fees, webhook handling) are marked "DB check (developer)".
 - Stories may depend on earlier stories (named by ID) for their preconditions.
@@ -68,6 +68,10 @@ Each area file holds stories in this shape:
 | [`07-payouts.md`](07-payouts.md) | `OUT` | Payout destination, automatic payouts connection, requests, approvals, payout rules, sweeps, Payouts Web export and import |
 | [`08-discord.md`](08-discord.md) | `DIS` | Discord sign-in and account link, server link, `/payleor link`, `/payouts setup` (built in S2, never checked on a real server) |
 | [`09-agentic.md`](09-agentic.md) | `AGT` | Stories of the agentic surfaces program, by run: client contacts, hosts, the AI plugin and conversations, delivery and API, the mall, Discord, agents and analytics, ratings and profiles, the AI seller, the demo |
+
+## Current scope (2026-10-28)
+
+M (AGT-38–41), E (AGT-20–25, AGT-42) and AG Studio (AGT-27) are cancelled for this delivery. Keep the IDs and their historical acceptance criteria; do not run them as current commitments. AGT-26 and AGT-28 are reframed as capabilities of the one contextual agent. AGT-55–60 describe that agent's scoped environment, routing, gates, stale actions and browse/resume behavior; all are planned, not verified. V and P remain priorities, but V has no approved implementation/walkthrough plan yet. Follow [Calls and the agent](../platform/2026-10-27-calls-and-agent-design.md) when older stories disagree. Existing S2 Discord stories remain existing code with their original evidence limits.
 
 ## Running stories
 

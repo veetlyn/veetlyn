@@ -1,5 +1,7 @@
 # The agentic dash
 
+> **Current scope, 2026-10-28:** Supporting reference, superseded where [Calls and the agent](2026-10-27-calls-and-agent-design.md) differs. There is one contextual agent, not a hierarchy of module agents. M, E and AG Studio are cancelled for this delivery. UI prototypes are not implementation evidence.
+
 **Date:** 2026-10-16. **Status:** sections approved by Mouhamed one by one in brainstorming on 2026-10-16; written document awaiting review. **Replaces** the program's run list after A2 (§10) and run D's separate agents; **builds on** the action registry ([`2026-10-13-action-catalog-design.md`](2026-10-13-action-catalog-design.md)), conversations ([`2026-10-14-conversations-design.md`](2026-10-14-conversations-design.md), kept with three additions, §5), the plugin spike ([`2026-10-14-plugin-spike-facts.md`](2026-10-14-plugin-spike-facts.md)) and the architecture reference ([`2026-10-16-architecture.md`](2026-10-16-architecture.md)).
 
 ## 1. Goal
