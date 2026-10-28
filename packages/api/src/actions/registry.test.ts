@@ -39,7 +39,9 @@ describe("action registry", () => {
       "delivery.submit",
     ];
     for (const name of committing) expect(agentPolicyOf(find(name)), name).not.toBe("free");
-    expect(agentPolicyOf(find("project.refund_client"))).toBe("never");
+    for (const name of ["project.refund_client", "project.late_refund.decide", "project.quality_refund.set"]) {
+      expect(agentPolicyOf(find(name)), name).toBe("never");
+    }
   });
 
   it("lets only team members change a project's clients, an agent only with a confirmation", () => {

@@ -2,17 +2,17 @@ import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
 import { createProjectPayouts, sendDuePayouts } from "@jendal-workspace/api/use-cases/payout-sweeps";
 import { processPayPalWebhookEvent } from "@jendal-workspace/api/use-cases/paypal-webhooks";
-import type { TenantEnvironment } from "@jendal-workspace/core";
+import { errorName, type TenantEnvironment } from "@jendal-workspace/core";
 import {
   findWebhookEvent,
   finishWebhookEvent,
   noteWebhookAttempt,
 } from "@jendal-workspace/db/repositories/paypal-webhooks";
 import { createStoreDirectory } from "@jendal-workspace/db/repositories/stores";
-import { initLogger } from "evlog";
+import { initLogger, log } from "evlog";
 import { createAuthMiddleware } from "evlog/better-auth";
 import { evlog } from "evlog/hono";
-import { Hono } from "hono";
+import { Hono, type ExecutionContext } from "hono";
 
 import type { AppEnv } from "./app-env";
 import { createContext } from "./context";
@@ -21,8 +21,11 @@ import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
 import { BRIDGE_PATH, bridgeResponse, createMcpRoute, widgetOriginsFor } from "./mcp/route";
 import { noStoreByDefault } from "./no-store";
+import { wakeNoticesAfterMutation } from "./notice-wakeup";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
 import { settleSentPayouts } from "./payouts";
+import { deliverDueOutboxDeliveries } from "@jendal-workspace/api/use-cases/outbox-dispatcher";
+import { runDueScheduleItems } from "@jendal-workspace/api/use-cases/scheduler-sweep";
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
@@ -52,6 +55,20 @@ const app = new Hono<AppEnv>();
 
 app.use(evlog());
 app.use(noStoreByDefault);
+app.use(wakeNoticesAfterMutation(deliverNotices));
+
+async function deliverNotices(execution: ExecutionContext): Promise<void> {
+  // Request connections can already be closing when background work begins.
+  const db = getDb();
+  try {
+    await deliverDueOutboxDeliveries({ db, email: getEmailServices(execution), secret: ENV.BETTER_AUTH_SECRET, limit: 5 });
+  } catch (error) {
+    log.error({ action: "notices.wake", error: { name: errorName(error) } });
+  } finally {
+    await db.$client.end();
+  }
+}
+
 
 app.use("*", async (c, next) => {
   const db = getDb();
@@ -162,12 +179,13 @@ export default {
         find: (eventId) => findWebhookEvent(db, eventId),
         process: (event) => {
           if (!paypal) throw new Error("PayPal is not configured on this server");
-          return processPayPalWebhookEvent({ db, paypal, email: getEmailServices(ctx) }, event);
+          return processPayPalWebhookEvent({ db, paypal, email: getEmailServices(ctx), disputes: { alertEmail: `disputes@${ENV.PLATFORM_DOMAIN}`, dashOrigin: ENV.BETTER_AUTH_URL } }, event);
         },
         finish: (eventId, outcome) => finishWebhookEvent(db, eventId, outcome),
         noteAttempt: (eventId, error) => noteWebhookAttempt(db, eventId, error),
       });
     } finally {
+      ctx.waitUntil(deliverNotices(ctx));
       ctx.waitUntil(db.$client.end());
     }
   },
@@ -184,6 +202,12 @@ export default {
         createProjectPayouts: () => createProjectPayouts({ db, payouts }, { now: new Date() }),
         sendPayouts: payouts ? () => sendDuePayouts({ db, payouts }, { now: new Date() }) : undefined,
         settlePayouts: payouts ? () => settleSentPayouts({ db, payouts }) : undefined,
+        deliverOutboxNotices: () => {
+          const email = getEmailServices(ctx);
+          if (!email) return Promise.resolve({ sent: 0, failed: 0, skipped: 0 });
+          return deliverDueOutboxDeliveries({ db, email, secret: ENV.BETTER_AUTH_SECRET });
+        },
+        runScheduler: () => runDueScheduleItems({ db, now: () => new Date() }),
       });
     } finally {
       ctx.waitUntil(db.$client.end());

@@ -1,5 +1,7 @@
 # payleor.com, rebuilt on the Landing B design system, then the dash
 
+> **Current scope, 2026-10-28:** The site remains on Landing B. For the dash, [Calls and the agent](2026-10-27-calls-and-agent-design.md) §6 takes precedence: landing colours only, Quartz structure, light relief, small radii, Cal Sans titles and Inter body. Do not migrate landing layout or leaf buttons into the dash.
+
 **Date:** 2026-10-19. **Status:** the site part (§1–5) is built: run L, merged into main as `ed0d175` (PR #9), walked through 2026-10-20 ([plan Outcome](../archive/platform/plans/2026-10-19-l-site.md#outcome)). §6, the dash, is still to plan (the DS phase). The prototype is archived in [`../archive/platform/2026-10-19-landing-b.html`](../archive/platform/2026-10-19-landing-b.html).
 
 ## 1. Intent

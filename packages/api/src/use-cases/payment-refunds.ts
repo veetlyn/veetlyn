@@ -18,6 +18,7 @@ import {
   markRefundPartCompleted,
 } from "@jendal-workspace/db/repositories/project-refunds";
 import { addPaymentRefunded, type PaymentRow } from "@jendal-workspace/db/repositories/projects";
+import { runInTransaction } from "@jendal-workspace/db/repositories/unit-of-work";
 import { payment } from "@jendal-workspace/db/schema/projects";
 import { type PayPalOrder, type PayPalRefund, refundsFromOrder } from "@jendal-workspace/paypal";
 import { eq } from "drizzle-orm";
@@ -114,7 +115,10 @@ export async function applyCompletedPaymentRefund(
       row.teamId,
       refundConfirmedTransfer({ currency: row.currency, projectId: row.projectId, refundId: refund.id, amountMinor }),
     );
-    if (posted) await addPaymentRefunded(tx, row.id, amountMinor);
+    if (posted) {
+      await addPaymentRefunded(tx, row.id, amountMinor);
+      await appendRefundNotice(tx, row, refund.id, amountMinor);
+    }
     await postReturnedFees(tx, row, refund);
     await markRefundPartCompleted(tx, part.id);
     await completeProjectRefundIfDone(tx, part.projectRefundId, input.now ?? new Date());
@@ -132,8 +136,15 @@ export async function applyCompletedPaymentRefund(
     throw new CaptureFactConflict(`Refund ${refund.id} was confirmed as an overpayment refund but no part names it`);
   }
   const posted = await postUnrequestedRefund(tx, row, { refundKey: `refund:${refund.id}`, amountMinor });
+  if (posted) await appendRefundNotice(tx, row, refund.id, amountMinor);
   await postReturnedFees(tx, row, refund);
   return posted ? "applied" : "already_applied";
+}
+
+async function appendRefundNotice(tx: Transaction, row: PaymentRow, refundId: string, amountMinor: number): Promise<void> {
+  await runInTransaction(tx, (_tx, uow) => uow.appendEvents({ id: row.projectId, teamId: row.teamId }, [{
+    type: "refund.issued", data: { paymentId: row.id, refundId, amountMinor, currency: row.currency },
+  }]));
 }
 
 // A reversal (chargeback) takes back what the refunds left with the team, not the full amount again.

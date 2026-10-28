@@ -1,3 +1,4 @@
+import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import {
   ANY_AMOUNT_MINOR,
@@ -12,6 +13,7 @@ import {
 } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import { getTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
+import { upsertDispute } from "@jendal-workspace/db/repositories/operating-model";
 import { insertPayoutRequest, updatePayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
 import { deletePayoutDestination, savePayoutDestination } from "@jendal-workspace/db/repositories/payouts";
 import { getTeamPayPalCountry, markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
@@ -71,7 +73,7 @@ type TeamPayPalAnswers = {
   teamToken?: () => Response;
   payout?: () => Response;
   batch?: () => Response;
-  balances?: () => Response;
+  balances?: () => Response | Promise<Response>;
 };
 
 function balancesAnswer(value = "5000.00"): Response {
@@ -593,6 +595,39 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       .sort();
   }
 
+  it("keeps the payout reservation and its requested notice atomic", async () => {
+    const { member, teamId, memberId, paypal } = await payoutTeam();
+    await db.execute(sql`alter table outbox add constraint reject_payout_notice check (type <> 'payout.requested')`);
+    try {
+      await expect(member.payouts.request({ ...TEAM, amount: "500.00" })).rejects.toThrow();
+      expect(await db.select().from(payoutRequest)).toEqual([]);
+      expect(await ledgerOf(teamId, memberId)).toMatchObject({ available: 85_000, reserved: 0 });
+      expect(paypal.requests.filter((request) => request.url.endsWith("/v1/payments/payouts"))).toEqual([]);
+    } finally {
+      await db.execute(sql`alter table outbox drop constraint reject_payout_notice`);
+    }
+    const requested = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    expect(await db.select().from(outbox)).toEqual([expect.objectContaining({ type: "payout.requested", data: expect.objectContaining({ payoutRequestId: requested.id }) })]);
+  });
+
+  it("recovers the same PayPal batch when persisting its sent notice fails", async () => {
+    const { member, admin, paypal } = await payoutTeam();
+    const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
+    await db.execute(sql`alter table outbox add constraint reject_sent_notice check (type <> 'payout.sent')`);
+    try {
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).rejects.toMatchObject({ code: "BAD_GATEWAY" });
+      const [row] = await db.select().from(payoutRequest).where(eq(payoutRequest.id, id));
+      expect(row).toMatchObject({ status: "sending", paypalBatchId: null, uncertainAt: expect.any(Date) });
+    } finally {
+      await db.execute(sql`alter table outbox drop constraint reject_sent_notice`);
+    }
+    await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "sent", paypalBatchId: "BATCH1" });
+    const posts = paypal.requests.filter((request) => request.url.endsWith("/v1/payments/payouts"));
+    expect(posts).toHaveLength(2);
+    expect(batchIdsOf(posts)[0]).toEqual(batchIdsOf(posts)[1]);
+    expect(await db.select().from(outbox).where(eq(outbox.type, "payout.sent"))).toHaveLength(1);
+  });
+
   it("pays an approved request less PayPal's estimated fee from the team's PayPal account and settles it once", async () => {
     const { teamId, memberId, admin, member, answers, paypal } = await payoutTeam();
 
@@ -1061,6 +1096,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       paypalFees: 0,
     });
     expect(await payoutReferences(teamId)).toEqual([`payout_released:${id}`, `payout_requested:${id}`]);
+    expect(await db.select().from(outbox).where(eq(outbox.type, "payout.failed"))).toEqual([expect.objectContaining({ data: expect.objectContaining({ payoutRequestId: id }) })]);
   });
 
   it.each([
@@ -1786,6 +1822,23 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       await expect(admin.payouts.retry({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "sent" });
     });
 
+    it("holds a payout when a dispute opens while its send reads the balance", async () => {
+      const { teamId, admin, member, paypal } = await payoutTeam("US", {
+        teamToken: readsBalance,
+        // The case lands after sendPayout's first dispute check and before its claim.
+        balances: async () => {
+          await upsertDispute(db, { teamId, paypalDisputeId: "PP-D-1", reason: "Not received", status: "open", amountMinor: null, currency: null });
+          return balancesAnswer("6000.00");
+        },
+      });
+      await admin.payouts.saveRules({ ...MANUAL, balanceFloor: "100.00" });
+      const { id } = await member.payouts.request({ ...TEAM, amount: "100.00" });
+
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "queued" });
+      expect(paypal.requests.map((r) => `${r.method} ${pathOf(r)}`)).toContain("GET /v1/reporting/balances");
+      expect(payoutPosts(paypal.requests)).toEqual([]);
+    });
+
     it("creates a project payout the rules leave for an admin, and sends it once approved", async () => {
       const { projectId, admin, paypal, services } = await payoutTeam("US", {}, { ...PROJECT_RULES, autoApproveUpTo: null });
 
@@ -1944,6 +1997,16 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         code: "BAD_REQUEST",
         message: "Automatic payouts send these for you.",
       });
+    });
+
+    it("refuses to export while a PayPal dispute is open, and exports nothing", async () => {
+      const { teamId, adminId, adaPayoutId, services } = await exportTeam();
+      await upsertDispute(db, { teamId, paypalDisputeId: "PP-D-1", reason: "Not received", status: "open", amountMinor: null, currency: null });
+
+      await expect(
+        callerFor(adminId, services, atWednesday).payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId] }),
+      ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: "An open PayPal dispute pauses this team's payouts." });
+      expect(await rowOf(adaPayoutId)).toMatchObject({ status: "queued", offlineReference: null, offlineBatchId: null });
     });
 
     it("settles exported payouts from PayPal's log with the automatic payouts' postings, once", async () => {

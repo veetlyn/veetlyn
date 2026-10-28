@@ -44,6 +44,15 @@ describe("completionPostings", () => {
     ]);
   });
 
+  it("takes the part of a late refund the freelancer's earnings cannot cover from the team cut", () => {
+    // $1,000 price with a 90% team cut and a $200 late refund: the freelancer's $100 goes, and the team keeps $800.
+    const { transfers } = completionPostings({ ...base, teamCutBps: 9_000, finalPriceMinor: 80_000, memberBearsMinor: 20_000, balance: paidInFull });
+    expect(transfers[0]?.entries).toEqual([
+      { account: "client_held:p1", currency: "USD", amountMinor: -80_000 },
+      { account: "team_revenue", currency: "USD", amountMinor: 80_000 },
+    ]);
+  });
+
   it("adds a refund when a decrease left the client overpaid", () => {
     // $1,000 quote, $600 deposit paid, decreased by $700 → quote $300, fee credit $70, refund $270.
     const balance = balanceDue({

@@ -1,5 +1,6 @@
 export * from "./auth-assertion";
 export * from "./client";
+export * from "./disputes";
 export * from "./errors";
 export * from "./token";
 export * from "./merchant-integrations";

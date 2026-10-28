@@ -28,13 +28,16 @@ const EXPECTED = {
     request_changes: "in_progress",
     propose_amendment: "delivered",
     accept_delivery: "awaiting_balance",
+    auto_complete: "awaiting_balance",
+    abandon: "abandoned",
     cancel: "cancelled",
   },
-  awaiting_balance: { balance_captured: "completed", cancel: "cancelled" },
+  awaiting_balance: { balance_captured: "completed", abandon: "abandoned", cancel: "cancelled" },
   completed: {},
   cancelled: {},
   declined: {},
   expired: {},
+  abandoned: {},
 } satisfies Record<ProjectStatus, Partial<Record<ProjectEvent, ProjectStatus>>>;
 
 // Allowed in the status but refused by a guard under the facts used for the table.

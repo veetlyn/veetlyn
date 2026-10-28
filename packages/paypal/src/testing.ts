@@ -4,7 +4,7 @@ import type { JsonBody } from "./schemas";
 export type RecordedRequest = { url: string; method: string; headers: Headers; body: string | null };
 
 // Shared fake fetch for every test of this package and its callers (router tests included).
-export function fakeFetch(handler: (request: RecordedRequest, callCount: number) => Response) {
+export function fakeFetch(handler: (request: RecordedRequest, callCount: number) => Response | Promise<Response>) {
   const requests: RecordedRequest[] = [];
   const fetchImpl: FetchLike = async (request) => {
     const body = await request.text();

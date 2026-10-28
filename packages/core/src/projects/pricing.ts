@@ -35,11 +35,13 @@ export function finalPriceMinor(quoteMinor: number, penaltyMinor: number): numbe
 
 export type PaymentSplit = { quotePartMinor: number; managementFeeMinor: number; totalMinor: number };
 
-// Services spec §5.2 step 3: 50% of the quote plus the management fee on the full quote.
-export function depositDue(quoteMinor: number, managementFeeBps: number): PaymentSplit {
+// Services spec §5.2 step 3: the upfront share of the quote plus the management fee on the full
+// quote. The rate comes from the project's pinned rulebook (flat or tiered, AGT-48).
+export function depositDue(quoteMinor: number, managementFeeBps: number, upfrontBps: number = DEPOSIT_BPS): PaymentSplit {
   assertAmount(quoteMinor, "quote");
+  assertBps(upfrontBps, "upfront rate");
   if (quoteMinor === 0) throw new RangeError("A quote must be positive");
-  const quotePartMinor = bpsOf(quoteMinor, DEPOSIT_BPS);
+  const quotePartMinor = bpsOf(quoteMinor, upfrontBps);
   const fee = managementFeeMinor(quoteMinor, managementFeeBps);
   return { quotePartMinor, managementFeeMinor: fee, totalMinor: quotePartMinor + fee };
 }

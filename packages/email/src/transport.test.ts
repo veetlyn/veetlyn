@@ -51,11 +51,13 @@ describe("createMailer with a Resend API key", () => {
   it("posts the message to the Resend emails API", async () => {
     const fetchMock = stubFetch();
 
-    await createMailer(RESEND).send(message);
+    const receipt = await createMailer(RESEND).send(message, { idempotencyKey: "delivery/one" });
 
     const request = onlyRequest(fetchMock);
     expect(request.url).toBe(RESEND_URL);
     expect(request.method).toBe("POST");
+    expect(request.headers.get("idempotency-key")).toBe("delivery/one");
+    expect(receipt).toEqual({ providerMessageId: "re_123" });
     expect(request.headers.get("authorization")).toBe("Bearer test-resend-key");
     expect(request.body).toMatchObject({
       from: "Platform <accounts@platform.test>",
@@ -69,6 +71,19 @@ describe("createMailer with a Resend API key", () => {
         { name: "kind", value: "verification" },
       ],
     });
+  });
+
+  it("replays the complete provider body after sender configuration changes", async () => {
+    const fetchMock = stubFetch();
+    const original = createMailer(RESEND);
+    const persisted = structuredClone(original.prepare?.(message) ?? message);
+    await original.send(persisted, { idempotencyKey: "delivery/recovered" });
+    const before = onlyRequest(fetchMock);
+    fetchMock.mockClear();
+    await createMailer({ ...RESEND, PLATFORM_NAME: "Renamed", EMAIL_DOMAIN: "new.example.com", EMAIL_REPLY_TO: "new@example.com" }).send(persisted, { idempotencyKey: "delivery/recovered" });
+    const after = onlyRequest(fetchMock);
+    expect(after.headers.get("idempotency-key")).toBe(before.headers.get("idempotency-key"));
+    expect(after.body).toEqual(before.body);
   });
 
   it("names the party a message is sent for and honours its reply-to address", async () => {

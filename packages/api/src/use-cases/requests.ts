@@ -15,6 +15,8 @@ import {
   matchOrCreateContact,
 } from "@jendal-workspace/db/repositories/contacts";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
+import { ensurePublishedRulebook, recordRulebookAcceptance } from "@jendal-workspace/db/repositories/operating-model";
+import { armProjectSchedule } from "./projects";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import {
   findServicesTeamBySlug,
@@ -23,16 +25,12 @@ import {
 } from "@jendal-workspace/db/repositories/services-teams";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { project } from "@jendal-workspace/db/schema/projects";
-import { quoteRequestLinkEmail, quoteRequestNoticeEmail } from "@jendal-workspace/email";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
-import { ActionError } from "../actions/errors";
-import { type LinkSecretSource, linkSecret } from "../client-links";
 import type { EmailServices } from "../context";
-import { primaryClientPath } from "./clients";
-import { clientPageUrl } from "./link-hosts";
 import { fail, runProjectTransaction } from "./projects";
+import { publishedClientTerms } from "./rulebooks";
 
 export type QuoteRequestInput = {
   slug: string;
@@ -41,6 +39,8 @@ export type QuoteRequestInput = {
   email: string;
   description: string;
   answers: QuoteRequestAnswer[];
+  termsAccepted: boolean;
+  acceptedRulebookId: string;
 };
 
 const HOUR_MS = 3_600_000;
@@ -48,6 +48,14 @@ const HOUR_MS = 3_600_000;
 // A signed-in requester (the client's AI assistant): their account is the contact, and the project follows them
 // on that surface.
 export type RequestAccount = { account: ClientAccount; homeSurface: "web" | "mcp" };
+
+export async function quoteRequestTerms(db: Database, input: { slug: string }) {
+  const team = await findServicesTeamBySlug(db, input.slug);
+  if (!team || !isStorePublic({ ...team, product: "services" })) fail("NOT_FOUND", "Seller not found.");
+  const settings = await getServicesTeamSettings(db, team.id);
+  if (!settings) fail("NOT_FOUND", "Services team settings not found.");
+  return publishedClientTerms(db, { teamId: team.id, currency: settings.currency });
+}
 
 // Sellers design §4.2: a public request becomes a project in quoting, source "web". The per-email
 // limit is spent only by valid requests, so typos never lock a client out.
@@ -58,6 +66,7 @@ export async function requestQuote(
 ): Promise<{ projectId: string; teamName: string; serviceName: string; supportEmail: string | null }> {
   const team = await findServicesTeamBySlug(db, input.slug);
   if (!team || !isStorePublic({ ...team, product: "services" })) fail("NOT_FOUND", "Seller not found.");
+  if (input.termsAccepted !== true) fail("BAD_REQUEST", "Accept the client terms before sending your request.");
   const account = signedIn?.account;
   if (account) {
     // A member of the team is never its client (action catalog design §5.4).
@@ -97,6 +106,10 @@ export async function requestQuote(
   const result = await runProjectTransaction(db, async (tx, uow) => {
     // Serialises requests per (team, email) so two at once cannot both pass the open-request count.
     await lockClientIdentity(tx, { teamId: team.id, key: email });
+    const rulebook = await ensurePublishedRulebook(tx, team.id);
+    if (input.acceptedRulebookId !== rulebook.id) {
+      fail("BAD_REQUEST", "The team's terms have changed. Read and accept the current terms before sending your request.");
+    }
     const accountContactId = account ? await matchOrCreateAccountContact(tx, { teamId: team.id, account }) : null;
     const open = accountContactId
       ? await countOpenRequestsForContact(tx, { teamId: team.id, contactId: accountContactId })
@@ -122,7 +135,13 @@ export async function requestQuote(
         clientHomeSurface: signedIn?.homeSurface ?? "web",
         currency: settings.currency,
         managementFeeBps: settings.managementFeeBps,
-        teamCutBps: settings.teamCutBps,
+        teamCutBps: rulebook.spec.split.teamCutBps,
+        managerCutBps: rulebook.spec.split.managerCutBps,
+        // The request pins the team's published rulebook: its rules govern this project even if the
+        // team publishes a new version while it runs (AGT-46).
+        rulebookId: rulebook.id,
+        revisions: rulebook.spec.revisions.freeCount,
+        upfrontBps: rulebook.spec.upfront.defaultBps,
       })
       .returning();
     if (!row) throw new Error("Insert into project returned no row");
@@ -132,6 +151,14 @@ export async function requestQuote(
       (await matchOrCreateContact(tx, { teamId: team.id, email, discordId: null, name: clientName, source: "request" }));
     // The link is emailed to this address right after the transaction.
     await attachContact(tx, { projectId: row.id, contactId, isPrimary: true, addedById: null, linkEmail: email });
+    await recordRulebookAcceptance(tx, {
+      rulebookId: rulebook.id,
+      teamId: team.id,
+      actorKind: "client",
+      contactId,
+      userId: account?.userId ?? null,
+      projectId: row.id,
+    });
     await uow.apply({
       project: row,
       set: {},
@@ -142,16 +169,17 @@ export async function requestQuote(
         },
       ],
     });
+    await armProjectSchedule(tx, row, new Date());
     return { projectId: row.id };
   });
   return { ...result, teamName: team.name, serviceName, supportEmail: contact?.supportEmail ?? null };
 }
 
 // The public quote request form (sellers design §4.2): no account, a honeypot, and per-IP, per-account and
-// per-email limits before a project row and the two emails. The honeypot check runs first so bots
+// per-email limits before creating a project and its durable notice event. The honeypot check runs first so bots
 // never touch the limit budget; the per-email limit lives in requestQuote, after validation.
 export async function createQuoteRequest(
-  deps: { db: Database; auth: LinkSecretSource; email?: EmailServices },
+  deps: { db: Database; email?: EmailServices },
   request: { ip: string | null },
   input: QuoteRequestInput & { website: string },
   signedIn?: RequestAccount,
@@ -174,47 +202,7 @@ export async function createQuoteRequest(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Requests are not available right now." });
   }
 
-  const { projectId, teamName, serviceName, supportEmail } = await requestQuote(db, input, signedIn);
-  const to = signedIn?.account.email ?? input.email.trim().toLowerCase();
-  const clientUrl = clientPageUrl(
-    emailServices.storeOrigin,
-    input.slug,
-    await primaryClientPath(db, linkSecret(deps.auth), projectId),
-  );
-  const linkContent = quoteRequestLinkEmail({ platformName: emailServices.platformName, clientName: input.name.trim(), teamName, url: clientUrl });
-  // The client's mail proves the address, so its failure is the request's failure. The caller gets a
-  // generic message; the provider's error text stays server-side.
-  try {
-    await emailServices.mailer.send({
-      sender: "invoices",
-      onBehalfOf: teamName,
-      replyTo: supportEmail ?? undefined,
-      tag: "quote-request",
-      to: to,
-      ...linkContent,
-    });
-  } catch (error) {
-    await emailServices.onError?.(error, { kind: "quote-request", to: to });
-    throw new ActionError("internal", "We could not send the email. Try again in a moment.", { expose: true });
-  }
-  if (supportEmail) {
-    const notice = quoteRequestNoticeEmail({
-      platformName: emailServices.platformName,
-      teamName,
-      clientName: input.name.trim(),
-      clientEmail: to,
-      serviceName,
-      description: input.description.trim(),
-      // Trimmed, as stored on the project.
-      answers: input.answers.map(({ question, answer }) => ({ question: question.trim(), answer: answer.trim() })),
-      url: `${emailServices.dashOrigin}/${input.slug}/projects/${projectId}`,
-    });
-    const send = emailServices.mailer
-      .send({ sender: "invoices", onBehalfOf: teamName, tag: "quote-request-notice", to: supportEmail, ...notice })
-      .catch((cause: unknown) => emailServices.onError?.(cause, { kind: "quote-request-notice", to: supportEmail }));
-    if (emailServices.waitUntil) emailServices.waitUntil(send);
-    else await send;
-  }
+  const { projectId } = await requestQuote(db, input, signedIn);
   // Only a signed-in requester learns the project's id: it opens nothing without their session.
   return { ok: true as const, projectId: signedIn ? projectId : null };
 }

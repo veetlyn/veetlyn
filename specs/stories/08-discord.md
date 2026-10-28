@@ -1,5 +1,7 @@
 # Discord (DIS)
 
+> **Current scope, 2026-10-28:** S2 code remains built with the evidence limits below. E's dedicated Discord run and real-server walkthrough are cancelled for this delivery; the older statement that E starts here is historical. Optional channel adapters follow the contextual dash through Chat SDK.
+
 What S2 built: Discord sign-in, linking Discord to a Payleor account, linking a team's Discord server with a one-time code, `/payleor link`, `/payouts setup`, and the interactions endpoint. None of it has been checked on a real Discord server; run E starts with that check (see AGT-20 in [`09-agentic.md`](09-agentic.md)).
 
 Setup the stories assume (all [human], in the Discord developer portal): the Interactions Endpoint URL points at the api Worker's `POST /discord/interactions`; the OAuth2 redirect `{dash}/api/auth/callback/discord` is registered; the app is installed in a test server with the `bot` and `applications.commands` scopes; the commands are registered with `pnpm -F server discord:register` (global commands can take a few minutes to appear).

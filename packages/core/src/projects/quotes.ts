@@ -1,5 +1,5 @@
-import { assertBps, MAX_AMOUNT_MINOR } from "../money/money";
-import type { PaymentSplit } from "./pricing";
+import { assertBps, formatMoney, MAX_AMOUNT_MINOR, money, type MoneyCurrency } from "../money/money";
+import { DEPOSIT_BPS, type PaymentSplit } from "./pricing";
 
 export const QUOTE_STATUSES = ["proposed", "accepted", "superseded", "rejected"] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
@@ -102,18 +102,59 @@ export function amendmentProblemMessage(problem: "no_change" | "unknown_item" | 
 export type PaymentLineKind = PaymentKind | "management_fee";
 export type PaymentLine = { kind: PaymentLineKind; label: string; amountMinor: number };
 
-const QUOTE_PART_LABELS = {
-  deposit: "Deposit (50% of the quote)",
-  top_up: "Top-up (50% of the increase)",
-  balance: "Balance",
-} satisfies Record<PaymentKind, string>;
+function quotePartLabel(kind: PaymentKind, upfrontBps: number): string {
+  if (kind === "balance") return "Balance";
+  const percent = `${upfrontBps / 100}%`;
+  if (kind === "top_up") return upfrontBps === 10_000 ? "Top-up (the whole increase)" : `Top-up (${percent} of the increase)`;
+  return upfrontBps === 10_000 ? "Full payment upfront" : `Deposit (${percent} of the quote)`;
+}
 
-// The lines shown on the client page and the pay page; zero lines are left out.
-export function paymentLines(kind: PaymentKind, split: PaymentSplit, managementFeeBps: number): PaymentLine[] {
+// The lines shown on the client page and the pay page; zero lines are left out. upfrontBps is the share the
+// project's rules took up front, which names the deposit and top-up lines.
+export function paymentLines(
+  kind: PaymentKind,
+  split: PaymentSplit,
+  managementFeeBps: number,
+  upfrontBps: number = DEPOSIT_BPS,
+): PaymentLine[] {
   assertBps(managementFeeBps, "management fee");
+  assertBps(upfrontBps, "upfront rate");
   const lines: PaymentLine[] = [
-    { kind, label: QUOTE_PART_LABELS[kind], amountMinor: split.quotePartMinor },
+    { kind, label: quotePartLabel(kind, upfrontBps), amountMinor: split.quotePartMinor },
     { kind: "management_fee", label: `Management fee (${managementFeeBps / 100}%)`, amountMinor: split.managementFeeMinor },
   ];
   return lines.filter((line) => line.amountMinor > 0);
+}
+
+export type CheckoutItem = { name: string; description?: string; amountMinor: number };
+
+// What the buyer reads in PayPal's checkout and receipt: the work they pay for, named the way a client would, not the
+// platform's internal line names. A whole price paid up front lists the quote's own lines.
+export function checkoutItems(input: {
+  title: string;
+  kind: PaymentKind;
+  currency: MoneyCurrency;
+  lines: readonly PaymentLine[];
+  quoteItems: readonly { description: string; amountMinor: number }[];
+  quoteMinor: number;
+  upfrontBps: number;
+  managementFeeBps: number;
+}): CheckoutItem[] {
+  const total = formatMoney(money(input.currency, input.quoteMinor));
+  return input.lines.flatMap((line): CheckoutItem[] => {
+    if (line.kind === "management_fee") {
+      return [{ name: "Project management fee", description: `${input.managementFeeBps / 100}% of the quote`, amountMinor: line.amountMinor }];
+    }
+    const wholeQuote = quoteTotalMinor(input.quoteItems) === line.amountMinor;
+    if (line.kind === "deposit" && input.upfrontBps === 10_000 && wholeQuote) {
+      return input.quoteItems.map((item) => ({ name: item.description, amountMinor: item.amountMinor }));
+    }
+    if (line.kind === "deposit") {
+      return [{ name: `${input.title}: ${input.upfrontBps / 100}% deposit`, description: `Quote total ${total}`, amountMinor: line.amountMinor }];
+    }
+    if (line.kind === "top_up") {
+      return [{ name: `${input.title}: change to the quote`, description: `New quote total ${total}`, amountMinor: line.amountMinor }];
+    }
+    return [{ name: `${input.title}: balance`, description: `Quote total ${total}`, amountMinor: line.amountMinor }];
+  });
 }

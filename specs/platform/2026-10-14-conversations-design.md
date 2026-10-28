@@ -1,5 +1,7 @@
 # Conversations: requests and projects on every surface
 
+> **Current scope, 2026-10-28:** Web/plugin conversations remain built foundations. Dedicated Discord request-thread/project-channel work (E) is cancelled for this delivery; its sections below are future references. Business conversations and the agent's calls are distinct: [Calls and the agent](2026-10-27-calls-and-agent-design.md) is the current agent design.
+
 **Date:** 2026-10-14. **Status:** approved by Mouhamed on 2026-10-14 (sections in brainstorming, then the written document, including the details in §2, §4, §5 and §8 filled in while writing). Built across runs C, B and E (§9).
 
 **Builds on:** the program's marketplace rules (`2026-10-13-agentic-surfaces-program.md` §4.1), the action catalog (`2026-10-13-action-catalog-design.md`: `perform`, actors, client contacts from A2), the Discord design (`2026-10-13-discord-ticket-flow-design.md`, revised for run E on top of this one), the plugin spike facts (`2026-10-14-plugin-spike-facts.md`).

@@ -1,5 +1,6 @@
 import type { MoneyCurrency } from "../money/money";
-import { freelancerEarningsMinor, teamCutMinor } from "../projects/pricing";
+import { bpsOf } from "../money/money";
+import { teamCutMinor } from "../projects/pricing";
 import { ledgerAccounts as a } from "./accounts";
 import { type LedgerTransferDraft, transferFromMoves } from "./transfers";
 
@@ -147,27 +148,47 @@ export function managementFeeCreditTransfer(
   });
 }
 
-// Completion: the team cut and the freelancer's earnings, both from the final price.
+// Completion: the team cut, the manager's cut and the member's earnings, all from the final price.
+// With no manager the manager's share falls to the member, who carried the manager's duties; the
+// three parts always sum to the final price exactly (AGT-46 split rule).
 export function completionTransfer(
-  input: ProjectPosting & { freelancerId: string; finalPriceMinor: number; teamCutBps: number },
+  input: ProjectPosting & {
+    freelancerId: string;
+    finalPriceMinor: number;
+    teamCutBps: number;
+    managerId?: string | null;
+    managerCutBps?: number;
+    // A confirmed late-delivery refund: the cuts stay on the price before it, and the member's share pays it.
+    memberBearsMinor?: number;
+  },
 ): LedgerTransferDraft {
+  const memberBears = input.memberBearsMinor ?? 0;
+  const cutBase = input.finalPriceMinor + memberBears;
+  let teamCut = teamCutMinor(cutBase, input.teamCutBps);
+  // Independently rounded cuts can exceed a tiny price by one cent; allocate the team cut first.
+  let managerCut = input.managerId && input.managerId !== input.freelancerId && input.managerCutBps
+    ? Math.min(cutBase - teamCut, bpsOf(cutBase, input.managerCutBps))
+    : 0;
+  // What the member's share cannot cover comes off the manager's cut, then the team's.
+  let shortfall = Math.max(0, teamCut + managerCut - input.finalPriceMinor);
+  const fromManager = Math.min(shortfall, managerCut);
+  managerCut -= fromManager;
+  shortfall -= fromManager;
+  teamCut -= shortfall;
+  const memberShare = input.finalPriceMinor - teamCut - managerCut;
+  const moves = [
+    { from: a.clientHeld(input.projectId), to: a.teamRevenue, amountMinor: teamCut },
+    { from: a.clientHeld(input.projectId), to: a.owedAvailable(input.freelancerId), amountMinor: memberShare },
+  ];
+  if (managerCut > 0 && input.managerId && input.managerId !== input.freelancerId) {
+    moves.splice(1, 0, { from: a.clientHeld(input.projectId), to: a.owedAvailable(input.managerId), amountMinor: managerCut });
+  }
   return transferFromMoves({
     kind: "completion",
     reference: `completion:${input.projectId}`,
     projectId: input.projectId,
     currency: input.currency,
-    moves: [
-      {
-        from: a.clientHeld(input.projectId),
-        to: a.teamRevenue,
-        amountMinor: teamCutMinor(input.finalPriceMinor, input.teamCutBps),
-      },
-      {
-        from: a.clientHeld(input.projectId),
-        to: a.owedAvailable(input.freelancerId),
-        amountMinor: freelancerEarningsMinor(input.finalPriceMinor, input.teamCutBps),
-      },
-    ],
+    moves,
   });
 }
 

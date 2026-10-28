@@ -2,6 +2,7 @@ import { createFakeFileStore } from "@jendal-workspace/core";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { user } from "@jendal-workspace/db/schema/auth";
 import { clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
+import { rulebookAcceptance } from "@jendal-workspace/db/schema/operating-model";
 import {
   createTestDb,
   hasTestDatabase,
@@ -19,23 +20,32 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { Surface } from "./actors";
 import { perform } from "./perform";
 import { createRequest } from "./requests";
+import type { EmailServices } from "../context";
+import { deliverDueOutboxDeliveries } from "../use-cases/outbox-dispatcher";
+import { quoteRequestTerms } from "../use-cases/requests";
 
 describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () => {
   const db = createTestDb();
+  let acceptedRulebookId = "";
 
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
 
   async function setup() {
-    const { organizationId } = await seedOrganization(db);
+    const { organizationId, userId: ownerId } = await seedOrganization(db);
     const team = await seedServicesTeam(db, { organizationId, slug: "walk-crew", name: "Walk Crew", status: "active" });
+    acceptedRulebookId = (await quoteRequestTerms(db, { slug: "walk-crew" })).rulebookId;
     const clientId = await seedUser(db, "Ann");
     await db.update(user).set({ email: "Ann@Example.com", emailVerified: true }).where(eq(user.id, clientId));
-    return { organizationId, teamId: team.id, clientId };
+    return { organizationId, teamId: team.id, clientId, ownerId };
   }
 
   function request(userId: string, surface: Surface = "mcp") {
     const mailer = createFakeMailer();
+    const email: EmailServices = {
+      mailer, siteOrigin: "https://platform.test", platformName: "Platform", dashOrigin: "https://dash.platform.test",
+      storeOrigin: (slug) => `https://${slug}.platform.test`,
+    };
     const run = () =>
       perform(
         {
@@ -44,13 +54,7 @@ describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () =
             platformName: "Platform",
             files: createFakeFileStore(),
             auth: { options: { secret: "test-secret-that-is-at-least-32-characters" } },
-            email: {
-              mailer,
-              siteOrigin: "https://platform.test",
-              platformName: "Platform",
-              dashOrigin: "https://dash.platform.test",
-              storeOrigin: (slug) => `https://${slug}.platform.test`,
-            },
+            email,
           },
           actor: { kind: "user", userId },
           surface,
@@ -66,24 +70,31 @@ describe.skipIf(!hasTestDatabase)("request.create from a signed-in client", () =
           description: "A logo for my bakery, warm colours, ready in a week.",
           answers: [],
           website: "",
+          termsAccepted: true,
+          acceptedRulebookId,
         },
       );
-    return { run, mailer };
+    return { run, mailer, email };
   }
 
   it("attaches the account's verified contact, records the AI as home and emails the account", async () => {
-    const { teamId, clientId } = await setup();
-    const { run, mailer } = request(clientId);
+    const { teamId, clientId, ownerId } = await setup();
+    const { run, mailer, email } = request(clientId);
     const { projectId } = await run();
     if (!projectId) throw new Error("no project id for a signed-in requester");
     expect(await findProjectById(db, projectId)).toMatchObject({ teamId, clientHomeSurface: "mcp", source: "web" });
     const [attached] = await db.select().from(projectClient).where(eq(projectClient.projectId, projectId));
+    expect(await db.select().from(rulebookAcceptance)).toEqual([
+      expect.objectContaining({ rulebookId: acceptedRulebookId, teamId, userId: clientId, contactId: attached?.contactId, actorKind: "client", projectId }),
+    ]);
     const identities = await db.select().from(clientIdentity).where(eq(clientIdentity.contactId, attached?.contactId ?? ""));
     expect(identities.map((i) => [i.kind, i.value, i.source, i.verifiedAt !== null]).sort()).toEqual([
       ["email", "ann@example.com", "account", true],
       ["user", clientId, "account", true],
     ]);
-    expect(mailer.sent.map((m) => m.to)).toEqual(["ann@example.com"]);
+    expect(mailer.sent).toEqual([]);
+    await deliverDueOutboxDeliveries({ db, email, secret: "test-secret-that-is-at-least-32-characters" });
+    expect(mailer.sent.map((m) => m.to).sort()).toEqual(["ann@example.com", `${ownerId}@example.com`].sort());
 
     const second = await request(clientId).run();
     const [again] = await db.select().from(projectClient).where(eq(projectClient.projectId, second.projectId ?? ""));

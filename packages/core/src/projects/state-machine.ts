@@ -8,6 +8,7 @@ export const PROJECT_STATUSES = [
   "cancelled",
   "declined",
   "expired",
+  "abandoned",
 ] as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
@@ -31,6 +32,8 @@ export const PROJECT_EVENTS = [
   "cancel",
   "decline",
   "expire",
+  "auto_complete",
+  "abandon",
 ] as const;
 
 export type ProjectEvent = (typeof PROJECT_EVENTS)[number];
@@ -70,6 +73,11 @@ function noOpenAmendmentMoney(facts: ProjectFacts): TransitionRefusal | null {
   return null;
 }
 
+// A paid revision's round, like any increase's work, waits for its top-up.
+function noUnpaidTopUp(facts: ProjectFacts): TransitionRefusal | null {
+  return facts.unpaidTopUp ? "unpaid_top_up" : null;
+}
+
 function hasPendingAmendment(facts: ProjectFacts): TransitionRefusal | null {
   return facts.pendingAmendment ? null : "no_pending_amendment";
 }
@@ -81,7 +89,7 @@ export const PROJECT_TRANSITIONS = {
   accept_quote: { from: ["quoting"], to: () => "awaiting_deposit" },
   deposit_captured: { from: ["awaiting_deposit"], to: () => "in_progress" },
   submit_delivery: { from: ["in_progress"], to: () => "delivered" },
-  request_changes: { from: ["delivered"], to: () => "in_progress" },
+  request_changes: { from: ["delivered"], to: () => "in_progress", guard: noUnpaidTopUp },
   propose_amendment: { from: WORKING, to: () => "unchanged", guard: noOpenAmendmentMoney },
   accept_amendment: { from: WORKING, to: () => "unchanged", guard: hasPendingAmendment },
   decline_amendment: { from: WORKING, to: () => "unchanged", guard: hasPendingAmendment },
@@ -96,6 +104,14 @@ export const PROJECT_TRANSITIONS = {
   // Conversations design §2: a request ends without a quote when staff decline it or nobody answers in time.
   decline: { from: ["quoting"], to: () => "declined" },
   expire: { from: ["quoting"], to: () => "expired" },
+  // The client silence ladder (AGT-52): acceptance by timeout, or the project ends and the payments
+  // already made stay settled.
+  auto_complete: {
+    from: ["delivered"],
+    to: (facts) => (facts.balanceDueMinor > 0 ? "awaiting_balance" : "completed"),
+    guard: noOpenAmendmentMoney,
+  },
+  abandon: { from: ["delivered", "awaiting_balance"], to: () => "abandoned" },
 } satisfies Readonly<Record<ProjectEvent, TransitionRule>>;
 
 const NO_FACTS: ProjectFacts = { pendingAmendment: false, unpaidTopUp: false, balanceDueMinor: 0 };
@@ -141,6 +157,7 @@ export const PROJECT_STATUS_LABELS = {
   cancelled: "Cancelled",
   declined: "Declined",
   expired: "Expired",
+  abandoned: "Ended without an answer",
 } satisfies Record<ProjectStatus, string>;
 
 export function projectStatusLabel(status: ProjectStatus): string {

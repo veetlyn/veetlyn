@@ -34,7 +34,7 @@ import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
 import Loader from "@/components/loader";
 import { paymentRefundLabel } from "@/lib/client-refund";
-import { AMENDMENT_STATUS_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
+import { AMENDMENT_STATUS_LABELS, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { minorToPriceInput } from "@/lib/money";
 import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
@@ -45,7 +45,10 @@ import { ProjectProgress } from "@/components/project-progress";
 
 import { ClientsSection } from "./clients-section";
 import { ConversationSection } from "./conversation-section";
+import { DisputeCard } from "./dispute-card";
 import { QuoteCalculator } from "./quote-calculator";
+import { MemberMarks } from "./member-marks";
+import { LateRefundNotice, QualityRefundForm } from "./price-adjustments";
 import { RefundSection } from "./refund-section";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
@@ -133,12 +136,23 @@ function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; curre
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-sm text-muted-foreground">Delivery in {quote.deliveryDays} days after the deposit.</p>
+      <p className="mt-2 text-sm text-muted-foreground">Delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`} after the deposit.</p>
     </div>
   );
 }
 
-export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: string; projectId: string }) {
+
+
+
+export default function ProjectDetail({
+  teamSlug,
+  projectId,
+  paypalEnvironment,
+}: {
+  teamSlug: string;
+  projectId: string;
+  paypalEnvironment: string | undefined;
+}) {
   const queryClient = useQueryClient();
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ teamSlug, projectId }),
@@ -165,8 +179,18 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const assign = useMutation(trpc.project.assign.mutationOptions({ onSuccess: refresh }));
-  const addQuote = useMutation(trpc.project.addQuote.mutationOptions({ onSuccess: refresh }));
+  const addQuote = useMutation(
+    trpc.project.addQuote.mutationOptions({
+      // A sent quote clears the form, so a second click cannot send it again.
+      onSuccess: async () => {
+        setQuoteRows([{ ...EMPTY_ROW }]);
+        setDeliveryDays("14");
+        await refresh();
+      },
+    }),
+  );
   const proposeAmendment = useMutation(trpc.project.proposeAmendment.mutationOptions({ onSuccess: refresh }));
+  const offerPaidRevision = useMutation(trpc.project.offerPaidRevision.mutationOptions({ onSuccess: refresh }));
   function removeDeliveryFile() {
     setDeliveryFile(null);
     setFileInputKey((key) => key + 1);
@@ -216,6 +240,10 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
     payments,
     deliveries,
     refund,
+    dispute,
+    marks,
+    revisionRounds,
+    qualityRefundCapMinor,
     role,
     quotingMode,
     solo,
@@ -291,6 +319,8 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
+        {dispute ? <DisputeCard dispute={dispute} currency={currency} paypalEnvironment={paypalEnvironment} /> : null}
+        <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {project.source === "web" ? (
           <section className="space-y-3 pt-3">
             <h2 className="text-lg font-semibold">Request</h2>
@@ -416,6 +446,26 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Amendments</h2>
+        {revisionRounds && revisionRounds.used >= revisionRounds.allowed && revisionRounds.paidPriceMinor > 0 && project.status === "delivered" && !pendingAmendment ? (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              The client used {revisionRounds.used} of {revisionRounds.allowed} free rounds of changes.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={offerPaidRevision.isPending}
+              onClick={() => offerPaidRevision.mutate({ teamSlug, projectId })}
+            >
+              Offer paid revision (+{formatMoney(money(currency, revisionRounds.paidPriceMinor))}, +1 revision)
+            </Button>
+            {offerPaidRevision.error ? (
+              <p role="alert" className="text-sm text-destructive">
+                {offerPaidRevision.error.message}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {amendments.length === 0 ? <p className="text-sm text-muted-foreground">No amendments.</p> : null}
         {amendments.map((amendment) => (
           <div key={amendment.id} className="panel p-4 text-sm">
@@ -565,14 +615,14 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
       </div>
 
       <aside className="grid min-w-0 gap-8">
-      <ProjectProgress status={project.status} />
+      <ProjectProgress status={project.status} paidUpfront={project.upfrontBps === 10_000} />
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
         {payments.map((payment) => (
           <div key={payment.id} className="panel p-4 text-sm">
             <div className="flex items-center justify-between gap-4">
-              <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
+              <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (
                   <Badge tone="warn">Needs review</Badge>
@@ -606,6 +656,10 @@ export default function ProjectDetail({ teamSlug, projectId }: { teamSlug: strin
           onRefunded={refresh}
         />
       ) : null}
+
+      <QualityRefundForm teamSlug={teamSlug} project={project} role={role} capMinor={qualityRefundCapMinor} onChanged={refresh} />
+
+      <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} />
       </aside>
     </main>
   );

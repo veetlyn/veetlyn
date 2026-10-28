@@ -10,14 +10,27 @@ const PROGRESS = [
 ] as const;
 
 // Where a project stands, from the quote to the last payment: a column on the team page, a row on the client page.
-export function ProjectProgress({ status, layout = "column" }: { status: string; layout?: "column" | "row" }) {
-  const at = PROGRESS.findIndex(([key]) => key === status);
+// A project paid in full up front has no balance step.
+export function ProjectProgress({
+  status,
+  layout = "column",
+  paidUpfront = false,
+}: {
+  status: string;
+  layout?: "column" | "row";
+  paidUpfront?: boolean;
+}) {
+  const steps = paidUpfront ? PROGRESS.filter(([key]) => key !== "awaiting_balance") : PROGRESS;
+  const at = steps.findIndex(([key]) => key === status);
   if (at < 0) return null;
   const done = status === "completed";
   return (
     <section aria-label="Progress" className="panel p-4">
-      <ol className={layout === "row" ? "grid grid-cols-[repeat(6,minmax(0,1fr))] gap-1.5" : "grid gap-2.5"}>
-        {PROGRESS.map(([key, label], index) => {
+      <ol
+        className={layout === "row" ? "grid gap-1.5" : "grid gap-2.5"}
+        style={layout === "row" ? { gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` } : undefined}
+      >
+        {steps.map(([key, label], index) => {
           const state = index < at || done ? "done" : index === at ? "now" : "next";
           return (
             <li

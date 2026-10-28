@@ -20,19 +20,26 @@ import {
   projectClientList,
   projectClientView,
   projectGet,
+  projectLateRefundDecide,
   projectList,
+  projectQualityRefundSet,
   projectRefundClient,
   projectStart,
+  projectWarningRecord,
 } from "./projects";
 import { offeringSearch } from "./offerings";
-import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
-import { createRequest } from "./requests";
+import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
+import { createRequest, requestTerms } from "./requests";
 
 export const ACTIONS: readonly AnyActionDefinition[] = [
   createRequest,
+  requestTerms,
   projectStart,
   projectAssign,
   projectRefundClient,
+  projectLateRefundDecide,
+  projectQualityRefundSet,
+  projectWarningRecord,
   projectList,
   projectGet,
   projectClientView,
@@ -45,6 +52,7 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   quoteCreate,
   quoteAccept,
   amendmentPropose,
+  amendmentOfferPaidRevision,
   amendmentAccept,
   amendmentDecline,
   deliveryUploadStart,

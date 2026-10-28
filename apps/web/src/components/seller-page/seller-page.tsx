@@ -1,7 +1,7 @@
 import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 
 import { formatMinor } from "@/lib/money";
-import { daysLabel, priceLabel } from "@/lib/offering-labels";
+import { daysLabel, FULFILMENT_LABELS, type Fulfilment, priceLabel } from "@/lib/offering-labels";
 
 type SellerPageOffering = {
   id: string;
@@ -12,6 +12,7 @@ type SellerPageOffering = {
   priceMaxMinor: number;
   daysMin: number;
   daysMax: number;
+  fulfilment: Fulfilment;
 };
 
 export type SellerPageProduct = { id: string; title: string; description: string; priceMinor: number };
@@ -49,6 +50,7 @@ function OfferingCard({
         <span className="text-muted-foreground">Usually </span>
         <span className="font-tabular font-semibold">{priceLabel(offering, page.currency)}</span>
         <span className="text-muted-foreground"> · {daysLabel(offering)}</span>
+        <span className="text-muted-foreground"> · {FULFILMENT_LABELS[offering.fulfilment]}</span>
       </p>
       <a
         href={`${page.pageBase}/request?offering=${offering.id}`}

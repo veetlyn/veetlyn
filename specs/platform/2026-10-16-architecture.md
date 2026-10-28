@@ -4,14 +4,22 @@
 
 **What is decided elsewhere:** the program and its runs ([`2026-10-13-agentic-surfaces-program.md`](2026-10-13-agentic-surfaces-program.md)), the action registry and client contacts ([`2026-10-13-action-catalog-design.md`](2026-10-13-action-catalog-design.md)), conversations ([`2026-10-14-conversations-design.md`](2026-10-14-conversations-design.md)), the plugin ([`2026-10-15-c-plugin-design.md`](2026-10-15-c-plugin-design.md)), sign-in across hosts ([`2026-10-06-auth-federation-design.md`](2026-10-06-auth-federation-design.md)), seller plans and fees ([`2026-10-07-seller-pricing-proposal.md`](2026-10-07-seller-pricing-proposal.md)), PayPal facts ([`2026-10-07-r1-paypal-facts.md`](2026-10-07-r1-paypal-facts.md)) and the PayPal rules ([`../references/AGENTS.md`](../references/AGENTS.md)).
 
+## Current direction and implementation boundary (2026-10-28)
+
+[Calls and the agent](2026-10-27-calls-and-agent-design.md) is the current contextual-agent design. One runtime changes its authorized environment with account, workspace, section and record context. The business state machine, pinned rulebook, role/record access checks and `perform` determine available transitions; the model prepares tools/widgets and never bypasses these checks. An event updates the business record and refreshes the agent's environment. Calls project who the work waits on rather than owning a second business lifecycle.
+
+B1's operating-model implementation is on `b1-operating-model`, with [staging evidence and remaining coverage](plans/2026-10-27-b1-staging-walkthrough.md); it is not recorded merged or verified on production. Agent scope/call persistence, dynamic permission handles, eligibility metadata and the SDK runtime beside the Workers are **planned**, not current infrastructure. Runtime choice and provider compatibility must be validated in the implementation plan. B2's external API keys/webhooks remain separate.
+
+M (mall), E (dedicated Discord) and AG Studio are cancelled for this delivery. V/P remain priorities. Existing store checkout, Discord identity links and the client plugin are not removed. Optional channels follow the dash through Chat SDK. This section takes precedence over older future-tense run promises below; host/package descriptions remain dated evidence, not a claim of a new deploy.
+
 ## 1. Product
 
 Payleor is the money flow and the trust around paid work. Sellers are services teams, solo freelancers and stores:
 
 - **Services** (the hackathon entry): a team or a freelancer publishes offerings, takes quote requests, quotes, gets paid through PayPal (deposit and balance), delivers, and pays its members under payout rules.
-- **Commerce:** a store sells digital products with guest checkout; the physical catalog exists (S5) and run M adds the cross-store cart and checkout.
+- **Commerce:** a store sells digital products with guest checkout; the physical catalog exists (S5) but the cross-store cart/checkout run M is cancelled for this delivery.
 
-Money always goes to the seller's PayPal account; Payleor takes its fee through PayPal's partner fee. No agent moves money without a person's approval in PayPal. "jendal" stays the code name in package names (`@jendal-workspace/*`), service and database names.
+Money always goes to the seller's PayPal account; Payleor takes its fee through PayPal's partner fee. Payers approve every checkout in PayPal. A team's explicitly configured Auto rule may authorize eligible business actions such as member payouts within its limits; this does not confer client authority or bypass `perform`. The contextual runtime and exact Auto allowlist remain to implement. "jendal" stays the code name in package names (`@jendal-workspace/*`), service and database names.
 
 ## 2. Hosts
 
@@ -87,7 +95,7 @@ Code rules (decoding at the boundary, money in integer minor units, no `typeof` 
 - **Surfaces:**
   - **Web:** the dashboard, seller sites, client and pay pages (built).
   - **Email:** the client link, notices to teams, buyer receipts (built; run B adds the delivery pipeline with an outbox).
-  - **Discord:** sign-in, account and server link, `/payleor link`, `/payouts setup` (built in S2, never checked on a real server; run E builds the project channels).
+  - **Discord:** sign-in, account and server link, `/payleor link`, `/payouts setup` (built in S2, never checked on a real server; project-channel run E is cancelled for this delivery).
   - **Claude and ChatGPT plugin:** MCP on `api.payleor.com/mcp`, OAuth through Better Auth, MCP Apps widgets, widget-only accept buttons, pay through the pay page (proven in spike S, built in run C).
   - **API keys and webhooks for AI sellers:** run B.
 - Every surface calls the same use cases; commitments by an AI client need a press on a Payleor widget button, and every payment needs the payer's PayPal approval.
@@ -108,7 +116,7 @@ The cron (every 10 minutes, `apps/server/src/maintenance.ts`) runs each sweep on
 |---|---|
 | AI checkout protocols (Store Sync, ACP, UCP, AP2) and a conformance agent | After the hackathon (decision of 2026-10-14). Run M sells through the plugin with checkout on Payleor |
 | Braintree rail | Dropped with the protocols |
-| Shopping, admin and dispute agents (Agents SDK, AI Gateway, Clef) | Replaced by the intake agent and the team copilot in run D; disputes after the hackathon |
+| Shopping, admin and dispute agents (Agents SDK, AI Gateway, Clef) | Replaced by capabilities of one contextual agent in D; no separate personas or AG Studio, disputes after the hackathon |
 | AI Search per store | Not built; run M's design decides how products are searched |
 | Custom domains (Cloudflare for SaaS) | Host resolution understands them; creating them is after the hackathon |
 | Tax (Shopify's manual model) | Not built; digital products and services only for now |

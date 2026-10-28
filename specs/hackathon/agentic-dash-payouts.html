@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payleor dash: payouts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="dash-ds.css?v=ctx4">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="side" aria-label="Navigation">
+    <button class="ws">
+      <span class="mark">WC</span>
+      <span style="flex:1;min-width:0"><span class="strong" style="display:block">Walk Crew</span><span class="t-label t-3">Services team</span></span>
+      <i data-lucide="chevrons-up-down" class="i-sm t-3"></i>
+    </button>
+    <nav class="nav scroll">
+      <a class="nav-item"><i data-lucide="layout-panel-top"></i>Overview</a>
+      <a class="nav-item"><i data-lucide="arrow-down-to-line"></i>Payments</a>
+      <a href="agentic-dash-payouts.html" class="nav-item on" aria-current="page"><i data-lucide="arrow-up-from-line"></i>Payouts<span class="n">4</span></a>
+      <a class="nav-item"><i data-lucide="undo-2"></i>Refunds</a>
+      <a class="nav-item"><i data-lucide="shield-check"></i>PayPal cases</a>
+
+      <div class="nav-head"><span>Calls in Money</span><button class="btn btn-ghost btn-sm btn-icon" aria-label="Start a call"><i data-lucide="plus" class="i-sm"></i></button></div>
+      <button class="group hot"><i data-lucide="chevron-down" class="i-sm"></i>Needs you<span class="n">3</span></button>
+      <a href="agentic-dash-mock.html" class="call"><span class="r1"><span class="title">Payouts this week</span><span class="when">11:24</span></span><span class="sub">3 requests, 2 need approval</span></a>
+      <a class="call new"><span class="r1"><span class="title">New request from Kojo</span><span class="when">11:02</span></span><span class="sub">Answer within 20 hours</span></a>
+      <a class="call new"><span class="r1"><span class="title">Ama wants to join</span><span class="when">09:40</span></span><span class="sub">Freelancer application</span></a>
+      <button class="group"><i data-lucide="chevron-right" class="i-sm"></i>In progress<span class="n">2</span></button>
+      <button class="group"><i data-lucide="chevron-right" class="i-sm"></i>Done<span class="n">4</span></button>
+    </nav>
+    <div class="me"><span class="avatar">MB</span><span class="medium">Mouhamed</span><button class="btn btn-ghost btn-icon" style="margin-left:auto" aria-label="Settings"><i data-lucide="settings" class="i-sm"></i></button></div>
+  </aside>
+
+  <main class="surface">
+    <header class="topbar">
+      <div class="crumbs">
+        <button class="crumb">Money<i data-lucide="chevrons-up-down" class="i-sm t-3"></i></button>
+        <span class="crumb-sep">/</span>
+        <span class="crumb here">Payouts</span>
+      </div>
+      <div class="tools">
+        <button class="btn btn-ghost btn-sm btn-icon ctx-open" data-ctx-toggle aria-label="Show details"><i data-lucide="panel-right-open" class="i-sm"></i></button><span class="t-sm t-2" title="Payleor prepares changes for you to review. Existing scheduled payouts continue under the operating model.">Prepares for approval</span></div>
+    </header>
+
+    <div class="main">
+      <div class="scroll">
+        <div class="page-head">
+          <div class="row1"><h1 class="t-page">Payouts</h1></div>
+          <div class="t-2">What Walk Crew pays its freelancers, and when.</div>
+          <div class="lead-figure">
+            <span class="v">$468.00</span>
+            <span class="k">awaiting your approval</span>
+          </div>
+          <p class="t-sm t-3" style="margin:0">$172.00 held, $95.00 requested, <span data-paid-total>$2,140.00</span> paid in October.</p>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 var(--gutter) 12px">
+          <div class="seg filters" role="group" aria-label="Filter payouts">
+            <button type="button" class="on" data-filter="all" aria-pressed="true">All <span class="n">14</span></button>
+            <button type="button" data-filter="requested" aria-pressed="false">Requested <span class="n">1</span></button>
+            <button type="button" data-filter="approval" aria-pressed="false">Awaiting approval <span class="n">2</span></button>
+            <button type="button" data-filter="held" aria-pressed="false">Held <span class="n">1</span></button>
+            <button type="button" data-filter="paid" aria-pressed="false">Paid <span class="n">10</span></button>
+          </div>
+          <label class="input" style="flex:1 1 14rem"><i data-lucide="search" class="i-sm"></i><input type="search" aria-label="Search payouts" placeholder="Search members or projects"></label>
+          <span class="t-sm t-2">October</span>
+        </div>
+
+        <div class="table-scroll"><table class="table" aria-label="October payouts">
+          <thead><tr><th><input type="checkbox" class="check" data-select-all aria-label="Select payouts awaiting approval" checked></th><th>Member</th><th>Project</th><th class="r">Amount</th><th>State</th><th>Next step</th><th class="r">Asked</th></tr></thead>
+          <tbody data-payouts></tbody>
+        </table></div>
+        <div class="table-foot"><span class="t-sm t-2" data-result-count aria-live="polite"></span><button class="btn btn-ghost btn-sm" data-show-more>Show more</button></div>
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer">
+          <textarea aria-label="Message Payleor" rows="2" placeholder="Ask Payleor about payouts, or have it act on the 2 selected"></textarea>
+          <div class="composer-foot">
+            <span class="scope"><i data-lucide="map-pin" class="i-sm"></i>This page</span>
+            <span class="tools-l">
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" disabled aria-label="Attach a file (unavailable)"><i data-lucide="paperclip" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" disabled aria-label="Mention a record (unavailable)"><i data-lucide="at-sign" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" disabled aria-label="Dictate (unavailable)"><i data-lucide="mic" class="i-sm"></i></button>
+            </span>
+            <span class="hint">Shift Enter for a new line</span>
+            <button type="button" class="btn btn-primary btn-icon send" aria-label="Send"><i data-lucide="arrow-up" class="i-sm"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside class="context" aria-label="Selection">
+      <div class="head">Selection<button class="btn btn-ghost btn-sm btn-icon" data-ctx-toggle aria-label="Hide details"><i data-lucide="panel-right-close" class="i-sm"></i></button></div>
+      <div class="body scroll">
+        <div class="ctx-top">
+          <h2 aria-live="polite"><span data-selection-count>2 payouts</span> selected</h2>
+          <p class="state"><span class="data medium" style="color:var(--text-1)" data-selection-amount>$468.00</span> for <span data-selection-names>Aicha Diallo and Yaw Mensah</span></p>
+          <dl class="facts-grid">
+            <dt>Sending</dt><dd>After both approvals</dd>
+            <dt>Who acts</dt><dd>You, as admin</dd>
+          </dl>
+          <div class="acts"><button class="btn btn-primary btn-sm" data-review-approval>Review approval</button></div>
+        </div>
+        <section class="block">
+          <div class="block-head"><span>Checked by Payleor</span></div>
+            <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">No open PayPal case or refund on either project</div></div><span></span></div>
+            <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Team balance covers it</div><div class="s">$1,240.00 available before sending</div></div><span></span></div>
+            <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Shares match the accepted quotes</div></div><span></span></div>
+        </section>
+        <section class="block">
+          <div class="block-head"><span>Coming up</span></div>
+            <div class="irow"><i data-lucide="send"></i><div><div class="t">Next scheduled payout run</div><div class="s">Friday 00:00 UTC, after required approvals</div></div><span></span></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+
+</div>
+<script src="dash-demo.js"></script>
+</body>
+</html>

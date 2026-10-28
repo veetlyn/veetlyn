@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payleor dash: design system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="dash-ds.css?v=operating-model-1">
+<style>
+  .sheet { display: grid; gap: 40px; padding: 32px var(--gutter) 48px; }
+  .sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); gap: 16px; }
+  .sw > div { display: grid; gap: 6px; align-content: start; font-size: 13px; }
+  .chip-c { height: 44px; border-radius: var(--r-soft); box-shadow: inset 0 0 0 1px var(--hair); }
+  .rule { display: grid; grid-template-columns: 12rem minmax(0, 1fr); gap: 16px; padding: 10px 0; border-top: 1px solid var(--hair); font-size: 13px; }
+</style>
+</head>
+<body>
+<div style="padding:8px">
+<main class="surface" style="grid-template-rows:var(--topbar) auto">
+  <header class="topbar"><span class="mark">P</span><span class="crumb here">Payleor dash design system</span><span class="t-sm t-3" style="margin-left:auto">Quartz structure, landing colours</span></header>
+  <div class="sheet">
+
+    <section class="section">
+      <h2 class="t-title">Colour roles</h2>
+      <div class="sw">
+        <div><div class="chip-c" style="background:var(--canvas)"></div><b>Canvas</b><span class="t-3">The page. The sidebar sits on it.</span></div>
+        <div><div class="chip-c" style="background:var(--paper);box-shadow:var(--raise)"></div><b>Surface</b><span class="t-3">The one raised surface: the main content.</span></div>
+        <div><div class="chip-c" style="background:var(--frame)"></div><b>Frame band</b><span class="t-3">Head or foot of a frame, and the context panel.</span></div>
+        <div><div class="chip-c" style="background:var(--field)"></div><b>Field</b><span class="t-3">Wells, the segmented track, your messages.</span></div>
+        <div><div class="chip-c" style="background:#e2e2e5"></div><b>Selected</b><span class="t-3">The open call in the sidebar.</span></div>
+        <div><div class="chip-c" style="background:var(--ink-2)"></div><b>Ink</b><span class="t-3">Text, the one primary button, checked boxes.</span></div>
+        <div><div class="chip-c" style="background:var(--accent-mark)"></div><b>Mint accent</b><span class="t-3">Payleor, progress, good states, focus, Bring in.</span></div>
+        <div><div class="chip-c" style="background:var(--accent-wash)"></div><b>Mint wash</b><span class="t-3">Selected table rows only.</span></div>
+        <div><div class="chip-c" style="background:var(--warn-text)"></div><b>Warn</b><span class="t-3">Held and blocked. Never decoration.</span></div>
+        <div><div class="chip-c" style="background:var(--fail-text)"></div><b>Fail</b><span class="t-3">Failed or refused. Never decoration.</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="t-title">Type</h2>
+      <div class="rule"><span class="t-3">Page title, Cal Sans 22</span><span class="t-page">Payouts</span></div>
+      <div class="rule"><span class="t-3">Section title, Cal Sans 16</span><span class="t-title">What can happen now</span></div>
+      <div class="rule"><span class="t-3">Body, Inter 14</span><span>Three freelancers asked to be paid since Monday.</span></div>
+      <div class="rule"><span class="t-3">Small, Inter 13</span><span class="t-sm t-2">Her last reminder was yesterday.</span></div>
+      <div class="rule"><span class="t-3">Label, Inter 12</span><span class="t-label t-3">In Friday's batch</span></div>
+      <div class="rule"><span class="t-3">Stat, Inter 22</span><span class="stat"><span class="v">$468.00</span></span></div>
+      <div class="rule"><span class="t-3">Reference, Plex Mono 12</span><span class="mono">5TX20917KD3381026</span></div>
+    </section>
+
+    <section class="section">
+      <h2 class="t-title">Controls</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+        <button class="btn btn-primary">Review approval</button>
+        <button class="btn btn-secondary">Review message</button>
+        <button class="btn btn-ghost">Show it first</button>
+        <button class="btn btn-secondary btn-sm">Extend</button>
+        <span class="t-sm t-2">Prepares for approval</span>
+        <label class="input"><i data-lucide="search" class="i-sm"></i><input type="search" aria-label="Search example" placeholder="Search"></label>
+        <span class="scope"><i data-lucide="map-pin" class="i-sm"></i>This page</span>
+        <span class="check on"><i data-lucide="check"></i></span><span class="check"></span>
+        <span class="good">Ready</span><span class="warn">Held</span><span class="fail">Failed</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="t-title">Rules</h2>
+      <div class="rule"><b>One raised surface</b><span class="t-2">The main content is the only raised surface. The sidebar sits on the canvas. The context column is a flat panel inside the surface, in the frame tone, with no elevation.</span></div>
+      <div class="rule"><b>Frames hold rows</b><span class="t-2">A frame groups rows split by hairlines. Its head or foot is a band. Nothing boxed inside a frame.</span></div>
+      <div class="rule"><b>Double rule</b><span class="t-2">Only where hierarchy changes: under the top bar and under a table head.</span></div>
+      <div class="rule"><b>One primary per view</b><span class="t-2">Ink fill for the action that finishes the job. Everything else is secondary or ghost.</span></div>
+      <div class="rule"><b>Stats as a strip</b><span class="t-2">Figures sit in the page header, label above value, no cards.</span></div>
+      <div class="rule"><b>Words, not dots</b><span class="t-2">Status is a word. No status dots, no middle-dot separators, no pills.</span></div>
+      <div class="rule"><b>Warm is trouble</b><span class="t-2">Amber and red mean warn and fail, nothing else.</span></div>
+      <div class="rule"><b>Scale</b><span class="t-2">Controls 32 and 28, rows 40, corners 4, 6 and 10, sidebar 15.5rem, gutter 24. The page fills the window and scrolls.</span></div>
+    </section>
+  </div>
+</main>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

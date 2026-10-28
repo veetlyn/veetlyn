@@ -1,7 +1,7 @@
 import { BRIDGE_VERSION } from "./bridge.generated";
 
 // Hosts cache a widget by its URI, so a changed widget gets a new one.
-export const WIDGET_URI = "ui://platform/app-v6";
+export const WIDGET_URI = "ui://platform/app-v7";
 
 const CSS = `
   .w {
@@ -123,13 +123,15 @@ async function openExternal(url) {
 
 const statusClass = (status) => ["quoting", "awaiting_deposit", "awaiting_balance", "delivered"].includes(status) ? "status you" : status === "completed" ? "status done" : "status";
 
+const FULFILMENT = { people: "By people", automated: "Automated", both: "People and automation" };
+
 function offeringsView(data) {
   if (!data.offerings.length) return [el("div", { class: "card" }, el("div", { class: "head" }, "Nothing matches yet"), el("div", { class: "cap" }, "Try broader words or a higher budget."))];
   const range = (o) => o.priceMinMinor === o.priceMaxMinor ? money(o.priceMinMinor, o.currency) : money(o.priceMinMinor, o.currency) + " – " + money(o.priceMaxMinor, o.currency);
   return [el("div", { class: "carousel", role: "list" }, data.offerings.map((o) =>
     el("article", { class: "card", role: "listitem" },
       el("div", { class: "head" }, o.name),
-      el("div", { class: "cap" }, o.seller + " · usually " + o.days),
+      el("div", { class: "cap" }, o.seller + " · usually " + o.days + (FULFILMENT[o.fulfilment] ? " · " + FULFILMENT[o.fulfilment] : "")),
       el("div", { class: "price num" }, range(o)),
       el("p", { class: "cap clamp grow" }, o.description),
       el("div", { class: "actions" },
@@ -172,7 +174,7 @@ function freelancerSlide(data, f, tokens, notice) {
   if (q) {
     slide.append(
       el("div", { class: "amount num" }, money(q.amountMinor, p.currency)),
-      el("div", { class: "cap" }, "Delivery in " + q.deliveryDays + " days"),
+      el("div", { class: "cap" }, "Delivery in " + q.deliveryDays + (q.deliveryDays === 1 ? " day" : " days")),
       q.items.length > 1 ? el("ul", { class: "items" }, q.items.map((i) => el("li", {}, el("span", {}, i.description), el("span", { class: "num" }, money(i.amountMinor, p.currency))))) : null);
   }
   for (const question of f.questions) {

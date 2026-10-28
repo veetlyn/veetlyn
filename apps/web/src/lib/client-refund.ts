@@ -4,12 +4,14 @@ import { formatMinor } from "./money";
 
 type RefundSummary = { amountMinor: number; currency: string; status: ProjectRefundStatus; completedAt: Date | string | null };
 
-// A failed refund still reads "on its way" for the client: the team retries it from the admin.
+// Until an admin sends it, the refund is owed, not moving. A failed one still reads "on its way" for the client:
+// the team retries it from the admin.
 export function clientRefundLabel(refund: RefundSummary, formatDate: (date: Date) => string): string {
   const amount = formatMinor(refund.amountMinor, refund.currency);
   if (refund.status === "completed" && refund.completedAt !== null) {
     return `Refunded ${amount} on ${formatDate(new Date(refund.completedAt))}`;
   }
+  if (refund.status === "requested") return `Refund of ${amount} due: the team sends it through PayPal`;
   return `Refund of ${amount}: on its way`;
 }
 

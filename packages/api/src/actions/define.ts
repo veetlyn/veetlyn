@@ -1,7 +1,7 @@
 import type { z } from "zod";
 
 import type { Actor, RequestMeta, Surface } from "./actors";
-import type { ActionDeps, Scope } from "./perform";
+import type { ActionDeps, ActionRuntime, Scope } from "./perform";
 
 export type Grant =
   | { grant: "member" }
@@ -14,7 +14,7 @@ export type AgentPolicy = "free" | "confirm" | "never";
 
 export type ScopeRequest = { projectId?: string; teamId?: string };
 
-export type ActionDefinition<Input, Result, Raw = Input> = {
+export type ActionDefinition<Input, Result, Raw = Input, Deps extends ActionRuntime = ActionDeps> = {
   name: string;
   kind: "action" | "query";
   summary: string;
@@ -26,7 +26,7 @@ export type ActionDefinition<Input, Result, Raw = Input> = {
   allow: readonly Grant[];
   agent?: AgentPolicy;
   run: (
-    context: { deps: ActionDeps; actor: Actor; scope: Scope; surface: Surface; request: RequestMeta },
+    context: { deps: Deps; actor: Actor; scope: Scope; surface: Surface; request: RequestMeta },
     input: Input,
   ) => Promise<Result>;
 };

@@ -14,6 +14,7 @@ export type ServicesOfferingRow = OfferingDraft & {
   departmentId: string | null;
   active: boolean;
   listed: boolean;
+  fulfilment: "people" | "automated" | "both";
   position: number;
 };
 
@@ -37,6 +38,7 @@ const offeringColumns = {
   intakeQuestions: servicesOffering.intakeQuestions,
   active: servicesOffering.active,
   listed: servicesOffering.listed,
+  fulfilment: servicesOffering.fulfilment,
   position: servicesOffering.position,
 };
 
@@ -168,7 +170,7 @@ export async function findServicesOffering(
 // Null on a duplicate name in this team; the unique index is the concurrency guard.
 export async function createServicesOffering(
   db: Database,
-  input: { teamId: string; departmentId?: string | null; listed?: boolean } & OfferingDraft,
+  input: { teamId: string; departmentId?: string | null; listed?: boolean; fulfilment?: "people" | "automated" | "both" } & OfferingDraft,
 ): Promise<ServicesOfferingRow | null> {
   const name = input.name.trim();
   const [existing] = await db
@@ -200,6 +202,7 @@ export async function createServicesOffering(
         intakeQuestions: input.intakeQuestions,
         active: true,
         listed: input.listed ?? true,
+        fulfilment: input.fulfilment ?? "people",
         position: positionRow?.next ?? 0,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -212,7 +215,7 @@ export async function createServicesOffering(
 // Null when the offering is not the team's, or the name is taken by another offering in the team.
 export async function updateServicesOffering(
   db: Database,
-  input: { id: string; teamId: string; departmentId?: string | null; listed?: boolean } & OfferingDraft,
+  input: { id: string; teamId: string; departmentId?: string | null; listed?: boolean; fulfilment?: "people" | "automated" | "both" } & OfferingDraft,
 ): Promise<ServicesOfferingRow | null> {
   const [owned] = await db
     .select({ id: servicesOffering.id })
@@ -247,6 +250,7 @@ export async function updateServicesOffering(
   };
   if ("departmentId" in input) values.departmentId = input.departmentId ?? null;
   if (input.listed !== undefined) values.listed = input.listed;
+  if (input.fulfilment !== undefined) values.fulfilment = input.fulfilment;
 
   const rows = await nullOnDuplicateName(
     db
@@ -327,6 +331,7 @@ export async function searchListedOfferings(
       daysMin: servicesOffering.daysMin,
       daysMax: servicesOffering.daysMax,
       intakeQuestions: servicesOffering.intakeQuestions,
+      fulfilment: servicesOffering.fulfilment,
       currency: servicesTeamSettings.currency,
       sellerName: team.name,
       sellerSlug: team.slug,

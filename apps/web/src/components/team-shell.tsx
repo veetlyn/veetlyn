@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   MessagesSquare,
   Package,
+  ScrollText,
   Settings,
   Tag,
   Users,
@@ -58,6 +59,12 @@ export default function TeamShell({
     retry: false,
     meta: { silent: true },
   });
+  const rules = useQuery({
+    ...trpc.rules.state.queryOptions({ teamSlug: slug }),
+    enabled: kind === "services" && team.isSuccess,
+    retry: false,
+    meta: { silent: true },
+  });
 
   const data = team.data;
   const solo = data?.settings?.solo ?? false;
@@ -78,6 +85,7 @@ export default function TeamShell({
   const team_: NavItem[] = [
     { href: `/${slug}/payouts`, label: "Payouts", icon: ArrowUpFromLine, show: kind === "services" && !solo },
     { href: `/${slug}/members`, label: "Members", icon: Users, show: kind === "services" && !solo },
+    { href: `/${slug}/rules`, label: "Rules", icon: ScrollText, show: kind === "services" },
     { href: `/${slug}/discord`, label: "Discord", icon: MessagesSquare, show: kind === "services" && admin },
     { href: `/${slug}/settings`, label: "Settings", icon: Settings, show: kind === "services" },
   ];
@@ -103,7 +111,7 @@ export default function TeamShell({
           aria-current={isActive(href) ? "page" : undefined}
           className={cn(
             "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-            "aria-[current=page]:bg-card aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_0_0_1px_var(--input),var(--raise)]",
+            "aria-[current=page]:bg-card aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_0_0_1px_var(--input)]",
           )}
         >
           <Icon className="size-4" aria-hidden="true" />
@@ -112,8 +120,9 @@ export default function TeamShell({
       ));
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[248px_minmax(0,1fr)]">
-      <aside className="hidden flex-col gap-1 border-r bg-sidebar px-3 py-4 md:flex">
+    // The window stays still: the sidebar and the top bar hold their place and only the page content scrolls.
+    <div data-app-shell className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[248px_minmax(0,1fr)]">
+      <aside className="hidden min-h-0 flex-col gap-1 overflow-y-auto border-r bg-sidebar px-3 py-4 md:flex">
         <Link href="/" className="mb-3 flex items-center gap-2 px-1.5 text-sm text-muted-foreground hover:text-foreground">
           <BrandMark className="size-5 text-foreground" />
           <span className="font-heading text-base text-foreground">
@@ -142,8 +151,8 @@ export default function TeamShell({
           </>
         ) : null}
       </aside>
-      <div className="flex min-w-0 flex-col">
-        <div className="flex h-14 items-center gap-2 border-b px-4 md:px-7">
+      <div className="flex min-h-0 min-w-0 flex-col">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-7">
           <Link href="/" className="md:hidden">
             <BrandMark className="size-6 text-foreground" />
             <span className="sr-only">All workspaces</span>
@@ -167,7 +176,7 @@ export default function TeamShell({
             <UserMenu />
           </div>
         </div>
-        <nav aria-label="Sections" className="flex gap-1 overflow-x-auto border-b px-3 py-2 md:hidden">
+        <nav aria-label="Sections" className="flex shrink-0 gap-1 overflow-x-auto [scrollbar-width:none] border-b px-3 py-2 md:hidden">
           {[...work, ...team_]
             .filter((item) => item.show !== false)
             .map(({ href, label }) => (
@@ -181,7 +190,15 @@ export default function TeamShell({
               </Link>
             ))}
         </nav>
+        <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
+        {rules.data?.memberAccepted === false && pathname !== `/${slug}/rules` ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7" role="status">
+            <p className="text-sm">Accept version {rules.data.published.version} of the member agreement before taking new work.</p>
+            <Link href={`/${slug}/rules#published-rules`} className="text-sm font-semibold underline underline-offset-4">Review team rules</Link>
+          </div>
+        ) : null}
         {children}
+        </div>
       </div>
     </div>
   );

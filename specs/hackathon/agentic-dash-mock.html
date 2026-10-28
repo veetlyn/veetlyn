@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payleor dash: a call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="dash-ds.css?v=ctx4">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="side" aria-label="Navigation">
+    <button class="ws">
+      <span class="mark">WC</span>
+      <span style="flex:1;min-width:0"><span class="strong" style="display:block">Walk Crew</span><span class="t-label t-3">Services team</span></span>
+      <i data-lucide="chevrons-up-down" class="i-sm t-3"></i>
+    </button>
+    <nav class="nav scroll">
+      <a class="nav-item"><i data-lucide="layout-panel-top"></i>Overview</a>
+      <a class="nav-item"><i data-lucide="arrow-down-to-line"></i>Payments</a>
+      <a href="agentic-dash-payouts.html" class="nav-item"><i data-lucide="arrow-up-from-line"></i>Payouts</a>
+      <a class="nav-item"><i data-lucide="undo-2"></i>Refunds</a>
+      <a class="nav-item"><i data-lucide="shield-check"></i>PayPal cases</a>
+
+      <div class="nav-head"><span>Calls in Money</span><button class="btn btn-ghost btn-sm btn-icon" aria-label="Start a call"><i data-lucide="plus" class="i-sm"></i></button></div>
+      <button class="group hot"><i data-lucide="chevron-down" class="i-sm"></i>Needs you<span class="n">3</span></button>
+      <a href="agentic-dash-mock.html" class="call on" aria-current="page"><span class="r1"><span class="title">Payouts this week</span><span class="when">11:24</span></span><span class="sub">3 requests, 2 need approval</span></a>
+      <a class="call new"><span class="r1"><span class="title">New request from Kojo</span><span class="when">11:02</span></span><span class="sub">Answer within 20 hours</span></a>
+      <a class="call new"><span class="r1"><span class="title">Ama wants to join</span><span class="when">09:40</span></span><span class="sub">Freelancer application</span></a>
+      <button class="group"><i data-lucide="chevron-right" class="i-sm"></i>In progress<span class="n">2</span></button>
+      <button class="group"><i data-lucide="chevron-right" class="i-sm"></i>Done<span class="n">4</span></button>
+    </nav>
+    <div class="me"><span class="avatar">MB</span><span class="medium">Mouhamed</span><button class="btn btn-ghost btn-icon" style="margin-left:auto" aria-label="Settings"><i data-lucide="settings" class="i-sm"></i></button></div>
+  </aside>
+
+  <main class="surface">
+    <header class="topbar">
+      <div class="crumbs">
+        <button class="crumb">Money<i data-lucide="chevrons-up-down" class="i-sm t-3"></i></button>
+        <span class="crumb-sep">/</span>
+        <span class="crumb here">Payouts this week</span>
+      </div>
+      <div class="tools">
+        <button class="btn btn-ghost btn-sm btn-icon ctx-open" data-ctx-toggle aria-label="Show details"><i data-lucide="panel-right-open" class="i-sm"></i></button><span class="t-sm t-2" title="Payleor prepares changes for you to review. Existing scheduled payouts continue under the operating model.">Prepares for approval</span></div>
+    </header>
+
+    <div class="main">
+      <div class="scroll">
+        <div class="thread">
+          <div class="turn">
+            <div class="who"><span class="mark xs"><i data-lucide="sparkles"></i></span>Payleor<span class="t-3">11:24</span></div>
+            <h1 class="t-page">Payouts this week</h1><p>Three requests total $640.00. Aicha and Yaw have $468.00 ready for approval. Kofi’s $172.00 is held because his payout destination changed.</p>
+            <div class="frame" style="max-width:46rem">
+              <div class="frame-head"><span class="t-title">Ready for your approval</span><span class="data strong" style="margin-left:auto">$468.00</span></div>
+              <table class="table" aria-label="Requests in this approval review"><tbody data-call-payouts></tbody></table>
+              <div class="frame-foot">
+                <button class="btn btn-primary" data-review-approval>Review approval</button>
+                <details class="more t-sm" style="margin-left:auto"><summary>How this was checked</summary><p>Released earnings, current payout destination and the required approvals are checked again before sending.</p></details>
+              </div>
+            </div>
+          </div>
+
+          <div class="turn mine"><div class="bubble">Could you also remind Lina to review Baobab?</div></div>
+
+          <div class="turn">
+            <div class="who"><span class="mark xs"><i data-lucide="sparkles"></i></span>Payleor<span class="t-3">11:25</span></div>
+            <p>Baobab is a separate project awaiting Lina’s review. Here’s a draft for her project conversation.</p>
+            <label class="t-sm t-2" for="client-note">To Lina Haddad, Baobab</label>
+            <textarea id="client-note" class="draft-note" rows="3">Hi Lina, the Brand kit v2 is ready for your review on Baobab. Could you accept the delivery or let us know what needs changing? Thank you.</textarea>
+            <div><button class="btn btn-secondary" data-preview-note>Review message to Lina</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer">
+          <textarea aria-label="Message Payleor" rows="2" placeholder="Reply to Payleor, or type @ to bring in a record"></textarea>
+          <div class="composer-foot">
+            <span class="scope"><i data-lucide="messages-square" class="i-sm"></i>This call</span> <button type="button" class="link" data-bring-in>Bring in</button>
+            <span class="tools-l">
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" disabled aria-label="Attach a file (unavailable)"><i data-lucide="paperclip" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" disabled aria-label="Mention a record (unavailable)"><i data-lucide="at-sign" class="i-sm"></i></button>
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" disabled aria-label="Dictate (unavailable)"><i data-lucide="mic" class="i-sm"></i></button>
+            </span>
+            <span class="hint">Shift Enter for a new line</span>
+            <button type="button" class="btn btn-primary btn-icon send" aria-label="Send"><i data-lucide="arrow-up" class="i-sm"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside class="context" aria-label="What this call is about">
+      <div class="head">Working on<button class="btn btn-ghost btn-sm btn-icon" data-ctx-toggle aria-label="Hide details"><i data-lucide="panel-right-close" class="i-sm"></i></button></div>
+      <div class="body scroll">
+        <div class="ctx-top">
+          <h2>Reviewing 3 payout requests</h2>
+          <p class="state">2 ready for approval, 1 held. You were called as <span class="good">@payouts</span>.</p>
+          <dl class="facts-grid">
+            <dt>Next step</dt><dd>Your approval</dd>
+            <dt>Sending</dt><dd>After both approvals</dd>
+          </dl>
+        </div>
+        <section class="block">
+          <div class="block-head"><span>On the table</span><button class="link" data-bring-in>Bring in</button></div>
+            <div class="irow"><i data-lucide="hand-coins"></i><div><div class="t">3 payout requests</div><div class="s">$640.00 in total</div></div><span></span></div>
+            <div class="irow"><i data-lucide="landmark"></i><div><div class="t">Payout balance</div><div class="s">$1,240.00 available before sending</div></div><span></span></div>
+            <div class="irow"><i data-lucide="folder"></i><div><div class="t">Baobab</div><div class="s">Separate project, waiting for Lina</div></div><span></span></div>
+        </section>
+        <section class="block"><details class="more"><summary>Done so far<span class="n">3</span></summary><div class="inner">
+            <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Checked each project for open PayPal cases and refunds</div></div><span></span></div>
+            <div class="irow"><i data-lucide="circle-check" style="color:var(--accent-text)"></i><div><div class="t">Worked out each share from the accepted quotes</div></div><span></span></div>
+            <div class="irow"><i data-lucide="circle-pause" style="color:var(--warn-text)"></i><div><div class="t">Held Kofi’s payout after his destination changed</div></div><span></span></div>
+        </div></details>
+        </section>
+        <section class="block">
+          <div class="block-head"><span>Coming up</span></div>
+            <div class="irow"><i data-lucide="calendar-clock"></i><div><div class="t">Lina's second review reminder</div><div class="s">Thursday 09:00, on its own</div></div><span></span></div>
+            <div class="irow"><i data-lucide="send"></i><div><div class="t">Next scheduled payout run</div><div class="s">Friday 00:00 UTC, after required approvals</div></div><span></span></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+
+</div>
+<script src="dash-demo.js"></script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 # Action registry (run A1) and client contacts (run A2): design
 
+> **Current agent boundary, 2026-10-28:** the built `perform` policy below remains enforced. [Calls and the agent](2026-10-27-calls-and-agent-design.md) proposes explicit eligibility metadata and rule-bound Auto for selected business transitions; it does not silently relax `confirm` or `never`. The implementation plan must define delegated actor authority, revalidation and idempotency before enabling Auto. Client widget commitments and payer approval remain human gates. D is one contextual agent; E and AG Studio are cancelled for this delivery.
+
 **Date:** 2026-10-13. **Status:** approved by Mouhamed on 2026-10-13, after the codebase-fit and security reviews. Run A is split: A1 (registry) Oct 14–15, A2 (client contacts) Oct 16–17.
 
 **Program:** runs A1 and A2 of the agentic surfaces program (`2026-10-13-agentic-surfaces-program.md`). Runs B (API, webhooks, email), C (client's AI plugin), D (agents and analytics) and E (Discord) call this registry.

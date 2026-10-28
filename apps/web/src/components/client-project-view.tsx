@@ -15,7 +15,7 @@ import { ProjectProgress } from "@/components/project-progress";
 import { DeliveryLink } from "@/components/delivery-link";
 import { clientRefundLabel, paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
-import { AMENDMENT_STATUS_LABELS, CLIENT_PROJECT_TONES, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
+import { AMENDMENT_STATUS_LABELS, CLIENT_PROJECT_TONES, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
 
 export type ClientProjectData = inferRouterOutputs<AppRouter>["project"]["clientGet"];
 
@@ -106,7 +106,7 @@ function QuoteSummary({
       <div className="flex items-center justify-between">
         <p className="font-medium">
           <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
-          <span className="text-muted-foreground"> · delivery in {quote.deliveryDays} days</span>
+          <span className="text-muted-foreground"> · delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`}</span>
         </p>
         <Badge tone={quote.status === "proposed" ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
           {quote.status === "proposed" ? "Waiting for you" : QUOTE_STATUS_LABELS[quote.status]}
@@ -129,6 +129,9 @@ function QuoteSummary({
   );
 }
 
+// The api prefixes rule refusals with a code for agents; people read the sentence after it.
+const ERROR_CODE_PREFIX = /^[A-Z_]+: /;
+
 export function ClientProjectView({
   data,
   actions,
@@ -149,6 +152,7 @@ export function ClientProjectView({
   const awaitingDelivery = project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
   const deliveryBusy = !actions || actions.deliveryBusy;
   const changesNoteTooLong = changesNote.trim().length > MAX_DELIVERY_NOTE;
+  const roundsUsed = project.revisionRounds !== null && project.revisionRounds.used >= project.revisionRounds.allowed;
 
   async function handleRequestChanges(event: FormEvent<HTMLFormElement>, deliveryId: string) {
     event.preventDefault();
@@ -175,6 +179,7 @@ export function ClientProjectView({
         </p>
         {refund ? <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p> : null}
         {project.brief ? <p className="text-sm">{project.brief}</p> : null}
+        {project.rules ? <p className="text-sm text-muted-foreground">Team rules: {project.rules}</p> : null}
       </div>
       {closedRequest ? (
         <section className="panel space-y-2 p-4">
@@ -187,7 +192,7 @@ export function ClientProjectView({
           </a>
         </section>
       ) : project.status !== "cancelled" ? (
-        <ProjectProgress status={project.status} layout="row" />
+        <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
       ) : null}
 
       {responses.length > 0 ? (
@@ -316,26 +321,38 @@ export function ClientProjectView({
                     </div>
                   </form>
                 ) : (
+                  <div className="space-y-2">
+                  {roundsUsed ? (
+                    <p className="text-sm text-muted-foreground">
+                      You used your {project.revisionRounds?.allowed === 1 ? "free round" : `${project.revisionRounds?.allowed} free rounds`} of changes.
+                      {project.revisionRounds && project.revisionRounds.paidPriceMinor > 0
+                        ? ` For more, ask the team for a paid revision (${formatMoney(money(currency, project.revisionRounds.paidPriceMinor))}) in a message; it arrives as a change to the quote.`
+                        : ""}
+                    </p>
+                  ) : null}
                   <div className="flex gap-2">
                     <Button disabled={deliveryBusy} onClick={() => actions?.acceptDelivery(delivery.id)}>
                       Accept delivery
                     </Button>
-                    <Button
-                      variant="outline"
-                      disabled={deliveryBusy}
-                      onClick={() => {
-                        actions?.resetDelivery();
-                        setChangesOpen(true);
-                      }}
-                    >
-                      Request changes
-                    </Button>
+                    {roundsUsed ? null : (
+                      <Button
+                        variant="outline"
+                        disabled={deliveryBusy}
+                        onClick={() => {
+                          actions?.resetDelivery();
+                          setChangesOpen(true);
+                        }}
+                      >
+                        Request changes
+                      </Button>
+                    )}
+                  </div>
                   </div>
                 )
               ) : null}
               {awaitingDelivery?.id === delivery.id && actions?.deliveryError ? (
                 <p role="alert" className="text-sm text-destructive">
-                  {actions.deliveryError.message}
+                  {actions.deliveryError.message.replace(ERROR_CODE_PREFIX, "")}
                 </p>
               ) : null}
             </div>
@@ -355,7 +372,7 @@ export function ClientProjectView({
             return (
               <div key={payment.id} className="space-y-3 panel p-4">
                 <div className="flex items-center justify-between text-sm">
-                  <p className="font-medium capitalize">{payment.kind.replace("_", "-")}</p>
+                  <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
                   <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</span>
                 </div>
                 <ul className="space-y-1 text-sm">

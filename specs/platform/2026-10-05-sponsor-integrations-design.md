@@ -1,5 +1,7 @@
 # Sponsor integrations: AG Grid, Channel3 and Render
 
+> **Current scope, 2026-10-28:** AG Studio analytics and its sponsor-prize integration are cancelled for this delivery. The older approval/run-D references below are historical. D now supplies capabilities of the [one contextual agent](2026-10-27-calls-and-agent-design.md); the dashboard does not require AG Studio.
+
 > **2026-10-13:** AG Grid remains the sponsor prize. For the hackathon it is built in run D of the agentic surfaces program as team analytics for services teams (money flow, payouts, agent and human work) with the team copilot as AG Studio's agent; the store analytics below are the reference for widgets, the agent setup and the trial key timing (request it Nov 1). Render is not used.
 
 - **Status:** approved on 2026-10-05

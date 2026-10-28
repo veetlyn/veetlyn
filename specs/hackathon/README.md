@@ -1,5 +1,7 @@
 # PayPal AI Hackathon: context
 
+> **Current submission context, 2026-10-28:** this file records the PayPal event. Payleor also targets the Meta hackathon **Startup track** with the contextual agentic dash built during Oct 27–Nov 4; see the [participant guide supplied by Mouhamed](meta-ai-hackathon-participant-guide.md) and [current design](../platform/2026-10-27-calls-and-agent-design.md). Keep the two demos and their build evidence separate. M, E and AG Studio are cancelled for this delivery. Dates here are recorded targets; recheck official rules before submitting.
+
 "Build what's next with PayPal and AI" is a global online hackathon. It is run by PayPal and administered by Devpost.
 
 - Site: <https://paypalaihackathon.devpost.com/>

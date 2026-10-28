@@ -1,4 +1,5 @@
 import { canOpenStore, hasStoreWideRole, storeSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
+import { resendOrderEmail } from "@jendal-workspace/api/use-cases/orders";
 import { isStoreSlugTaken, listOrganizationsWithStores } from "@jendal-workspace/db/repositories/stores";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -23,6 +24,17 @@ export const storeRouter = router({
   }),
 
   get: storeProcedure.query(({ ctx }) => ({ ...ctx.store, role: ctx.role })),
+
+  // Backlog row 15: the admin's Resend button on the order view.
+  resendOrderEmail: storeProcedure
+    .input(z.object({ orderId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.role !== "owner" && ctx.role !== "admin" && ctx.servicesTeamRole !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only team admins can resend order emails." });
+      }
+      const sent = await resendOrderEmail({ db: ctx.db, email: ctx.email }, { orderId: input.orderId, teamId: ctx.store.id });
+      return { sent };
+    }),
 
   checkSlug: protectedProcedure.input(z.object({ slug: slugInput })).query(async ({ ctx, input }) => {
     const result = validateStoreSlug(input.slug);

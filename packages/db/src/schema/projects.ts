@@ -60,6 +60,24 @@ export const project = pgTable(
     managementFeeBps: integer("management_fee_bps").notNull(),
     teamCutBps: integer("team_cut_bps").notNull(),
     revisions: integer("revisions").notNull().default(0),
+    // The rulebook version this project runs under, pinned at request time; plain text because the
+    // rulebook table lives in another module and projects may predate rulebooks (backfilled then).
+    rulebookId: text("rulebook_id"),
+    // The manager who runs the project; their cut comes from the completion split when set.
+    managerId: text("manager_id").references(() => user.id, { onDelete: "set null" }),
+    managerCutBps: integer("manager_cut_bps").notNull().default(0),
+    // The upfront rate computed from the pinned rulebook at quote acceptance.
+    upfrontBps: integer("upfront_bps").notNull().default(5000),
+    // A late-delivery refund waits here for an admin to confirm or waive it; nothing pays on its own.
+    lateRefundProposedMinor: minor("late_refund_proposed_minor"),
+    lateRefundDaysLate: integer("late_refund_days_late"),
+    lateRefundStatus: text("late_refund_status", { enum: ["pending", "confirmed", "waived"] }),
+    lateRefundDecidedBy: text("late_refund_decided_by").references(() => user.id, { onDelete: "set null" }),
+    lateRefundDecidedAt: timestamp("late_refund_decided_at"),
+    // A quality refund an admin set within the pinned rulebook's cap; it lowers the final price at acceptance.
+    qualityRefundMinor: minor("quality_refund_minor"),
+    qualityRefundSetBy: text("quality_refund_set_by").references(() => user.id, { onDelete: "set null" }),
+    qualityRefundSetAt: timestamp("quality_refund_set_at"),
     deadlineAt: timestamp("deadline_at"),
     // The price the client accepted the delivery at (services spec §5.3); null until then.
     finalPriceMinor: minor("final_price_minor"),
@@ -154,6 +172,8 @@ export const amendment = pgTable(
     managementFeeCreditMinor: minor("management_fee_credit_minor").notNull().default(0),
     newAmountMinor: minor("new_amount_minor").notNull(),
     extraDays: integer("extra_days").notNull().default(0),
+    // A paid revision adds rounds of changes once the client accepts it.
+    revisionsAdded: integer("revisions_added").notNull().default(0),
     resultingQuoteId: text("resulting_quote_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     decidedAt: timestamp("decided_at"),

@@ -49,6 +49,8 @@ describe("project router types", () => {
       description: string;
       answers: { question: string; answer: string }[];
       website: string;
+      termsAccepted: boolean;
+      acceptedRulebookId: string;
     }>();
     expectTypeOf<Outputs["requestQuote"]>().toEqualTypeOf<{ ok: true; projectId: string | null }>();
   });
