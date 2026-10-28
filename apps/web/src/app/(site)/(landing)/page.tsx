@@ -5,6 +5,7 @@ import CloseCta from "@/components/site/close-cta";
 import FaqList, { faqStructuredData } from "@/components/site/faq-list";
 import JsonLd from "@/components/site/json-ld";
 import { NetworkArt, SideArt } from "@/components/site/art/home";
+import { TermsArt } from "@/components/site/art/terms";
 import LogoStrip from "@/components/site/logo-strip";
 import PMark from "@/components/site/p-mark";
 import { indexFaq } from "@/content/site/faqs";
@@ -46,37 +47,13 @@ function Terms() {
     <section id="terms" aria-labelledby="terms-h">
       <div className="wrap">
         <h2 id="terms-h" data-in>Our terms, on top of every integration</h2>
-        <div className="terms three">
-          <div className="term" data-in>
-            <span className="via">Claude and ChatGPT<ViaLogos names={["claude", "openai"]} /></span><p className="coat">
-              <PMark />The client's AI finds, asks and requests quotes. It never pays.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">PayPal checkout<ViaLogos names={["paypal"]} /></span><p className="coat">
-              <PMark />The price on the page is the price charged.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">PayPal Payouts<ViaLogos names={["paypal"]} /></span><p className="coat">
-              <PMark />Each share is sent once, after a person or your rule says yes.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Your dash and team chat<ViaLogos names={["slack", "discord", "googlechat"]} /></span><p className="coat">
-              <PMark />Agent drafts wait for a person to confirm them.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Your own agents, through our API<ViaLogos names={["api"]} /></span><p className="coat">
-              <PMark />The same approvals and payout rules as your team.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Every offer</span><p className="coat">
-              <PMark />Buyers see who does the work: people, AI or both.
-            </p>
-          </div>
+        <div className="bento terms-bento">
+          <div className="tile wide dark" data-in><p className="tag">Claude and ChatGPT<ViaLogos names={["claude", "openai"]} /></p><h3>The client's AI finds, asks and requests quotes. It never pays.</h3><TermsArt name="assistants" /></div>
+          <div className="tile" data-in><p className="tag">PayPal checkout<ViaLogos names={["paypal"]} /></p><h3>The price on the page is the price charged.</h3><TermsArt name="checkout" /></div>
+          <div className="tile dark" data-in><p className="tag">PayPal Payouts<ViaLogos names={["paypal"]} /></p><h3>Each share is sent once, after a person or your rule says yes.</h3><TermsArt name="payouts" /></div>
+          <div className="tile" data-in><p className="tag">Your dash and team chat<ViaLogos names={["slack", "discord", "googlechat"]} /></p><h3>Agent drafts wait for a person to confirm them.</h3><TermsArt name="chat" /></div>
+          <div className="tile" data-in><p className="tag">Your own agents, through our API<ViaLogos names={["api"]} /></p><h3>The same approvals and payout rules as your team.</h3><TermsArt name="api" /></div>
+          <div className="tile wide mint" data-in><p className="tag">Every offer</p><h3>Buyers see who does the work: people, AI or both.</h3><TermsArt name="who" /></div>
         </div>
       </div>
     </section>
