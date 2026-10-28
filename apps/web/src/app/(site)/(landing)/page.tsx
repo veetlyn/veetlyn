@@ -1,3 +1,4 @@
+import { isWaitlistOnly } from "@/lib/launch";
 import Link from "next/link";
 
 import ChatDemo from "@/components/site/chat-demo";
@@ -127,7 +128,7 @@ export default function HomePage() {
             <h1 data-in>Sell where <em>AI</em> shops</h1>
             <p className="lead" data-in>{name} Network puts your services and products inside Claude and ChatGPT. Agents do the work. People approve the money.</p>
             <div className="ctas" data-in>
-              <Link className="btn btn-mint" href="/pricing">Start selling</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>
+              <Link className="btn btn-mint" href={isWaitlistOnly() ? "/waitlist" : "/pricing"}>{isWaitlistOnly() ? "Join the waitlist" : "Start selling"}</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>
             </div>
             <p className="hero-note" data-in>Clients add {name} Network once, in Claude or ChatGPT.</p>
           </div>

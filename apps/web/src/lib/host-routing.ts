@@ -21,7 +21,16 @@ export type HostRoute =
 
 const INTERNAL_ROUTE_TREES = new Set(["dash", "admin", "store"]);
 
-export function routeForHost(url: URL, domains: HostDomains): HostRoute {
+export function routeForHost(url: URL, domains: HostDomains, publicAccess = "open"): HostRoute {
+  if (publicAccess === "waitlist") {
+    const target = parseRequestTarget(url.hostname, domains);
+    if (target.kind === "platform" && (target.app === "dash" || target.app === "admin")) {
+      return { kind: "redirect", location: `https://${domains.platformDomain}/waitlist` };
+    }
+    if (target.kind === "platform" && target.app === "www" && ["/login", "/signup", "/sign-in", "/sign-up"].includes(url.pathname)) {
+      return { kind: "redirect", location: new URL("/waitlist", url).href };
+    }
+  }
   // The route trees are reachable only through a rewrite, so one host never serves another host's pages.
   if (INTERNAL_ROUTE_TREES.has(url.pathname.split("/")[1] ?? "")) return { kind: "not-found" };
 

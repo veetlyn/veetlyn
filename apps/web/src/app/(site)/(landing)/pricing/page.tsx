@@ -1,3 +1,4 @@
+import { signupDestination } from "@/lib/launch";
 import { TRIAL_DAYS } from "@jendal-workspace/core";
 import Link from "next/link";
 
@@ -26,7 +27,7 @@ export default async function PricingPage() {
   const { name } = site;
   const faq = pricingFaq(name);
   const { dash } = await getPlatformOrigins();
-  const signup = `${dash}/signup`;
+  const signup = signupDestination(dash);
   return (
     <>
       <JsonLd

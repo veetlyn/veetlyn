@@ -1,3 +1,4 @@
+import { signupDestination } from "@/lib/launch";
 import { depositDue, formatOrderFee, getSellerPlan, NETWORK_FEE_BPS, SOLO_MANAGEMENT_FEE_BPS } from "@jendal-workspace/core";
 import Link from "next/link";
 
@@ -39,7 +40,7 @@ export default async function FreelancersPage() {
     { label: `${name}, ${soloFee} and ${formatOrderFee(NETWORK_FEE_BPS)} once`, minor: amadou.platformMinor, tone: "platform" },
   ] as const;
   const { dash } = await getPlatformOrigins();
-  const signup = `${dash}/signup`;
+  const signup = signupDestination(dash);
   return (
     <>
       <JsonLd data={graph(organization(site), breadcrumbs([["Freelancers", "/freelancers"]], site), faqStructuredData(FREELANCER_FAQ))} />

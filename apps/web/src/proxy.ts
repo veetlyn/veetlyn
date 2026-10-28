@@ -7,14 +7,14 @@ export function proxy(request: NextRequest) {
   const route = routeForHost(new URL(request.url), {
     platformDomain: env.PLATFORM_DOMAIN,
     storeDomain: env.STORE_DOMAIN,
-  });
+  }, env.PUBLIC_ACCESS);
   switch (route.kind) {
     case "pass":
       return NextResponse.next();
     case "not-found":
       return new NextResponse("Not found", { status: 404 });
     case "redirect":
-      return NextResponse.redirect(route.location, 301);
+      return NextResponse.redirect(route.location, env.PUBLIC_ACCESS === "waitlist" ? 307 : 301);
     case "rewrite":
       return NextResponse.rewrite(new URL(`${route.pathname}${request.nextUrl.search}`, request.url));
   }
