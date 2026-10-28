@@ -1,0 +1,58 @@
+apps/web/src/app/(site)/(landing)/agencies/page.tsx
+  s_73e10f9d158414::t_f2728723fb0acc 27,51,57-58,66,77,79,87,109,150
+apps/web/src/app/(site)/(landing)/pricing/page.tsx
+  s_73e10f9d158414::t_f26b0b6734c16b 70
+apps/web/src/components/site/tiers.tsx
+  s_73e10f9d158414::t_f26b0b6734c16b 33
+  s_73e10f9d158414::t_b489a909c7ddec 91,104,161,169
+apps/web/src/content/site/logos.ts
+  s_73e10f9d158414::t_2395ce241e008a 1-2,9-12
+apps/web/src/app/(site)/(landing)/studios/page.tsx
+  s_73e10f9d158414::t_b489a909c7ddec 34,44,46-47,49,54,108,154,156,162
+apps/web/src/content/site/audiences.ts
+  s_73e10f9d158414::t_b489a909c7ddec 4
+apps/web/src/components/site/site.css
+  s_73e10f9d158414::t_f26b0b6734c16b 628
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_73e10f9d158414::t_db566ee5b2b598 79
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_73e10f9d158414::t_db566ee5b2b598 33,148,181,191-192,196-197
+  s_73e10f9d158414::t_f2728723fb0acc 47
+  s_73e10f9d158414::t_6039ce4cad8178 138
+  s_73e10f9d158414::t_f26b0b6734c16b 74
+apps/web/src/content/site/faqs.ts
+  s_73e10f9d158414::t_b489a909c7ddec 61,79,92
+  s_73e10f9d158414::t_7b3792e1183f85 89
+  s_73e10f9d158414::t_f26b0b6734c16b 120,131
+apps/web/src/app/(site)/(landing)/stores/page.tsx
+  s_73e10f9d158414::t_7b3792e1183f85 19,27,44-45,57,66,70-72,80,82-83,85,90-91,100,133-134,154-156,158
+  s_73e10f9d158414::t_61453cc7cc33a5 51-53,56,59
+apps/web/src/components/site/pricing-explorer.tsx
+  s_73e10f9d158414::t_b489a909c7ddec 47-55,62
+  s_73e10f9d158414::t_f26b0b6734c16b 42
+apps/web/src/content/blog/get-found-on-google-and-in-ai-answers.mdx
+  s_73e10f9d158414::t_f26b0b6734c16b 32
+apps/web/src/app/(site)/(landing)/visibility/page.tsx
+  s_73e10f9d158414::t_f26b0b6734c16b 18,34,55,57-60
+  s_73e10f9d158414::t_f2728723fb0acc 90
+apps/web/src/app/(site)/(landing)/discover/page.tsx
+  s_73e10f9d158414::t_5b984f5e42e9f4 53-54
+apps/web/src/components/site/logo-strip.tsx
+  s_73e10f9d158414::t_6039ce4cad8178 1,14,19,25-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "31686b8fd1dc866cdb14baca92567856f3b0bd32",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
