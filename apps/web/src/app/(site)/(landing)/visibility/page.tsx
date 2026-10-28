@@ -41,7 +41,7 @@ export default function VisibilityPage() {
             <p className="ask-label">Someone asks</p>
             <p className="ask">a pedicure in Brooklyn this Saturday</p>
             <div className="answer-row"><p className="engine">Google</p><p className="s">maisonlune.{storeDomain}</p><p className="serp-title">Pedicure in Brooklyn · Maison Lune</p></div>
-            <div className="answer-row"><p className="engine">ChatGPT</p><p>Maison Lune does pedicures for $45, and you can request Saturday.</p></div>
+            <div className="answer-row"><p className="engine">ChatGPT</p><p>Maison Lune does pedicures for $45, and you can request Saturday.</p><div className="widget"><p className="wtop"><PMark /><b>{name} Network</b> · Maison Lune</p><div className="wrow"><span><span className="t">Pedicure</span><br /><span className="s">Service · 45 min</span></span><span className="num t">$45</span><span className="act">Request</span></div></div></div>
             <div className="answer-row"><p className="engine">Perplexity · Sources</p><p><span className="src-n">1</span> maisonlune.{storeDomain}/pedicure</p></div>
             <div className="answer-row"><p className="engine">AI Overviews</p><p>Maison Lune in Brooklyn offers pedicures and hair care from one page.</p></div>
             <p className="s" style={{ marginTop: "12px" }}>Example</p>

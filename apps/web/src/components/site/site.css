@@ -762,3 +762,16 @@
 .site-root .bento .tile.dark .tag .logos { color: var(--band-ink); }
 .site-root .terms-bento .tag .logos svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
 .site-root .terms-bento h3 { font-size: clamp(20px, 1.7vw, 24px); line-height: 1.25; }
+
+/* Get found: the client's question, then the network card the answer carries. */
+.site-root .ask-bubble { justify-self: end; max-width: 85%; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--tray); font-size: 15px; }
+.site-root .seen .widget { margin-top: 6px; background: var(--card); }
+.site-root .seen .widget .wrow .act { min-width: 0; }
+.site-root .report .widget b { font-size: 24px; }
+.site-root .report .widget .bars { height: 56px; margin-top: 8px; }
+.site-root .answer-row .widget { margin-top: 8px; padding: 12px; }
+.site-root .report .widget .wtop b { font: 600 15px var(--site-display); }
+.site-root .serp-offers { display: grid; margin-top: 6px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--border); }
+.site-root .serp-offers p { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; font-size: 14px; }
+.site-root .serp-offers p + p { border-top: 1px solid var(--border); }
+.site-root .serp-offers span:first-child { color: var(--brand-text); font-weight: 600; }
