@@ -22,44 +22,28 @@ export function generateMetadata() {
   });
 }
 
-function Terms({ name }: { name: string }) {
+function Terms() {
   return (
     <section id="terms" aria-labelledby="terms-h">
       <div className="wrap">
         <h2 id="terms-h" data-in>Our terms, on top of every integration</h2>
-        <div className="terms">
+        <div className="terms three">
           <div className="term" data-in>
-            <span className="via">Claude and ChatGPT, through {name} Network</span><p className="coat">
+            <span className="via">Claude and ChatGPT</span><p className="coat">
               <PMark />The client's AI finds, asks and requests quotes. It never pays.
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">PayPal checkout</span><p className="coat">
-              <PMark />The price on the page is the price charged.
+            <span className="via">PayPal</span><p className="coat">
+              <PMark />The payer approves each payment. A person or your rule approves each payout.
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">PayPal Payouts</span><p className="coat">
-              <PMark />Each share is sent once, after a person or your rule says yes.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Your dash and team chat</span><p className="coat">
-              <PMark />Agent drafts wait for a person to confirm them.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Your own agents, through our API</span><p className="coat">
-              <PMark />The same approvals and payout rules as your team.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Every offer</span><p className="coat">
-              <PMark />Buyers see who does the work: people, AI or both.
+            <span className="via">Your agents</span><p className="coat">
+              <PMark />They draft. A person confirms.
             </p>
           </div>
         </div>
-        <p className="rails-note" data-in><b>Every payment runs through PayPal.</b> Card details stay with PayPal and never reach {name}.</p>
       </div>
     </section>
 
@@ -145,19 +129,16 @@ export default function HomePage() {
               <div className="side theirs" data-in>
                 <p className="for">Their agents</p>
                 <h3>Claude and ChatGPT, through {name} Network</h3>
-                <ul><li>Find your offers</li><li>Ask your questions</li><li>Request quotes</li><li>Follow the project</li></ul>
                 <p className="foot-line">They never pay.</p>
               </div>
               <div className="side middle" data-in>
                 <p className="for">{name}</p>
                 <h3>The money and the rules</h3>
-                <ul><li>The price comes from your project</li><li>The payer approves each payment in PayPal</li><li>A person or your rule approves each payout</li><li>Every step is recorded</li></ul>
                 <p className="foot-line">Paid through PayPal.</p>
               </div>
               <div className="side yours" data-in>
                 <p className="for">Your agents</p>
-                <h3>Working for you, inside your rules</h3>
-                <ul><li>The intake agent drafts quotes</li><li>The copilot answers money questions</li><li>The payout agent pays by your rules</li><li>Your own agents join through the API</li></ul>
+                <h3>Quotes, answers and payouts, drafted for you</h3>
                 <p className="foot-line">They act inside your rules.</p>
               </div>
             </div>
@@ -166,20 +147,13 @@ export default function HomePage() {
         <section id="network" aria-labelledby="network-h">
           <div className="wrap">
             <h2 id="network-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
-            <div className="features">
-              <div className="feature agent" data-in><p className="tag">A way in</p><h3>For people who sell their work</h3><p>Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</p></div>
-              <div className="feature agent" data-in><p className="tag">Platform rules</p><h3>The AI never pays</h3><p>The client approves each payment on {name}, in PayPal.</p></div>
-              <div className="feature agent" data-in><p className="tag">Consent</p><h3>A press the model cannot fake</h3><p>Accepting a quote or a delivery takes the client's own press.</p></div>
-            </div>
+            <p className="note" data-in>Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</p>
             <Link className="more" href="/network">How {name} Network works</Link>
           </div>
         </section>
         <section id="stories" aria-labelledby="stories-h">
           <div className="wrap">
             <h2 id="stories-h" data-in>For anyone who sells</h2>
-            <ul className="wall" data-in>
-              <li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Remote teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li>
-            </ul>
             <div className="stories">
               <Link className="story-card is-dark" href="/freelancers" data-in>
                 <p className="for">Freelancers</p>
@@ -204,7 +178,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        </section><Terms name={name} /> <Seen storeDomain={storeDomain} /><section aria-labelledby="price-h">
+        </section><Terms /> <Seen storeDomain={storeDomain} /><section aria-labelledby="price-h">
           <div className="wrap">
             <h2 id="price-h" data-in>Your clients stay yours. We charge when we bring you one.</h2>
             <div className="model" data-in>
