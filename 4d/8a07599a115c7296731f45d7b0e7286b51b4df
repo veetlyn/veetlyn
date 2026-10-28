@@ -1,0 +1,23 @@
+apps/web/src/components/sandbox-banner.tsx
+  s_22e9e82f1423d1::t_ac0579b4c280ab 5
+apps/web/src/lib/sandbox-banner.test.ts
+  s_22e9e82f1423d1::t_eb5132ae97b854 19-23
+apps/web/src/lib/sandbox-banner.ts
+  s_22e9e82f1423d1::t_d91c70809f4016 4,26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4d8a07599a115c7296731f45d7b0e7286b51b4df",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
