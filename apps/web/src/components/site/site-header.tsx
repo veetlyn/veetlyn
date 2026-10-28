@@ -67,7 +67,7 @@ function Drop({
   );
 }
 
-export default function SiteHeader({ dashOrigin }: { dashOrigin: string }) {
+export default function SiteHeader({ dashOrigin, waitlistOnly = false }: { dashOrigin: string; waitlistOnly?: boolean }) {
   const header = useRef<HTMLElement>(null);
   const pathname = useHeaderMenus(header);
   const name = usePlatformName();
@@ -88,9 +88,7 @@ export default function SiteHeader({ dashOrigin }: { dashOrigin: string }) {
               {l.label}
             </Link>
           ))}
-          <a className="nav-item" href={`${dashOrigin}/login`}>
-            Log in
-          </a>
+          {!waitlistOnly && <a className="nav-item" href={`${dashOrigin}/login`}>Log in</a>}
           <details className="menu">
             <summary>Menu</summary>
             <div className="menu-panel">
@@ -112,14 +110,12 @@ export default function SiteHeader({ dashOrigin }: { dashOrigin: string }) {
                     {l.label}
                   </Link>
                 ))}
-                <a className="menu-link" href={`${dashOrigin}/login`}>
-                  Log in
-                </a>
+                {!waitlistOnly && <a className="menu-link" href={`${dashOrigin}/login`}>Log in</a>}
               </div>
             </div>
           </details>
-          <a className="btn btn-mint" href={`${dashOrigin}/signup`}>
-            Get started
+          <a className="btn btn-mint" href={waitlistOnly ? "/waitlist" : `${dashOrigin}/signup`}>
+            {waitlistOnly ? "Join the waitlist" : "Get started"}
           </a>
         </nav>
       </div>

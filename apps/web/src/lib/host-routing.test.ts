@@ -94,3 +94,18 @@ describe("routeForHost", () => {
     }
   });
 });
+
+// Launch access belongs at host routing: it applies to direct URLs and existing sessions too.
+describe("waitlist host routing", () => {
+  it.each(["dash", "admin"])("redirects the %s host without retaining a private path or query", (host) => {
+    expect(routeForHost(new URL(`https://${host}.platform.test/acme/orders?token=private`), SAME, "waitlist")).toEqual({ kind: "redirect", location: "https://platform.test/waitlist" });
+  });
+  it("redirects account URLs but leaves marketing and the waitlist available", () => {
+    expect(routeForHost(new URL("https://platform.test/signup"), SAME, "waitlist")).toEqual({ kind: "redirect", location: "https://platform.test/waitlist" });
+    expect(routeForHost(new URL("https://platform.test/waitlist"), SAME, "waitlist")).toEqual({ kind: "pass" });
+    expect(routeForHost(new URL("https://platform.test/pricing"), SAME, "waitlist")).toEqual({ kind: "pass" });
+  });
+  it("keeps the staging dashboard available with open access", () => {
+    expect(routeForHost(new URL("https://dash.staging.platform.test/login"), { platformDomain: "staging.platform.test", storeDomain: "staging.platform.site" }, "open")).toEqual({ kind: "rewrite", pathname: "/dash/login" });
+  });
+});

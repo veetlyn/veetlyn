@@ -225,11 +225,11 @@ export function Tier({ id, interval, signupUrl }: { id: TierId; interval: Billin
       <p className="fee">{t.fee}</p>
       {href.startsWith("/") ? (
         <Link className={`btn ${t.btn}`} href={href}>
-          {t.cta}
+          {href === "/waitlist" ? "Join the waitlist" : t.cta}
         </Link>
       ) : (
         <a className={`btn ${t.btn}`} href={href}>
-          {t.cta}
+          {href === "/waitlist" ? "Join the waitlist" : t.cta}
         </a>
       )}
       <ul>

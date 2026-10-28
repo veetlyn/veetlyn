@@ -1,3 +1,4 @@
+import { signupDestination } from "@/lib/launch";
 import { formatOrderFee, getPlan } from "@jendal-workspace/core";
 import Link from "next/link";
 
@@ -34,7 +35,7 @@ export default async function StoresPage() {
   const { name, storeDomain } = site;
   const faq = storeFaq(name);
   const { dash } = await getPlatformOrigins();
-  const signup = `${dash}/signup`;
+  const signup = signupDestination(dash);
   return (
     <>
       <JsonLd data={graph(organization(site), breadcrumbs([["Stores", "/stores"]], site), faqStructuredData(faq))} />

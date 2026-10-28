@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
     inputs:
       stage:
@@ -17,18 +17,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.stage || 'production' }}
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.workflow_run.head_branch == 'dev' && 'staging' || 'production') }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    # Production deploys only after CI passed on a push to main; the production environment accepts main only.
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    # CI-gated branches: dev -> staging, main -> production. Manual runs obey the same mapping.
+    if: (github.event_name == 'workflow_dispatch' && ((github.ref == 'refs/heads/main' && inputs.stage == 'production') || (github.ref == 'refs/heads/dev' && inputs.stage == 'staging'))) || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'dev'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || 'production' }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.workflow_run.head_branch == 'dev' && 'staging' || 'production') }}
     env:
-      STAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || 'production' }}
+      PUBLIC_ACCESS: ${{ vars.PUBLIC_ACCESS }}
+      STAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.workflow_run.head_branch == 'dev' && 'staging' || 'production') }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}

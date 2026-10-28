@@ -1,3 +1,4 @@
+import { signupDestination } from "@/lib/launch";
 import { depositDue, formatOrderFee, getSellerPlan } from "@jendal-workspace/core";
 import Link from "next/link";
 
@@ -40,7 +41,7 @@ export default async function AgenciesPage() {
     { label: `${name}, ${formatOrderFee(EXAMPLE_TEAM.platformFeeBps)}`, minor: walkCrew.platformMinor, tone: "platform" },
   ] as const;
   const { dash } = await getPlatformOrigins();
-  const signup = `${dash}/signup`;
+  const signup = signupDestination(dash);
   return (
     <>
       <JsonLd data={graph(organization(site), breadcrumbs([["Agencies", "/agencies"]], site), faqStructuredData(faq))} />
