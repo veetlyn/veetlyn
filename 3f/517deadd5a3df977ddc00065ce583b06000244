@@ -1,0 +1,19 @@
+specs/platform/plans/2026-10-28-dash-tree-and-revamp.md
+  s_73e10f9d158414::t_c4cfbc1efebf2e 1-550
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3f517deadd5a3df977ddc00065ce583b06000244",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
