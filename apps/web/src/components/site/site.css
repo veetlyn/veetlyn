@@ -753,3 +753,12 @@
   .site-root .home-art .vis-needle { transform: rotate(48deg); }
   .site-root .home-art .vis-lit { fill: var(--brand); }
 }
+
+/* Terms as a bento: the integration and its logos on top, the promise, then its picture. */
+.site-root .bento .tile.mint { background: var(--brand); color: var(--brand-foreground); box-shadow: none; }
+.site-root .bento .tile.mint .tag { color: var(--brand-foreground); opacity: 0.75; }
+.site-root .terms-bento .tag { display: flex; align-items: center; gap: 12px; }
+.site-root .terms-bento .tag .logos { margin-left: auto; display: inline-flex; gap: 10px; color: currentColor; }
+.site-root .bento .tile.dark .tag .logos { color: var(--band-ink); }
+.site-root .terms-bento .tag .logos svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
+.site-root .terms-bento h3 { font-size: clamp(20px, 1.7vw, 24px); line-height: 1.25; }
