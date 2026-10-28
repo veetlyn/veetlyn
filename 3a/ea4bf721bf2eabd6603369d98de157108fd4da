@@ -1,0 +1,52 @@
+specs/platform/2026-10-28-contextual-agent-use-cases-review.md
+  s_dcbba9695c4b8a::t_b53ba0840c2794 62,150
+  s_dcbba9695c4b8a::t_713cc52ea22f90 1-61,63-149,151-413
+specs/BACKLOG.md
+  s_22e9e82f1423d1::t_86e78325b5e4cb 15-19,21
+specs/PROGRESS.md
+  s_22e9e82f1423d1::t_a7c61df280de07 8-9,13
+specs/README.md
+  s_22e9e82f1423d1::t_2c842430517d74 48
+specs/hackathon/agentic-dash-mock.html
+  s_22e9e82f1423d1::t_4c9fc3ec9a77f3 11,25,29,31,47,55,57-58,60-61,66,70-73,79-80,82,84-86,88,91,98,100-102,107,109-110,116,121,129
+specs/hackathon/agentic-dash-payouts.html
+  s_22e9e82f1423d1::t_c9c344061a09e2 11,25,29-35,47,56,58-59,64-72,75-79,83-84,88-90,92,95,102,104,106,108,113,118,126
+specs/hackathon/agentic-dash-record.html
+  s_22e9e82f1423d1::t_0d02d4851495a0 11,31,47-48,55-57,71,77,86,88,90-92,99-100,104-106,108,111,118,120-124,126,139-140,142,150
+specs/hackathon/dash-demo.js
+  s_22e9e82f1423d1::t_a07b2ca8a259da 1-149
+specs/hackathon/dash-ds.css
+  s_22e9e82f1423d1::t_4d676fc5161321 15,109-110,264-284
+specs/hackathon/dash-ds.html
+  s_22e9e82f1423d1::t_c87631f6333312 11,37,56-57,60-61
+specs/hackathon/dashboard-prototype-notes.md
+  s_22e9e82f1423d1::t_79d5b3cf637998 1-31
+specs/platform/2026-10-27-calls-and-agent-design.md
+  s_22e9e82f1423d1::t_85adab8e5c3605 1,9,25-26,31,41-42,73,85,133,135,184-200
+specs/stories/09-agentic.md
+  s_22e9e82f1423d1::t_5e44473e78c7e4 728-748
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3aea4bf721bf2eabd6603369d98de157108fd4da",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_dcbba9695c4b8a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1801b-7d73-79a1-8d02-bd50f6a976af",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
