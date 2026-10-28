@@ -124,7 +124,7 @@ function TeamEarningsCard({
           </p>
         ) : null}
         {request.isSuccess ? (
-          <p className="text-sm font-medium text-brand-text">
+          <p className="text-sm font-medium text-success-text">
             {request.data.status === "requested"
               ? `Payout requested. An admin of ${earnings.teamName} reviews it.`
               : "Payout approved. It is on its way to your PayPal account."}

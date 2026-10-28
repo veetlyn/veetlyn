@@ -166,7 +166,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
               {saveBio.error.message}
             </p>
           ) : null}
-          {saveBio.isSuccess ? <p className="text-sm font-medium text-brand-text">Saved.</p> : null}
+          {saveBio.isSuccess ? <p className="text-sm font-medium text-success-text">Saved.</p> : null}
           <Button
             type="button"
             onClick={() => saveBio.mutate({ teamSlug, bio: values.bio })}
@@ -230,7 +230,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           </>
         )}
         {save.error ? <p className="text-sm text-destructive">{save.error.message}</p> : null}
-        {save.isSuccess ? <p className="text-sm font-medium text-brand-text">Settings saved.</p> : null}
+        {save.isSuccess ? <p className="text-sm font-medium text-success-text">Settings saved.</p> : null}
         <Button type="submit" disabled={!canSave} className="justify-self-start">
           {save.isPending ? "Saving…" : "Save settings"}
         </Button>
