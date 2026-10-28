@@ -1,6 +1,7 @@
 export const SANDBOX_NOTICE = "Sandbox: payments use PayPal test accounts. No real money moves.";
 
 export type SandboxSettings = {
+  DEPLOY_STAGE?: string;
   PAYPAL_ENVIRONMENT?: string;
   SANDBOX_BUYER_EMAIL?: string;
   SANDBOX_BUYER_PASSWORD?: string;
@@ -22,6 +23,8 @@ export function sandboxBannerContent(
   variant: "default" | "checkout",
   settings: SandboxSettings,
 ): SandboxBannerContent | null {
+  // Public production pages must not carry the demo banner, even while PayPal remains in sandbox mode.
+  if (variant === "default" && settings.DEPLOY_STAGE === "production") return null;
   // The notice says no real money moves; on a live deployment that would be false.
   if (settings.PAYPAL_ENVIRONMENT !== "sandbox") return null;
   const email = settings.SANDBOX_BUYER_EMAIL;
