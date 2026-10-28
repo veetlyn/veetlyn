@@ -14,6 +14,13 @@ export function generateMetadata(): Metadata {
   return {
     title: platformName(),
     description: "Stores and services teams, paid through PayPal",
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+        { url: "/favicon/favicon.svg", type: "image/svg+xml" },
+      ],
+      apple: "/favicon/apple-touch-icon.png",
+    },
   };
 }
 
