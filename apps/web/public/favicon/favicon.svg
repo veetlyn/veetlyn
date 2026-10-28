@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="92" height="92"><svg width="92" height="92" viewBox="0 0 92 92" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="8" y="8" width="76" height="76" rx="12" fill="#F5EEFF" stroke="#B79AFF" stroke-width="3"></rect>
-  <text x="46" y="56" text-anchor="middle" font-family="monospace" font-size="40" fill="#8F5BFF">$<tspan dx="0" dy="0">_</tspan></text>
-</svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
-@media (prefers-color-scheme: dark) { :root { filter: none; } }
-</style></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="2 1.5 60 60"><style>.i{fill:#191c1b}@media (prefers-color-scheme:dark){.i{fill:#f1f1f3}}</style><path class="i" d="M4.00 6.00L22.78 50.86L23.88 50.40A8.8 8.8 0 0 1 31.94 38.20L31.93 37.00L18.96 6.00Z"/><path d="M60.00 6.00L41.22 50.86L40.12 50.40A8.8 8.8 0 0 0 32.06 38.20L32.07 37.00L45.04 6.00Z" fill="#1fbf8f"/><circle cx="32" cy="47" r="10" fill="#1fbf8f"/><circle class="i" cx="32" cy="43" r="6"/></svg>

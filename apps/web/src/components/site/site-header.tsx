@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 
-import { BrandMark } from "@/components/brand-mark";
+import { BrandWordmark } from "@/components/brand-mark";
 import { usePlatformName } from "@/components/platform-name";
 import ArticleArt from "@/components/site/art/article";
 import MiniArt from "@/components/site/art/mini";
@@ -77,8 +77,7 @@ export default function SiteHeader({ dashOrigin, waitlistOnly = false }: { dashO
     <header className="top band" ref={header}>
       <div className="wrap">
         <Link className="mark" href="/" aria-label={`${name} home`}>
-          <BrandMark />
-          {name}
+          <BrandWordmark />
         </Link>
         <nav className="links" aria-label="Main">
           <Drop label="Network" entries={netMenu} feature={netFeature} pathname={pathname} />
