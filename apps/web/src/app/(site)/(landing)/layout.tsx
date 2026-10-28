@@ -1,4 +1,5 @@
 import "@/components/site/site.css";
+import { isWaitlistOnly } from "@/lib/launch";
 import Reveal from "@/components/site/reveal";
 import SiteFooter from "@/components/site/site-footer";
 import SiteHeader from "@/components/site/site-header";
@@ -8,7 +9,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const { dash } = await getPlatformOrigins();
   return (
     <div className="site-root flex-1">
-      <SiteHeader dashOrigin={dash} />
+      <SiteHeader dashOrigin={dash} waitlistOnly={isWaitlistOnly()} />
       <main id="main">{children}</main>
       <SiteFooter />
       <Reveal />

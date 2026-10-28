@@ -1,3 +1,4 @@
+import { signupDestination } from "@/lib/launch";
 import { depositDue, formatOrderFee, getSellerPlan, NETWORK_FEE_BPS, SOLO_MANAGEMENT_FEE_BPS } from "@jendal-workspace/core";
 import Link from "next/link";
 
@@ -39,7 +40,7 @@ export default async function FreelancersPage() {
     { label: `${name}, ${soloFee} and ${formatOrderFee(NETWORK_FEE_BPS)} once`, minor: amadou.platformMinor, tone: "platform" },
   ] as const;
   const { dash } = await getPlatformOrigins();
-  const signup = `${dash}/signup`;
+  const signup = signupDestination(dash);
   return (
     <>
       <JsonLd data={graph(organization(site), breadcrumbs([["Freelancers", "/freelancers"]], site), faqStructuredData(FREELANCER_FAQ))} />
@@ -142,7 +143,7 @@ export default async function FreelancersPage() {
               <div className="feature" data-in><p className="tag">PayPal</p><h3>Deposits and balances</h3><p>Pay pages with PayPal, or as a guest.</p></div>
               <div className="feature" data-in><p className="tag">Your page</p><h3>A seller page and pay links</h3><p>One link for your bio, your email and every chat.</p></div>
               <div className="feature" data-in><p className="tag">Delivery</p><h3>Deliver and get approved</h3><p>Files, approval and the balance in one place.</p></div>
-              <div className="feature" data-in><p className="tag">Yours</p><h3>Export everything</h3><p>Projects, clients, payments and files, any time.</p></div>
+              <div className="feature" data-in><p className="tag">Yours <span className="soon">Coming soon</span></p><h3>Export everything</h3><p>Projects, clients, payments and files, any time.</p></div>
             </div>
           </div>
         </section>

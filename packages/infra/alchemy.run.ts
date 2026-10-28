@@ -6,6 +6,7 @@ import * as Redacted from "effect/Redacted";
 import "varlock/auto-load";
 import { z } from "zod";
 
+import { launchAccess } from "./launch-access.ts";
 import { deployedHosts, parseDeployedStage, storeSlugsFrom } from "./deploy-hosts.ts";
 import { localPorts, parseLocalStage, stageUrls, tunnelSettings } from "./dev-hosts.ts";
 
@@ -15,6 +16,8 @@ const optionalString = (name: string) => Config.String(name).pipe(Config.withDef
 // JENDAL_LOCAL_STAGE is set by the `dev` and `dev:preprod` scripts, JENDAL_DEPLOY_STAGE by the deploy scripts.
 const localStage = parseLocalStage(process.env.JENDAL_LOCAL_STAGE);
 const deployStage = parseDeployedStage(process.env.JENDAL_DEPLOY_STAGE);
+// Explicit launch switch; an omitted value keeps production closed and demos open.
+const publicAccess = launchAccess(deployStage, process.env.PUBLIC_ACCESS);
 if (!localStage && !deployStage) {
   throw new Error("Run a local stage (pnpm dev) or deploy with pnpm deploy:staging or pnpm deploy:production.");
 }
@@ -118,6 +121,7 @@ export const server = Cloudflare.Worker("server", {
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: dashOrigin,
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
+    PUBLIC_ACCESS: publicAccess,
     PLATFORM_DOMAIN: platformDomain,
     PLATFORM_NAME: Config.String("PLATFORM_NAME"),
     STORE_DOMAIN: storeDomain,
@@ -170,6 +174,8 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
   routes: hosts?.web.routes,
   env: {
     SERVER: server,
+    DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
+    PUBLIC_ACCESS: publicAccess,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
     PLATFORM_DOMAIN: platformDomain,
     PLATFORM_NAME: Config.String("PLATFORM_NAME"),

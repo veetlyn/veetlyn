@@ -28,6 +28,7 @@ import {
   projectWarningRecord,
 } from "./projects";
 import { offeringSearch } from "./offerings";
+import { PAYOUT_ACTIONS } from "./payouts";
 import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
 import { createRequest, requestTerms } from "./requests";
 
@@ -67,4 +68,5 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   memberDepartments,
   requestListOpen,
   offeringSearch,
+  ...PAYOUT_ACTIONS,
 ];

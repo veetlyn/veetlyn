@@ -1,3 +1,4 @@
+import { isWaitlistOnly, signupDestination } from "@/lib/launch";
 import Link from "next/link";
 
 import ChatDemo from "@/components/site/chat-demo";
@@ -28,7 +29,7 @@ export default async function NetworkPage() {
   const { name, domain } = site;
   const faq = networkFaq(name);
   const { dash } = await getPlatformOrigins();
-  const signup = `${dash}/signup`;
+  const signup = signupDestination(dash);
   return (
     <>
       <JsonLd data={graph(organization(site), breadcrumbs([[`${name} Network`, "/network"]], site), faqStructuredData(faq))} />
@@ -38,7 +39,7 @@ export default async function NetworkPage() {
             <h1 data-in>{name} Network</h1>
             <p className="lead" data-in>The connector your clients add to Claude and ChatGPT. Their AI finds you, asks and requests. They pay on {name}, with PayPal.</p>
             <div className="ctas" data-in>
-              <a className="btn btn-mint" href={signup}>Get listed</a>{" "}<a className="link" href="#add">Add it to Claude or ChatGPT</a>
+              <a className="btn btn-mint" href={signup}>{isWaitlistOnly() ? "Join the waitlist" : "Get listed"}</a>{" "}<a className="link" href="#add">Add it to Claude or ChatGPT</a>
             </div>
           </div>
           <ChatDemo
@@ -76,7 +77,7 @@ export default async function NetworkPage() {
             <div className="sides two">
               <div className="side theirs" data-in>
                 <p className="for">Their AI can</p>
-                <ul><li>Search sellers and products</li><li>Ask the seller questions</li><li>Request and compare quotes</li><li>Fill a cart across stores</li><li>Follow a project</li></ul>
+                <ul><li>Search sellers and products</li><li>Ask the seller questions</li><li>Request and compare quotes</li><li>Follow a project</li></ul>
               </div>
               <div className="side middle" data-in>
                 <p className="for">Only the client can</p>

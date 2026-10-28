@@ -98,7 +98,7 @@ Run standalone Node/Bun tools that use Varlock from the owning app directory so 
 
 `alchemy profile edit` stores the selected Axiom, Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
 
-Two stages are deployed, with hosts fixed in `packages/infra/deploy-hosts.ts`: `production` (`payleor.com`, `dash.payleor.com`, `api.payleor.com`, `*.payleor.app`) and `staging` (the same hosts under `staging.`). Production deploys from GitHub Actions on every push to main once CI passes (`.github/workflows/deploy.yml`); staging deploys by hand from the Actions tab ("Deploy", choose the branch and `staging`). From a machine with the deploy settings in `packages/infra/.env`, run `pnpm deploy:staging` or `pnpm deploy:production`. There is no CORS setting: the web Worker reaches the api Worker through a service binding.
+Two stages are deployed, with hosts fixed in `packages/infra/deploy-hosts.ts`: `production` (`payleor.com`, `dash.payleor.com`, `api.payleor.com`, `*.payleor.app`) and `staging` (the same hosts under `staging.`). Production deploys after successful CI on `main`; staging deploys after successful CI on `dev` (`.github/workflows/deploy.yml`). Manual deployment also requires the matching branch and stage. From a machine with the deploy settings in `packages/infra/.env`, run `pnpm deploy:staging` or `pnpm deploy:production`. There is no CORS setting: the web Worker reaches the api Worker through a service binding.
 
 No deploy value lives in the repository. Each stage reads its settings from env files that git ignores: `packages/infra/.env` and `apps/server/.env` for what the stages share, and `packages/infra/.env.<stage>.local` for what each stage owns (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `ALCHEMY_PASSWORD`, `PAYPAL_WEBHOOK_ID`). The `.env.schema` files name and document every value. `pnpm -F @jendal-workspace/infra github-env <stage>` copies a stage's values into the GitHub environment of the same name, for the secrets and variables `deploy.yml` reads; it prints names only.
 
@@ -130,3 +130,17 @@ jendal-workspace/
 - `pnpm run db:migrate`: Run database migrations
 - `pnpm run db:studio`: Open database studio UI
 - `cd apps/web && pnpm run generate-pwa-assets`: Generate PWA assets
+
+## Launch access and deployments
+
+`dev` is the GitHub default branch and the target for feature pull requests; it deploys to staging for demos and hackathons. Release pull requests merge `dev` into `main`, which deploys to production. Successful push CI deploys `dev` to staging and `main` to production. Manual deployments accept only those matching branch/environment pairs. GitHub branch protection must enforce the pull-request policy: workflow files alone cannot forbid direct pushes.
+
+`PUBLIC_ACCESS=waitlist` disables authentication HTTP endpoints, redirects dashboard visitors to `/waitlist`, and replaces account calls to action with the launch mailing list. `PUBLIC_ACCESS=open` enables normal access. Defaults are `waitlist` for production and `open` for staging/local; GitHub environment variables can override them. Both Workers receive the same flag. Merging a branch does not itself open access: the target environment’s flag decides. Changing it requires redeployment.
+
+The launch list stores a normalized unique email and join timestamp in `launch_waitlist`, separately from accounts, after explicit launch-notification consent. The endpoint validates origin/input, rate-limits submissions, and never exposes existing membership. It does not send mail. Launch notification is a later deliberate mailing operation, not an automatic campaign. Use the privacy-policy contact for removal requests and remove waitlist-only addresses after the launch campaign.
+
+## License
+
+AGPL-3.0-only or a separate commercial agreement. Commercial deployments are private-network deployments by default; Payleor Network membership is an optional add-on. See [LICENSING.md](LICENSING.md), including the MIT package exceptions.
+
+Main protection configuration is saved in [.github/main-protection.json](.github/main-protection.json). GitHub rejected enforcement on the current private repository plan (HTTP 403). Once the plan supports it, apply with `gh api --method PUT repos/payleor/payleor/branches/main/protection --input .github/main-protection.json`. It restricts pushes/merges to `Mouhamed-B`, requires a pull request and successful `check` (including for administrators), and forbids force pushes/deletion. Until applied, direct pushes are **not** technically blocked.
