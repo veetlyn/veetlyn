@@ -1,0 +1,16 @@
+README.md
+  h_6877e5e7a06bc5 136,150
+specs/PROGRESS.md
+  h_6877e5e7a06bc5 65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "797920a5421bd4bbf2d8207ebbea1bd1b108ed3d",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
