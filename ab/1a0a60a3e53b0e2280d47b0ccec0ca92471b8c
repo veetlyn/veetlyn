@@ -1,0 +1,138 @@
+specs/hackathon/dash-ds.html
+  s_73e10f9d158414::t_408c863ba7c7aa 6,13-17,21-24,26-28,30,32-40,42-51,53-64,66,68-69,71-80
+  s_73e10f9d158414::t_e4311ffa4c3504 1-5,7-8,10,12,18-20,25,65,67,81-84
+  s_73e10f9d158414::t_a4efac024f92c3 9
+  s_73e10f9d158414::t_45a4ad8c118497 41,52
+  s_73e10f9d158414::t_a416ff7ffd0595 11,29,31,70
+specs/hackathon/agentic-dash-mock.html
+  s_73e10f9d158414::t_b2fa38c039b26f 46
+  s_73e10f9d158414::t_fb41521206eb89 85,137
+  s_73e10f9d158414::t_26d678e474185d 87-97,99
+  s_73e10f9d158414::t_bf22ea36b31ea0 11
+  s_73e10f9d158414::t_ee594fef900cb7 83
+  s_73e10f9d158414::t_6d75100acdba22 6,16-29,32-33,35-45,47-49,53-58,60-71,74,76,78-81,84,86,98,101-102,104,114-115,120,126,131,133-134
+  s_73e10f9d158414::t_91fd21e844cd29 50-51
+  s_73e10f9d158414::t_ee8fa78c294531 103,105,107,111,113,116-118,121-124,127-129
+  s_73e10f9d158414::t_e2d8699f2766d9 1-5,7-8,10,12-13,75,77,82,100,136,138-139
+  s_73e10f9d158414::t_1f04a77b43f06a 14-15,52
+  s_73e10f9d158414::t_a4efac024f92c3 9
+  s_73e10f9d158414::t_538b79a7183957 30-31,34
+  s_73e10f9d158414::t_b3f40360f1bd00 59,72-73,106,108-110,112,119,125,130,132,135
+specs/hackathon/fonts/CalSansUI-OFL.txt
+  s_73e10f9d158414::t_bb7c539a2a2c51 1-94
+specs/hackathon/dash-ds.css
+  s_73e10f9d158414::t_c93bde9369e959 263
+  s_73e10f9d158414::t_32fdbe596fb671 1-3,5,7-9,11-39,41,44-67,69-70,76-129,133-135,138-140,142,144-151,155-186,198-199,222-252,256-260
+  s_73e10f9d158414::t_2079f98792b925 40,71,152-154
+  s_73e10f9d158414::t_bf22ea36b31ea0 202
+  s_73e10f9d158414::t_8d744c62f88e80 261
+  s_73e10f9d158414::t_a4efac024f92c3 4
+  s_73e10f9d158414::t_26d678e474185d 187-197
+  s_73e10f9d158414::t_538b79a7183957 68,72-75,130-132,136-137,141,143,253-255
+  s_73e10f9d158414::t_c0e379cf5cbd4b 262
+  s_73e10f9d158414::t_a03052a174a7cb 6,42-43
+  s_73e10f9d158414::t_6d01abb0c91a22 10,200-201,203-221
+specs/platform/2026-10-27-calls-and-agent-design.md
+  s_73e10f9d158414::t_7d889111fdd3e9 125-144
+  s_73e10f9d158414::t_75d30d08a365ff 119
+  s_73e10f9d158414::t_d339f6679a5be8 145-164
+  s_73e10f9d158414::t_050b51e13060a7 89
+  s_73e10f9d158414::t_121264f0481ec0 1-87,90-118,120-124,165-169
+  s_22e9e82f1423d1::t_a2c5fe3b5df21d 88,170-183
+specs/hackathon/agentic-dash-record.html
+  s_73e10f9d158414::t_ee8fa78c294531 114,116,118,123-124,127-128,132-133,137-139
+  s_73e10f9d158414::t_91fd21e844cd29 14,45,50
+  s_73e10f9d158414::t_bf22ea36b31ea0 11
+  s_73e10f9d158414::t_538b79a7183957 33-34
+  s_73e10f9d158414::t_e566dc31a004ee 6,15-22,24-29,31-32,35-44,46-49,52-57,59-71,73-82,84-94,96-97,113,115,125-126,129-131,134-136,140,143-144
+  s_73e10f9d158414::t_26d678e474185d 98-110
+  s_73e10f9d158414::t_1f04a77b43f06a 51
+  s_263bdab18b3756::t_8bf081b0bf33d1 1-5,7-8,10,12-13,23,30,58,72,83,95,111-112,141,146-149
+  s_73e10f9d158414::t_a4efac024f92c3 9
+  s_73e10f9d158414::t_ac20babf07869f 117,119-122,142,145
+specs/hackathon/agentic-dash-payouts.html
+  s_73e10f9d158414::t_1f04a77b43f06a 50
+  s_73e10f9d158414::t_a4efac024f92c3 9
+  s_73e10f9d158414::t_91fd21e844cd29 14,44,49
+  s_263bdab18b3756::t_8bf081b0bf33d1 1-5,7-8,10,12-13,15,82,98-99,127-130
+  s_73e10f9d158414::t_4e147c88d7db0f 6,16-29,33-43,45-48,51-81,83-84,100,102,112-113,118-119,121,124-125
+  s_73e10f9d158414::t_bf22ea36b31ea0 11
+  s_73e10f9d158414::t_26d678e474185d 85-97
+  s_73e10f9d158414::t_ee8fa78c294531 101,103,105,109-111,114-116,120
+  s_73e10f9d158414::t_538b79a7183957 30-32
+  s_73e10f9d158414::t_d18102244acfd4 104,106-108,117,122-123,126
+specs/BACKLOG.md
+  s_22e9e82f1423d1::t_c28e0e6ae92a1f 7-10,15-18,40-41,47,55-56
+specs/PROGRESS.md
+  s_22e9e82f1423d1::t_05ed2c9b86bf36 7-13,19,30,32-34,39,57,87
+specs/README.md
+  s_22e9e82f1423d1::t_a9622b42400d34 3,13,30,32,34-35,45-48,50,53-54,60,64
+specs/hackathon/README.md
+  s_22e9e82f1423d1::t_a7f8b52571c2f7 3-4
+specs/platform/2026-10-05-sponsor-integrations-design.md
+  s_22e9e82f1423d1::t_755871cc30ce27 3-4
+specs/platform/2026-10-13-action-catalog-design.md
+  s_22e9e82f1423d1::t_3fd128e74e7463 3-4
+specs/platform/2026-10-13-agentic-surfaces-program.md
+  s_22e9e82f1423d1::t_a967fa2465e5d6 3,7-15,25,32-35,50,68-70,75,77,85-86,90-92,94,98-100
+specs/platform/2026-10-13-discord-ticket-flow-design.md
+  s_22e9e82f1423d1::t_cd246b66301f61 3-4
+specs/platform/2026-10-14-conversations-design.md
+  s_22e9e82f1423d1::t_71583b80c69838 3-4
+specs/platform/2026-10-16-agentic-dash-design.md
+  s_22e9e82f1423d1::t_78ac720ddc2ace 3-4
+specs/platform/2026-10-16-architecture.md
+  s_22e9e82f1423d1::t_a3152700ecdc58 7-14,20,22,98,119
+specs/platform/2026-10-18-contextual-dash-ontology-design.md
+  s_22e9e82f1423d1::t_ac77bafa8ff039 3-4
+specs/platform/2026-10-19-site-and-design-system-design.md
+  s_22e9e82f1423d1::t_5aac8acf4e3f02 3-4
+specs/stories/08-discord.md
+  s_22e9e82f1423d1::t_dc029dcf57f2ff 3-4
+specs/stories/09-agentic.md
+  s_22e9e82f1423d1::t_96264e139483ac 3-4,11,21,36,50,61,72,83,188,282-283,288,295,299,310,321,332,344,356,367,379,391,402,412,458,468,478,489,504,514,526,538,548,562,573,583,587,589-593,597,605,607-611,669,671-727
+specs/stories/README.md
+  s_22e9e82f1423d1::t_3ad4b7a71eb870 53,72-75
+specs/hackathon/meta-ai-hackathon-participant-guide.md
+  s_2f463c64952183::t_46fc1c10be72e1 1-245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ab1a0a60a3e53b0e2280d47b0ccec0ca92471b8c",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_263bdab18b3756": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f52f6244-60f8-414a-b810-1c2ab79c68c1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_2f463c64952183": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "53668fae-a531-44cf-858f-dec6461155eb",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
