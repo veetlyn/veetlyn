@@ -6,7 +6,7 @@ const KEPT = [/^specs\//, /\.md$/, /^plugins\//, /^LICENSE/, /(^|\/)pnpm-lock\.y
 
 let out = "";
 try {
-  out = execFileSync("git", ["grep", "-n", "-I", "-i", ["pay", "leor"].join(""), "--", "."], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  out = execFileSync("git", ["grep", "-n", "-I", "-i", "-e", ["pay", "leor"].join(""), "-e", ["vee", "tlyn"].join(""), "--", "."], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 } catch {
   // git grep exits 1 when nothing matches.
   out = "";
