@@ -10,7 +10,7 @@ const badgeVariants = cva(
       tone: {
         neutral: "text-muted-foreground",
         brand: "font-semibold text-brand-text",
-        good: "font-semibold text-brand-text",
+        good: "font-semibold text-success-text",
         warn: "font-semibold text-warning",
         fail: "font-semibold text-destructive",
         info: "text-info",

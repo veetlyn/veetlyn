@@ -11,11 +11,11 @@ const CSS = `
     --fg2: var(--color-text-secondary, color-mix(in srgb, CanvasText 66%, Canvas));
     --line: var(--color-border-primary, color-mix(in srgb, CanvasText 14%, Canvas));
     --danger: var(--color-text-danger, light-dark(#b3261e, #f2a49d));
-    --ok: var(--color-text-success, light-dark(#1a7f37, #7ccf8f));
+    --ok: var(--color-text-success, light-dark(#447f5e, #7fb89a));
     --ring: var(--color-ring-primary, Highlight);
-    --brand: #1fbf8f;
-    --brand-ink: #0d0d10;
-    --brand-accent: light-dark(color-mix(in oklch, #1fbf8f 62%, #141417), color-mix(in oklch, #1fbf8f 80%, #ffffff));
+    --brand: #23b5d3;
+    --brand-ink: #0d160b;
+    --brand-accent: light-dark(#1b7d8d, color-mix(in oklch, #23b5d3 80%, #ffffff));
     --r: var(--border-radius-xl, 12px);
     --r-sm: var(--border-radius-md, 8px);
     --f-head: 16px; --f-body: 14px; --f-cap: 12px;

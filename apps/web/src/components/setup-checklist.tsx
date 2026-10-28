@@ -47,7 +47,7 @@ export default function SetupChecklist({
         {steps.map((step) => (
           <li key={step.id} className="flex items-center gap-2 text-sm">
             {step.done ? (
-              <CircleCheck aria-hidden className="size-4 text-brand" />
+              <CircleCheck aria-hidden className="size-4 text-success" />
             ) : (
               <Circle aria-hidden className="size-4 text-muted-foreground" />
             )}

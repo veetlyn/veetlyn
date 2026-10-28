@@ -127,7 +127,7 @@ export default function PayoutsSetup({
               </p>
             ) : null}
             {save.isSuccess ? (
-              <p className="text-sm font-medium text-brand-text">PayPal destination saved.</p>
+              <p className="text-sm font-medium text-success-text">PayPal destination saved.</p>
             ) : null}
             <label className="flex items-center gap-2 text-sm">
               <Checkbox

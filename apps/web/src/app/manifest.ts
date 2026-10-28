@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     // The manifest takes literal colours: the light theme's --background and --primary.
-    background_color: "#f6f6f7",
-    theme_color: "#1c1c20",
+    background_color: "#fffcf7",
+    theme_color: "#0d160b",
     icons: [
       {
         src: "/favicon/web-app-manifest-192x192.png",
