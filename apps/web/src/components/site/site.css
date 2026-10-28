@@ -633,3 +633,39 @@
 .site-root .tone-paypal { --c: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
 .site-root .tone-platform { --c: var(--muted-foreground); }
 .site-root .split .bar span[class^="tone-"] { background: var(--c); }
+
+/* Home pictures: one slow loop each, in the menu tiles' language. */
+.site-root .home-art { display: block; width: 100%; height: auto; max-height: 150px; }
+.site-root .network-art { max-width: 640px; max-height: none; margin-top: 28px; }
+.site-root .home-art .a-row { animation: home-rise 6s ease-out infinite both; }
+.site-root .home-art .a-row-1 { animation-delay: 0.35s; }
+.site-root .home-art .a-row-2 { animation-delay: 0.7s; }
+.site-root .home-art .a-press, .site-root .home-art .a-confirm { transform-box: fill-box; transform-origin: center; animation: home-press 6s ease-in-out infinite both; }
+.site-root .home-art .a-coin { animation: home-coin 6s ease-in-out infinite both; }
+.site-root .home-art .a-check { stroke-dasharray: 1; stroke-dashoffset: 1; animation: home-draw 6s ease-out infinite both; }
+.site-root .home-art .a-check.a-late { animation-name: home-draw-late; }
+.site-root .home-art .a-share { opacity: 0; animation: 6s ease-in-out infinite both; }
+.site-root .home-art .a-share-0 { animation-name: home-share-0; }
+.site-root .home-art .a-share-1 { animation-name: home-share-1; }
+.site-root .home-art .a-share-2 { animation-name: home-share-2; }
+.site-root .home-art .a-member { animation: home-member 6s ease-in-out infinite both; }
+.site-root .home-art .a-line { transform-box: fill-box; transform-origin: left center; animation: home-type 6s ease-out infinite both; }
+.site-root .home-art .a-line-1 { animation-delay: 0.4s; }
+.site-root .home-art .a-line-2 { animation-delay: 0.8s; }
+.site-root .home-art .a-wire { animation: home-flow 1.6s linear infinite; }
+@keyframes home-rise { 0% { opacity: 0; transform: translateY(6px); } 12%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@keyframes home-press { 0%, 40% { opacity: 0; transform: scale(1); } 48% { opacity: 1; } 56% { transform: scale(0.92); } 62%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
+@keyframes home-coin { 0% { opacity: 0; transform: none; } 5% { opacity: 1; } 25% { opacity: 1; transform: translateX(62px); } 30%, 100% { opacity: 0; transform: translateX(62px); } }
+@keyframes home-draw { 0%, 28% { stroke-dashoffset: 1; opacity: 1; } 40%, 90% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes home-draw-late { 0%, 62% { stroke-dashoffset: 1; opacity: 1; } 70%, 90% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes home-share-0 { 0%, 42% { opacity: 0; transform: none; } 45% { opacity: 1; } 62% { opacity: 1; transform: translate(66px, -36px); } 66%, 100% { opacity: 0; transform: translate(66px, -36px); } }
+@keyframes home-share-1 { 0%, 42% { opacity: 0; transform: none; } 45% { opacity: 1; } 62% { opacity: 1; transform: translate(66px, 0); } 66%, 100% { opacity: 0; transform: translate(66px, 0); } }
+@keyframes home-share-2 { 0%, 42% { opacity: 0; transform: none; } 45% { opacity: 1; } 62% { opacity: 1; transform: translate(66px, 36px); } 66%, 100% { opacity: 0; transform: translate(66px, 36px); } }
+@keyframes home-member { 0%, 62% { fill: var(--band-raise); } 68%, 92% { fill: var(--brand); } 100% { fill: var(--band-raise); } }
+@keyframes home-type { 0% { transform: scaleX(0); opacity: 1; } 15%, 90% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes home-flow { to { stroke-dashoffset: -20; } }
+@media (prefers-reduced-motion: reduce) {
+  .site-root .home-art * { animation: none !important; }
+  .site-root .home-art .a-check { stroke-dashoffset: 0; }
+  .site-root .home-art .a-member { fill: var(--brand); }
+}

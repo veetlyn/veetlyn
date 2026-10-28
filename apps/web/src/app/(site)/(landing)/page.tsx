@@ -4,6 +4,7 @@ import ChatDemo from "@/components/site/chat-demo";
 import CloseCta from "@/components/site/close-cta";
 import FaqList, { faqStructuredData } from "@/components/site/faq-list";
 import JsonLd from "@/components/site/json-ld";
+import { NetworkArt, SideArt } from "@/components/site/art/home";
 import LogoStrip from "@/components/site/logo-strip";
 import PMark from "@/components/site/p-mark";
 import { indexFaq } from "@/content/site/faqs";
@@ -129,16 +130,19 @@ export default function HomePage() {
               <div className="side theirs" data-in>
                 <p className="for">Their agents</p>
                 <h3>Claude and ChatGPT, through {name} Network</h3>
+                <SideArt name="theirs" />
                 <p className="foot-line">They never pay.</p>
               </div>
               <div className="side middle" data-in>
                 <p className="for">{name}</p>
                 <h3>The money and the rules</h3>
+                <SideArt name="middle" />
                 <p className="foot-line">Paid through PayPal.</p>
               </div>
               <div className="side yours" data-in>
                 <p className="for">Your agents</p>
                 <h3>Quotes, answers and payouts, drafted for you</h3>
+                <SideArt name="yours" />
                 <p className="foot-line">They act inside your rules.</p>
               </div>
             </div>
@@ -148,6 +152,7 @@ export default function HomePage() {
           <div className="wrap">
             <h2 id="network-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
             <p className="note" data-in>Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</p>
+            <div data-in><NetworkArt /></div>
             <Link className="more" href="/network">How {name} Network works</Link>
           </div>
         </section>
