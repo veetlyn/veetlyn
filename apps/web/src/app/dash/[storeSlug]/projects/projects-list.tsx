@@ -62,7 +62,7 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
                   type="button"
                   aria-pressed={filter === key}
                   onClick={() => setFilter(key)}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_var(--input),var(--raise)]"
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_var(--input)]"
                 >
                   {label} <span className="font-tabular text-xs text-muted-foreground">{count}</span>
                 </button>

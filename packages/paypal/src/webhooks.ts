@@ -3,6 +3,8 @@ import type { z } from "zod";
 import type { PayPalRequest } from "./client";
 import { type JsonBody, webhookEventSchema, webhookUnitSchema, webhookVerificationSchema } from "./schemas";
 
+export * from "./disputes";
+
 export type WebhookTransmission = {
   authAlgo: string;
   certUrl: string;

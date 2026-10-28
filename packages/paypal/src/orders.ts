@@ -31,13 +31,13 @@ export type CreateSellerOrderInput = {
   brandName: string;
   // One line per item, quantity 1, so the buyer's receipt matches the pay page. Their values must add up
   // to `value`; PayPal rejects the order otherwise.
-  items?: { name: string; value: string }[];
+  items?: { name: string; description?: string; value: string }[];
 };
 
 // PayPal caps description and brand_name at 127 characters (R1 facts §1).
 const MAX_TEXT = 127;
 
-type OrderItem = { name: string; quantity: string; unit_amount: PayPalMoney };
+type OrderItem = { name: string; description?: string; quantity: string; unit_amount: PayPalMoney };
 type OrderPurchaseUnit = {
   custom_id: string;
   description: string;
@@ -56,11 +56,11 @@ function sellerOrderBody(input: Omit<CreateSellerOrderInput, "requestId">) {
   };
   if (input.items?.length) {
     unit.amount.breakdown = { item_total: { currency_code: input.currency, value: input.value } };
-    unit.items = input.items.map((item) => ({
-      name: item.name.slice(0, MAX_TEXT),
-      quantity: "1",
-      unit_amount: { currency_code: input.currency, value: item.value },
-    }));
+    unit.items = input.items.map((item) => {
+      const line: OrderItem = { name: item.name.slice(0, MAX_TEXT), quantity: "1", unit_amount: { currency_code: input.currency, value: item.value } };
+      if (item.description) line.description = item.description.slice(0, MAX_TEXT);
+      return line;
+    });
   }
   if (input.platformFeeValue !== null) {
     unit.payment_instruction = {

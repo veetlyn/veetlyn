@@ -59,6 +59,7 @@ const offeringSchema = z.object({
   daysMin: z.number(),
   daysMax: z.number(),
   intakeQuestions: z.array(z.string()),
+  fulfilment: z.enum(["people", "automated", "both"]),
   active: z.boolean(),
   position: z.number(),
 });

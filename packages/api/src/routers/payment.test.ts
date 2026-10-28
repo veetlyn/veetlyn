@@ -1,3 +1,4 @@
+import { acceptCurrentMemberAgreement, seedAgreedServicesTeamMember, seedServicesTeamWithAgreedAdmin } from "../testing/rulebooks";
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
 import { ledgerAccounts, createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { markTeamPayPalMerchant } from "@jendal-workspace/db/repositories/paypal-onboarding";
@@ -10,12 +11,11 @@ import {
   hasTestDatabase,
   seedOrganization,
   seedServicesTeam,
-  seedServicesTeamMember,
-  seedServicesTeamWithAdmin,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { buildAuthAssertion, createPayPalClient, PayPalError } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
+import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -25,6 +25,7 @@ import type { PayPalServices } from "../context";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
 import { applyCaptureFact, type CaptureFact, CaptureFactConflict } from "../use-cases/payments";
+import { publishRulebook, saveRulebookDraft } from "../use-cases/rulebooks";
 import { appRouter } from "./index";
 
 const SECRET = TEST_AUTH_CONFIG.BETTER_AUTH_SECRET;
@@ -118,8 +119,8 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
 
   // A $1,000 quote accepted by the client: a pending $600 deposit ($500 + the 10% management fee).
   async function pendingDeposit() {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await callerFor(userId).project.create({
       teamSlug: "team",
       title: "Website redesign",
@@ -407,8 +408,14 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
         payee: { merchant_id: "SELLER1" },
         payment_instruction: { platform_fees: [{ amount: { currency_code: "USD", value: "3.00" } }] },
         items: [
-          { name: "Deposit (50% of the quote)", quantity: "1", unit_amount: { currency_code: "USD", value: "500.00" } },
-          { name: "Management fee (10%)", quantity: "1", unit_amount: { currency_code: "USD", value: "100.00" } },
+          // The buyer reads the work and the fee, not the platform's line names.
+          {
+            name: "Website redesign: 50% deposit",
+            description: "Quote total $1,000.00",
+            quantity: "1",
+            unit_amount: { currency_code: "USD", value: "500.00" },
+          },
+          { name: "Project management fee", description: "10% of the quote", quantity: "1", unit_amount: { currency_code: "USD", value: "100.00" } },
         ],
       });
       expect(await paymentRow(paymentId)).toMatchObject({ paypalOrderId: "ORDER1", platformFeeMinor: 300, status: "pending" });
@@ -417,6 +424,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
     it("creates an order for a solo seller with the platform's 1% Solo fee", async () => {
       const { userId, organizationId } = await seedOrganization(db);
       const { id: soloTeamId } = await seedServicesTeam(db, { organizationId, slug: "solo", solo: true });
+      await acceptCurrentMemberAgreement(db, soloTeamId, userId);
       const caller = callerFor(userId);
       const { projectId } = await caller.project.create({
         teamSlug: "solo",
@@ -708,7 +716,7 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       const [create] = calls(requests, "/v2/checkout/orders");
       expect(JSON.parse(create?.body ?? "{}").purchase_units[0]).toMatchObject({
         amount: { currency_code: "USD", value: "500.00" },
-        items: [{ name: "Balance", unit_amount: { currency_code: "USD", value: "500.00" } }],
+        items: [{ name: "Website redesign: balance", description: "Quote total $1,000.00", unit_amount: { currency_code: "USD", value: "500.00" } }],
       });
 
       expect(await caller.payment.payCapture({ token, orderId: "ORDER1" })).toEqual({ outcome: "captured" });
@@ -739,6 +747,24 @@ describe.skipIf(!hasTestDatabase)("payments", () => {
       expect(await db.select().from(ledgerTransfer).where(eq(ledgerTransfer.reference, `completion:${projectId}`))).toHaveLength(1);
       expect(await db.select().from(outbox).where(eq(outbox.type, "project.completed"))).toHaveLength(1);
     });
+  });
+
+  it("shows the project's pinned rules on the pay page and the client page, not a later version", async () => {
+    const { projectId, teamId, token } = await connectedDeposit();
+    const clientToken = await clientTokenFor(db, SECRET, projectId);
+    const pinned = (await callerFor(null).payment.payGet({ token })).project.rules;
+    expect(pinned).toContain("2 free revisions");
+
+    await saveRulebookDraft(db, {
+      teamId,
+      preset: "custom",
+      spec: { ...AGENCY_RULEBOOK_SPEC.rules, revisions: { freeCount: 5, paidRevisionPriceMinor: 1_000 } },
+      userId: null,
+    });
+    await publishRulebook(db, { teamId, userId: null });
+
+    expect((await callerFor(null).payment.payGet({ token })).project.rules).toBe(pinned);
+    expect((await callerFor(null).project.clientGet({ token: clientToken })).project.rules).toBe(pinned);
   });
 
   it("gives the client page a pay path for a payment that can be paid, and none once it is paid", async () => {

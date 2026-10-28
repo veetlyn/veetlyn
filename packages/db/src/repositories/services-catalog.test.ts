@@ -136,6 +136,7 @@ describe.skipIf(!hasTestDatabase)("services catalog repository", () => {
       departmentId: branding.id,
       active: true,
       listed: true,
+      fulfilment: "people",
       position: 0,
       ...draft,
     });

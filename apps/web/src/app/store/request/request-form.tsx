@@ -3,10 +3,11 @@
 import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { validateQuoteRequest } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
+import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
 import { daysLabel, priceLabel } from "@/lib/offering-labels";
@@ -33,10 +34,16 @@ export default function RequestForm({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [website, setWebsite] = useState("");
   const [done, setDone] = useState(false);
+  const [acceptedRulebookId, setAcceptedRulebookId] = useState<string | null>(null);
   // Client-side problems wait until the visitor tries to submit; the server stays the authority.
   const [touched, setTouched] = useState(false);
 
-  const requestQuote = useMutation(trpc.project.requestQuote.mutationOptions({ onSuccess: () => setDone(true) }));
+  const terms = useQuery(trpc.project.requestTerms.queryOptions({ slug: page.slug }));
+  const termsAccepted = terms.data !== undefined && acceptedRulebookId === terms.data.rulebookId;
+  const requestQuote = useMutation(trpc.project.requestQuote.mutationOptions({
+    onSuccess: () => setDone(true),
+    onError: () => { void terms.refetch(); },
+  }));
 
   const offering = page.offerings.find((candidate) => candidate.id === offeringId) ?? null;
   const questions = offering?.intakeQuestions ?? [];
@@ -46,7 +53,7 @@ export default function RequestForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setTouched(true);
-    if (problem !== undefined || requestQuote.isPending) return;
+    if (problem !== undefined || requestQuote.isPending || !termsAccepted || !terms.data) return;
     requestQuote.mutate({
       slug: page.slug,
       offeringId,
@@ -55,6 +62,8 @@ export default function RequestForm({
       description,
       answers: answersList,
       website,
+      termsAccepted,
+      acceptedRulebookId: terms.data.rulebookId,
     });
   }
 
@@ -63,7 +72,7 @@ export default function RequestForm({
       <main className="mx-auto w-full max-w-2xl space-y-3 px-4 py-6 md:px-7 md:py-10">
         <h1 className="font-heading text-3xl">Request sent</h1>
         <p className="text-sm text-muted-foreground">
-          We emailed {email} a link to your page. It is how you follow the request and answer the team.
+          We emailed you a link to your page. It is how you follow the request and answer the team.
         </p>
       </main>
     );
@@ -152,7 +161,36 @@ export default function RequestForm({
             }}
             required
           />
+          <p className="text-sm text-muted-foreground">If you are signed in, we use your account email.</p>
         </div>
+        <section aria-labelledby="request-terms-heading" className="space-y-3">
+          <h2 id="request-terms-heading" className="font-medium">Client terms</h2>
+          {terms.isPending ? <p role="status" className="text-sm text-muted-foreground">Loading client terms…</p> : null}
+          {terms.error ? (
+            <div role="alert" className="space-y-2 text-sm text-destructive">
+              <p>We could not load the client terms.</p>
+              <Button type="button" variant="outline" onClick={() => { void terms.refetch(); }}>Try again</Button>
+            </div>
+          ) : null}
+          {terms.data ? (
+            <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground marker:text-muted-foreground">
+              {terms.data.termLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="request-terms"
+              name="termsAccepted"
+              checked={termsAccepted}
+              disabled={!terms.data || requestQuote.isPending}
+              onCheckedChange={(checked) => setAcceptedRulebookId(checked ? terms.data?.rulebookId ?? null : null)}
+              required
+            />
+            <Label htmlFor="request-terms">I agree to these client terms{terms.data ? ` (version ${terms.data.version})` : ""}.</Label>
+          </div>
+        </section>
         {/* Honeypot: invisible to people, filled by bots */}
         <div className="hidden">
           <input
@@ -174,7 +212,7 @@ export default function RequestForm({
             {requestQuote.error.message}
           </p>
         ) : null}
-        <Button type="submit" disabled={requestQuote.isPending} className="justify-self-start">
+        <Button type="submit" disabled={requestQuote.isPending || !termsAccepted || terms.isError} className="justify-self-start">
           {requestQuote.isPending ? "Sending…" : "Send request"}
         </Button>
       </form>

@@ -1,6 +1,8 @@
 import {
   captureReviewReason,
   type CaptureReviewReason,
+  type CheckoutItem,
+  checkoutItems,
   completionTransfer,
   errorName,
   type LedgerTransferDraft,
@@ -37,7 +39,9 @@ import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { log } from "evlog";
 
 import type { PayPalServices } from "../context";
+import { armProjectSchedule, confirmedLateRefundMinor } from "./projects";
 import { captureFees, isRefundedCaptureStatus } from "./paypal-amounts";
+import { projectRuleSummary } from "./rulebooks";
 
 // One capture as PayPal reports it: from a capture response, an order lookup or a webhook (R1c).
 export type CaptureFact = {
@@ -125,6 +129,9 @@ async function projectChangeOnCapture(
       freelancerId,
       finalPriceMinor: row.finalPriceMinor,
       teamCutBps: row.teamCutBps,
+      managerId: row.managerId,
+      managerCutBps: row.managerCutBps,
+      memberBearsMinor: confirmedLateRefundMinor(row),
     });
     return {
       set: { status: result.to },
@@ -218,6 +225,11 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
           ...change.events,
         ],
       });
+      if (change.set.status) {
+        await armProjectSchedule(tx, { ...projectRow, ...change.set }, capturedAt, {
+          workStartedAt: change.set.status === "in_progress" ? capturedAt : undefined,
+        });
+      }
       return "applied";
     }
 
@@ -333,7 +345,11 @@ async function requireSeller(db: Database, teamId: string): Promise<{ merchantId
 
 export async function getPayPage(deps: { db: Database; paypal: PayPalServices | undefined }, paymentId: string) {
   const row = await requirePayment(deps.db, paymentId);
-  const [projectRow, team] = await Promise.all([findProjectById(deps.db, row.projectId), findTeamById(deps.db, row.teamId)]);
+  const [projectRow, team, rules] = await Promise.all([
+    findProjectById(deps.db, row.projectId),
+    findTeamById(deps.db, row.teamId),
+    projectRuleSummary(deps.db, { projectId: row.projectId, currency: row.currency }),
+  ]);
   if (!projectRow || !team) throw new Error(`Payment ${row.id} has no project or team`);
   return {
     payment: {
@@ -346,7 +362,7 @@ export async function getPayPage(deps: { db: Database; paypal: PayPalServices | 
       lines: row.lines,
       capturedAt: row.capturedAt,
     },
-    project: { id: projectRow.id, title: projectRow.title },
+    project: { id: projectRow.id, title: projectRow.title, rules },
     team: { name: team.name },
     // Null until the server has PayPal configured and the team has connected its account.
     paypal: deps.paypal && team.paypalMerchantId ? { ...deps.paypal.sdk, merchantId: team.paypalMerchantId } : null,
@@ -424,6 +440,17 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
     }
   }
   const fee = platformFeeMinor(row.amountMinor, sellerPlanFor({ id: row.teamId, solo: seller.solo }).feeBps);
+  const currentQuote = await getCurrentQuote(deps.db, row.projectId);
+  const items = checkoutItems({
+    title: projectRow.title,
+    kind: row.kind,
+    currency: row.currency,
+    lines: row.lines,
+    quoteItems: currentQuote?.items ?? [],
+    quoteMinor: currentQuote?.amountMinor ?? 0,
+    upfrontBps: projectRow.upfrontBps,
+    managementFeeBps: projectRow.managementFeeBps,
+  });
   const order = await deps.paypal.client.orders.create({
     // A new key per start: each start is a new order, while the client's own retries reuse this key.
     requestId: `order:${row.id}:${crypto.randomUUID()}`,
@@ -434,11 +461,10 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
     customId: row.id,
     description: projectRow.title,
     brandName: seller.name,
-    // The lines always add up to the amount (core paymentLines); the check keeps a bad row from failing the order.
-    items:
-      row.lines.reduce((sum, line) => sum + line.amountMinor, 0) === row.amountMinor
-        ? row.lines.map((line) => ({ name: line.label, value: toPayPalValue(line.amountMinor) }))
-        : undefined,
+    // The items always add up to the amount (core paymentLines); the check keeps a bad row from failing the order.
+    items: itemsAddUp(items, row.amountMinor)
+      ? items.map((item) => ({ name: item.name, description: item.description, value: toPayPalValue(item.amountMinor) }))
+      : undefined,
   });
   const updated = await deps.db
     .update(payment)
@@ -449,6 +475,10 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
     throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });
   }
   return { orderId: order.id };
+}
+
+function itemsAddUp(items: readonly CheckoutItem[], amountMinor: number): boolean {
+  return items.length > 0 && items.reduce((sum, item) => sum + item.amountMinor, 0) === amountMinor;
 }
 
 export type CaptureOutcome = "captured" | "pending" | "declined";

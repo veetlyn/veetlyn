@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { depositDue } from "./pricing";
 import {
   amendmentProblemMessage,
+  checkoutItems,
   amendQuoteItems,
   paymentLines,
   type QuoteItem,
@@ -64,12 +65,43 @@ describe("amendQuoteItems", () => {
   });
 });
 
+describe("checkoutItems", () => {
+  const base = { title: "Logo refresh", currency: "USD" as const, managementFeeBps: 1_000 };
+  const quoteItems = [
+    { description: "Logo mark", amountMinor: 15_000 },
+    { description: "Wordmark", amountMinor: 5_000 },
+  ];
+
+  it("lists the quote's own lines when the whole price is paid up front", () => {
+    const lines = paymentLines("deposit", depositDue(20_000, 1_000, 10_000), 1_000, 10_000);
+    expect(checkoutItems({ ...base, kind: "deposit", lines, quoteItems, quoteMinor: 20_000, upfrontBps: 10_000 })).toEqual([
+      { name: "Logo mark", amountMinor: 15_000 },
+      { name: "Wordmark", amountMinor: 5_000 },
+      { name: "Project management fee", description: "10% of the quote", amountMinor: 2_000 },
+    ]);
+  });
+
+  it("names a part payment after the project with the quote total beside it", () => {
+    const lines = paymentLines("deposit", depositDue(20_000, 1_000), 1_000);
+    expect(checkoutItems({ ...base, kind: "deposit", lines, quoteItems, quoteMinor: 20_000, upfrontBps: 5_000 })[0]).toEqual({
+      name: "Logo refresh: 50% deposit",
+      description: "Quote total $200.00",
+      amountMinor: 10_000,
+    });
+  });
+});
+
 describe("paymentLines", () => {
   it("shows the §5.3 deposit as two lines", () => {
     expect(paymentLines("deposit", depositDue(100_000, 1_000), 1_000)).toEqual([
       { kind: "deposit", label: "Deposit (50% of the quote)", amountMinor: 50_000 },
       { kind: "management_fee", label: "Management fee (10%)", amountMinor: 10_000 },
     ]);
+  });
+
+  it("names the deposit by the share the rules took up front", () => {
+    expect(paymentLines("deposit", depositDue(20_000, 1_000, 10_000), 1_000, 10_000)[0]?.label).toBe("Full payment upfront");
+    expect(paymentLines("deposit", depositDue(100_000, 1_000, 3_000), 1_000, 3_000)[0]?.label).toBe("Deposit (30% of the quote)");
   });
 
   it("labels top-ups and leaves out zero lines", () => {

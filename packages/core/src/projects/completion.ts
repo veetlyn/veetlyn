@@ -18,6 +18,9 @@ export function completionPostings(input: {
   freelancerId: string;
   finalPriceMinor: number;
   teamCutBps: number;
+  managerId?: string | null;
+  managerCutBps?: number;
+  memberBearsMinor?: number;
   balance: Balance;
 }): CompletionPostings {
   const { currency, projectId, balance } = input;
@@ -30,6 +33,9 @@ export function completionPostings(input: {
         freelancerId: input.freelancerId,
         finalPriceMinor: input.finalPriceMinor,
         teamCutBps: input.teamCutBps,
+        managerId: input.managerId,
+        managerCutBps: input.managerCutBps,
+        memberBearsMinor: input.memberBearsMinor,
       }),
     );
   }

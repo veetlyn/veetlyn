@@ -33,7 +33,8 @@ export async function createProjectPayouts(
     remaining -= projects.length;
     for (const project of projects) {
       try {
-        if (await createProjectPayout(deps, { team, rules, project, now: input.now })) created++;
+        const row = await createProjectPayout(deps, { team, rules, project, now: input.now });
+        if (row) created++;
       } catch (error) {
         log.error({
           action: "payout.project_sweep",

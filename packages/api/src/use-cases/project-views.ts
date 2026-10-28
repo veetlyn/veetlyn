@@ -3,8 +3,10 @@ import {
   type FileStore,
   isProjectStaff,
   maskContactDetails,
-    sellerPlanFor,
+  type ProjectStatus,
+  sellerPlanFor,
 } from "@jendal-workspace/core";
+import { checkQualityRefundCap, type RulebookRules } from "@opmodel/engine-rules";
 import { memberDepartmentIds, userDisplayName } from "@jendal-workspace/db/repositories/conversations";
 import type { ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import type { Database } from "@jendal-workspace/db";
@@ -27,8 +29,15 @@ import { TRPCError } from "@trpc/server";
 import { type LinkSecretSource, linkSecret, signPayLink } from "../client-links";
 import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
-import { deliveryFileUrl, type ProjectActor } from "./projects";
+import { deliveryFileUrl, pinnedRulebookRules, type ProjectActor } from "./projects";
+import { projectRuleSummary } from "./rulebooks";
+import { findLatestDisputeForProject, listProjectMemberMarks } from "@jendal-workspace/db/repositories/operating-model";
 
+
+function qualityRefundCap(rules: RulebookRules | null, status: ProjectStatus, quoteMinor: number | undefined): number | null {
+  if (!rules || quoteMinor === undefined || (status !== "in_progress" && status !== "delivered")) return null;
+  return checkQualityRefundCap(rules, status === "in_progress" ? "in_progress" : "after_delivery", 0, quoteMinor).capMinor;
+}
 // The team's projects the viewer may see: staff see all, freelancers what is assigned to them and the requests
 // the conversation audience rule opens to them.
 async function visibleProjects(db: Database, viewer: ProjectActor, rows: ProjectRow[]): Promise<ProjectRow[]> {
@@ -99,7 +108,9 @@ export async function getTeamProjectView(
   // international estimate.
   const payeeId = row.assignedFreelancerId ?? (viewer.role === "freelancer" ? viewer.actorId : null);
   const seesPayee = viewer.role === "admin" || payeeId === viewer.actorId;
-  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee] = await Promise.all([
+  const seesMarks = viewer.role === "admin" || viewer.role === "manager";
+  const rules = await pinnedRulebookRules(db, row.rulebookId);
+  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee, latestDispute, marks] = await Promise.all([
     listProjectContacts(db, row.id),
     listProjectQuotes(db, row.id),
     listProjectAmendments(db, row.id),
@@ -108,6 +119,8 @@ export async function getTeamProjectView(
     getStaffRefundView(db, row.id),
     getTeamPayPalCountry(db, viewer.teamId),
     payeeId && seesPayee ? getPayoutDestination(db, payeeId) : null,
+    findLatestDisputeForProject(db, row.id),
+    seesMarks ? listProjectMemberMarks(db, { teamId: viewer.teamId, projectId: row.id }) : [],
   ]);
   // The legacy client columns stay server-side: the contacts say who the client is.
   const { clientEmail: _email, clientName: _name, clientDiscordId: _discord, ...project } = row;
@@ -128,6 +141,25 @@ export async function getTeamProjectView(
     payments,
     deliveries: await withDeliveryFiles(db, deliveries),
     refund,
+    // The free rounds of changes and the paid revision price (AGT-49); null for projects without team rules.
+    revisionRounds: rules && {
+      allowed: row.revisions,
+      used: deliveries.filter((d) => d.status === "changes_requested").length,
+      paidPriceMinor: rules.revisions.paidRevisionPriceMinor,
+    },
+    // The most a quality refund may take at the project's current stage (AGT-53); null when none can be set.
+    qualityRefundCapMinor: qualityRefundCap(rules, row.status, quotes.find((q) => q.status === "accepted")?.amountMinor),
+    dispute: latestDispute && {
+      paypalDisputeId: latestDispute.paypalDisputeId,
+      reason: latestDispute.reason,
+      status: latestDispute.status,
+      outcome: latestDispute.outcome,
+      amountMinor: latestDispute.amountMinor,
+      currency: latestDispute.currency,
+      openedAt: latestDispute.openedAt,
+      resolvedAt: latestDispute.resolvedAt,
+    },
+    marks,
     role: viewer.role,
     quotingMode: settings?.quotingMode ?? "assigned",
     solo: settings?.solo ?? false,
@@ -199,13 +231,15 @@ export async function getClientProjectView(
   const { db } = deps;
   const row = await findProjectById(db, projectId);
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
-  const [quotes, amendments, payments, deliveries, refund, conversation] = await Promise.all([
+  const [quotes, amendments, payments, deliveries, refund, conversation, rules, pinned] = await Promise.all([
     listProjectQuotes(db, projectId),
     listProjectAmendments(db, projectId),
     listProjectPayments(db, projectId),
     listProjectDeliveries(db, projectId),
     getClientRefundView(db, projectId),
     conversationFor(db, { kind: "client" }, row, deps.platformName),
+    projectRuleSummary(db, { projectId, currency: row.currency }),
+    pinnedRulebookRules(db, row.rulebookId),
   ]);
   const freelancers = await clientFacingFreelancers(db, quotes, conversation.messages);
   const secret = linkSecret(deps.auth);
@@ -233,9 +267,16 @@ export async function getClientProjectView(
       status: row.status,
       currency: row.currency,
       managementFeeBps: row.managementFeeBps,
+      upfrontBps: row.upfrontBps,
       finalPriceMinor: row.finalPriceMinor,
       declinedReason: row.declinedReason,
       declinedAt: row.declinedAt,
+      rules,
+      revisionRounds: pinned && {
+        allowed: row.revisions,
+        used: deliveries.filter((d) => d.status === "changes_requested").length,
+        paidPriceMinor: pinned.revisions.paidRevisionPriceMinor,
+      },
     },
     quotes: quotes.map((q) => ({
       id: q.id,

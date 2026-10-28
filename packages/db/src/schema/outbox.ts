@@ -19,10 +19,12 @@ export const outbox = pgTable(
     // Per project, from 1, with no gaps; subscribers order by it.
     sequence: integer("sequence").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    noticesProcessedAt: timestamp("notices_processed_at"),
     data: jsonb("data").$type<JsonObject>().notNull(),
   },
   (t) => [
     uniqueIndex("outbox_project_sequence_idx").on(t.projectId, t.sequence),
     index("outbox_teamId_createdAt_idx").on(t.teamId, t.createdAt),
+    index("outbox_notices_pending_idx").on(t.noticesProcessedAt, t.createdAt),
   ],
 );

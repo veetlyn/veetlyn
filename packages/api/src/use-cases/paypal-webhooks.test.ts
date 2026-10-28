@@ -1,3 +1,5 @@
+import { seedAgreedServicesTeamMember, seedServicesTeamWithAgreedAdmin } from "../testing/rulebooks";
+import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { createTestAuth, TEST_AUTH_CONFIG } from "@jendal-workspace/auth/testing";
 import { ledgerAccounts, createFakeFileStore, hashToken, orderFeesTransfer, type JsonObject } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
@@ -20,8 +22,6 @@ import {
   hasTestDatabase,
   seedOrder,
   seedProduct,
-  seedServicesTeamMember,
-  seedServicesTeamWithAdmin,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
 import { createFakeMailer } from "@jendal-workspace/email/fake";
@@ -118,6 +118,7 @@ function storedEvent(overrides: Partial<PayPalWebhookEventRow> = {}): PayPalWebh
     orderId: "ORDER1",
     captureId: null,
     merchantId: "SELLER1",
+    disputePayload: null,
     status: "received",
     attempts: 0,
     note: null,
@@ -148,8 +149,8 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
 
   // A $1,000 quote accepted by the client, for a team connected to PayPal: a pending $600 deposit.
   async function connectedDeposit() {
-    const { userId, organizationId, teamId } = await seedServicesTeamWithAdmin(db);
-    const freelancer = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const { projectId } = await callerFor(userId).project.create({
       teamSlug: "team",
       title: "Website redesign",
@@ -583,6 +584,9 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         { reference: "refund_confirmed:R1", account: ledgerAccounts.clientRefunds, amountMinor: -16_000 },
         { reference: "refund_confirmed:R1", account: ledgerAccounts.paypalClearing, amountMinor: 16_000 },
       ]);
+      expect(await db.select().from(outbox).where(eq(outbox.type, "refund.issued"))).toEqual([expect.objectContaining({
+        projectId, data: expect.objectContaining({ paymentId, refundId: "R1", amountMinor: 16_000, currency: "USD" }),
+      })]);
       expect(await postingsOf("refund_fees")).toHaveLength(3);
       expect(await postingsOf("payment_refunded")).toEqual([]);
       expect(await balanceOf(ledgerAccounts.clientRefunds)).toBe(0);
@@ -729,7 +733,7 @@ describe.skipIf(!hasTestDatabase)("processPayPalWebhookEvent", () => {
         capture?: () => Response;
       } = {},
     ) {
-      const { teamId } = await seedServicesTeamWithAdmin(db);
+      const { teamId } = await seedServicesTeamWithAgreedAdmin(db);
       await markTeamPayPalMerchant(db, { teamId, merchantId: "SELLER1" });
       const product = await seedProduct(db, { storeId: teamId, kind: "digital", status: "published", priceMinor: 60_000 });
       const paid = options.status === "paid";

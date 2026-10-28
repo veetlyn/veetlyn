@@ -32,6 +32,10 @@ export type MaintenanceDeps = {
   // Absent when payouts are not set up on this server; the send and settle sweeps are then skipped.
   sendPayouts?: () => Promise<{ sent: number; held: number }>;
   settlePayouts?: () => Promise<{ checked: number; settled: number }>;
+  // The outbox notice retry sweep (AGT-16); absent when email is not configured on this server.
+  deliverOutboxNotices?: () => Promise<{ sent: number; failed: number; skipped: number }>;
+  // The 10-minute rule scheduler (AGT-37); absent when rules are not served on this server.
+  runScheduler?: () => Promise<{ fired: number; failed: number }>;
   now?: () => Date;
 };
 
@@ -43,7 +47,9 @@ export type MaintenanceSweep =
   | "orders"
   | "projectPayouts"
   | "payoutSends"
-  | "payouts";
+  | "payouts"
+  | "outboxNotices"
+  | "schedule";
 
 export type MaintenanceReport = {
   webhookEventsRequeued: number;
@@ -56,6 +62,10 @@ export type MaintenanceReport = {
   payoutsSent: number;
   payoutsChecked: number;
   payoutsSettled: number;
+  outboxNoticesSent: number;
+  outboxNoticesFailed: number;
+  scheduleFired: number;
+  scheduleFailed: number;
   errors: MaintenanceSweep[];
 };
 
@@ -73,6 +83,10 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     payoutsSent: 0,
     payoutsChecked: 0,
     payoutsSettled: 0,
+    outboxNoticesSent: 0,
+    outboxNoticesFailed: 0,
+    scheduleFired: 0,
+    scheduleFailed: 0,
     errors: [],
   };
 
@@ -168,6 +182,29 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
       return { checked, settled };
     });
   }
+
+  // The timed rules due now (AGT-37): reminders, expiry, marks and the client silence ladder.
+  const runScheduler = deps.runScheduler;
+  if (runScheduler) {
+    await sweep("schedule", async () => {
+      const { fired, failed } = await runScheduler();
+      report.scheduleFired = fired;
+      report.scheduleFailed = failed;
+      return { fired, failed };
+    });
+  }
+
+  // Notice deliveries whose send failed retry here on the 10-minute cadence (AGT-16).
+  const deliverOutboxNotices = deps.deliverOutboxNotices;
+  if (deliverOutboxNotices) {
+    await sweep("outboxNotices", async () => {
+      const { sent, failed, skipped } = await deliverOutboxNotices();
+      report.outboxNoticesSent = sent;
+      report.outboxNoticesFailed = failed;
+      return { sent, failed, skipped };
+    });
+  }
+
 
   return report;
 }

@@ -1,3 +1,9 @@
+import { runDueScheduleItems } from "@jendal-workspace/api/use-cases/scheduler-sweep";
+import { deliverDueOutboxDeliveries } from "@jendal-workspace/api/use-cases/outbox-dispatcher";
+import { scheduleItem } from "@jendal-workspace/db/schema/operating-model";
+import { project } from "@jendal-workspace/db/schema/projects";
+import { createFakeMailer } from "@jendal-workspace/email/fake";
+import { eq } from "drizzle-orm";
 import { findFileUpload, insertFileUpload } from "@jendal-workspace/db/repositories/files";
 import { findOrderById } from "@jendal-workspace/db/repositories/orders";
 import { findWebhookEvent } from "@jendal-workspace/db/repositories/paypal-webhooks";
@@ -132,6 +138,10 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       payoutsSent: 2,
       payoutsChecked: 3,
       payoutsSettled: 2,
+      outboxNoticesSent: 0,
+      outboxNoticesFailed: 0,
+      scheduleFired: 0,
+      scheduleFailed: 0,
       errors: [],
     });
     expect(ran).toEqual(["createProjectPayouts", "sendPayouts", "settlePayouts"]);
@@ -164,6 +174,23 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
     expect(info).toHaveBeenCalledWith({ action: "maintenance.projectPayouts", maintenance: { created: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.payoutSends", maintenance: { sent: 2, held: 1 } });
     expect(info).toHaveBeenCalledWith({ action: "maintenance.payouts", maintenance: { checked: 3, settled: 2 } });
+  });
+
+  it("delivers a due project reminder in the same maintenance tick", async () => {
+    const { teamId, userId } = await seedServicesTeamWithAdmin(db);
+    const projectId = await seedProject(db, { teamId });
+    await db.update(project).set({ status: "quoting", source: "web" }).where(eq(project.id, projectId));
+    await db.insert(scheduleItem).values({ teamId, subjectId: projectId, kind: "request.remind", runAt: new Date(0) });
+    const mailer = createFakeMailer();
+    const report = await runMaintenance(deps({
+      runScheduler: () => runDueScheduleItems({ db }),
+      deliverOutboxNotices: () => deliverDueOutboxDeliveries({ db, email: {
+        mailer, platformName: "Platform", siteOrigin: "https://platform.test", dashOrigin: "https://dash.platform.test",
+        storeOrigin: (slug) => `https://${slug}.platform.test`,
+      } }),
+    }));
+    expect(report).toMatchObject({ scheduleFired: 1, outboxNoticesSent: 1, errors: [] });
+    expect(mailer.sent.map((message) => message.to)).toEqual([`${userId}@example.com`]);
   });
 
   it("deletes action log rows older than 180 days", async () => {

@@ -1,5 +1,6 @@
 import type { FileStore, ServicesTeamRole } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import type { DbExecutor } from "@jendal-workspace/db/executor";
 import { insertActionLog } from "@jendal-workspace/db/repositories/action-log";
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
@@ -10,7 +11,12 @@ import { type Actor, isClientActor, type RequestMeta, type Surface } from "./act
 import type { ActionDefinition, Grant, ScopeRequest } from "./define";
 import { ActionError, type ActionErrorCode, toActionError } from "./errors";
 
-export type ActionDeps = {
+export type ActionRuntime = {
+  db: DbExecutor;
+  onLogError?: (cause: unknown) => void;
+};
+
+export type ActionDeps = ActionRuntime & {
   db: Database;
   platformName: string;
   files: FileStore;
@@ -18,13 +24,12 @@ export type ActionDeps = {
   paypal?: PayPalServices;
   email?: EmailServices;
   now?: () => Date;
-  onLogError?: (cause: unknown) => void;
 };
 
 export type Scope = { teamId: string | null; project: ProjectRow | null; role: ServicesTeamRole | null };
 
-export type PerformRequest = {
-  deps: ActionDeps;
+export type PerformRequest<Deps extends ActionRuntime = ActionDeps> = {
+  deps: Deps;
   actor: Actor;
   surface: Surface;
   request: RequestMeta;
@@ -34,7 +39,7 @@ export type PerformRequest = {
 
 const NOT_FOUND_PROJECT = "Project not found.";
 
-async function loadScope(req: PerformRequest, scopeRequest: ScopeRequest): Promise<Scope> {
+async function loadScope(req: PerformRequest<ActionRuntime>, scopeRequest: ScopeRequest): Promise<Scope> {
   let project: ProjectRow | null = null;
   if (scopeRequest.teamId && req.team && scopeRequest.teamId !== req.team.id) {
     throw new ActionError("not_found", "Team not found.");
@@ -93,7 +98,7 @@ function actorId(actor: Actor): string | null {
 }
 
 async function writeLog(
-  req: PerformRequest,
+  req: PerformRequest<ActionRuntime>,
   definition: Pick<ActionDefinition<never, never, never>, "name" | "kind">,
   scope: Scope,
   outcome: "ok" | ActionErrorCode,
@@ -137,9 +142,9 @@ export async function logRefusal(
   await writeLog(req, definition, { teamId: project?.teamId ?? null, project, role: null }, "forbidden", message, Date.now());
 }
 
-export async function perform<Input, Result, Raw>(
-  req: PerformRequest,
-  definition: ActionDefinition<Input, Result, Raw>,
+export async function perform<Input, Result, Raw, Deps extends ActionRuntime = ActionDeps>(
+  req: PerformRequest<Deps>,
+  definition: ActionDefinition<Input, Result, Raw, Deps>,
   rawInput: Raw,
 ): Promise<Result> {
   const started = Date.now();

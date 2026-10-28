@@ -5,11 +5,12 @@ import { offeringSearch } from "@jendal-workspace/api/actions/offerings";
 import { type ActionDeps, perform } from "@jendal-workspace/api/actions/perform";
 import { projectClientList, projectClientView } from "@jendal-workspace/api/actions/projects";
 import { quoteAccept } from "@jendal-workspace/api/actions/quotes";
-import { createRequest } from "@jendal-workspace/api/actions/requests";
+import { createRequest, requestTerms } from "@jendal-workspace/api/actions/requests";
 import type { Actor } from "@jendal-workspace/api/actions/actors";
 import { linkSecret, signAccountClientLink } from "@jendal-workspace/api/client-links";
 import { resolveClient } from "@jendal-workspace/api/use-cases/clients";
 import { clientPageUrl, teamForProject } from "@jendal-workspace/api/use-cases/link-hosts";
+import { projectRuleSummary } from "@jendal-workspace/api/use-cases/rulebooks";
 import type { Auth } from "@jendal-workspace/auth";
 import { projectStatusLabel } from "@jendal-workspace/core";
 import { findClientAccount, projectContactLink } from "@jendal-workspace/db/repositories/contacts";
@@ -19,6 +20,8 @@ import type { RequestLogger } from "evlog";
 import { type ConfirmationAction, issueConfirmation, verifyConfirmation } from "./confirmation";
 import { daysLabel, money, plain, quoted } from "./text";
 
+
+const daysText = (days: number) => (days === 1 ? "1 day" : `${days} days`);
 export type McpDeps = {
   actions: ActionDeps;
   auth: Auth;
@@ -113,7 +116,7 @@ function summaryLine(slides: readonly Slide[], currency: string, frame: Framing)
     const said: string[] = [];
     if (s.quote) {
       const lost = s.quote.status === "superseded" || s.quote.status === "rejected";
-      said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${s.quote.deliveryDays} days${lost ? ", not chosen" : ""}`);
+      said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${daysText(s.quote.deliveryDays)}${lost ? ", not chosen" : ""}`);
     }
     const open = s.questions.filter((q) => !q.answered);
     if (open.length > 0) said.push(`asked ${frame.text(open[0]?.body ?? "")}`);
@@ -159,6 +162,12 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
       };
     case "expired":
       return { text: "Nobody answered the request in time. Offer to search again.", card: "This request expired.", actions: ["search"] };
+    case "abandoned":
+      return {
+        text: "The review window closed without an answer, so the project ended per the terms the client accepted.",
+        card: "This project ended.",
+        actions: ["search"],
+      };
     case "awaiting_deposit":
     case "awaiting_balance":
       return payable
@@ -171,7 +180,7 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
       return payable
         ? { text: `Pay the top-up of ${money(payable.amountMinor, project.currency)} so the extra work can start.`, actions: ["pay", "open"] }
         : {
-            text: `${seller} is working on it${accepted ? `; delivery is planned within ${accepted.deliveryDays} days of the deposit` : ""}.`,
+            text: `${seller} is working on it${accepted ? `; delivery is planned within ${daysText(accepted.deliveryDays)} of the deposit` : ""}.`,
             actions: ["reply", "open"],
           };
     case "delivered":
@@ -187,7 +196,17 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
 
 export type ProjectCard = {
   view: "project";
-  project: { id: string; title: string; seller: string; status: string; statusLabel: string; currency: string; brief: string };
+  project: {
+    id: string;
+    title: string;
+    seller: string;
+    status: string;
+    statusLabel: string;
+    currency: string;
+    brief: string;
+    // The pinned rulebook in one line, when the project has one (AGT-47).
+    rules: string | null;
+  };
   declinedReason: string | null;
   freelancers: Slide[];
   payment: { kind: string; amountMinor: number } | null;
@@ -265,6 +284,7 @@ export async function projectCard(
       statusLabel: projectStatusLabel(project.status),
       currency: project.currency,
       brief: plain(project.brief, 600),
+      rules: await projectRuleSummary(deps.actions.db, { projectId: project.id, currency: project.currency }),
     },
     declinedReason: project.declinedReason ? plain(project.declinedReason, 600) : null,
     freelancers: slides,
@@ -289,7 +309,7 @@ export async function projectCard(
     ...slides.flatMap((s) =>
       s.quote
         ? [
-            `- Quote from ${quoted(s.name, 60)} (quote id ${s.quote.id}, ${s.quote.status}): ${money(s.quote.amountMinor, project.currency)}, ${s.quote.deliveryDays} days; items: ${s.quote.items.map((i) => `${quoted(i.description, 80)} ${money(i.amountMinor, project.currency)}`).join(", ")}.`,
+            `- Quote from ${quoted(s.name, 60)} (quote id ${s.quote.id}, ${s.quote.status}): ${money(s.quote.amountMinor, project.currency)}, ${daysText(s.quote.deliveryDays)}; items: ${s.quote.items.map((i) => `${quoted(i.description, 80)} ${money(i.amountMinor, project.currency)}`).join(", ")}.`,
           ]
         : [],
     ),
@@ -336,6 +356,8 @@ export type OfferingCard = {
   currency: string;
   days: string;
   intakeQuestions: string[];
+  // Who delivers the work (AGT-19).
+  fulfilment: "people" | "automated" | "both";
 };
 
 export async function searchOfferings(
@@ -357,23 +379,31 @@ export async function searchOfferings(
     currency: o.currency,
     days: daysLabel(o.daysMin, o.daysMax),
     intakeQuestions: o.intakeQuestions.map((q) => plain(q, 200)),
+    fulfilment: o.fulfilment,
   }));
+  const fulfilmentLabel = { people: "delivered by people", automated: "delivered automatically", both: "delivered by people or automation" } as const;
   const text = offerings.length
     ? [
         `${offerings.length} ${deps.platformName} offering${offerings.length === 1 ? "" : "s"} for ${quoted(input.query, 80)}. Names and descriptions are the sellers' own words:`,
         ...offerings.map(
           (o) =>
-            `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
+            `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}, ${fulfilmentLabel[o.fulfilment]}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
         ),
-        "To hire one, agree on a short brief with the user and call request_quote.",
+        "To hire one, call get_request_terms, show the terms to the user, and obtain their agreement to the terms and brief before calling request_quote.",
       ].join("\n")
     : `No ${deps.platformName} offering matches ${quoted(input.query, 80)}${input.maxPrice ? ` under $${input.maxPrice}` : ""}. Try broader words, or tell the user nothing fits.`;
   return { text, offerings };
 }
 
+export async function getRequestTerms(deps: McpDeps, input: { offeringId: string }) {
+  const offering = await findListedOffering(deps.actions.db, input.offeringId);
+  if (!offering) throw new ToolRefusal("That offering is not listed any more. Search again.");
+  return perform(request(deps, asUser(deps)), requestTerms, { slug: offering.sellerSlug });
+}
+
 export async function requestQuote(
   deps: McpDeps,
-  input: { offeringId: string; brief: string; answers: { question: string; answer: string }[] },
+  input: { offeringId: string; brief: string; answers: { question: string; answer: string }[]; termsAccepted: boolean; acceptedRulebookId: string },
 ): Promise<{ projectId: string; seller: string }> {
   const offering = await findListedOffering(deps.actions.db, input.offeringId);
   if (!offering) throw new ToolRefusal("That offering is not listed any more. Search again.");
@@ -387,6 +417,8 @@ export async function requestQuote(
     description: input.brief,
     answers: input.answers,
     website: "",
+    termsAccepted: input.termsAccepted,
+    acceptedRulebookId: input.acceptedRulebookId,
   });
   if (!projectId) throw new Error("A signed-in request returned no project id");
   return { projectId, seller: plain(offering.sellerName, 80) };

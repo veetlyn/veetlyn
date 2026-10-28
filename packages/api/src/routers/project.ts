@@ -27,12 +27,15 @@ import {
   projectClientView,
   projectGet,
   projectList,
+  projectLateRefundDecide,
+  projectQualityRefundSet,
   projectRefundClient,
   projectStart,
+  projectWarningRecord,
 } from "../actions/projects";
-import { amendmentAccept, amendmentDecline, amendmentPropose, quoteAccept, quoteCreate } from "../actions/quotes";
-import { createRequest } from "../actions/requests";
-import { clientProcedureFor, publicProcedureFor, signedInProcedureFor, teamProcedureFor } from "../actions/trpc";
+import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "../actions/quotes";
+import { createRequest, requestTerms } from "../actions/requests";
+import { clientProcedureFor, optionalSessionProcedureFor, publicProcedureFor, signedInProcedureFor, teamProcedureFor } from "../actions/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -54,9 +57,13 @@ export const projectRouter = router({
   assign: teamProcedureFor(projectAssign),
   addQuote: teamProcedureFor(quoteCreate),
   proposeAmendment: teamProcedureFor(amendmentPropose),
+  offerPaidRevision: teamProcedureFor(amendmentOfferPaidRevision),
   deliveryUploadStart: teamProcedureFor(deliveryUploadStart),
   deliver: teamProcedureFor(deliverySubmit),
   refundClient: teamProcedureFor(projectRefundClient),
+  decideLateRefund: teamProcedureFor(projectLateRefundDecide),
+  setQualityRefund: teamProcedureFor(projectQualityRefundSet),
+  recordWarning: teamProcedureFor(projectWarningRecord),
   deliveryFileUrl: teamProcedureFor(deliveryFile),
   clientAdd: teamProcedureFor(projectClientAdd),
   clientRemove: teamProcedureFor(projectClientRemove),
@@ -68,7 +75,8 @@ export const projectRouter = router({
   decline: teamProcedureFor(requestDecline),
   shortlist: teamProcedureFor(requestShortlist),
 
-  requestQuote: publicProcedureFor(createRequest),
+  requestQuote: optionalSessionProcedureFor(createRequest),
+  requestTerms: publicProcedureFor(requestTerms),
   mine: signedInProcedureFor(projectClientList),
 
   // The web Worker asks which team's site serves a link before rendering the client or pay page on a host.
