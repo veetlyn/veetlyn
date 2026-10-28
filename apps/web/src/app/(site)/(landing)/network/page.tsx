@@ -76,7 +76,7 @@ export default async function NetworkPage() {
             <div className="sides two">
               <div className="side theirs" data-in>
                 <p className="for">Their AI can</p>
-                <ul><li>Search sellers and products</li><li>Ask the seller questions</li><li>Request and compare quotes</li><li>Fill a cart across stores</li><li>Follow a project</li></ul>
+                <ul><li>Search sellers and products</li><li>Ask the seller questions</li><li>Request and compare quotes</li><li>Follow a project</li></ul>
               </div>
               <div className="side middle" data-in>
                 <p className="for">Only the client can</p>

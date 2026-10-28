@@ -15,7 +15,7 @@ export function generateMetadata() {
     path: "/visibility",
     title: "Get found on Google and in AI answers",
     description:
-      "Get found on Google and in AI answers. Web SEO comes to every seller page with run V, and Network members will get AI visibility run by an agent with their approval.",
+      "Get found on Google and in AI answers. Web SEO is coming to every seller page, and Network members will get AI visibility run by an agent with their approval.",
     site,
   });
 }
@@ -31,7 +31,7 @@ export default function VisibilityPage() {
         <div className="wrap hero page">
           <div>
             <h1 data-in>Get found by Google and AI</h1>
-            <p className="lead" data-in>Web SEO comes to every seller page with run V, the way it is built into {domain} today. Network members will also get AI visibility, run by an agent that asks before anything ships.</p>
+            <p className="lead" data-in>Web SEO is coming to every seller page, the way it is built into {domain} today. Network members will also get AI visibility, run by an agent that asks before anything ships.</p>
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href="/contact#membership">Join the membership waitlist</Link>{" "}<a className="link" href="#included">What every plan gets</a>
             </div>
@@ -52,12 +52,12 @@ export default function VisibilityPage() {
         <section id="included" aria-labelledby="inc-h">
           <div className="wrap">
             <h2 id="inc-h" data-in>Web SEO for every plan</h2>
-            <p className="lead-dark" data-in>Before an AI can name you, it has to read you. Seller pages are built to be read with run V; {domain} already is.</p>
+            <p className="lead-dark" data-in>Before an AI can name you, it has to read you. Seller pages will be built to be read; {domain} already is.</p>
             <div className="features">
-              <div className="feature" data-in><p className="tag">Structured data <span className="soon">Coming with run V</span></p><h3>Your offers, labelled</h3><p>Services, products, prices and questions, written for search engines and AI tools.</p></div>
-              <div className="feature" data-in><p className="tag">Crawlers <span className="soon">Coming with run V</span></p><h3>Open to AI crawlers</h3><p>A sitemap, an llms.txt and robots rules that let AI assistants read you.</p></div>
-              <div className="feature" data-in><p className="tag">Speed <span className="soon">Coming with run V</span></p><h3>Fast, clean pages</h3><p>One page per offer, with clear titles and links that last.</p></div>
-              <div className="feature" data-in><p className="tag">Discover <span className="soon">Coming with run V</span></p><h3>Listed on Discover</h3><p>People browse the same catalog your clients' AI searches.</p></div>
+              <div className="feature" data-in><p className="tag">Structured data <span className="soon">Coming soon</span></p><h3>Your offers, labelled</h3><p>Services, products, prices and questions, written for search engines and AI tools.</p></div>
+              <div className="feature" data-in><p className="tag">Crawlers <span className="soon">Coming soon</span></p><h3>Open to AI crawlers</h3><p>A sitemap, an llms.txt and robots rules that let AI assistants read you.</p></div>
+              <div className="feature" data-in><p className="tag">Speed <span className="soon">Coming soon</span></p><h3>Fast, clean pages</h3><p>One page per offer, with clear titles and links that last.</p></div>
+              <div className="feature" data-in><p className="tag">Discover <span className="soon">Coming soon</span></p><h3>Listed on Discover</h3><p>People browse the same catalog your clients' AI searches.</p></div>
               <div className="feature" data-in><p className="tag">{name} Network</p><h3>Found in Claude and ChatGPT</h3><p>By every client who adds {name} Network.</p></div>
               <div className="feature" data-in><p className="tag">Your domain</p><h3>On your own address</h3><p>On Team, Agency, Grow and Scale.</p></div>
             </div>
@@ -87,7 +87,7 @@ export default function VisibilityPage() {
             <div className="story-flow">
               <div className="feature" data-in><p className="tag">1</p><h3>The agent finds a gap</h3><p>A question you should answer, a fact that is wrong, a page that is slow.</p></div>
               <div className="feature" data-in><p className="tag">2</p><h3>It drafts the change</h3><p>A new article, a fixed title, a corrected price.</p></div>
-              <div className="feature agent" data-in><p className="tag">3</p><h3>You approve it</h3><p>In the dash or in Discord, with one press.</p></div>
+              <div className="feature agent" data-in><p className="tag">3</p><h3>You approve it</h3><p>In the dash or your team chat, with one press.</p></div>
               <div className="feature" data-in><p className="tag">4</p><h3>It ships and is tracked</h3><p>The weekly report shows what moved.</p></div>
             </div>
             <p className="term-line" data-in><PMark />We report what happened. We never promise rankings.</p>

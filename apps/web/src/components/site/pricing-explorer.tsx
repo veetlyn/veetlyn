@@ -39,24 +39,31 @@ const SERVICES_ROWS: readonly Row[] = [
     id: "seo",
     label: (
       <>
-        Web SEO on every page <span className="soon">Coming with run V</span>
+        Web SEO on every page <span className="soon">Coming soon</span>
       </>
     ),
     cells: [true, true, true, true],
   },
-  { id: "discord", label: "Discord request threads", cells: [false, true, true, true] },
+  {
+    id: "chat",
+    label: (
+      <>
+        Your agents in team chat <span className="soon">Coming soon</span>
+      </>
+    ),
+    cells: [false, true, true, true],
+  },
 ];
 const STORE_ROWS: readonly Row[] = [
   {
     id: "carts",
     label: (
       <>
-        Sold in <PlatformName /> Network carts
+        Listed in <PlatformName /> Network <span className="soon">Coming soon</span>
       </>
     ),
     cells: [true, true, true, true],
   },
-  { id: "checkout", label: "One checkout across stores", cells: [true, true, true, true] },
   { id: "admin", label: "Admin agent", cells: [false, true, true, true] },
   { id: "credits", label: "AI credits for your agents", cells: ["Some", "More", "The most", "Custom"] },
 ];

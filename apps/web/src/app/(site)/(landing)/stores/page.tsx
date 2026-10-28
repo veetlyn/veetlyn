@@ -16,7 +16,7 @@ import { PRICE_FACTS, saleFees } from "@/lib/site/fees";
 import { breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
 const growFee = formatOrderFee(getPlan("grow").orderFeeBps);
-const CLAY_ROOM_ORDER_MINOR = 6_500;
+const CLAY_ROOM_ORDER_MINOR = 2_900;
 const clayRoomFee = saleFees({ kind: "store", planId: "grow", amountMinor: CLAY_ROOM_ORDER_MINOR, source: "network" });
 
 export function generateMetadata() {
@@ -24,7 +24,7 @@ export function generateMetadata() {
   return pageMetadata({
     path: "/stores",
     title: `${site.name} for stores`,
-    description: `Sell in AI carts. Clients' AI fills one cart across ${site.name} stores and pays once with PayPal. Downloads, courses and shipped goods, from ${PRICE_FACTS.from} a month.`,
+    description: `Sell courses and downloads from your own page, paid with PayPal and delivered at once. Inside Claude and ChatGPT soon, from ${PRICE_FACTS.from} a month.`,
     site,
   });
 }
@@ -41,37 +41,35 @@ export default async function StoresPage() {
       <div className="band">
         <div className="wrap hero page">
           <div>
-            <h1 data-in>Your products, in every AI cart</h1>
-            <p className="lead" data-in>For store owners, creators and course sellers. Your clients' AI fills one cart across stores, and they pay once with PayPal.</p>
+            <h1 data-in>Sell your courses and downloads</h1>
+            <p className="lead" data-in>For creators and course sellers. Clients pay with PayPal on your page and get the file at once. Inside Claude and ChatGPT soon.</p>
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href="/pricing">Start with Grow</Link>{" "}<a className="link" href="#story">See how it works</a>
             </div>
           </div>
           <ChatDemo
-            label={`In ChatGPT, a client asks for two mugs, the glazing course and coffee beans. ${name}'s cart shows items from Clay Room and Roast House, and the client checks out on ${name}.`}
-            who="ChatGPT"
-            message="Add two of those blue mugs, the glazing course and a bag of coffee."
+            label={`Coming soon: in ChatGPT, a client asks for a glazing course. ${name} Network shows Clay Room's course for $29, and the client buys it on Clay Room's page with PayPal.`}
+            who="ChatGPT, coming soon"
+            message="Find me a pottery glazing course."
           >
             <div className="widget frame" data-at="400">
-              <p className="wtop"><PMark /><b>{name} Network</b> · Cart, 2 stores</p>
-              <div className="wrow"><span><span className="t">Two mugs</span><br /><span className="s">Clay Room · shipped</span></span><span className="num t">$36</span><span></span></div>
-              <div className="wrow"><span><span className="t">Glazing course</span><br /><span className="s">Clay Room · download</span></span><span className="num t">$29</span><span></span></div>
-              <div className="wrow"><span><span className="t">Coffee beans</span><br /><span className="s">Roast House · shipped</span></span><span className="num t">$24</span><span className="act" data-press="2000" data-done="Checking out">Check out</span></div>
+              <p className="wtop"><PMark /><b>{name} Network</b> · Clay Room</p>
+              <div className="wrow"><span><span className="t">Glazing course</span><br /><span className="s">Six videos and a PDF</span></span><span className="num t">$29</span><span className="act" data-press="2000" data-done="Paying">Buy</span></div>
             </div>
-            <p className="reply frame" data-at="2900">Checkout opened on {name}. You approve the payment in PayPal.</p>
+            <p className="reply frame" data-at="2900">Checkout opened on Clay Room's page. You approve the payment in PayPal.</p>
           </ChatDemo>
         </div>
       </div>
       <div>
         <section id="story" aria-labelledby="story-h">
           <div className="wrap">
-            <h2 id="story-h" data-in>From a chat to a shipped order</h2>
+            <h2 id="story-h" data-in>From your page to a download</h2>
             <Story>
               <div className="steps">
                 <span className="rail" aria-hidden="true"><i></i></span>
-                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">ChatGPT, for a client</p><h3>Fills one cart from two stores</h3><p className="promise">The chat never takes the payment.</p></div>
-                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">The client, on {name}</p><h3>Pays both stores at once</h3><p className="promise">One PayPal payment. Each store gets its part.</p></div>
-                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Clay Room</p><h3>Gets its own order</h3><p className="promise">PayPal collects the address.</p></div>
+                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">A client, on your page</p><h3>Picks the course</h3><p className="promise">One link for your bio.</p></div>
+                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">The client, in PayPal</p><h3>Pays</h3><p className="promise">The money goes into your PayPal.</p></div>
+                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Clay Room</p><h3>Sees the order</h3><p className="promise">Paid, with the buyer and the file sent.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">The client</p><h3>Gets the course at once</h3><p className="promise">Download links expire, so your files stay yours.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">{name}</p><h3>Takes {growFee}, nothing more</h3><p className="promise">On Grow. Every fee shows before you sell.</p></div>
               </div>
@@ -79,37 +77,28 @@ export default async function StoresPage() {
                 <div className="scene-stage">
                   <div className="scene on">
                     <div className="ui">
-                      <p className="s">Cart, in ChatGPT</p>
+                      <p className="s">clayroom.{storeDomain}</p>
                       <div className="lines">
-                        <p className="row num"><span>Two mugs · Clay Room</span><span>$36.00</span></p>
-                        <p className="row num"><span>Glazing course · Clay Room</span><span>$29.00</span></p>
-                        <p className="row num"><span>Coffee beans · Roast House</span><span>$24.00</span></p>
-                        <p className="row num sum"><span className="t">Two stores</span><span className="t">$89.00</span></p>
+                        <p className="row num"><span>Glazing course · Download</span><span>$29.00</span></p>
+                        <p className="row"><span className="muted">Six videos and a PDF</span><span>1.2 GB</span></p>
                       </div>
-                      <span className="act">Check out on {name}</span>
+                      <span className="act">Buy</span>
                     </div>
                   </div>
                   <div className="scene">
                     <div className="ui">
-                      <p className="s">Checkout on {name}</p>
-                      <p className="big num">$89.00</p>
-                      <div className="lines">
-                        <p className="row num"><span className="muted">Clay Room</span><span>$65.00</span></p>
-                        <p className="row num"><span className="muted">Roast House</span><span>$24.00</span></p>
-                      </div>
+                      <p className="s">Pay Clay Room</p>
+                      <p className="big num">$29.00</p>
                       <span className="act">Pay with PayPal</span>
-                      <p className="s" style={{ marginTop: "8px" }}>Shipping set by each store, shown in PayPal</p>
                     </div>
                   </div>
                   <div className="scene">
                     <div className="ui">
                       <p className="row"><span className="t">Order for Clay Room</span><span className="ok">Paid</span></p>
                       <div className="lines">
-                        <p className="row num"><span className="muted">Two mugs</span><span>$36.00</span></p>
                         <p className="row num"><span className="muted">Glazing course</span><span>$29.00</span></p>
-                        <p className="row"><span className="muted">Ship to</span><span>Address from PayPal</span></p>
+                        <p className="row"><span className="muted">Download link</span><span>Sent</span></p>
                       </div>
-                      <span className="act ink">Add tracking</span>
                     </div>
                   </div>
                   <div className="scene">
@@ -141,8 +130,8 @@ export default async function StoresPage() {
           <div className="wrap everywhere">
             <div>
               <h2 id="link-h" data-in>One link for your bio and every chat</h2>
-              <p className="lead-dark" data-in>Coming from Shopify, WooCommerce, Gumroad or a link-in-bio page? Add your products and sell them inside AI too.</p>
-              <div className="chans" data-in><span>Your bio</span><span>Claude</span><span>ChatGPT</span><span>Discord</span><span>A pay link</span></div>
+              <p className="lead-dark" data-in>Coming from Shopify, WooCommerce, Gumroad or a link-in-bio page? Add your products and sell them from one page. Inside AI soon.</p>
+              <div className="chans" data-in><span>Your bio</span><span>A pay link</span><span>Claude and ChatGPT, soon</span></div>
             </div>
             <div className="phone" data-in role="img" aria-label={`Clay Room's page at clayroom.${storeDomain} with a mug, the glazing course and a serving bowl`}>
               <div className="screen">
@@ -162,11 +151,11 @@ export default async function StoresPage() {
           <div className="wrap">
             <h2 id="feat-h" data-in>A store that sells inside AI</h2>
             <div className="features">
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Sold in AI carts</h3><p>Through {name} Network, Claude and ChatGPT add your products to a cart.</p></div>
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>An admin agent</h3><p>On Grow and Scale, for your orders and catalog.</p></div>
-              <div className="feature" data-in><p className="tag">PayPal</p><h3>One checkout, many stores</h3><p>One payment, split into one order per store.</p></div>
+              <div className="feature agent" data-in><p className="tag">Agent <span className="soon">Coming soon</span></p><h3>Found by AI</h3><p>Through {name} Network, Claude and ChatGPT will find your products.</p></div>
+              <div className="feature agent" data-in><p className="tag">Agent <span className="soon">Coming soon</span></p><h3>An admin agent</h3><p>On Grow and Scale, for your orders and catalog.</p></div>
+              <div className="feature" data-in><p className="tag">PayPal</p><h3>PayPal checkout</h3><p>Clients pay on your page. The money goes into your PayPal.</p></div>
               <div className="feature" data-in><p className="tag">Digital</p><h3>Courses and downloads</h3><p>Files delivered at once, with expiring links.</p></div>
-              <div className="feature" data-in><p className="tag">Shipping</p><h3>Flat shipping and tracking</h3><p>PayPal collects the address. You add tracking.</p></div>
+              <div className="feature" data-in><p className="tag">Shipping <span className="soon">Coming soon</span></p><h3>Shipped goods</h3><p>Physical products with shipping and tracking.</p></div>
               <div className="feature" data-in><p className="tag">Your page</p><h3>Your own domain</h3><p>On Grow and Scale. One link for your bio.</p></div>
             </div>
           </div>

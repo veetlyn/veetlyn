@@ -30,7 +30,7 @@ type TierCard = {
 };
 type TierTable = Readonly<Record<TierId, TierCard>>;
 
-const SEO_LATER = <span className="later">Coming with run V</span>;
+const SEO_LATER = <span className="later">Coming soon</span>;
 
 function services(id: SellerPlanId): Pick<TierCard, "name" | "priceCents" | "fee" | "cta"> {
   const p = getSellerPlan(id);
@@ -88,7 +88,7 @@ const TIERS = {
   },
   team: {
     ...services("team"),
-    for: "For small agencies and Discord teams",
+    for: "For small agencies and remote teams",
     kind: "pick",
     btn: "btn-ink",
     plusLine: "Everything in Solo, plus:",
@@ -101,7 +101,7 @@ const TIERS = {
         <b>Team copilot</b> with charts
       </>,
       "Payouts by approval or by rule",
-      "Discord and the public API",
+      "Team chat and the public API, soon",
       <>
         Your own domain, no <PlatformName /> badge
       </>,
@@ -158,7 +158,7 @@ const TIERS = {
     btn: "btn-quiet",
     features: [
       <b key="c">
-        Sold in <PlatformName /> Network carts
+        Listed in <PlatformName /> Network {SEO_LATER}
       </b>,
       "Storefront on your page",
       <>
@@ -166,7 +166,7 @@ const TIERS = {
       </>,
       "Digital downloads and courses",
       "Shipped goods, flat shipping and tracking",
-      "One PayPal checkout across stores",
+      "PayPal checkout on your page",
       "AI credits for your agents",
       `${getPlan("starter").staffSeats} staff accounts`,
     ],

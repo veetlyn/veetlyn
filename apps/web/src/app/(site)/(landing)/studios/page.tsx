@@ -31,7 +31,7 @@ function Week({ name }: { name: string }) {
         <Story>
           <div className="steps">
             <span className="rail" aria-hidden="true"><i></i></span>
-            <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Claude, for a client</p><h3>Fills one cart from two stores</h3><p className="promise">The chat never takes the payment.</p></div>
+            <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Claude, for a client</p><h3>Finds the pedicure</h3><p className="promise">The chat never takes the payment.</p></div>
             <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your intake agent</p><h3>Drafts the pedicure quote</h3><p className="promise">Nothing goes out until you confirm.</p></div>
             <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">The client, in PayPal</p><h3>Pays the deposit</h3><p className="promise">It lands in your PayPal. We never hold it.</p></div>
             <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your payout rules</p><h3>Pay Inès her share</h3><p className="promise">Each share is sent once.</p></div>
@@ -41,19 +41,17 @@ function Week({ name }: { name: string }) {
             <div className="scene-stage">
               <div className="scene on">
                 <div className="ui">
-                  <p className="s">Cart, in Claude</p>
+                  <p className="s">Maison Lune, in Claude</p>
                   <div className="lines">
-                    <p className="row num"><span>Argan shampoo · Maison Lune</span><span>$18.00</span></p>
-                    <p className="row num"><span>Nail kit · Coco Nails</span><span>$24.00</span></p>
-                    <p className="row num sum"><span className="t">Two stores</span><span className="t">$42.00</span></p>
+                    <p className="row num"><span>Pedicure · 45 min</span><span>$45.00</span></p>
+                    <p className="row"><span className="muted">Saturday</span><span>11:00</span></p>
                   </div>
-                  <span className="act">Check out on {name}</span>
-                  <p className="s" style={{ marginTop: "8px" }}>One PayPal payment</p>
+                  <span className="act">Request</span>
                 </div>
               </div>
               <div className="scene">
                 <div className="ui">
-                  <p className="row"><span className="t">#requests</span><span className="s">Discord</span></p>
+                  <p className="row"><span className="t">New request</span><span className="s">From Claude</span></p>
                   <p className="s" style={{ marginTop: "10px" }}>The intake agent drafted a quote</p>
                   <div className="lines">
                     <p className="row num"><span>Pedicure, Saturday 11:00</span><span className="t">$45.00</span></p>
@@ -107,7 +105,7 @@ function OneLink({ storeDomain }: { storeDomain: string }) {
       <div className="wrap everywhere">
         <div>
           <h2 id="link-h" data-in>One link for your bio and every chat</h2>
-          <div className="chans" data-in><span>Your bio</span><span>Claude</span><span>ChatGPT</span><span>Discord</span><span>A pay link</span></div>
+          <div className="chans" data-in><span>Your bio</span><span>Claude</span><span>ChatGPT</span><span>A pay link</span></div>
         </div>
         <div className="phone" data-in role="img" aria-label={`Maison Lune's page at maisonlune.${storeDomain} with its services and its store: pedicure, argan shampoo and a nail kit`}>
           <div className="screen">
@@ -153,16 +151,15 @@ export default function StudiosPage() {
             </div>
           </div>
           <ChatDemo
-            label={`In Claude, a client asks for a pedicure on Saturday and their argan shampoo. ${name}'s card shows Maison Lune's pedicure and shampoo; the client requests the pedicure and adds the shampoo to the cart.`}
+            label={`In Claude, a client asks for a pedicure on Saturday. ${name}'s card shows Maison Lune's pedicure, and the client requests it.`}
             who="Claude"
-            message="Find me a pedicure for Saturday and reorder my argan shampoo."
+            message="Find me a pedicure in Brooklyn for Saturday."
           >
             <div className="widget frame" data-at="400">
               <p className="wtop"><PMark /><b>{name} Network</b> · Maison Lune</p>
               <div className="wrow"><span><span className="t">Pedicure</span><br /><span className="s">Service · 45 min</span></span><span className="num t">$45</span><span className="act" data-press="1800" data-done="Requested">Request</span></div>
-              <div className="wrow"><span><span className="t">Argan shampoo</span><br /><span className="s">Product · 250 ml</span></span><span className="num t">$18</span><span className="act ghost" data-press="2800" data-done="In cart">Add to cart</span></div>
             </div>
-            <p className="reply frame" data-at="3500">Maison Lune has your request for Saturday. The shampoo is in your cart.</p>
+            <p className="reply frame" data-at="3500">Maison Lune has your request for Saturday.</p>
           </ChatDemo>
         </div>
       </div>
