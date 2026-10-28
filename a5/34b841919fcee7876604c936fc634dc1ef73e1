@@ -1,0 +1,91 @@
+.github/main-protection.json
+  s_22e9e82f1423d1::t_4da650d7e4958b 1-12
+.github/workflows/ci.yml
+  s_22e9e82f1423d1::t_5bd08b4ca47bd0 6
+.github/workflows/deploy.yml
+  s_22e9e82f1423d1::t_f07b24607e8c9f 7,20,25-26,29,31-32
+README.md
+  s_22e9e82f1423d1::t_784c00fad0b492 101,133-146
+apps/server/.env.schema
+  s_22e9e82f1423d1::t_6248d3a09f263e 100-103
+apps/server/src/index.ts
+  s_22e9e82f1423d1::t_d06cd053114761 23-24,60,101-102
+apps/server/src/launch-gate.test.ts
+  s_22e9e82f1423d1::t_eeaca6c694fee2 1-23
+apps/server/src/launch-gate.ts
+  s_22e9e82f1423d1::t_b9d5dbe99678bc 1-12
+apps/server/src/routes/waitlist.test.ts
+  s_22e9e82f1423d1::t_d29f8043265ac0 1-58
+apps/server/src/routes/waitlist.ts
+  s_22e9e82f1423d1::t_b9ee92536ecf19 1-41
+apps/web/src/app/(site)/(landing)/agencies/page.tsx
+  s_22e9e82f1423d1::t_4b5f6e633421a8 1,44
+apps/web/src/app/(site)/(landing)/freelancers/page.tsx
+  s_22e9e82f1423d1::t_73bb3621d4d2d7 1,43
+apps/web/src/app/(site)/(landing)/layout.tsx
+  s_22e9e82f1423d1::t_10c8eaa179f1be 2,12
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_22e9e82f1423d1::t_93b74cfd6eb76f 1,32,42
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_22e9e82f1423d1::t_5c016ba87f223b 1,131
+apps/web/src/app/(site)/(landing)/pricing/page.tsx
+  s_22e9e82f1423d1::t_81d9897465e271 1,30
+apps/web/src/app/(site)/(landing)/stores/page.tsx
+  s_22e9e82f1423d1::t_403517767d9f03 1,38
+apps/web/src/app/(site)/(landing)/waitlist/page.tsx
+  s_22e9e82f1423d1::t_3ca79fdfb6159e 1-16
+apps/web/src/components/site/close-cta.tsx
+  s_22e9e82f1423d1::t_611a4e9cbfbd36 1,14-15
+apps/web/src/components/site/site-footer.tsx
+  s_22e9e82f1423d1::t_b56694a6029aad 1,47-48
+apps/web/src/components/site/site-header.tsx
+  s_22e9e82f1423d1::t_bebd1fc79f4b24 70,91,113,117-118
+apps/web/src/components/site/tiers.tsx
+  s_22e9e82f1423d1::t_62369e1e50475c 228,232
+apps/web/src/components/site/waitlist-form.tsx
+  s_22e9e82f1423d1::t_1fff1836adb94e 1-36
+apps/web/src/content/legal/privacy.mdx
+  s_22e9e82f1423d1::t_8f4fba342696a3 26,62-65
+apps/web/src/lib/host-routing.test.ts
+  s_22e9e82f1423d1::t_1c9ebf30437a4d 97-111
+apps/web/src/lib/host-routing.ts
+  s_22e9e82f1423d1::t_00f0cea7ad3cea 24-33
+apps/web/src/lib/launch.ts
+  s_22e9e82f1423d1::t_07f104619fe3a7 1-9
+apps/web/src/proxy.ts
+  s_22e9e82f1423d1::t_fceb6e49f53323 10,17
+packages/db/src/migrations/20261028150841_launch_waitlist/migration.sql
+  s_22e9e82f1423d1::t_8cbb5f1c0d3789 1-4
+packages/db/src/migrations/20261028150841_launch_waitlist/snapshot.json
+  s_22e9e82f1423d1::t_d87382a6e4a5f9 1-14612
+packages/db/src/schema/index.ts
+  s_22e9e82f1423d1::t_8160d78e101fd4 19
+packages/db/src/schema/waitlist.ts
+  s_22e9e82f1423d1::t_4b3128afd9e517 1-7
+packages/db/src/testing/db.ts
+  s_22e9e82f1423d1::t_e4fe1d59a84a2c 30
+packages/infra/.env.schema
+  s_22e9e82f1423d1::t_d951e5c934922e 82-85
+packages/infra/alchemy.run.ts
+  s_22e9e82f1423d1::t_8a35db2e7c1862 9,19-20,124,177-178
+packages/infra/launch-access.test.ts
+  s_22e9e82f1423d1::t_6500eb6329c987 1-17
+packages/infra/launch-access.ts
+  s_22e9e82f1423d1::t_f5795fcfae8749 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a534b841919fcee7876604c936fc634dc1ef73e1",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
