@@ -42,6 +42,7 @@ function depsOf(ctx: Context): ActionDeps {
     files: ctx.files,
     auth: ctx.auth,
     paypal: ctx.paypal,
+    payouts: ctx.payouts,
     email: ctx.email,
     now: ctx.now,
     onLogError: ctx.onActionLogError,

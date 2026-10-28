@@ -52,6 +52,21 @@ describe("action registry", () => {
     expect(find("project.client_preview")).toMatchObject({ kind: "query", allow: [{ grant: "member" }], surfaces: ["web"] });
   });
 
+  it("puts every payout decision behind a person, and payout credentials beyond an agent", () => {
+    for (const name of ["payout.approve", "payout.reject", "payout.retry", "payout.rules.save", "payout.rules.preset", "payout.web.export"]) {
+      expect(find(name).allow, name).toEqual([{ grant: "member" }]);
+      expect(agentPolicyOf(find(name)), name).toBe("confirm");
+    }
+    for (const name of ["payout.connect.start", "payout.connect.complete", "payout.credentials.remove", "payout.web.import"]) {
+      expect(agentPolicyOf(find(name)), name).toBe("never");
+    }
+    for (const name of ["payout.list", "payout.rules.get", "payout.credentials.get"]) {
+      expect(find(name)).toMatchObject({ kind: "query", allow: [{ grant: "member" }] });
+    }
+    expect(find("payout.request").allow).toEqual([{ grant: "signed_in" }]);
+    expect(find("payout.mine")).toMatchObject({ kind: "query", allow: [{ grant: "signed_in" }] });
+  });
+
   it("leaves declining a request to a person and answering questions to the client", () => {
     expect(agentPolicyOf(find("request.decline"))).toBe("never");
     expect(find("request.decline").allow).toEqual([{ grant: "member" }]);
