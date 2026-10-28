@@ -35,13 +35,28 @@ function Terms() {
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">PayPal</span><p className="coat">
-              <PMark />The payer approves each payment. A person or your rule approves each payout.
+            <span className="via">PayPal checkout</span><p className="coat">
+              <PMark />The price on the page is the price charged.
             </p>
           </div>
           <div className="term" data-in>
-            <span className="via">Your agents</span><p className="coat">
-              <PMark />They draft. A person confirms.
+            <span className="via">PayPal Payouts</span><p className="coat">
+              <PMark />Each share is sent once, after a person or your rule says yes.
+            </p>
+          </div>
+          <div className="term" data-in>
+            <span className="via">Your dash and team chat</span><p className="coat">
+              <PMark />Agent drafts wait for a person to confirm them.
+            </p>
+          </div>
+          <div className="term" data-in>
+            <span className="via">Your own agents, through our API</span><p className="coat">
+              <PMark />The same approvals and payout rules as your team.
+            </p>
+          </div>
+          <div className="term" data-in>
+            <span className="via">Every offer</span><p className="coat">
+              <PMark />Buyers see who does the work: people, AI or both.
             </p>
           </div>
         </div>
@@ -131,18 +146,21 @@ export default function HomePage() {
                 <p className="for">Their agents</p>
                 <h3>Claude and ChatGPT, through {name} Network</h3>
                 <SideArt name="theirs" />
+                <ul><li>Find your offers</li><li>Ask your questions</li><li>Request quotes</li><li>Follow the project</li></ul>
                 <p className="foot-line">They never pay.</p>
               </div>
               <div className="side middle" data-in>
                 <p className="for">{name}</p>
                 <h3>The money and the rules</h3>
                 <SideArt name="middle" />
+                <ul><li>The price comes from your project</li><li>The payer approves each payment in PayPal</li><li>A person or your rule approves each payout</li><li>Every step is recorded</li></ul>
                 <p className="foot-line">Paid through PayPal.</p>
               </div>
               <div className="side yours" data-in>
                 <p className="for">Your agents</p>
                 <h3>Quotes, answers and payouts, drafted for you</h3>
                 <SideArt name="yours" />
+                <ul><li>The intake agent drafts quotes</li><li>The copilot answers money questions</li><li>The payout agent pays by your rules</li><li>Your own agents join through the API</li></ul>
                 <p className="foot-line">They act inside your rules.</p>
               </div>
             </div>
@@ -151,14 +169,32 @@ export default function HomePage() {
         <section id="network" aria-labelledby="network-h">
           <div className="wrap">
             <h2 id="network-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
-            <p className="note" data-in>Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</p>
-            <div data-in><NetworkArt /></div>
+            <div className="zigzag">
+              <div className="zig">
+                <div className="zig-art plain" data-in><NetworkArt /></div>
+                <div className="zig-text" data-in>
+                  <p className="tag">A way in</p>
+                  <h3>For people who sell their work</h3>
+                  <ul>
+                    <li><b>One connector.</b> Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</li>
+                    <li><b>The AI never pays.</b> The client approves each payment on {name}, in PayPal.</li>
+                    <li><b>A press the model cannot fake.</b> Accepting a quote or a delivery takes the client's own press.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <Link className="more" href="/network">How {name} Network works</Link>
           </div>
         </section>
         <section id="stories" aria-labelledby="stories-h">
           <div className="wrap">
             <h2 id="stories-h" data-in>For anyone who sells</h2>
+            <div className="marquee" data-in>
+              <div className="marquee-track">
+                <ul className="wall"><li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Remote teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li><li>Studios</li><li>Designers</li><li>Coaches</li><li>Developers</li></ul>
+                <ul className="wall" aria-hidden="true"><li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Remote teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li><li>Studios</li><li>Designers</li><li>Coaches</li><li>Developers</li></ul>
+              </div>
+            </div>
             <div className="stories">
               <Link className="story-card is-dark" href="/freelancers" data-in>
                 <p className="for">Freelancers</p>
