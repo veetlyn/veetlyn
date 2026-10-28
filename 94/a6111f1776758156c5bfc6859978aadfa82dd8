@@ -1,0 +1,19 @@
+README.md
+  s_22e9e82f1423d1::t_87b1818c9d350e 136,138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "94a6111f1776758156c5bfc6859978aadfa82dd8",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
