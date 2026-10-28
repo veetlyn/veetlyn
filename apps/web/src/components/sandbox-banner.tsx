@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 
 import { sandboxBannerContent } from "@/lib/sandbox-banner";
 
-// Rendered by the root layout on every host. It cannot be dismissed (spec §4.3).
+// Demo notice on non-production hosts; production never shows the global banner.
 export default function SandboxBanner() {
   const content = sandboxBannerContent("default", env);
   if (!content) return null;
