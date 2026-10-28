@@ -30,7 +30,7 @@ type TierCard = {
 };
 type TierTable = Readonly<Record<TierId, TierCard>>;
 
-const SEO_LATER = <span className="later">Coming with run V</span>;
+const SEO_LATER = <span className="later">Coming soon</span>;
 
 function services(id: SellerPlanId): Pick<TierCard, "name" | "priceCents" | "fee" | "cta"> {
   const p = getSellerPlan(id);
@@ -83,12 +83,12 @@ const TIERS = {
         <b>Web SEO</b> built into every page {SEO_LATER}
       </>,
       `${solo.storageGb} GB of files`,
-      "Export everything",
+      <>Export everything {SEO_LATER}</>,
     ],
   },
   team: {
     ...services("team"),
-    for: "For small agencies and Discord teams",
+    for: "For small agencies and remote teams",
     kind: "pick",
     btn: "btn-ink",
     plusLine: "Everything in Solo, plus:",
@@ -101,9 +101,9 @@ const TIERS = {
         <b>Team copilot</b> with charts
       </>,
       "Payouts by approval or by rule",
-      "Discord and the public API",
+      <>Team chat and the public API {SEO_LATER}</>,
       <>
-        Your own domain, no <PlatformName /> badge
+        Your own domain, no <PlatformName /> badge {SEO_LATER}
       </>,
       `${team.storageGb} GB of files`,
     ],
@@ -158,7 +158,7 @@ const TIERS = {
     btn: "btn-quiet",
     features: [
       <b key="c">
-        Sold in <PlatformName /> Network carts
+        Listed in <PlatformName /> Network {SEO_LATER}
       </b>,
       "Storefront on your page",
       <>
@@ -166,7 +166,7 @@ const TIERS = {
       </>,
       "Digital downloads and courses",
       "Shipped goods, flat shipping and tracking",
-      "One PayPal checkout across stores",
+      "PayPal checkout on your page",
       "AI credits for your agents",
       `${getPlan("starter").staffSeats} staff accounts`,
     ],
@@ -178,9 +178,9 @@ const TIERS = {
     btn: "btn-ink",
     plusLine: "Everything in Starter, plus:",
     features: [
-      <b key="a">Admin agent</b>,
+      <span key="a"><b>Admin agent</b> {SEO_LATER}</span>,
       "More AI credits",
-      "Your own domain",
+      <>Your own domain {SEO_LATER}</>,
       `${getPlan("grow").staffSeats} staff accounts`,
     ],
   },
@@ -225,11 +225,11 @@ export function Tier({ id, interval, signupUrl }: { id: TierId; interval: Billin
       <p className="fee">{t.fee}</p>
       {href.startsWith("/") ? (
         <Link className={`btn ${t.btn}`} href={href}>
-          {t.cta}
+          {href === "/waitlist" ? "Join the waitlist" : t.cta}
         </Link>
       ) : (
         <a className={`btn ${t.btn}`} href={href}>
-          {t.cta}
+          {href === "/waitlist" ? "Join the waitlist" : t.cta}
         </a>
       )}
       <ul>

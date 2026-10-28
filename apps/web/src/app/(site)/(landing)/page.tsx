@@ -1,12 +1,16 @@
+import { isWaitlistOnly } from "@/lib/launch";
 import Link from "next/link";
 
 import ChatDemo from "@/components/site/chat-demo";
 import CloseCta from "@/components/site/close-cta";
 import FaqList, { faqStructuredData } from "@/components/site/faq-list";
 import JsonLd from "@/components/site/json-ld";
+import { NetworkArt, SideArt } from "@/components/site/art/home";
+import { TermsArt } from "@/components/site/art/terms";
 import LogoStrip from "@/components/site/logo-strip";
 import PMark from "@/components/site/p-mark";
 import { indexFaq } from "@/content/site/faqs";
+import { LOGO_PATHS } from "@/content/site/logos";
 import { platformSite } from "@/lib/platform";
 import { agencyExample, usd, walkCrewDepositMinor } from "@/lib/site/examples";
 import { PRICE_FACTS } from "@/lib/site/fees";
@@ -22,73 +26,83 @@ export function generateMetadata() {
   });
 }
 
-function Terms({ name }: { name: string }) {
+const API_GLYPH = "M8.5 5 3 12l5.5 7m7-14L21 12l-5.5 7";
+
+// The services a term rides on, as small marks after its label.
+function ViaLogos({ names }: { names: readonly (keyof typeof LOGO_PATHS | "api")[] }) {
+  return (
+    <span className="logos">
+      {names.map((n) =>
+        n === "api" ? (
+          <svg key={n} viewBox="0 0 24 24" aria-hidden="true"><path d={API_GLYPH} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        ) : (
+          <svg key={n} viewBox="0 0 24 24" aria-hidden="true"><path d={LOGO_PATHS[n]} /></svg>
+        ),
+      )}
+    </span>
+  );
+}
+
+function Terms() {
   return (
     <section id="terms" aria-labelledby="terms-h">
       <div className="wrap">
         <h2 id="terms-h" data-in>Our terms, on top of every integration</h2>
-        <div className="terms">
-          <div className="term" data-in>
-            <span className="via">Claude and ChatGPT, through {name} Network</span><p className="coat">
-              <PMark />The client's AI finds, asks and fills carts. It never pays.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">PayPal checkout</span><p className="coat">
-              <PMark />The price on the page is the price charged.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">PayPal Payouts</span><p className="coat">
-              <PMark />Each share is sent once, after a person or your rule says yes.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Discord</span><p className="coat">
-              <PMark />Agent drafts wait for a person to confirm them.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Your own agents, through our API</span><p className="coat">
-              <PMark />The same approvals and payout rules as your team.
-            </p>
-          </div>
-          <div className="term" data-in>
-            <span className="via">Every offer</span><p className="coat">
-              <PMark />Buyers see who does the work: people, AI or both.
-            </p>
-          </div>
+        <div className="bento terms-bento">
+          <div className="tile wide dark" data-in><p className="tag">Claude and ChatGPT<ViaLogos names={["claude", "openai"]} /></p><h3>The client's AI finds, asks and requests quotes. It never pays.</h3><TermsArt name="assistants" /></div>
+          <div className="tile" data-in><p className="tag">PayPal checkout<ViaLogos names={["paypal"]} /></p><h3>The price on the page is the price charged.</h3><TermsArt name="checkout" /></div>
+          <div className="tile dark" data-in><p className="tag">PayPal Payouts<ViaLogos names={["paypal"]} /></p><h3>Each share is sent once, after a person or your rule says yes.</h3><TermsArt name="payouts" /></div>
+          <div className="tile" data-in><p className="tag">Your dash and team chat<ViaLogos names={["slack", "discord", "googlechat"]} /></p><h3>Agent drafts wait for a person to confirm them.</h3><TermsArt name="chat" /></div>
+          <div className="tile" data-in><p className="tag">Your own agents, through our API<ViaLogos names={["api"]} /></p><h3>The same approvals and payout rules as your team.</h3><TermsArt name="api" /></div>
+          <div className="tile wide mint" data-in><p className="tag">Every offer</p><h3>Buyers see who does the work: people, AI or both.</h3><TermsArt name="who" /></div>
         </div>
-        <p className="rails-note" data-in><b>Every payment runs through PayPal.</b> Card details stay with PayPal and never reach {name}.</p>
       </div>
     </section>
 
   );
 }
 
-function Seen({ storeDomain }: { storeDomain: string }) {
+function Seen({ name, storeDomain }: { name: string; storeDomain: string }) {
   return (
     <section id="seen" aria-labelledby="seen-h">
       <div className="wrap">
         <h2 id="seen-h" data-in>Get found on search and in AI answers</h2>
-        <p className="note" data-in>Web SEO comes to every seller page with run V. Network members will also get AI visibility, run by an agent with their approval.</p>
+        <p className="note" data-in>Web SEO is coming to every seller page. Network members will also get AI visibility, run by an agent with their approval.</p>
         <div className="seen">
           <div className="ui" data-in>
             <p className="src">maisonlune.{storeDomain} › pedicure</p>
             <p className="serp-title">Pedicure in Brooklyn · Maison Lune</p>
             <p className="s">Service · $45 · 45 min</p>
             <p className="s">Request a pedicure and shop hair care from the same page.</p>
+            <div className="serp-offers">
+              <p><span>Pedicure</span><span className="num">$45 · 45 min</span></p>
+              <p><span>Manicure</span><span className="num">$35 · 30 min</span></p>
+              <p><span>Argan shampoo</span><span className="num">$18</span></p>
+            </div>
+            <p className="s">Offers labelled with structured data</p>
           </div>
           <div className="ui" data-in>
             <p className="src">ChatGPT</p>
+            <p className="ask-bubble">A pedicure in Brooklyn this Saturday?</p>
             <p className="answer">Maison Lune does pedicures for $45. Want me to request Saturday?</p>
-            <span className="chip">
-              <PMark />Maison Lune · Pedicure · $45
-            </span>
+            <div className="widget">
+              <p className="wtop"><PMark /><b>{name} Network</b> · Maison Lune</p>
+              <div className="wrow"><span><span className="t">Pedicure</span><br /><span className="s">Service · 45 min · Saturday</span></span><span className="num t">$45</span><span className="act">Request</span></div>
+            </div>
           </div>
           <div className="ui report" data-in>
             <p className="src">AI visibility report · <span className="soon">For members</span></p>
+            <div className="widget">
+              <p className="wtop"><PMark /><b>This week</b> · Maison Lune</p>
+              <div className="kpis num">
+                <div><span className="s">Shown by AI</span><b>128</b></div>
+                <div><span className="s">Requests</span><b>9</b></div>
+                <div><span className="s">Orders</span><b>4</b></div>
+              </div>
+              <div className="bars" aria-hidden="true"><span style={{ height: "34%" }}></span><span style={{ height: "46%" }}></span><span style={{ height: "40%" }}></span><span style={{ height: "62%" }}></span><span style={{ height: "58%" }}></span><span style={{ height: "80%" }}></span><span style={{ height: "100%" }}></span></div>
+            </div>
             <ul className="report-list"><li>How often AI agents showed you</li><li>The requests that came from it</li><li>The orders that came from it</li></ul>
+            <p className="s">Example</p>
           </div>
         </div>
         <p className="term-line" data-in>
@@ -114,7 +128,7 @@ export default function HomePage() {
             <h1 data-in>Sell where <em>AI</em> shops</h1>
             <p className="lead" data-in>{name} Network puts your services and products inside Claude and ChatGPT. Agents do the work. People approve the money.</p>
             <div className="ctas" data-in>
-              <Link className="btn btn-mint" href="/pricing">Start selling</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>
+              <Link className="btn btn-mint" href={isWaitlistOnly() ? "/waitlist" : "/pricing"}>{isWaitlistOnly() ? "Join the waitlist" : "Start selling"}</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>
             </div>
             <p className="hero-note" data-in>Clients add {name} Network once, in Claude or ChatGPT.</p>
           </div>
@@ -135,7 +149,7 @@ export default function HomePage() {
             <p className="reply frame" data-at="5100">Accepted. Pay the deposit on {name}, with PayPal.</p>
           </ChatDemo>
         </div>
-        <div className="wrap"><LogoStrip /></div>
+        <div className="wrap"><LogoStrip channels /></div>
       </div>
       <div>
         <section aria-labelledby="sides-h">
@@ -145,18 +159,21 @@ export default function HomePage() {
               <div className="side theirs" data-in>
                 <p className="for">Their agents</p>
                 <h3>Claude and ChatGPT, through {name} Network</h3>
-                <ul><li>Find your offers</li><li>Ask your questions</li><li>Request quotes</li><li>Fill carts across stores</li></ul>
+                <SideArt name="theirs" />
+                <ul><li>Find your offers</li><li>Ask your questions</li><li>Request quotes</li><li>Follow the project</li></ul>
                 <p className="foot-line">They never pay.</p>
               </div>
               <div className="side middle" data-in>
                 <p className="for">{name}</p>
                 <h3>The money and the rules</h3>
+                <SideArt name="middle" />
                 <ul><li>The price comes from your project</li><li>The payer approves each payment in PayPal</li><li>A person or your rule approves each payout</li><li>Every step is recorded</li></ul>
                 <p className="foot-line">Paid through PayPal.</p>
               </div>
               <div className="side yours" data-in>
                 <p className="for">Your agents</p>
-                <h3>Working for you, inside your rules</h3>
+                <h3>Quotes, answers and payouts, drafted for you</h3>
+                <SideArt name="yours" />
                 <ul><li>The intake agent drafts quotes</li><li>The copilot answers money questions</li><li>The payout agent pays by your rules</li><li>Your own agents join through the API</li></ul>
                 <p className="foot-line">They act inside your rules.</p>
               </div>
@@ -166,10 +183,19 @@ export default function HomePage() {
         <section id="network" aria-labelledby="network-h">
           <div className="wrap">
             <h2 id="network-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
-            <div className="features">
-              <div className="feature agent" data-in><p className="tag">A way in</p><h3>For people who sell their work</h3><p>Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</p></div>
-              <div className="feature agent" data-in><p className="tag">Platform rules</p><h3>The AI never pays</h3><p>The client approves each payment on {name}, in PayPal.</p></div>
-              <div className="feature agent" data-in><p className="tag">Consent</p><h3>A press the model cannot fake</h3><p>Accepting a quote or a delivery takes the client's own press.</p></div>
+            <div className="zigzag">
+              <div className="zig">
+                <div className="zig-art plain" data-in><NetworkArt /></div>
+                <div className="zig-text" data-in>
+                  <p className="tag">A way in</p>
+                  <h3>For people who sell their work</h3>
+                  <ul>
+                    <li><b>One connector.</b> Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</li>
+                    <li><b>The AI never pays.</b> The client approves each payment on {name}, in PayPal.</li>
+                    <li><b>A press the model cannot fake.</b> Accepting a quote or a delivery takes the client's own press.</li>
+                  </ul>
+                </div>
+              </div>
             </div>
             <Link className="more" href="/network">How {name} Network works</Link>
           </div>
@@ -177,9 +203,12 @@ export default function HomePage() {
         <section id="stories" aria-labelledby="stories-h">
           <div className="wrap">
             <h2 id="stories-h" data-in>For anyone who sells</h2>
-            <ul className="wall" data-in>
-              <li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Discord teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li>
-            </ul>
+            <div className="marquee" data-in>
+              <div className="marquee-track">
+                <ul className="wall"><li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Remote teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li><li>Studios</li><li>Designers</li><li>Coaches</li><li>Developers</li></ul>
+                <ul className="wall" aria-hidden="true"><li>Salons</li><li>Course creators</li><li>Template shops</li><li>Web agencies</li><li>Remote teams</li><li>Merchants</li><li>Freelancers</li><li>AI sellers</li><li>Studios</li><li>Designers</li><li>Coaches</li><li>Developers</li></ul>
+              </div>
+            </div>
             <div className="stories">
               <Link className="story-card is-dark" href="/freelancers" data-in>
                 <p className="for">Freelancers</p>
@@ -188,13 +217,13 @@ export default function HomePage() {
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card" href="/agencies" data-in>
                 <p className="for">Agencies</p>
-                <h3>Walk Crew runs its agency from Discord</h3>
-                <div className="ui"><p className="row"><span className="t">#requests</span><span className="s">Discord</span></p><p className="row num"><span>Draft quote, by the intake agent</span><span className="t">$640</span></p></div>
+                <h3>Walk Crew answers requests with an agent</h3>
+                <div className="ui"><p className="row"><span className="t">New request</span><span className="s">Logo and brand kit</span></p><p className="row num"><span>Draft quote, by the intake agent</span><span className="t">$640</span></p></div>
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card" href="/stores" data-in>
                 <p className="for">Stores</p>
-                <h3>Clay Room sells mugs and a course in AI carts</h3>
-                <div className="ui"><p className="row num"><span>Two mugs · Clay Room</span><span>$36</span></p><p className="row num"><span>Glazing course · Clay Room</span><span>$29</span></p><p className="row num"><span>Coffee beans · Roast House</span><span>$24</span></p></div>
+                <h3>Clay Room sells a course from one page</h3>
+                <div className="ui"><p className="row num"><span>Glazing course · Download</span><span>$29</span></p><p className="row"><span>Paid with PayPal</span><span className="ok">Sent at once</span></p></div>
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card is-dark" href="/studios" data-in>
                 <p className="for">Studios</p>
@@ -204,7 +233,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        </section><Terms name={name} /> <Seen storeDomain={storeDomain} /><section aria-labelledby="price-h">
+        </section><Terms /> <Seen name={name} storeDomain={storeDomain} /><section aria-labelledby="price-h">
           <div className="wrap">
             <h2 id="price-h" data-in>Your clients stay yours. We charge when we bring you one.</h2>
             <div className="model" data-in>

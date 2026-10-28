@@ -20,6 +20,8 @@ import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
 import { BRIDGE_PATH, bridgeResponse, createMcpRoute, widgetOriginsFor } from "./mcp/route";
+import { productionAuthGate } from "./launch-gate";
+import { createWaitlistRoute } from "./routes/waitlist";
 import { noStoreByDefault } from "./no-store";
 import { wakeNoticesAfterMutation } from "./notice-wakeup";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
@@ -55,6 +57,7 @@ const app = new Hono<AppEnv>();
 
 app.use(evlog());
 app.use(noStoreByDefault);
+app.use("/api/auth/*", productionAuthGate(ENV.PUBLIC_ACCESS));
 app.use(wakeNoticesAfterMutation(deliverNotices));
 
 async function deliverNotices(execution: ExecutionContext): Promise<void> {
@@ -94,6 +97,8 @@ app.use(
     cache: createKvStoreCache(ENV.STORE_CACHE),
   })),
 );
+
+app.route("/", createWaitlistRoute(ENV.PLATFORM_DOMAIN));
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw));
 

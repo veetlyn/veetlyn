@@ -22,7 +22,7 @@ export const indexFaq = (name: string): readonly Faq[] => [
     a: "Yes. One workspace, one link. Run both and the cheaper plan is half price.",
   },
   { q: `Can an AI sell on ${name}?`, a: "Yes. Connect it through our API. Buyers see that the work is automated." },
-  { q: "Can I leave with my data?", a: "Yes. Export everything at any time. The code is open source under AGPL-3.0." },
+  { q: "Can I leave with my data?", a: "Yes. A full export is coming soon. The code is open source under AGPL-3.0." },
 ];
 
 export const networkFaq = (name: string): readonly Faq[] => [
@@ -58,7 +58,7 @@ export const agencyFaq = (name: string): readonly Faq[] => [
   },
   {
     q: "We work in Slack or Microsoft Teams. Can we use them?",
-    a: "Not yet. Slack comes after launch. Today, requests come from AI, Discord and your page, and notices go by email.",
+    a: "Not yet. Slack, Discord and Google Chat are coming. Today, requests come from AI and your page, and notices go by email.",
   },
   {
     q: `Can our own agent work with ${name}?`,
@@ -76,7 +76,7 @@ export const storeFaq = (name: string): readonly Faq[] => [
     q: "Can I bring my products from Shopify, WooCommerce or Gumroad?",
     a: `Add them to your ${name} store. There is no import tool yet.`,
   },
-  { q: "Who collects the shipping address?", a: "PayPal, at checkout. You see it on the order." },
+  { q: "Can I sell shipped goods?", a: "Not yet. Courses and downloads work today; shipping is coming." },
   { q: "Do I need a PayPal business account?", a: "Yes. Payments go straight into it." },
   {
     q: "Can I sell services too?",
@@ -86,10 +86,10 @@ export const storeFaq = (name: string): readonly Faq[] => [
 ];
 
 export const STUDIO_FAQ: readonly Faq[] = [
-  { q: "Do clients see services and products together?", a: "Yes. One page and one card in the chat show both." },
+  { q: "Do clients see services and products together?", a: "Yes, on your page. In the chat, services today and products soon." },
   {
     q: "Can a client pay for a service and a product at once?",
-    a: "Not yet. A service is paid on its pay page, products at the cart checkout.",
+    a: "Not yet. A service is paid on its pay page, products at checkout on your page.",
   },
   {
     q: "Can my staff get a share of each service?",
@@ -117,7 +117,7 @@ export const pricingFaq = (name: string): readonly Faq[] => [
   },
   {
     q: "Is SEO included?",
-    a: "Web SEO on seller pages is coming to every plan with run V. AI visibility comes with Network membership, which opens by waitlist with manual approval.",
+    a: "Web SEO on seller pages is coming soon to every plan. AI visibility comes with Network membership, which opens by waitlist with manual approval.",
   },
   {
     q: "Is there a free trial?",
@@ -128,7 +128,7 @@ export const pricingFaq = (name: string): readonly Faq[] => [
 export const visibilityFaq = (name: string): readonly Faq[] => [
   {
     q: "What does every plan get?",
-    a: `Web SEO on every seller page, coming with run V: structured data, a sitemap, an llms.txt, fast pages, and a listing on Discover and ${name} Network.`,
+    a: `Web SEO on every seller page, coming soon: structured data, a sitemap, an llms.txt, fast pages, and a listing on Discover and ${name} Network.`,
   },
   {
     q: "How do I get AI visibility?",

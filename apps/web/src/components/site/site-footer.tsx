@@ -1,3 +1,4 @@
+import { isWaitlistOnly } from "@/lib/launch";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand-mark";
@@ -43,8 +44,8 @@ export default function SiteFooter() {
         <a href={`mailto:${email}`}>{email}</a>
       </div>
       <p className="small">
-        Sandbox prototype. Walk Crew, Amadou, Clay Room, Roast House, Maison Lune, Coco Nails, Logo Bot, Inès and the
-        Discover listings are examples.
+        {isWaitlistOnly() ? "Coming soon. Join the waitlist for launch news. " : "Sandbox prototype. "}
+        Walk Crew, Amadou, Clay Room, Roast House, Maison Lune, Coco Nails, Logo Bot, Inès and the Discover listings are examples.
       </p>
       <nav className="legal" aria-label="Legal">
         <Link href="/legal/terms">Terms of service</Link>

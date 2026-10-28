@@ -16,6 +16,7 @@ export * from "./outbox";
 export * from "./action-log";
 export * from "./payouts";
 export * from "./limits";
+export * from "./waitlist";
 export * from "./contacts";
 export * from "./conversations";
 export * from "./oauth";

@@ -1,3 +1,4 @@
+import { isWaitlistOnly, signupDestination } from "@/lib/launch";
 import Link from "next/link";
 
 import { getPlatformOrigins } from "@/lib/server-api";
@@ -10,8 +11,8 @@ export default async function CloseCta() {
         <div className="close" data-in>
           <h2 id="start-h">Be there when AI comes shopping</h2>
           <div className="close-ctas">
-            <a className="btn btn-mint" href={`${dash}/signup`}>
-              Start selling
+            <a className="btn btn-mint" href={signupDestination(dash)}>
+              {isWaitlistOnly() ? "Join the waitlist" : "Start selling"}
             </a>
             <Link className="link" href="/contact#sales">
               Talk to sales

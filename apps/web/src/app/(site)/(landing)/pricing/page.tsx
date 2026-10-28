@@ -1,3 +1,4 @@
+import { signupDestination } from "@/lib/launch";
 import { TRIAL_DAYS } from "@jendal-workspace/core";
 import Link from "next/link";
 
@@ -26,7 +27,7 @@ export default async function PricingPage() {
   const { name } = site;
   const faq = pricingFaq(name);
   const { dash } = await getPlatformOrigins();
-  const signup = `${dash}/signup`;
+  const signup = signupDestination(dash);
   return (
     <>
       <JsonLd
@@ -67,7 +68,7 @@ export default async function PricingPage() {
           <div className="wrap">
             <h2 id="add-h" data-in>Getting found</h2>
             <div className="addons">
-              <article className="addon" data-in><p className="kind">Coming to every plan with run V</p><h3>Web SEO</h3><p>Structured data on every offer, a sitemap and an llms.txt, AI crawlers allowed, fast pages, and a listing on Discover and {name} Network. <Link className="link" href="/visibility">Get found</Link></p></article>
+              <article className="addon" data-in><p className="kind">Coming soon to every plan</p><h3>Web SEO</h3><p>Structured data on every offer, a sitemap and an llms.txt, AI crawlers allowed, fast pages, and a listing on Discover and {name} Network. <Link className="link" href="/visibility">Get found</Link></p></article>
               <article className="addon" data-in><p className="kind">Network members · Waitlist</p><h3>AI visibility</h3><p>An agent tracks what ChatGPT, Claude, Perplexity and Gemini say about you, drafts articles and fixes for your approval, and reports weekly. We never promise rankings.</p></article>
               <article className="addon later" data-in><p className="kind">Planned for 2027</p><h3>Self-hosted</h3><p>Run {name} on your own servers with a yearly licence. You stay in the network, payments still run through PayPal, with the same fees.</p></article>
             </div>
@@ -81,7 +82,7 @@ export default async function PricingPage() {
               <li>The payer approves every payment</li>
               <li>Each share is paid once</li>
               <li>Every fee shows before you confirm</li>
-              <li>Export everything, any time</li>
+              <li>Export everything, any time (coming soon)</li>
               <li>{TRIAL_DAYS} days free, no setup fee</li>
             </ul>
           </div>
