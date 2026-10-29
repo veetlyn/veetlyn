@@ -2,7 +2,7 @@
   "mcpServers": {
     "payleor": {
       "type": "http",
-      "url": "https://api.payleor.com/mcp"
+      "url": "https://api.veetlyn.com/mcp"
     }
   }
 }

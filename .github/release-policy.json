@@ -1,8 +1,10 @@
 {
   "repository": "veetlyn/veetlyn",
   "owner": "Mouhamed-B",
-  "platformZone": "payleor.com",
-  "storeZone": "payleor.app",
+  "platformZone": "veetlyn.com",
+  "storeZone": "veetlyn.app",
   "platformName": "Veetlyn",
-  "paypalEnvironment": "sandbox"
+  "paypalEnvironment": "sandbox",
+  "legacyPlatformZone": "payleor.com",
+  "legacyStoreZone": "payleor.app"
 }
