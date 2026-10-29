@@ -1,5 +1,5 @@
 /** Public provenance only. Never include credentials or tenant data here. */
-export function releaseResponse(service: "web" | "api", env: {
+export function releaseDescriptor(service: "web" | "api", env: {
   RELEASE_SHA: string;
   CF_VERSION_METADATA?: { id: string };
   DEPLOY_STAGE: string;
@@ -8,11 +8,11 @@ export function releaseResponse(service: "web" | "api", env: {
   PLATFORM_DOMAIN: string;
   STORE_DOMAIN: string;
   PAYPAL_ENVIRONMENT: string;
-}): Response {
-  return Response.json({
+}) {
+  return {
     service, workerVersion: env.CF_VERSION_METADATA?.id ?? null, sha: env.RELEASE_SHA, stage: env.DEPLOY_STAGE,
     publicAccess: env.PUBLIC_ACCESS, platformName: env.PLATFORM_NAME,
     platformDomain: env.PLATFORM_DOMAIN, storeDomain: env.STORE_DOMAIN,
     paypalEnvironment: env.PAYPAL_ENVIRONMENT,
-  }, { headers: { "Cache-Control": "no-store" } });
+  };
 }
