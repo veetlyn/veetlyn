@@ -1,0 +1,51 @@
+.github/workflows/deploy.yml
+  s_22e9e82f1423d1::t_334c53c6e89682 125-129,157-158
+CLAUDE.md
+  s_22e9e82f1423d1::t_1298339a2e2057 53
+README.md
+  s_22e9e82f1423d1::t_0800094389f5d6 101,105,136
+apps/server/src/index.ts
+  s_22e9e82f1423d1::t_e0692b99317295 1,188-191
+apps/server/src/tenant/canonical-request.test.ts
+  s_22e9e82f1423d1::t_91bc32bb755fa5 1-21
+apps/server/src/tenant/canonical-request.ts
+  s_22e9e82f1423d1::t_35bf539f26656b 1-14
+apps/web/src/lib/domain-redirect.test.ts
+  s_22e9e82f1423d1::t_3b6e5da41001e1 1-18
+apps/web/src/lib/domain-redirect.ts
+  s_22e9e82f1423d1::t_1cceb1ca8f4ed9 1-16
+apps/web/worker/index.ts
+  s_22e9e82f1423d1::t_70468eec57814f 1,13-17
+packages/core/src/tenancy/legacy-host.test.ts
+  s_22e9e82f1423d1::t_8585141697ac26 1-21
+packages/infra/deploy-hosts.test.ts
+  s_22e9e82f1423d1::t_30975065d77426 15,32-33,41-55
+packages/infra/deploy-hosts.ts
+  s_22e9e82f1423d1::t_8b32b9815051c4 15-16,22,47,50-53,58,62-63,69,72,74-75
+plugins/payleor/.claude-plugin/plugin.json
+  s_22e9e82f1423d1::t_e561f83873757d 4,8
+scripts/build-plugin-zips.ts
+  s_22e9e82f1423d1::t_bcfcbd210b023b 97-100
+scripts/release-smoke.mjs
+  s_22e9e82f1423d1::t_c7b5a22eabc73e 29-30,34-41
+scripts/release-zone-access.mjs
+  s_22e9e82f1423d1::t_a618caefe3594e 1-27
+specs/platform/plans/2026-10-29-veetlyn-domain-cutover.md
+  s_22e9e82f1423d1::t_2cbda4da943dfa 1-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b59863259d44e4004e8c76c530350c28cb398a9",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
