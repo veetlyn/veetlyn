@@ -18,7 +18,7 @@
 | Enforcement | Every rule in §3 is enforced in B1, not just displayed. Money rules propose; a person confirms (PayPal rules: no money movement without a person) |
 | AI importer | Reading a team's ToS and operations book into the model goes to run D (intake agent proposals), on the same schema |
 | Open source | Generic code is built as OSS packages (§2), in three future projects: the JSON app builder, the operating-model engine (actions, rules, scheduler, outbox), and the agentic React admin. Open core: premium packs plug in from outside; the MIT core holds no licence checks |
-| Naming | No "payleor" in source code: code says `platform`; every user-facing mention of the name reads the `PLATFORM_NAME` environment variable (value `Payleor`), and domains come from the existing domain variables. Done in a prep run before B1 (§7) |
+| Naming | No "veetlyn" in source code: code says `platform`; every user-facing mention of the name reads the `PLATFORM_NAME` environment variable (value `Veetlyn`), and domains come from the existing domain variables. Done in a prep run before B1 (§7) |
 
 ## 1. Scope
 
@@ -94,11 +94,11 @@ Templates per team kind seed every rule (salon, freelancer, studio or agency, cr
 
 Before B1, one mechanical PR:
 
-- **Identifiers and comments** say `platform` (`payleorFees` → `platformFees`); a migration renames `payleor_fees` to `platform_fees`.
-- **The name people read** (UI copy, emails, page titles, MCP tool and widget text, metadata) comes from `PLATFORM_NAME`, set per stage in the Workers' env and the infra config (value `Payleor`), decoded with zod at startup and passed down like the domains; local dev and tests default it in their env files. Renaming the product is then a variable change and a redeploy.
+- **Identifiers and comments** say `platform` (`veetlynFees` → `platformFees`); a migration renames `payleor_fees` to `platform_fees`.
+- **The name people read** (UI copy, emails, page titles, MCP tool and widget text, metadata) comes from `PLATFORM_NAME`, set per stage in the Workers' env and the infra config (value `Veetlyn`), decoded with zod at startup and passed down like the domains; local dev and tests default it in their env files. Renaming the product is then a variable change and a redeploy.
 - **Domains** come from `PLATFORM_DOMAIN`, `STORE_DOMAIN` and the other existing variables; fixtures use `platform.test`.
 - **External values:** the PayPal attribution variable becomes `PLATFORM_BN`, its value unchanged.
-- **A lint rule** rejects "payleor" in source; specs and the plugin manifest keep the name (product docs and the published plugin identity), and the zip build fills the manifest's display name from `PLATFORM_NAME`.
+- **A lint rule** rejects "veetlyn" in source; specs and the plugin manifest keep the name (product docs and the published plugin identity), and the zip build fills the manifest's display name from `PLATFORM_NAME`.
 - The PR gets the test and security audits and a smoke on staging.
 
 ## 8. Migration and rollout

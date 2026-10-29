@@ -38,7 +38,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
   1. Open the email "Your request to Walk Crew" in the client's inbox.
   2. Click **Open your page**.
 - **Expected:**
-  - The sender is "Walk Crew via Payleor" at `invoices@payleor.com`, with reply-to the team's support email.
+  - The sender is "Walk Crew via Veetlyn" at `invoices@veetlyn.com`, with reply-to the team's support email.
   - The email says "Walk Crew received your request. Follow it, and accept or discuss the quote, on your private page:" and links to `{seller}/c/<token>`.
   - The client page shows the project title, "Quoting", the description, and under "Quotes": "The team is preparing your quote." No account is needed.
 - **Edge cases:** a changed or made-up token shows "This link is not valid" and "Ask the team to send you the project link again."; the link never expires.
@@ -175,7 +175,7 @@ Requests from the same client email count against the limits in QUO-06 and QUO-0
   1. In "Quote calculator", type `85` in "The member should receive (USD)".
   2. Click **Use this quote**.
 - **Expected:**
-  - "Quote $102.05" (at walk-crew's 15% cut and 10% fee, team plan) and the lines "Client pays …", "PayPal's checkout fee (about) …, paid by the team", "Payleor's fee …", "Team keeps …", "PayPal's payout fee (about) …" and "Member receives $85.00". In R5b-1 these were $112.26, $4.41, $1.12, $19.99, $1.74 and $85.00.
+  - "Quote $102.05" (at walk-crew's 15% cut and 10% fee, team plan) and the lines "Client pays …", "PayPal's checkout fee (about) …, paid by the team", "Veetlyn's fee …", "Team keeps …", "PayPal's payout fee (about) …" and "Member receives $85.00". In R5b-1 these were $112.26, $4.41, $1.12, $19.99, $1.74 and $85.00.
   - Line 1's amount becomes 102.05.
   - Pressing Enter in the calculator does not send the quote.
 - **Edge cases:** text that is not an amount shows "Enter what the member should receive."; with two or more lines there is no **Use this quote** button; the payout fee uses the international estimate until a payee with a PayPal country is known.

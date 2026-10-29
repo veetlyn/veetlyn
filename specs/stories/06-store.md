@@ -4,11 +4,11 @@ Digital products, the store switch, checkout, orders, downloads, and refunds rev
 
 Shared facts for these stories:
 
-- `{seller}` is `walk-crew`'s seller page (`https://walk-crew.payleor.app` today) unless a story names another slug. `walk-crew` is published, has PayPal connected, and its support email is `walk-crew@example.com`.
+- `{seller}` is `walk-crew`'s seller page (`https://walk-crew.veetlyn.app` today) unless a story names another slug. `walk-crew` is published, has PayPal connected, and its support email is `walk-crew@example.com`.
 - Store pages in the admin are under `{dash}/walk-crew` (dashboard), `/products` and `/orders`.
 - In dev, file uploads go to a local S3 endpoint, so the browser must allow local network access for the admin host.
 - Pay the PayPal popup from a browser profile that is not signed in to PayPal as the sandbox seller.
-- Sellers refund store orders in their PayPal account; Payleor has no refund button for orders.
+- Sellers refund store orders in their PayPal account; Veetlyn has no refund button for orders.
 
 ### STO-01: An admin turns on the store
 
@@ -94,7 +94,7 @@ Shared facts for these stories:
 - **Expected:**
   - The page shows "Confirming your payment…", then opens `{seller}/orders/<token>`.
   - The order page shows "Order from Walk Crew", "Icon pack", $19.00, "Paid <date>", **Download** and "5 downloads left · link works until <date 7 days later>".
-  - DB check (developer): the order is `paid` with its capture id, PayPal's fee and Payleor's fee (0.5% for `walk-crew`, $0.10 after rounding half up); the PayPal order's `custom_id` is `order:<order id>`; ledger transfers `order_paid` and `order_fees`.
+  - DB check (developer): the order is `paid` with its capture id, PayPal's fee and Veetlyn's fee (0.5% for `walk-crew`, $0.10 after rounding half up); the PayPal order's `custom_id` is `order:<order id>`; ledger transfers `order_paid` and `order_fees`.
 - **Edge cases (not walked through):** a declined capture shows "PayPal declined this payment. Try again or choose another way to pay." (or "PayPal declined this payment method. Choose another way to pay."); a pending capture shows "PayPal is still processing your payment. We'll email your download link as soon as it clears."; an unconfirmed capture shows "We could not confirm your payment. It may have gone through; check your email before trying again." (B2, `eed3537`). Checkout starts and captures are limited per IP and per order ("Too many attempts. Wait a few minutes and try again.").
 
 ### STO-08: The buyer downloads the file
@@ -117,7 +117,7 @@ Shared facts for these stories:
   1. Open the buyer's inbox (AgentMail).
   2. Open the email's **Download** link.
 - **Expected:**
-  - The email comes from "Walk Crew via Payleor" `<stores@payleor.com>`, reply-to `walk-crew@example.com`, subject "Your download: Icon pack".
+  - The email comes from "Walk Crew via Veetlyn" `<stores@veetlyn.com>`, reply-to `walk-crew@example.com`, subject "Your download: Icon pack".
   - It says "Thanks for your purchase from Walk Crew. Download Icon pack from your order page:" and "The link works for 7 days and 5 downloads. After that, open it and ask for a new link; it comes to this address."
   - The link opens `{seller}/orders/<token>` with its own token and 5 downloads left.
 - **Edge cases:** known gap (backlog): if this email fails while the webhook applies the capture, a buyer who closed the checkout has no link.
@@ -168,8 +168,8 @@ Shared facts for these stories:
 - **Expected:**
   - The order page says "This order was refunded, so the download is no longer available." with no buttons; every link of the order (page and emails) stops working.
   - The admin list shows "Refunded <date>".
-  - DB check (developer): the `PAYMENT.CAPTURE.REFUNDED` event is `processed / refunded`; the order is `refunded` and all its grants are revoked; transfers `order_refunded:refund:<refund id>` (gross) and `refund_fees:<refund id>` (the PayPal and Payleor fees the refund returned) post once, even when the event is resent.
-- **Edge cases:** any refund, partial or full, or a chargeback refunds the order. A capture refunded before Payleor applied it is recorded as paid then refunded, with no download link or email (B3, not walked through).
+  - DB check (developer): the `PAYMENT.CAPTURE.REFUNDED` event is `processed / refunded`; the order is `refunded` and all its grants are revoked; transfers `order_refunded:refund:<refund id>` (gross) and `refund_fees:<refund id>` (the PayPal and Veetlyn fees the refund returned) post once, even when the event is resent.
+- **Edge cases:** any refund, partial or full, or a chargeback refunds the order. A capture refunded before Veetlyn applied it is recorded as paid then refunded, with no download link or email (B3, not walked through).
 
 ### STO-14: Turning the store off hides the products
 
@@ -191,7 +191,7 @@ Shared facts for these stories:
 - **Actor:** buyer · **Surface:** web (order page) · **Delivered by:** B2 (`eed3537`) · **Status:** Built
 - **Preconditions:** an order link of `walk-crew` (STO-07).
 - **Steps:**
-  1. Open the link's path on another published seller's host (`https://<other-slug>.payleor.app/orders/<token>`).
+  1. Open the link's path on another published seller's host (`https://<other-slug>.veetlyn.app/orders/<token>`).
   2. Open `{seller}/orders/not-a-real-token-xxxxxxxxxx`.
   3. View the source of a valid order page.
 - **Expected:**

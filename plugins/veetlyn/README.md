@@ -6,30 +6,30 @@ Everything runs in the PayPal sandbox during the hackathon: pay with a PayPal sa
 
 ## Contents
 
-- **Connector:** `https://api.payleor.com/mcp`. The first time, you sign in with a Veetlyn account (email and password) and allow the connection.
+- **Connector:** `https://api.veetlyn.com/mcp`. The first time, you sign in with a Veetlyn account (email and password) and allow the connection.
 - **Tools:** `search_offerings`, `get_request_terms`, `request_quote`, `list_my_projects`, `get_project`, `reply`, `request_changes`, plus `accept_quote` and `accept_delivery`, which only the card's buttons can call. The assistant reads the current client terms and obtains your explicit agreement before sending a quote request.
 - **Skill:** `hire-a-professional` tells the assistant when Veetlyn fits and how to walk through a hire, with a reference of statuses, conversations and payments.
 
 ## Get the zips
 
-From the repository root: `pnpm plugin:zip`. It writes `dist/plugin/payleor-plugin.zip` (Claude) and `dist/plugin/payleor-plugin-chatgpt.zip` (ChatGPT). For the staging hosts: `pnpm plugin:zip --mcp-url https://api.staging.payleor.com/mcp`, which writes the `-staging` pair.
+From the repository root: `pnpm plugin:zip`. It writes `dist/plugin/veetlyn-plugin.zip` (Claude) and `dist/plugin/veetlyn-plugin-chatgpt.zip` (ChatGPT). For the staging hosts: `pnpm plugin:zip:staging`, which writes the `-staging` pair. Built zips are never committed: the **AI plugin** workflow (`.github/workflows/plugin.yml`) builds all four on every change to `plugins/` and keeps them as the `ai-plugin-zips` artifact.
 
 ## Install in Claude
 
-1. Sign up at `https://dash.payleor.com/signup` and verify your email (or sign in if you have an account).
-2. In Claude, open **Customize → Plugins → Add**, choose **Upload plugin** and pick `payleor-plugin.zip`. (Or add this repository as a plugin marketplace.)
+1. Sign up at `https://dash.veetlyn.com/signup` and verify your email (or sign in if you have an account).
+2. In Claude, open **Customize → Plugins → Add**, choose **Upload plugin** and pick `veetlyn-plugin.zip`. (Or add this repository as a plugin marketplace.)
 3. Open the plugin's **Connectors** tab and connect Veetlyn. A Veetlyn window opens: sign in, check that it says you go back to `claude.ai`, and press **Allow**.
 4. Try: "Find me someone to design a logo for my bakery under $400."
 
-A connector alone also works: **Settings → Connectors → Add custom connector** with the URL `https://api.payleor.com/mcp` and no OAuth fields. You then get the tools without the skill.
+A connector alone also works: **Settings → Connectors → Add custom connector** with the URL `https://api.veetlyn.com/mcp` and no OAuth fields. You then get the tools without the skill.
 
 ## Install in ChatGPT
 
-1. Sign up at `https://dash.payleor.com/signup` and verify your email.
-2. **Web, with the skill:** at chatgpt.com, open **Plugins → Upload new or existing plugin** (this needs a verified developer identity) and pick `payleor-plugin-chatgpt.zip`. Connect when asked: sign in to Veetlyn, check that it says you go back to `chatgpt.com`, and press **Allow**.
-3. **Web, tools only:** chatgpt.com/plugins → **Add custom MCP server** with `https://api.payleor.com/mcp`, then **Create as a plugin**.
+1. Sign up at `https://dash.veetlyn.com/signup` and verify your email.
+2. **Web, with the skill:** at chatgpt.com, open **Plugins → Upload new or existing plugin** (this needs a verified developer identity) and pick `veetlyn-plugin-chatgpt.zip`. Connect when asked: sign in to Veetlyn, check that it says you go back to `chatgpt.com`, and press **Allow**.
+3. **Web, tools only:** chatgpt.com/plugins → **Add custom MCP server** with `https://api.veetlyn.com/mcp`, then **Create as a plugin**.
 4. **Desktop app, from a personal marketplace:**
-   1. Copy this folder to `~/.codex/plugins/payleor`.
+   1. Copy this folder to `~/.codex/plugins/veetlyn`.
    2. Create `~/.agents/plugins/marketplace.json`:
 
       ```json
@@ -37,8 +37,8 @@ A connector alone also works: **Settings → Connectors → Add custom connector
         "name": "personal",
         "plugins": [
           {
-            "name": "payleor",
-            "source": { "source": "local", "path": "./.codex/plugins/payleor" },
+            "name": "veetlyn",
+            "source": { "source": "local", "path": "./.codex/plugins/veetlyn" },
             "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
             "category": "Productivity",
             "interface": { "displayName": "Veetlyn" }

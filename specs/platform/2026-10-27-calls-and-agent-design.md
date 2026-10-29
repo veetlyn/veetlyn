@@ -6,11 +6,11 @@
 
 ## 1. Intent
 
-Payleor is an applied AI agent operating in the business environment, whose available context, tools and widgets change as records transition through the existing business state machine. The **operating model** defines RBAC, ACL and the business behavior it covers; server-side evaluation remains authoritative. The **harness** assembles the authorized environment, exposes eligible tools, governs model execution and refreshes from resulting events. These are facets of one business system, not separate permission frameworks invented by the model. The interaction borrows how a team on Discord works: when something needs someone, they get mentioned, and they act where they were mentioned. Here the mention opens a **call**, and the call shows what can be done, as widgets, with the work already prepared when the team allows it.
+Veetlyn is an applied AI agent operating in the business environment, whose available context, tools and widgets change as records transition through the existing business state machine. The **operating model** defines RBAC, ACL and the business behavior it covers; server-side evaluation remains authoritative. The **harness** assembles the authorized environment, exposes eligible tools, governs model execution and refreshes from resulting events. These are facets of one business system, not separate permission frameworks invented by the model. The interaction borrows how a team on Discord works: when something needs someone, they get mentioned, and they act where they were mentioned. Here the mention opens a **call**, and the call shows what can be done, as widgets, with the work already prepared when the team allows it.
 
-- **One agent, Payleor.** What it can see and do depends on where it works (§2).
+- **One agent, Veetlyn.** What it can see and do depends on where it works (§2).
 - **Handles** name who gets called: roles the team owner defines, like Discord roles, and people (§3).
-- **Most calls come from events.** A person can also start one. Some events never need a call: they join a batch, Payleor handles them, or they are just an update (§4).
+- **Most calls come from events.** A person can also start one. Some events never need a call: they join a batch, Veetlyn handles them, or they are just an update (§4).
 - **The dash is the main place to work.** Chat channels are optional (§8).
 
 This is the work the Meta hackathon demo shows (Oct 27 to Nov 4, [`../hackathon/meta-ai-hackathon-participant-guide.md`](../hackathon/meta-ai-hackathon-participant-guide.md)).
@@ -19,7 +19,7 @@ This is the work the Meta hackathon demo shows (Oct 27 to Nov 4, [`../hackathon/
 
 The account is the root of everything a person has. Below it are levels:
 
-| Level | What it is | Payleor sees |
+| Level | What it is | Veetlyn sees |
 |---|---|---|
 | Account | The person: their workspaces, roles, subscription, and what they buy as a client | Each workspace's summary, never inside it; their own client records *(call)* |
 | Workspace | An organization and its memberships, or the mandatory personal workspace; the subscription enables supported business capabilities | Authorized projections for its sellers and records |
@@ -48,7 +48,7 @@ The outbox (B1) carries every event. For each one the team's rules choose one of
 1. **New call** to a handle: a decision with its own context.
 2. **Joins the record's call:** one open call per record per handle; follow-ups land in it, like a Discord thread.
 3. **Joins a batch:** one call per period gathers them (payout requests).
-4. **Payleor handles it** (Auto, within the rules); it is logged under "Done on its own" and a call opens only for what falls outside the rules.
+4. **Veetlyn handles it** (Auto, within the rules); it is logged under "Done on its own" and a call opens only for what falls outside the rules.
 5. **Update only:** no action needed; it shows as an unread mark on the record and in the activity.
 
 Proposed routing defaults, edited by the team. **Mode boundary:** these modes govern the new agent's discretionary preparation/execution. Until an explicit migration is designed, they do not pause or rewrite B1's existing deterministic scheduler, timers or configured automatic payout preset. “Ask me” must not imply that all platform automation stops. The UI must identify any existing scheduled send and its approval requirements separately; changing the mode alone cannot authorize a new payout or suppress an already configured engine rule. The exact precedence/migration is open in §13.
@@ -57,10 +57,10 @@ Defaults:
 
 | Event | Called | Manual | Ask me | Auto |
 |---|---|---|---|---|
-| New request from a client | `@sales` | New call | New call, quote drafted | Payleor asks questions or quotes within its limits; call if it can't |
+| New request from a client | `@sales` | New call | New call, quote drafted | Veetlyn asks questions or quotes within its limits; call if it can't |
 | Someone applies to join as a freelancer | `@admins` | New call | New call | New call (always a person) |
 | A freelancer asks to be paid | `@payouts` | Joins the batch | Batch prepared, collect required approvals | Paid at the batch time; call for held or over-limit payouts |
-| Store order that needs handling | `@sales` | New call | New call, reply drafted | Payleor sends the fulfilment notice |
+| Store order that needs handling | `@sales` | New call | New call, reply drafted | Veetlyn sends the fulfilment notice |
 | Digital store sale | none | Update | Update | Update |
 | PayPal case opened | `@admins` | New call | New call, response drafted | Same as Ask me (always a person) |
 | Refund request | `@payouts` | New call | New call, recommendation | Recommendation only; human executes (registry `never` for agents) |
@@ -74,9 +74,9 @@ Defaults:
 
 ## 5. Inside a call
 
-- **Opening:** in Manual the call shows the records and their buttons, nothing drafted. In Ask me and Auto, Payleor runs once when the call opens to prepare the work (the batch, the draft quote, the case response).
-- **Widgets:** built from json-render specs the server fills from the records; Payleor picks the widget and its inputs, never free-form buttons. Each button is a registry action, run through `perform` after the person presses it.
-- **Talking:** the person can reply in the call; Payleor answers within the call's scope and can propose more actions as widgets.
+- **Opening:** in Manual the call shows the records and their buttons, nothing drafted. In Ask me and Auto, Veetlyn runs once when the call opens to prepare the work (the batch, the draft quote, the case response).
+- **Widgets:** built from json-render specs the server fills from the records; Veetlyn picks the widget and its inputs, never free-form buttons. Each button is a registry action, run through `perform` after the person presses it.
+- **Talking:** the person can reply in the call; Veetlyn answers within the call's scope and can propose more actions as widgets.
 - **Progress and closing:** routing names both the required next decision and the business outcome that resolves this call. Taking an optional allowed action does not close it. A payout call stays Needs you while required approvals remain, becomes In progress when fully approved/queued or sent, and becomes Done on settlement (or an explicit terminal outcome); one approver cannot satisfy a multi-approval rule. An intake call may resolve on quote sent when that is its named outcome. All handle members see the same record-derived progress, filtered by their own authority.
 - **Started by a person:** a call with no event, at the level they are on; it has no handle and closes when they close it.
 
@@ -90,9 +90,9 @@ Mockups: [call](../hackathon/agentic-dash-mock.html), [record](../hackathon/agen
 - **Left:** workspace switcher, contextual navigation/back link, then Calls. Calls is the section heading; **Needs you**, **In progress**, **Done** are subordinate group labels; call titles and one smaller detail line sit below them. Selected pages have a light raised state and selected calls a grey fill. Handles are not repeated as row headings; unread meaning must not rely on colour alone.
 - **Centre:** breadcrumb and tools, then a clear page title. A call holds the conversation and relevant business widgets. Record/table views retain browsing, search, lifecycle and analytics; browsing does not create a call. The composer is a real growing multiline textarea with scope chip, Bring in, attachment/mention controls and a separate send row.
 - **Right, what the call is about:**
-  - **Working on:** what it is and why you were called ("Payleor called you as `@payouts` because 3 freelancers asked to be paid"); **Where** (Walk Crew › Money, and "widened from Baobab when you brought in Aicha"); **Who acts**, from the mode: Manual "You decide; Payleor prepares nothing", Ask me "The agent prepares; you confirm its proposed action" (show any separately configured scheduled automation alongside it), Auto "Payleor does this on its own; you are here because …" with the rule that sent it; **By** (the deadline); **Rule**.
+  - **Working on:** what it is and why you were called ("Veetlyn called you as `@payouts` because 3 freelancers asked to be paid"); **Where** (Walk Crew › Money, and "widened from Baobab when you brought in Aicha"); **Who acts**, from the mode: Manual "You decide; Veetlyn prepares nothing", Ask me "The agent prepares; you confirm its proposed action" (show any separately configured scheduled automation alongside it), Auto "Veetlyn does this on its own; you are here because …" with the rule that sent it; **By** (the deadline); **Rule**.
   - **On the table:** the records in play, with **Bring in**.
-  - **Done so far:** what Payleor checked or did in this call.
+  - **Done so far:** what Veetlyn checked or did in this call.
   - **Coming up:** the batch time, reminders, deadlines.
 - **Words on screen:** Calls (not sessions), On the table (not context), Done so far, Coming up, Bring in. No "agent", "session", "scope" or "workflow" in the interface.
 - **Phone:** the call full screen; Calls behind the menu; Working on behind a "Details" button.
@@ -121,7 +121,7 @@ Optional, after the dash. Teams that want to work from Slack or Discord pick cha
 2. He brings in Baobab from the project page; "Working on" widens and says why.
 3. He provides the required approval; the batch remains in progress through the configured send and settlement, then the call closes. The action log distinguishes approval, sending and settlement.
 4. He switches Payouts to Auto; the next request is paid on its own, and only Kofi's held payout opens a call, with the rule that sent it.
-5. A new request reaches `@sales`; Payleor drafted questions; one tap sends them.
+5. A new request reaches `@sales`; Veetlyn drafted questions; one tap sends them.
 
 ## 11. The model underneath
 
@@ -135,12 +135,12 @@ Calls, handles and levels are three views of one model (Mouhamed, 2026-10-27): a
 | **Roles (RBAC)** | Fixed roles and current workspace inheritance; coarse action grants with deeper checks | Evaluate roles/permissions as an operating-model facet. Adapt fixed roles first; editable bundles can follow. Handles reference an authorized audience and do not become permission grants |
 | **Access (ACL)** | `Scope` is a team and a project (`perform.ts`) | The scope is a node in the account tree (§2); reading is the subtree plus one link; record rules stay (a freelancer sees only their own quote) |
 | **Conditions** | Rule checks inside actions (refund caps, response windows) | Unchanged; they also decide when Auto must call a person instead (§4) |
-| **Who fires** | `agent: free \| confirm \| never` per action; agents refused in `perform` | The section's mode and the "Calls" rule say whether Payleor may fire it on its own; `never` stays never |
+| **Who fires** | `agent: free \| confirm \| never` per action; agents refused in `perform` | The section's mode and the "Calls" rule say whether Veetlyn may fire it on its own; `never` stays never |
 
 What follows from it:
 
 - **A record waits on a handle** when its current state/rule requires that handle's next decision, not merely because a permitted optional action exists. Eligibility lists all allowed actions; a separate required-decision/outcome projection drives Needs you, In progress and Done. Routing names the resolving outcome (for example quote sent or payout settled), with remaining approvals and external waits kept visible. Both projections read the same records and pinned rules; calls never invent their own business state.
-- **Payleor's tools** for a call are the actions open on the records on the table, filtered by the person's permissions and the mode.
+- **Veetlyn's tools** for a call are the actions open on the records on the table, filtered by the person's permissions and the mode.
 - **Scope of the work before Nov 4:** declare `from` and permissions for the actions the demo touches (payout requests, payout batches, requests and quotes, project review); the rest follow after *(call)*. No state machine library; the statuses stay in the database.
 
 ## 12. Act and look
@@ -151,14 +151,14 @@ Calls are for acting; people also browse, search and read numbers. Both live in 
 |---|---|---|
 | A call | The thread and its widgets | **Working on**, On the table, Done so far, Coming up |
 | A record | Its lifecycle, **What can happen now**, **What happened** | **About this project** (or payment, member…): money, people, Coming up, the rules it runs under and the pinned rulebook version |
-| A table | Totals, filters by state, rows with a **Next step** column | The selection: **What you can do with them**, what Payleor checked, Coming up; folded when nothing is selected |
+| A table | Totals, filters by state, rows with a **Next step** column | The selection: **What you can do with them**, what Veetlyn checked, Coming up; folded when nothing is selected |
 
 - **Lifecycle strip:** the record's statuses in order, done steps ticked, the current one marked, the next ones faint; under it, what the record waits on and the timer that will move it, with the rule and version.
 - **What can happen now:** every action declared from the current status (§11), in three kinds: open to the viewer (a button), someone else's step ("Only Lina can do this"), and **blocked** with the guard's reason and what unlocks it ("Opens when Lina accepts, or on Nov 3 · rule 6.1"); a blocked step offers the allowed alternative when there is one ("Offer a paid change").
-- **What happened:** each step with its time, who took it (a person, Payleor, PayPal), the rule and version, and the mode when Payleor acted.
+- **What happened:** each step with its time, who took it (a person, Veetlyn, PayPal), the rule and version, and the mode when Veetlyn acted.
 - **Tables:** filters are the record's statuses with counts; the **Next step** column comes from the same open-actions query; bulk actions are the actions allowed from every selected row's status, with the others shown and their reason ("Approve · already approved on Oct 27"). A payout batch is a bulk action.
 - **Search:** ⌘K finds pages and records with their breadcrumb; the composer's `@` uses the same search.
-- **Payleor on every page:** a multiline composer at the bottom with "This page" as a chip; asking from a record or a table starts a call scoped to it; answers can be tables or charts, and "Open as a page" keeps one.
+- **Veetlyn on every page:** a multiline composer at the bottom with "This page" as a chip; asking from a record or a table starts a call scoped to it; answers can be tables or charts, and "Open as a page" keeps one.
 - **Bridges:** every record and row has **Bring into a call** and **Ask about this**; every chip in a call opens its record; browsing never opens a call by itself.
 - **Before Nov 4:** the existing list and record pages move into the frame; the lifecycle strip, What can happen now and the Next step column are built for projects and payouts first *(call)*.
 

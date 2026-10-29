@@ -6,7 +6,7 @@
 
 ## 1. The tree
 
-One agent, Payleor. Where it stands in this tree decides what it sees, what it may do and which playbooks it loads. Moving through the dash moves it through the tree; bringing in a record widens it to the lowest node that holds everything on the table.
+One agent, Veetlyn. Where it stands in this tree decides what it sees, what it may do and which playbooks it loads. Moving through the dash moves it through the tree; bringing in a record widens it to the lowest node that holds everything on the table.
 
 ```mermaid
 graph TD
@@ -43,7 +43,7 @@ graph TD
   V["Visitor, outside the tenant<br/>(site, Discover, seller pages)"] -. signs up .-> A
 ```
 
-Outside the dash, the same nodes are reached from the client's AI plugin (`api.payleor.com/mcp`), the client and pay pages on `{team}.payleor.app`, and later chat channels. Those surfaces see the client's side of the same records.
+Outside the dash, the same nodes are reached from the client's AI plugin (`api.veetlyn.com/mcp`), the client and pay pages on `{team}.veetlyn.app`, and later chat channels. Those surfaces see the client's side of the same records.
 
 ## 2. Inventory: nodes and today's screens
 
@@ -96,7 +96,7 @@ The contextual agent's own stories (AGT-26, AGT-28, AGT-55–63, "D: one context
 
 ### 2.2 What the web app has today, node by node
 
-From `apps/web/src/app` on B1 (`00ad399`). Three apps share one Worker, picked by host (`lib/host-routing.ts`): the site (`(site)/`), the dash (`dash/`, on `dash.`) and the seller site (`store/`, rewritten from `{team}.payleor.app`). There is **no agent, chat, call or "needs you" surface anywhere** in the web app today; the agent exists only as the client's AI plugin on the API.
+From `apps/web/src/app` on B1 (`00ad399`). Three apps share one Worker, picked by host (`lib/host-routing.ts`): the site (`(site)/`), the dash (`dash/`, on `dash.`) and the seller site (`store/`, rewritten from `{team}.veetlyn.app`). There is **no agent, chat, call or "needs you" surface anywhere** in the web app today; the agent exists only as the client's AI plugin on the API.
 
 | Node | There | Not there |
 |---|---|---|
@@ -139,7 +139,7 @@ What the inventory shows:
 
 ## 3. The environment at each node
 
-For each node: **Context** is what Payleor loads before it answers; **Tools** are what it can call, with today's agent policy (`free`, `confirm`, `never`); **Skills** are the playbooks it needs there: the domain knowledge and steps for that kind of work, loaded only at that node. **Opens calls** names the events that reach a person from this node.
+For each node: **Context** is what Veetlyn loads before it answers; **Tools** are what it can call, with today's agent policy (`free`, `confirm`, `never`); **Skills** are the playbooks it needs there: the domain knowledge and steps for that kind of work, loaded only at that node. **Opens calls** names the events that reach a person from this node.
 
 Tool names in `code` are registry actions (`packages/api/src/actions/`), which go through `perform` with grants, actors and the action log. Names in *italics* are tRPC procedures only **today**: the agent cannot use them until they become registry actions.
 

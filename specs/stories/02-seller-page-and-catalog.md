@@ -87,7 +87,7 @@ The services catalog (departments and services), the bio, publishing, the public
   - Without PayPal: "Connect PayPal before you publish."
   - With PayPal and no active service or product on sale: "Add at least one active service or product before you publish."
   - The checklist shows "Publish your seller page" to do.
-- **Edge cases:** a suspended seller shows "This seller is suspended. Contact support@payleor.com." (there is no way to suspend from the app).
+- **Edge cases:** a suspended seller shows "This seller is suspended. Contact support@veetlyn.com." (there is no way to suspend from the app).
 
 ### CAT-07: An admin publishes the seller page
 
@@ -97,7 +97,7 @@ The services catalog (departments and services), the bio, publishing, the public
   1. On `{dash}/walk-crew`, click **Publish**.
   2. Open the public address from the card.
 - **Expected:**
-  - The card reads "Live at https://walk-crew.payleor.app" (`{seller}` for `walk-crew`) with **Unpublish**.
+  - The card reads "Live at https://walk-crew.veetlyn.app" (`{seller}` for `walk-crew`) with **Unpublish**.
   - The checklist step "Publish your seller page" is done.
   - The public page answers at once (CAT-08).
 - **Edge cases:** only admins see **Publish**; others see "An admin publishes the page." (ACC-16).
@@ -114,7 +114,7 @@ The services catalog (departments and services), the bio, publishing, the public
   - Each service card shows its name, description, "Usually <price or range> · <days>" and a "Request a quote" button linking to `/request?offering=<id>`.
   - Below the services: "Looking for something else? Request a quote", linking to `/request`.
   - Hidden services do not appear.
-  - The footer has "Terms of service" and "Privacy policy" (relative `/policies/…`), and "Powered by Payleor", "Payleor terms", "Payleor privacy" and "Acceptable use" as absolute links to `{site}`.
+  - The footer has "Terms of service" and "Privacy policy" (relative `/policies/…`), and "Powered by Veetlyn", "Veetlyn terms", "Veetlyn privacy" and "Acceptable use" as absolute links to `{site}`.
 - **Edge cases:** a seller with no services and no products shows "No services listed right now."
 
 ### CAT-09: Draft sellers are hidden; members preview them
@@ -128,7 +128,7 @@ The services catalog (departments and services), the bio, publishing, the public
 - **Expected:**
   - Step 1: a not-found page (HTTP 404).
   - Step 2: a bar reads "Preview. This page is a draft; only your team can see it." with "Back to the dashboard", above the page as visitors would see it (bio, services by department, hidden services left out).
-  - Step 3: "Preview. This page is live at https://walk-crew.payleor.app."
+  - Step 3: "Preview. This page is live at https://walk-crew.veetlyn.app."
 - **Edge cases:** any team member, not only admins, can open the preview; an outsider gets "Team not found".
 
 ### CAT-10: An admin unpublishes the seller page
@@ -153,7 +153,7 @@ The services catalog (departments and services), the bio, publishing, the public
   1. Click "Terms of service" and "Privacy policy" in the seller page footer.
   2. Open `/policies/returns` and `/policies/shipping` on the same host.
 - **Expected:**
-  - "Terms of service" names the team as the provider and says Payleor "is not a party to your agreement with Walk Crew"; it covers quotes, payment (deposit, then balance through PayPal), delivery and contact.
+  - "Terms of service" names the team as the provider and says Veetlyn "is not a party to your agreement with Walk Crew"; it covers quotes, payment (deposit, then balance through PayPal), delivery and contact.
   - Both pages show "Walk Crew" under the title, "Last updated <the team's creation date>", the team's support email as contact, and "This text is a template and is not legal advice."
   - `/policies/returns` and `/policies/shipping` answer 404 for a services seller.
 - **Edge cases:** the policies of a draft seller answer 404 like the page.

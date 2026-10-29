@@ -12,7 +12,7 @@ describe("deployedHosts", () => {
     expect(hosts.dashOrigin).toBe("https://dash.platform.test");
     expect(hosts.web.domain).toEqual({
       name: "platform.test",
-      aliases: ["dash.platform.test", "admin.platform.test"],
+      aliases: ["dash.platform.test", "admin.platform.test", "platform-store.test", "www.platform-store.test"],
       redirects: ["www.platform.test"],
     });
     expect(hosts.web.routes).toEqual([{ pattern: "*.platform-store.test/*", zoneName: "platform-store.test" }]);
@@ -29,6 +29,8 @@ describe("deployedHosts", () => {
     expect(hosts.web.domain.aliases).toEqual([
       "dash.staging.platform.test",
       "admin.staging.platform.test",
+      "staging.platform-store.test",
+      "www.staging.platform-store.test",
       "walk-crew.staging.platform-store.test",
       "acme.staging.platform-store.test",
     ]);

@@ -6,16 +6,16 @@
 
 ## 1. Goal
 
-Payleor becomes a specialised agent harness for paid work: one agent, its tools, its permissions, its money rails and its event loop, shown wherever people work. The dashboard is the agent's interface. Who you are and which workspace you are in decide what you see; each section of the sidebar is a specialisation of the same agent (intake, disputes, payouts…), not a separate bot. People tap more than they type: the agent proposes, components carry the decision, a person's tap commits. Sessions of work wait for events and wake when they arrive, so the agent comes back to you instead of you checking on it. The Claude and ChatGPT plugin is the same dash for someone else's agent.
+Veetlyn becomes a specialised agent harness for paid work: one agent, its tools, its permissions, its money rails and its event loop, shown wherever people work. The dashboard is the agent's interface. Who you are and which workspace you are in decide what you see; each section of the sidebar is a specialisation of the same agent (intake, disputes, payouts…), not a separate bot. People tap more than they type: the agent proposes, components carry the decision, a person's tap commits. Sessions of work wait for events and wake when they arrive, so the agent comes back to you instead of you checking on it. The Claude and ChatGPT plugin is the same dash for someone else's agent.
 
 ## 2. Decisions (Mouhamed, 2026-10-16)
 
 | Topic | Decision |
 |---|---|
-| Ambition | The agent is the main way into Payleor for the hackathon; it replaces runs D, B (except its event pipeline), E, M and P before the freeze (§10) |
+| Ambition | The agent is the main way into Veetlyn for the hackathon; it replaces runs D, B (except its event pipeline), E, M and P before the freeze (§10) |
 | Interaction | Tap first, type when you want: designed components with buttons; chat is optional (⌘K) |
 | Shape | An agentic dash: workspace switcher, sidebar of specialisations, sessions triaged by **Needs input**, **Working**, **Completed**, nested under projects |
-| Who | One dash on `dash.payleor.com` for every signed-in person; the workspace is the context (a team as staff, a team as freelancer, "Me" as client, a store) |
+| Who | One dash on `dash.veetlyn.com` for every signed-in person; the workspace is the context (a team as staff, a team as freelancer, "Me" as client, a store) |
 | Runtime | Approach A: Postgres holds the truth (sessions, waits, triage); the Cloudflare Agents SDK runs conversations (one Durable Object per session) |
 | Model | Claude through Cloudflare AI Gateway with the platform's key: Haiku 5.5 for fast work, Sonnet 5.5 for drafting and insights |
 | Step kinds | Every agent step is a **rule**, **classify**, **retrieve** or **generate** step (§6.3); most are rules |
@@ -38,8 +38,8 @@ Payleor becomes a specialised agent harness for paid work: one agent, its tools,
 
 - The top of the sidebar is the **workspace switcher** ("Me" plus each team and store) and the **triage** of that workspace's sessions (§6.1).
 - Each section page has three layers: the section's sessions that need you, the section's content (today's pages, moved under the new navigation), and ⌘K scoped to the workspace, the section and the open record.
-- Routes: `dash.payleor.com/{slug}/{section}/…` and `dash.payleor.com/me/…`.
-- **Guests** on `{slug}.payleor.app` meet the concierge (§6.4): offerings and a request built by tapping; signing in lands them in "Me".
+- Routes: `dash.veetlyn.com/{slug}/{section}/…` and `dash.veetlyn.com/me/…`.
+- **Guests** on `{slug}.veetlyn.app` meet the concierge (§6.4): offerings and a request built by tapping; signing in lands them in "Me".
 - **No-account client links** (`/c/{token}`) open a single-project view built from the same components as "My projects".
 
 ## 4. Components
@@ -112,7 +112,7 @@ Every classify and generate step is logged with its outcome (sent as is, edited,
 
 ### 6.4 Runtime and modes
 
-- **Interactive** (⌘K Ask, the concierge, Insights' Ask): a `PayleorAgent` Durable Object (Agents SDK, exported by the api Worker, bound through Alchemy) per session; replies stream over a WebSocket the web Worker forwards same-origin, as it does `/trpc`. On connect, the session cookie is checked against the instance name and the agent builds its actor (person, workspace, roles).
+- **Interactive** (⌘K Ask, the concierge, Insights' Ask): a `VeetlynAgent` Durable Object (Agents SDK, exported by the api Worker, bound through Alchemy) per session; replies stream over a WebSocket the web Worker forwards same-origin, as it does `/trpc`. On connect, the session cookie is checked against the instance name and the agent builds its actor (person, workspace, roles).
 - **Event-driven** (intake, disputes, follow-ups): the session's step runs when the pipeline wakes it; its state lives in Postgres, its thread in its Durable Object.
 - **Tools** come from the registry: a read catalog (project, request thread, offerings, payouts, ledger figures) filtered by `conversationAccess` and the section's scope, and actions offered only as proposals.
 - **Guests** are anonymous: public reads and creating a request, under today's request limits, honeypot and rate limits.
@@ -137,7 +137,7 @@ Every classify and generate step is logged with its outcome (sent as is, edited,
 
 ## 8. The plugin
 
-The dash for someone else's agent, on `api.payleor.com/mcp` with OAuth through Better Auth on the dash host and CIMD registration, as proven in the spike:
+The dash for someone else's agent, on `api.veetlyn.com/mcp` with OAuth through Better Auth on the dash host and CIMD registration, as proven in the spike:
 
 - **Same tools:** generated from the read catalog and registry actions, filtered by `dashSections` and `conversationAccess`. A client sees "Me"; a staff member can triage their team's sessions.
 - **Same components:** a text summary for the model plus the components as `structuredContent`, drawn by one widget with a versioned resource URI.
@@ -149,7 +149,7 @@ The dash for someone else's agent, on `api.payleor.com/mcp` with OAuth through B
 
 Today's UI is fine for development, not for a product judged from a video. V runs in parallel with H and A2 and merges before G:
 
-1. **Design system** in `packages/ui`: tokens for color, type scale, spacing, radius, elevation and motion; light and dark; Payleor's own look. Existing components are restyled through the tokens, not rewritten.
+1. **Design system** in `packages/ui`: tokens for color, type scale, spacing, radius, elevation and motion; light and dark; Veetlyn's own look. Existing components are restyled through the tokens, not rewritten.
 2. **Mockups reviewed by Mouhamed (around Oct 17–18) before building:** the shell (workspace switcher, triage sidebar, ⌘K), the session view (plan, recap, side rail), RequestBuilder, QuoteCompare, ProjectStatus, Delivery, EvidencePack, Approval, and the public pages (seller page, pay page, landing), each on phone and desktop.
 3. **The shell built to the mockups,** behind the existing pages, so G plugs sessions into a finished frame.
 
@@ -159,7 +159,7 @@ Later runs build their screens to the approved mockups; existing pages adopt the
 
 | Dates | Run | Delivers |
 |---|---|---|
-| Oct 16–17 | **H** hosts and first deploy | As planned: main on `payleor.com` and `*.payleor.app`, the `dash.` rename, the deploy workflow |
+| Oct 16–17 | **H** hosts and first deploy | As planned: main on `veetlyn.com` and `*.veetlyn.app`, the `dash.` rename, the deploy workflow |
 | Oct 16–19 (parallel) | **V** visual overhaul | §9 |
 | Oct 18–19 | **A2** client contacts, trimmed | Contacts, verified identities, "a team member is never the client", revocable links: the identity behind "Me" and the plugin |
 | Oct 20–22 | **G** agentic dash foundation | The event pipeline on the outbox; `agent_session`, `session_wait`, triage, wake and start; the dash shell with sections and ⌘K; the component catalog and its first components; web push; batched email |

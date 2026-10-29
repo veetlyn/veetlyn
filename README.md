@@ -1,150 +1,137 @@
 # Veetlyn
 
-Veetlyn's designs, plans, backlog and progress tracking live in [`specs/`](specs/README.md). Start with [`specs/PROGRESS.md`](specs/PROGRESS.md).
+**Sell goods and services where AI shops.**
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Hono, TRPC, and more.
+Veetlyn puts a seller's services and products inside Claude and ChatGPT. A client's AI finds the offer, asks questions and requests a quote. The client pays with PayPal on Veetlyn. Agents draft the quotes, answers and payouts; a person approves every payment.
 
-## Features
+[Website](https://veetlyn.com) · [Network and plugin](https://veetlyn.com/network) · [Specs](specs/README.md) · [License](#license)
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Hono** - Lightweight, performant server framework
-- **tRPC** - End-to-end type-safe APIs
-- **workers** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **PWA** - Progressive Web App support
-- **Turborepo** - Optimized monorepo build system
+> **Status:** built for the PayPal AI Hackathon (submission Nov 12, 2026). Everything runs on the PayPal **sandbox**. Production is waitlist-only; staging is open.
 
-## Getting Started
+## What it does
 
-First, install the dependencies:
+- **Quotes and projects.** Clients request work; a team's freelancers ask questions and quote; the client accepts one quote, pays a deposit, follows the delivery and pays the balance.
+- **PayPal, done properly.** Orders are created on the server, every payment is approved by the payer in PayPal, webhooks are verified, and refunds and disputes pause what they should.
+- **Team payouts.** Payout rules split each payment between members; a person or a rule approves each payout before PayPal sends it.
+- **Veetlyn Network.** One connector (`https://api.veetlyn.com/mcp`) lets Claude and ChatGPT search every listed seller, request quotes and follow projects. Agents never pay.
+- **Your own agents, with limits.** Every action goes through one registry with roles and per-action agent policy: free, needs a person's confirmation, or never.
+- **Found in search and in AI.** Seller pages on `<seller>.veetlyn.app` with structured data, open to AI crawlers, plus guided visibility work.
+
+## Use it from your AI assistant
+
+Download the plugin from [veetlyn.com/network](https://veetlyn.com/network#add), or add the connector by hand:
+
+- **Claude:** Customize → Plugins → Upload plugin, or Settings → Connectors → Add custom connector with `https://api.veetlyn.com/mcp`.
+- **ChatGPT:** Plugins → Upload, or turn on developer mode and add the same address.
+
+The plugin source is in [`plugins/veetlyn`](plugins/veetlyn/README.md).
+
+## How it is built
+
+```
+Claude / ChatGPT ──MCP──┐
+                        ▼
+browser ──► web Worker (vinext) ──service binding──► api Worker (Hono, tRPC, MCP)
+             veetlyn.com, dash.,                       api.veetlyn.com
+             *.veetlyn.app                                   │
+                                                             ├─► Postgres (Hyperdrive, Drizzle)
+                                                             ├─► R2, KV, Queues
+                                                             └─► PayPal, Resend, Discord
+```
+
+- **Runtime:** Cloudflare Workers. Infrastructure as code with [Alchemy](https://alchemy.run) in `packages/infra/alchemy.run.ts`.
+- **Web:** vinext (Next.js on Vite), Tailwind, shadcn/ui primitives in `packages/ui`.
+- **API:** Hono, tRPC and an MCP server; Better Auth for sign-in and OAuth for the connector.
+- **Data:** PostgreSQL through Hyperdrive, Drizzle ORM and migrations.
+- **Config:** [Varlock](https://varlock.dev) schemas (`.env.schema`) in every app; no secret lives in the repository.
+
+More detail: [`specs/platform/2026-10-16-architecture.md`](specs/platform/2026-10-16-architecture.md).
+
+### Repository layout
+
+```
+apps/
+  web/            website, dashboard and seller pages (vinext, one Worker)
+  server/         api Worker: tRPC, MCP, webhooks, queues
+packages/
+  api/            use cases and the action registry
+  auth/           Better Auth setup
+  core/           domain rules shared by both Workers
+  db/             schema, repositories, migrations
+  paypal/         PayPal client
+  email/          email templates and delivery
+  ui/             design tokens and shared components
+  infra/          Alchemy stages, hosts and deploy scripts
+  oss/            standalone MIT packages (rules engine, outbox, scheduler)
+plugins/veetlyn/  the Claude and ChatGPT plugin
+specs/            designs, plans, stories and progress
+```
+
+## Run it locally
+
+You need Node 24, pnpm 10 and Docker.
 
 ```bash
-pnpm install
+pnpm install                       # also generates the typed env accessors
+
+# Postgres for development
+docker run -d --name veetlyn-pg -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:17
+docker exec veetlyn-pg createdb -U postgres veetlyn_dev
 ```
 
-## Database Setup
-
-This project uses PostgreSQL with Drizzle ORM.
-
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
+Fill the ignored env files from their schemas: `apps/server/.env` (see `apps/server/.env.schema`) and `packages/infra/.env`. Set `DEV_DATABASE_URL` (in `packages/infra/.env`) to the database above. PayPal values come from a [PayPal developer](https://developer.paypal.com) sandbox app.
 
 ```bash
-pnpm run db:push
+pnpm db:migrate:dev                # migrate the dev database
+pnpm dev                           # site on localhost:3001, dashboard on dash.localhost:3001
 ```
 
-Then, run the development server:
+Alchemy emulates R2, KV and Queues locally.
+
+## Checks
 
 ```bash
-pnpm run dev
+pnpm check-types
+pnpm lint          # Oxlint with the anti-slop plugin, plus the brand and OSS-boundary checks
+pnpm test          # Vitest; needs TEST_DATABASE_URL in .env.test.local, on a database whose name contains "test"
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+CI runs all three, a secret scan and the release builds on every pull request.
 
-## UI Customization
+## AI plugin builds
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
+Built plugin zips are never committed.
 
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
+- `pnpm plugin:zip` and `pnpm plugin:zip:staging` write the Claude and ChatGPT zips to `dist/plugin/`.
+- The **AI plugin** workflow builds both stages on every change to `plugins/` and keeps them as the `ai-plugin-zips` artifact.
+- Each deploy builds the downloads for its own stage into the website, served at `/plugin/claude.zip` and `/plugin/chatgpt.zip`.
 
-### Add more shared components
+## Deploying your own
 
-Run this from the project root to add more primitives to the shared UI package:
+Two stages are deployed from GitHub Actions: `staging` (after CI passes on `dev`) and `production` (an owner-approved dispatch from `main`, with verified staging evidence for the same tree). See [the release protocol](specs/platform/2026-10-29-release-protocol.md).
 
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
+Hosts are derived from two zones in `packages/infra/deploy-hosts.ts`: the platform zone (site, `dash.`, `api.`) and the seller zone (`*.` seller pages). Only production is indexed by search engines; other stages send `noindex`.
 
-Import shared components like this:
+Deploys use `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The token needs, on the account: Workers Scripts, Workers R2 Storage, Workers KV Storage, Queues, Hyperdrive and Account API Tokens (Edit), Account Settings (Read); on both zones: DNS, Workers Routes and Dynamic URL Redirects (Edit), Zone (Read).
 
-```tsx
-import { Button } from "@jendal-workspace/ui/components/button";
-```
+Stage values live in ignored files (`packages/infra/.env`, `packages/infra/.env.<stage>.local`) and in the GitHub environment of the same name; `pnpm -F @jendal-workspace/infra github-env <stage>` copies them and prints names only. `PUBLIC_ACCESS=waitlist` closes sign-up and sign-in behind a launch list; `open` opens them.
 
-### Add app-specific blocks
+Branch protection for `main` is saved in [`.github/main-protection.json`](.github/main-protection.json); reapply it with `gh api --method PUT repos/veetlyn/veetlyn/branches/main/protection --input .github/main-protection.json`.
 
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
+## Contributing
 
-## Environment Configuration
+- Open pull requests against `dev`, the default branch. `main` only receives release merges.
+- Use [Conventional Commits](https://www.conventionalcommits.org).
+- Keep `pnpm check-types`, `pnpm lint` and `pnpm test` green; lint must stay at zero findings.
+- Read [`CLAUDE.md`](CLAUDE.md) for the code rules (money in integer minor units, untrusted input decoded with zod, no agent moves money without a person). They apply to people too.
+- Designs and plans go in [`specs/`](specs/README.md); [`specs/PROGRESS.md`](specs/PROGRESS.md) says where the build stands.
 
-Each app owns its environment schema in `.env.schema`. Varlock generates `src/env.ts` during installation; run `pnpm run env:generate` after changing a schema. Commit schemas, and keep secrets in ignored env files or your deployment platform.
+## Security
 
-Import the generated `ENV` accessor in application code. Shared database and auth packages receive configuration or initialized clients from the application. See [Varlock's monorepo guide](https://varlock.dev/guides/monorepos/).
-
-For Cloudflare, Alchemy loads and validates deployment inputs with `varlock/auto-load` in its Node/Bun deployment process. Worker code reads native bindings; web clients use the framework's public env API through `src/env.public.ts` where needed. Alchemy supplies resource URLs and managed database credentials. In-Worker Varlock protections are deferred until an official Alchemy integration is available; see [the non-Wrangler deployment guidance](https://varlock.dev/integrations/cloudflare/#non-wrangler-deploy-tools-alchemy-sst-pulumi).
-
-Bun's automatic env loading is disabled in `bunfig.toml`; the framework integration or server bootstrap loads Varlock. Node deployments must include Varlock and its dependencies alongside the app schema.
-
-Run standalone Node/Bun tools that use Varlock from the owning app directory so they load that app's schema and env files. `env:generate` only generates TypeScript files; it does not initialize environment values in a subsequent command.
-
-## Deployment
-
-### Alchemy
-
-- Target: web on Cloudflare + server on Cloudflare
-- Configure provider accounts: `cd packages/infra && pnpm exec alchemy profile edit`
-- Dev: pnpm run dev
-- Deploy: `pnpm deploy:staging`, `pnpm deploy:production`
-
-`alchemy profile edit` stores the selected Axiom, Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
-
-Two stages are deployed, with hosts fixed in `packages/infra/deploy-hosts.ts`: `production` (`payleor.com`, `dash.payleor.com`, `api.payleor.com`, `*.payleor.app`) and `staging` (the same hosts under `staging.`). Production deploys after successful CI on `main`; staging deploys after successful CI on `dev` (`.github/workflows/deploy.yml`). Manual deployment also requires the matching branch and stage. From a machine with the deploy settings in `packages/infra/.env`, run `pnpm deploy:staging` or `pnpm deploy:production`. There is no CORS setting: the web Worker reaches the api Worker through a service binding.
-
-No deploy value lives in the repository. Each stage reads its settings from env files that git ignores: `packages/infra/.env` and `apps/server/.env` for what the stages share, and `packages/infra/.env.<stage>.local` for what each stage owns (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `ALCHEMY_PASSWORD`, `PAYPAL_WEBHOOK_ID`). The `.env.schema` files name and document every value. `pnpm -F @jendal-workspace/infra github-env <stage>` copies a stage's values into the GitHub environment of the same name, for the secrets and variables `deploy.yml` reads; it prints names only.
-
-Deploys authenticate with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; an `alchemy profile` OAuth login cannot create the R2 access token the server's file uploads use. The token is an account token with, on the account: Workers Scripts, Workers R2 Storage, Workers KV Storage, Queues, Hyperdrive and Account API Tokens (Edit), Account Settings (Read); on the `payleor.com` and `payleor.app` zones: DNS, Workers Routes and Dynamic URL Redirects (Edit), Zone (Read).
-
-## Project Structure
-
-```
-jendal-workspace/
-├── apps/
-│   ├── web/         # Frontend application (Next.js)
-│   └── server/      # Backend API (Hono, TRPC)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run dev:server`: Start only the server
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
-- `cd apps/web && pnpm run generate-pwa-assets`: Generate PWA assets
-
-## Product name
-
-The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The current payleor.com/payleor.app domains, GitHub repository and plugin identifiers remain in place until a separate migration. The unpublished marketing drafts use Veetlyn too.
-
-## Launch access and deployments
-
-`dev` is the GitHub default branch and the target for feature pull requests; it deploys to staging for demos and hackathons. Release pull requests merge `dev` into `main`, which deploys to production. Successful push CI deploys `dev` to staging and `main` to production. Manual deployments accept only those matching branch/environment pairs. GitHub branch protection must enforce the pull-request policy: workflow files alone cannot forbid direct pushes.
-
-`PUBLIC_ACCESS=waitlist` disables authentication HTTP endpoints, redirects dashboard visitors to `/waitlist`, and replaces account calls to action with the launch mailing list. `PUBLIC_ACCESS=open` enables normal access. Defaults are `waitlist` for production and `open` for staging/local; GitHub environment variables can override them. Both Workers receive the same flag. Merging a branch does not itself open access: the target environment’s flag decides. Changing it requires redeployment.
-
-The launch list stores a normalized unique email and join timestamp in `launch_waitlist`, separately from accounts, after explicit launch-notification consent. The endpoint validates origin/input, rate-limits submissions, and never exposes existing membership. It does not send mail. Launch notification is a later deliberate mailing operation, not an automatic campaign. Use the privacy-policy contact for removal requests and remove waitlist-only addresses after the launch campaign.
+Please do not open public issues for vulnerabilities. Report them privately to the maintainer through GitHub ([@Mouhamed-B](https://github.com/Mouhamed-B)). The app only touches the PayPal sandbox today.
 
 ## License
 
-AGPL-3.0-only or a separate commercial agreement. Commercial deployments are private-network deployments by default; Veetlyn Network membership is an optional add-on. See [LICENSING.md](LICENSING.md), including the MIT package exceptions.
+The application is available under [AGPL-3.0-only](LICENSE) or a separate commercial agreement. Standalone packages in `packages/oss/` are MIT. Details, including Veetlyn Network membership, are in [LICENSING.md](LICENSING.md). The Veetlyn name and logo are not licensed by the software license.
 
-Main protection configuration is saved in [.github/main-protection.json](.github/main-protection.json). GitHub rejected enforcement on the current private repository plan (HTTP 403). Once the plan supports it, apply with `gh api --method PUT repos/payleor/payleor/branches/main/protection --input .github/main-protection.json`. It restricts pushes/merges to `Mouhamed-B`, requires a pull request and successful `check` (including for administrators), and forbids force pushes/deletion. Until applied, direct pushes are **not** technically blocked.
+If this project helps you, you can [sponsor it](https://github.com/sponsors/Mouhamed-B).

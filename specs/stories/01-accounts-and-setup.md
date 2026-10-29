@@ -12,13 +12,13 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   3. Scroll to the end. Click **Get started**, then come back and click **Log in**.
   4. Repeat at 390 wide with the **Menu** button.
 - **Expected:**
-  - A dark band with "Sell where AI shops", the buttons "Start selling" (to `/pricing`) and "How Payleor Network works" (to `/network`), and "Clients add Payleor Network once, in Claude or ChatGPT."
-  - The Claude card types "Find someone to design a logo for my bakery, under $900.", shows Logo Bot $29 and Walk Crew $400+, presses "Request a quote" into "Requested", shows Walk Crew's quote "Logo and brand kit, 10 days · deposit $384, $640", presses "Accept" into "Accepted", then "Accepted. Pay the deposit on Payleor, with PayPal." With reduced motion it shows the end state at once.
+  - A dark band with "Sell where AI shops", the buttons "Start selling" (to `/pricing`) and "How Veetlyn Network works" (to `/network`), and "Clients add Veetlyn Network once, in Claude or ChatGPT."
+  - The Claude card types "Find someone to design a logo for my bakery, under $900.", shows Logo Bot $29 and Walk Crew $400+, presses "Request a quote" into "Requested", shows Walk Crew's quote "Logo and brand kit, 10 days · deposit $384, $640", presses "Accept" into "Accepted", then "Accepted. Pay the deposit on Veetlyn, with PayPal." With reduced motion it shows the end state at once.
   - "Where clients find you" with ChatGPT, Claude, Perplexity, Gemini and Google, and "Paid through" PayPal, in monochrome.
-  - Sections: "Agentic commerce, with a person on every payment" (three sides), "AI shopping left services out. Payleor Network brings them in.", "For anyone who sells" with four story cards to the audience pages, "Our terms, on top of every integration" (six terms), "Get found on search and in AI answers" (its note says web SEO comes to every seller page with run V; "We report what happened. We never promise rankings."), "Your clients stay yours. We charge when we bring you one." with "From $12 a month", "0.25–2%" and "5% once", "Money questions" (five, the first open) and "Be there when AI comes shopping".
+  - Sections: "Agentic commerce, with a person on every payment" (three sides), "AI shopping left services out. Veetlyn Network brings them in.", "For anyone who sells" with four story cards to the audience pages, "Our terms, on top of every integration" (six terms), "Get found on search and in AI answers" (its note says web SEO comes to every seller page with run V; "We report what happened. We never promise rankings."), "Your clients stay yours. We charge when we bring you one." with "From $12 a month", "0.25–2%" and "5% once", "Money questions" (five, the first open) and "Be there when AI comes shopping".
   - The menus each show four illustrated tiles and a feature card; one opens at a time; Escape closes it and puts focus back on its button; a click outside closes it. The header has Pricing, Blog, Contact, "Log in" (`{dash}/login`) and "Get started" (`{dash}/signup`) and stays under the sandbox banner while scrolling.
   - Below 1140 wide the links fold into **Menu**: tiles for both menus, then Pricing, Blog, Contact and Log in.
-  - The footer has Sell and Payleor columns, the examples note, the three legal links and "© 2026 Payleor".
+  - The footer has Sell and Veetlyn columns, the examples note, the three legal links and "© 2026 Veetlyn".
 - **Edge cases:** the deposit ($384), quote and plan figures are computed from `packages/core`; a price change in core changes the page.
 
 ### ACC-01b: Visitor compares plans on the pricing page
@@ -31,18 +31,18 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   - Services, monthly: Solo $19 with 1% on each client payment, Team $59 with 0.5%, Agency $199 with 0.25%, Enterprise "Custom" with "Talk to sales" (to `/contact#sales`). Yearly: $16, $49 and $166 a month, "Billed $192 a year" on Solo.
   - Store: Starter $12 with 2% on each order, Grow $39 with 1%, Scale $129 with 0.5% (yearly $9, $29, $99), and Enterprise.
   - Services + store hides the plan cards and shows "Run services and a store" with the bundle builder (ACC-01g); the services and store agent tables both show.
-  - "Agents in every plan": intake drafts 50, 300, 1,500 and Custom; "Web SEO on every page" carries "Coming with run V". "Payleor Network: 5%, once", "Getting found" (Web SEO "Coming to every plan with run V", AI visibility "Network members · Waitlist", Self-hosted "Planned for 2027"), "Every plan includes our terms" with "14 days free, no setup fee", six questions.
+  - "Agents in every plan": intake drafts 50, 300, 1,500 and Custom; "Web SEO on every page" carries "Coming with run V". "Veetlyn Network: 5%, once", "Getting found" (Web SEO "Coming to every plan with run V", AI visibility "Network members · Waitlist", Self-hosted "Planned for 2027"), "Every plan includes our terms" with "14 days free, no setup fee", six questions.
 - **Edge cases:** every price and fee is read from `SELLER_PLANS`, `PLANS` and `NETWORK_FEE_BPS`.
 
-### ACC-01c: Visitor reads the Payleor Network page
+### ACC-01c: Visitor reads the Veetlyn Network page
 
 - **Actor:** visitor · **Surface:** web (`{site}/network`) · **Delivered by:** L · **Status:** Built on `l-site`, walked through 2026-10-20 (PR #7)
 - **Preconditions:** none.
 - **Steps:**
   1. Open `{site}/network`, let the ChatGPT card play, scroll to the end and click **Join the waitlist**.
 - **Expected:**
-  - The card shows Walk Crew's delivery ("Logo, 3 directions", Ready) and "Balance due $320"; "Accept delivery" turns into "Accepted", then "Accepted. Pay the $320 balance on Payleor, with PayPal."
-  - Six gaps, "What their AI can do, and what only the client can", "How clients add it" with `api.payleor.com/mcp` and the note that directory listings come after the platforms' review; nowhere says sellers are listed in Claude or ChatGPT.
+  - The card shows Walk Crew's delivery ("Logo, 3 directions", Ready) and "Balance due $320"; "Accept delivery" turns into "Accepted", then "Accepted. Pay the $320 balance on Veetlyn, with PayPal."
+  - Six gaps, "What their AI can do, and what only the client can", "How clients add it" with `api.veetlyn.com/mcp` and the note that directory listings come after the platforms' review; nowhere says sellers are listed in Claude or ChatGPT.
   - Membership (`#membership`): how to qualify, what members get with "Planned, opening soon", the Maison Lune member card. **Join the waitlist** opens `/contact#membership` with the topic "Network membership" selected.
 - **Edge cases:** none.
 
@@ -79,10 +79,10 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   1. Open each page at 1280 wide and scroll through its story; repeat one at 390 wide.
 - **Expected:**
   - Wide: the steps scroll beside a pinned scene that changes with the step nearest the middle; the rail fills. Phone: each step carries its own scene.
-  - Freelancers: the deposit scene shows $320.00; the last scene "You kept $578.77" with PayPal $22.83 and "Payleor, 1% and 5% once" $38.40; cards Solo, Team, Enterprise.
-  - Agencies: deposit $384.00 (half the quote $320.00, management fee $64.00), "Send $543.75 to Amadou?" with Walk Crew $131.42, PayPal $25.31, "Payleor, 0.5%" $3.52; cards Team, Agency, Enterprise.
-  - Stores: "Takes 1%, nothing more"; "Clay Room's order: $65.00" with "Payleor, 1% on Grow" $0.65; cards Starter, Grow, Scale, Enterprise.
-  - Studios: "A week at Maison Lune" with the deposit $22.50 and "Send $26.75 to Inès?" (Maison Lune $13.45, PayPal $2.32, Payleor $2.48), "One link for your bio and every chat", and the bundle builder.
+  - Freelancers: the deposit scene shows $320.00; the last scene "You kept $578.77" with PayPal $22.83 and "Veetlyn, 1% and 5% once" $38.40; cards Solo, Team, Enterprise.
+  - Agencies: deposit $384.00 (half the quote $320.00, management fee $64.00), "Send $543.75 to Amadou?" with Walk Crew $131.42, PayPal $25.31, "Veetlyn, 0.5%" $3.52; cards Team, Agency, Enterprise.
+  - Stores: "Takes 1%, nothing more"; "Clay Room's order: $65.00" with "Veetlyn, 1% on Grow" $0.65; cards Starter, Grow, Scale, Enterprise.
+  - Studios: "A week at Maison Lune" with the deposit $22.50 and "Send $26.75 to Inès?" (Maison Lune $13.45, PayPal $2.32, Veetlyn $2.48), "One link for your bio and every chat", and the bundle builder.
 - **Edge cases:** the splits are computed from core (`apps/web/src/lib/site/examples.ts`, tested); a fee change fails that test.
 
 ### ACC-01g: Visitor uses the fee calculator and the bundle builder
@@ -93,8 +93,8 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   1. On `/pricing`, read the calculator, press **Your own client**, then switch to **Store**, pick Grow and type 120.
   2. Switch to **Services + store**, then **Yearly**.
 - **Expected:**
-  - Default (Team, $640, Found through AI): "0.5% payment fee $3.20", "5% network fee, first project $32.00", "Payleor $35.20" and "The next project with this client: 0.5% only." Your own client: the network line is $0.00 and the note reads "Your own clients never pay the network fee."
-  - Store, Grow, 120: "1% order fee $1.20", "Payleor $1.20", "PayPal's own fee is separate."
+  - Default (Team, $640, Found through AI): "0.5% payment fee $3.20", "5% network fee, first project $32.00", "Veetlyn $35.20" and "The next project with this client: 0.5% only." Your own client: the network line is $0.00 and the note reads "Your own clients never pay the network fee."
+  - Store, Grow, 120: "1% order fee $1.20", "Veetlyn $1.20", "PayPal's own fee is separate."
   - Bundle (Team + Grow): "Team $59.00", "Grow, half price $19.50", "A month $78.50", "Every payment and order pays 0.5%, the lower fee." Yearly: $49.00 + $14.50 = $63.50.
 - **Edge cases:** an empty or invalid amount shows $0.00 lines.
 
@@ -106,7 +106,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   1. Open `{site}/contact#sales`, then `{site}/contact#membership`. Fill name, email, company and message and press **Write the email**.
 - **Expected:**
   - `#sales` selects "Enterprise and sales"; `#membership` selects "Network membership".
-  - The mail app opens a message to contact@payleor.com with the subject "<topic>: <company>" and a body with name, company, what they sell, team size and the message. Nothing is sent from the page.
+  - The mail app opens a message to contact@veetlyn.com with the subject "<topic>: <company>" and a body with name, company, what they sell, team size and the message. Nothing is sent from the page.
 - **Edge cases:** without a company the subject uses the name.
 
 ### ACC-01i: Visitor reads the blog
@@ -118,7 +118,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   2. Open "How to get found on Google and in AI answers, without ads" and scroll to the end. Open `{site}/blog/unknown`.
 - **Expected:**
   - Six articles, the first as the feature card; a topic shows only its articles; `#visibility` opens on Getting found.
-  - The article: breadcrumbs Blog / Getting found, "October 19, 2026 · 2 min read · The Payleor team", the illustration, "In short", the body (its "What Payleor does for you" section says web SEO comes to every plan with run V), Questions, the call to action and "Keep reading" with three other articles.
+  - The article: breadcrumbs Blog / Getting found, "October 19, 2026 · 2 min read · The Veetlyn team", the illustration, "In short", the body (its "What Veetlyn does for you" section says web SEO comes to every plan with run V), Questions, the call to action and "Keep reading" with three other articles.
   - An unknown slug is a 404.
 - **Edge cases:** none.
 
@@ -129,8 +129,8 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Steps:**
   1. Fetch the three files on `{site}`. On each page, parse every `<script type="application/ld+json">`.
 - **Expected:**
-  - The sitemap lists 17 URLs on `https://payleor.com` (11 pages and 6 articles); robots allows `*` and names GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, Claude-User, PerplexityBot and Google-Extended, with the sitemap line; llms.txt starts with "# Payleor" and links every page and article.
-  - Each page has one JSON-LD graph that parses: Organization plus WebSite with a SearchAction to `/discover?q=` and FAQPage on the index; BreadcrumbList on the others, with FAQPage where the page has questions, SoftwareApplication offers on pricing, CollectionPage on Discover, Blog on the blog, BlogPosting on articles. Each page has a description and a canonical URL on `https://payleor.com`.
+  - The sitemap lists 17 URLs on `https://veetlyn.com` (11 pages and 6 articles); robots allows `*` and names GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, Claude-User, PerplexityBot and Google-Extended, with the sitemap line; llms.txt starts with "# Veetlyn" and links every page and article.
+  - Each page has one JSON-LD graph that parses: Organization plus WebSite with a SearchAction to `/discover?q=` and FAQPage on the index; BreadcrumbList on the others, with FAQPage where the page has questions, SoftwareApplication offers on pricing, CollectionPage on Discover, Blog on the blog, BlogPosting on articles. Each page has a description and a canonical URL on `https://veetlyn.com`.
 - **Edge cases:** on `{dash}` the three files redirect to the login page, and seller hosts have none; seller-page robots and sitemaps come with run V.
 
 ### ACC-02: Visitor reads the platform legal pages
@@ -142,7 +142,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Expected:**
   - Each page has its title, "Last updated October 5, 2026", and ends with "This text is a template and is not legal advice."
   - The Terms name Mouhamed Bakhoum as the operator, Senegalese law and the courts of Dakar.
-  - The footer on every `{site}` page shows the three links, `contact@payleor.com` and "© 2026 Payleor".
+  - The footer on every `{site}` page shows the three links, `contact@veetlyn.com` and "© 2026 Veetlyn".
 - **Edge cases:** none.
 
 ### ACC-03: Every page shows the sandbox banner
@@ -160,16 +160,16 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 ### ACC-04: Someone signs up with email and verifies the address
 
 - **Actor:** new user · **Surface:** web (`{dash}/signup`, `{dash}/verify-email`), email · **Delivered by:** W1-D (`a8e5260`) · **Status:** Built
-- **Preconditions:** an email address nobody has used on Payleor (an AgentMail plus address, for example `tester+acc04@example.com`).
+- **Preconditions:** an email address nobody has used on Veetlyn (an AgentMail plus address, for example `tester+acc04@example.com`).
 - **Steps:**
   1. Open `{dash}/signup`. Fill "Your name", "Email" and a "Password" of at least 10 characters, then **Create account**.
-  2. Open the email "Verify your email for Payleor" and click **Verify email**.
+  2. Open the email "Verify your email for Veetlyn" and click **Verify email**.
 - **Expected:**
-  - The sign-in pages (sign-up, log in, forgot password, reset password, verify email) fill the window without scrolling: the form on the left with the Payleor mark and the theme switch, the Payleor P drawn as contour lines on the right (hidden on phones), and no dash header.
-  - The sign-up page is titled "Create your Payleor account" with "Free for 14 days. No setup fee." and the notice "By continuing you agree to the Terms of service and the Acceptable use policy" linking to `{site}/legal/…`.
+  - The sign-in pages (sign-up, log in, forgot password, reset password, verify email) fill the window without scrolling: the form on the left with the Veetlyn mark and the theme switch, the Veetlyn P drawn as contour lines on the right (hidden on phones), and no dash header.
+  - The sign-up page is titled "Create your Veetlyn account" with "Free for 14 days. No setup fee." and the notice "By continuing you agree to the Terms of service and the Acceptable use policy" linking to `{site}/legal/…`.
   - After submit, `{dash}/verify-email` shows "Check your inbox" and "We sent a link to <address>. Open it to verify your address. The link expires in 1 hour."
   - The resend button counts down ("Send a new link in 59s" …) and then reads "Send a new link"; clicking it shows "We sent a new link." and restarts the countdown.
-  - The email comes from "Payleor" `accounts@payleor.com`.
+  - The email comes from "Veetlyn" `accounts@veetlyn.com`.
   - The link signs the user in and lands on `{dash}/new` ("Create your store"), because the account has no seller yet.
 - **Edge cases:** a password under 10 characters is refused by the form; logging in before verifying sends the user to `{dash}/verify-email` and emails a fresh link; more than 5 sign-ups a minute, or 3 resends in 10 minutes, show "Too many attempts. Try again in a few minutes." (rate limits not walked through). There is no link from `/new` to the services form; open `{dash}/new/services-team` directly (ACC-08).
 
@@ -178,7 +178,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Actor:** team admin · **Surface:** web (`{dash}/login`) · **Delivered by:** W1-D (`a8e5260`); forms post before hydration since E3 (`219e6db`) · **Status:** Built
 - **Preconditions:** the Team admin account with a known password (reset it with ACC-06 if needed).
 - **Steps:**
-  1. Open `{dash}/login` ("Log in to Payleor"), enter the email and password, then **Log in**.
+  1. Open `{dash}/login` ("Log in to Veetlyn"), enter the email and password, then **Log in**.
   2. Open `{dash}/login` again while signed in.
   3. Open the user menu (the user's name, top right) and choose **Sign out**.
 - **Expected:**
@@ -193,7 +193,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Preconditions:** the Team admin account; access to its AgentMail inbox.
 - **Steps:**
   1. On `{dash}/login`, click **Forgot your password?**, enter the email, then **Send reset link**.
-  2. Open the email "Reset your Payleor password" and click **Choose a new password**.
+  2. Open the email "Reset your Veetlyn password" and click **Choose a new password**.
   3. Enter a new password twice, then **Change password**.
   4. Log in with the new password.
 - **Expected:**
@@ -205,7 +205,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 ### ACC-07: Someone signs up or logs in with PayPal
 
 - **Actor:** new user · **Surface:** web (`{dash}/signup`, `{dash}/login`), PayPal · **Delivered by:** W1-D (`a8e5260`) · **Status:** Built (not walked through)
-- **Preconditions:** a PayPal sandbox personal account with no Payleor account yet.
+- **Preconditions:** a PayPal sandbox personal account with no Veetlyn account yet.
 - **Steps:**
   1. On `{dash}/signup`, click **Sign up with PayPal**.
   2. [human] Log in to the PayPal sandbox account and consent.
@@ -254,7 +254,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
 - **Expected:**
   - "Your workspace", with one section per workspace (by name) listing each seller: name, "Services team", and the user's role ("Admin", "Manager" or "Freelancer").
   - The buttons "Create your services team" (always) and "Create your store" (only for workspace owners and admins).
-  - Clicking the name opens the seller dashboard at `{dash}/walk-crew`, with the Payleor mark at the top of the sidebar linking back to the workspace home.
+  - Clicking the name opens the seller dashboard at `{dash}/walk-crew`, with the Veetlyn mark at the top of the sidebar linking back to the workspace home.
 - **Edge cases:** a user with no sellers is redirected to `{dash}/new`.
 
 ### ACC-11: The dashboard checklist tracks setup
@@ -328,7 +328,7 @@ The public site, sign-up and sign-in, email verification and password reset, cre
   - Walk Through is listed with "Admin · workspace" and no role or title control.
   - The new member appears with the role select; the title survives the reload.
   - The role change is kept after a reload.
-- **Edge cases:** an email without an account shows "No Payleor account uses this email. Ask them to sign up first."; adding someone already on the team shows "This user is already on the team."; adding a workspace owner or admin shows "Workspace owners and admins are already team admins." Members cannot be removed in the app.
+- **Edge cases:** an email without an account shows "No Veetlyn account uses this email. Ask them to sign up first."; adding someone already on the team shows "This user is already on the team."; adding a workspace owner or admin shows "Workspace owners and admins are already team admins." Members cannot be removed in the app.
 
 ### ACC-16: Managers and freelancers cannot change the team
 

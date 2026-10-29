@@ -39,7 +39,7 @@ export default async function NetworkPage() {
             <h1 data-in>{name} Network</h1>
             <p className="lead" data-in>The connector your clients add to Claude and ChatGPT. Their AI finds you, asks and requests. They pay on {name}, with PayPal.</p>
             <div className="ctas" data-in>
-              <a className="btn btn-mint" href={signup}>{isWaitlistOnly() ? "Join the waitlist" : "Get listed"}</a>{" "}<a className="link" href="#add">Add it to Claude or ChatGPT</a>
+              <a className="btn btn-mint" href={signup}>{isWaitlistOnly() ? "Join the waitlist" : "Get listed"}</a>{" "}<a className="link" href="#add">{isWaitlistOnly() ? "How clients add it" : "Add it to Claude or ChatGPT"}</a>
             </div>
           </div>
           <ChatDemo
@@ -91,10 +91,18 @@ export default async function NetworkPage() {
           <div className="wrap">
             <h2 id="add-h" data-in>How clients add it</h2>
             <div className="features">
-              <div className="feature" data-in><p className="tag">Claude</p><h3>Add a custom connector</h3><p>Settings, then Connectors, then Add custom connector, with this address.</p></div>
-              <div className="feature" data-in><p className="tag">ChatGPT</p><h3>Add it in developer mode</h3><p>Turn on developer mode, then add the connector with the same address.</p></div>
+              <div className="feature" data-in><p className="tag">Claude</p><h3>Upload the plugin</h3><p>Customize, then Plugins, then Upload plugin. Or add a custom connector with this address.</p></div>
+              <div className="feature" data-in><p className="tag">ChatGPT</p><h3>Upload the plugin</h3><p>Plugins, then Upload. Or turn on developer mode and add the connector with the same address.</p></div>
               <div className="feature agent" data-in><p className="tag">The address</p><h3 className="num">api.{domain}/mcp</h3><p>One address for every seller on the network.</p></div>
             </div>
+            {isWaitlistOnly() ? (
+              <p className="note" data-in>The plugin downloads open at launch.</p>
+            ) : (
+              <div className="ctas" data-in>
+                <a className="btn btn-mint" href="/plugin/claude.zip" download>Get the plugin for Claude</a>{" "}
+                <a className="btn btn-ink" href="/plugin/chatgpt.zip" download>Get the plugin for ChatGPT</a>
+              </div>
+            )}
             <p className="note" data-in>Directory listings in Claude and ChatGPT come after the platforms' review. Until then, clients add {name} Network themselves, once.</p>
           </div>
         </section>

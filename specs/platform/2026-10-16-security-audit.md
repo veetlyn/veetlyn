@@ -1,4 +1,4 @@
-# Payleor security audit
+# Veetlyn security audit
 
 **Date:** 2026-10-16. **Status:** reviewed 2026-10-16 (A4 corrected, owners added); findings open, filed in [`BACKLOG.md`](../BACKLOG.md). **Scope:** the code on `main` at `27c26b9` and the throwaway `spike-plugin` branch at `92dcbef` (not merged; its four items feed run C — two of them are already addressed by the [run C design](2026-10-15-c-plugin-design.md)). **Method:** the securebydesign skill's 25 controls (v1.1.0; the skill's upstream repo 404s, so freshness is unverified). **Result:** 0 critical, 0 high; 7 hardening items against `main`, 4 against the spike branch.
 
@@ -16,7 +16,7 @@ No critical or high vulnerabilities were found. The money paths, webhook verific
 
 ### A1. [Low] CSV formula injection in the Payouts Web export — SBD-01, SBD-03
 
-**Evidence:** `packages/core/src/payouts/payouts-web.ts:22-24` — `csvCell` quotes `"`, `,` and CR/LF but does not neutralize `= + - @` prefixes. The `note` column embeds the user-settable team name (`payouts-web.ts` — `Payout from ${team.name} via Payleor`). Admins open this CSV in Excel/Sheets before uploading it to PayPal.
+**Evidence:** `packages/core/src/payouts/payouts-web.ts:22-24` — `csvCell` quotes `"`, `,` and CR/LF but does not neutralize `= + - @` prefixes. The `note` column embeds the user-settable team name (`payouts-web.ts` — `Payout from ${team.name} via Veetlyn`). Admins open this CSV in Excel/Sheets before uploading it to PayPal.
 
 **Remediation:** Prefix `'` (or a space) when a cell starts with `=`, `+`, `-`, `@`, tab or CR. Only `note` carries user text (receiver, amount, currency and reference are system values), and PayPal shows the note to the recipient, so the prefix appears in their payout note; alternatively, strip those leading characters from the team name in the note.
 
@@ -55,7 +55,7 @@ No critical or high vulnerabilities were found. The money paths, webhook verific
 
 **Evidence:** `packages/auth/src/index.ts` — `allowDynamicClientRegistration` and `allowUnauthenticatedClientRegistration`. The consent page renders `client_name` fetched from the freshly-registered client record (`apps/web/src/app/admin/oauth/consent/consent-form.tsx`) plus raw scope strings. Rate limiting is present, not missing: the spike observed the limiter refuse a registration burst with 429 ([plugin spike facts](2026-10-14-plugin-spike-facts.md) §Answers 1), and the [run C design](2026-10-15-c-plugin-design.md) already plans a "rate-limited DCR fallback".
 
-**Risk:** anyone can register a client named "Payleor Sync" with a redirect URI they control and route a victim through `/api/auth/oauth2/authorize` on the admin host; after approval the attacker holds tokens that act as that user through `/mcp`. It is consent-phishing riding a first-party UI — the check performed is real, the displayed identity is not verifiable.
+**Risk:** anyone can register a client named "Veetlyn Sync" with a redirect URI they control and route a victim through `/api/auth/oauth2/authorize` on the admin host; after approval the attacker holds tokens that act as that user through `/mcp`. It is consent-phishing riding a first-party UI — the check performed is real, the displayed identity is not verifiable.
 
 **Remediation:** on the consent screen, show the client's **redirect URI host** (the real trust anchor), not just `client_name`; periodically purge registered-but-unused clients.
 

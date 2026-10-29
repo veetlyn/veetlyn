@@ -277,7 +277,7 @@ Prefer: return=minimal
 - **Client ID vs client token:**
   - The live setup page says: "Most integrations should authenticate with a client ID." Client ID is for standard checkout and one-time payments, and the client ID is safe in front-end code. A client token is "for Fastlane only". (https://developer.paypal.com/sdk/js/set-up, "Authenticate the SDK")
   - AIT agrees, with vaulting and Fastlane as the client-token cases. (`AIT/js-sdk-v6.md:42-67`)
-  - **So for Payleor buttons, the server provides the partner client ID, the seller merchant ID and the BN code, with no token call:**
+  - **So for Veetlyn buttons, the server provides the partner client ID, the seller merchant ID and the BN code, with no token call:**
     ```js
     createInstance({ clientId: PARTNER_CLIENT_ID, merchantId: SELLER_MERCHANT_ID, partnerAttributionId: BN_CODE, components: ["paypal-payments"], pageType: "checkout" })
     ```

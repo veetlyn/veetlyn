@@ -36,7 +36,7 @@ Collected 2026-10-14 from primary sources only. Each fact cites a source key; th
 | S-BLOG | https://blog.modelcontextprotocol.io/posts/2025-11-03-using-server-instructions/ |
 | A-TOOLS | https://www.anthropic.com/engineering/writing-tools-for-agents |
 
-## Rules for Payleor
+## Rules for Veetlyn
 
 1. [Both] One widget = one job. Inline cards hold at most 2 actions at the bottom (1 primary + 1 optional secondary), at most 4-5 data points, no tabs, drill-ins, breadcrumbs, or multiple views. (C-DG, O-UI)
 2. [Both] No nested scrolling inline: the card auto-fits its height. Anything needing its own scroll area goes fullscreen through `ui/request-display-mode`. The host caps inline height and clips overflow; on mobile, vertical pans go to the conversation. (C-DG, O-UI)
@@ -50,7 +50,7 @@ Collected 2026-10-14 from primary sources only. Each fact cites a source key; th
 10. [Both] Light and dark mode are mandatory. Test both. Contrast must meet WCAG AA. Provide alt text, keyboard navigation, and text resizing without breaking the layout. (C-DG, O-UI)
 11. [Both] Layout from 320px up with no fixed widths and no horizontal scrolling. Tap targets are at least 44x44pt. Apply `hostContext.safeAreaInsets` as padding. Never put controls flush against an edge, because the composer can overlay the bottom. (C-DG)
 12. [Both] Loading state: a skeleton that matches the final layout, not a spinner, for inline content. (C-DG)
-13. [Both] Do not show the Payleor logo or app name inside the widget, because the host already labels it. Icons are monochrome and outlined. (O-UI, C-DG)
+13. [Both] Do not show the Veetlyn logo or app name inside the widget, because the host already labels it. Icons are monochrome and outlined. (O-UI, C-DG)
 14. [Spec] Keep `autoResize` on (the SDK default). Never report height 0, because that makes the app invisible. Call `app.connect()` after registering `ontoolresult` and the other handlers. (S-APPS, C-TS)
 15. [Spec] Declare `appCapabilities.availableDisplayModes` (for example `["inline","fullscreen"]`). Check `hostContext.availableDisplayModes` before you request a mode. Handle a returned mode that differs from the one requested. (S-APPS, C-DG)
 16. [Both] Set `_meta.ui.prefersBorder` explicitly on each UI resource. Use `false` for a transparent, blended look in Claude. (C-THEME, C-DG, O-REF)
@@ -146,7 +146,7 @@ From C-DG and S-APPS; Claude values use `light-dark()` (C-THEME):
 
 ### Claude plugin packaging (C-PLUG)
 
-- `.claude-plugin/plugin.json` with `name`, `displayName`, `version`, `description`, `author`, `license`; `.mcp.json` at the root with `{"mcpServers":{"payleor":{"type":"http","url":"https://…/mcp"}}}`; `skills/<name>/SKILL.md`. Upload a zip via claude.ai Customize > Plugins > Add > Upload plugin; validate with `claude plugin validate`. Use the same server URL as the directory connector to avoid duplicate tools.
+- `.claude-plugin/plugin.json` with `name`, `displayName`, `version`, `description`, `author`, `license`; `.mcp.json` at the root with `{"mcpServers":{"veetlyn":{"type":"http","url":"https://…/mcp"}}}`; `skills/<name>/SKILL.md`. Upload a zip via claude.ai Customize > Plugins > Add > Upload plugin; validate with `claude plugin validate`. Use the same server URL as the directory connector to avoid duplicate tools.
 
 ## 3. MCP Apps spec (2026-01-26) and ext-apps 2.0.3
 

@@ -116,10 +116,12 @@ export const server = Cloudflare.Worker("server", {
   // Runs the maintenance sweeps in apps/server/src/maintenance.ts.
   crons: ["*/10 * * * *"],
   env: {
+    CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata(),
     HYPERDRIVE: Database,
     STORE_CACHE: StoreCache,
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: dashOrigin,
+    RELEASE_SHA: optionalString("RELEASE_SHA"),
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PUBLIC_ACCESS: publicAccess,
     PLATFORM_DOMAIN: platformDomain,
@@ -174,6 +176,7 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
   routes: hosts?.web.routes,
   env: {
     SERVER: server,
+    RELEASE_SHA: optionalString("RELEASE_SHA"),
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PUBLIC_ACCESS: publicAccess,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
@@ -211,9 +214,10 @@ export default Alchemy.Stack(
       settings: { batchSize: 10, maxRetries: 10, maxWaitTimeMs: 1000, retryDelay: 30 },
     });
     if (deployStage === "production" && zones) {
+      const storeZoneId = Config.String("CLOUDFLARE_STORE_ZONE_ID");
       // Seller sites: the web Worker's wildcard store route needs a proxied record to receive requests.
       yield* Cloudflare.DNS.Record("StoreWildcard", {
-        zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
+        zoneId: yield* storeZoneId,
         name: `*.${zones.storeZone}`,
         type: "AAAA",
         content: "100::",
@@ -223,7 +227,7 @@ export default Alchemy.Stack(
       // The wildcard route also matches staging's seller hosts and wins over their custom domains, so this
       // Worker-less route hands them back to the staging Worker. Adopted: it was first created by hand.
       yield* Cloudflare.Workers.WorkerRoute("StagingStoresOptOut", {
-        zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
+        zoneId: yield* storeZoneId,
         pattern: `*.staging.${zones.storeZone}/*`,
       }).pipe(Alchemy.AdoptPolicy.adopt(true));
     }

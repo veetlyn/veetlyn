@@ -63,6 +63,7 @@
 .site-root .hero h1 em { font-style: normal; color: var(--brand); }
 .site-root .hero .lead { margin-top: 28px; font-size: 20px; color: var(--band-muted); max-width: 32ch; }
 .site-root .hero .ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; margin-top: 40px; }
+.site-root section .ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 28px; }
 @media (max-width: 900px) {
   .site-root .hero { grid-template-columns: minmax(0, 1fr); gap: 48px; }
 }

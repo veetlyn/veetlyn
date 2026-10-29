@@ -1,4 +1,4 @@
-# Payleor architecture
+# Veetlyn architecture
 
 **Date:** 2026-10-16. **Status:** the architecture reference, written from the code on main at `4a27fb6` and the approved program. It replaces the platform design of 2026-10-03 ([`../archive/platform/2026-10-03-payleor-platform-design.md`](../archive/platform/2026-10-03-payleor-platform-design.md)), which planned a commerce-only product with AI checkout protocols, a dispute agent and Braintree; §10 lists what of that plan was dropped or deferred. Update this file in the same commit as a change that makes it wrong.
 
@@ -14,27 +14,27 @@ M (mall), E (dedicated Discord) and AG Studio are cancelled for this delivery. V
 
 ## 1. Product
 
-Payleor is the money flow and the trust around paid work. Sellers are services teams, solo freelancers and stores:
+Veetlyn is the money flow and the trust around paid work. Sellers are services teams, solo freelancers and stores:
 
 - **Services** (the hackathon entry): a team or a freelancer publishes offerings, takes quote requests, quotes, gets paid through PayPal (deposit and balance), delivers, and pays its members under payout rules.
 - **Commerce:** a store sells digital products with guest checkout; the physical catalog exists (S5) but the cross-store cart/checkout run M is cancelled for this delivery.
 
-Money always goes to the seller's PayPal account; Payleor takes its fee through PayPal's partner fee. Payers approve every checkout in PayPal. A team's explicitly configured Auto rule may authorize eligible business actions such as member payouts within its limits; this does not confer client authority or bypass `perform`. The contextual runtime and exact Auto allowlist remain to implement. "jendal" stays the code name in package names (`@jendal-workspace/*`), service and database names.
+Money always goes to the seller's PayPal account; Veetlyn takes its fee through PayPal's partner fee. Payers approve every checkout in PayPal. A team's explicitly configured Auto rule may authorize eligible business actions such as member payouts within its limits; this does not confer client authority or bypass `perform`. The contextual runtime and exact Auto allowlist remain to implement. "jendal" stays the code name in package names (`@jendal-workspace/*`), service and database names.
 
 ## 2. Hosts
 
 | Host | Production (since 2026-10-20) | Staging | After run C |
 |---|---|---|---|
-| `payleor.com` | Landing, pricing, legal pages, client page `/c/{token}`, pay page `/pay/{token}` | `staging.payleor.com` | Landing and the client's home across teams; `/c` and `/pay` move to the team's site |
-| `dash.payleor.com` | Sign-in, account, seller dashboards (`/{slug}/…`); `admin.payleor.com` redirects here | `dash.staging.payleor.com` | same |
-| `api.payleor.com` | The api Worker: auth, tRPC, webhooks, Discord, onboarding return | `api.staging.payleor.com` | plus `/mcp`, the plugin's endpoint |
-| `{slug}.payleor.app` | One seller's site: seller page or storefront, request form, `/buy`, orders, policies | `{slug}.staging.payleor.app` | plus the client and pay pages (`{slug}.payleor.app/c/{token}`, `/pay/{token}`) |
+| `veetlyn.com` | Landing, pricing, legal pages, client page `/c/{token}`, pay page `/pay/{token}` | `staging.veetlyn.com` | Landing and the client's home across teams; `/c` and `/pay` move to the team's site |
+| `dash.veetlyn.com` | Sign-in, account, seller dashboards (`/{slug}/…`); `admin.veetlyn.com` redirects here | `dash.staging.veetlyn.com` | same |
+| `api.veetlyn.com` | The api Worker: auth, tRPC, webhooks, Discord, onboarding return | `api.staging.veetlyn.com` | plus `/mcp`, the plugin's endpoint |
+| `{slug}.veetlyn.app` | One seller's site: seller page or storefront, request form, `/buy`, orders, policies | `{slug}.staging.veetlyn.app` | plus the client and pay pages (`{slug}.veetlyn.app/c/{token}`, `/pay/{token}`) |
 
-- `PLATFORM_NAME` is `Payleor` (every user-facing string, email sender, MCP tool description and metadata title reads it); `PLATFORM_DOMAIN` (`PLATFORM_ZONE` in infra) is `payleor.com`, `STORE_DOMAIN` (`STORE_ZONE` in infra) is `payleor.app`. `payleor.com` is multi-tenant (accounts, dashboards, the client's HQ); each `payleor.app` subdomain is one seller's own site, where client, team and freelancer interact. `pnpm lint` runs `scripts/check-no-brand.mjs` so source code never hardcodes the product name or domains.
+- `PLATFORM_NAME` is `Veetlyn` (every user-facing string, email sender, MCP tool description and metadata title reads it); `PLATFORM_DOMAIN` (`PLATFORM_ZONE` in infra) is `veetlyn.com`, `STORE_DOMAIN` (`STORE_ZONE` in infra) is `veetlyn.app`. `veetlyn.com` is multi-tenant (accounts, dashboards, the client's HQ); each `veetlyn.app` subdomain is one seller's own site, where client, team and freelancer interact. `pnpm lint` runs `scripts/check-no-brand.mjs` so source code never hardcodes the product name or domains.
 - One account works on every host (federated sign-in, [`2026-10-06-auth-federation-design.md`](2026-10-06-auth-federation-design.md)). Signed client links stay the no-account path.
-- `parseRequestTarget` (`packages/core/src/tenancy/target.ts`) classifies a host as a platform app (`www`, `admin`, `api`, `mcp`), a seller slug, a custom domain or unknown. The `mcp.` label stays reserved; the MCP endpoint is `api.payleor.com/mcp`.
-- **Reserved slugs** (`packages/core/src/tenancy/slug.ts`): platform host labels, environment names, mail and DNS labels, brand names (`payleor`, `paypal`, `venmo`, `braintree`), `agent(s)`, and the dashboard's own top-level paths, so a slug never shadows a page.
-- **Email** goes out through Resend (`packages/email`) from purpose addresses on `payleor.com` (`accounts@`, `stores@`, `invoices@`, `payouts@`, …), replies to `support@payleor.com`. `payleor.app` sends no mail (SPF `-all`, null MX).
+- `parseRequestTarget` (`packages/core/src/tenancy/target.ts`) classifies a host as a platform app (`www`, `admin`, `api`, `mcp`), a seller slug, a custom domain or unknown. The `mcp.` label stays reserved; the MCP endpoint is `api.veetlyn.com/mcp`.
+- **Reserved slugs** (`packages/core/src/tenancy/slug.ts`): platform host labels, environment names, mail and DNS labels, brand names (`veetlyn`, `paypal`, `venmo`, `braintree`), `agent(s)`, and the dashboard's own top-level paths, so a slug never shadows a page.
+- **Email** goes out through Resend (`packages/email`) from purpose addresses on `veetlyn.com` (`accounts@`, `stores@`, `invoices@`, `payouts@`, …), replies to `support@veetlyn.com`. `veetlyn.app` sends no mail (SPF `-all`, null MX).
 
 ## 3. Runtime
 
@@ -82,9 +82,9 @@ Code rules (decoding at the boundary, money in integer minor units, no `typeof` 
 
 - **Client** (`packages/paypal`): platform token cached until expiry; `PayPal-Auth-Assertion` and `PayPal-Partner-Attribution-Id` on seller calls; `PayPal-Request-Id` on every POST, derived from our record and step; 429 and 5xx retried with backoff under the same request id; every call logged with operation, status and debug id, never secrets.
 - **Onboarding:** partner referrals with `EXPRESS_CHECKOUT` (services teams skip shipment tracking). Automatic payouts use a first-party referral that shares the team's REST credentials (`PAYOUTS`, balance reading), sealed with `PAYOUT_CREDENTIALS_KEY`.
-- **Payments:** Orders v2 created on the server with the seller as payee and Payleor's platform fee at the seller's plan rate; the buyer approves with JS SDK v6 buttons on the pay page or `/buy`; capture on the server. Project payments (deposit, top-up, balance) and store orders share this path.
+- **Payments:** Orders v2 created on the server with the seller as payee and Veetlyn's platform fee at the seller's plan rate; the buyer approves with JS SDK v6 buttons on the pay page or `/buy`; capture on the server. Project payments (deposit, top-up, balance) and store orders share this path.
 - **Webhooks:** `/webhooks/paypal` verifies the signature with PayPal, stores the event (unique id), answers 200 and enqueues it; the consumer applies captures, refunds and reversals, and parks facts that need a person. Handlers are safe to run twice; the cron requeues stuck events.
-- **Ledger:** every capture, fee, refund, reversal and payout is posted in core's ledger, with PayPal's fee and Payleor's fee as their own lines.
+- **Ledger:** every capture, fee, refund, reversal and payout is posted in core's ledger, with PayPal's fee and Veetlyn's fee as their own lines.
 - **Payouts:** members request payouts of their available earnings; the team's payout rules (approval, trusted members, second approver, automatic project payouts with a hold, payday, balance floor, minimum) decide in one core function; payouts go through the Payouts API with the team's own credentials, or as a PayPal Payouts Web CSV when automatic payouts are off.
 - **Refunds:** from the dashboard through the capture refund API; refunds and reversals revoke digital downloads.
 - **Plans and fees:** core computes the plan and fee rate per seller (Solo, Pro, Premium for freelancers; Team, Studio, Agency for teams; Starter, Grow, Scale for stores). Subscriptions are not billed yet.
@@ -95,10 +95,10 @@ Code rules (decoding at the boundary, money in integer minor units, no `typeof` 
 - **Surfaces:**
   - **Web:** the dashboard, seller sites, client and pay pages (built).
   - **Email:** the client link, notices to teams, buyer receipts (built; run B adds the delivery pipeline with an outbox).
-  - **Discord:** sign-in, account and server link, `/payleor link`, `/payouts setup` (built in S2, never checked on a real server; project-channel run E is cancelled for this delivery).
-  - **Claude and ChatGPT plugin:** MCP on `api.payleor.com/mcp`, OAuth through Better Auth, MCP Apps widgets, widget-only accept buttons, pay through the pay page (proven in spike S, built in run C).
+  - **Discord:** sign-in, account and server link, `/veetlyn link`, `/payouts setup` (built in S2, never checked on a real server; project-channel run E is cancelled for this delivery).
+  - **Claude and ChatGPT plugin:** MCP on `api.veetlyn.com/mcp`, OAuth through Better Auth, MCP Apps widgets, widget-only accept buttons, pay through the pay page (proven in spike S, built in run C).
   - **API keys and webhooks for AI sellers:** run B.
-- Every surface calls the same use cases; commitments by an AI client need a press on a Payleor widget button, and every payment needs the payer's PayPal approval.
+- Every surface calls the same use cases; commitments by an AI client need a press on a Veetlyn widget button, and every payment needs the payer's PayPal approval.
 
 ## 8. Background work
 
@@ -114,14 +114,14 @@ The cron (every 10 minutes, `apps/server/src/maintenance.ts`) runs each sweep on
 
 | Planned on 2026-10-03 | Now |
 |---|---|
-| AI checkout protocols (Store Sync, ACP, UCP, AP2) and a conformance agent | After the hackathon (decision of 2026-10-14). Run M sells through the plugin with checkout on Payleor |
+| AI checkout protocols (Store Sync, ACP, UCP, AP2) and a conformance agent | After the hackathon (decision of 2026-10-14). Run M sells through the plugin with checkout on Veetlyn |
 | Braintree rail | Dropped with the protocols |
 | Shopping, admin and dispute agents (Agents SDK, AI Gateway, Clef) | Replaced by capabilities of one contextual agent in D; no separate personas or AG Studio, disputes after the hackathon |
 | AI Search per store | Not built; run M's design decides how products are searched |
 | Custom domains (Cloudflare for SaaS) | Host resolution understands them; creating them is after the hackathon |
 | Tax (Shopify's manual model) | Not built; digital products and services only for now |
 | Plan subscriptions through PayPal | Plans and fee rates exist; billing after the hackathon |
-| Hosts `admin.payleor.app`, `mcp.payleor.app/mcp`, store domain `payleor.site` | §2 |
+| Hosts `admin.veetlyn.app`, `mcp.veetlyn.app/mcp`, store domain `veetlyn.site` | §2 |
 
 ## 11. Versions
 

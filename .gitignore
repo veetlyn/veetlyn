@@ -62,3 +62,6 @@ temp
 
 # Mimosa security hook state
 .mimosa/
+
+# AI plugin downloads, built at deploy time
+apps/web/public/plugin/

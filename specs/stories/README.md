@@ -1,15 +1,15 @@
 # Story book
 
-Every finished feature of Payleor as a user story with steps and expected results that a person or a browser agent (Claude in Chrome, Playwright) can check against the deployed sandbox app. A story is a claim: "this works, like this". Walkthroughs run stories; a failed check becomes a backlog row.
+Every finished feature of Veetlyn as a user story with steps and expected results that a person or a browser agent (Claude in Chrome, Playwright) can check against the deployed sandbox app. A story is a claim: "this works, like this". Walkthroughs run stories; a failed check becomes a backlog row.
 
 ## Hosts
 
 | Placeholder | Production (after a merge) | Staging (a branch before its merge) |
 |---|---|---|
-| `{site}` | `https://payleor.com` | `https://staging.payleor.com` |
-| `{dash}` | `https://dash.payleor.com` | `https://dash.staging.payleor.com` |
-| `{seller}` | `https://<slug>.payleor.app` | `https://<slug>.staging.payleor.app` |
-| `{api}` | `https://api.payleor.com` | `https://api.staging.payleor.com` |
+| `{site}` | `https://veetlyn.com` | `https://staging.veetlyn.com` |
+| `{dash}` | `https://dash.veetlyn.com` | `https://dash.staging.veetlyn.com` |
+| `{seller}` | `https://<slug>.veetlyn.app` | `https://<slug>.staging.veetlyn.app` |
+| `{api}` | `https://api.veetlyn.com` | `https://api.staging.veetlyn.com` |
 
 Everything runs in the PayPal sandbox. No real money moves.
 
@@ -66,7 +66,7 @@ Each area file holds stories in this shape:
 | [`05-delivery-and-completion.md`](05-delivery-and-completion.md) | `DEL` | Deliveries (note, link, file), changes requested, acceptance, completion, refunds to the client |
 | [`06-store.md`](06-store.md) | `STO` | Digital products, store switch, checkout, orders, downloads, refunds revoking access |
 | [`07-payouts.md`](07-payouts.md) | `OUT` | Payout destination, automatic payouts connection, requests, approvals, payout rules, sweeps, Payouts Web export and import |
-| [`08-discord.md`](08-discord.md) | `DIS` | Discord sign-in and account link, server link, `/payleor link`, `/payouts setup` (built in S2, never checked on a real server) |
+| [`08-discord.md`](08-discord.md) | `DIS` | Discord sign-in and account link, server link, `/veetlyn link`, `/payouts setup` (built in S2, never checked on a real server) |
 | [`09-agentic.md`](09-agentic.md) | `AGT` | Stories of the agentic surfaces program, by run: client contacts, hosts, the AI plugin and conversations, delivery and API, the mall, Discord, agents and analytics, ratings and profiles, the AI seller, the demo |
 
 ## Current scope (2026-10-28)
