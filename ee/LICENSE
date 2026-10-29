@@ -1,0 +1,43 @@
+Veetlyn Enterprise License
+
+Copyright (c) 2026 the Veetlyn copyright holders. All rights reserved.
+
+This license applies to everything in the "ee/" directory of the Veetlyn
+repository and to any file whose header refers to it ("the Enterprise
+Software"). The rest of the repository is licensed separately; see
+LICENSING.md at the repository root.
+
+1. Production use. You may use the Enterprise Software in production only
+   under a valid, current commercial agreement or subscription with the
+   Veetlyn copyright holders ("Commercial Agreement") that covers the number
+   of deployments, accounts and users you run.
+
+2. Development and testing. Without a Commercial Agreement, you may copy,
+   modify and run the Enterprise Software only to develop and test it, not
+   to serve real users, customers or transactions.
+
+3. Modifications. You may modify the Enterprise Software for uses permitted
+   above. The Veetlyn copyright holders retain all rights in the Enterprise
+   Software, including in modifications you make to it, to the extent the
+   Commercial Agreement does not state otherwise.
+
+4. Restrictions. You may not sell, sublicense, redistribute or offer the
+   Enterprise Software as a service to third parties, or remove or bypass
+   any license check, limit or notice in it, except as the Commercial
+   Agreement allows.
+
+5. Third-party components. Third-party material keeps its own license.
+
+6. Trademarks. This license grants no right to use the Veetlyn name, logo
+   or other marks.
+
+7. No warranty. THE ENTERPRISE SOFTWARE IS PROVIDED "AS IS", WITHOUT
+   WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+   IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+   OR OTHER LIABILITY ARISING FROM THE ENTERPRISE SOFTWARE OR ITS USE.
+
+8. Termination. Any use outside these terms ends your rights under this
+   license automatically.
+
+For a Commercial Agreement, use the contact form at https://veetlyn.com/contact.
