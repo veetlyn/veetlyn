@@ -1,0 +1,29 @@
+apps/web/src/app/(site)/(landing)/agencies/page.tsx
+  s_22e9e82f1423d1::t_a3e90949d7e98c 58,63,78,89,145,149-150
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_22e9e82f1423d1::t_cff5de69102a06 178,223
+apps/web/src/components/site/contextual-agent-teaser.tsx
+  s_22e9e82f1423d1::t_c1feff1e55f396 14
+apps/web/src/components/site/pricing-explorer.tsx
+  s_22e9e82f1423d1::t_dc74af1b4bb68d 34-36,51,67-68,197,200-201
+apps/web/src/components/site/tiers.tsx
+  s_22e9e82f1423d1::t_8f3f000cf88acc 79,100,103,105,121,124,173,184
+specs/platform/2026-10-27-calls-and-agent-design.md
+  s_22e9e82f1423d1::t_7f5a9140a21806 201-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ef43d5da4b03ad0939c7f7167e69df83e35e0ccf",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
