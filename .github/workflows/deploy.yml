@@ -20,7 +20,7 @@ on:
         description: Successful verified staging Deploy run ID (production only)
         type: string
       version:
-        description: New immutable vX.Y.Z version (production only)
+        description: New immutable version, vX.Y.Z or vX.Y.Z-alpha.N (production only)
         type: string
       recovery_url:
         description: Repository issue/PR containing walkthrough, backup and rollback evidence (production only)
@@ -213,4 +213,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ needs.validate.outputs.sha }}
         run: |
-          gh release create "$RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --target "$RELEASE_SHA" --title "$RELEASE_VERSION" --notes-file release.json
+          # Alpha, beta and rc versions are published as pre-releases.
+          case "$RELEASE_VERSION" in *-*) PRERELEASE=--prerelease ;; *) PRERELEASE= ;; esac
+          gh release create "$RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --target "$RELEASE_SHA" --title "$RELEASE_VERSION" --notes-file release.json $PRERELEASE
