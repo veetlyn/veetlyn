@@ -1,22 +1,17 @@
-// Roadmap copy shared by the launch page and Network page; not an enabled payment capability.
+// Launch teaser shared by the landing and Network pages.
 export default function DelegatedPurchasesTeaser({ name }: { name: string }) {
   return (
     <section aria-labelledby="delegated-purchases-h">
       <div className="wrap">
-        <p className="tag" data-in>Planned · Agentic ways of doing business</p>
-        <h2 id="delegated-purchases-h" data-in>An agent that can buy within your budget.</h2>
+        <p className="tag" data-in>Coming next · Agentic ways of doing business</p>
+        <h2 id="delegated-purchases-h" data-in>Give it a task. Set a budget. Get back to business.</h2>
         <p className="lead-dark" data-in>
-          Tell it what to buy, which sellers it can use and how much it can spend.
-          Set an expiry. Let it handle the purchase and come back to you when it needs more authority.
+          An agent that finds what you need and takes care of the purchase.
+          You choose the sellers, the spending limit and when to check back with you.
         </p>
         <p data-in>
-          We plan to bring delegated purchases to {name} through PayPal Agent Ready:
-          purchases within your limits, approval requests outside them, and a record of each action.
-          Availability depends on PayPal approval, supported accounts and AI platforms, and our integration.
-        </p>
-        <p className="foot-line" data-in>
-          Not available in the alpha. Today, buyers approve checkout in PayPal.
-          No launch date is confirmed for delegated purchases.
+          From restocking supplies to hiring a specialist, delegate more of the work through {name}.
+          Keep control of every permission and a record of every purchase. Paid through PayPal.
         </p>
       </div>
     </section>
