@@ -72,7 +72,7 @@ export default async function NetworkPage() {
             </div>
           </div>
         </section>
-        <ContextualAgentTeaser name={name} />
+        <ContextualAgentTeaser name={name} surface="network" />
         <section aria-labelledby="can-h">
           <div className="wrap">
             <h2 id="can-h" data-in>What their AI can do, and what only the client can</h2>

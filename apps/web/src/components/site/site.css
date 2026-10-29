@@ -787,3 +787,16 @@
 .site-root .serp-offers p { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; font-size: 14px; }
 .site-root .serp-offers p + p { border-top: 1px solid var(--border); }
 .site-root .serp-offers span:first-child { color: var(--brand-text); font-weight: 600; }
+
+/* Discovery leads into business context, then into concrete use cases or client approvals. */
+.site-root .contextual-agent-story { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+.site-root .contextual-agent-copy .tag { margin-bottom: 18px; color: var(--brand-text); }
+.site-root .contextual-agent-copy h2 { font-size: clamp(30px, 3.5vw, 46px); line-height: 1.08; }
+.site-root .contextual-agent-copy > p:not(.tag) { margin-top: 20px; color: var(--muted-foreground); font-size: 17px; }
+.site-root .contextual-agent-copy > .link { display: inline-block; margin-top: 24px; font-size: 15px; }
+.site-root .contextual-agent-figure { margin: 0; min-width: 0; }
+.site-root .contextual-agent-art { display: block; width: 100%; height: auto; font-family: var(--site-text); }
+.site-root .contextual-agent-figure figcaption { margin-top: 12px; text-align: center; color: var(--muted-foreground); font-size: 14px; }
+@media (max-width: 860px) {
+  .site-root .contextual-agent-story { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
