@@ -181,7 +181,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        <ContextualAgentTeaser name={name} />
         <section id="network" aria-labelledby="network-h">
           <div className="wrap">
             <h2 id="network-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
@@ -202,6 +201,7 @@ export default function HomePage() {
             <Link className="more" href="/network">How {name} Network works</Link>
           </div>
         </section>
+        <ContextualAgentTeaser name={name} />
         <section id="stories" aria-labelledby="stories-h">
           <div className="wrap">
             <h2 id="stories-h" data-in>For anyone who sells</h2>
