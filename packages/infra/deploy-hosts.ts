@@ -57,7 +57,7 @@ export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly 
       domain: {
         name: platformDomain,
         // admin. stays attached so the web app can redirect it to dash. with its path.
-        aliases: [`dash.${platformDomain}`, `admin.${platformDomain}`, ...storeHosts],
+        aliases: [`dash.${platformDomain}`, `admin.${platformDomain}`, storeDomain, `www.${storeDomain}`, ...storeHosts],
         redirects: [`www.${platformDomain}`],
       },
       routes: stage === "production" ? [{ pattern: `*.${storeDomain}/*`, zoneName: zones.storeZone }] : [],
