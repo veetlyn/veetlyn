@@ -1,4 +1,4 @@
-/* Payleor dash. Structure, scale and rules from Quartz (.claude/skills/quartz);
+/* Veetlyn dash. Structure, scale and rules from Quartz (.claude/skills/quartz);
    colours from the landing; light relief, Cal Sans titles and Inter text by Mouhamed's call. */
 
 @font-face { font-family: "Cal Sans UI"; src: url("fonts/CalSansUI-Variable.woff2") format("woff2"); font-weight: 300 800; font-display: swap; }
@@ -15,7 +15,7 @@
   --text-1: #141417; --text-2: #52525b; --text-3: #62626c;
   --hair: rgb(20 20 28 / 0.08); --line: rgb(20 20 28 / 0.11); --strong: rgb(20 20 28 / 0.18);
 
-  /* Accent: Payleor mint (landing #1fbf8f). Marks, the agent, selected rows, focus. */
+  /* Accent: Veetlyn mint (landing #1fbf8f). Marks, the agent, selected rows, focus. */
   --accent-mark: #1fbf8f;
   --accent-text: oklch(50% 0.105 163);
   --accent-wash: oklch(97.6% 0.02 163);

@@ -1,6 +1,6 @@
 # PayPal AI Hackathon: context
 
-> **Current submission context, 2026-10-28:** this file records the PayPal event. Payleor also targets the Meta hackathon **Startup track** with the contextual agentic dash built during Oct 27–Nov 4; see the [participant guide supplied by Mouhamed](meta-ai-hackathon-participant-guide.md) and [current design](../platform/2026-10-27-calls-and-agent-design.md). Keep the two demos and their build evidence separate. M, E and AG Studio are cancelled for this delivery. Dates here are recorded targets; recheck official rules before submitting.
+> **Current submission context, 2026-10-28:** this file records the PayPal event. Veetlyn also targets the Meta hackathon **Startup track** with the contextual agentic dash built during Oct 27–Nov 4; see the [participant guide supplied by Mouhamed](meta-ai-hackathon-participant-guide.md) and [current design](../platform/2026-10-27-calls-and-agent-design.md). Keep the two demos and their build evidence separate. M, E and AG Studio are cancelled for this delivery. Dates here are recorded targets; recheck official rules before submitting.
 
 "Build what's next with PayPal and AI" is a global online hackathon. It is run by PayPal and administered by Devpost.
 
@@ -114,7 +114,7 @@ Pick one sponsor prize to aim for. Only one sponsor prize can be won.
 
 The resources page links the Agent Toolkit and MCP quickstarts directly; see [`resources.md`](resources.md#ai-and-agent-development).
 
-**Early-access risk.** Store Sync, the Cart API, and Agent Ready are early access (see `refs/README.md` §6). Confirm on Discord or at <https://docs.paypal.ai/> that hackathon sandbox accounts can use them before you depend on them. Have a fallback that uses the Orders v2 API and agent-toolkit. Decided 2026-10-14: the submission does not use them; the agentic commerce story is the service hire and the mall (cart in the chat, checkout on Payleor) through the Payleor plugin ([program §6](../platform/2026-10-13-agentic-surfaces-program.md)).
+**Early-access risk.** Store Sync, the Cart API, and Agent Ready are early access (see `refs/README.md` §6). Confirm on Discord or at <https://docs.paypal.ai/> that hackathon sandbox accounts can use them before you depend on them. Have a fallback that uses the Orders v2 API and agent-toolkit. Decided 2026-10-14: the submission does not use them; the agentic commerce story is the service hire and the mall (cart in the chat, checkout on Veetlyn) through the Veetlyn plugin ([program §6](../platform/2026-10-13-agentic-surfaces-program.md)).
 
 **Human in the loop.** An agent must get explicit buyer confirmation before any capture or refund. This follows `refs/AGENTS.md`, and it also makes a good moment to show in the demo video.
 

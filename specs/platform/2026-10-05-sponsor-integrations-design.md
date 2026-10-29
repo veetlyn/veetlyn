@@ -11,7 +11,7 @@
 
 ## 1. Goal and prize strategy
 
-Use the hackathon sponsors' tools where they make Payleor a better product, and compete seriously for one sponsor prize.
+Use the hackathon sponsors' tools where they make Veetlyn a better product, and compete seriously for one sponsor prize.
 
 - A project wins **at most one sponsor prize**, on top of one grand prize or one honorable mention (`../hackathon/rules.md` §Prizes). So we go deep on one sponsor and keep the others smaller.
 - Staff from AG Grid, Bryntum, Channel3, Elastic, Postman, Render and APIMatic sit on the main judging panel. Every integration is visible to a judge who also scores the grand prizes.
@@ -29,7 +29,7 @@ Use the hackathon sponsors' tools where they make Payleor a better product, and 
 
 ### 2.1 Page
 
-- Route: `admin.payleor.app/{storeSlug}/analytics`, a client component using `ag-studio` and `ag-studio-react` (2.1.x), with `AgStudioAiModule` registered.
+- Route: `admin.veetlyn.app/{storeSlug}/analytics`, a client component using `ag-studio` and `ag-studio-react` (2.1.x), with `AgStudioAiModule` registered.
 - First load shows an **Overview** report shipped as JSON in code. Merchants can switch to edit mode, change widgets, add pages and save.
 - The report state is one serializable JSON object per store, saved in `analytics_reports` (§6). "Reset to default" restores the shipped report.
 - A period picker (last 7, 30 or 90 days, 12 months) sets a page-level date filter.
@@ -64,9 +64,9 @@ KPI tiles: net sales, orders, average order value, refund rate, open disputes. T
 | Gross sales | Sum of `orders.total − orders.tax` for orders with a capture in the period |
 | Refunds | Sum of `refunds.amount` in the period, minus the tax share of each refund |
 | PayPal fees | Sum of `payments.paypal_fee` (from the capture's `seller_receivable_breakdown`) |
-| Payleor fee | Sum of `payments.payleor_fee` (the partner fee at the store's plan rate, parent §6.2) |
+| Veetlyn fee | Sum of `payments.payleor_fee` (the partner fee at the store's plan rate, parent §6.2) |
 | Tax collected | Sum of `orders.tax`, net of refunded tax. Money owed to tax authorities, never shown as revenue |
-| Net sales | Gross sales − refunds − PayPal fees − Payleor fee |
+| Net sales | Gross sales − refunds − PayPal fees − Veetlyn fee |
 | Refund rate | Refunded orders ÷ orders, by count, in the period |
 | Dispute rate | Orders with a dispute opened in the period ÷ orders in the period |
 
@@ -76,7 +76,7 @@ Each widget is built from the merchant question it answers. All three are `AgWid
 
 | Widget | Merchant question | What it shows | Next step from the widget |
 |---|---|---|---|
-| **Money flow** | "How much of my sales do I actually keep?" | A flow from gross sales through refunds, PayPal fees and the Payleor fee to net sales, with tax collected shown beside it as owed, not earned. Follows the page period | Clicking a segment cross-filters the orders grid to the orders behind it |
+| **Money flow** | "How much of my sales do I actually keep?" | A flow from gross sales through refunds, PayPal fees and the Veetlyn fee to net sales, with tax collected shown beside it as owed, not earned. Follows the page period | Clicking a segment cross-filters the orders grid to the orders behind it |
 | **Dispute clock** | "Which disputes need me now, and what is at stake?" | Open disputes sorted by `seller_response_due_date`: countdown, amount, reason, recommended action, evidence readiness. Under 72 hours is amber, under 24 hours red, PayPal `ALERT` cases use the 20-hour clock | Clicking a row opens the dispute in the disputes console |
 | **Agent vs human sales** | "Are AI agents bringing me customers, and are they good customers?" | For each channel: share of net sales, orders, average order value, refund rate and dispute rate, plus the agent share trend over the period | Filters the page by channel; an "Ask why" button sends the selection to the agent |
 

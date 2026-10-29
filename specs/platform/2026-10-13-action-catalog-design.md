@@ -10,7 +10,7 @@
 
 ## 1. Goal
 
-Every services action the demo and the later surfaces need gets one typed definition. The web, the public API, the MCP plugin, Discord and Payleor's agents call the same `perform`, so they accept and refuse the same things and every action is recorded with who did it, for whom and from where (A1). Clients become contacts with verified identities, so "is this person the client of this project" has one safe answer on every surface (A2).
+Every services action the demo and the later surfaces need gets one typed definition. The web, the public API, the MCP plugin, Discord and Veetlyn's agents call the same `perform`, so they accept and refuse the same things and every action is recorded with who did it, for whom and from where (A1). Clients become contacts with verified identities, so "is this person the client of this project" has one safe answer on every surface (A2).
 
 ## 2. Decisions
 
@@ -78,7 +78,7 @@ export const acceptQuote = defineAction({
 
 ```ts
 type Actor =
-  | { kind: "user"; userId: string }            // a signed-in Payleor user
+  | { kind: "user"; userId: string }            // a signed-in Veetlyn user
   | { kind: "client_link"; token: ClientLink }  // a verified client link (A1: { projectId }; A2: { projectId, contactId, version })
   | { kind: "anonymous" }                       // the public request form
   | { kind: "system"; job: string };            // cron, PayPal webhooks
@@ -123,7 +123,7 @@ Use cases keep their detailed checks (quoting mode, self-approval, states). **Pr
 ### 4.7 Action log
 
 `action_log`:
-- **Columns:** `id`, `created_at`, `request_id`, `action`, `surface`, `team_id`, `project_id`, `subject_kind`, `subject_id`, `actor_kind`, `actor_id` (the user ID, or the contact ID for a client link after A2), `on_behalf_of` (JSON), `ip`, `outcome` (`ok` or the error code), `message` (Payleor's message only, never upstream text), `duration_ms`.
+- **Columns:** `id`, `created_at`, `request_id`, `action`, `surface`, `team_id`, `project_id`, `subject_kind`, `subject_id`, `actor_kind`, `actor_id` (the user ID, or the contact ID for a client link after A2), `on_behalf_of` (JSON), `ip`, `outcome` (`ok` or the error code), `message` (Veetlyn's message only, never upstream text), `duration_ms`.
 - **What is logged:** every action. Queries are logged only from surfaces other than `web`.
 - **No inputs:** they are never stored.
 - **When it is written:** after the action, best effort. A failed write logs an error. Run D's confirmation records are the durable audit for agent actions.
@@ -166,7 +166,7 @@ The tRPC procedures behind these call `perform` and keep their names, inputs and
 
 - An **email** identity is verified when someone opens a client link that was emailed to that address (the link names the contact). If a verified identity with the same email already exists in the team, the newly verified contact is merged into it.
 - A **user** identity is verified by construction (added from a signed-in session).
-- A **Discord** identity is verified when that Discord user interacts with Payleor (run E).
+- A **Discord** identity is verified when that Discord user interacts with Veetlyn (run E).
 - Typed, requested and migrated identities start unverified and give no authority.
 
 ### 5.3 Client links

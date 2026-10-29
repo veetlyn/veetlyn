@@ -4,7 +4,7 @@ Veetlyn is the money flow and the trust around paid work: freelancers, teams and
 
 This folder is enough on its own to continue the work; there is no separate handoff document. This page is its context index: what to read for each kind of work, and nothing more.
 
-The public name is **Veetlyn** from 2026-10-28. Earlier documents use Payleor for the same product. Existing payleor.com/payleor.app hosts remain active until a new domain is chosen.
+The public name is **Veetlyn**: the platform on veetlyn.com, seller sites on veetlyn.app.
 
 ## How to read this folder
 

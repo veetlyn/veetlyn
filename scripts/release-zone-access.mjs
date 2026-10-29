@@ -13,8 +13,8 @@ async function api(path) {
   assert.equal(data.success, true, 'Cloudflare zone access check failed');
   return data.result;
 }
-for (const name of new Set([e.PLATFORM_ZONE, e.STORE_ZONE, e.LEGACY_PLATFORM_ZONE, e.LEGACY_STORE_ZONE])) {
-  assert.ok(name, 'Canonical and legacy zones must be explicit');
+for (const name of new Set([e.PLATFORM_ZONE, e.STORE_ZONE])) {
+  assert.ok(name, 'Platform and seller zones must be explicit');
   const zones = await api(`/zones?name=${encodeURIComponent(name)}`);
   const zone = zones.find(zone => zone.name === name && zone.account.id === e.CLOUDFLARE_ACCOUNT_ID);
   assert.ok(zone, 'Zone is not visible in the deployment account');

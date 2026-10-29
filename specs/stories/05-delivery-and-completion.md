@@ -156,4 +156,4 @@ Shared facts for these stories:
   - The payment shows "Partly refunded $3.00" on both pages ("Refunded" once nothing is left with the team).
   - A fully refunded payment's pay link shows "This payment was refunded."
   - DB check (developer): a `payment_refunded:refund:<refund id>` transfer (from the project's `client_held` first while the project is open, from team revenue once it is completed) and a `refund_fees` transfer; resending the webhook posts nothing.
-- **Edge cases:** the walkthrough refunded a completed project's payment; the open-project path is covered by tests only. Known gaps (backlog): a refund made before Payleor applied the capture is parked, not recorded.
+- **Edge cases:** the walkthrough refunded a completed project's payment; the open-project path is covered by tests only. Known gaps (backlog): a refund made before Veetlyn applied the capture is parked, not recorded.
