@@ -1,3 +1,5 @@
+import { createReadinessRoute } from "./routes/readiness";
+import { releaseDescriptor } from "@jendal-workspace/core/release";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
 import { createProjectPayouts, sendDuePayouts } from "@jendal-workspace/api/use-cases/payout-sweeps";
@@ -59,6 +61,11 @@ app.use(evlog());
 app.use(noStoreByDefault);
 app.use("/api/auth/*", productionAuthGate(ENV.PUBLIC_ACCESS));
 app.use(wakeNoticesAfterMutation(deliverNotices));
+app.route("/", createReadinessRoute(async () => {
+  const db = getDb();
+  try { await db.$client`select 1`; }
+  finally { await db.$client.end(); }
+}));
 
 async function deliverNotices(execution: ExecutionContext): Promise<void> {
   // Request connections can already be closing when background work begins.
@@ -175,7 +182,10 @@ app.get("/", (c) => {
 });
 
 export default {
-  fetch: app.fetch,
+  fetch(request: Request, env: typeof ENV, ctx: ExecutionContext) {
+    if (new URL(request.url).pathname === "/.well-known/release") return Response.json(releaseDescriptor("api", env), { headers: { "Cache-Control": "no-store" } });
+    return app.fetch(request, env, ctx);
+  },
   async queue(batch, _env, ctx) {
     const db = getDb();
     const paypal = getPayPalServices();
