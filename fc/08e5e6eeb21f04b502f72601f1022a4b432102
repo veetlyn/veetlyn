@@ -1,0 +1,43 @@
+apps/web/src/content/blog/stores-sell-courses-and-downloads.mdx
+  s_73e10f9d158414::t_ea8df85d87d66d 1-15
+apps/web/src/content/site/nav.ts
+  s_73e10f9d158414::t_ea8df85d87d66d 26,28
+apps/web/src/content/blog/freelancers-get-hired-from-ai.mdx
+  s_73e10f9d158414::t_ea8df85d87d66d 5,7,27-30
+apps/web/src/content/blog/bodies.ts
+  s_73e10f9d158414::t_ea8df85d87d66d 5,8,12,15,19-23
+  s_73e10f9d158414::t_de13fcee102a52 24
+apps/web/src/content/blog/posts.ts
+  s_73e10f9d158414::t_ea8df85d87d66d 35,38,50,60,66,98,123-124,128
+  s_73e10f9d158414::t_b1760e8d09e90d 42,63,84,105,126,146
+apps/web/src/content/blog/agencies-split-client-payments.mdx
+  s_73e10f9d158414::t_ea8df85d87d66d 25,27-28
+apps/web/src/components/site/close-cta.tsx
+  s_73e10f9d158414::t_ea8df85d87d66d 12
+apps/web/src/content/blog/get-found-on-google-and-in-ai-answers.mdx
+  s_73e10f9d158414::t_ea8df85d87d66d 28,32
+apps/web/src/content/blog/studios-sell-services-and-products.mdx
+  s_73e10f9d158414::t_ea8df85d87d66d 3
+apps/web/src/lib/site/llms.test.ts
+  s_73e10f9d158414::t_ea8df85d87d66d 25
+apps/web/src/app/(site)/(landing)/blog/[slug]/page.tsx
+  s_73e10f9d158414::t_71dad39579199f 2,10,12,14,38-39,47,106-114
+apps/web/src/components/site/site.css
+  s_73e10f9d158414::t_9cda11992d12b7 580-581
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc08e5e6eeb21f04b502f72601f1022a4b432102",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
