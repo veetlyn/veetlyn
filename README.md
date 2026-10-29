@@ -102,7 +102,7 @@ Two stages are deployed, with hosts fixed in `packages/infra/deploy-hosts.ts`: `
 
 No deploy value lives in the repository. Each stage reads its settings from env files that git ignores: `packages/infra/.env` and `apps/server/.env` for what the stages share, and `packages/infra/.env.<stage>.local` for what each stage owns (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `ALCHEMY_PASSWORD`, `PAYPAL_WEBHOOK_ID`). The `.env.schema` files name and document every value. `pnpm -F @jendal-workspace/infra github-env <stage>` copies a stage's values into the GitHub environment of the same name, for the secrets and variables `deploy.yml` reads; it prints names only.
 
-Deploys authenticate with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; an `alchemy profile` OAuth login cannot create the R2 access token the server's file uploads use. The token is an account token with, on the account: Workers Scripts, Workers R2 Storage, Workers KV Storage, Queues, Hyperdrive and Account API Tokens (Edit), Account Settings (Read); on the canonical `veetlyn.com`/`veetlyn.app` and retained legacy `payleor.com`/`payleor.app` zones: DNS, Workers Routes and Dynamic URL Redirects (Edit), Zone (Read).
+Deploys authenticate with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; an `alchemy profile` OAuth login cannot create the R2 access token the server's file uploads use. The token is an account token with, on the account: Workers Scripts, Workers R2 Storage, Workers KV Storage, Queues, Hyperdrive and Account API Tokens (Edit), Account Settings (Read); on the `veetlyn.com` and `veetlyn.app` zones: DNS, Workers Routes and Dynamic URL Redirects (Edit), Zone (Read).
 
 ## Project Structure
 
@@ -133,7 +133,7 @@ jendal-workspace/
 
 ## Product name
 
-The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The repository is `veetlyn/veetlyn`. Canonical domains are veetlyn.com/veetlyn.app. The domain-cutover release retains the old payleor.com/payleor.app hosts during compatibility overlap; installed plugin identifiers stay stable. Domain activation and provider readiness must be verified through the release protocol before announcing the cutover as live. The unpublished marketing drafts use Veetlyn too.
+The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The repository is `veetlyn/veetlyn`. Canonical domains are veetlyn.com/veetlyn.app. The old payleor.com and payleor.app hosts are no longer bound; the AI plugin is named `veetlyn`, so installs of the old `payleor` plugin need replacing. Domain activation and provider readiness must be verified through the release protocol before announcing the cutover as live. The unpublished marketing drafts use Veetlyn too.
 
 ## Launch access and deployments
 

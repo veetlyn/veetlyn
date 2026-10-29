@@ -38,21 +38,6 @@ describe("deployedHosts", () => {
     expect(hosts.api.domain).toBe("api.staging.platform.test");
   });
 
-  it("retains old hosts, routes and file origins while making new hosts canonical", () => {
-    const legacy = { platformZone: "old.test", storeZone: "old-store.test" };
-    const hosts = deployedHosts("production", ["walk-crew"], ZONES, legacy);
-    expect(hosts.web.domain.name).toBe("platform.test");
-    expect(hosts.web.domain.aliases).toContain("old.test");
-    expect(hosts.web.domain.aliases).toContain("dash.old.test");
-    expect(hosts.api.domain).toEqual({ name: "api.platform.test", aliases: ["api.old.test"] });
-    expect(hosts.web.routes).toContainEqual({ pattern: "*.old-store.test/*", zoneName: "old-store.test" });
-    expect(hosts.fileOrigins).toContain("https://dash.old.test");
-    const staging = deployedHosts("staging", ["walk-crew"], ZONES, legacy);
-    expect(staging.web.routes).toEqual([]);
-    expect(staging.web.domain.aliases).toContain("walk-crew.staging.old-store.test");
-    expect(staging.web.domain.aliases).not.toContain("walk-crew.old-store.test");
-  });
-
   it("refuses a zone that is not a domain name", () => {
     for (const bad of ["", "platform", "https://platform.test", "platform.test/path", "*.platform.test", "Platform.test"]) {
       expect(() => deployedHosts("production", [], { platformZone: bad, storeZone: "platform-store.test" })).toThrow(

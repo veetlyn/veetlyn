@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "payleor": {
+    "veetlyn": {
       "type": "http",
       "url": "https://api.veetlyn.com/mcp"
     }

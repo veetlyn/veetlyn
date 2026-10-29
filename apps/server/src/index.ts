@@ -1,4 +1,3 @@
-import { canonicalRequest } from "./tenant/canonical-request";
 import { createReadinessRoute } from "./routes/readiness";
 import { releaseDescriptor } from "@jendal-workspace/core/release";
 import { trpcServer } from "@hono/trpc-server";
@@ -185,10 +184,6 @@ app.get("/", (c) => {
 export default {
   fetch(request: Request, env: typeof ENV, ctx: ExecutionContext) {
     if (new URL(request.url).pathname === "/.well-known/release") return Response.json(releaseDescriptor("api", env), { headers: { "Cache-Control": "no-store" } });
-    request = canonicalRequest(request, {
-      platformDomain: env.PLATFORM_DOMAIN, storeDomain: env.STORE_DOMAIN,
-      legacyPlatformDomain: env.LEGACY_PLATFORM_DOMAIN, legacyStoreDomain: env.LEGACY_STORE_DOMAIN,
-    });
     return app.fetch(request, env, ctx);
   },
   async queue(batch, _env, ctx) {

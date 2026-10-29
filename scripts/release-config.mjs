@@ -8,8 +8,6 @@ export function validateConfig(env) {
   assert.ok(['production', 'staging'].includes(env.STAGE));
   assert.equal(env.PLATFORM_ZONE, policy.platformZone, 'Unexpected platform domain');
   assert.equal(env.STORE_ZONE, policy.storeZone, 'Unexpected seller domain');
-  assert.equal(env.LEGACY_PLATFORM_ZONE, policy.legacyPlatformZone, 'Unexpected legacy platform domain');
-  assert.equal(env.LEGACY_STORE_ZONE, policy.legacyStoreZone, 'Unexpected legacy seller domain');
   assert.equal(env.PLATFORM_NAME, policy.platformName, 'Unexpected product name');
   // Opening accounts or accepting live money requires a separately reviewed policy change.
   assert.equal(env.PUBLIC_ACCESS, env.STAGE === 'production' ? 'waitlist' : 'open', 'Unapproved launch access');

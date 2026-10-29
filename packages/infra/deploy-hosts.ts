@@ -12,14 +12,12 @@ export type Zones = { platformZone: string; storeZone: string };
 export type DeployedHosts = {
   platformDomain: string;
   storeDomain: string;
-  legacyPlatformDomain: string;
-  legacyStoreDomain: string;
   dashOrigin: string;
   web: {
     domain: { name: string; aliases: string[]; redirects: string[] };
     routes: { pattern: string; zoneName: string }[];
   };
-  api: { domain: string | { name: string; aliases: string[] } };
+  api: { domain: string };
   fileOrigins: string[];
 };
 
@@ -44,34 +42,27 @@ function checkZone(name: string, zone: string): void {
   }
 }
 
-export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly string[], zones: Zones, legacyZones?: Zones): DeployedHosts {
+export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly string[], zones: Zones): DeployedHosts {
   checkZone("PLATFORM_ZONE", zones.platformZone);
   checkZone("STORE_ZONE", zones.storeZone);
-  if (legacyZones) {
-    checkZone("LEGACY_PLATFORM_ZONE", legacyZones.platformZone);
-    checkZone("LEGACY_STORE_ZONE", legacyZones.storeZone);
-  }
   const prefix = stage === "production" ? "" : "staging.";
   const platformDomain = `${prefix}${zones.platformZone}`;
   const storeDomain = `${prefix}${zones.storeZone}`;
   const storeHosts = stage === "production" ? [] : stagingStoreSlugs.map((slug) => `${slug}.${storeDomain}`);
-  const legacy = legacyZones ? deployedHosts(stage, stagingStoreSlugs, legacyZones) : undefined;
   return {
     platformDomain,
     storeDomain,
-    legacyPlatformDomain: legacy?.platformDomain ?? "",
-    legacyStoreDomain: legacy?.storeDomain ?? "",
     dashOrigin: `https://dash.${platformDomain}`,
     web: {
       domain: {
         name: platformDomain,
         // admin. stays attached so the web app can redirect it to dash. with its path.
-        aliases: [`dash.${platformDomain}`, `admin.${platformDomain}`, storeDomain, `www.${storeDomain}`, ...storeHosts, ...(legacy ? [legacy.platformDomain, ...legacy.web.domain.aliases, ...legacy.web.domain.redirects] : [])],
+        aliases: [`dash.${platformDomain}`, `admin.${platformDomain}`, storeDomain, `www.${storeDomain}`, ...storeHosts],
         redirects: [`www.${platformDomain}`],
       },
-      routes: stage === "production" ? [{ pattern: `*.${storeDomain}/*`, zoneName: zones.storeZone }, ...(legacy?.web.routes ?? [])] : [],
+      routes: stage === "production" ? [{ pattern: `*.${storeDomain}/*`, zoneName: zones.storeZone }] : [],
     },
-    api: { domain: legacy ? { name: `api.${platformDomain}`, aliases: [`api.${legacy.platformDomain}`] } : `api.${platformDomain}` },
-    fileOrigins: [`https://${platformDomain}`, `https://dash.${platformDomain}`, ...(legacy?.fileOrigins ?? [])],
+    api: { domain: `api.${platformDomain}` },
+    fileOrigins: [`https://${platformDomain}`, `https://dash.${platformDomain}`],
   };
 }
