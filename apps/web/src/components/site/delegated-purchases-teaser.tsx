@@ -1,5 +1,5 @@
 // Roadmap copy shared by the launch page and Network page; not an enabled payment capability.
-export default function DelegatedPurchasesTeaser() {
+export default function DelegatedPurchasesTeaser({ name }: { name: string }) {
   return (
     <section aria-labelledby="delegated-purchases-h">
       <div className="wrap">
@@ -10,7 +10,7 @@ export default function DelegatedPurchasesTeaser() {
           Set an expiry. Let it handle the purchase and come back to you when it needs more authority.
         </p>
         <p data-in>
-          We plan to bring delegated purchases to Veetlyn through PayPal Agent Ready:
+          We plan to bring delegated purchases to {name} through PayPal Agent Ready:
           purchases within your limits, approval requests outside them, and a record of each action.
           Availability depends on PayPal approval, supported accounts and AI platforms, and our integration.
         </p>
