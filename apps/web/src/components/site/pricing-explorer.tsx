@@ -31,10 +31,10 @@ const SERVICES_ROWS: readonly Row[] = [
     ),
     cells: [true, true, true, true],
   },
-  { id: "intake", label: "Agent-written quotes, drafts a month", cells: [drafts("solo"), drafts("team"), drafts("agency"), "Custom"] },
-  { id: "copilot", label: "Business answers from your agent", cells: [false, true, true, true] },
-  { id: "payout", label: "Agent-assisted payouts", cells: [false, false, true, true] },
-  { id: "api", label: "Your own agents, through the API", cells: [false, true, true, true] },
+  { id: "intake", label: <>Agent-written quotes, drafts a month <span className="soon">Coming next</span></>, cells: [drafts("solo"), drafts("team"), drafts("agency"), "Custom"] },
+  { id: "copilot", label: <>Business answers from your agent <span className="soon">Coming next</span></>, cells: [false, true, true, true] },
+  { id: "payout", label: <>Agent-assisted payouts <span className="soon">Coming next</span></>, cells: [false, false, true, true] },
+  { id: "api", label: <>Your own agents, through the API <span className="soon">Coming soon</span></>, cells: [false, true, true, true] },
   {
     id: "seo",
     label: (
@@ -64,7 +64,7 @@ const STORE_ROWS: readonly Row[] = [
     ),
     cells: [true, true, true, true],
   },
-  { id: "admin", label: "Store management with your agent", cells: [false, true, true, true] },
+  { id: "admin", label: <>Store management with your agent <span className="soon">Coming next</span></>, cells: [false, true, true, true] },
   { id: "credits", label: "AI credits for your agent", cells: ["Some", "More", "The most", "Custom"] },
 ];
 

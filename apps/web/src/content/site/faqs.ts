@@ -15,13 +15,13 @@ export const indexFaq = (name: string): readonly Faq[] => [
   },
   {
     q: "Can an AI agent spend my money?",
-    a: "You control what you delegate. In the alpha, buyer checkout needs your approval in PayPal. Team payouts can follow approvals or the automatic payout rules you set. Connecting an agent does not grant it additional permissions.",
+    a: "You control what you delegate. Buyer checkout needs your approval in PayPal. Team payouts can follow approvals or the automatic payout rules you set. Connecting an agent does not grant it additional permissions.",
   },
   {
     q: "Can I sell products and services together?",
     a: "Yes. One workspace, one link. Run both and the cheaper plan is half price.",
   },
-  { q: `Can an AI sell on ${name}?`, a: "Yes. Connect it through our API. Buyers see that the work is automated." },
+  { q: `Can an AI sell on ${name}?`, a: "Support for connecting your own seller agent through the public API is coming next. Automated sellers must be identified to buyers." },
   { q: "Can I leave with my data?", a: "Yes. A full export is coming soon. The code is open source under AGPL-3.0." },
 ];
 
@@ -30,7 +30,7 @@ export const networkFaq = (name: string): readonly Faq[] => [
     q: `Is ${name} Network in the Claude or ChatGPT directory?`,
     a: "Not yet. Clients add it by its address. Directory listings come after the platforms' review.",
   },
-  { q: "Can the AI pay for my client?", a: `No. The client pays on ${name} and approves the payment in PayPal.` },
+  { q: "Who approves checkout?", a: `The client approves the payment in PayPal on ${name}’s pay page.` },
   {
     q: "Do I have to be listed?",
     a: "No. Every offering is listed by default, and you can take any of them off the network.",
@@ -47,22 +47,22 @@ export const FREELANCER_FAQ: readonly Faq[] = [
     q: `When do I pay the ${network} network fee?`,
     a: "Only on the first project with a client who found you through an AI agent. You see it before you quote.",
   },
-  { q: "Can an AI agent send a quote for me?", a: "No. The intake agent drafts it. You send it." },
+  { q: "How will my agent help with quotes?", a: "Coming next: your agent prepares a quote from the request and your prices, ready for your review." },
   { q: "Can I bring my own clients?", a: `Yes. Your own clients only pay your plan's ${soloFee} fee.` },
 ];
 
 export const agencyFaq = (name: string): readonly Faq[] => [
   {
     q: "How do members get paid?",
-    a: "Each member connects their own PayPal. Their share goes out after your approval, by your rules, or on payday.",
+    a: "Each member connects their own PayPal. Manage payouts yourself or schedule them through your operating model.",
   },
   {
     q: "We work in Slack or Microsoft Teams. Can we use them?",
-    a: "Not yet. Slack, Discord and Google Chat are coming. Today, requests come from AI and your page, and notices go by email.",
+    a: "Requests come from the client-facing connector and your page; notices go by email. Additional chat integrations are outside the current release.",
   },
   {
     q: `Can our own agent work with ${name}?`,
-    a: "Yes, through the public API and webhooks on Team and Agency. The payer still approves every payment in PayPal.",
+    a: "Public seller API access and webhooks are coming to Team and Agency. They will follow your operating model and approval requirements.",
   },
   {
     q: `We are more than ${getSellerPlan("agency").members} people.`,
@@ -113,7 +113,7 @@ export const pricingFaq = (name: string): readonly Faq[] => [
   },
   {
     q: "Can I leave and take my data?",
-    a: "Yes, on every plan. Export your projects, clients, payments and files at any time.",
+    a: "Full data export is coming soon. The code is available under AGPL-3.0.",
   },
   {
     q: "Is SEO included?",
