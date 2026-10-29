@@ -43,8 +43,8 @@ export default function SiteFooter() {
         <a href={`mailto:${email}`}>{email}</a>
       </div>
       <p className="small">
-        {isWaitlistOnly() ? "Coming soon. Join the waitlist for launch news. " : "Sandbox prototype. "}
-        Walk Crew, Amadou, Clay Room, Roast House, Maison Lune, Coco Nails, Logo Bot, Inès and the Discover listings are examples.
+        {isWaitlistOnly() ? "Launching soon. Join the waitlist for launch news. " : "Test mode: payments use PayPal test accounts. "}
+        Sellers named in examples and on Discover are illustrations.
       </p>
       <nav className="legal" aria-label="Legal">
         <Link href="/legal/terms">Terms of service</Link>
