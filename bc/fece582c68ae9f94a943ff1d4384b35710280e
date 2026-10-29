@@ -1,0 +1,23 @@
+apps/web/src/app/(site)/(landing)/waitlist/page.tsx
+  s_22e9e82f1423d1::t_c4483d6d881f73 1-2,12-29
+apps/web/src/components/site/site.css
+  s_22e9e82f1423d1::t_3529830fab3c68 803-828
+apps/web/src/components/site/waitlist-form.tsx
+  s_22e9e82f1423d1::t_4797f0c84c16d5 8,13,21-28,30,35-48,50-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bcfece582c68ae9f94a943ff1d4384b35710280e",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
