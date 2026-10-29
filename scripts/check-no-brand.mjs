@@ -2,7 +2,7 @@
 import { execFileSync } from "node:child_process";
 
 // Docs, the published plugin, generated files and migrations (history) keep the name.
-const KEPT = [/^\.github\/release-policy\.json$/,/^specs\//, /\.md$/, /^plugins\//, /(^|\/)LICENSE$/, /(^|\/)pnpm-lock\.yaml$/, /\.generated\.ts$/, /(^|\/)src\/env\.ts$/, /\/migrations\/.*\.sql$/];
+const KEPT = [/^\.github\/release-policy\.json$/, /^\.gitmodules$/, /^specs\//, /\.md$/, /^plugins\//, /(^|\/)LICENSE$/, /(^|\/)pnpm-lock\.yaml$/, /\.generated\.ts$/, /(^|\/)src\/env\.ts$/, /\/migrations\/.*\.sql$/];
 
 let out = "";
 try {
