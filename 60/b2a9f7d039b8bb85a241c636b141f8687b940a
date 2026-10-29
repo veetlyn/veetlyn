@@ -1,0 +1,140 @@
+specs/platform/2026-10-16-architecture.md
+  s_73e10f9d158414::t_a1f26e31b4599d 1,17,22,28-31,33,35-37,85,87,98-99,101,117,124
+specs/platform/2026-10-07-r1-paypal-facts.md
+  s_73e10f9d158414::t_a1f26e31b4599d 280
+scripts/build-plugin-zips.ts
+  s_73e10f9d158414::t_4263766aefc283 4,87
+specs/parking-lot.md
+  s_73e10f9d158414::t_a1f26e31b4599d 9
+specs/platform/2026-10-14-connector-ux-guidelines.md
+  s_73e10f9d158414::t_a1f26e31b4599d 39,53,149
+specs/stories/07-payouts.md
+  s_73e10f9d158414::t_a1f26e31b4599d 20,43,46,58,62,67,76,107,289,302,339-340
+specs/stories/README.md
+  s_73e10f9d158414::t_a1f26e31b4599d 3,9-12,69
+specs/BACKLOG.md
+  s_73e10f9d158414::t_a1f26e31b4599d 38-39,53,60,63-64
+specs/stories/04-payments.md
+  s_73e10f9d158414::t_433e0d10a8f27d 156-157
+  s_73e10f9d158414::t_a1f26e31b4599d 7,127,155
+specs/platform/plans/2026-10-29-veetlyn-domain-cutover.md
+  s_73e10f9d158414::t_518947b72d7c16 31-34
+  s_73e10f9d158414::t_a1f26e31b4599d 19
+specs/stories/03-requests-and-quotes.md
+  s_73e10f9d158414::t_a1f26e31b4599d 41,178
+specs/backlog-later.md
+  s_73e10f9d158414::t_a1f26e31b4599d 12,22
+specs/platform/2026-10-21-b1-operating-model-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 21,97-98,101
+specs/platform/2026-10-18-widget-gallery.html
+  s_73e10f9d158414::t_a1f26e31b4599d 250
+specs/stories/01-accounts-and-setup.md
+  s_73e10f9d158414::t_a1f26e31b4599d 15-16,18,21,34,37,44-45,82-85,96-97,109,121,132-133,145,163,166,168-169,172,181,196,208,257,331
+specs/README.md
+  s_73e10f9d158414::t_433e0d10a8f27d 7
+specs/platform/2026-10-14-conversations-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 11,39,44,104
+specs/platform/2026-10-13-discord-ticket-flow-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 7,13,17-18,20,24,26,32,65,69,130,134,140,173,177,203,212
+specs/stories/06-store.md
+  s_73e10f9d158414::t_a1f26e31b4599d 7,11,97,120,171-172,194
+specs/PROGRESS.md
+  s_73e10f9d158414::t_a1f26e31b4599d 28-30,34,43,54,56,66,72,74,76,82,90,92,97,99-100
+  s_73e10f9d158414::t_433e0d10a8f27d 7
+specs/hackathon/agentic-dash-mock.html
+  s_73e10f9d158414::t_a1f26e31b4599d 6,48,55,70,81
+specs/platform/2026-10-06-auth-federation-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 1,4,11,13-14,18,25,40-41,46,53,55,68-70,76,82,88,96,116,124,129-131
+specs/platform/2026-10-13-agentic-surfaces-program.md
+  s_73e10f9d158414::t_a1f26e31b4599d 3,5,21,23,25-26,32,43,49,51,54,65-66,73
+specs/platform/2026-10-16-security-audit.md
+  s_73e10f9d158414::t_a1f26e31b4599d 1,19,58
+specs/platform/2026-10-15-c-plugin-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 9-10,13,28-31,61-63,65,83,89
+specs/platform/2026-10-29-release-protocol.md
+  s_73e10f9d158414::t_a1f26e31b4599d 9,46
+README.md
+  s_73e10f9d158414::t_433e0d10a8f27d 136
+specs/hackathon/README.md
+  s_73e10f9d158414::t_a1f26e31b4599d 3,117
+specs/stories/08-discord.md
+  s_73e10f9d158414::t_a1f26e31b4599d 5,15,19,21,26,28,30-31,42-43,46,51,54-55,57,59,64-67,70-74,85,100-101
+specs/platform/2026-10-19-site-and-design-system-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 1,9,13,15-16,19,21,29,32,41,48
+specs/hackathon/dash-ds.css
+  s_73e10f9d158414::t_a1f26e31b4599d 1,18
+specs/platform/2026-10-05-sponsor-integrations-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 14,32,67,69,79
+specs/platform/2026-10-28-contextual-agent-use-cases-review.md
+  s_73e10f9d158414::t_a1f26e31b4599d 17,31,52,221,226,229,337
+.github/workflows/plugin.yml
+  s_73e10f9d158414::t_4263766aefc283 28,31-32,34
+  s_73e10f9d158414::t_839449436fec63 1-27,29-30,33,35-40
+specs/platform/2026-10-13-action-catalog-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 13,81,126,169
+apps/web/src/lib/platform.ts
+  s_73e10f9d158414::t_c50c2f69aca2ff 19-23
+specs/platform/plans/2026-10-22-b1-operating-model.md
+  s_73e10f9d158414::t_a1f26e31b4599d 512,517,536,550,552
+package.json
+  s_73e10f9d158414::t_4263766aefc283 25
+specs/hackathon/dashboard-prototype-notes.md
+  s_73e10f9d158414::t_a1f26e31b4599d 35
+specs/hackathon/agentic-dash-payouts.html
+  s_73e10f9d158414::t_a1f26e31b4599d 6,48,84,111
+specs/platform/2026-10-16-agentic-dash-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 9,15,18,41-42,115,140,152,162
+specs/stories/05-delivery-and-completion.md
+  s_73e10f9d158414::t_a1f26e31b4599d 159
+specs/platform/2026-10-07-seller-pricing-proposal.md
+  s_73e10f9d158414::t_a1f26e31b4599d 16,44,47,49,53,59-60,71,76,78,86,91,93
+specs/platform/2026-10-18-contextual-dash-ontology-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 5,7,11,13-14,16,27,44,50-51,56,60,78,108,124,129,137,157,196,198,200,206-207,226-227,231,241,251,277,290,301
+specs/platform/plans/2026-10-28-dash-tree-and-revamp.md
+  s_73e10f9d158414::t_a1f26e31b4599d 496,511,545
+CLAUDE.md
+  s_73e10f9d158414::t_a1f26e31b4599d 27
+  s_73e10f9d158414::t_96ca2e8a633f79 53
+.claude/skills/README.md
+  s_73e10f9d158414::t_a1f26e31b4599d 15
+specs/platform/2026-10-28-context-graph-inventory.md
+  s_73e10f9d158414::t_a1f26e31b4599d 9,46,99,142
+plugins/veetlyn/README.md
+  s_73e10f9d158414::t_3e9f688522fc7d 15
+specs/hackathon/dash-demo.js
+  s_73e10f9d158414::t_a1f26e31b4599d 58
+specs/stories/02-seller-page-and-catalog.md
+  s_73e10f9d158414::t_a1f26e31b4599d 90,100,117,131,156
+specs/stories/09-agentic.md
+  s_73e10f9d158414::t_a1f26e31b4599d 10,12,98,110,118,123,125,130-131,134-135,178,276,473,478,481,483,533,587,589,691,699,707,723
+apps/web/src/app/robots.ts
+  s_73e10f9d158414::t_c50c2f69aca2ff 3,20
+specs/hackathon/agentic-dash-record.html
+  s_73e10f9d158414::t_a1f26e31b4599d 6,89,101
+specs/hackathon/dash-ds.html
+  s_73e10f9d158414::t_a1f26e31b4599d 6,23,35
+apps/web/worker/index.ts
+  s_73e10f9d158414::t_09bc7393e2f273 12,26
+  s_73e10f9d158414::t_c50c2f69aca2ff 13-19,30
+  s_73e10f9d158414::t_1609689b3e9d4f 20
+specs/platform/2026-10-14-plugin-spike-facts.md
+  s_73e10f9d158414::t_a1f26e31b4599d 9,11,15-16,57,79,85,105,128-129,135-137,144,146,148-149,165,171,173,177-178,190,194,216,238-239
+specs/platform/2026-10-27-calls-and-agent-design.md
+  s_73e10f9d158414::t_a1f26e31b4599d 9,11,13,22,51,60,63,77-79,93,95,124,138,143,154,158,161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60b2a9f7d039b8bb85a241c636b141f8687b940a",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
