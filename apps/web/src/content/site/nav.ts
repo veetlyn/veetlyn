@@ -23,9 +23,9 @@ export const networkMenu = (name: string): readonly MenuEntry[] => [
 ];
 
 export const networkFeature = (name: string): MenuFeature => ({
-  path: "/blog/ai-shopping-left-services-out",
+  path: "/blog/how-clients-hire-through-their-ai",
   title: `Why ${name} Network exists`,
-  text: "AI shopping left services out. Here is the gap it fills.",
+  text: "How clients hire through their AI, and where the network fits.",
   go: "Read the guide",
   art: "gap",
 });
