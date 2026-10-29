@@ -1,0 +1,75 @@
+apps/web/src/content/blog/posts.ts
+  s_73e10f9d158414::t_5dd5f64309f598 24-25,44,66,88,110,132,153
+apps/web/src/app/(site)/(docs)/legal/privacy/page.tsx
+  s_73e10f9d158414::t_5dd5f64309f598 7-8,11-12
+apps/web/src/lib/site/seller-seo.ts
+  s_73e10f9d158414::t_769d55516c94a1 1-120
+  s_36ca484bc07422::t_cacbb382842ebd 121
+apps/web/src/app/(site)/(docs)/legal/acceptable-use/page.tsx
+  s_73e10f9d158414::t_5dd5f64309f598 7-8,11-12
+apps/web/src/app/store/llms.txt/route.ts
+  s_73e10f9d158414::t_69ab7ce0496f3c 4-8
+  s_73e10f9d158414::t_766729bedb4f6e 1-3,9-13
+apps/web/src/lib/site/seo.ts
+  s_73e10f9d158414::t_5dd5f64309f598 81,93
+  s_36ca484bc07422::t_751ec09e354913 23-24,35
+apps/web/src/app/dash/layout.tsx
+  s_73e10f9d158414::t_69ab7ce0496f3c 2-5
+apps/web/src/app/sitemap.ts
+  s_73e10f9d158414::t_5dd5f64309f598 4,9
+apps/web/src/app/store/pay/[token]/page.tsx
+  s_73e10f9d158414::t_c633e374cf6b3a 4
+  s_73e10f9d158414::t_7b3df96c9c89bb 9-11
+apps/web/src/lib/site/llms.test.ts
+  s_73e10f9d158414::t_5dd5f64309f598 4,20-22,25
+apps/web/src/lib/site/llms.ts
+  s_73e10f9d158414::t_5dd5f64309f598 2,21-29
+apps/web/src/lib/seller-site.ts
+  s_73e10f9d158414::t_ac8ba088731a52 1-35
+apps/web/src/app/(site)/(docs)/legal/terms/page.tsx
+  s_73e10f9d158414::t_5dd5f64309f598 7-8,11-12
+apps/web/src/app/layout.tsx
+  s_36ca484bc07422::t_f98482df63c8de 16
+apps/web/src/app/robots.ts
+  s_36ca484bc07422::t_7da19a0e45cbd0 22
+apps/web/src/app/store/c/[token]/page.tsx
+  s_73e10f9d158414::t_b8d77fc9694a78 3,8-10
+apps/web/src/app/store/robots.txt/route.ts
+  s_73e10f9d158414::t_f96de1515dc344 1-10
+apps/web/src/app/store/sitemap.xml/route.ts
+  s_73e10f9d158414::t_b45e9a009c8ab7 1-16
+apps/web/src/lib/site/seller-seo.test.ts
+  s_36ca484bc07422::t_fdb1437fae82e1 1-34
+apps/web/src/lib/site/seo.test.ts
+  s_36ca484bc07422::t_4e255aa8001138 14-15
+apps/web/src/app/store/page.tsx
+  s_73e10f9d158414::t_117976eabca91d 5-14,21-28
+apps/web/src/app/store/policies/[policy]/page.tsx
+  s_73e10f9d158414::t_697149e87246f8 7,11-22
+apps/web/src/app/store/request/page.tsx
+  s_73e10f9d158414::t_d5c4388e60ab56 3,8-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ab9214e3393730a2c46cb2492b7dc42f17093582",
+  "prompts": {},
+  "sessions": {
+    "s_36ca484bc07422": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a189de-35f9-78e2-bae2-33461e8592a8",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
