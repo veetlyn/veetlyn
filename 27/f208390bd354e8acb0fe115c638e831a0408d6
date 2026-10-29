@@ -1,0 +1,63 @@
+apps/web/src/content/blog/get-found-on-google-and-in-ai-answers.mdx
+  s_73e10f9d158414::t_4556d1dc360844 34
+apps/web/src/lib/site/llms.ts
+  s_73e10f9d158414::t_9b22bb9a21d427 37
+  s_73e10f9d158414::t_8c8ba2555d94e5 32,36
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_73e10f9d158414::t_9b22bb9a21d427 95
+  s_73e10f9d158414::t_bc6859889bafd5 175,179,194-195
+specs/platform/2026-10-29-public-content-contract.md
+  s_73e10f9d158414::t_e539519f07ef49 1-23
+apps/web/src/app/(site)/(landing)/agencies/page.tsx
+  s_22e9e82f1423d1::t_8134f396902c50 52,145,149-150
+apps/web/src/app/(site)/(landing)/freelancers/page.tsx
+  s_22e9e82f1423d1::t_7fe80e2cd1c4ab 78,97,142
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_22e9e82f1423d1::t_e6b8ec0014fde5 64,68
+apps/web/src/app/(site)/(landing)/studios/page.tsx
+  s_22e9e82f1423d1::t_272cdc58e05883 35,55
+apps/web/src/components/site/pricing-explorer.tsx
+  s_22e9e82f1423d1::t_ab700ec28b7b60 34-37,67
+apps/web/src/components/site/tiers.tsx
+  s_22e9e82f1423d1::t_dda2946fdb1a17 79,100,103,121,124
+apps/web/src/content/blog/agencies-split-client-payments.mdx
+  s_22e9e82f1423d1::t_26de7d2be8eb92 1,3-7,18,25-27,31,33,35,37
+apps/web/src/content/blog/ai-shopping-left-services-out.mdx
+  s_22e9e82f1423d1::t_6af719fa5712a6 1,3,7,13
+apps/web/src/content/blog/freelancers-get-hired-from-ai.mdx
+  s_22e9e82f1423d1::t_9dc5887334d521 5,7
+apps/web/src/content/blog/posts.ts
+  s_22e9e82f1423d1::t_d10798e878711b 39-40,44,50-51,66,81,86,88,92,101-103,107-109,113,128,133
+apps/web/src/content/blog/stores-sell-in-ai-carts.mdx
+  s_22e9e82f1423d1::t_6f634996935e33 1,3,5,7,9,11,13,15
+apps/web/src/content/blog/studios-sell-services-and-products.mdx
+  s_22e9e82f1423d1::t_8b70bb1e62dbe7 3,9,11
+apps/web/src/content/site/faqs.ts
+  s_73e10f9d158414::t_1058a84f308a39 18,24,33,50,57,61,65,116
+specs/platform/2026-10-19-site-and-design-system-design.md
+  s_22e9e82f1423d1::t_a8b4eeeaba60ff 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "27f208390bd354e8acb0fe115c638e831a0408d6",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    },
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
