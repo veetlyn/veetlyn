@@ -22,6 +22,6 @@ describe("sitePaths", () => {
     const paths = sitePaths();
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths).toContain("/");
-    expect(paths).toContain("/blog/stores-sell-in-ai-carts");
+    expect(paths).toContain("/blog/stores-sell-courses-and-downloads");
   });
 });
