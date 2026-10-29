@@ -1,5 +1,5 @@
 import { createReadinessRoute } from "./routes/readiness";
-import { releaseResponse } from "@jendal-workspace/core/release";
+import { releaseDescriptor } from "@jendal-workspace/core/release";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
 import { createProjectPayouts, sendDuePayouts } from "@jendal-workspace/api/use-cases/payout-sweeps";
@@ -183,7 +183,7 @@ app.get("/", (c) => {
 
 export default {
   fetch(request: Request, env: typeof ENV, ctx: ExecutionContext) {
-    if (new URL(request.url).pathname === "/.well-known/release") return releaseResponse("api", env);
+    if (new URL(request.url).pathname === "/.well-known/release") return Response.json(releaseDescriptor("api", env), { headers: { "Cache-Control": "no-store" } });
     return app.fetch(request, env, ctx);
   },
   async queue(batch, _env, ctx) {
