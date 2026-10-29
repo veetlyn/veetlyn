@@ -1,0 +1,27 @@
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_22e9e82f1423d1::t_f6881557069794 75
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_22e9e82f1423d1::t_410b4238f5c4a7 204
+apps/web/src/components/site/art/contextual-agent.tsx
+  s_22e9e82f1423d1::t_63fc29caab4d56 1-47
+apps/web/src/components/site/contextual-agent-teaser.tsx
+  s_22e9e82f1423d1::t_16fb569f8279c9 1-6,9-28
+apps/web/src/components/site/site.css
+  s_22e9e82f1423d1::t_a56fcac6ab0a5e 790-802
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9115ae29691bd65b0e2c449b23e73796c5f56cda",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
