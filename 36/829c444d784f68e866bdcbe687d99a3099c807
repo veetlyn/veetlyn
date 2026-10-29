@@ -1,0 +1,19 @@
+apps/web/src/components/site/delegated-purchases-teaser.tsx
+  s_22e9e82f1423d1::t_09923b525ca7bd 1,6-7,9-10,13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "36829c444d784f68e866bdcbe687d99a3099c807",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
