@@ -800,3 +800,29 @@
 @media (max-width: 860px) {
   .site-root .contextual-agent-story { grid-template-columns: minmax(0, 1fr); gap: 28px; }
 }
+
+/* Launch waitlist: one message and one form, using the landing site's band and relief tokens. */
+.site-root .waitlist-hero { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 4fr); gap: clamp(40px, 6vw, 80px); align-items: center; padding-block: clamp(56px, 8vw, 112px); }
+.site-root .waitlist-copy h1 { margin-top: 20px; max-width: 12ch; font-size: clamp(44px, 5.8vw, 80px); line-height: 1; letter-spacing: -0.035em; }
+.site-root .waitlist-copy .tag { color: var(--band-muted); }
+.site-root .waitlist-copy .lead { margin-top: 28px; max-width: 38ch; font-size: 19px; color: var(--band-muted); }
+.site-root .waitlist-audience { margin-top: 24px; color: var(--band-muted); font-size: 14px; }
+.site-root .waitlist-copy > .link { display: inline-block; margin-top: 24px; font-size: 15px; }
+.site-root form.waitlist-signup { color: var(--foreground); gap: 22px; border-radius: 10px; padding: clamp(24px, 3vw, 36px); box-shadow: inset 0 0 0 1px var(--border), inset 0 2px 0 var(--background), var(--site-raise); }
+.site-root .waitlist-signup h2 { font-size: clamp(26px, 2.6vw, 32px); line-height: 1.15; letter-spacing: -0.02em; }
+.site-root .waitlist-form-intro p, .site-root .waitlist-success p { margin-top: 10px; color: var(--muted-foreground); font-size: 15px; line-height: 1.6; }
+.site-root .waitlist-signup .f input { border-radius: 6px; }
+.site-root .waitlist-consent { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.5; cursor: pointer; }
+.site-root .waitlist-consent input { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--foreground); }
+.site-root .waitlist-signup .btn { width: 100%; justify-content: space-between; }
+.site-root .waitlist-signup .btn:disabled { opacity: 0.65; cursor: progress; }
+.site-root .waitlist-signup .form-note { font-size: 13px; line-height: 1.7; }
+.site-root .waitlist-signup .form-note a { text-underline-offset: 3px; }
+.site-root .waitlist-error { font-size: 14px; border-inline-start: 2px solid var(--foreground); padding-inline-start: 12px; }
+.site-root .waitlist-success { padding-block: 12px; }
+.site-root .waitlist-check { display: inline-grid; place-items: center; width: 40px; height: 40px; margin-bottom: 24px; border-radius: 50%; background: var(--brand); color: var(--brand-foreground); font-size: 22px; }
+.site-root .waitlist-success .link { display: inline-block; margin-top: 28px; font-size: 14px; }
+@media (max-width: 800px) {
+  .site-root .waitlist-hero { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .site-root .waitlist-copy h1 { max-width: 15ch; }
+}

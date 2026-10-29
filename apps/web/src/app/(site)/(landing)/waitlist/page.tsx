@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import WaitlistForm from "@/components/site/waitlist-form";
 import { platformSite } from "@/lib/platform";
 import { pageMetadata } from "@/lib/site/seo";
@@ -7,10 +9,22 @@ export function generateMetadata() {
 }
 
 export default function WaitlistPage() {
-  return <section className="wrap hero page solo"><div>
-    <p className="kind">Coming soon</p>
-    <h1>Be there at launch</h1>
-    <p className="lead">We’re getting ready. Leave your email and we’ll let you know when {platformSite().name} opens.</p>
-    <WaitlistForm />
-  </div></section>;
+  const { name } = platformSite();
+  return (
+    <div className="band">
+      <section className="wrap waitlist-hero" aria-labelledby="waitlist-title">
+        <div className="waitlist-copy">
+          <p className="tag">{name} · Launching soon</p>
+          <h1 id="waitlist-title">Agentic ways of doing business.</h1>
+          <p className="lead">
+            Your requests, projects and payouts. One agent that follows the work,
+            with your operating model guiding every step.
+          </p>
+          <p className="waitlist-audience">For independent professionals, studios and teams.</p>
+          <Link className="link" href="/">Explore what’s coming <span aria-hidden="true">↗</span></Link>
+        </div>
+        <WaitlistForm />
+      </section>
+    </div>
+  );
 }
