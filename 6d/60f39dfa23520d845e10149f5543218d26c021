@@ -1,0 +1,19 @@
+scripts/check-no-brand.mjs
+  s_73e10f9d158414::t_6730dd94352881 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6d60f39dfa23520d845e10149f5543218d26c021",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
