@@ -18,9 +18,8 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { BrandMark } from "@/components/brand-mark";
+import { BrandMark, BrandWordmark } from "@/components/brand-mark";
 import { ModeToggle } from "@/components/mode-toggle";
-import { PlatformName } from "@/components/platform-name";
 import UserMenu from "@/components/user-menu";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { trpc } from "@/utils/trpc";
@@ -124,10 +123,7 @@ export default function TeamShell({
     <div data-app-shell className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="hidden min-h-0 flex-col gap-1 overflow-y-auto border-r bg-sidebar px-3 py-4 md:flex">
         <Link href="/" className="mb-3 flex items-center gap-2 px-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <BrandMark className="size-5 text-foreground" />
-          <span className="font-heading text-base text-foreground">
-            <PlatformName />
-          </span>
+          <BrandWordmark className="font-heading text-base text-foreground" />
           <span className="sr-only">All workspaces</span>
         </Link>
         <div className="mb-3 flex items-center gap-2.5 rounded-xl px-2 py-2 raised">

@@ -1,7 +1,7 @@
 import { isWaitlistOnly } from "@/lib/launch";
 import Link from "next/link";
 
-import { BrandMark } from "@/components/brand-mark";
+import { BrandWordmark } from "@/components/brand-mark";
 import { contactEmail } from "@/content/legal/meta";
 import { AUDIENCES } from "@/content/site/audiences";
 import { platformSite } from "@/lib/platform";
@@ -21,8 +21,7 @@ export default function SiteFooter() {
     <footer className="wrap site">
       <div className="brand">
         <Link className="mark" href="/">
-          <BrandMark />
-          {name}
+          <BrandWordmark />
         </Link>
         <p>Sell products and services inside AI, paid through PayPal.</p>
       </div>
