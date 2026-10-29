@@ -1,13 +1,13 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "payleor",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Hire freelancers, studios and AI sellers for paid work: find offerings, request a quote, answer the team's questions, compare quotes, pay with PayPal and follow the delivery, from a conversation.",
   "author": {
     "name": "Veetlyn",
-    "url": "https://payleor.com"
+    "url": "https://veetlyn.com"
   },
-  "homepage": "https://payleor.com",
+  "homepage": "https://veetlyn.com",
   "license": "AGPL-3.0-only",
   "keywords": [
     "freelancers",

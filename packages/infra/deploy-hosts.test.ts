@@ -12,7 +12,7 @@ describe("deployedHosts", () => {
     expect(hosts.dashOrigin).toBe("https://dash.platform.test");
     expect(hosts.web.domain).toEqual({
       name: "platform.test",
-      aliases: ["dash.platform.test", "admin.platform.test"],
+      aliases: ["dash.platform.test", "admin.platform.test", "platform-store.test", "www.platform-store.test"],
       redirects: ["www.platform.test"],
     });
     expect(hosts.web.routes).toEqual([{ pattern: "*.platform-store.test/*", zoneName: "platform-store.test" }]);
@@ -29,11 +29,28 @@ describe("deployedHosts", () => {
     expect(hosts.web.domain.aliases).toEqual([
       "dash.staging.platform.test",
       "admin.staging.platform.test",
+      "staging.platform-store.test",
+      "www.staging.platform-store.test",
       "walk-crew.staging.platform-store.test",
       "acme.staging.platform-store.test",
     ]);
     expect(hosts.web.routes).toEqual([]);
     expect(hosts.api.domain).toBe("api.staging.platform.test");
+  });
+
+  it("retains old hosts, routes and file origins while making new hosts canonical", () => {
+    const legacy = { platformZone: "old.test", storeZone: "old-store.test" };
+    const hosts = deployedHosts("production", ["walk-crew"], ZONES, legacy);
+    expect(hosts.web.domain.name).toBe("platform.test");
+    expect(hosts.web.domain.aliases).toContain("old.test");
+    expect(hosts.web.domain.aliases).toContain("dash.old.test");
+    expect(hosts.api.domain).toEqual({ name: "api.platform.test", aliases: ["api.old.test"] });
+    expect(hosts.web.routes).toContainEqual({ pattern: "*.old-store.test/*", zoneName: "old-store.test" });
+    expect(hosts.fileOrigins).toContain("https://dash.old.test");
+    const staging = deployedHosts("staging", ["walk-crew"], ZONES, legacy);
+    expect(staging.web.routes).toEqual([]);
+    expect(staging.web.domain.aliases).toContain("walk-crew.staging.old-store.test");
+    expect(staging.web.domain.aliases).not.toContain("walk-crew.old-store.test");
   });
 
   it("refuses a zone that is not a domain name", () => {

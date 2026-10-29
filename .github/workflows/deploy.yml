@@ -122,6 +122,11 @@ jobs:
       CHANNEL3_API_KEY: ${{ secrets.CHANNEL3_API_KEY }}
       PAYOUT_CREDENTIALS_KEY: ${{ secrets.PAYOUT_CREDENTIALS_KEY }}
       CLOUDFLARE_STORE_ZONE_ID: ${{ vars.CLOUDFLARE_STORE_ZONE_ID }}
+      CLOUDFLARE_LEGACY_STORE_ZONE_ID: ${{ vars.CLOUDFLARE_LEGACY_STORE_ZONE_ID }}
+      LEGACY_PLATFORM_ZONE: ${{ vars.LEGACY_PLATFORM_ZONE }}
+      LEGACY_STORE_ZONE: ${{ vars.LEGACY_STORE_ZONE }}
+      EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
+      EMAIL_REPLY_TO: ${{ vars.EMAIL_REPLY_TO }}
       PLATFORM_NAME: ${{ vars.PLATFORM_NAME }}
       PLATFORM_ZONE: ${{ vars.PLATFORM_ZONE }}
       STORE_ZONE: ${{ vars.STORE_ZONE }}
@@ -149,6 +154,8 @@ jobs:
         run: node scripts/release-gate.mjs
       - name: Validate production configuration before any mutation
         run: node scripts/release-config.mjs
+      - name: Verify access to canonical and retained zones before mutation
+        run: node scripts/release-zone-access.mjs
       - name: Apply backward-compatible migrations
         run: pnpm -F @jendal-workspace/db db:migrate:deploy
       - name: Alchemy state store credentials

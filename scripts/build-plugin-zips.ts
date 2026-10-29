@@ -94,7 +94,10 @@ const stageLabel = stage ? ` ${stage.charAt(0).toUpperCase()}${stage.slice(1)}` 
 // A staging build points the connector at its stage and carries the stage in its name, so a host can install
 // it next to the production plugin instead of replacing it.
 function forStage(name: string, text: string): string {
-  if (name === "mcp.json" || name === ".mcp.json") return text.replace(CONNECTOR_URL, mcpUrl);
+  const platformDomain = new URL(mcpUrl).hostname.replace(/^api\./, "");
+  text = text.replace(CONNECTOR_URL, mcpUrl)
+    .replaceAll(`https://dash.${env.PLATFORM_DOMAIN}`, `https://dash.${platformDomain}`);
+  if (name === "mcp.json" || name === ".mcp.json") return text;
   if (name !== "plugin.json" && name !== ".claude-plugin/plugin.json") return text;
   return text
     .replace(`"name": "${pluginName}"`, `"name": "${pluginName}${suffix}"`)

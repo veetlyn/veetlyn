@@ -29,7 +29,10 @@ const zones = deployStage
       .object({ platformZone: z.string().min(1), storeZone: z.string().min(1) })
       .parse({ platformZone: process.env.PLATFORM_ZONE, storeZone: process.env.STORE_ZONE })
   : undefined;
-const hosts = deployStage && zones ? deployedHosts(deployStage, storeSlugsFrom(process.env.STAGING_STORE_SLUGS), zones) : undefined;
+const legacyZones = process.env.LEGACY_PLATFORM_ZONE && process.env.LEGACY_STORE_ZONE
+  ? { platformZone: process.env.LEGACY_PLATFORM_ZONE, storeZone: process.env.LEGACY_STORE_ZONE }
+  : undefined;
+const hosts = deployStage && zones ? deployedHosts(deployStage, storeSlugsFrom(process.env.STAGING_STORE_SLUGS), zones, legacyZones) : undefined;
 // The empty fallbacks are unreachable after the check above.
 const platformDomain = localUrls ? localUrls.platformDomain : (hosts?.platformDomain ?? "");
 const storeDomain = localUrls ? localUrls.storeDomain : (hosts?.storeDomain ?? "");
@@ -124,6 +127,8 @@ export const server = Cloudflare.Worker("server", {
     RELEASE_SHA: optionalString("RELEASE_SHA"),
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PUBLIC_ACCESS: publicAccess,
+    LEGACY_PLATFORM_DOMAIN: hosts?.legacyPlatformDomain ?? "",
+    LEGACY_STORE_DOMAIN: hosts?.legacyStoreDomain ?? "",
     PLATFORM_DOMAIN: platformDomain,
     PLATFORM_NAME: Config.String("PLATFORM_NAME"),
     STORE_DOMAIN: storeDomain,
@@ -180,6 +185,8 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PUBLIC_ACCESS: publicAccess,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
+    LEGACY_PLATFORM_DOMAIN: hosts?.legacyPlatformDomain ?? "",
+    LEGACY_STORE_DOMAIN: hosts?.legacyStoreDomain ?? "",
     PLATFORM_DOMAIN: platformDomain,
     PLATFORM_NAME: Config.String("PLATFORM_NAME"),
     STORE_DOMAIN: storeDomain,
@@ -214,10 +221,27 @@ export default Alchemy.Stack(
       settings: { batchSize: 10, maxRetries: 10, maxWaitTimeMs: 1000, retryDelay: 30 },
     });
     if (deployStage === "production" && zones) {
+      // Keep existing DNS resource IDs attached to the legacy zone during overlap.
+      // Provision canonical records separately rather than moving/deleting old records.
+      const retainedStoreZone = legacyZones?.storeZone ?? zones.storeZone;
+      const retainedStoreZoneId = legacyZones
+        ? Config.String("CLOUDFLARE_LEGACY_STORE_ZONE_ID")
+        : Config.String("CLOUDFLARE_STORE_ZONE_ID");
+      if (legacyZones) {
+        yield* Cloudflare.DNS.Record("CanonicalStoreWildcard", {
+          zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
+          name: `*.${zones.storeZone}`, type: "AAAA", content: "100::", proxied: true,
+          comment: "Canonical seller sites",
+        });
+        yield* Cloudflare.Workers.WorkerRoute("CanonicalStagingStoresOptOut", {
+          zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
+          pattern: `*.staging.${zones.storeZone}/*`,
+        });
+      }
       // Seller sites: the web Worker's wildcard store route needs a proxied record to receive requests.
       yield* Cloudflare.DNS.Record("StoreWildcard", {
-        zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
-        name: `*.${zones.storeZone}`,
+        zoneId: yield* retainedStoreZoneId,
+        name: `*.${retainedStoreZone}`,
         type: "AAAA",
         content: "100::",
         proxied: true,
@@ -226,8 +250,8 @@ export default Alchemy.Stack(
       // The wildcard route also matches staging's seller hosts and wins over their custom domains, so this
       // Worker-less route hands them back to the staging Worker. Adopted: it was first created by hand.
       yield* Cloudflare.Workers.WorkerRoute("StagingStoresOptOut", {
-        zoneId: yield* Config.String("CLOUDFLARE_STORE_ZONE_ID"),
-        pattern: `*.staging.${zones.storeZone}/*`,
+        zoneId: yield* retainedStoreZoneId,
+        pattern: `*.staging.${retainedStoreZone}/*`,
       }).pipe(Alchemy.AdoptPolicy.adopt(true));
     }
     const web = yield* Web;
