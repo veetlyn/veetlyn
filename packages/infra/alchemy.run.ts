@@ -226,6 +226,12 @@ export default Alchemy.Stack(
       });
       // The wildcard route also matches staging's seller hosts and wins over their custom domains, so this
       // Worker-less route hands them back to the staging Worker. Adopted: it was first created by hand.
+      // *.staging. excludes nested seller hosts, but not the staging seller root itself.
+      // Reserve that exact host too, otherwise production treats "staging" as a store slug.
+      yield* Cloudflare.Workers.WorkerRoute("StagingStoreRootOptOut", {
+        zoneId: yield* storeZoneId,
+        pattern: `staging.${zones.storeZone}/*`,
+      }).pipe(Alchemy.AdoptPolicy.adopt(true));
       yield* Cloudflare.Workers.WorkerRoute("StagingStoresOptOut", {
         zoneId: yield* storeZoneId,
         pattern: `*.staging.${zones.storeZone}/*`,
