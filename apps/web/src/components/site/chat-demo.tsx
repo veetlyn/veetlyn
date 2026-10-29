@@ -95,7 +95,7 @@ export default function ChatDemo({
         {children}
       </div>
       <div className="foot">
-        <span>Sandbox example</span>
+        <span>Example</span>
         <button className="replay" type="button" onClick={() => replay.current()}>
           Play again
         </button>
