@@ -1,0 +1,63 @@
+.github/main-protection.json
+  s_22e9e82f1423d1::t_196090ece55df7 20
+.github/release-policy.json
+  s_22e9e82f1423d1::t_633976f20119d5 1-8
+.github/release-tags.json
+  s_22e9e82f1423d1::t_0a4e758413dbb2 1-8
+.github/workflows/ci.yml
+  s_22e9e82f1423d1::t_e55e83c8181381 54-58
+.github/workflows/deploy.yml
+  s_22e9e82f1423d1::t_76d584683d35ec 7,14-27,31,34,37-43,45-95,97,100,103,136,138-141,146-153,161-205
+README.md
+  s_22e9e82f1423d1::t_b87f37f733eadc 101,140,150
+apps/server/src/index.ts
+  s_22e9e82f1423d1::t_a8642ba72454b0 1-2,64-68,185-188
+apps/server/src/routes/readiness.test.ts
+  s_22e9e82f1423d1::t_6ea78974fec303 1-19
+apps/server/src/routes/readiness.ts
+  s_22e9e82f1423d1::t_e03c7fb9472803 1-16
+apps/web/worker/index.ts
+  s_22e9e82f1423d1::t_028ca30247b4d1 1,11
+packages/core/src/release.test.ts
+  s_22e9e82f1423d1::t_df1c6f40163202 1-18
+packages/core/src/release.ts
+  s_22e9e82f1423d1::t_e4abb423366be3 1-18
+packages/infra/.env.schema
+  s_22e9e82f1423d1::t_c05a5d1ca76563 86-89
+packages/infra/alchemy.run.ts
+  s_22e9e82f1423d1::t_7ed0ba0e24a11d 119,124,179
+packages/infra/scripts/check-web-build.ts
+  s_22e9e82f1423d1::t_a38030be2b5e20 1-17
+scripts/check-no-brand.mjs
+  s_22e9e82f1423d1::t_9ffdac3592d0a0 5
+scripts/release-config.mjs
+  s_22e9e82f1423d1::t_d684dd848a131c 1-21
+scripts/release-config.test.mjs
+  s_22e9e82f1423d1::t_540ef41a0547b8 1-10
+scripts/release-gate.mjs
+  s_22e9e82f1423d1::t_ae535e2d1b30fe 1-112
+scripts/release-gate.test.mjs
+  s_22e9e82f1423d1::t_bd809b0901b4e3 1-61
+scripts/release-smoke.mjs
+  s_22e9e82f1423d1::t_3a0e504c52eee7 1-97
+specs/platform/2026-10-29-release-protocol.md
+  s_22e9e82f1423d1::t_c2b7385f67710c 1-106
+specs/platform/plans/2026-10-29-release-protocol.md
+  s_22e9e82f1423d1::t_fab9ded14450d5 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "64968615f0caafe01034c43b7a4901cedd4fc3ba",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
