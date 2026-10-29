@@ -1,0 +1,23 @@
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_22e9e82f1423d1::t_fec8992b23a595 1,75
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_22e9e82f1423d1::t_df21d82b6e15d5 1,184
+apps/web/src/components/site/contextual-agent-teaser.tsx
+  s_22e9e82f1423d1::t_846e2417d2c334 1-2,4,7,9-10,13-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca44f9efac08356f787e62380b61981a8a1e550e",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
