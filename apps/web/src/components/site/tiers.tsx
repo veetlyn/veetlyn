@@ -26,11 +26,13 @@ type TierCard = {
   href?: string;
   // The "Everything in …, plus:" line that opens the list on the bigger plans.
   plusLine?: string;
+  // Shown but not yet offered.
+  soon?: boolean;
   features: readonly ReactNode[];
 };
 type TierTable = Readonly<Record<TierId, TierCard>>;
 
-const SEO_LATER = <span className="later">Coming soon</span>;
+const COMING_SOON = <span className="later">Coming soon</span>;
 
 function services(id: SellerPlanId): Pick<TierCard, "name" | "priceCents" | "fee" | "cta"> {
   const p = getSellerPlan(id);
@@ -74,16 +76,16 @@ const TIERS = {
         Listed on <PlatformName /> Network
       </b>,
       <>
-        <b>Intake agent</b>, {solo.aiDraftsPerMonth} drafts a month
+        <b>Agent-written quotes</b>, {solo.aiDraftsPerMonth} drafts a month
       </>,
       "Your seller page and pay links",
       "Pay pages, deposits and deliveries",
       "Guest checkout with PayPal",
       <>
-        <b>Web SEO</b> built into every page {SEO_LATER}
+        <b>Web SEO</b> built into every page {COMING_SOON}
       </>,
       `${solo.storageGb} GB of files`,
-      <>Export everything {SEO_LATER}</>,
+      <>Export everything {COMING_SOON}</>,
     ],
   },
   team: {
@@ -95,15 +97,15 @@ const TIERS = {
     features: [
       `Up to ${team.members} members`,
       <>
-        <b>Intake agent</b>, {team.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
+        <b>Agent-written quotes</b>, {team.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
       </>,
       <>
-        <b>Team copilot</b> with charts
+        <b>Business answers</b> from your agent
       </>,
-      "Payouts by approval or by rule",
-      <>Team chat and the public API {SEO_LATER}</>,
+      "Manage or schedule team payouts",
+      <>Team chat and the public API {COMING_SOON}</>,
       <>
-        Your own domain, no <PlatformName /> badge {SEO_LATER}
+        Your own domain, no <PlatformName /> badge {COMING_SOON}
       </>,
       `${team.storageGb} GB of files`,
     ],
@@ -116,10 +118,10 @@ const TIERS = {
     features: [
       `Up to ${agency.members} members`,
       <>
-        <b>Intake agent</b>, {agency.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
+        <b>Agent-written quotes</b>, {agency.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
       </>,
       <>
-        <b>Payout agent</b> for automatic payouts
+        <b>Agent-assisted payouts</b> and exception handling
       </>,
       "A second approver for big payouts",
       "Several services teams",
@@ -137,6 +139,7 @@ const TIERS = {
       </>
     ),
     cta: "Talk to sales",
+    soon: true,
     kind: "is-dark",
     btn: "btn-mint",
     href: "/contact#sales",
@@ -158,16 +161,16 @@ const TIERS = {
     btn: "btn-quiet",
     features: [
       <b key="c">
-        Listed in <PlatformName /> Network {SEO_LATER}
+        Listed in <PlatformName /> Network {COMING_SOON}
       </b>,
       "Storefront on your page",
       <>
-        <b>Web SEO</b> built into every page {SEO_LATER}
+        <b>Web SEO</b> built into every page {COMING_SOON}
       </>,
       "Digital downloads and courses",
       "Shipped goods, flat shipping and tracking",
       "PayPal checkout on your page",
-      "AI credits for your agents",
+      "AI credits for your agent",
       `${getPlan("starter").staffSeats} staff accounts`,
     ],
   },
@@ -178,9 +181,9 @@ const TIERS = {
     btn: "btn-ink",
     plusLine: "Everything in Starter, plus:",
     features: [
-      <span key="a"><b>Admin agent</b> {SEO_LATER}</span>,
+      <span key="a"><b>Store management with your agent</b> {COMING_SOON}</span>,
       "More AI credits",
-      <>Your own domain {SEO_LATER}</>,
+      <>Your own domain {COMING_SOON}</>,
       `${getPlan("grow").staffSeats} staff accounts`,
     ],
   },
@@ -197,9 +200,9 @@ export function Tier({ id, interval, signupUrl }: { id: TierId; interval: Billin
   const t: TierCard = TIERS[id];
   const href = t.href ?? signupUrl;
   return (
-    <article className={`tier ${t.kind ?? ""}`} data-in>
+    <article className={`tier ${t.kind ?? ""} ${id === "enterprise" ? "wide" : ""}`} data-in>
       <div>
-        <p className="name">{t.name}</p>
+        <p className="name">{t.name}{t.soon ? <> {COMING_SOON}</> : null}</p>
         <p className="for">{t.for}</p>
       </div>
       <div>

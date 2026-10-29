@@ -2,18 +2,18 @@
 
 **Sell goods and services where AI shops.**
 
-Veetlyn puts a seller's services and products inside Claude and ChatGPT. A client's AI finds the offer, asks questions and requests a quote. The client pays with PayPal on Veetlyn. Agents draft the quotes, answers and payouts; a person approves every payment.
+Veetlyn puts a seller's services and products inside Claude and ChatGPT. A client's AI finds the offer, asks questions and requests a quote. The client pays with PayPal on Veetlyn. Agents work within the permissions and business policies assigned to them. In the alpha, buyers approve checkout in PayPal; team payouts follow approval and automation settings.
 
 [Website](https://veetlyn.com) · [Network and plugin](https://veetlyn.com/network) · [Specs](specs/README.md) · [License](#license)
 
-> **Status:** built for the PayPal AI Hackathon (submission Nov 12, 2026). Everything runs on the PayPal **sandbox**. Production is waitlist-only; staging is open.
+> **Status: alpha.** Payments run on the PayPal sandbox while the product is in alpha. veetlyn.com is open to the launch waitlist; the staging deployment is open for testing.
 
 ## What it does
 
 - **Quotes and projects.** Clients request work; a team's freelancers ask questions and quote; the client accepts one quote, pays a deposit, follows the delivery and pays the balance.
 - **PayPal, done properly.** Orders are created on the server, every payment is approved by the payer in PayPal, webhooks are verified, and refunds and disputes pause what they should.
 - **Team payouts.** Payout rules split each payment between members; a person or a rule approves each payout before PayPal sends it.
-- **Veetlyn Network.** One connector (`https://api.veetlyn.com/mcp`) lets Claude and ChatGPT search every listed seller, request quotes and follow projects. Agents never pay.
+- **Veetlyn Network.** One connector (`https://api.veetlyn.com/mcp`) lets Claude and ChatGPT search every listed seller, request quotes and follow projects. The alpha connector prepares purchases for buyer approval in PayPal.
 - **Your own agents, with limits.** Every action goes through one registry with roles and per-action agent policy: free, needs a person's confirmation, or never.
 - **Found in search and in AI.** Seller pages on `<seller>.veetlyn.app` with structured data, open to AI crawlers, plus guided visibility work.
 

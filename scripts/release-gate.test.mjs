@@ -19,6 +19,9 @@ function candidate() {
 test('accepts a main release only with successful exact-SHA CI and same-tree staging evidence', () => {
   assert.doesNotThrow(() => validateCandidate(candidate()));
 });
+test('accepts an alpha release version', () => {
+  assert.doesNotThrow(() => validateCandidate({ ...candidate(), version: 'v0.1.0-alpha.1' }));
+});
 for (const [name, mutate] of [
   ['stale candidate', c => { c.currentSha = 'c'.repeat(40); }],
   ['CI for a different commit', c => { c.ci.head_sha = 'c'.repeat(40); }],
@@ -34,6 +37,7 @@ for (const [name, mutate] of [
   ['foreign staging run', c => { c.stagingRun.head_repository.full_name = 'someone/else'; }],
   ['missing recovery evidence', c => { c.recoveryUrl = ''; }],
   ['invalid version', c => { c.version = 'latest'; }],
+  ['unknown pre-release label', c => { c.version = 'v0.1.0-nightly.1'; }],
 ]) {
   test(`rejects ${name} before deployment`, () => {
     const c = candidate(); mutate(c);

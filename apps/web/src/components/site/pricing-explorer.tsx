@@ -31,9 +31,9 @@ const SERVICES_ROWS: readonly Row[] = [
     ),
     cells: [true, true, true, true],
   },
-  { id: "intake", label: "Intake agent, drafts a month", cells: [drafts("solo"), drafts("team"), drafts("agency"), "Custom"] },
-  { id: "copilot", label: "Team copilot", cells: [false, true, true, true] },
-  { id: "payout", label: "Payout agent", cells: [false, false, true, true] },
+  { id: "intake", label: "Agent-written quotes, drafts a month", cells: [drafts("solo"), drafts("team"), drafts("agency"), "Custom"] },
+  { id: "copilot", label: "Business answers from your agent", cells: [false, true, true, true] },
+  { id: "payout", label: "Agent-assisted payouts", cells: [false, false, true, true] },
   { id: "api", label: "Your own agents, through the API", cells: [false, true, true, true] },
   {
     id: "seo",
@@ -48,7 +48,7 @@ const SERVICES_ROWS: readonly Row[] = [
     id: "chat",
     label: (
       <>
-        Your agents in team chat <span className="soon">Coming soon</span>
+        Your agent in team chat <span className="soon">Coming soon</span>
       </>
     ),
     cells: [false, true, true, true],
@@ -64,8 +64,8 @@ const STORE_ROWS: readonly Row[] = [
     ),
     cells: [true, true, true, true],
   },
-  { id: "admin", label: "Admin agent", cells: [false, true, true, true] },
-  { id: "credits", label: "AI credits for your agents", cells: ["Some", "More", "The most", "Custom"] },
+  { id: "admin", label: "Store management with your agent", cells: [false, true, true, true] },
+  { id: "credits", label: "AI credits for your agent", cells: ["Some", "More", "The most", "Custom"] },
 ];
 
 function Switch<T extends string>({
@@ -194,11 +194,11 @@ export default function PricingExplorer({ signupUrl }: { signupUrl: string }) {
       <section aria-labelledby="agents-h">
         <div className="wrap">
           <h2 id="agents-h" data-in>
-            Agents in every plan
+            One agent, capabilities for your business
           </h2>
           <p className="lead-dark" data-in>
-            Their AI finds and shops. Your agents draft, answer and pay by your rules. The payer approves every payment
-            in PayPal, and a person or your rule approves every payout.
+            Your agent helps with quotes, business questions and payout preparation. Your operating model defines
+            how your business runs, including permissions, approvals and scheduled payouts through PayPal.
           </p>
           <AgentsTable
             head={["Services", "Solo", "Team", "Agency", "Enterprise"]}

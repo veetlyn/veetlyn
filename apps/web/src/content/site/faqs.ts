@@ -15,7 +15,7 @@ export const indexFaq = (name: string): readonly Faq[] => [
   },
   {
     q: "Can an AI agent spend my money?",
-    a: "No. Every payment needs the payer's approval in PayPal. Every payout needs a person on your team or a rule you set.",
+    a: "You control what you delegate. In the alpha, buyer checkout needs your approval in PayPal. Team payouts can follow approvals or the automatic payout rules you set. Connecting an agent does not grant it additional permissions.",
   },
   {
     q: "Can I sell products and services together?",

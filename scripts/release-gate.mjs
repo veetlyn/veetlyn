@@ -28,7 +28,7 @@ export function validateCandidate(c) {
     assert.equal(c.ref, 'refs/heads/main', 'Production must dispatch from main');
     assert.equal(c.event, 'workflow_dispatch', 'Production requires deliberate dispatch');
     assert.equal(c.actor, policy.owner, 'Only the release owner can authorize production');
-    assert.match(c.version, /^v\d+\.\d+\.\d+$/, 'Use an immutable vX.Y.Z release version');
+    assert.match(c.version, /^v\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$/, 'Use an immutable vX.Y.Z or vX.Y.Z-alpha.N release version');
     const evidenceUrl = new URL(c.recoveryUrl);
     assert.equal(evidenceUrl.origin, 'https://github.com');
     assert.ok(evidenceUrl.pathname.startsWith(`/${repository}/issues/`) || evidenceUrl.pathname.startsWith(`/${repository}/pull/`), 'Record recovery evidence in this repository');
