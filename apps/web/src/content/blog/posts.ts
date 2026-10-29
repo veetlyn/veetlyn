@@ -32,14 +32,14 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
   const { name, domain } = site;
   return [
     {
-      slug: "ai-shopping-left-services-out",
+      slug: "how-clients-hire-through-their-ai",
       category: "network",
       art: "gap",
-      title: `AI shopping left services out. Here is how ${name} Network lets them in`,
+      title: `How clients hire through their AI, and pay on ${name}`,
       description: `Professional work starts with a brief, a quote and an agreement. ${name} Network is one connector that lets clients' AI find, ask and request, while the client pays on ${name} with PayPal.`,
       lead: "Finding someone is the first step. Professional work also needs a brief, a quote, payment and a record of delivery.",
       date: "2026-10-19",
-      words: 442,
+      words: 385,
       short: [
         "Keep the brief, quote, payment and delivery connected.",
         `${name} Network is one connector that clients add to Claude or ChatGPT.`,
@@ -47,7 +47,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       ],
       faq: [
         { q: `Is ${name} Network in the ChatGPT or Claude directory?`, a: `Not yet. Clients add it by its address, api.${domain}/mcp. Directory listings come after the platforms' review.` },
-        { q: "Can the AI spend the client's money?", a: `The client approves checkout in PayPal on ${name}’s pay page.` },
+        { q: "Can the AI spend the client's money?", a: `No. The client approves checkout in PayPal on ${name}’s pay page.` },
         { q: "Who can be found on the network?", a: `Freelancers, agencies and studios listing services on ${name}. Every offering is listed by default, and sellers can take any of them off.` },
       ],
       cta: { label: `How ${name} Network works`, href: "/network" },
@@ -57,13 +57,13 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       category: "freelancers",
       art: "freelancer",
       title: "Freelancers: get hired from your clients' AI, and paid before you start",
-      description: `How a freelancer on ${name} gets briefs from clients' AI, sends a quote drafted by an agent, and collects a deposit through PayPal, with every fee shown to the cent.`,
+      description: `How a freelancer on ${name} gets briefs from clients' AI, sends a quote and collects a deposit through PayPal, with every fee shown to the cent.`,
       lead: `Clients now ask AI who to hire. Here is how a freelancer on ${name} gets the brief, sends the quote and collects a deposit through PayPal.`,
       date: "2026-10-19",
-      words: 286,
+      words: 328,
       short: [
         `Your services are on ${name} Network, so your clients' AI can find you.`,
-        "Coming next: your agent prepares quotes from your prices for review.",
+        "You send the quote; the client accepts it with a press.",
         "The client pays half up front with PayPal, as a guest if they like.",
       ],
       faq: [
@@ -81,7 +81,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `How agencies on ${name} keep requests, projects and team payouts together, with one contextual agent coming next to help prepare the work.`,
       lead: `Agencies spend hours paying freelancers by hand. On ${name}, each share is worked out per project and sent by rules you set.`,
       date: "2026-10-19",
-      words: 301,
+      words: 298,
       short: [
         "Requests come from the client-facing connector or your page.",
         `The client pays the agency's PayPal. ${name} works out each member's share.`,
@@ -95,14 +95,14 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       cta: { label: `${name} for agencies`, href: "/agencies" },
     },
     {
-      slug: "stores-sell-in-ai-carts",
+      slug: "stores-sell-courses-and-downloads",
       category: "stores",
       art: "store",
       title: "Stores: sell courses and downloads from your own page",
       description: `Sell digital products on your ${name} page, accept payment through PayPal and deliver time-limited download links.`,
       lead: `Give customers one link to your courses and downloads, with PayPal checkout and digital delivery.`,
       date: "2026-10-19",
-      words: 238,
+      words: 178,
       short: [
         `Customers choose courses and downloads on your ${name} page.`,
         `Checkout happens on the seller’s page through PayPal.`,
@@ -120,12 +120,12 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       category: "studios",
       art: "studio",
       title: "Studios: sell the session and the product from one shop",
-      description: `Salons, spas and studios sell time and things. ${name} runs services and products from one workspace and one link, pays staff their share, and halves the cheaper plan when you run both.`,
-      lead: `Salons, spas and studios sell time and things. Most tools make you pick one. ${name} runs both from one workspace and one link.`,
+      description: `Salons, spas and studios sell sessions and digital products. ${name} runs services and products from one workspace and one link, pays staff their share, and halves the cheaper plan when you run both.`,
+      lead: `Salons, spas and studios sell sessions, and often guides or classes too. Most tools make you pick one. ${name} runs both from one workspace and one link.`,
       date: "2026-10-19",
-      words: 242,
+      words: 281,
       short: [
-        "Services and digital products share your page, with separate payment flows.",
+        "Services and digital products share your page, each with its own checkout.",
         "Staff get their share of each service through PayPal, by your rules.",
         "Run both and the cheaper plan is half price, with the lower fee on everything.",
       ],
@@ -143,7 +143,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `Search engines and AI assistants read the web the same way: clear pages, plain facts and structured data. What helps a seller get found, and what ${name} does for you.`,
       lead: `Search engines and AI assistants read the web the same way: clear pages, plain facts and structured data. Here is what helps, and what ${name} does for you.`,
       date: "2026-10-19",
-      words: 384,
+      words: 423,
       short: [
         "Give each offer its own page that says what, for whom, where and at what price.",
         "Add structured data so machines read your prices and reviews correctly.",

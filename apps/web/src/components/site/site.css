@@ -577,6 +577,8 @@
 .site-root .post-cta { margin-top: 56px; padding: 28px 32px; border-radius: 24px; background: var(--brand); color: var(--brand-foreground); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; }
 .site-root .post-cta p { font: 600 clamp(22px, 2.2vw, 28px)/1.15 var(--site-display); font-variation-settings: "GEOM" 100; }
 .site-root .post-cta .btn { background: var(--brand-foreground); color: var(--brand); }
+.site-root .post-cta-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.site-root .post-cta .link { color: var(--brand-foreground); font-weight: 600; }
 .site-root .related { margin-top: 72px; }
 .site-root .related h2 { font-size: clamp(26px, 2.4vw, 32px); }
 .site-root .post-feature[hidden] { display: none; }

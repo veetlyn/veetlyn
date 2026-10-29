@@ -9,7 +9,7 @@ export default async function CloseCta() {
     <section id="start" aria-labelledby="start-h">
       <div className="wrap">
         <div className="close" data-in>
-          <h2 id="start-h">Be there when AI comes shopping</h2>
+          <h2 id="start-h">Be there when clients ask AI</h2>
           <div className="close-ctas">
             <a className="btn btn-mint" href={signupDestination(dash)}>
               {isWaitlistOnly() ? "Join the waitlist" : "Start selling"}
