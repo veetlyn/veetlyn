@@ -1,8 +1,12 @@
 import { notFound } from "next/navigation";
 
+import { NOINDEX } from "@/lib/seller-site";
 import { fetchLinkTeam, fetchStoreInfo } from "@/lib/server-api";
 
 import ClientProject from "./client-project";
+
+// A tokenised link is private to its client.
+export const metadata = NOINDEX;
 
 // The client page lives on the team's own site; the same token on another team's site is not found.
 export default async function ClientProjectPage({ params }: { params: Promise<{ token: string }> }) {

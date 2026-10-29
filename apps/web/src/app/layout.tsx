@@ -13,7 +13,7 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Inter:wght@400..700&fami
 export function generateMetadata(): Metadata {
   return {
     title: platformName(),
-    description: "Stores and services teams, paid through PayPal",
+    description: "Sell where clients ask AI. Your services inside Claude and ChatGPT, paid through PayPal.",
     icons: {
       icon: [
         { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
