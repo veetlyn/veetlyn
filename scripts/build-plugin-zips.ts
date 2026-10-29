@@ -1,7 +1,7 @@
 // Builds the plugin zips judges and testers upload: <plugin>-plugin.zip for Claude (the folder inside the zip)
 // and <plugin>-plugin-chatgpt.zip for ChatGPT (files at the root, as its upload expects). <plugin> is the folder
 // under plugins/. PLATFORM_NAME and PLATFORM_DOMAIN come from the environment (apps/server/.env.schema).
-// Usage: pnpm plugin:zip [--mcp-url https://api.staging.example.com/mcp]
+// Usage: pnpm plugin:zip [--staging | --mcp-url https://api.staging.example.com/mcp]
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { crc32, deflateRawSync } from "node:zlib";
@@ -84,7 +84,7 @@ const [pluginName, ...otherPlugins] = (await readdir(PLUGINS, { withFileTypes: t
 if (!pluginName || otherPlugins.length > 0) throw new Error("plugins/ must hold exactly one plugin folder");
 const SOURCE = join(PLUGINS, pluginName);
 
-const mcpUrl = argValue("--mcp-url") ?? PRODUCTION_MCP_URL;
+const mcpUrl = argValue("--mcp-url") ?? (process.argv.includes("--staging") ? `https://api.staging.${env.PLATFORM_DOMAIN}/mcp` : PRODUCTION_MCP_URL);
 if (!/^https:\/\/[a-z0-9.-]+\/mcp$/.test(mcpUrl)) throw new Error(`Not an MCP endpoint URL: ${mcpUrl}`);
 
 const stage = mcpUrl === PRODUCTION_MCP_URL ? null : (new URL(mcpUrl).hostname.split(".")[1] ?? "custom");

@@ -12,7 +12,7 @@ Workflow skills for agents working on this repository (Claude Code loads them fr
 | `anti-slop` | Code, prose and design quality checks |
 | `design-system-boss` | Leads design system work: reads the app, picks a playbook, runs the skills below in order |
 | `build-design-system`, `migrate-design-system`, `token-mapping`, `component-docs`, `ui-review` | Build the system from the shipped UI, move screens onto it, map raw values to tokens, document a component, review a screen |
-| `quartz`, `lime` | Rules and source of design.how's two systems; Quartz is the base Payleor's system builds on |
+| `quartz`, `lime` | Rules and source of design.how's two systems; Quartz is the base Veetlyn's system builds on |
 | `securebydesign` | Security checks on every design, API, auth, storage or deploy change |
 | `security-audit` | Vulnerability audit with verified, machine-readable findings; run on each run's diff before its merge (`quick` profile, scoped run) |
 

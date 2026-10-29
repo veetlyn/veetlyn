@@ -12,7 +12,7 @@ Everything runs in the PayPal sandbox during the hackathon: pay with a PayPal sa
 
 ## Get the zips
 
-From the repository root: `pnpm plugin:zip`. It writes `dist/plugin/veetlyn-plugin.zip` (Claude) and `dist/plugin/veetlyn-plugin-chatgpt.zip` (ChatGPT). For the staging hosts: `pnpm plugin:zip --mcp-url https://api.staging.veetlyn.com/mcp`, which writes the `-staging` pair.
+From the repository root: `pnpm plugin:zip`. It writes `dist/plugin/veetlyn-plugin.zip` (Claude) and `dist/plugin/veetlyn-plugin-chatgpt.zip` (ChatGPT). For the staging hosts: `pnpm plugin:zip:staging`, which writes the `-staging` pair. Built zips are never committed: the **AI plugin** workflow (`.github/workflows/plugin.yml`) builds all four on every change to `plugins/` and keeps them as the `ai-plugin-zips` artifact.
 
 ## Install in Claude
 
