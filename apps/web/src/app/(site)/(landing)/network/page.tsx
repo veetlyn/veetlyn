@@ -1,3 +1,4 @@
+import ContextualAgentTeaser from "@/components/site/contextual-agent-teaser";
 import { isWaitlistOnly, signupDestination } from "@/lib/launch";
 import Link from "next/link";
 
@@ -71,6 +72,7 @@ export default async function NetworkPage() {
             </div>
           </div>
         </section>
+        <ContextualAgentTeaser name={name} />
         <section aria-labelledby="can-h">
           <div className="wrap">
             <h2 id="can-h" data-in>What their AI can do, and what only the client can</h2>
