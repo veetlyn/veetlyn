@@ -4,6 +4,8 @@ Veetlyn is the money flow and the trust around paid work: freelancers, teams and
 
 ## Read first, in this order
 
+`specs/` is the private `veetlyn/specs` repository, checked out as a submodule: run `git submodule update --init specs` in a new clone or worktree. Spec changes are committed and pushed there, then the submodule pointer is updated here.
+
 1. [`specs/PROGRESS.md`](specs/PROGRESS.md): where the build stands, the next step, the run board, how a run works, the environment, the decisions log.
 2. [`specs/BACKLOG.md`](specs/BACKLOG.md): open gaps with the run that owns them.
 3. [`specs/platform/2026-10-13-agentic-surfaces-program.md`](specs/platform/2026-10-13-agentic-surfaces-program.md): the program, the demo and the hackathon deliverables.
