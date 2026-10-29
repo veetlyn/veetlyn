@@ -1,7 +1,8 @@
 // Builds the plugin zips judges and testers upload: <plugin>-plugin.zip for Claude (the folder inside the zip)
 // and <plugin>-plugin-chatgpt.zip for ChatGPT (files at the root, as its upload expects). <plugin> is the folder
 // under plugins/. PLATFORM_NAME and PLATFORM_DOMAIN come from the environment (apps/server/.env.schema).
-// Usage: pnpm plugin:zip [--staging | --mcp-url https://api.staging.example.com/mcp]
+// Usage: pnpm plugin:zip [--staging | --mcp-url https://api.staging.example.com/mcp] [--site <dir>]
+// --site writes the pair as claude.zip and chatgpt.zip for the website to serve.
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { crc32, deflateRawSync } from "node:zlib";
@@ -111,7 +112,9 @@ const files: Entry[] = await Promise.all(
   }),
 );
 
-await mkdir(OUT, { recursive: true });
-await writeFile(join(OUT, `${pluginName}-plugin${suffix}.zip`), zip(files.map((f) => ({ ...f, name: `${pluginName}/${f.name}` }))));
-await writeFile(join(OUT, `${pluginName}-plugin-chatgpt${suffix}.zip`), zip(files));
-console.log(`Wrote ${files.length} files for ${mcpUrl} to dist/plugin/`);
+const site = argValue("--site");
+const out = site ?? OUT;
+await mkdir(out, { recursive: true });
+await writeFile(join(out, site ? "claude.zip" : `${pluginName}-plugin${suffix}.zip`), zip(files.map((f) => ({ ...f, name: `${pluginName}/${f.name}` }))));
+await writeFile(join(out, site ? "chatgpt.zip" : `${pluginName}-plugin-chatgpt${suffix}.zip`), zip(files));
+console.log(`Wrote ${files.length} files for ${mcpUrl} to ${relative(ROOT, out) || "."}/`);

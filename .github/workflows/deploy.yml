@@ -162,6 +162,13 @@ jobs:
           umask 077
           mkdir -p ~/.alchemy/credentials/default
           printf '%s' "$STATE_STORE_CREDENTIALS" > ~/.alchemy/credentials/default/cloudflare-state-store.json
+      # The site serves the AI plugin downloads for its own stage; built zips are never committed.
+      - name: Build AI plugin downloads for the website
+        env:
+          PLATFORM_DOMAIN: ${{ env.PLATFORM_ZONE }}
+        run: |
+          [ "$STAGE" = production ] && STAGE_FLAG= || STAGE_FLAG=--staging
+          node scripts/build-plugin-zips.ts $STAGE_FLAG --site apps/web/public/plugin
       - name: Deploy both Workers
         run: pnpm deploy:${{ env.STAGE }}
       - name: Verify deployed revision, configuration and access boundaries
