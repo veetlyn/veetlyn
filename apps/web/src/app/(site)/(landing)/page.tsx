@@ -21,8 +21,8 @@ export function generateMetadata() {
   const site = platformSite();
   return pageMetadata({
     path: "/",
-    title: `${site.name}: sell services and products where AI shops`,
-    description: `Sell services and products where AI shops. ${site.name} Network brings freelancers, agencies, stores and studios into Claude and ChatGPT, paid through PayPal.`,
+    title: `${site.name}: sell services and products where clients ask AI`,
+    description: `Sell services and products where clients ask AI. ${site.name} Network brings freelancers, agencies, stores and studios into Claude and ChatGPT, paid through PayPal.`,
     site,
   });
 }
@@ -92,7 +92,7 @@ function Seen({ name, storeDomain }: { name: string; storeDomain: string }) {
             </div>
           </div>
           <div className="ui report" data-in>
-            <p className="src">AI visibility report · <span className="soon">For members</span></p>
+            <p className="src">AI visibility report · <span className="soon">Planned for members</span></p>
             <div className="widget">
               <p className="wtop"><PMark /><b>This week</b> · Maison Lune</p>
               <div className="kpis num">
@@ -126,7 +126,7 @@ export default function HomePage() {
       <div className="band">
         <div className="wrap hero">
           <div>
-            <h1 data-in>Sell where <em>AI</em> shops</h1>
+            <h1 data-in><em>Sell</em> where clients ask <em>AI</em></h1>
             <p className="lead" data-in>{name} Network puts your services and products inside Claude and ChatGPT. Agents do the work. People approve the money.</p>
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href={isWaitlistOnly() ? "/waitlist" : "/pricing"}>{isWaitlistOnly() ? "Join the waitlist" : "Start selling"}</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>
@@ -172,11 +172,11 @@ export default function HomePage() {
                 <p className="foot-line">Paid through PayPal.</p>
               </div>
               <div className="side yours" data-in>
-                <p className="for">Your agents</p>
+                <p className="for">Your agent</p>
                 <h3>Quotes, answers and payouts, drafted for you</h3>
                 <SideArt name="yours" />
                 <ul><li>Your agent drafts quotes</li><li>It answers money questions</li><li>It prepares payouts and flags exceptions</li><li>Your own agents join through the API</li></ul>
-                <p className="foot-line">They act within the authority you give them.</p>
+                <p className="foot-line">It acts within the authority you give it.</p>
               </div>
             </div>
           </div>
@@ -191,8 +191,8 @@ export default function HomePage() {
                   <p className="tag">A way in</p>
                   <h3>For people who sell their work</h3>
                   <ul>
-                    <li><b>One connector.</b> Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</li>
-                    <li><b>You control the purchase.</b> In the alpha, the client approves checkout on {name}, in PayPal.</li>
+                    <li><b>One connector.</b> One connector lets clients discover your services, ask questions and request a quote.</li>
+                    <li><b>You control the purchase.</b> The client approves checkout on {name}, in PayPal.</li>
                     <li><b>A press the model cannot fake.</b> Accepting a quote or a delivery takes the client's own press.</li>
                   </ul>
                 </div>

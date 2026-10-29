@@ -32,7 +32,7 @@ function Week({ name }: { name: string }) {
           <div className="steps">
             <span className="rail" aria-hidden="true"><i></i></span>
             <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Claude, for a client</p><h3>Finds the pedicure</h3><p className="promise">Gets the purchase ready for checkout.</p></div>
-            <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your intake agent</p><h3>Drafts the pedicure quote</h3><p className="promise">Nothing goes out until you confirm.</p></div>
+            <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your agent</p><h3>Drafts the pedicure quote</h3><p className="promise">Nothing goes out until you confirm.</p></div>
             <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">The client, in PayPal</p><h3>Pays the deposit</h3><p className="promise">It lands in your PayPal. We never hold it.</p></div>
             <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your payout rules</p><h3>Pay Inès her share</h3><p className="promise">Each share is sent once.</p></div>
             <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your copilot</p><h3>Sums up the week</h3><p className="promise">It reads your books. It changes nothing.</p></div>
@@ -52,7 +52,7 @@ function Week({ name }: { name: string }) {
               <div className="scene">
                 <div className="ui">
                   <p className="row"><span className="t">New request</span><span className="s">From Claude</span></p>
-                  <p className="s" style={{ marginTop: "10px" }}>The intake agent drafted a quote</p>
+                  <p className="s" style={{ marginTop: "10px" }}>Your agent drafted a quote</p>
                   <div className="lines">
                     <p className="row num"><span>Pedicure, Saturday 11:00</span><span className="t">$45.00</span></p>
                   </div>

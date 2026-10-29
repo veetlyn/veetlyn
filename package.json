@@ -14,7 +14,7 @@
     "tunnel:setup": "pnpm -F @jendal-workspace/infra tunnel:setup",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
-    "lint": "oxlint && node scripts/check-no-brand.mjs && node scripts/check-oss-boundary.mjs",
+    "lint": "oxlint && node scripts/check-no-brand.mjs && node scripts/check-oss-boundary.mjs && node scripts/check-ee-boundary.mjs",
     "test": "vitest run",
     "db:push": "turbo run db:push -F @jendal-workspace/db --",
     "db:studio": "turbo run db:studio -F @jendal-workspace/db --",

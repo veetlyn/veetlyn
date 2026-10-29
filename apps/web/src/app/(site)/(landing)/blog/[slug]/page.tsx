@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { PlatformName } from "@/components/platform-name";
 import ArticleArt from "@/components/site/art/article";
@@ -7,9 +7,11 @@ import CloseCta from "@/components/site/close-cta";
 import { FaqItems, faqStructuredData } from "@/components/site/faq-list";
 import JsonLd from "@/components/site/json-ld";
 import PostCard from "@/components/site/post-card";
-import { POST_BODIES } from "@/content/blog/bodies";
+import { POST_BODIES, RENAMED_POSTS } from "@/content/blog/bodies";
 import { categoryLabel, posts, readingMinutes } from "@/content/blog/posts";
+import { isWaitlistOnly, signupDestination } from "@/lib/launch";
 import { platformSite } from "@/lib/platform";
+import { getPlatformOrigins } from "@/lib/server-api";
 import { blogPosting, breadcrumbs, graph, organization, pageMetadata, type SeoSite } from "@/lib/site/seo";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -33,6 +35,8 @@ export default async function ArticlePage({ params }: Params) {
   const site = platformSite();
   const allPosts = posts(site);
   const { slug } = await params;
+  const renamed = RENAMED_POSTS.get(slug);
+  if (renamed) permanentRedirect(`/blog/${renamed}`);
   const post = allPosts.find((p) => p.slug === slug);
   if (!post) notFound();
   const Body = POST_BODIES.get(post.slug);
@@ -40,6 +44,7 @@ export default async function ArticlePage({ params }: Params) {
   const path = `/blog/${post.slug}`;
   const section = categoryLabel(site.name)[post.category];
   const related = allPosts.filter((p) => p !== post).slice(0, 3);
+  const { dash } = await getPlatformOrigins();
   return (
     <>
       <JsonLd
@@ -98,10 +103,15 @@ export default async function ArticlePage({ params }: Params) {
             </div>
           </section>
           <div className="post-cta">
-            <p>{post.cta.label}</p>
-            <Link className="btn" href={post.cta.href}>
-              Read more
-            </Link>
+            <p>{isWaitlistOnly() ? "Be first in when we launch" : `Start selling on ${site.name}`}</p>
+            <div className="post-cta-actions">
+              <a className="btn" href={signupDestination(dash)}>
+                {isWaitlistOnly() ? "Join the waitlist" : "Get started"}
+              </a>
+              <Link className="link" href={post.cta.href}>
+                {post.cta.label}
+              </Link>
+            </div>
           </div>
           <section className="related" aria-labelledby="rel-h" style={{ padding: 0 }}>
             <h2 id="rel-h">Keep reading</h2>

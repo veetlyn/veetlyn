@@ -1,10 +1,10 @@
 # Veetlyn
 
-**Sell goods and services where AI shops.**
+**Sell where clients ask AI.**
 
 Veetlyn puts a seller's services and products inside Claude and ChatGPT. A client's AI finds the offer, asks questions and requests a quote. The client pays with PayPal on Veetlyn. Agents work within the permissions and business policies assigned to them. In the alpha, buyers approve checkout in PayPal; team payouts follow approval and automation settings.
 
-[Website](https://veetlyn.com) · [Network and plugin](https://veetlyn.com/network) · [Specs](specs/README.md) · [License](#license)
+[Website](https://veetlyn.com) · [Network and plugin](https://veetlyn.com/network) · [License](#license)
 
 > **Status: alpha.** Payments run on the PayPal sandbox while the product is in alpha. veetlyn.com is open to the launch waitlist; the staging deployment is open for testing.
 
@@ -45,7 +45,6 @@ browser ──► web Worker (vinext) ──service binding──► api Worker 
 - **Data:** PostgreSQL through Hyperdrive, Drizzle ORM and migrations.
 - **Config:** [Varlock](https://varlock.dev) schemas (`.env.schema`) in every app; no secret lives in the repository.
 
-More detail: [`specs/platform/2026-10-16-architecture.md`](specs/platform/2026-10-16-architecture.md).
 
 ### Repository layout
 
@@ -64,7 +63,7 @@ packages/
   infra/          Alchemy stages, hosts and deploy scripts
   oss/            standalone MIT packages (rules engine, outbox, scheduler)
 plugins/veetlyn/  the Claude and ChatGPT plugin
-specs/            designs, plans, stories and progress
+specs/            internal designs and plans (private submodule)
 ```
 
 ## Run it locally
@@ -108,7 +107,7 @@ Built plugin zips are never committed.
 
 ## Deploying your own
 
-Two stages are deployed from GitHub Actions: `staging` (after CI passes on `dev`) and `production` (an owner-approved dispatch from `main`, with verified staging evidence for the same tree). See [the release protocol](specs/platform/2026-10-29-release-protocol.md).
+Two stages are deployed from GitHub Actions: `staging` (after CI passes on `dev`) and `production` (an owner-approved dispatch from `main`, with verified staging evidence for the same tree).
 
 Hosts are derived from two zones in `packages/infra/deploy-hosts.ts`: the platform zone (site, `dash.`, `api.`) and the seller zone (`*.` seller pages). Only production is indexed by search engines; other stages send `noindex`.
 
@@ -124,7 +123,7 @@ Branch protection for `main` is saved in [`.github/main-protection.json`](.githu
 - Use [Conventional Commits](https://www.conventionalcommits.org).
 - Keep `pnpm check-types`, `pnpm lint` and `pnpm test` green; lint must stay at zero findings.
 - Read [`CLAUDE.md`](CLAUDE.md) for the code rules (money in integer minor units, untrusted input decoded with zod, no agent moves money without a person). They apply to people too.
-- Designs and plans go in [`specs/`](specs/README.md); [`specs/PROGRESS.md`](specs/PROGRESS.md) says where the build stands.
+- Product designs and plans are kept in a private repository (`specs/` is a submodule for maintainers). Open an issue to discuss a change before building it.
 
 ## Security
 
@@ -132,6 +131,12 @@ Please do not open public issues for vulnerabilities. Report them privately to t
 
 ## License
 
-The application is available under [AGPL-3.0-only](LICENSE) or a separate commercial agreement. Standalone packages in `packages/oss/` are MIT. Details, including Veetlyn Network membership, are in [LICENSING.md](LICENSING.md). The Veetlyn name and logo are not licensed by the software license.
+Veetlyn is open core:
+
+- Everything outside `ee/` is [AGPL-3.0-only](LICENSE), or available under a commercial agreement.
+- [`ee/`](ee/README.md) holds the enterprise features under the [Veetlyn Enterprise License](ee/LICENSE): free to develop and test, a commercial agreement for production.
+- Standalone packages in `packages/oss/` are MIT.
+
+Details are in [LICENSING.md](LICENSING.md). The Veetlyn name and logo are not licensed by any of these licenses.
 
 If this project helps you, you can [sponsor it](https://github.com/sponsors/Mouhamed-B).
