@@ -1,0 +1,19 @@
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_73e10f9d158414::t_e3bc2241cd8b8b 129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1d3df6dfb714fcc3c7d2906fccd26971c97d2a63",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
