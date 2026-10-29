@@ -49,7 +49,7 @@
 .site-root header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
 .site-root header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
 .site-root .mark { display: inline-flex; align-items: center; gap: 8px; font: 600 19px var(--site-display); letter-spacing: -0.02em; text-decoration: none; font-variation-settings: "GEOM" 100; }
-.site-root .mark svg { width: 26px; height: 26px; }
+.site-root .mark .brand-v { width: auto; height: 0.7em; }
 .site-root nav.links { display: flex; align-items: center; gap: 24px; font-size: 15px; }
 .site-root nav.links a:not(.btn) { text-decoration: none; color: var(--band-muted); }
 .site-root nav.links a:not(.btn):hover { color: var(--band-ink); }

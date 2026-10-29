@@ -1,9 +1,8 @@
 import Link from "next/link";
 
 import AuthVisual from "@/components/auth/auth-visual";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandLockup } from "@/components/brand-mark";
 import { ModeToggle } from "@/components/mode-toggle";
-import { PlatformName } from "@/components/platform-name";
 
 // The sign-in and consent pages split the screen: the form on the left, the visual on the right, all within one
 // screen.
@@ -13,10 +12,7 @@ export default function AuthSplit({ children, visual }: { children: React.ReactN
       <div className="flex min-h-0 flex-col overflow-y-auto [scrollbar-width:none]">
         <div className="flex items-center justify-between px-3 pt-2">
           <Link href="/" className="flex items-center gap-2">
-            <BrandMark className="size-6 text-foreground" />
-            <span className="font-heading text-lg">
-              <PlatformName />
-            </span>
+            <BrandLockup />
           </Link>
           <ModeToggle />
         </div>
