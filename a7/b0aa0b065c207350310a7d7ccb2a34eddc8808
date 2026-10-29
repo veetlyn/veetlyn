@@ -1,0 +1,31 @@
+ee/LICENSE
+  s_73e10f9d158414::t_f3a5dd9630d654 1-43
+ee/README.md
+  s_73e10f9d158414::t_f3a5dd9630d654 1-18
+LICENSING.md
+  s_73e10f9d158414::t_f3a5dd9630d654 3,5-9,11,13,15-25
+README.md
+  s_73e10f9d158414::t_f3a5dd9630d654 135-141
+package.json
+  s_73e10f9d158414::t_f3a5dd9630d654 17
+scripts/check-no-brand.mjs
+  s_73e10f9d158414::t_0d9ec87943c1c4 5
+scripts/check-ee-boundary.mjs
+  s_73e10f9d158414::t_9ec56a9ddf643d 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a7b0aa0b065c207350310a7d7ccb2a34eddc8808",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
