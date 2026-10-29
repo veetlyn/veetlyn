@@ -1,4 +1,4 @@
-import DelegatedPurchasesTeaser from "@/components/site/delegated-purchases-teaser";
+import ContextualAgentTeaser from "@/components/site/contextual-agent-teaser";
 import { isWaitlistOnly } from "@/lib/launch";
 import Link from "next/link";
 
@@ -181,7 +181,7 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        <DelegatedPurchasesTeaser name={name} />
+        <ContextualAgentTeaser name={name} />
         <section id="network" aria-labelledby="network-h">
           <div className="wrap">
             <h2 id="network-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
