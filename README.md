@@ -6,7 +6,7 @@ Veetlyn puts a seller's services and products inside Claude and ChatGPT. A clien
 
 [Website](https://veetlyn.com) · [Network and plugin](https://veetlyn.com/network) · [Specs](specs/README.md) · [License](#license)
 
-> **Status:** built for the PayPal AI Hackathon (submission Nov 12, 2026). Everything runs on the PayPal **sandbox**. Production is waitlist-only; staging is open.
+> **Status: alpha.** Payments run on the PayPal sandbox while the product is in alpha. veetlyn.com is open to the launch waitlist; the staging deployment is open for testing.
 
 ## What it does
 

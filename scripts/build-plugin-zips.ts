@@ -1,4 +1,4 @@
-// Builds the plugin zips judges and testers upload: <plugin>-plugin.zip for Claude (the folder inside the zip)
+// Builds the plugin zips people upload: <plugin>-plugin.zip for Claude (the folder inside the zip)
 // and <plugin>-plugin-chatgpt.zip for ChatGPT (files at the root, as its upload expects). <plugin> is the folder
 // under plugins/. PLATFORM_NAME and PLATFORM_DOMAIN come from the environment (apps/server/.env.schema).
 // Usage: pnpm plugin:zip [--staging | --mcp-url https://api.staging.example.com/mcp] [--site <dir>]
