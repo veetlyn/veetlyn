@@ -1,0 +1,31 @@
+README.md
+  s_22e9e82f1423d1::t_f6396e5b6b8f91 5,16
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_22e9e82f1423d1::t_2c8ca1627f6b41 67
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_22e9e82f1423d1::t_21edfafca35d17 52,157,164,168,178,194
+apps/web/src/app/(site)/(landing)/studios/page.tsx
+  s_22e9e82f1423d1::t_1f561d9ed61455 34
+apps/web/src/content/blog/ai-shopping-left-services-out.mdx
+  s_22e9e82f1423d1::t_1a23a7934bbe81 15,17,23
+apps/web/src/content/site/faqs.ts
+  s_22e9e82f1423d1::t_c53e2df75ec4a1 18
+plugins/veetlyn/README.md
+  s_22e9e82f1423d1::t_32339adc159ee3 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "502e0e4863d35e41c4b3051b2856e08bb29f05fa",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
