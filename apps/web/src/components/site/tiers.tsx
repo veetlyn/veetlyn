@@ -76,7 +76,7 @@ const TIERS = {
         Listed on <PlatformName /> Network
       </b>,
       <>
-        <b>Intake agent</b>, {solo.aiDraftsPerMonth} drafts a month
+        <b>Agent-written quotes</b>, {solo.aiDraftsPerMonth} drafts a month
       </>,
       "Your seller page and pay links",
       "Pay pages, deposits and deliveries",
@@ -97,12 +97,12 @@ const TIERS = {
     features: [
       `Up to ${team.members} members`,
       <>
-        <b>Intake agent</b>, {team.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
+        <b>Agent-written quotes</b>, {team.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
       </>,
       <>
-        <b>Team copilot</b> with charts
+        <b>Business answers</b> from your agent
       </>,
-      "Payouts by approval or by rule",
+      "Manage or schedule team payouts",
       <>Team chat and the public API {COMING_SOON}</>,
       <>
         Your own domain, no <PlatformName /> badge {COMING_SOON}
@@ -118,10 +118,10 @@ const TIERS = {
     features: [
       `Up to ${agency.members} members`,
       <>
-        <b>Intake agent</b>, {agency.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
+        <b>Agent-written quotes</b>, {agency.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
       </>,
       <>
-        <b>Payout agent</b> for automatic payouts
+        <b>Agent-assisted payouts</b> and exception handling
       </>,
       "A second approver for big payouts",
       "Several services teams",
@@ -170,7 +170,7 @@ const TIERS = {
       "Digital downloads and courses",
       "Shipped goods, flat shipping and tracking",
       "PayPal checkout on your page",
-      "AI credits for your agents",
+      "AI credits for your agent",
       `${getPlan("starter").staffSeats} staff accounts`,
     ],
   },
@@ -181,7 +181,7 @@ const TIERS = {
     btn: "btn-ink",
     plusLine: "Everything in Starter, plus:",
     features: [
-      <span key="a"><b>Admin agent</b> {COMING_SOON}</span>,
+      <span key="a"><b>Store management with your agent</b> {COMING_SOON}</span>,
       "More AI credits",
       <>Your own domain {COMING_SOON}</>,
       `${getPlan("grow").staffSeats} staff accounts`,

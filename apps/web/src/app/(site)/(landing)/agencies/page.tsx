@@ -55,12 +55,12 @@ export default async function AgenciesPage() {
             </div>
           </div>
           <ChatDemo
-            label={`In Walk Crew's ${name} dash, a client asks for a logo for a bakery. The intake agent drafts a quote of $640, and an admin confirms it.`}
+            label={`In Walk Crew's ${name} dash, a client asks for a logo for a bakery. Your agent drafts a quote of $640, and an admin confirms it.`}
             who={`${name} · New request`}
             message="Hi! We need a logo for our bakery, three directions, in two weeks."
           >
             <div className="widget frame" data-at="400">
-              <p className="wtop"><PMark /><b>{name}</b> · Draft by the intake agent</p>
+              <p className="wtop"><PMark /><b>{name}</b> · Draft by your agent</p>
               <div className="wrow"><span><span className="t">Logo, 3 directions</span><br /><span className="s">Amadou · 10 days</span></span><span className="num t">$400</span><span></span></div>
               <div className="wrow"><span><span className="t">Colour and type sheet</span><br /><span className="s">Amadou</span></span><span className="num t">$240</span><span className="act" data-press="2000" data-done="Confirmed">Confirm</span></div>
             </div>
@@ -75,7 +75,7 @@ export default async function AgenciesPage() {
             <Story>
               <div className="steps">
                 <span className="rail" aria-hidden="true"><i></i></span>
-                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your intake agent</p><h3>Drafts the quote</h3><p className="promise">An admin confirms it. Nothing else goes out.</p></div>
+                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your agent</p><h3>Drafts the quote</h3><p className="promise">An admin confirms it. Nothing else goes out.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">The client, in PayPal</p><h3>Pays the deposit</h3><p className="promise">It lands in the agency's PayPal.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Amadou</p><h3>Uploads the delivery</h3><p className="promise">The client approves and pays the rest.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your payout rules</p><h3>Pay Amadou his share</h3><p className="promise">Each share is sent once.</p></div>
@@ -86,7 +86,7 @@ export default async function AgenciesPage() {
                   <div className="scene on">
                     <div className="ui">
                       <p className="row"><span className="t">New request</span><span className="s">From Claude</span></p>
-                      <p className="s" style={{ marginTop: "10px" }}>The intake agent drafted a quote</p>
+                      <p className="s" style={{ marginTop: "10px" }}>Your agent drafted a quote</p>
                       <div className="lines">
                         <p className="row num"><span>Logo, 3 directions</span><span>$400.00</span></p>
                         <p className="row num"><span>Colour and type sheet</span><span>$240.00</span></p>
@@ -142,12 +142,12 @@ export default async function AgenciesPage() {
           <div className="wrap">
             <h2 id="feat-h" data-in>Built for agencies that share the work and the money</h2>
             <div className="features">
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Intake agent</h3><p>
+              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Quote preparation</h3><p>
                   {getSellerPlan("team").aiDraftsPerMonth} draft quotes a month on Team,{" "}
                   {getSellerPlan("agency").aiDraftsPerMonth.toLocaleString("en-US")} on Agency.
                 </p></div>
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Team copilot</h3><p>Ask what came in, what you owe and what is waiting.</p></div>
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Payout agent</h3><p>On Agency, it pays shares by your rules.</p></div>
+              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Business answers</h3><p>Ask what came in, what you owe and what is waiting.</p></div>
+              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Agent-assisted payouts</h3><p>On Agency, your agent prepares payouts and flags exceptions. Your operating model guides each step.</p></div>
               <div className="feature" data-in><p className="tag">Team chat <span className="soon">Coming soon</span></p><h3>Your agents in your chat</h3><p>Slack, Discord and Google Chat, where you already work.</p></div>
               <div className="feature" data-in><p className="tag">Payouts</p><h3>Your rules, your approvers</h3><p>Approve each one, set limits, or add a second admin.</p></div>
               <div className="feature" data-in><p className="tag">API</p><h3>Your own agents</h3><p>The public API and webhooks, with the same approvals.</p></div>

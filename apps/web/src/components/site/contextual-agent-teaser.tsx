@@ -11,7 +11,7 @@ export default function ContextualAgentTeaser({ name }: { name: string }) {
         </p>
         <p data-in>
           Your agent follows the work across {name}, explains what needs your attention and
-          prepares the next step. Your operating model guides what it can see and do,
+          prepares the next step. Your operating model defines how your business runs and what your agent can see and do,
           from drafting a quote to preparing your team’s payouts through PayPal.
         </p>
       </div>
