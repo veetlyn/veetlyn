@@ -1,0 +1,40 @@
+name: AI plugin
+
+# Builds the AI plugin zips from plugins/ for each stage and keeps them as workflow artifacts; built zips are never
+# committed.
+on:
+  push:
+    branches: [main, dev]
+    paths: [plugins/**, scripts/build-plugin-zips.ts, .github/workflows/plugin.yml]
+  pull_request:
+    paths: [plugins/**, scripts/build-plugin-zips.ts, .github/workflows/plugin.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The name and domain come from the release policy, the same values the deployments are checked against.
+      - name: Build production and staging zips
+        run: |
+          export PLATFORM_NAME="$(jq -r .platformName .github/release-policy.json)"
+          export PLATFORM_DOMAIN="$(jq -r .platformZone .github/release-policy.json)"
+          node scripts/build-plugin-zips.ts
+          node scripts/build-plugin-zips.ts --staging
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ai-plugin-zips
+          path: dist/plugin/*.zip
+          if-no-files-found: error
+          retention-days: 30

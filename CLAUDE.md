@@ -24,7 +24,7 @@ The skills in `.claude/skills/` carry the process:
 - **anti-slop** for code and prose quality, next to `pnpm lint`.
 - **design-system-boss** steers all UI and brand work, with Quartz as the base system; it runs `build-design-system`, `migrate-design-system`, `token-mapping`, `component-docs` and `ui-review`.
 - **securebydesign** for any change to an API, auth, storage, payments or a deploy.
-- **End of every run, before the merge:** a **test-audit** sweep of every test the branch adds or changes, then a **security-audit** in full audit mode with the `quick` profile, scoped to the run's diff (`origin/main...<branch>`), its output outside the repository (`~/security-audit-skill/payleor/run-<N>`). Both results go in the plan's Outcome; confirmed findings are fixed on the branch or become backlog rows with an owner before the merge.
+- **End of every run, before the merge:** a **test-audit** sweep of every test the branch adds or changes, then a **security-audit** in full audit mode with the `quick` profile, scoped to the run's diff (`origin/main...<branch>`), its output outside the repository (`~/security-audit-skill/veetlyn/run-<N>`). Both results go in the plan's Outcome; confirmed findings are fixed on the branch or become backlog rows with an owner before the merge.
 
 One branch and worktree per run, its own test database. Open a pull request; Mouhamed merges once CI is green and the walkthrough passed. Spec, plan, story and backlog edits are part of the work: record the outcome, story statuses and backlog changes as `PROGRESS.md` "How a run works" says.
 
@@ -50,4 +50,4 @@ One branch and worktree per run, its own test database. Open a pull request; Mou
 ## Claude Code cloud sessions
 
 - Start Postgres with `docker run -d --name pg -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:17` (or `service postgresql start` for the pre-installed 16), create `jendal_test`, and write `.env.test.local` with `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/jendal_test`.
-- Deployment uses the release protocol (`specs/platform/2026-10-29-release-protocol.md`): dev push CI deploys staging; production requires owner-approved dispatch from main with same-tree staging and recovery evidence. Canonical dashboard hosts are `dash.staging.veetlyn.com` and `dash.veetlyn.com`, with legacy Payleor hosts retained during cutover. Never claim a deployment live from a merge alone or bypass the GitHub deployment gates with a local deploy.
+- Deployment uses the release protocol (`specs/platform/2026-10-29-release-protocol.md`): dev push CI deploys staging; production requires owner-approved dispatch from main with same-tree staging and recovery evidence. Canonical dashboard hosts are `dash.staging.veetlyn.com` and `dash.veetlyn.com`. Never claim a deployment live from a merge alone or bypass the GitHub deployment gates with a local deploy.

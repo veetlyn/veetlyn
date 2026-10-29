@@ -27,15 +27,10 @@ async function verify() {
       service, sha: process.env.RELEASE_SHA, stage,
       publicAccess: process.env.PUBLIC_ACCESS, platformName: process.env.PLATFORM_NAME,
       platformDomain: platform, storeDomain: stores,
-      legacyPlatformDomain: `${prefix}${process.env.LEGACY_PLATFORM_ZONE}`, legacyStoreDomain: `${prefix}${process.env.LEGACY_STORE_ZONE}`, paypalEnvironment: process.env.PAYPAL_ENVIRONMENT,
+      paypalEnvironment: process.env.PAYPAL_ENVIRONMENT,
     }, `${service} revision/configuration mismatch`);
     descriptors.push(data);
   }
-  const legacy = `https://${prefix}${process.env.LEGACY_PLATFORM_ZONE}`;
-  const redirect = await request(`${legacy}/waitlist?source=legacy-smoke`);
-  assert.equal(redirect.status, 307, 'Legacy marketing redirect failed');
-  assert.equal(redirect.headers.get('location'), `${origin}/waitlist?source=legacy-smoke`);
-  assert.equal((await request(`https://api.${prefix}${process.env.LEGACY_PLATFORM_ZONE}/health/ready`)).status, 200, 'Legacy API compatibility failed');
   const storeRoot = await request(`https://${stores}/`);
   assert.equal(storeRoot.status, 307, 'Seller root must not serve a parking page');
   assert.equal(storeRoot.headers.get('location'), `${origin}/`);

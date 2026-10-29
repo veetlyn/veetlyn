@@ -16,6 +16,11 @@ export function storeDomain(): string {
   return z.string().min(1).parse(env.STORE_DOMAIN);
 }
 
+// Only production is indexed: other stages would compete with it in search results.
+export function isIndexedStage(): boolean {
+  return env.DEPLOY_STAGE === "production";
+}
+
 export function platformSite(): PlatformSite {
   return { name: platformName(), domain: platformDomain(), storeDomain: storeDomain() };
 }
