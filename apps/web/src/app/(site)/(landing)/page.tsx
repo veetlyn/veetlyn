@@ -126,7 +126,7 @@ export default function HomePage() {
       <div className="band">
         <div className="wrap hero">
           <div>
-            <h1 data-in><em>Sell</em> where clients ask AI</h1>
+            <h1 data-in><em>Sell</em> where clients ask <em>AI</em></h1>
             <p className="lead" data-in>{name} Network puts your services and products inside Claude and ChatGPT. Agents do the work. People approve the money.</p>
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href={isWaitlistOnly() ? "/waitlist" : "/pricing"}>{isWaitlistOnly() ? "Join the waitlist" : "Start selling"}</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>
