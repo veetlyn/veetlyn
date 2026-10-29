@@ -49,7 +49,7 @@ export default async function AgenciesPage() {
         <div className="wrap hero page">
           <div>
             <h1 data-in>Run your agency with agents</h1>
-            <p className="lead" data-in>For agencies, collectives and remote teams. Requests come from AI or your page. Agents draft and report. Your rules pay everyone.</p>
+            <p className="lead" data-in>For agencies, collectives and remote teams. Requests come from AI or your page. Your operating model guides the work, from the first request to your team’s payouts.</p>
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href="/pricing">Start with Team</Link>{" "}<Link className="link" href="/contact#sales">Talk to sales</Link>
             </div>
@@ -142,12 +142,12 @@ export default async function AgenciesPage() {
           <div className="wrap">
             <h2 id="feat-h" data-in>Built for agencies that share the work and the money</h2>
             <div className="features">
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Quote preparation</h3><p>
+              <div className="feature agent" data-in><p className="tag">Coming next</p><h3>Quote preparation</h3><p>
                   {getSellerPlan("team").aiDraftsPerMonth} draft quotes a month on Team,{" "}
                   {getSellerPlan("agency").aiDraftsPerMonth.toLocaleString("en-US")} on Agency.
                 </p></div>
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Business answers</h3><p>Ask what came in, what you owe and what is waiting.</p></div>
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>Agent-assisted payouts</h3><p>On Agency, your agent prepares payouts and flags exceptions. Your operating model guides each step.</p></div>
+              <div className="feature agent" data-in><p className="tag">Coming next</p><h3>Business answers</h3><p>Ask what came in, what you owe and what is waiting.</p></div>
+              <div className="feature agent" data-in><p className="tag">Coming next</p><h3>Agent-assisted payouts</h3><p>On Agency, your agent prepares payouts and flags exceptions. Your operating model guides each step.</p></div>
               <div className="feature" data-in><p className="tag">Team chat <span className="soon">Coming soon</span></p><h3>Your agents in your chat</h3><p>Slack, Discord and Google Chat, where you already work.</p></div>
               <div className="feature" data-in><p className="tag">Payouts</p><h3>Your rules, your approvers</h3><p>Approve each one, set limits, or add a second admin.</p></div>
               <div className="feature" data-in><p className="tag">API</p><h3>Your own agents</h3><p>The public API and webhooks, with the same approvals.</p></div>

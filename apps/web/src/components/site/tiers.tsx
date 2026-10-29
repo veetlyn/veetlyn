@@ -76,7 +76,7 @@ const TIERS = {
         Listed on <PlatformName /> Network
       </b>,
       <>
-        <b>Agent-written quotes</b>, {solo.aiDraftsPerMonth} drafts a month
+        <b>Agent-written quotes</b>, {solo.aiDraftsPerMonth} drafts a month {COMING_SOON}
       </>,
       "Your seller page and pay links",
       "Pay pages, deposits and deliveries",
@@ -97,10 +97,10 @@ const TIERS = {
     features: [
       `Up to ${team.members} members`,
       <>
-        <b>Agent-written quotes</b>, {team.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
+        <b>Agent-written quotes</b>, {team.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month {COMING_SOON}
       </>,
       <>
-        <b>Business answers</b> from your agent
+        <b>Business answers</b> from your agent {COMING_SOON}
       </>,
       "Manage or schedule team payouts",
       <>Team chat and the public API {COMING_SOON}</>,
@@ -118,10 +118,10 @@ const TIERS = {
     features: [
       `Up to ${agency.members} members`,
       <>
-        <b>Agent-written quotes</b>, {agency.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month
+        <b>Agent-written quotes</b>, {agency.aiDraftsPerMonth.toLocaleString("en-US")} drafts a month {COMING_SOON}
       </>,
       <>
-        <b>Agent-assisted payouts</b> and exception handling
+        <b>Agent-assisted payouts</b> and exception handling {COMING_SOON}
       </>,
       "A second approver for big payouts",
       "Several services teams",
