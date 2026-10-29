@@ -131,6 +131,12 @@ Please do not open public issues for vulnerabilities. Report them privately to t
 
 ## License
 
-The application is available under [AGPL-3.0-only](LICENSE) or a separate commercial agreement. Standalone packages in `packages/oss/` are MIT. Details, including Veetlyn Network membership, are in [LICENSING.md](LICENSING.md). The Veetlyn name and logo are not licensed by the software license.
+Veetlyn is open core:
+
+- Everything outside `ee/` is [AGPL-3.0-only](LICENSE), or available under a commercial agreement.
+- [`ee/`](ee/README.md) holds the enterprise features under the [Veetlyn Enterprise License](ee/LICENSE): free to develop and test, a commercial agreement for production.
+- Standalone packages in `packages/oss/` are MIT.
+
+Details are in [LICENSING.md](LICENSING.md). The Veetlyn name and logo are not licensed by any of these licenses.
 
 If this project helps you, you can [sponsor it](https://github.com/sponsors/Mouhamed-B).
