@@ -130,7 +130,7 @@ export default function HomePage() {
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href={isWaitlistOnly() ? "/waitlist" : "/pricing"}>{isWaitlistOnly() ? "Join the waitlist" : "Start selling"}</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>
             </div>
-            <p className="hero-note" data-in>Clients add {name} Network once, in Claude or ChatGPT.</p>
+            <p className="hero-note" data-in>Clients add {name} Network once, in Claude or ChatGPT. <Link className="link" href="/network#add">Add it</Link></p>
           </div>
           <ChatDemo
             label={`In Claude, a bakery asks for a logo under $900. ${name} Network shows an automated seller for $29 and Walk Crew, a studio of people. The client requests a quote, accepts Walk Crew's $640 quote with a press, and goes to pay the deposit on ${name}.`}
