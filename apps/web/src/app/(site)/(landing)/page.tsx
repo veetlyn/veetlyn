@@ -21,8 +21,8 @@ export function generateMetadata() {
   const site = platformSite();
   return pageMetadata({
     path: "/",
-    title: `${site.name}: sell services and products where AI shops`,
-    description: `Sell services and products where AI shops. ${site.name} Network brings freelancers, agencies, stores and studios into Claude and ChatGPT, paid through PayPal.`,
+    title: `${site.name}: sell services and products where clients ask AI`,
+    description: `Sell services and products where clients ask AI. ${site.name} Network brings freelancers, agencies, stores and studios into Claude and ChatGPT, paid through PayPal.`,
     site,
   });
 }
@@ -126,7 +126,7 @@ export default function HomePage() {
       <div className="band">
         <div className="wrap hero">
           <div>
-            <h1 data-in>Sell where <em>AI</em> shops</h1>
+            <h1 data-in>Sell where clients ask <em>AI</em></h1>
             <p className="lead" data-in>{name} Network puts your services and products inside Claude and ChatGPT. Agents do the work. People approve the money.</p>
             <div className="ctas" data-in>
               <Link className="btn btn-mint" href={isWaitlistOnly() ? "/waitlist" : "/pricing"}>{isWaitlistOnly() ? "Join the waitlist" : "Start selling"}</Link>{" "}<Link className="link" href="/network">How {name} Network works</Link>

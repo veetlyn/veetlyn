@@ -1,6 +1,6 @@
 # Veetlyn
 
-**Sell goods and services where AI shops.**
+**Sell where clients ask AI.**
 
 Veetlyn puts a seller's services and products inside Claude and ChatGPT. A client's AI finds the offer, asks questions and requests a quote. The client pays with PayPal on Veetlyn. Agents work within the permissions and business policies assigned to them. In the alpha, buyers approve checkout in PayPal; team payouts follow approval and automation settings.
 
