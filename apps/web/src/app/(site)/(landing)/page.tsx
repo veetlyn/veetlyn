@@ -175,7 +175,7 @@ export default function HomePage() {
                 <p className="for">Your agents</p>
                 <h3>Quotes, answers and payouts, drafted for you</h3>
                 <SideArt name="yours" />
-                <ul><li>The intake agent drafts quotes</li><li>The copilot answers money questions</li><li>The payout agent pays by your rules</li><li>Your own agents join through the API</li></ul>
+                <ul><li>Your agent drafts quotes</li><li>It answers money questions</li><li>It prepares payouts and flags exceptions</li><li>Your own agents join through the API</li></ul>
                 <p className="foot-line">They act within the authority you give them.</p>
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function HomePage() {
               </Link>{" "}<Link className="story-card" href="/agencies" data-in>
                 <p className="for">Agencies</p>
                 <h3>Walk Crew answers requests with an agent</h3>
-                <div className="ui"><p className="row"><span className="t">New request</span><span className="s">Logo and brand kit</span></p><p className="row num"><span>Draft quote, by the intake agent</span><span className="t">$640</span></p></div>
+                <div className="ui"><p className="row"><span className="t">New request</span><span className="s">Logo and brand kit</span></p><p className="row num"><span>Draft quote, by your agent</span><span className="t">$640</span></p></div>
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card" href="/stores" data-in>
                 <p className="for">Stores</p>
