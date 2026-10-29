@@ -1,0 +1,25 @@
+apps/server/src/index.ts
+  s_22e9e82f1423d1::t_db441dd01ee202 2,186
+apps/web/worker/index.ts
+  s_22e9e82f1423d1::t_972f0771902fc2 1,11
+packages/core/src/release.test.ts
+  s_22e9e82f1423d1::t_2bcf6d718310b8 2,5,11
+packages/core/src/release.ts
+  s_22e9e82f1423d1::t_dea1191e5bca3f 2,11-12,17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee69647a6a25e663ee0582e86f5fe76bbaea3cb2",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
