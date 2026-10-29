@@ -4,7 +4,5 @@
   "platformZone": "veetlyn.com",
   "storeZone": "veetlyn.app",
   "platformName": "Veetlyn",
-  "paypalEnvironment": "sandbox",
-  "legacyPlatformZone": "payleor.com",
-  "legacyStoreZone": "payleor.app"
+  "paypalEnvironment": "sandbox"
 }
