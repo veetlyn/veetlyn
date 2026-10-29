@@ -362,6 +362,7 @@
 .site-root .tier.pick { box-shadow: inset 0 0 0 2px var(--foreground); }
 .site-root .tier.is-dark { background: var(--band); color: var(--band-ink); box-shadow: none; }
 .site-root .tier .name { font: 600 26px var(--site-display); letter-spacing: -0.02em; font-variation-settings: "GEOM" 100; }
+.site-root .tier .name .later { margin-left: 6px; font: 500 14px var(--site-text); letter-spacing: 0; vertical-align: middle; }
 .site-root .tier .for { margin-top: 2px; font-size: 15px; color: var(--muted-foreground); }
 .site-root .tier.is-dark .for, .site-root .tier.is-dark .bill { color: var(--band-muted); }
 .site-root .tier .price { font: 600 52px/1 var(--site-display); letter-spacing: -0.035em; font-variation-settings: "GEOM" 100; }
@@ -380,6 +381,16 @@
 .site-root .tier li.plus::before { display: none; }
 .site-root .tier li b { font-weight: 600; }
 .site-root .tier .later { color: var(--muted-foreground); }
+/* Enterprise sits under the plans across the whole row: its terms on the left, its list on the right. */
+.site-root .tiers:has(> .tier.wide) { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.site-root .tier.wide { grid-column: 1 / -1; grid-row: auto; grid-template-rows: none; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); column-gap: 56px; align-items: start; }
+.site-root .tier.wide > :not(ul) { grid-column: 1; }
+.site-root .tier.wide > ul { grid-column: 2; grid-row: 1 / span 4; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; align-content: start; }
+.site-root .tier.wide > ul .plus { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  .site-root .tier.wide { grid-template-columns: minmax(0, 1fr); }
+  .site-root .tier.wide > ul { grid-column: 1; grid-row: auto; grid-template-columns: minmax(0, 1fr); }
+}
 .site-root .tier.is-dark .later { color: var(--band-muted); }
 @media (max-width: 1120px) {
   .site-root .tiers, .site-root .tiers.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }

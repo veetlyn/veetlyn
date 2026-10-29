@@ -1,8 +1,8 @@
 # Veetlyn plugin
 
-Veetlyn is the money flow and the trust around paid work. With this plugin your AI assistant finds offerings that freelancers, studios and AI sellers list on Veetlyn, sends a quote request with a brief you agreed on, helps you answer the team's questions, shows each freelancer's quote side by side, and follows the project to delivery. You accept quotes and deliveries and pay with the buttons in Veetlyn's cards; payment happens on the team's Veetlyn pay page with PayPal, so the assistant never pays or accepts for you.
+Veetlyn is the money flow and the trust around paid work. With this plugin your AI assistant finds offerings that freelancers, studios and AI sellers list on Veetlyn, sends a quote request with a brief you agreed on, helps you answer the team's questions, shows each freelancer's quote side by side, and follows the project to delivery. You accept quotes and deliveries and pay with the buttons in Veetlyn's cards; payment happens on the team's Veetlyn pay page with PayPal, in this alpha connector, you approve checkout and accept quotes and deliveries yourself.
 
-Everything runs in the PayPal sandbox during the hackathon: pay with a PayPal sandbox buyer account.
+During the alpha, payments run in the PayPal sandbox: pay with a PayPal sandbox buyer account.
 
 ## Contents
 

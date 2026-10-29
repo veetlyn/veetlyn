@@ -1,3 +1,4 @@
+import ContextualAgentTeaser from "@/components/site/contextual-agent-teaser";
 import { isWaitlistOnly } from "@/lib/launch";
 import Link from "next/link";
 
@@ -49,7 +50,7 @@ function Terms() {
       <div className="wrap">
         <h2 id="terms-h" data-in>Our terms, on top of every integration</h2>
         <div className="bento terms-bento">
-          <div className="tile wide dark" data-in><p className="tag">Claude and ChatGPT<ViaLogos names={["claude", "openai"]} /></p><h3>The client's AI finds, asks and requests quotes. It never pays.</h3><TermsArt name="assistants" /></div>
+          <div className="tile wide dark" data-in><p className="tag">Claude and ChatGPT<ViaLogos names={["claude", "openai"]} /></p><h3>Let your client's AI find your offers and get the purchase ready.</h3><TermsArt name="assistants" /></div>
           <div className="tile" data-in><p className="tag">PayPal checkout<ViaLogos names={["paypal"]} /></p><h3>The price on the page is the price charged.</h3><TermsArt name="checkout" /></div>
           <div className="tile dark" data-in><p className="tag">PayPal Payouts<ViaLogos names={["paypal"]} /></p><h3>Each share is sent once, after a person or your rule says yes.</h3><TermsArt name="payouts" /></div>
           <div className="tile" data-in><p className="tag">Your dash and team chat<ViaLogos names={["slack", "discord", "googlechat"]} /></p><h3>Agent drafts wait for a person to confirm them.</h3><TermsArt name="chat" /></div>
@@ -154,18 +155,18 @@ export default function HomePage() {
       <div>
         <section aria-labelledby="sides-h">
           <div className="wrap">
-            <h2 id="sides-h" data-in>Agentic commerce, with a person on every payment</h2>
+            <h2 id="sides-h" data-in>Delegate the work. Set the authority.</h2>
             <div className="sides">
               <div className="side theirs" data-in>
                 <p className="for">Their agents</p>
                 <h3>Claude and ChatGPT, through {name} Network</h3>
                 <SideArt name="theirs" />
                 <ul><li>Find your offers</li><li>Ask your questions</li><li>Request quotes</li><li>Follow the project</li></ul>
-                <p className="foot-line">They never pay.</p>
+                <p className="foot-line">Buyer checkout currently needs approval in PayPal.</p>
               </div>
               <div className="side middle" data-in>
                 <p className="for">{name}</p>
-                <h3>The money and the rules</h3>
+                <h3>The money and the permissions</h3>
                 <SideArt name="middle" />
                 <ul><li>The price comes from your project</li><li>The payer approves each payment in PayPal</li><li>A person or your rule approves each payout</li><li>Every step is recorded</li></ul>
                 <p className="foot-line">Paid through PayPal.</p>
@@ -174,12 +175,13 @@ export default function HomePage() {
                 <p className="for">Your agents</p>
                 <h3>Quotes, answers and payouts, drafted for you</h3>
                 <SideArt name="yours" />
-                <ul><li>The intake agent drafts quotes</li><li>The copilot answers money questions</li><li>The payout agent pays by your rules</li><li>Your own agents join through the API</li></ul>
-                <p className="foot-line">They act inside your rules.</p>
+                <ul><li>Your agent drafts quotes</li><li>It answers money questions</li><li>It prepares payouts and flags exceptions</li><li>Your own agents join through the API</li></ul>
+                <p className="foot-line">They act within the authority you give them.</p>
               </div>
             </div>
           </div>
         </section>
+        <ContextualAgentTeaser name={name} />
         <section id="network" aria-labelledby="network-h">
           <div className="wrap">
             <h2 id="network-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
@@ -191,7 +193,7 @@ export default function HomePage() {
                   <h3>For people who sell their work</h3>
                   <ul>
                     <li><b>One connector.</b> Assistant checkouts sell physical goods. One connector puts every {name} seller in front of a client's AI.</li>
-                    <li><b>The AI never pays.</b> The client approves each payment on {name}, in PayPal.</li>
+                    <li><b>You control the purchase.</b> In the alpha, the client approves checkout on {name}, in PayPal.</li>
                     <li><b>A press the model cannot fake.</b> Accepting a quote or a delivery takes the client's own press.</li>
                   </ul>
                 </div>
@@ -218,7 +220,7 @@ export default function HomePage() {
               </Link>{" "}<Link className="story-card" href="/agencies" data-in>
                 <p className="for">Agencies</p>
                 <h3>Walk Crew answers requests with an agent</h3>
-                <div className="ui"><p className="row"><span className="t">New request</span><span className="s">Logo and brand kit</span></p><p className="row num"><span>Draft quote, by the intake agent</span><span className="t">$640</span></p></div>
+                <div className="ui"><p className="row"><span className="t">New request</span><span className="s">Logo and brand kit</span></p><p className="row num"><span>Draft quote, by your agent</span><span className="t">$640</span></p></div>
                 <p className="go">Read the story</p>
               </Link>{" "}<Link className="story-card" href="/stores" data-in>
                 <p className="for">Stores</p>
