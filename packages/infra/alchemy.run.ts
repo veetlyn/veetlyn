@@ -116,10 +116,12 @@ export const server = Cloudflare.Worker("server", {
   // Runs the maintenance sweeps in apps/server/src/maintenance.ts.
   crons: ["*/10 * * * *"],
   env: {
+    CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata(),
     HYPERDRIVE: Database,
     STORE_CACHE: StoreCache,
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: dashOrigin,
+    RELEASE_SHA: optionalString("RELEASE_SHA"),
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PUBLIC_ACCESS: publicAccess,
     PLATFORM_DOMAIN: platformDomain,
@@ -174,6 +176,7 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
   routes: hosts?.web.routes,
   env: {
     SERVER: server,
+    RELEASE_SHA: optionalString("RELEASE_SHA"),
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PUBLIC_ACCESS: publicAccess,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
