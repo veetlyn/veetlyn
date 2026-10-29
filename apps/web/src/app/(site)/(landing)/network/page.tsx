@@ -61,11 +61,11 @@ export default async function NetworkPage() {
         <section aria-labelledby="gap-h">
           <div className="wrap">
             <h2 id="gap-h" data-in>AI shopping left services out. {name} Network brings them in.</h2>
-            <p className="lead-dark" data-in>The assistants' own checkouts sell physical goods. Services, courses and downloads have no way in. These are the gaps the network fills.</p>
+            <p className="lead-dark" data-in>A service starts with a brief and a conversation. The network keeps discovery connected to the quote, payment and delivery.</p>
             <div className="features">
               <div className="feature agent" data-in><p className="tag">A way in</p><h3>For people who sell their work</h3><p>One connector puts every {name} seller in front of a client's AI.</p></div>
               <div className="feature agent" data-in><p className="tag">One integration</p><h3>We build it once, for everyone</h3><p>No seller writes a connector or passes a platform review.</p></div>
-              <div className="feature agent" data-in><p className="tag">Your control</p><h3>Delegate with clear permissions</h3><p>Agents prepare the purchase. In the alpha, the payer approves checkout on {name}'s page in PayPal.</p></div>
+              <div className="feature agent" data-in><p className="tag">Your control</p><h3>Delegate with clear permissions</h3><p>Agents prepare the purchase. The payer approves checkout on {name}'s page in PayPal.</p></div>
               <div className="feature" data-in><p className="tag">Consent</p><h3>A press the model cannot fake</h3><p>Accepting a quote or a delivery takes the client's own press on a card.</p></div>
               <div className="feature" data-in><p className="tag">Proof</p><h3>A record for work with no tracking number</h3><p>The agreed scope, changes, deliveries and the client's answers are kept.</p></div>
               <div className="feature" data-in><p className="tag">After the sale</p><h3>Money for the whole team</h3><p>Deposits, balances, shares and payouts by your rules.</p></div>

@@ -75,7 +75,7 @@ export default async function FreelancersPage() {
               <div className="steps">
                 <span className="rail" aria-hidden="true"><i></i></span>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Claude, for the bakery</p><h3>Sends you the brief</h3><p className="promise">Buyers see your work is done by people.</p></div>
-                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your intake agent</p><h3>Drafts the quote from your prices</h3><p className="promise">Nothing goes out until you send it.</p></div>
+                <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">Your agent</p><h3>Drafts the quote from your prices</h3><p className="promise">Nothing goes out until you send it.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">The client, in PayPal</p><h3>Pays half up front</h3><p className="promise">It lands in your PayPal. We never hold it.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">You</p><h3>Deliver, and get the rest</h3><p className="promise">Paid only shows once PayPal confirms it.</p></div>
                 <div className="step"><span className="dot" aria-hidden="true"></span><p className="actor">{name}</p><h3>Shows what you kept</h3><p className="promise">Every fee, to the cent, before you start.</p></div>
@@ -94,7 +94,7 @@ export default async function FreelancersPage() {
                   </div>
                   <div className="scene">
                     <div className="ui">
-                      <p className="row"><span className="t">Draft quote</span><span className="s">By your intake agent</span></p>
+                      <p className="row"><span className="t">Draft quote</span><span className="s">By your agent</span></p>
                       <div className="lines">
                         <p className="row num"><span className="muted">Logo, 3 directions</span><span>$400.00</span></p>
                         <p className="row num"><span className="muted">Colour and type sheet</span><span>$240.00</span></p>
@@ -139,7 +139,7 @@ export default async function FreelancersPage() {
             <h2 id="feat-h" data-in>Everything a freelancer needs to get paid</h2>
             <div className="features">
               <div className="feature agent" data-in><p className="tag">Agent</p><h3>On {name} Network</h3><p>Clients who add it to Claude or ChatGPT find you and send briefs.</p></div>
-              <div className="feature agent" data-in><p className="tag">Agent</p><h3>An intake agent</h3><p>{solo.aiDraftsPerMonth} draft quotes a month from your own prices.</p></div>
+              <div className="feature agent" data-in><p className="tag">Coming next</p><h3>Quote preparation</h3><p>{solo.aiDraftsPerMonth} draft quotes a month from your own prices.</p></div>
               <div className="feature" data-in><p className="tag">PayPal</p><h3>Deposits and balances</h3><p>Pay pages with PayPal, or as a guest.</p></div>
               <div className="feature" data-in><p className="tag">Your page</p><h3>A seller page and pay links</h3><p>One link for your bio, your email and every chat.</p></div>
               <div className="feature" data-in><p className="tag">Delivery</p><h3>Deliver and get approved</h3><p>Files, approval and the balance in one place.</p></div>
