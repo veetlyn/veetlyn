@@ -4,32 +4,103 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main, dev]
+    branches: [dev]
   workflow_dispatch:
     inputs:
       stage:
-        description: Stage to deploy the chosen branch to
         type: choice
         options: [staging, production]
         default: staging
+        required: true
+      sha:
+        description: Full approved commit SHA (must equal the target branch HEAD)
+        type: string
+        required: true
+      staging_run:
+        description: Successful verified staging Deploy run ID (production only)
+        type: string
+      version:
+        description: New immutable vX.Y.Z version (production only)
+        type: string
+      recovery_url:
+        description: Repository issue/PR containing walkthrough, backup and rollback evidence (production only)
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.workflow_run.head_branch == 'dev' && 'staging' || 'production') }}
+  group: deploy-${{ inputs.stage || 'staging' }}
   cancel-in-progress: false
 
+env:
+  STAGE: ${{ inputs.stage || 'staging' }}
+  RELEASE_SHA: ${{ inputs.sha || github.event.workflow_run.head_sha }}
+  RELEASE_VERSION: ${{ inputs.version }}
+  STAGING_RUN_ID: ${{ inputs.staging_run }}
+  RECOVERY_URL: ${{ inputs.recovery_url }}
+
 jobs:
+  validate:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'dev' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.gate.outputs.sha }}
+      tree: ${{ steps.gate.outputs.tree }}
+    steps:
+      # This runs from the trusted workflow before any candidate code is checked out.
+      - name: Authenticate candidate before executing repository code
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const e = process.env;
+          assert.ok(['staging', 'production'].includes(e.STAGE));
+          assert.match(e.RELEASE_SHA || '', /^[a-f0-9]{40}$/);
+          const branch = e.STAGE === 'production' ? 'main' : 'dev';
+          if (e.GITHUB_EVENT_NAME === 'workflow_dispatch') {
+            assert.equal(e.GITHUB_REF, `refs/heads/${branch}`);
+            if (e.STAGE === 'production') assert.equal(e.GITHUB_ACTOR, 'Mouhamed-B');
+          } else {
+            assert.equal(e.STAGE, 'staging');
+            assert.equal(e.GITHUB_EVENT_NAME, 'workflow_run');
+            const event = JSON.parse(readFileSync(e.GITHUB_EVENT_PATH, 'utf8'));
+            assert.equal(event.workflow_run.event, 'push');
+            assert.equal(event.workflow_run.head_branch, 'dev');
+            assert.equal(event.workflow_run.head_repository.full_name, e.GITHUB_REPOSITORY);
+            assert.equal(event.workflow_run.conclusion, 'success');
+          }
+          const response = await fetch(`https://api.github.com/repos/${e.GITHUB_REPOSITORY}/branches/${branch}`, {
+            headers: {Authorization: `Bearer ${e.GH_TOKEN}`, Accept: 'application/vnd.github+json'},
+          });
+          assert.equal(response.status, 200);
+          assert.equal((await response.json()).commit.sha, e.RELEASE_SHA, 'Only protected branch HEAD may execute as a deployment candidate');
+          NODE
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.RELEASE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+      - name: Validate immutable candidate and staging provenance
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-gate.mjs
+
   deploy:
-    # CI-gated branches: dev -> staging, main -> production. Manual runs obey the same mapping.
-    if: (github.event_name == 'workflow_dispatch' && ((github.ref == 'refs/heads/main' && inputs.stage == 'production') || (github.ref == 'refs/heads/dev' && inputs.stage == 'staging'))) || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'dev'))
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.workflow_run.head_branch == 'dev' && 'staging' || 'production') }}
+    environment: ${{ inputs.stage || 'staging' }}
     env:
       PUBLIC_ACCESS: ${{ vars.PUBLIC_ACCESS }}
-      STAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.stage || (github.event.workflow_run.head_branch == 'dev' && 'staging' || 'production') }}
+      STAGE: ${{ inputs.stage || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
@@ -62,19 +133,24 @@ jobs:
       SANDBOX_CARD_CVV: ${{ vars.SANDBOX_CARD_CVV }}
       DEMO_STORE_SLUG: ${{ vars.DEMO_STORE_SLUG }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # turbo marks db:migrate interactive (for local prompts) and refuses to run it in CI, so call drizzle-kit directly.
-      - run: pnpm -F @jendal-workspace/db db:migrate:deploy
-      # Alchemy's state store is reached with the credentials its OAuth login cached on a laptop; without them it
-      # re-derives them through the account's Secrets Store, which the deploy token cannot read.
+      - name: Revalidate candidate after acquiring deployment lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-gate.mjs
+      - name: Validate production configuration before any mutation
+        run: node scripts/release-config.mjs
+      - name: Apply backward-compatible migrations
+        run: pnpm -F @jendal-workspace/db db:migrate:deploy
       - name: Alchemy state store credentials
         env:
           STATE_STORE_CREDENTIALS: ${{ secrets.ALCHEMY_STATE_STORE_CREDENTIALS }}
@@ -82,4 +158,48 @@ jobs:
           umask 077
           mkdir -p ~/.alchemy/credentials/default
           printf '%s' "$STATE_STORE_CREDENTIALS" > ~/.alchemy/credentials/default/cloudflare-state-store.json
-      - run: pnpm deploy:${{ env.STAGE }}
+      - name: Deploy both Workers
+        run: pnpm deploy:${{ env.STAGE }}
+      - name: Verify deployed revision, configuration and access boundaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-smoke.mjs
+      - name: Observe production through a maintenance interval
+        if: inputs.stage == 'production'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for ((attempt=1; attempt<=10; attempt++)); do
+            sleep 60
+            node scripts/release-smoke.mjs
+          done
+          node --input-type=module -e 'import {readFileSync,writeFileSync} from "node:fs"; const record=JSON.parse(readFileSync("release.json","utf8")); record.observationSeconds=600; record.observedUntil=new Date().toISOString(); writeFileSync("release.json",JSON.stringify(record,null,2));'
+      - name: Preserve verified release evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-evidence
+          path: release.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Deployment summary
+        run: |
+          echo '## Verified deployment' >> "$GITHUB_STEP_SUMMARY"
+          cat release.json >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: [validate, deploy]
+    if: inputs.stage == 'production'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-evidence
+      - name: Publish immutable release after verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.validate.outputs.sha }}
+        run: |
+          gh release create "$RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --target "$RELEASE_SHA" --title "$RELEASE_VERSION" --notes-file release.json
