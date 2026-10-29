@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 
-import { BrandMark } from "./brand-mark";
+import { BrandLockup } from "./brand-mark";
 import { ModeToggle } from "./mode-toggle";
-import { PlatformName } from "./platform-name";
 import UserMenu from "./user-menu";
 
 const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password", "/reset-password", "/verify-email", "/oauth/consent"]);
@@ -18,10 +17,7 @@ export default function Header() {
   return (
     <header className="flex h-14 items-center justify-between border-b px-4 md:px-7">
       <Link href="/" className="flex items-center gap-2">
-        <BrandMark className="size-6 text-foreground" />
-        <span className="font-heading text-lg">
-          <PlatformName />
-        </span>
+        <BrandLockup />
       </Link>
       <div className="flex items-center gap-2">
         <ModeToggle />
