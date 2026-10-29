@@ -1,11 +1,25 @@
 # Licensing
 
-The first-party application is available under either GNU Affero General Public License version 3 only (`AGPL-3.0-only`), in [LICENSE](LICENSE), or a separate commercial agreement from its copyright holders.
+Veetlyn is open core. The repository holds three kinds of code under three licenses.
 
-Commercial licensing covers private-network deployments by default. Joining **Veetlyn Network** is an optional add-on, not a condition of the base commercial offering. Veetlyn Network is the official commercial distribution channel. Deployment, redistribution, support and add-on rights are established by the signed commercial agreement; this notice itself grants no commercial license.
+| Code | License |
+|---|---|
+| Everything outside `ee/` and `packages/oss/` | [AGPL-3.0-only](LICENSE), or a separate commercial agreement |
+| `ee/` | [Veetlyn Enterprise License](ee/LICENSE): commercial; free to develop and test, a commercial agreement for production |
+| `packages/oss/*` packages that declare MIT | MIT, as stated in each package |
 
-AGPL recipients retain the use, modification and redistribution rights granted by the AGPL. Official distribution and trademark status do not restrict those rights. Private deployment does not automatically require a commercial license: the applicable obligations depend on use, modification, conveyance and network interaction under that license.
+## The AGPL core
 
-This dual-license choice covers only material whose copyright holders authorize both licensing paths. Third-party material retains its own license. Standalone `packages/oss/` packages that declare MIT remain MIT; existing grants are not revoked. Branding and trademarks are not licensed by this software notice.
+The core is the full product: quotes, projects, PayPal payments, deliveries, team payouts by approval or rule, seller pages and the Network connector. AGPL recipients keep every right the AGPL grants: use, modification and redistribution, with its source-sharing obligations for modified network services. Companies that cannot meet those obligations can take the core under a commercial agreement instead.
 
-Commercial agreements must identify the licensor, software/version, permitted deployments and users, fees, redistribution rights, support, termination and any Network add-on. Contributor rights must permit both licensing paths before contributed material is offered commercially.
+## The ee/ folder
+
+`ee/` holds the features sold on top of the core: custom offers, Network membership, the payout agent and multi-account. Its license allows copying, modifying and running the code to develop and test it; production use needs a commercial agreement. The core never imports from `ee/` and runs without it.
+
+## Commercial agreements
+
+Commercial agreements cover private deployments by default; joining **Veetlyn Network** is an optional add-on. An agreement names the licensor, the software and version, permitted deployments and users, fees, redistribution rights, support, termination and any Network add-on. This notice itself grants no commercial license. Contact: https://veetlyn.com/contact.
+
+## Contributions, third parties and marks
+
+Contributions are accepted only when their authors permit both licensing paths for the core and the Enterprise License for `ee/`. Third-party material keeps its own license. The Veetlyn name and logo are not licensed by any of these licenses.
