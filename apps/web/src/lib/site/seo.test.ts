@@ -11,6 +11,8 @@ describe("pageMetadata", () => {
     expect(m.alternates?.canonical).toBe(`${origin}/network`);
     expect(m.openGraph).toMatchObject({ title: "Platform Network", url: `${origin}/network`, siteName: "Platform" });
     expect(m.description).toBe("The connector.");
+    expect(m.openGraph).toMatchObject({ images: [{ url: `${origin}/og.png`, width: 1200, height: 630 }] });
+    expect(m.twitter).toMatchObject({ card: "summary_large_image", images: [`${origin}/og.png`] });
   });
 });
 

@@ -1,4 +1,5 @@
 import { posts } from "../../content/blog/posts";
+import { LEGAL_LAST_UPDATED } from "../../content/legal/meta";
 import { AUDIENCES } from "../../content/site/audiences";
 import { PRICE_FACTS } from "./fees";
 import { absoluteUrl, type SeoSite } from "./seo";
@@ -17,9 +18,15 @@ export const STATIC_PATHS = [
   "/blog",
 ] as const;
 
-export const sitePaths = (): string[] => [
-  ...STATIC_PATHS,
-  ...posts({ name: "", domain: "" }).map((p) => `/blog/${p.slug}`),
+const LEGAL_PATHS = ["/legal/terms", "/legal/privacy", "/legal/acceptable-use"] as const;
+
+// The last copy change on the landing pages; bump it with a content release so crawlers revisit.
+const SITE_UPDATED = "2026-10-29";
+
+export const sitemapEntries = (): { path: string; lastModified: string }[] => [
+  ...STATIC_PATHS.map((path) => ({ path, lastModified: SITE_UPDATED })),
+  ...LEGAL_PATHS.map((path) => ({ path, lastModified: LEGAL_LAST_UPDATED.toISOString().slice(0, 10) })),
+  ...posts({ name: "", domain: "" }).map((p) => ({ path: `/blog/${p.slug}`, lastModified: p.updated ?? p.date })),
 ];
 
 export function llmsTxt(site: SeoSite): string {
