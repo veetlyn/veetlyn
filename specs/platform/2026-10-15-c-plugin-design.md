@@ -6,11 +6,11 @@
 
 ## 1. Domain model (Mouhamed, 2026-10-15)
 
-- **`payleor.com` is the multi-tenant HQ.** Auth, accounts, workspace and the dashboard live here; clients may also sign in at the HQ for their history and holdings across teams. The plugin is a cross-team surface, so it authenticates here (`api.payleor.com/mcp`, OAuth issuer on the dash host).
-- **`payleor.app` is single-tenant seller sites.** Each `{slug}.payleor.app` is one team's or one freelancer's own site: storefront or services page, the request form, the client page and the pay page. Client ↔ team ↔ freelancer interaction lives on `.app`.
+- **`veetlyn.com` is the multi-tenant HQ.** Auth, accounts, workspace and the dashboard live here; clients may also sign in at the HQ for their history and holdings across teams. The plugin is a cross-team surface, so it authenticates here (`api.veetlyn.com/mcp`, OAuth issuer on the dash host).
+- **`veetlyn.app` is single-tenant seller sites.** Each `{slug}.veetlyn.app` is one team's or one freelancer's own site: storefront or services page, the request form, the client page and the pay page. Client ↔ team ↔ freelancer interaction lives on `.app`.
 - **One seller, one slug, one site:** stores and services teams share the `team.slug` unique index (`packages/auth/src/index.ts:71`). A seller with both shows products and services on the same site.
 - **Auth is federated** ([`2026-10-06-auth-federation-design.md`](2026-10-06-auth-federation-design.md)): one account works across HQ and every `.app` site. Signed client links stay the no-account path; a signed-in client is a bonus, never a requirement.
-- `payleor.app` never sends mail (SPF `-all`, null MX). Emails send from `payleor.com` purpose addresses and link to `.app` pages. The mall's cross-store checkout lands on the `payleor.app` root in run M, not here.
+- `veetlyn.app` never sends mail (SPF `-all`, null MX). Emails send from `veetlyn.com` purpose addresses and link to `.app` pages. The mall's cross-store checkout lands on the `veetlyn.app` root in run M, not here.
 
 ## 2. Goal
 
@@ -25,10 +25,10 @@ Settled on 2026-10-15:
 - **Listing is default-on with opt-out.** `services_offering.listed` and `services_department.listed` are boolean, default `true`, settable at creation and edit ("List in AI assistants"). Search returns only active offerings that are listed and whose department (if any) is listed, from active teams. This supersedes the amendments proposal's `assistant_hiring` setting (off by default) and the program's "sellers opt in" wording.
 - **Audience per quoting mode:** `open` — the department's (or shortlist's) freelancers read, write and quote; `team` — they read and discuss, only staff quote; `assigned` — staff only, the assigned freelancer joins at assignment. The client never reads the request space; their replies relay in masked as "Client". The request space closes to freelancers when a quote is accepted; the winner's history is relayed into the project space.
 - **Demo team:** Walk Crew switches to `open` mode and gains 1–2 seeded freelancers in its department, so the demo shows competing quotes on one request.
-- **Client and pay pages move to the seller's site:** `{team}.payleor.app/c/{token}` and `{team}.payleor.app/pay/{token}`. The host's team must match the token's project, else 404. Link building (request email, plugin results, payment router) moves from the site origin to the team subdomain. The tunnel already serves `*.payleor.app`, so dev works before run H.
-- **Client HQ home:** a minimal signed-in page on `payleor.com` lists the client's projects across teams, each linking to the team's `.app` client page. The web equivalent of the plugin's project list.
-- **MCP host stays `api.payleor.com/mcp`** for the hackathon (registered clients point at it). This supersedes `mcp.payleor.app/mcp` (platform design §8.1) and `mcp.payleor.com/mcp` (auth federation §6); the reserved `mcp.` slug stays reserved. A move is post-hackathon.
-- **Sequencing:** core first (tables, rule, masking, events), then web surfaces, then the plugin on `perform`. A2 merges before C starts; H (Oct 18–19) lands before C ships, so the OAuth issuer is already `dash.payleor.com` and connectors are re-registered exactly once.
+- **Client and pay pages move to the seller's site:** `{team}.veetlyn.app/c/{token}` and `{team}.veetlyn.app/pay/{token}`. The host's team must match the token's project, else 404. Link building (request email, plugin results, payment router) moves from the site origin to the team subdomain. The tunnel already serves `*.veetlyn.app`, so dev works before run H.
+- **Client HQ home:** a minimal signed-in page on `veetlyn.com` lists the client's projects across teams, each linking to the team's `.app` client page. The web equivalent of the plugin's project list.
+- **MCP host stays `api.veetlyn.com/mcp`** for the hackathon (registered clients point at it). This supersedes `mcp.veetlyn.app/mcp` (platform design §8.1) and `mcp.veetlyn.com/mcp` (auth federation §6); the reserved `mcp.` slug stays reserved. A move is post-hackathon.
+- **Sequencing:** core first (tables, rule, masking, events), then web surfaces, then the plugin on `perform`. A2 merges before C starts; H (Oct 18–19) lands before C ships, so the OAuth issuer is already `dash.veetlyn.com` and connectors are re-registered exactly once.
 
 ## 4. Data (one migration)
 
@@ -58,11 +58,11 @@ Registry actions through `perform`, logged with actor and surface: `conversation
 - **Open requests board** (`{dash}/{team}/requests`): requests the audience rule shows the signed-in freelancer, newest first, with department and the 48-hour countdown (display only in C; reminder and expiry are run B). A request opens to the brief, the request space and the quote form.
 - **Staff project page:** a **Request** tab (each freelancer's activity grouped, the shortlist control, Decline with a required reason) and a **Project** tab (the exchange with the client).
 - **Team settings:** each freelancer's departments; the "List in AI assistants" checkbox on the offering and department forms (checked by default).
-- **Client page** at `{team}.payleor.app/c/{token}`: responses grouped by freelancer — their questions with an Answer box, their quote with an Accept button — plus team messages and the event timeline. The composer names its audience: before acceptance "The freelancers looking at your request (contact details are hidden until you accept a quote)" with a "team only" choice; after acceptance "Your freelancer and the team". Declined/expired requests show the reason and a link to request again.
-- **Pay page** at `{team}.payleor.app/pay/{token}`: same page, new host; the payments flow is unchanged.
-- **Client HQ home** (`payleor.com`, signed in): the client's projects across teams with status, each linking to the team's `.app` client page.
+- **Client page** at `{team}.veetlyn.app/c/{token}`: responses grouped by freelancer — their questions with an Answer box, their quote with an Accept button — plus team messages and the event timeline. The composer names its audience: before acceptance "The freelancers looking at your request (contact details are hidden until you accept a quote)" with a "team only" choice; after acceptance "Your freelancer and the team". Declined/expired requests show the reason and a link to request again.
+- **Pay page** at `{team}.veetlyn.app/pay/{token}`: same page, new host; the payments flow is unchanged.
+- **Client HQ home** (`veetlyn.com`, signed in): the client's projects across teams with status, each linking to the team's `.app` client page.
 
-**Host move mechanics:** the web Worker's host routing resolves `{slug}.payleor.app` to the seller route tree (as the seller page today) and gains `/c/[token]` and `/pay/[token]` there; both 404 when the token's project belongs to another team. Link building moves from `siteOrigin` to `https://{teamSlug}.payleor.app` in `packages/api/src/use-cases/requests.ts:138`, the payment router's `clientPath`, and the plugin's results; the server joins the project's team slug when building links. Old `{site}/c/{token}` links redirect to the team host so emails sent before the move keep working.
+**Host move mechanics:** the web Worker's host routing resolves `{slug}.veetlyn.app` to the seller route tree (as the seller page today) and gains `/c/[token]` and `/pay/[token]` there; both 404 when the token's project belongs to another team. Link building moves from `siteOrigin` to `https://{teamSlug}.veetlyn.app` in `packages/api/src/use-cases/requests.ts:138`, the payment router's `clientPath`, and the plugin's results; the server joins the project's team slug when building links. Old `{site}/c/{token}` links redirect to the team host so emails sent before the move keep working.
 
 ## 8. Plugin
 
@@ -80,13 +80,13 @@ Registry actions through `perform`, logged with actor and surface: `conversation
 | `request_changes` | `delivery.request_changes` | As today |
 | `accept_quote`, `accept_delivery` | `quote.accept`, `delivery.accept` | App-only; confirmation token required; called by widget buttons only |
 
-**Widget v2:** one MCP Apps resource with versioned URIs (hosts cache by URI); offerings as a carousel; the project card shows one slide per freelancer (their quote with Accept, their questions for the model to relay); status changes call `updateModelContext` (spike lesson); themed to the host's variables with fallbacks, skeleton loading, transparent background; the bridge is bundled or served from our origin, not unpkg; `_meta.ui.csp` includes `*.payleor.app` in `redirect_domains` for ChatGPT's `openExternal`. The design pass (states, typography, dark/light) follows functionality within the run.
+**Widget v2:** one MCP Apps resource with versioned URIs (hosts cache by URI); offerings as a carousel; the project card shows one slide per freelancer (their quote with Accept, their questions for the model to relay); status changes call `updateModelContext` (spike lesson); themed to the host's variables with fallbacks, skeleton loading, transparent background; the bridge is bundled or served from our origin, not unpkg; `_meta.ui.csp` includes `*.veetlyn.app` in `redirect_domains` for ChatGPT's `openExternal`. The design pass (states, typography, dark/light) follows functionality within the run.
 
 **Reliability fixes from the spike:** reproduce the streamed-response SSE failure in a test first, then buffer the response or tie the database client's lifetime to the stream.
 
 **Skill** (`hire-a-professional`): the flow gains answering questions and replying (the "no messages" rule is retired), decline/expiry handling with a search-again offer, and the rule that file links go in the brief (no client upload exists). `reference.md` gains the new statuses.
 
-**Packaging:** one `plugins/payleor/` folder serves Claude (`.claude-plugin/plugin.json` + `.mcp.json`) and ChatGPT/Codex (`plugin.json` + `mcp.json` with `streamable-http`; `extensions.com.openai.interface` with displayName, shortDescription, a non-transactional default prompt; `onboardingSkill` as the `./`-relative SKILL.md path — a bare name fails ChatGPT's upload). A `pnpm plugin:zip` script builds both zips (Claude's with the folder, ChatGPT's flat). The README's install steps become the judges' testing instructions.
+**Packaging:** one `plugins/veetlyn/` folder serves Claude (`.claude-plugin/plugin.json` + `.mcp.json`) and ChatGPT/Codex (`plugin.json` + `mcp.json` with `streamable-http`; `extensions.com.openai.interface` with displayName, shortDescription, a non-transactional default prompt; `onboardingSkill` as the `./`-relative SKILL.md path — a bare name fails ChatGPT's upload). A `pnpm plugin:zip` script builds both zips (Claude's with the folder, ChatGPT's flat). The README's install steps become the judges' testing instructions.
 
 ## 9. Errors and edge cases
 

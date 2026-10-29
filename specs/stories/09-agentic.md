@@ -7,9 +7,9 @@ Planned stories for the agentic surfaces program (`../platform/2026-10-13-agenti
 Security rules every story here assumes (program §3.4):
 
 - A member of the project's team is never its client, whatever link, contact or email they hold.
-- Only identities Payleor verified count: an email whose link was clicked, a Discord user who interacted, a signed-in account.
+- Only identities Veetlyn verified count: an email whose link was clicked, a Discord user who interacted, a signed-in account.
 - Built agent policy remains enforced by `perform`. For the planned contextual agent, Ask me drafts for authorized confirmation; Auto is limited to expressly configured eligible transitions and limits, never client acceptance or PayPal checkout approval. No prompt or scope change grants authority; an API key never acts as a client. The Auto allowlist and actor/delegation contract must be approved before those execution stories are implemented.
-- Accepting a quote or a delivery from an AI client needs a press on a Payleor widget button.
+- Accepting a quote or a delivery from an AI client needs a press on a Veetlyn widget button.
 - Every payment needs the payer's PayPal approval on the pay page.
 
 ## A2: client contacts
@@ -95,7 +95,7 @@ Plan: not written. Its walkthrough also runs the whole book on the deployed host
 ### AGT-07: The platform runs on the deployed sandbox hosts
 
 - **Actor:** team admin, client · **Surface:** web (`{site}`, `{dash}`, `{seller}`) · **Delivered by:** H · **Status:** Walked through 2026-10-20 on production (H plan Outcome)
-- **Preconditions:** run H deployed; `{dash}` is `https://dash.payleor.com`.
+- **Preconditions:** run H deployed; `{dash}` is `https://dash.veetlyn.com`.
 - **Steps:**
   1. Open `{site}`, sign in on `{dash}`, open `{dash}/walk-crew`.
   2. Open the walk-crew seller page on `{seller}` and request a quote.
@@ -107,7 +107,7 @@ Plan: not written. Its walkthrough also runs the whole book on the deployed host
   - Every story in areas 01 to 07 can run against these hosts.
 - **Edge cases:** PayPal return URLs (onboarding, Log in with PayPal, automatic payouts) come back to the deployed hosts.
 
-### AGT-08: PayPal shows the partner app as Payleor
+### AGT-08: PayPal shows the partner app as Veetlyn
 
 - **Actor:** team admin · **Surface:** PayPal consent screens · **Delivered by:** H · **Status:** Walked through 2026-10-20 on production (H plan Outcome)
 - **Preconditions:** AGT-07.
@@ -115,24 +115,24 @@ Plan: not written. Its walkthrough also runs the whole book on the deployed host
   1. Start turning on automatic payouts (OUT-04).
   2. [human] Read the PayPal consent screen.
 - **Expected:**
-  - PayPal names the app Payleor (no longer "Test Store").
+  - PayPal names the app Veetlyn (no longer "Test Store").
 - **Edge cases:** none.
 
 ## C: client's AI plugin
 
-Plan: [`2026-10-15-c-plugin.md`](../archive/platform/plans/2026-10-15-c-plugin.md); Task 12 sharpened these stories to what was built (2026-10-20), Task 17 walks them. The plugin zips come from `pnpm plugin:zip` (add `--mcp-url https://api.staging.payleor.com/mcp` for staging); the demo data from `packages/db/scripts/demo-seed-conversations.ts`.
+Plan: [`2026-10-15-c-plugin.md`](../archive/platform/plans/2026-10-15-c-plugin.md); Task 12 sharpened these stories to what was built (2026-10-20), Task 17 walks them. The plugin zips come from `pnpm plugin:zip` (add `--mcp-url https://api.staging.veetlyn.com/mcp` for staging); the demo data from `packages/db/scripts/demo-seed-conversations.ts`.
 
-### AGT-09: A client connects the Payleor plugin in Claude and ChatGPT
+### AGT-09: A client connects the Veetlyn plugin in Claude and ChatGPT
 
 - **Actor:** client · **Surface:** Claude, ChatGPT · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT checked for consent and the golden prompts (2026-10-21)
 - **Preconditions:** the plugin deployed on the platform hosts.
 - **Steps:**
-  1. [human] Add the Payleor connector in Claude, then in ChatGPT.
-  2. [human] Sign in to a Payleor client account through the OAuth screen, then read the consent page "Connect your AI assistant" on `{dash}/oauth/consent`.
+  1. [human] Add the Veetlyn connector in Claude, then in ChatGPT.
+  2. [human] Sign in to a Veetlyn client account through the OAuth screen, then read the consent page "Connect your AI assistant" on `{dash}/oauth/consent`.
 - **Expected:**
   - The consent page says "After you allow it, you go back to" `claude.ai` (or `chatgpt.com`), and lists what the assistant can do; **Allow** connects.
-  - Both AI clients list Payleor's tools (`search_offerings`, `request_quote`, `list_my_projects`, `get_project`, `reply`, `request_changes`; `accept_quote` and `accept_delivery` as app-only) and show its widgets.
-  - The client account is a Payleor account with a verified identity, used for every later request.
+  - Both AI clients list Veetlyn's tools (`search_offerings`, `request_quote`, `list_my_projects`, `get_project`, `reply`, `request_changes`; `accept_quote` and `accept_delivery` as app-only) and show its widgets.
+  - The client account is a Veetlyn account with a verified identity, used for every later request.
 - **Edge cases:** a client who never connects can still use the web and email path.
 
 ### AGT-10: The client's AI searches listed offerings
@@ -175,7 +175,7 @@ Plan: [`2026-10-15-c-plugin.md`](../archive/platform/plans/2026-10-15-c-plugin.m
 - **Actor:** client, PayPal buyer · **Surface:** Claude or ChatGPT, web (pay page) · **Delivered by:** C · **Status:** Walked through in Claude on staging (2026-10-20); ChatGPT checked for consent and the golden prompts (2026-10-21)
 - **Preconditions:** AGT-12.
 - **Steps:**
-  1. [human] Press **Pay $… with PayPal**; the AI client opens the pay page on `walk-crew.payleor.app/pay/{token}` (the card shows "Opens walk-crew.payleor.app").
+  1. [human] Press **Pay $… with PayPal**; the AI client opens the pay page on `walk-crew.veetlyn.app/pay/{token}` (the card shows "Opens walk-crew.veetlyn.app").
   2. [human] Approve the payment in the PayPal popup as the PayPal buyer.
 - **Expected:**
   - The pay page is the same one the web uses ([`04-payments.md`](04-payments.md)); the deposit is captured and the project starts.
@@ -273,7 +273,7 @@ Plan: [`2026-10-15-c-plugin.md`](../archive/platform/plans/2026-10-15-c-plugin.m
   1. Open the client link and the pay link from the client email.
   2. Open the same token paths on another team's subdomain, and an old client link on the site host.
 - **Expected:**
-  - The pages open on `walk-crew.payleor.app` (`/c/{token}`, `/pay/{token}`).
+  - The pages open on `walk-crew.veetlyn.app` (`/c/{token}`, `/pay/{token}`).
   - On another team's subdomain they are not found; the old site URL redirects to the team's site.
 - **Edge cases:** none.
 
@@ -470,17 +470,17 @@ Plan: not written.
 - **Steps:**
   1. [human] Ask the AI to add a product from each store, then to show the cart.
 - **Expected:**
-  - The cart card lists the items by store with prices, shipping and the total; the cart is kept on Payleor for the signed-in client.
+  - The cart card lists the items by store with prices, shipping and the total; the cart is kept on Veetlyn for the signed-in client.
 - **Edge cases:** adding more than the stock is refused.
 
 ### AGT-40: One PayPal checkout pays every store in the cart
 
-- **Actor:** client · **Surface:** Claude or ChatGPT, web (checkout on `payleor.app`) · **Delivered by:** M · **Status:** Cancelled for this delivery (2026-10-27)
+- **Actor:** client · **Surface:** Claude or ChatGPT, web (checkout on `veetlyn.app`) · **Delivered by:** M · **Status:** Cancelled for this delivery (2026-10-27)
 - **Preconditions:** AGT-39.
 - **Steps:**
-  1. [human] Press **Checkout** on the cart card; on Payleor's checkout, approve in the PayPal popup and give the shipping address there.
+  1. [human] Press **Checkout** on the cart card; on Veetlyn's checkout, approve in the PayPal popup and give the shipping address there.
 - **Expected:**
-  - One PayPal order pays each store as its own payee, with each store's flat shipping and Payleor's fee.
+  - One PayPal order pays each store as its own payee, with each store's flat shipping and Veetlyn's fee.
   - Stock is reserved at checkout; each store sees its order.
 - **Edge cases:** an item sold out since it was added is refused before payment. Cut order: one store per checkout if the multi-store order slips.
 
@@ -530,7 +530,7 @@ Plan: not written; design: [`2026-10-13-discord-ticket-flow-design.md`](../platf
   2. [human] Watch the project channel.
 - **Expected:**
   - A pinned card always shows the current state, the quote, payments and the next step naming who acts.
-  - Each event that needs someone posts a notice that mentions only that person; Payleor never pings everyone or a role.
+  - Each event that needs someone posts a notice that mentions only that person; Veetlyn never pings everyone or a role.
 - **Edge cases:** none.
 
 ### AGT-23: The freelancer delivers with /deliver
@@ -584,9 +584,9 @@ Plan: not written; design: [`2026-10-13-discord-ticket-flow-design.md`](../platf
 
 Plan: not written.
 
-### AGT-26: Payleor prepares an intake proposal in the request's context
+### AGT-26: Veetlyn prepares an intake proposal in the request's context
 
-- **Actor:** team admin and Payleor acting for that admin · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
+- **Actor:** team admin and Veetlyn acting for that admin · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
 - **Preconditions:** a new request from the web or client plugin; the section is in Ask me and the admin has the quoting grant.
 - **Steps:** open the request's call, inspect the drafted question or quote, edit it, then confirm.
 - **Expected:** the same agent uses this request's authorized records and pinned rulebook; a proposal is visibly distinct from a sent quote. Nothing reaches the client until an authorized person confirms through `perform`; the resulting event refreshes the call and record.
@@ -688,7 +688,7 @@ Plan: not written. Design: [Calls and the agent](../platform/2026-10-27-calls-an
 
 ### AGT-56: Events route and batch calls without duplicating business state
 
-- **Actor:** admin and Payleor · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
+- **Actor:** admin and Veetlyn · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
 - **Preconditions:** explicit routing rules, payout requests and a held request.
 - **Steps:** request two eligible payouts, replay an event, and add a held request.
 - **Expected:** eligible requests join the intended batch/call once; requested, eligible and held totals are distinct. Needs you / In progress / Done derive from the same current record state and actor, not independent mock counts.
@@ -696,7 +696,7 @@ Plan: not written. Design: [Calls and the agent](../platform/2026-10-27-calls-an
 
 ### AGT-57: Modes gate preparation and execution
 
-- **Actor:** authorized admin and Payleor · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
+- **Actor:** authorized admin and Veetlyn · **Surface:** contextual dash · **Delivered by:** D / contextual agent · **Status:** Planned (D)
 - **Preconditions:** approved mode-change behavior and an explicit Auto action allowlist/limit; a forbidden action and over-limit case.
 - **Steps:** exercise the same request in Manual, Ask me and Auto, then retry without the required role.
 - **Expected:** Manual waits for the person; Ask me prepares but does not execute; Auto executes only a rule-authorized eligible transition and logs its actor/rule/version. Forbidden and over-limit actions require the defined human path. Checkout still needs the payer's PayPal approval.
@@ -704,7 +704,7 @@ Plan: not written. Design: [Calls and the agent](../platform/2026-10-27-calls-an
 
 ### AGT-58: Stale widgets cannot bypass a transition guard
 
-- **Actor:** admin and Payleor · **Surface:** contextual dash/API action boundary · **Delivered by:** D / contextual agent · **Status:** Planned (D)
+- **Actor:** admin and Veetlyn · **Surface:** contextual dash/API action boundary · **Delivered by:** D / contextual agent · **Status:** Planned (D)
 - **Preconditions:** a payout approval card, then a hold or state change before it is pressed.
 - **Steps:** open the card, change the underlying state, and attempt its action; repeat/retry the accepted action.
 - **Expected:** `perform` rechecks state, ACL and pinned rules at execution. A stale action is refused with the current reason; a retry cannot pay twice. Tools/widgets and the call refresh from the resulting business event.
@@ -720,7 +720,7 @@ Plan: not written. Design: [Calls and the agent](../platform/2026-10-27-calls-an
 
 ### AGT-60: The Meta demo proves newly built contextual-agent work
 
-- **Actor:** team admin and Payleor · **Surface:** deployed contextual dash · **Delivered by:** D / Meta demo · **Status:** Planned (D)
+- **Actor:** team admin and Veetlyn · **Surface:** deployed contextual dash · **Delivered by:** D / Meta demo · **Status:** Planned (D)
 - **Preconditions:** implemented runtime using the selected Meta model, approved scope/Auto limits and a documented Oct 27–Nov 4 build-window change set.
 - **Steps:** show an event-driven call, the prepared action, context composition, authorized confirmation and the refreshed outcome; contrast an eligible payout with a held one, then an intake proposal in the same agent.
 - **Expected:** video and evidence distinguish pre-existing PayPal/B1 foundations from new agentic work. Actual model/tool use, business transitions, rule/permission enforcement and the action log are observable; static mockups are not presented as implemented behavior.

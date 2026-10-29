@@ -493,7 +493,7 @@ The reference shows no forms, records, empty states, dialogs or agent views. Der
 
 - [ ] Replace `TeamShell`'s frame with `AppFrame`, filled as follows:
   - **Switcher:** the seller, inside the workspace.
-  - **Top items:** "Overview" and "Payleor" (the agent's page, under its own route `[storeSlug]/agent`; empty for now with the `AgentComposer`).
+  - **Top items:** "Overview" and "Veetlyn" (the agent's page, under its own route `[storeSlug]/agent`; empty for now with the `AgentComposer`).
   - **`QuickFind`:** jumps to sections and records.
   - **Groups:** Phase 1's groups as `SidebarGroup`s.
   - **Footer:** Settings, Support (link to contact).
@@ -508,7 +508,7 @@ Every page takes one of four shapes. The list shape is the reference itself.
 
 | Shape | Composition | Pages |
 |---|---|---|
-| **List** | `PageHeader` → `Banner` (what Payleor prepared here, or setup) → filter row (`Segmented` period, `DateRange`, `Select`; actions on the right) → section heading → `StatCard` row (auto-fit, `minmax(14rem, 1fr)`) → `ChartCard` row (2fr / 1fr) → `DataTable` | Requests, Projects, Payments, Payouts, PayPal cases, Services, Products, Orders, Members, My purchases, My earnings |
+| **List** | `PageHeader` → `Banner` (what Veetlyn prepared here, or setup) → filter row (`Segmented` period, `DateRange`, `Select`; actions on the right) → section heading → `StatCard` row (auto-fit, `minmax(14rem, 1fr)`) → `ChartCard` row (2fr / 1fr) → `DataTable` | Requests, Projects, Payments, Payouts, PayPal cases, Services, Products, Orders, Members, My purchases, My earnings |
 | **Record** | `PageHeader` → `RecordHeader` → `StatCard` row for the record's figures → `Tabs` of `Section`s | A project (split `project-detail.tsx` into one section per child: quote, amendments, deliveries, conversation, clients, refunds, case), a product, a service, a member, a rulebook version |
 | **Summary** | `PageHeader` → `Banner` → `StatCard` row per child node → one `Section` per child with its top rows | Account home, Personal workspace home, Workspace home, seller Overview |
 | **Settings** | `PageHeader` → `Tabs` → `Section`s of `FormRow`s | Settings: General, Operating model, PayPal and channels; account |
@@ -542,7 +542,7 @@ For each page in the table, in this order:
 - [ ] Delete `_kit` and the old Relief-only classes that nothing uses any more (`grep` each token).
 - [ ] Run the `ui-review` skill on Payouts, a project, Settings and the Account home, and fix its findings.
 - [ ] Run the `test-audit` skill over the tests in Tasks 1, 2 and 8.
-- [ ] Run the `security-audit` skill (quick profile) on `origin/main...dash-tree-revamp`, with output in `~/security-audit-skill/payleor/run-dash-revamp`.
+- [ ] Run the `security-audit` skill (quick profile) on `origin/main...dash-tree-revamp`, with output in `~/security-audit-skill/veetlyn/run-dash-revamp`.
 - [ ] Deploy to staging (Mouhamed runs it), then walk the stories listed above. Record the outcome below, set the stories' statuses, and update `PROGRESS.md`.
 
 ## Outcome

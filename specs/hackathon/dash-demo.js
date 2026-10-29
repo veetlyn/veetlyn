@@ -55,7 +55,7 @@
     document.querySelectorAll('[data-selection-names]').forEach(el => { el.textContent = rows.length ? rows.map(p => p.name).join(' and ') : 'Select a payout awaiting approval.'; });
     document.querySelectorAll('[data-review-approval]').forEach(button => { button.disabled = !rows.length; });
     const textarea = document.querySelector('.composer textarea');
-    if (body && textarea) textarea.placeholder = rows.length ? `Ask Payleor about payouts, or about the ${rows.length} selected` : 'Ask Payleor about payouts';
+    if (body && textarea) textarea.placeholder = rows.length ? `Ask Veetlyn about payouts, or about the ${rows.length} selected` : 'Ask Veetlyn about payouts';
     const paid = document.querySelector('[data-paid-total]');
     if (paid) paid.textContent = money(sum(payouts.filter(p => p.state === 'paid')));
   }

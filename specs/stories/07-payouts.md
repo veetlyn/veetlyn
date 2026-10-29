@@ -17,7 +17,7 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
   2. Click **Log in with PayPal**.
   3. [human] Log in to PayPal as the member payout destination (sandbox buyer 1) and consent.
 - **Expected:**
-  - Before connecting, the section says "Connect your PayPal account once. Payleor stores your PayPal payer ID; teams pay you with it." and the Earnings card says "Connect your PayPal account above to request a payout."
+  - Before connecting, the section says "Connect your PayPal account once. Veetlyn stores your PayPal payer ID; teams pay you with it." and the Earnings card says "Connect your PayPal account above to request a payout."
   - After the return, the page shows "Verified PayPal account ({email}). Payer ID {13-character payer ID}." and "Verified {date}. Teams pay you with this PayPal account."
   - With the box ticked, it shows "Confirmed 18 or older."
   - The destination records the PayPal country (buyer 1 is US), which sets the fee estimate in OUT-07.
@@ -40,10 +40,10 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
 - **Actor:** freelancer · **Surface:** web (`{dash}/me/payouts`) · **Delivered by:** R5c (`abc93b0`) · **Status:** Built
 - **Preconditions:** a member with no destination.
 - **Steps:**
-  1. [human] Click **Log in with PayPal** while the browser is still signed in to PayPal as an account already linked to another Payleor user (for example walk-crew's business account), and consent.
+  1. [human] Click **Log in with PayPal** while the browser is still signed in to PayPal as an account already linked to another Veetlyn user (for example walk-crew's business account), and consent.
   2. [human] Start again and take more than 5 minutes to finish the PayPal sign-in.
 - **Expected:**
-  - Step 1 returns with "This PayPal account is already connected to another Payleor account. Log out of PayPal, then log in with a different PayPal account."
+  - Step 1 returns with "This PayPal account is already connected to another Veetlyn account. Log out of PayPal, then log in with a different PayPal account."
   - Step 2 returns with "The PayPal sign-in took too long. Try again and finish within 5 minutes."
   - No destination is saved in either case.
 - **Edge cases:** any other PayPal error shows "PayPal did not confirm the connection. Try again."; PayPal not sharing a payer ID shows "PayPal did not confirm your payer ID. Connect PayPal again."
@@ -55,16 +55,16 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
 - **Actor:** team admin · **Surface:** web (`{dash}/walk-crew/payouts`) and PayPal mini-browser · **Delivered by:** R5c (`b437e78`, `0f0f58a`), R5b-1 (`a4cf6a8`) · **Status:** Built
 - **Preconditions:** walk-crew has PayPal connected (see [`01-accounts-and-setup.md`](01-accounts-and-setup.md)) and automatic payouts off.
 - **Steps:**
-  1. Open `{dash}/walk-crew/payouts`. The "Automatic payouts" card says "Payleor sends members' payouts from this team's PayPal balance. PayPal's fee comes off each payout."
+  1. Open `{dash}/walk-crew/payouts`. The "Automatic payouts" card says "Veetlyn sends members' payouts from this team's PayPal balance. PayPal's fee comes off each payout."
   2. Click **Turn on automatic payouts**, then **Continue in PayPal**.
   3. [human] In the PayPal window, log in as the PayPal seller (sandbox seller 3) and consent.
 - **Expected:**
-  - Step 2 shows "PayPal opens in a small secure window and shares this team's payout access with Payleor." and, after the consent, "Checking the connection with PayPal…".
+  - Step 2 shows "PayPal opens in a small secure window and shares this team's payout access with Veetlyn." and, after the consent, "Checking the connection with PayPal…".
   - The card then says "On. Payouts are sent from ••••75MG." and "Verified {date}.", with no reconnect prompt (the connection asks PayPal for the balance and transaction search permissions).
   - The dashboard checklist step "Turn on automatic payouts" is done.
 - **Edge cases:** consenting with another PayPal account than the team's shows "Connect the PayPal account this team already uses (••••75MG)." and saves nothing; a team without PayPal connected gets "Connect PayPal first."; an attempt older than an hour or already used shows "This PayPal connection expired. Turn on automatic payouts again."; PayPal refusing the exchange shows "PayPal did not confirm the connection. Try again."; an account without Payouts enabled shows "PayPal has not turned on Payouts for this PayPal account. Ask PayPal to turn it on, then try again.". PayPal calling back twice for one consent completes the connection once. Before run H the sandbox consent screen names the partner app "Test Store".
 
-### OUT-05: Admin reconnects so Payleor can read the PayPal balance
+### OUT-05: Admin reconnects so Veetlyn can read the PayPal balance
 
 - **Actor:** team admin · **Surface:** web (`{dash}/walk-crew/payouts`) · **Delivered by:** R5b-1 (`a4cf6a8`) · **Status:** Built
 - **Preconditions:** automatic payouts on with a connection made before R5b-1 (it cannot read the balance).
@@ -73,7 +73,7 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
   2. Click **Reconnect**, then **Continue in PayPal**.
   3. [human] Consent in the PayPal window as the PayPal seller.
 - **Expected:**
-  - Before: the card shows "Reconnect so Payleor can read your PayPal balance." with **Reconnect**; the rules page's balance floor hint says "Turn on automatic payouts again so Payleor can read your balance."
+  - Before: the card shows "Reconnect so Veetlyn can read your PayPal balance." with **Reconnect**; the rules page's balance floor hint says "Turn on automatic payouts again so Veetlyn can read your balance."
   - After: the card shows only "On. Payouts are sent from ••••75MG." and the reconnect prompt is gone.
 - **Edge cases:** see OUT-22 for payouts while the balance cannot be read.
 
@@ -104,7 +104,7 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
   - After the request: "Payout requested. An admin of Walk Crew reviews it." The amount moves from Available to In progress, the History shows the request as "Waiting for approval", and the card says "Your payout request for this team is still in progress." with the field disabled.
 - **Edge cases:** an amount over the available balance shows "You can request up to {available}."; under 1.00 shows "Enter at least 1.00."; over 20,000 shows "PayPal pays at most 20,000.00 at a time."; an amount that leaves less than 1.00 after the fee shows "This payout is too small to cover PayPal's fee." under the field and is refused; a second request while one is open is refused with "You already have a payout in progress for this team."; a project payout in progress (OUT-17) does not block a request. With no earnings the section says "No earnings yet. Your share of a project shows up here once the client has paid and the project is complete."
 
-### OUT-08: Admin approves a request and Payleor sends it
+### OUT-08: Admin approves a request and Veetlyn sends it
 
 - **Actor:** team admin · **Surface:** web (`{dash}/walk-crew/payouts`) · **Delivered by:** R5c (`b437e78`), R5b-1 (`a4cf6a8`) · **Status:** Built
 - **Preconditions:** automatic payouts on (OUT-04); a $25.00 request waiting (OUT-07) from a member who is not the approving admin (sign in as the second admin when Walk Through is the payee).
@@ -286,7 +286,7 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
   3. As an admin (not the payee), approve it.
   4. Lower the floor to 100.00, save, and click **Retry** (or wait for the next try).
 - **Expected:**
-  - The floor hint reads "Payleor reads your PayPal balance to apply this."
+  - The floor hint reads "Veetlyn reads your PayPal balance to apply this."
   - Step 2: the request is not auto-approved ("Payout requested. An admin of Walk Crew reviews it.").
   - Step 3: the row stays "Approved, waiting to send" with "Waiting until the team's PayPal balance stays above $10,000.00." and "Next try {time}" about 15 minutes later.
   - Step 4: the payout is sent and settles as OUT-10.
@@ -299,7 +299,7 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
 - **Steps:**
   1. Approve a request.
 - **Expected:**
-  - The row waits with "Turn on automatic payouts again so Payleor can read your PayPal balance." and a next try.
+  - The row waits with "Turn on automatic payouts again so Veetlyn can read your PayPal balance." and a next try.
   - Auto-approval rules do not approve payouts while the balance is unreadable.
 - **Edge cases:** without a floor the payout sends, and PayPal's insufficient-funds refusal still holds it (OUT-11).
 
@@ -336,8 +336,8 @@ Status note: `Built (not walked through)` marks stories whose code is merged but
   2. Click **Export for PayPal Payouts Web**.
 - **Expected:**
   - Each payout line shows the member, the amount and "Sends {amount} after PayPal's fee (about)" once an estimate exists.
-  - The section lists the steps "In PayPal, open Pay & Get Paid > Payouts.", "Upload this file and send the payout." and "When it shows Processed, open it under Activity and choose Download > Download (CSV)." and the note "Your PayPal account needs Payouts turned on. PayPal charges its fee to your account; Payleor takes it from the member's payout, as with automatic payouts."
-  - The browser downloads `payleor-payouts-{YYYY-MM-DD}.csv` with one line per payout and no header: payer ID, the amount less the fee estimate, currency, a reference starting with `PL`, "Payout from Walk Crew via Payleor", `PAYPAL`.
+  - The section lists the steps "In PayPal, open Pay & Get Paid > Payouts.", "Upload this file and send the payout." and "When it shows Processed, open it under Activity and choose Download > Download (CSV)." and the note "Your PayPal account needs Payouts turned on. PayPal charges its fee to your account; Veetlyn takes it from the member's payout, as with automatic payouts."
+  - The browser downloads `veetlyn-payouts-{YYYY-MM-DD}.csv` with one line per payout and no header: payer ID, the amount less the fee estimate, currency, a reference starting with `PL`, "Payout from Walk Crew via Veetlyn", `PAYPAL`.
   - The row becomes "Sent through PayPal Payouts Web" with **Cancel export**.
 - **Edge cases:** "No approved payouts to export." when none qualify; payouts before their payday, unconfirmed or flagged for review are not offered; mixed currencies: "Export one currency at a time."; with automatic payouts on, the section is hidden and the API refuses with "Automatic payouts send these for you.".
 

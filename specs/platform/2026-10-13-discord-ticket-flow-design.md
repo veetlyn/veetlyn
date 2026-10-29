@@ -4,32 +4,32 @@
 
 **Date:** 2026-10-13. **Status:** reframed on 2026-10-13 by the agentic surfaces program (`2026-10-13-agentic-surfaces-program.md`): this becomes run E. Its flow, money rules and Discord facts carry over; the Discord-only tables (§4.1–4.3) and the Discord-specific consumer give way to the client contacts (run A2) and the delivery pipeline (run B), and the client's home surface decides where client notices go. Run E builds only the minimum the demo needs (program §4: a channel for any project, card, notices, `/deliver`, client buttons, draft confirmation); amendments, payouts, `/ask` and archiving come after the hackathon. Revise to that scope before run E's plan. On 2026-10-14 Mouhamed added request threads (program §4.1): a request gets a channel or thread where the client talks with the team's freelancers before a quote, and accepting a freelancer's quote opens the private project channel with that freelancer, with messages synced between the two. This replaces §2's "client-started requests from Discord are out of scope" and "only team members start projects" for requests. The conversations design (`2026-10-14-conversations-design.md` §7) defines the spaces, the relay, the Gateway reader and masking; run E's revision builds on it.
 
-**Builds on:** S2 Discord (`../archive/platform/plans/2026-10-06-s2-discord.md`: sign-in with Discord, account and server link, `/payleor link`, `/payouts setup`, the interaction endpoint and the unused REST client), services spec §5.2 (every step on every surface), §6.6 (outbox), §8.1 (shared use cases) and §8.4 (Payleor's bot), R5b-1 payout rules (`2026-10-13-payout-rules-design.md`).
+**Builds on:** S2 Discord (`../archive/platform/plans/2026-10-06-s2-discord.md`: sign-in with Discord, account and server link, `/veetlyn link`, `/payouts setup`, the interaction endpoint and the unused REST client), services spec §5.2 (every step on every surface), §6.6 (outbox), §8.1 (shared use cases) and §8.4 (Veetlyn's bot), R5b-1 payout rules (`2026-10-13-payout-rules-design.md`).
 
 **Run order:** first written as run 5b-2; now run E of the agentic surfaces program.
 
 ## 1. Goal
 
-A services team runs its client projects inside its own Discord server. A team member starts a project for a client with one command; Payleor creates a private channel for it, keeps a pinned card that always shows the project's current state, and lets each person act where they are: the team quotes, amends and delivers with commands, the client accepts, pays and reviews with buttons. Members check earnings and request payouts, and admins approve payouts, from Discord too. Every action goes through the same use cases as the web app, so Discord and the web always agree.
+A services team runs its client projects inside its own Discord server. A team member starts a project for a client with one command; Veetlyn creates a private channel for it, keeps a pinned card that always shows the project's current state, and lets each person act where they are: the team quotes, amends and delivers with commands, the client accepts, pays and reviews with buttons. Members check earnings and request payouts, and admins approve payouts, from Discord too. Every action goes through the same use cases as the web app, so Discord and the web always agree.
 
 ## 2. Decisions
 
-- **Full ticket flow.** Payleor creates one private channel per project. The team does not need its own ticket bot.
-- **Who is the client.** The user picked in `/project start client:@user`. The team can add more client users to a project (a client's colleagues) and remove them. Clients are matched by their Discord user ID and do not need a Payleor account.
+- **Full ticket flow.** Veetlyn creates one private channel per project. The team does not need its own ticket bot.
+- **Who is the client.** The user picked in `/project start client:@user`. The team can add more client users to a project (a client's colleagues) and remove them. Clients are matched by their Discord user ID and do not need a Veetlyn account.
 - **Who starts.** Only team members start projects (`/project start client:@user title:`). Client-started requests from Discord are out of scope; clients keep the seller page request form.
-- **Team members link Discord.** A team member's commands and clicks count only when their Discord account is linked to their Payleor account (S2 account link). Payleor then checks their team role exactly as the web does.
+- **Team members link Discord.** A team member's commands and clicks count only when their Discord account is linked to their Veetlyn account (S2 account link). Veetlyn then checks their team role exactly as the web does.
 - **Extras in scope:** amendments, `/project assign`, adding and removing client users, archiving the channel when the project ends, payout commands, payout approval cards and member DMs.
 - **Payout notices** go to one team channel an admin picks (the payouts channel), with approval cards for admins. Members get DMs about their own payouts.
 - **Channel visibility.** A project channel is visible to its client users, the assigned freelancer, and one staff role the admin picks. Nobody else in the server sees it.
-- **Delivery (option A).** Every committed change already writes outbox events (§6.6). Payleor sends each new event to a `DISCORD_OUTBOX` Cloudflare Queue; the consumer posts and edits Discord messages; a delivery table records progress and the 10-minute cron re-queues anything missed. Discord is never called inside a database transaction.
+- **Delivery (option A).** Every committed change already writes outbox events (§6.6). Veetlyn sends each new event to a `DISCORD_OUTBOX` Cloudflare Queue; the consumer posts and edits Discord messages; a delivery table records progress and the 10-minute cron re-queues anything missed. Discord is never called inside a database transaction.
 - **Three stages, one spec, three plans:** 5b-2a foundation, 5b-2b project actions, 5b-2c payouts (§3). Each stage ends with a real-server walkthrough.
-- **Out of scope:** `/project draft`, client-started requests in Discord, mirroring Discord roles into Payleor roles, channels for projects started on the web (backlog), moving email onto the outbox, the outgoing webhooks of §8.3, cases (`/case open`).
+- **Out of scope:** `/project draft`, client-started requests in Discord, mirroring Discord roles into Veetlyn roles, channels for projects started on the web (backlog), moving email onto the outbox, the outgoing webhooks of §8.3, cases (`/case open`).
 
 ## 3. Stages
 
 ### 3.1 5b-2a foundation
 
-0. **S2 real-server check (first task).** S2 never had a confirmed walkthrough in a real server. Before building on it: save the interaction endpoint through the tunnel, register the dev commands in the test server, link a Payleor account with Discord, run `/payleor link` and `/payouts setup`. Any fix lands before the next task.
+0. **S2 real-server check (first task).** S2 never had a confirmed walkthrough in a real server. Before building on it: save the interaction endpoint through the tunnel, register the dev commands in the test server, link a Veetlyn account with Discord, run `/veetlyn link` and `/payouts setup`. Any fix lands before the next task.
 1. Discord settings page and bot install with the permissions of §9.1.
 2. The delivery pipeline (§5): outbox delivery rows, the queue and consumer, the cron catch-up, the Discord REST client with rate limits.
 3. `/project start` (channel then project), the pinned project card, notices.
@@ -62,11 +62,11 @@ The guild ID stays on `services_team_settings.discord_guild_id` (S2). Changing t
 
 ### 4.2 `project_client_user`
 
-`project_id`, `discord_user_id`, `added_by_id` (Payleor user), `added_at`; primary key (`project_id`, `discord_user_id`). `/project start` inserts the first row and also fills `project.client_discord_id` as today. A project keeps at least one client user.
+`project_id`, `discord_user_id`, `added_by_id` (Veetlyn user), `added_at`; primary key (`project_id`, `discord_user_id`). `/project start` inserts the first row and also fills `project.client_discord_id` as today. A project keeps at least one client user.
 
 ### 4.3 `discord_message`
 
-The Discord messages Payleor edits later: `id`, `team_id`, `kind` (`project_card`, `payout_card`), `project_id` or `payout_request_id`, `channel_id`, `message_id`, `created_at`. Unique per (`project_id`, `kind`) and per (`payout_request_id`, `kind`). Notices and DMs are not stored here.
+The Discord messages Veetlyn edits later: `id`, `team_id`, `kind` (`project_card`, `payout_card`), `project_id` or `payout_request_id`, `channel_id`, `message_id`, `created_at`. Unique per (`project_id`, `kind`) and per (`payout_request_id`, `kind`). Notices and DMs are not stored here.
 
 ### 4.4 `outbox_delivery`
 
@@ -127,17 +127,17 @@ An event can need several Discord actions: edit the project card, post a notice,
 ### 6.2 Card and notices
 
 - **Card (one per project, pinned):** title, status, client users, assigned freelancer, the current quote with numbered items, payments (paid and due), deadline, and the next step naming who acts. Its buttons depend on the state (§7.2). It has a link button to the client page (`/c/{token}`), as services spec §5.2 says.
-- **Notices:** a short message for each event that needs someone, mentioning that person, for example "@client, the quote is ready: $1,200. Accept it on the pinned card." Card edits do not ping anyone, so notices do. Every post sets `allowed_mentions` to the named users only; Payleor never pings `@everyone` or roles.
+- **Notices:** a short message for each event that needs someone, mentioning that person, for example "@client, the quote is ready: $1,200. Accept it on the pinned card." Card edits do not ping anyone, so notices do. Every post sets `allowed_mentions` to the named users only; Veetlyn never pings `@everyone` or roles.
 
 ### 6.3 Assign and clients
 
-- `/project assign freelancer:@user` in a project channel, with the web's assign permission. The freelancer must be a linked team member. Payleor adds their overwrite and removes the previous freelancer's, unless that person is also a client user.
+- `/project assign freelancer:@user` in a project channel, with the web's assign permission. The freelancer must be a linked team member. Veetlyn adds their overwrite and removes the previous freelancer's, unless that person is also a client user.
 - `/project client add user:@user` and `/project client remove user:@user`, for team members who can start projects. Add writes the row and the overwrite; remove deletes both and refuses to remove the last client user.
 - All three write outbox events, and the overwrite changes run as steps of those events, so they retry like everything else.
 
 ### 6.4 Archive
 
-On `project.completed` or `project.cancelled`: rename the channel `done-…` or `cancelled-…`, move it to the archive category when one is set, and set client users and the freelancer to read only (deny Send Messages). Payleor never deletes a project channel. A Discord category holds at most 50 channels: when the archive category is full the channel stays where it is (renamed), and the settings page shows a warning.
+On `project.completed` or `project.cancelled`: rename the channel `done-…` or `cancelled-…`, move it to the archive category when one is set, and set client users and the freelancer to read only (deny Send Messages). Veetlyn never deletes a project channel. A Discord category holds at most 50 channels: when the archive category is full the channel stays where it is (renamed), and the settings page shows a warning.
 
 ## 7. Commands, buttons and modals
 
@@ -170,11 +170,11 @@ Commands that need a project find it by the channel and answer "Run this in a pr
 
 ### 7.3 Modals (5b-2b)
 
-Discord shows a modal only as the first answer to an interaction, inside the 3-second window, so Payleor opens modals without reading the database. All checks run when the modal is submitted (deferred).
+Discord shows a modal only as the first answer to an interaction, inside the 3-second window, so Veetlyn opens modals without reading the database. All checks run when the modal is submitted (deferred).
 
 - **Quote:** "Items", a paragraph field of up to 10 lines, one item per line as `Description | 120.00 | 2` (extra days optional); "Delivery days". The `freelancer` option travels in the modal's `custom_id`. Bad lines are listed back by line number. Quotes with more than 10 items use the web form.
 - **Amendment:** "Add items" (same line format), "Remove items" (item numbers from the pinned card, comma-separated), "Note".
-- **Delivery:** "Note", "Link", and an optional file through the modal file upload. Payleor copies the file into delivery storage while handling the submit, with the web's size limit; a larger file gets a pointer to the web form.
+- **Delivery:** "Note", "Link", and an optional file through the modal file upload. Veetlyn copies the file into delivery storage while handling the submit, with the web's size limit; a larger file gets a pointer to the web form.
 - **Request changes** (client): "What should change?".
 
 ## 8. Payouts in Discord (5b-2c)
@@ -200,7 +200,7 @@ After the server link:
 - **Bot:** installed or not, with the install link; the last permission check and any missing permission by name.
 - **Menus:** projects category, archive category, staff role, payouts channel. Options are loaded through the bot (the guild's channels and roles); saving checks the bot can see and manage them.
 - **Members:** which team members have linked Discord, since only they can use commands and buttons.
-- **Status:** the last delivered event and failed deliveries with their reason, the fix ("Give the Payleor bot Manage Roles", "The payouts channel was deleted, pick another") and **Retry**.
+- **Status:** the last delivered event and failed deliveries with their reason, the fix ("Give the Veetlyn bot Manage Roles", "The payouts channel was deleted, pick another") and **Retry**.
 
 Only team admins (`manage_connections`) see and change this page.
 
@@ -209,7 +209,7 @@ Only team admins (`manage_connections`) see and change this page.
 - Interactions answer within 3 seconds by deferring, as S2 does; the follow-up edits the deferred reply.
 - A member who leaves the team keeps their Discord account link but loses command access, because every command checks the current role.
 - A client user who leaves the server keeps their row; removing them is the team's choice.
-- A deleted project channel: events for it fail with Unknown Channel and show on the settings page. Payleor does not recreate the channel; the project continues on the web.
+- A deleted project channel: events for it fail with Unknown Channel and show on the settings page. Veetlyn does not recreate the channel; the project continues on the web.
 - Unlinking the server (S2) stops delivery: new events become `not_needed`; existing channels stay.
 - The same Discord user can be a client of one project and a member of the team; clicks are judged by their role in that project (client buttons) or in the team (commands, approvals).
 - Rate limits and outages delay Discord, never the change itself: the database commits first and Discord catches up.

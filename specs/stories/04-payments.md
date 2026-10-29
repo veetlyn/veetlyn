@@ -4,7 +4,7 @@ The pay page (deposit, top-up, balance), PayPal webhooks and fees in the ledger.
 
 Shared facts for these stories:
 
-- `walk-crew` charges a 10% management fee and keeps a 15% team cut. Its plan (Team) sends Payleor 0.5% of each payment as PayPal's `platform_fees`; a solo seller (Solo plan) sends 1%. The plans and fees are in `packages/core/src/billing/seller-plans.ts` (changed on 2026-10-19 from 1% and 2%).
+- `walk-crew` charges a 10% management fee and keeps a 15% team cut. Its plan (Team) sends Veetlyn 0.5% of each payment as PayPal's `platform_fees`; a solo seller (Solo plan) sends 1%. The plans and fees are in `packages/core/src/billing/seller-plans.ts` (changed on 2026-10-19 from 1% and 2%).
 - Pay the PayPal popup from a browser profile that is not signed in to PayPal as the sandbox seller; PayPal refuses a payment to yourself (`CANNOT_PAY_SELF`).
 - The team pages show payment statuses only. Ledger entries, fees and webhook events have no page yet, so those checks are marked "DB check (developer)".
 
@@ -124,7 +124,7 @@ Shared facts for these stories:
 - **Preconditions:** a pending deposit or balance on a `walk-crew` project.
 - **Steps:**
   1. Open the pay page and click the PayPal button.
-  2. [human] Approve as the PayPal buyer, then close the Payleor tab before the page confirms. (If the popup does not open, approve on PayPal's checkout page in its own tab, as in the R2 walkthrough.)
+  2. [human] Approve as the PayPal buyer, then close the Veetlyn tab before the page confirms. (If the popup does not open, approve on PayPal's checkout page in its own tab, as in the R2 walkthrough.)
   3. After about a minute, open the client page.
 - **Expected:**
   - The payment shows "Paid" and the project has moved on (In progress after a deposit, Completed after a balance).
@@ -152,9 +152,9 @@ Shared facts for these stories:
   1. DB check (developer): read the payment row and the team's ledger transfers.
   2. [human] Compare with the capture's details in the sandbox seller's PayPal account.
 - **Expected:**
-  - The payment holds PayPal's fee and Payleor's fee from PayPal's `seller_receivable_breakdown` (for example $4.98 and $0.60 on a $120 deposit).
-  - One balanced `payment_fees` transfer per payment moves both fees from team revenue to `paypal_fees` and `payleor_fees`.
-  - For the team, `−paypal_clearing − paypal_fees − payleor_fees` matches PayPal's net amounts of its captures minus its refunds.
+  - The payment holds PayPal's fee and Veetlyn's fee from PayPal's `seller_receivable_breakdown` (for example $4.98 and $0.60 on a $120 deposit).
+  - One balanced `payment_fees` transfer per payment moves both fees from team revenue to `paypal_fees` and `platform_fees`.
+  - For the team, `−paypal_clearing − paypal_fees − platform_fees` matches PayPal's net amounts of its captures minus its refunds.
 - **Edge cases:** a capture whose receivable is in another currency is flagged: the team's project page shows "Needs review" next to the payment status (B3, not walked through; the sandbox runs in one currency). Known gap (backlog): the Icon pack capture differs from PayPal by $0.14 since its partial refund.
 
 ### PAY-13: A solo seller's deposit has no management fee and a 1% fee

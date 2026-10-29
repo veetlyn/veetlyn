@@ -6,7 +6,7 @@ Approved for implementation by Mouhamed on 2026-10-29. The controls below descri
 
 Feature PRs target dev. dev is staging. Only a release PR promotes dev into main. main is the production source. Mouhamed authorizes production promotion; merging an ordinary feature PR is not production approval. The release PR states the candidate commit, scope, evidence, configuration changes, migration impact, and rollback procedure before approval.
 
-Product branding is Veetlyn. Hosting remains Cloudflare. Production uses payleor.com, dash.payleor.com, api.payleor.com, and seller hosts under payleor.app. Staging keeps its existing separate hosts and database. The Render migration is cancelled; its reserved hostname is only a redirect.
+Product branding is Veetlyn. Hosting remains Cloudflare. Production uses veetlyn.com, dash.veetlyn.com, api.veetlyn.com, and seller hosts under veetlyn.app. Staging keeps its existing separate hosts and database. The Render migration is cancelled; its reserved hostname is only a redirect.
 
 ## Verified audit findings
 
@@ -43,7 +43,7 @@ CI: frozen-lockfile installation, secret scan, dependency audit under the docume
 
 Staging: real flows relevant to the change, route/tenant separation, authorization, session isolation, error paths and mobile usability where affected. Payments use sandbox data. Smoke tests must assert expected responses and page content, not merely HTTP 200. Maintain a release checklist mapping each claim to evidence.
 
-Production while waitlist-only: PLATFORM_NAME remains Veetlyn; domains remain payleor.com/payleor.app; PUBLIC_ACCESS is waitlist on both Workers; landing and waitlist work; login/signup and alternate auth endpoints remain blocked as designed; dashboard access redirects; no sandbox banner or demo credentials appear; seller routing remains isolated; the new logo/favicon and static assets serve correctly. Test waitlist submission only using a designated controlled address and explicit consent, with cleanup recorded. Do not email the list as a deployment side effect.
+Production while waitlist-only: PLATFORM_NAME remains Veetlyn; domains remain veetlyn.com/veetlyn.app; PUBLIC_ACCESS is waitlist on both Workers; landing and waitlist work; login/signup and alternate auth endpoints remain blocked as designed; dashboard access redirects; no sandbox banner or demo credentials appear; seller routing remains isolated; the new logo/favicon and static assets serve correctly. Test waitlist submission only using a designated controlled address and explicit consent, with cleanup recorded. Do not email the list as a deployment side effect.
 
 Backend verification: API readiness and database connectivity; expected migration state; web-to-API binding; queue consumer and maintenance configuration; webhook authentication and environment unchanged. Never make a real charge, payout or refund as a smoke test. Prefer safe observability/readiness probes and sandbox integration evidence.
 

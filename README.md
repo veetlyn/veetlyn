@@ -133,7 +133,7 @@ jendal-workspace/
 
 ## Product name
 
-The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The repository is `veetlyn/veetlyn`. Canonical domains are veetlyn.com/veetlyn.app. The old payleor.com and payleor.app hosts are no longer bound; the AI plugin is named `veetlyn`, so installs of the old `payleor` plugin need replacing. Domain activation and provider readiness must be verified through the release protocol before announcing the cutover as live. The unpublished marketing drafts use Veetlyn too.
+The public name is Veetlyn. `PLATFORM_NAME` controls the name in the website, dashboard, emails and generated UI. Production and staging use `Veetlyn`. The repository is `veetlyn/veetlyn`. The platform is on veetlyn.com and seller sites on veetlyn.app; no other domain is bound. The AI plugin is named `veetlyn`. Domain activation and provider readiness must be verified through the release protocol before announcing the cutover as live. The unpublished marketing drafts use Veetlyn too.
 
 ## Launch access and deployments
 

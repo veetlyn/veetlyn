@@ -6,14 +6,14 @@
 
 The spike ran on the dev stack over the tunnel, with Better Auth 1.7.7, `@modelcontextprotocol/server` 2.3.1 and `@modelcontextprotocol/ext-apps` 2.0.3.
 
-- **Auth:** `jwt()`, `mcp({ loginPage: "/login", consentPage: "/oauth/consent", resource: "https://api.payleor.com/mcp", allowDynamicClientRegistration, allowUnauthenticatedClientRegistration })` and `cimd({ metadataProfile: "mcp-2026-07-28" })` in `packages/auth/src/index.ts`.
+- **Auth:** `jwt()`, `mcp({ loginPage: "/login", consentPage: "/oauth/consent", resource: "https://api.veetlyn.com/mcp", allowDynamicClientRegistration, allowUnauthenticatedClientRegistration })` and `cimd({ metadataProfile: "mcp-2026-07-28" })` in `packages/auth/src/index.ts`.
 - **Database:** eight new tables (`jwks`, `oauth_client`, `oauth_resource`, `oauth_client_resource`, `oauth_access_token`, `oauth_refresh_token`, `oauth_consent`, `oauth_client_assertion`), from migrations `20261014123711_spike_mcp_oauth` and `20261014125010_spike_mcp_oauth_jsonb`.
-- **Web:** a consent page at `admin.payleor.com/oauth/consent`. `oauthProviderClient()` is added to the web auth client, and the sign-in form follows the OAuth continuation.
+- **Web:** a consent page at `admin.veetlyn.com/oauth/consent`. `oauthProviderClient()` is added to the web auth client, and the sign-in form follows the OAuth continuation.
 - **Web Worker:** forwards `/.well-known/oauth-authorization-server*` and `/.well-known/openid-configuration*` to the api.
 - **api Worker:** answers `GET /.well-known/oauth-protected-resource[/mcp]` from the Better Auth handler, and serves `POST /mcp` wrapped in `requireMcpAuth`, through `createMcpHandler(factory, { legacy: "stateless" })`.
 - **Tools:**
-  - `find_offerings` (widget `ui://payleor/offerings`).
-  - `show_quote` (widget `ui://payleor/quote`, with **Pay with PayPal** through `app.openLink` and **Accept (test)** through `app.callServerTool`).
+  - `find_offerings` (widget `ui://veetlyn/offerings`).
+  - `show_quote` (widget `ui://veetlyn/quote`, with **Pay with PayPal** through `app.openLink` and **Accept (test)** through `app.callServerTool`).
   - `accept_quote_spike`, which is app-only (`_meta.ui.visibility: ["app"]`) and logs only.
 - **Widgets:** plain HTML that imports `App` from unpkg (`_meta.ui.csp.resourceDomains: ["https://unpkg.com"]`).
 
@@ -54,7 +54,7 @@ Cloudflare's egress does not reach private networks, so the allowlist bounds the
 
 The authorization server can live on a different host from the MCP resource.
 
-- **Hosts:** the issuer is `https://admin.payleor.com/api/auth` (it follows `BETTER_AUTH_URL`) and the resource is `https://api.payleor.com/mcp`. Claude read `authorization_servers` from the protected resource metadata and ran discovery on the admin host.
+- **Hosts:** the issuer is `https://admin.veetlyn.com/api/auth` (it follows `BETTER_AUTH_URL`) and the resource is `https://api.veetlyn.com/mcp`. Claude read `authorization_servers` from the protected resource metadata and ran discovery on the admin host.
 - **Pages:** the login and consent pages are ours. The existing `/login` works once:
   - the web auth client has `oauthProviderClient()`, which adds the signed `oauth_query` to the sign-in body;
   - the form follows `{ redirect: true, url }`. The URL is relative (`/oauth/consent?…`) when consent is next.
@@ -76,13 +76,13 @@ The authorization server can live on a different host from the MCP resource.
 - **Tool list:** after connecting, Claude listed three tools, two marked interactive and one app-only. So it reads `_meta.ui.resourceUri` and `_meta.ui.visibility`.
 - **Bridge:** the widgets loaded `App` from unpkg under `_meta.ui.csp.resourceDomains`, received the tool result through `ontoolresult`, and rendered the cards with system fonts.
 - **Use of results:** Claude used the text content to answer. It noticed that the demo quote ($350) did not match the offering's listed price ($150) and said so, so run C's tool texts must be accurate and complete.
-- **First prompt:** Claude first offered a web search. The user had to say "Use Payleor for this" before it called `find_offerings`. Run C's tool descriptions should name the cases where Payleor applies.
+- **First prompt:** Claude first offered a web search. The user had to say "Use Veetlyn for this" before it called `find_offerings`. Run C's tool descriptions should name the cases where Veetlyn applies.
 
 ChatGPT: (to fill in).
 
 ### 6. Leaving the widget for the pay page
 
-**Claude: it works.** **Pay with PayPal** (`app.openLink({ url })`, which sends `ui/open-link`) opened `https://payleor.com/pay/{token}` in a new browser tab.
+**Claude: it works.** **Pay with PayPal** (`app.openLink({ url })`, which sends `ui/open-link`) opened `https://veetlyn.com/pay/{token}` in a new browser tab.
 
 - **Payment:** Mouhamed paid there with the PayPal popup on our own page. The $210 deposit of "Logo refresh" was captured and the project moved to `in_progress`.
 - **Widget status:** the widget showed "Opened the pay page." For a custom connector, Claude's docs say an "Open external link" confirmation appears first.
@@ -102,7 +102,7 @@ ChatGPT: (to fill in).
 
 ### 8. Judges
 
-- **Claude:** custom connectors are available on every plan (Free is limited to one): Settings → Connectors → Add custom connector, with the URL `https://api.payleor.com/mcp` (the deployed host after run H) and no OAuth fields.
+- **Claude:** custom connectors are available on every plan (Free is limited to one): Settings → Connectors → Add custom connector, with the URL `https://api.veetlyn.com/mcp` (the deployed host after run H) and no OAuth fields.
 - **ChatGPT:** (to fill in).
 
 ## Problems found that run C must handle
@@ -125,28 +125,28 @@ ChatGPT: (to fill in).
 ## Discovery: a plugin with skills, not a bare connector
 
 - **What we saw:**
-  - **ChatGPT:** it used Fiverr's published app for "find a logo designer" without an @-mention, but called Payleor only when Mouhamed @-mentioned it.
-  - **Claude:** it first offered a web search, and called `find_offerings` only after "Use Payleor for this".
+  - **ChatGPT:** it used Fiverr's published app for "find a logo designer" without an @-mention, but called Veetlyn only when Mouhamed @-mentioned it.
+  - **Claude:** it first offered a web search, and called `find_offerings` only after "Use Veetlyn for this".
 - **ChatGPT docs:**
   - A developer-mode (unpublished) app runs only when selected or @-mentioned for that message ("App selection applies to the message where you use it", help.openai.com 12584461).
   - Published apps can be surfaced through in-conversation discovery, which uses conversation context, brand mentions, tool metadata and linking state (developers.openai.com/apps-sdk/concepts/user-interaction).
   - Public distribution is now by plugins (apps, skills, or both) in ChatGPT and Codex, after review.
   - Model-readable text must not tell the model to prefer our app over others (submission guidelines).
-  - ChatGPT plugins use the portable Agent Plugins format: root `plugin.json` with `$schema: https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`, skills discovered from `skills/`, and `mcp.json` where each server declares `type: "streamable-http"` (not a renamed `.mcp.json`). OpenAI presentation (`displayName`, `defaultPrompt`) goes under `extensions.com.openai.interface`. Our `plugins/payleor/` already matches this format.
-  - ChatGPT web takes a zip upload (Plugins → Upload new or existing plugin, behind a verified developer identity): files at the zip root, `onboardingSkill` must be a `./`-relative path to the SKILL.md (a bare skill name fails the upload with a generic "could not be added" error). Payleor's zip uploaded clean on 2026-10-15 after that fix (`92dcbef`).
-  - Local install is by marketplace file, not upload: `$REPO_ROOT/.agents/plugins/marketplace.json` (repo) or `~/.agents/plugins/marketplace.json` (personal), with the plugin folder at e.g. `~/.codex/plugins/payleor` and `source.path` relative to the marketplace root; then restart the **desktop app** and install from the local source in the Plugins Directory. On the web, chatgpt.com/plugins → Add custom MCP server → "Create as a plugin" wraps the registered connector (tools only, no skills).
+  - ChatGPT plugins use the portable Agent Plugins format: root `plugin.json` with `$schema: https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`, skills discovered from `skills/`, and `mcp.json` where each server declares `type: "streamable-http"` (not a renamed `.mcp.json`). OpenAI presentation (`displayName`, `defaultPrompt`) goes under `extensions.com.openai.interface`. Our `plugins/veetlyn/` already matches this format.
+  - ChatGPT web takes a zip upload (Plugins → Upload new or existing plugin, behind a verified developer identity): files at the zip root, `onboardingSkill` must be a `./`-relative path to the SKILL.md (a bare skill name fails the upload with a generic "could not be added" error). Veetlyn's zip uploaded clean on 2026-10-15 after that fix (`92dcbef`).
+  - Local install is by marketplace file, not upload: `$REPO_ROOT/.agents/plugins/marketplace.json` (repo) or `~/.agents/plugins/marketplace.json` (personal), with the plugin folder at e.g. `~/.codex/plugins/veetlyn` and `source.path` relative to the marketplace root; then restart the **desktop app** and install from the local source in the Plugins Directory. On the web, chatgpt.com/plugins → Add custom MCP server → "Create as a plugin" wraps the registered connector (tools only, no skills).
   - `@plugin-creator` (ChatGPT Work mode) / `$plugin-creator` (Codex) scaffolds the older `.codex-plugin/plugin.json` compatibility layout and can wire a registered connector (`plugin_asdk_app...` id) into a plugin; the portable layout is the documented way forward.
 - **Claude docs:**
   - A plugin bundles skills, MCP connectors and commands. "A connector alone leaves Claude to work out your workflow from tool names. The skill is where you put the sequence, the defaults, and what good output looks like." (claude.com/docs/plugins/build).
   - People add a plugin from Customize → Plugins: upload a zip, add a Git repository as a marketplace (`marketplace.json`), or install from the directory (reviewed, paid plans).
   - The skill's `description` decides when Claude loads it.
 - **Spike follow-up (`spike-plugin`):**
-  - `plugins/payleor/` holds a Claude plugin: `.claude-plugin/plugin.json`, `.mcp.json` pointing at `https://api.payleor.com/mcp`, the skill `skills/hire-a-professional/SKILL.md` and a README. The same folder is a valid ChatGPT portable plugin: root `plugin.json` (0.2.0, with `extensions.com.openai.interface` and `onboardingSkill`) and `mcp.json` with `type: "streamable-http"`. Installed on Mouhamed's machine at `~/.codex/plugins/payleor` with a personal marketplace at `~/.agents/plugins/marketplace.json`.
+  - `plugins/veetlyn/` holds a Claude plugin: `.claude-plugin/plugin.json`, `.mcp.json` pointing at `https://api.veetlyn.com/mcp`, the skill `skills/hire-a-professional/SKILL.md` and a README. The same folder is a valid ChatGPT portable plugin: root `plugin.json` (0.2.0, with `extensions.com.openai.interface` and `onboardingSkill`) and `mcp.json` with `type: "streamable-http"`. Installed on Mouhamed's machine at `~/.codex/plugins/veetlyn` with a personal marketplace at `~/.agents/plugins/marketplace.json`.
   - The tool descriptions now use OpenAI's "Use this when…" wording.
-  - Whether Claude then uses Payleor without being told: **yes**. With the v2 plugin uploaded, "find me a logo refresh under $350" (no mention of Payleor) loaded the skill and called `search_offerings` (2026-10-14, 20:53; screenshot [`s-connector-v2-claude-plugin.png`](../archive/platform/plans/evidence/s-connector-v2-claude-plugin.png)). See "Claude plugin test" under Connector v2.
+  - Whether Claude then uses Veetlyn without being told: **yes**. With the v2 plugin uploaded, "find me a logo refresh under $350" (no mention of Veetlyn) loaded the skill and called `search_offerings` (2026-10-14, 20:53; screenshot [`s-connector-v2-claude-plugin.png`](../archive/platform/plans/evidence/s-connector-v2-claude-plugin.png)). See "Claude plugin test" under Connector v2.
 - **For run C and the submission:**
-  - Ship Payleor as a plugin: one `plugins/payleor/` folder serves both clients (Claude reads `.claude-plugin/` + `.mcp.json`, ChatGPT and Codex read `plugin.json` + `mcp.json`). Judges add it to Claude as a marketplace with `owner/repo`, and to ChatGPT desktop or Codex with `codex plugin marketplace add owner/repo`.
-  - Write a golden prompt set and measure how often each client calls Payleor unprompted.
+  - Ship Veetlyn as a plugin: one `plugins/veetlyn/` folder serves both clients (Claude reads `.claude-plugin/` + `.mcp.json`, ChatGPT and Codex read `plugin.json` + `mcp.json`). Judges add it to Claude as a marketplace with `owner/repo`, and to ChatGPT desktop or Codex with `codex plugin marketplace add owner/repo`.
+  - Write a golden prompt set and measure how often each client calls Veetlyn unprompted.
   - Directory listings (both clients) need review, so they cannot be counted on before judging; the testing instructions use the marketplace or upload for Claude and developer mode with an @-mention for ChatGPT.
 
 ## Connector v2 (spike, 2026-10-14 evening)
@@ -162,20 +162,20 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
   - A forged token is refused, and a real one accepted the quote (tested with the scripted client).
 - **Identity:** the client is the signed-in user's verified email matching the project's client email, and never a member of the seller's workspace. Run C replaces this with run A2's contacts and `perform`.
 - **Server instructions:** the cross-tool flow and the rules on commitments and pay links.
-- **Widget** (`ui://payleor/app-v3`), one app for every tool:
+- **Widget** (`ui://veetlyn/app-v3`), one app for every tool:
   - Offerings show as a carousel with one call to action that asks in the chat. Project cards have at most two actions plus the project page link.
   - Colors, fonts and radii come from the host's style variables (`applyDocumentTheme`, `applyHostStyleVariables`, `applyHostFonts`) with fallbacks, on a transparent background. Loading shows a skeleton.
   - After a widget action, `updateModelContext` tells the model what the user did.
   - The pay button uses `window.openai.openExternal` when present, else `ui/open-link`.
   - Screenshots from a test host: [`s-connector-v2-offerings-light.png`](../archive/platform/plans/evidence/s-connector-v2-offerings-light.png), [`s-connector-v2-deposit-dark.png`](../archive/platform/plans/evidence/s-connector-v2-deposit-dark.png), [`s-connector-v2-delivered-light.png`](../archive/platform/plans/evidence/s-connector-v2-delivered-light.png).
-- **Plugin** (`plugins/payleor/` on the branch, zipped as `payleor-plugin.zip`):
+- **Plugin** (`plugins/veetlyn/` on the branch, zipped as `veetlyn-plugin.zip`):
   - The Claude manifest (`.claude-plugin/plugin.json`, `.mcp.json`) and the portable agent-plugins manifest (`plugin.json`, `mcp.json`), which ChatGPT reads.
-  - The skill `hire-a-professional`: when to use Payleor, the eight-step flow, the rules. Its `reference.md` covers roles, offerings, statuses, payments (the deposit is half the quote plus any management fee), deliveries and emails.
+  - The skill `hire-a-professional`: when to use Veetlyn, the eight-step flow, the rules. Its `reference.md` covers roles, offerings, statuses, payments (the deposit is half the quote plus any management fee), deliveries and emails.
 - **Listing policy risk:**
   - Claude's directory does not accept connectors that "transfer money".
   - ChatGPT's plugin guidelines allow commerce only for physical goods (read literally, no services).
-  - Payleor never moves money in the chat (payment happens on our pay page, approved in PayPal), but public directory listings may still be refused. Custom connectors, uploaded plugins and developer mode are not affected, which is what judges use.
-  - **Correction after checking precedent:** OpenAI publishes service marketplaces with external payment. Airtasker's ChatGPT plugin (Aug 2026) lets clients post a task, compare offers and hire in the chat, with "Payments … handled through Airtasker" and redirects for wallet top-ups. Fiverr's app showed up in Mouhamed's session. So the "physical goods only" rule reads as no selling through in-chat checkout, and Payleor's pay page fits the external checkout pattern.
+  - Veetlyn never moves money in the chat (payment happens on our pay page, approved in PayPal), but public directory listings may still be refused. Custom connectors, uploaded plugins and developer mode are not affected, which is what judges use.
+  - **Correction after checking precedent:** OpenAI publishes service marketplaces with external payment. Airtasker's ChatGPT plugin (Aug 2026) lets clients post a task, compare offers and hire in the chat, with "Payments … handled through Airtasker" and redirects for wallet top-ups. Fiverr's app showed up in Mouhamed's session. So the "physical goods only" rule reads as no selling through in-chat checkout, and Veetlyn's pay page fits the external checkout pattern.
 - **Claude plugin test** (Mouhamed, 2026-10-14 20:53, plugin uploaded as a zip, project `70202b60` created):
   - Unprompted "find me a logo refresh under $350": the skill loaded, the carousel rendered (one card, Walk Crew's $150 Logo refresh), and Claude recommended it in a few sentences.
   - The card's Request a quote button sent the follow-up message; Claude asked three brief questions, filled the rest from its memory of the user's company, showed the brief and asked "Shall I send this to Walk Crew?" before calling `request_quote`. The project card (Quoting, Refresh, Open project page) rendered after the call, and the client email went out.
@@ -187,11 +187,11 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
   - The full chain worked: `request_quote` (05:06), quote viewed, `accept_quote` from the card (05:16), Pay in a new tab (ORDER.APPROVED 05:18:34, $360 deposit CAPTURE.COMPLETED 05:18:48), Check payment → In progress. No model-side accept attempt in the log.
   - ChatGPT called `get_project` directly instead of listing projects first.
   - Mouhamed's take: ChatGPT's card interface renders better than Claude's.
-  - Unprompted discovery works in ChatGPT with the uploaded plugin: "find me someone to design business cards" in a fresh chat (no @-mention) called `search_offerings` (05:27) and ChatGPT blended Payleor's Walk Crew with a local business search (3 people in Dakar). Caveat: memory answers first when it can — "any news?" at 05:20 got a correct answer with no tool call. Discovery tests need prompts memory cannot answer.
+  - Unprompted discovery works in ChatGPT with the uploaded plugin: "find me someone to design business cards" in a fresh chat (no @-mention) called `search_offerings` (05:27) and ChatGPT blended Veetlyn's Walk Crew with a local business search (3 people in Dakar). Caveat: memory answers first when it can — "any news?" at 05:20 got a correct answer with no tool call. Discovery tests need prompts memory cannot answer.
 - **Agentic commerce in the clients:**
   - ChatGPT's Instant Checkout (ACP, with Stripe; PayPal through Braintree "Agent Ready") is "available only to select marketplace partners", for physical goods.
   - OpenAI's "Get Quote" spec for local services is a partner-only beta: a fixed `request_service` tool, opened in a modal from a business card fed by a business feed with addresses.
-  - Neither is open to Payleor before judging. Payleor's agentic commerce story is the full service hire by an agent with a person approving every payment in PayPal, plus AI sellers on the public API (program §1, §5). ACP, UCP and Store Sync belong to the dormant Commerce product ([`research.md`](../archive/platform/research.md) §3).
+  - Neither is open to Veetlyn before judging. Veetlyn's agentic commerce story is the full service hire by an agent with a person approving every payment in PayPal, plus AI sellers on the public API (program §1, §5). ACP, UCP and Store Sync belong to the dormant Commerce product ([`research.md`](../archive/platform/research.md) §3).
 
 ## Run C scope notes
 
@@ -213,7 +213,7 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
   - The web Worker forwards the OAuth discovery paths.
   - Login and consent are our own pages: `oauthProviderClient()` in the web auth client, the sign-in form following the continuation, and a designed consent page showing the client's name.
 - **Tokens:**
-  - JWT access tokens bound to the resource, checked with `requireMcpAuth` against `{issuer}/jwks`. `sub` is the Payleor user id, and `azp` is the AI client.
+  - JWT access tokens bound to the resource, checked with `requireMcpAuth` against `{issuer}/jwks`. `sub` is the Veetlyn user id, and `azp` is the AI client.
   - Run C maps the user to a client contact (run A2) before any tool reads a project.
 - **Transport:**
   - `createMcpHandler(factory, { legacy: "stateless" })` serves both protocol eras.
@@ -235,7 +235,7 @@ After the first sessions, the connector was rebuilt along the clients' guidance 
 - **ChatGPT: go.** Sign-in through CIMD (`private_key_jwt`), widgets render, the pay page opens from the widget's Pay button in a new tab and payments were captured ($360 deposit 05:18, $300 balance 11:30, walkthrough A9/A17), and the widget calls the app-only tool (Accept (test) at 16:48 on 2026-10-14; `accept_quote`/`accept_delivery` from the card on 2026-10-15). The full walkthrough passed (A1–A19, 2026-10-15) with the plugin uploaded as a zip, including unprompted discovery (05:27).
   - First-session evidence: [`plans/evidence/s-spike-chatgpt-session.png`](../archive/platform/plans/evidence/s-spike-chatgpt-session.png), from 2026-10-14.
 - **ChatGPT's behavior, in Mouhamed's words "lost":**
-  - It mixed Fiverr's published app results with Payleor's, and drew its own cards for the $150 "Logo refresh" offering, including a "Request the $150 quote" button.
-  - It then said that Payleor's project creation and quote requests "aren't exposed in connected tools". It searched `find_offerings` again with the whole brief as the query (16:49:24), and ended with a written brief for the user to submit by hand.
+  - It mixed Fiverr's published app results with Veetlyn's, and drew its own cards for the $150 "Logo refresh" offering, including a "Request the $150 quote" button.
+  - It then said that Veetlyn's project creation and quote requests "aren't exposed in connected tools". It searched `find_offerings` again with the whole brief as the query (16:49:24), and ended with a written brief for the user to submit by hand.
   - So the model wants a request tool. Without one, it improvises.
   - Run C must expose the full path as tools: request an offering (which creates the project and the request), the status of my projects, show my quote, then widget buttons to accept and pay. The text results must say what the next step is.

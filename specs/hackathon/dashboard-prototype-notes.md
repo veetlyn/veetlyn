@@ -32,7 +32,7 @@ No phone-width, full keyboard-flow, screen-reader, reduced-motion, loading/error
 
 ## Context panel and hierarchy (2026-10-28)
 
-From the screenshot study (`/tmp/payleor-seeds-screen-distillation.md`, 87 references) and Mouhamed's "no card at all" for the right panel:
+From the screenshot study (`/tmp/veetlyn-seeds-screen-distillation.md`, 87 references) and Mouhamed's "no card at all" for the right panel:
 
 - The panel's top is unboxed: a heading, one state line and two or three facts that decide the action. No background, border or shadow.
 - Everything else sits below in plain sections. History and secondary rules ("Done so far", "Operating model", the money breakdown) are behind named disclosures.

@@ -2,18 +2,18 @@
 
 > **Current scope, 2026-10-28:** Resumed through [Calls and the agent](2026-10-27-calls-and-agent-design.md). The parked status below records Oct 18 history. The new design takes precedence for calls, team-defined handles and one agent with a changing environment; its schema/runtime/permission changes remain unbuilt.
 
-**Date:** 2026-10-18. **Status: parked on 2026-10-18 by Mouhamed** ("we need to put aside the agentic dash and focus on revamping current screens and the plugin interfaces and widgets"). Kept as the reference for when the dash resumes; nothing here is planned. Before parking: revised the same day after Mouhamed's review ("aren't we overdoing this? in a plain CRUD app dash it would be pretty straightforward"; "yes do it"). The first draft modelled Payleor's work as sessions with their own tables, waits and routing; this version builds the dash on the records that already exist. Revised again the same evening: modes per section with rules (§8), the first prototype's record page and the second's sidebar for switching context. Awaiting Mouhamed's review. Choices marked *(call)* are Claude's and open to change.
+**Date:** 2026-10-18. **Status: parked on 2026-10-18 by Mouhamed** ("we need to put aside the agentic dash and focus on revamping current screens and the plugin interfaces and widgets"). Kept as the reference for when the dash resumes; nothing here is planned. Before parking: revised the same day after Mouhamed's review ("aren't we overdoing this? in a plain CRUD app dash it would be pretty straightforward"; "yes do it"). The first draft modelled Veetlyn's work as sessions with their own tables, waits and routing; this version builds the dash on the records that already exist. Revised again the same evening: modes per section with rules (§8), the first prototype's record page and the second's sidebar for switching context. Awaiting Mouhamed's review. Choices marked *(call)* are Claude's and open to change.
 
-**Amends** the agentic dash design ([`2026-10-16-agentic-dash-design.md`](2026-10-16-agentic-dash-design.md)) as listed in §11; its components (§4), push (§7), plugin (§8), failures (§11) and testing (§12) stand where §11 does not change them. **Builds on** conversations ([`2026-10-14-conversations-design.md`](2026-10-14-conversations-design.md)), the action registry ([`2026-10-13-action-catalog-design.md`](2026-10-13-action-catalog-design.md)) and the architecture reference ([`2026-10-16-architecture.md`](2026-10-16-architecture.md)). The clickable prototype is on the `brand-ds` branch (`.design-system/directions/payleor-dash.html`).
+**Amends** the agentic dash design ([`2026-10-16-agentic-dash-design.md`](2026-10-16-agentic-dash-design.md)) as listed in §11; its components (§4), push (§7), plugin (§8), failures (§11) and testing (§12) stand where §11 does not change them. **Builds on** conversations ([`2026-10-14-conversations-design.md`](2026-10-14-conversations-design.md)), the action registry ([`2026-10-13-action-catalog-design.md`](2026-10-13-action-catalog-design.md)) and the architecture reference ([`2026-10-16-architecture.md`](2026-10-16-architecture.md)). The clickable prototype is on the `brand-ds` branch (`.design-system/directions/veetlyn-dash.html`).
 
 ## 1. Intent
 
-The dash is a CRUD dash over Payleor's records (requests, projects, payments, payouts, disputes) with four agentic parts:
+The dash is a CRUD dash over Veetlyn's records (requests, projects, payments, payouts, disputes) with four agentic parts:
 
-1. **Payleor drafts the next step on the record:** the questions for a client, the quote, the delivery note, the dispute response. A person reads it and taps to send it.
-2. **Events produce drafts and notices:** when Lina answers, Yaw's quote draft is ready and Yaw is told. Nothing in Payleor sleeps or wakes; the outbox consumer reacts to events.
+1. **Veetlyn drafts the next step on the record:** the questions for a client, the quote, the delivery note, the dispute response. A person reads it and taps to send it.
+2. **Events produce drafts and notices:** when Lina answers, Yaw's quote draft is ready and Yaw is told. Nothing in Veetlyn sleeps or wakes; the outbox consumer reacts to events.
 3. **Needs you, a notification tray** behind a bell in the top bar, computed from the records' states: what waits on you, grouped by section (Mouhamed, 2026-10-18).
-4. **A mode per section,** Manual, Ask me or Auto, so a team moves from doing the work itself to letting Payleor send what its rules allow, without the dash getting busier (§8).
+4. **A mode per section,** Manual, Ask me or Auto, so a team moves from doing the work itself to letting Veetlyn send what its rules allow, without the dash getting busier (§8).
 
 Plus the ask box for questions, the first thing to cut if time runs short.
 
@@ -24,7 +24,7 @@ It is contextual because the same record looks different to each person: what th
 **Goals**
 
 - One vocabulary for code, specs, stories and screens (§2).
-- For every record type: who it waits on in each state, what card each person sees, and what Payleor drafts (§5, §6).
+- For every record type: who it waits on in each state, what card each person sees, and what Veetlyn drafts (§5, §6).
 - The build of runs G, C, L and D plans from this document.
 
 **Non-goals:** the store context (later, same pattern); internal cases with templates (later, under Disputes); Discord and Slack (later, on the same events).
@@ -41,23 +41,23 @@ It is contextual because the same record looks different to each person: what th
 
 | In code and specs | On screen | Meaning |
 |---|---|---|
-| Payleor | Payleor | The assistant inside the dash; never "the AI" or "the agent" in copy |
+| Veetlyn | Veetlyn | The assistant inside the dash; never "the AI" or "the agent" in copy |
 | Workspace context | The workspace in the switcher, with the role under it | A workspace and the person's role in it (§4) |
 | Section (`dashSections`) | Requests, Projects, Money… | A part of the dash, with its list page |
 | Record | A request, a project, a payment, a payout, a dispute | A row the dash shows, with its own page |
 | Waiting on (`waitingOn`) | "Waiting for Ama" | Who a record needs next, from its state |
 | Needs you, In progress, Done | Needs you, In progress, Done | A record's place for one viewer, computed (§5) |
-| Next step | Next step | The card on a record's page: what is needed, by whom, with Payleor's draft and the buttons |
-| Draft (`draft`) | "Payleor drafted…" | Words or lines Payleor prepared for a person to send (§6) |
+| Next step | Next step | The card on a record's page: what is needed, by whom, with Veetlyn's draft and the buttons |
+| Draft (`draft`) | "Veetlyn drafted…" | Words or lines Veetlyn prepared for a person to send (§6) |
 | Activity | Activity | Recent events across the workspace, on Home |
 
 Copy rules from the screens review stand: sentence case, kinds as words, no eyebrows, no status dots, warm colours for trouble only.
 
-## 3. Payleor's rules
+## 3. Veetlyn's rules
 
 1. **Reads only what the person may see,** in their current workspace context, never across contexts.
 2. **Drafts; people commit.** A draft is never sent by itself. Sending it is the normal action (`quote.create`, `conversation.post`…) performed by the person who taps, through `perform`.
-3. **Money.** Client payments leave for the pay page and PayPal's approval. A team payout waits 10 seconds with Undo after the tap (Mouhamed, 2026-10-17). Actions the registry marks `never` (refunds, roles, settings, connections) get no draft and no button from Payleor; the card links to the form *(call)*.
+3. **Money.** Client payments leave for the pay page and PayPal's approval. A team payout waits 10 seconds with Undo after the tap (Mouhamed, 2026-10-17). Actions the registry marks `never` (refunds, roles, settings, connections) get no draft and no button from Veetlyn; the card links to the form *(call)*.
 4. **The server builds every card.** The model writes words; amounts, names, dates and buttons come from the records.
 5. **Untrusted text is data.** Briefs, messages, answers and dispute notes reach the model as data, never as instructions.
 6. **Everything is recorded:** each action in the action log, each change as an outbox event on the record's timeline, each draft with its outcome (sent as is, edited, dismissed) as a label for a later classifier.
@@ -75,7 +75,7 @@ A workspace context is a workspace and the person's role in it. The switcher lis
 | Freelancer | Members with the freelancer role | `services_team_member.role` freelancer | Find work in the team, quote as themselves in open mode, deliver, get paid |
 | Me | Anyone signed in, as a client | Verified client identities (A2) through `project_client` | Get work done and pay safely, with every team |
 
-**Without a context:** a guest on `{slug}.payleor.app` builds a request with the concierge and lands in Me after signing in; a client link (`/c/{token}`) opens one project in the Me view; the plugin gives someone else's AI the same records (§9).
+**Without a context:** a guest on `{slug}.veetlyn.app` builds a request with the concierge and lands in Me after signing in; a client link (`/c/{token}`) opens one project in the Me view; the plugin gives someone else's AI the same records (§9).
 
 **Several contexts, one person** *(call)*: the dash opens on the last context used; the switcher shows each context's Needs-you count; a notice opens in its own context; a team member is never the client of their own team's project (A2).
 
@@ -105,7 +105,7 @@ Source: `project` in `quoting`, `quote`, `conversation_message` and `request_sho
 
 | State | Waits on | Staff see | The freelancer sees | The client sees |
 |---|---|---|---|---|
-| New, nobody has answered | Staff; in open mode, the eligible freelancers | Payleor's questions draft (team and assigned modes); decline with a reason; shortlist | Open mode: "Start your bid", then Payleor's questions draft for them | "3 freelancers are looking at it" |
+| New, nobody has answered | Staff; in open mode, the eligible freelancers | Veetlyn's questions draft (team and assigned modes); decline with a reason; shortlist | Open mode: "Start your bid", then Veetlyn's questions draft for them | "3 freelancers are looking at it" |
 | Questions sent | The client | Waiting for the answers | Waiting for the answers | The questions, answered by tapping |
 | Answered | Whoever quotes | Quote draft (team and assigned modes) | Quote draft from their own past work | Waiting |
 | Quotes sent | The client | Every quote in full | "2 quotes sent, yours included": only their own in detail | One quote per slide, each with Accept |
@@ -121,12 +121,12 @@ Source: `project` (`awaiting_deposit` to `completed`, `cancelled`), `delivery`, 
 | State | Waits on | The freelancer sees | The client sees | Staff see |
 |---|---|---|---|---|
 | Awaiting deposit | The client | Waiting for the deposit | Pay the deposit | The payment in Money |
-| In progress | The freelancer, by the due date | Deliver: upload, with Payleor's note drafted | Waiting | Propose an amendment, drafted from a client's change request |
+| In progress | The freelancer, by the due date | Deliver: upload, with Veetlyn's note drafted | Waiting | Propose an amendment, drafted from a client's change request |
 | Delivered | The client | Waiting for the review | Accept, or ask for changes with a note | Waiting |
 | Awaiting balance | The client | Waiting | Pay the balance | The payment in Money |
 | Completed | Nobody | Earnings recorded | Done | The payout in Money |
 
-A pending amendment waits on the client; an accepted increase adds a top-up payment. A late delivery's penalty (`packages/core/src/projects/penalty.ts`) shows on the timeline; Payleor never proposes or waives one.
+A pending amendment waits on the client; an accepted increase adds a top-up payment. A late delivery's penalty (`packages/core/src/projects/penalty.ts`) shows on the timeline; Veetlyn never proposes or waives one.
 
 ### 5.4 Payment
 
@@ -134,7 +134,7 @@ Source: `payment` (kinds `deposit`, `top_up`, `balance`; statuses `pending`, `ca
 
 - **Due or failed:** waits on the client, who pays from the card (the pay page, then PayPal's approval). Staff may send a new link (`project.client_link.email`).
 - **Reminders:** 2 days after due, then weekly, three at most, with fixed wording and the pay link; the team can turn them off *(call)*.
-- **Refund owed** (`refund.requested`): waits on an admin; the card opens the refund form, with no button from Payleor.
+- **Refund owed** (`refund.requested`): waits on an admin; the card opens the refund form, with no button from Veetlyn.
 
 ### 5.5 Payout
 
@@ -154,7 +154,7 @@ Source: `paypal_dispute` *(new)*, kept from the verified `CUSTOMER.DISPUTE.*` we
 
 ### 5.7 Setup
 
-Computed from the seller's and the member's own state, as ACC-11's checklist is today: PayPal connected, rates and quoting mode, a service, the page published, the bio; for a member, a payout destination and the age confirmation. It waits on admins or on the member. Payleor drafts the bio and service descriptions.
+Computed from the seller's and the member's own state, as ACC-11's checklist is today: PayPal connected, rates and quoting mode, a service, the page published, the bio; for a member, a payout destination and the age confirmation. It waits on admins or on the member. Veetlyn drafts the bio and service descriptions.
 
 ## 6. Drafts
 
@@ -193,18 +193,18 @@ The outbox consumer (G) reads each event once, by its id, makes the drafts it ca
 
 Notices are batched: at most one email and one web push every 15 minutes per project and person (dash design §5).
 
-## 8. How much Payleor does
+## 8. How much Veetlyn does
 
-Each team chooses, section by section, how much Payleor does on its own (Mouhamed, 2026-10-18). The model is Claude Code's own: a mode decides what runs without asking, Shift+Tab switches it, and rules (allow, ask, deny) settle each kind of step, with deny beating ask and ask beating allow.
+Each team chooses, section by section, how much Veetlyn does on its own (Mouhamed, 2026-10-18). The model is Claude Code's own: a mode decides what runs without asking, Shift+Tab switches it, and rules (allow, ask, deny) settle each kind of step, with deny beating ask and ask beating allow.
 
-| Mode | What Payleor does |
+| Mode | What Veetlyn does |
 |---|---|
 | Manual | Answers questions; drafts nothing. The forms open empty |
 | Ask me (the default) | Drafts the next step; a person sends it |
 | Auto | Sends what the rules allow; everything else waits for a person, with the reason |
 
-- **Where it is set:** in the ask box of every section and record (Shift+Tab cycles the three modes), and on the Payleor page, which lists every section's mode, the rules, and what ran on its own. The mode also shows as a chip in the sidebar and in the closed ask box.
-- **Who sets it:** admins for the team's sections; a freelancer for their own Open requests and My work; the owner of a solo seller for everything. Clients have no modes: Payleor never accepts, pays or answers for a client.
+- **Where it is set:** in the ask box of every section and record (Shift+Tab cycles the three modes), and on the Veetlyn page, which lists every section's mode, the rules, and what ran on its own. The mode also shows as a chip in the sidebar and in the closed ask box.
+- **Who sets it:** admins for the team's sections; a freelancer for their own Open requests and My work; the owner of a solo seller for everything. Clients have no modes: Veetlyn never accepts, pays or answers for a client.
 - **Rules,** one per kind of step, each Allow (runs on its own in Auto), Ask (always waits) or Never. Locked rules cannot be changed.
 
 | Section | Step | Default |
@@ -223,12 +223,12 @@ Each team chooses, section by section, how much Payleor does on its own (Mouhame
 | Earnings (freelancer) | Request a payout | Never: only the member asks (locked) |
 
 - **The check before each automatic step** (a classify step): the rule first; then anything the rule does not settle, or that looks unusual (a price far from past work, a client message that reads as a complaint), waits and says why: "Auto asked you: $1,200.00 is 14% above your Wedding teaser ($1,050.00), outside your 10% range." The check is code plus a Haiku classification with a strict run-or-ask schema; an error or any doubt means ask.
-- **What people see:** a step that ran on its own is on the record's timeline with the rule that let it through ("Payleor sent Lina your 2 questions, on its own. Rule: send my questions on a request, Allow"), under "Done on its own" on the Payleor page, and in the catch-up on Home. Needs you holds only what waits on a person, so more autonomy means less in Needs you, not more.
-- **In the registry:** a `confirm` action runs with Payleor as the actor, on behalf of the team's setting, only when its section is in Auto and its rule allows it; `never` actions never run. Each automatic run writes the action log with the agent as actor, the rule and the mode.
+- **What people see:** a step that ran on its own is on the record's timeline with the rule that let it through ("Veetlyn sent Lina your 2 questions, on its own. Rule: send my questions on a request, Allow"), under "Done on its own" on the Veetlyn page, and in the catch-up on Home. Needs you holds only what waits on a person, so more autonomy means less in Needs you, not more.
+- **In the registry:** a `confirm` action runs with Veetlyn as the actor, on behalf of the team's setting, only when its section is in Auto and its rule allows it; `never` actions never run. Each automatic run writes the action log with the agent as actor, the rule and the mode.
 
 ## 9. The dash
 
-- **Sidebar, for switching context fast** (Mouhamed, 2026-10-18): a rail with the person's workspaces on top (one click switches, each with its Needs-you count), then Home and one tile per section with its count, and Payleor (modes and rules) at the bottom. Beside the rail, the chosen section's records under **Needs you**, **In progress** and **Done** (folded), with the section's mode as a chip; a record that changed list since the person last looked is highlighted once, and Search (⌘K) sits above the lists.
+- **Sidebar, for switching context fast** (Mouhamed, 2026-10-18): a rail with the person's workspaces on top (one click switches, each with its Needs-you count), then Home and one tile per section with its count, and Veetlyn (modes and rules) at the bottom. Beside the rail, the chosen section's records under **Needs you**, **In progress** and **Done** (folded), with the section's mode as a chip; a record that changed list since the person last looked is highlighted once, and Search (⌘K) sits above the lists.
 - **Needs you is a tray** (Mouhamed, 2026-10-18): a bell in the top bar with its count opens a short list of what waits on the person, grouped by section, each row opening its record. It is where notices land; email and push carry the same notices.
 - **Home is an overview:** "While you were away" (events since the person's last visit), one card per section with its open records (what needs you first) and a link to the section, and Activity beside them.
 - **Each section page is a dashboard built for its job,** not stacked full-width lists (Mouhamed, 2026-10-18): a row of totals, then
@@ -238,7 +238,7 @@ Each team chooses, section by section, how much Payleor does on its own (Mouhame
   - **Disputes:** case cards with the amount and the date the answer is due in PayPal;
   - **Shop:** what is left to set up, then the services.
   A card that needs the viewer is outlined in the brand colour and says "Needs you".
-- **Record page** (as in the first prototype): **Where this stands** (what is needed, by whom, Payleor's draft with what it was made from, and the buttons; in Manual a note that nothing is drafted; in Auto, why it asked), the timeline (events, messages and what Payleor did on its own), and a side rail with the progress, details, people and **How Payleor worked this out**. On a phone the side rail sits behind a Details button.
+- **Record page** (as in the first prototype): **Where this stands** (what is needed, by whom, Veetlyn's draft with what it was made from, and the buttons; in Manual a note that nothing is drafted; in Auto, why it asked), the timeline (events, messages and what Veetlyn did on its own), and a side rail with the progress, details, people and **How Veetlyn worked this out**. On a phone the side rail sits behind a Details button.
 - **Search (⌘K):** pages and records with breadcrumbs; a typed question goes to the ask box.
 - **Ask box:** floats over every page and grows on focus; it reads what the person can see, starting from the page they are on, and answers in words with a server-built table when useful. On a section or a record it carries the mode switch (Manual, Ask me, Auto; Shift+Tab). Answering questions is first to cut; the mode switch stays.
 - **Phone:** bottom tabs Home, Menu (the sections with their counts) and Search; the bell stays in the top bar.
@@ -248,7 +248,7 @@ From the Claude Code desktop idea this keeps the triage (Needs you, In progress,
 
 ## 10. Data
 
-- **New** (G unless marked): `draft` (§6); `push_subscription` (dash design §7); `workspace_visit` (`user_id`, `workspace_id`, `last_seen_at`) for "While you were away" *(call)*; `payleor_mode` (`team_id`, `user_id` for a freelancer's own sections, `section`, `mode`) and `payleor_rule` (`team_id`, `user_id`, `rule`, `decision`), with the defaults and locks in code; `paypal_dispute` (D). If Mouhamed wants questions kept, `ask_question` (`id`, `workspace_id`, `user_id`, `text`, `answer`, `created_at`) in C; otherwise answers are not stored.
+- **New** (G unless marked): `draft` (§6); `push_subscription` (dash design §7); `workspace_visit` (`user_id`, `workspace_id`, `last_seen_at`) for "While you were away" *(call)*; `veetlyn_mode` (`team_id`, `user_id` for a freelancer's own sections, `section`, `mode`) and `veetlyn_rule` (`team_id`, `user_id`, `rule`, `decision`), with the defaults and locks in code; `paypal_dispute` (D). If Mouhamed wants questions kept, `ask_question` (`id`, `workspace_id`, `user_id`, `text`, `answer`, `created_at`) in C; otherwise answers are not stored.
 - **Outbox events added:** `message.posted`, `request.declined`, `request.expired` (C); `dispute.opened`, `dispute.updated`, `dispute.resolved` (D).
 - **Pure functions in core,** tested as tables: `workspaceContexts(person)`, `dashSections(context)`, `waitingOn` per record type, `needsYou(record, viewer)`.
 - **Not built** (from this document's first draft): `agent_session`, `session_wait`, `session_entry`, `session_proposal`, `context_visit`, thread kinds, nested threads, side questions, a separate History journal, the five-layer scope stack.
@@ -274,7 +274,7 @@ From the Claude Code desktop idea this keeps the triage (Needs you, In progress,
 | G (Oct 20–22) | Contexts and the switcher; sections as dashboards; `waitingOn` and `needsYou`; the Needs you tray; Home; record pages with the Next step card, without drafts yet; the outbox consumer for notices; web push; the `draft` and `workspace_visit` tables |
 | C (Oct 23–25) | Conversations; question and quote drafts with the model; the quote visibility rule; the ask box; the modes and rules, with Auto for questions and quotes |
 | L (Oct 26–27) | The plugin on the same records: `get_needs_you`, next steps as widget cards |
-| D (Oct 28–29) | Disputes with the drafted response; the payout approval card with undo; Auto for payment reminders and pay links; the Payleor page; AG Grid tables on the section pages |
+| D (Oct 28–29) | Disputes with the drafted response; the payout approval card with undo; Auto for payment reminders and pay links; the Veetlyn page; AG Grid tables on the section pages |
 
 **Cut order,** first to last: the ask box; the delivery note and amendment drafts; the dispute response draft (the evidence stays); web push (email stays). **Never cut:** the deploy, the Needs you tray, request drafts, the plugin's client flow, the pay page.
 
@@ -287,7 +287,7 @@ Story IDs are given when these are written into [`stories/`](../stories/README.m
 | As anyone, the bell's tray lists what waits on me in this workspace, and the switcher counts the others | new |
 | As Yaw, I switch between Walk Crew, my studio and Me, and each shows only its own work | new |
 | As staff, a new request arrives with its questions drafted, and I send them with one tap | AGT-31; new for the draft |
-| As a freelancer in open mode, Payleor drafts my questions and my quote from my own past work | new |
+| As a freelancer in open mode, Veetlyn drafts my questions and my quote from my own past work | new |
 | As a freelancer, I see how many quotes a request has, and only my own | new |
 | As a client, I answer by tapping and compare quotes one freelancer per slide | AGT-31, AGT-34 |
 | As staff, a request I let sit reminds me at 24 hours and expires at 48 unless I extend it | AGT-37 |
@@ -298,7 +298,7 @@ Story IDs are given when these are written into [`stories/`](../stories/README.m
 | As an admin, a payout waiting on me shows the rule that applied, and I can undo my approval for 10 seconds | OUT-08, OUT-14 to OUT-16; new for the undo |
 | As an admin, a PayPal case arrives with its evidence gathered and a drafted response to copy into PayPal | new (D) |
 | As anyone, the ask box answers from what I can see, about the page I am on | AGT-28, widened |
-| As anyone, when Payleor cannot draft, the form opens empty and I carry on | new |
+| As anyone, when Veetlyn cannot draft, the form opens empty and I carry on | new |
 
 ## 14. Sequences
 

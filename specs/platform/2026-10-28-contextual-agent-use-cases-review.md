@@ -14,7 +14,7 @@ The [parent prototype pass and verification](../hackathon/dashboard-prototype-no
 
 ## 1. Verdict and recommended direction
 
-Keep **one Payleor agent, the existing business records and their state machines, and one authoritative action path**. Change its authorized environment, presentation and available tools with the person's current capacity and the record's facts. Do not create a customer agent, consultant agent, merchant agent, agency agent and studio agent. Equally, do not turn every person into a services-team administrator with different navigation labels.
+Keep **one Veetlyn agent, the existing business records and their state machines, and one authoritative action path**. Change its authorized environment, presentation and available tools with the person's current capacity and the record's facts. Do not create a customer agent, consultant agent, merchant agent, agency agent and studio agent. Equally, do not turn every person into a services-team administrator with different navigation labels.
 
 The current direction fits agency operations well: incoming work, assignment, delivery, money, member payouts and exceptions. Its foundations also fit independent sellers and customers. The draft fails where it makes the account/workspace tree an access model, makes attention handles permission roles, and treats a payout-oriented staff Call as the default experience for everyone. The key composition is:
 
@@ -28,7 +28,7 @@ Recommend six immediate design corrections:
 2. Put **My purchases** in the mandatory personal workspace as a private view of externally owned records. Keep account home as a compact overview of authorized contexts. Do not copy purchases into the person's seller records or grant their personal-workspace collaborators access.
 3. Keep fixed roles for the first implementation, behind a permission evaluator. Handles initially route to these roles or record relationships. Editable permissions can follow without rebuilding Calls.
 4. Build an authorized record projection and an eligibility/required-decision evaluator before offering model tools. Existing status-only helpers and broad record responses are insufficient.
-5. Present one automation settings surface with explicit executors and effects; retain existing deterministic schedules until an explicit migration. Payleor mode is not an undocumented platform-wide stop switch.
+5. Present one automation settings surface with explicit executors and effects; retain existing deterministic schedules until an explicit migration. Veetlyn mode is not an undocumented platform-wide stop switch.
 6. Start with scoped reads, human-confirmed intake and payout decisions, and honest deterministic payout outcomes. Add discretionary Auto only after the delegation and action-specific limits below are implemented and verified.
 
 These recommendations are concrete defaults for the parent to incorporate into the next design/plan. They do not authorize schema migration, deployment, changing team policies, or enabling autonomous financial actions.
@@ -49,7 +49,7 @@ These recommendations are concrete defaults for the parent to incorporate into t
 
 “Customer,” “consultant,” “merchant,” “agency” and “studio” describe jobs or business arrangements. The same account may occupy several rows simultaneously. A role is always attached to a workspace/seller; a client or payee relationship is attached to the relevant record or obligation.
 
-| Capacity and job | Relevant objects | Required decisions / authorized reads and actions | Visibility restrictions | Payleor's useful work / first view |
+| Capacity and job | Relevant objects | Required decisions / authorized reads and actions | Visibility restrictions | Veetlyn's useful work / first view |
 |---|---|---|---|---|
 | Customer only: commission work | Public offerings; own request, received quotes, messages, deliveries, invoices/refunds | Supply brief/answers; compare and explicitly accept quote; approve PayPal checkout; accept delivery or request changes within terms; accept/decline amendment | Verified attached contact or valid record link; no membership needed. No other clients, internal staff notes, team ledger, competing workers' earnings or seller-wide rules editor | Explain offers and total cost, help write brief/reply, summarize what changed, surface the customer's next decision. **My purchases**, not team setup or payout approvals |
 | Customer only: buy a download | Published product; own order and download grant | Human checkout; use download; request a fresh link through existing email path; contact seller for a problem | Possession of a valid order grant is not seller membership or access to other orders. Typed buyer email alone is not proof of account ownership | Explain payment/download state and expiry; link to the order. No invented shipping or service review step |
@@ -218,15 +218,15 @@ Sources: [STO-01–17](../stories/06-store.md#L13), [B1 plan, lines 294–302, 5
 
 ### 5.1 One policy surface, explicit execution mechanisms
 
-Keep Manual / Ask me / Auto as the amount of **discretion entrusted to Payleor**, not a universal label for every background mechanism. Put all related behavior in one **Automation** settings surface per seller/section, grouped by business effect: asking/quoting, reviewing by timeout, approving/sending payouts, notices and reconciliation. Show executor, source/version, limits, required approvals, timing and whether it is enabled. A read-only summary chip in the header links there; the exact placement is a recommended UX decision, not a claim of user approval.
+Keep Manual / Ask me / Auto as the amount of **discretion entrusted to Veetlyn**, not a universal label for every background mechanism. Put all related behavior in one **Automation** settings surface per seller/section, grouped by business effect: asking/quoting, reviewing by timeout, approving/sending payouts, notices and reconciliation. Show executor, source/version, limits, required approvals, timing and whether it is enabled. A read-only summary chip in the header links there; the exact placement is a recommended UX decision, not a claim of user approval.
 
 | Mode | New discretionary preparation | New discretionary action | Existing deterministic work |
 |---|---|---|---|
 | Manual | No automatic drafts; read questions still work. Explicit “Draft this” is an on-demand request with no external effect | Human acts in normal form; nothing automatic because of a chat instruction | Continues under its disclosed accepted/configured rule |
-| Ask me (default) | Prepare only authorized work; persist source/version/effect preview | Authorized human confirms exact proposal; sending a draft is not a read | Same; show e.g. “Payleor prepares; approved payouts still send on payday” |
+| Ask me (default) | Prepare only authorized work; persist source/version/effect preview | Authorized human confirms exact proposal; sending a draft is not a read | Same; show e.g. “Veetlyn prepares; approved payouts still send on payday” |
 | Auto | Same preparation, subject to budget and event/run deduplication | Only explicitly allowlisted effects within current grant, state and limits; otherwise a human decision | Same authoritative deterministic path; agent must not create a competing send/reminder |
 
-This is a coherent final model if “mode” always names Payleor's discretion and automation settings enumerate all background effects. It is incoherent if a prominent Ask me badge is the only explanation while payouts send. Do not preserve that UX ambiguity merely with a footnote in documentation.
+This is a coherent final model if “mode” always names Veetlyn's discretion and automation settings enumerate all background effects. It is incoherent if a prominent Ask me badge is the only explanation while payouts send. Do not preserve that UX ambiguity merely with a footnote in documentation.
 
 Implement a read-only compatibility projection of existing payout rules/schedules first. Then use a versioned operational policy for new discretion. Do not rewrite accepted project terms when someone changes drafting mode. A later migration may let a person change or pause future scheduled sends in the same settings transaction, after showing affected items. It must distinguish new sends from irrevocable in-flight sends and reconciliation. This review does **not** propose that switching to Manual silently pauses the engine.
 
@@ -334,7 +334,7 @@ Model-dependent follow-ups, in dependency order:
 | P0 — current calls design §§2/3/11 | Replace subtree/one-link language with authorized projections; separate workspace/seller ids and context from grants; separate attention handles from permission bundles. Keep fixed-role foundation first | AGT-55, AGT-58/59 |
 | P0 — calls §§4/5/7 | Define record-derived required decisions, outcome episodes, per-viewer triage, audience-safe shared/private Calls, event dedupe and batch selection identity; closing chat cannot close obligation | AGT-56, AGT-59 |
 | P0 — calls §§9/13 | Adopt narrow human-sponsored delegation, current revocation, three policy references and durable effect/confirmation contract; explicitly enumerate initial supported actions and `never` gates | AGT-57/58/59 |
-| P0 — calls §§4/6/10 and fixtures | Show existing deterministic automation beside Payleor discretion; replace unimplemented Friday 17:00/Pay now behavior with actual schedule or mark it proposed; repair fixture money/earnings chronology | AGT-56/57/60; OUT-08/16/20/24 |
+| P0 — calls §§4/6/10 and fixtures | Show existing deterministic automation beside Veetlyn discretion; replace unimplemented Friday 17:00/Pay now behavior with actual schedule or mark it proposed; repair fixture money/earnings chronology | AGT-56/57/60; OUT-08/16/20/24 |
 | P0 — action catalog / implementation plan | Record current payout operations outside registry. Add internal definitions and equivalent authorization/audit/idempotency before tool exposure; move no public-key/webhook requirements into this slice | AGT-58; OUT-07–29; B2 AGT-17/18 unchanged |
 | P1 — context/personal workspace | Personal purchases are private relationship views; preserve seller ownership and verified client identities; no email-only guest-order import; idempotent personal-container rollout without reparenting | AGT-55/59; AGT-35; ACC-08/10 |
 | P1 — AGT-26/28 | Add consultant, worker, customer, merchant and mixed-capacity examples. Money answers distinguish revenue/held/owed/cash/fees and currency/time range, using only the viewer's projection | AGT-26/28, AGT-31/32/34 |

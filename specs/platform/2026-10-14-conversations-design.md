@@ -8,7 +8,7 @@
 
 ## 1. Goal
 
-Before a quote is accepted, a team's freelancers and the client talk about the request: freelancers ask questions and quote, staff can decline with a reason. After a quote is accepted, the chosen freelancer works with the client and staff in a private space that holds the whole history. Mouhamed described this in Discord terms (a public request thread and a private project channel, messages synced between them). This design puts the conversation in Payleor's core so the web, the client's AI, email, the API and Discord all show the same thing in their own form.
+Before a quote is accepted, a team's freelancers and the client talk about the request: freelancers ask questions and quote, staff can decline with a reason. After a quote is accepted, the chosen freelancer works with the client and staff in a private space that holds the whole history. Mouhamed described this in Discord terms (a public request thread and a private project channel, messages synced between them). This design puts the conversation in Veetlyn's core so the web, the client's AI, email, the API and Discord all show the same thing in their own form.
 
 ## 2. Decisions
 
@@ -36,12 +36,12 @@ Before a quote is accepted, a team's freelancers and the client talk about the r
 | What is in it | Freelancers' questions, quotes and messages; staff messages; the client's replies, relayed in as "Client" | Everything from the request space (relayed); the private exchange between the client and staff; after acceptance, the project's messages and events |
 | Discord | A thread in the department's requests channel (a private thread with a shortlist) | The private project channel |
 
-**Message kinds:** `text`; `question` (from the team, answered by the client); `answer` (linked to its question); `event` (written by Payleor: quote sent, quote accepted, request declined with its reason, request expired, delivery submitted, changes requested, amendment proposed).
+**Message kinds:** `text`; `question` (from the team, answered by the client); `answer` (linked to its question); `event` (written by Veetlyn: quote sent, quote accepted, request declined with its reason, request expired, delivery submitted, changes requested, amendment proposed).
 
 **Who writes where:**
 
 - Freelancers and staff write in the request space; staff also write in the project space. After acceptance the accepted freelancer writes in the project space.
-- The client writes once and Payleor places the message: before acceptance a reply goes to the request space (the freelancers read it, masked); a message marked "to the team only" goes to the project space. After acceptance everything goes to the project space.
+- The client writes once and Veetlyn places the message: before acceptance a reply goes to the request space (the freelancers read it, masked); a message marked "to the team only" goes to the project space. After acceptance everything goes to the project space.
 
 ## 5. Data and actions
 
@@ -101,7 +101,7 @@ Quote proposal, acceptance, decline, expiry, delivery, changes and amendments wr
 - The team maps each department to a requests channel (or uses one channel for all) and picks the staff role. A new request in `open` mode creates a thread in its department's channel, visible to the department's role; with a shortlist, a private thread with those freelancers and the staff role.
 - The project channel is private to the client's Discord users (when the client is on Discord) and the staff role; the accepted freelancer is added at acceptance. When the client is not on Discord, the channel is team-only and the client uses the web or their AI.
 - Relayed messages are posted through a channel webhook under the author's name with a short label ("Client", "from the request").
-- Plain messages are read through the Gateway in a Durable Object (Message Content intent). Messages from people Payleor does not know (not a client contact or a linked team member) are not relayed. Before acceptance, a message with contact details is deleted and reposted masked through the webhook, with a short notice to its author.
+- Plain messages are read through the Gateway in a Durable Object (Message Content intent). Messages from people Veetlyn does not know (not a client contact or a linked team member) are not relayed. Before acceptance, a message with contact details is deleted and reposted masked through the webhook, with a short notice to its author.
 - Fallback if the Gateway fails: a **Reply** button on the pinned card and on relayed messages opens a modal; the interaction endpoint posts the message.
 
 ## 8. Errors and edge cases
