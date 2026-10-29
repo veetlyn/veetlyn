@@ -1,0 +1,23 @@
+apps/web/src/app/(site)/(landing)/network/page.tsx
+  s_22e9e82f1423d1::t_addc4803d1f11f 75
+apps/web/src/app/(site)/(landing)/page.tsx
+  s_22e9e82f1423d1::t_58c7092af6e376 184
+apps/web/src/components/site/delegated-purchases-teaser.tsx
+  s_22e9e82f1423d1::t_429057ea8b24ec 2,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ce028a18cbaacd66f7ce7d26601ce778f8c4331",
+  "prompts": {},
+  "sessions": {
+    "s_22e9e82f1423d1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17eb8-8026-7010-adac-71c38bc48980",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
