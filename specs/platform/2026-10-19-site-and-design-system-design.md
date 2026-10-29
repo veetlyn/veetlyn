@@ -25,7 +25,7 @@ veetlyn.com becomes the prototype: a site that tells the stories of agentic comm
 
 The page is written for the Nov 12 submission and the sandbox. The rules:
 
-- Everything in the Oct 31 runs (C, B, M, E, D, P and the optional AI seller) is described as working. If a run is cut, its lines come out before deploy (the plan lists them).
+- Superseded launch-copy policy (2026-10-29): a planned run is not evidence of availability. Use the current PROGRESS/BACKLOG scope and the current calls design. Present approved upcoming capabilities as launch teasers (Coming next), not as already operating. M, E and AG Studio are cancelled; remove their promises. Public seller API/webhook work remains B2, separate and unshipped. The contextual agent is one harness, not separate intake/payout/copilot products. See [public content contract](2026-10-29-public-content-contract.md).
 - Run V (web SEO on seller pages, Discover live) is proposed without a slot: until it ships, Discover shows sample listings labelled as samples, and web SEO on seller pages is described as part of every plan only once V is merged. Until then the Get found page and the pricing page say "built into every page" only for veetlyn.com itself and mark seller-page SEO "Coming with run V" (the plan's copy table has the exact words).
 - Membership and AI visibility are marked Planned and Waitlist.
 - No invented proof: no reviews, ratings counts or business numbers in search or report mock-ups; examples are labelled.
