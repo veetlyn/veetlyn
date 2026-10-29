@@ -1,0 +1,47 @@
+packages/infra/deploy-hosts.ts
+  s_73e10f9d158414::t_d29ce46e48889c 20,45,60,63,65-66
+.github/release-policy.json
+  s_73e10f9d158414::t_d29ce46e48889c 7
+plugins/veetlyn/.claude-plugin/plugin.json
+  s_73e10f9d158414::t_2b5aca5134b560 1-11
+plugins/veetlyn/mcp.json
+  s_73e10f9d158414::t_2b5aca5134b560 1-9
+scripts/release-zone-access.mjs
+  s_73e10f9d158414::t_d29ce46e48889c 16-17
+README.md
+  s_73e10f9d158414::t_faad780194d151 105,136
+plugins/veetlyn/plugin.json
+  s_73e10f9d158414::t_2b5aca5134b560 1-31
+apps/web/worker/index.ts
+  s_73e10f9d158414::t_d29ce46e48889c 13
+apps/web/src/lib/domain-redirect.test.ts
+  s_73e10f9d158414::t_d29ce46e48889c 3-5,7,9,13
+plugins/veetlyn/README.md
+  s_73e10f9d158414::t_2b5aca5134b560 1-58
+scripts/release-smoke.mjs
+  s_73e10f9d158414::t_d29ce46e48889c 30
+scripts/release-config.test.mjs
+  s_73e10f9d158414::t_d29ce46e48889c 6
+apps/web/src/lib/domain-redirect.ts
+  s_73e10f9d158414::t_d29ce46e48889c 3-4,7-8
+packages/infra/alchemy.run.ts
+  s_73e10f9d158414::t_d29ce46e48889c 32,217,220-221,230-231
+plugins/veetlyn/.mcp.json
+  s_73e10f9d158414::t_2b5aca5134b560 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da4c8b322816d53d7c4b81baa673a4e6cbf9dbe1",
+  "prompts": {},
+  "sessions": {
+    "s_73e10f9d158414": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78af21ac-17ad-4045-a5df-7b9e88f6d08d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
