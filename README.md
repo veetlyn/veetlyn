@@ -67,7 +67,7 @@ plugins/veetlyn/  the Claude and ChatGPT plugin
 
 ## Run it locally
 
-You need Node 24, pnpm 10 and Docker.
+You need Node 24 or newer (any supported LTS), pnpm 10 and Docker. Node runs your local toolchain only — installs, tests and builds. Veetlyn itself runs on Cloudflare's Workers runtime (`workerd`), so nothing you install here ships to production.
 
 ```bash
 pnpm install                       # also generates the typed env accessors
