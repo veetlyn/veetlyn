@@ -116,6 +116,14 @@ Stage values live in ignored files (`packages/infra/.env`, `packages/infra/.env.
 
 Branch protection for `main` is saved in [`.github/main-protection.json`](.github/main-protection.json); reapply it with `gh api --method PUT repos/veetlyn/veetlyn/branches/main/protection --input .github/main-protection.json`.
 
+## Documentation
+
+- [docs/environments.md](docs/environments.md) — local, staging and production: what each stage is for, who can sign up, and the demo/sandbox rules
+- [docs/user-guide.md](docs/user-guide.md) — using Veetlyn as a seller (services, payouts) or a client (requests, quotes, payments)
+- [docs/ai-plugin.md](docs/ai-plugin.md) — connecting Claude and ChatGPT, what to ask, and the rules the connector cannot break
+- [docs/development.md](docs/development.md) — environment variables, the test database, migrations, code rules and project workflow
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to open issues and pull requests
+
 ## Contributing
 
 - Open pull requests against `dev`, the default branch. `main` only receives release merges.
