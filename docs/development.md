@@ -4,7 +4,9 @@ The practical version of this page is the README's ["Run it locally"](../README.
 
 ## Prerequisites
 
-Node 24, pnpm 10 (`corepack enable`), Docker (for Postgres). Nothing else — R2, KV and Queues are emulated by `alchemy dev`.
+**Node 24 or newer (any supported LTS)**, pnpm 10 (`corepack enable`, the version is pinned by `packageManager` in `package.json`), Docker (for Postgres).
+
+Why a Node version at all, when the product runs on Workers: Node is only the **local toolchain runtime** — `pnpm`, Vitest, drizzle-kit and `alchemy dev` execute on it. The Workers themselves run on Cloudflare's `workerd`, and no Node ships to production. CI pins `node-version: 24` (maintenance LTS, security-patched; the upgrade to the current Active LTS is a tested change of its own). Nothing else to install — R2, KV and Queues are emulated by `alchemy dev`.
 
 ## Environment variables
 
