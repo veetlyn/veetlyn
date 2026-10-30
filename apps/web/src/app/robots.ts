@@ -19,7 +19,7 @@ const AI_CRAWLERS = [
 export default function robots(): MetadataRoute.Robots {
   if (!isIndexedStage()) return { rules: [{ userAgent: "*", disallow: "/" }] };
   return {
-    rules: [{ userAgent: "*", allow: "/" }, ...AI_CRAWLERS.map((userAgent) => ({ userAgent, allow: "/" }))],
+    rules: ["*", ...AI_CRAWLERS].map((userAgent) => ({ userAgent, allow: "/", disallow: ["/c/", "/pay/"] })),
     sitemap: absoluteUrl("/sitemap.xml", platformDomain()),
   };
 }

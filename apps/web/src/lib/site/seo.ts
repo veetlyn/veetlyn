@@ -20,8 +20,8 @@ export function pageMetadata(p: {
     title: p.title,
     description: p.description,
     alternates: { canonical: url },
-    openGraph: { title: p.title, description: p.description, url, siteName: site.name, type: p.kind ?? "website" },
-    twitter: { card: "summary", title: p.title, description: p.description },
+    openGraph: { images: [{ url: absoluteUrl("/og.png", site.domain), width: 1200, height: 630, alt: `${site.name}: Sell where clients ask AI.` }], title: p.title, description: p.description, url, siteName: site.name, type: p.kind ?? "website" },
+    twitter: { card: "summary_large_image", images: [absoluteUrl("/og.png", site.domain)], title: p.title, description: p.description },
   };
 }
 
@@ -32,6 +32,7 @@ export const organization = (site: SeoSite) =>
     name: site.name,
     url: absoluteUrl("/", site.domain),
     email: `contact@${site.domain}`,
+    logo: absoluteUrl("/favicon/web-app-manifest-512x512.png", site.domain),
   }) as const;
 
 export const websiteWithSearch = (site: SeoSite) =>
@@ -77,6 +78,7 @@ export function blogPosting(p: {
   title: string;
   description: string;
   date: string;
+  updated?: string;
   section: string;
   words: number;
   domain: string;
@@ -88,7 +90,7 @@ export function blogPosting(p: {
     headline: p.title,
     description: p.description,
     datePublished: p.date,
-    dateModified: p.date,
+    dateModified: p.updated ?? p.date,
     url,
     mainEntityOfPage: url,
     articleSection: p.section,

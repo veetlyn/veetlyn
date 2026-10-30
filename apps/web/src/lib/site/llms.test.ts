@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { posts } from "../../content/blog/posts";
-import { llmsTxt, sitePaths } from "./llms";
+import { llmsTxt, sitemapEntries } from "./llms";
 
 const SITE = { name: "Platform", domain: "platform.test" };
 
@@ -17,11 +17,12 @@ describe("llms.txt", () => {
   });
 });
 
-describe("sitePaths", () => {
-  it("covers the site and the blog once each", () => {
-    const paths = sitePaths();
+describe("sitemapEntries", () => {
+  it("covers the site, the legal pages and the blog once each", () => {
+    const paths = sitemapEntries().map((e) => e.path);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths).toContain("/");
+    expect(paths).toContain("/legal/privacy");
     expect(paths).toContain("/blog/stores-sell-courses-and-downloads");
   });
 });

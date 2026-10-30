@@ -21,6 +21,8 @@ export type Post = {
   description: string;
   lead: string;
   date: string;
+  // The last material edit, for dateModified and the sitemap.
+  updated?: string;
   // Lead, "In short" and body, for BlogPosting's wordCount and the reading time.
   words: number;
   short: readonly string[];
@@ -39,6 +41,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `Professional work starts with a brief, a quote and an agreement. ${name} Network is one connector that lets clients' AI find, ask and request, while the client pays on ${name} with PayPal.`,
       lead: "Finding someone is the first step. Professional work also needs a brief, a quote, payment and a record of delivery.",
       date: "2026-10-19",
+      updated: "2026-10-29",
       words: 385,
       short: [
         "Keep the brief, quote, payment and delivery connected.",
@@ -60,6 +63,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `How a freelancer on ${name} gets briefs from clients' AI, sends a quote and collects a deposit through PayPal, with every fee shown to the cent.`,
       lead: `Clients now ask AI who to hire. Here is how a freelancer on ${name} gets the brief, sends the quote and collects a deposit through PayPal.`,
       date: "2026-10-19",
+      updated: "2026-10-29",
       words: 328,
       short: [
         `Your services are on ${name} Network, so your clients' AI can find you.`,
@@ -81,6 +85,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `How agencies on ${name} keep requests, projects and team payouts together, with one contextual agent coming next to help prepare the work.`,
       lead: `Agencies spend hours paying freelancers by hand. On ${name}, each share is worked out per project and sent by rules you set.`,
       date: "2026-10-19",
+      updated: "2026-10-29",
       words: 298,
       short: [
         "Requests come from the client-facing connector or your page.",
@@ -102,6 +107,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `Sell digital products on your ${name} page, accept payment through PayPal and deliver time-limited download links.`,
       lead: `Give customers one link to your courses and downloads, with PayPal checkout and digital delivery.`,
       date: "2026-10-19",
+      updated: "2026-10-29",
       words: 178,
       short: [
         `Customers choose courses and downloads on your ${name} page.`,
@@ -123,6 +129,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `Salons, spas and studios sell sessions and digital products. ${name} runs services and products from one workspace and one link, pays staff their share, and halves the cheaper plan when you run both.`,
       lead: `Salons, spas and studios sell sessions, and often guides or classes too. Most tools make you pick one. ${name} runs both from one workspace and one link.`,
       date: "2026-10-19",
+      updated: "2026-10-29",
       words: 281,
       short: [
         "Services and digital products share your page, each with its own checkout.",
@@ -143,6 +150,7 @@ export function posts(site: { name: string; domain: string }): readonly Post[] {
       description: `Search engines and AI assistants read the web the same way: clear pages, plain facts and structured data. What helps a seller get found, and what ${name} does for you.`,
       lead: `Search engines and AI assistants read the web the same way: clear pages, plain facts and structured data. Here is what helps, and what ${name} does for you.`,
       date: "2026-10-19",
+      updated: "2026-10-29",
       words: 423,
       short: [
         "Give each offer its own page that says what, for whom, where and at what price.",
