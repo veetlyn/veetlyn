@@ -24,7 +24,7 @@ Follow the README's ["Run it locally"](README.md#run-it-locally); [docs/developm
 
 - Describe what changed, why, and how to check it (a walkthrough of the affected pages is worth more than a paragraph).
 - Keep PRs reviewable: a series of honest commits beats one mixed one.
-- Docs-only PRs are welcome; markdown is exempt from the brand check, but follow the [content rules](docs/environments.md) — describe what works, in test mode, without promising roadmap items.
+- Docs-only PRs are welcome. **`docs/` documents only what is built**: designs, plans and roadmap live in the separate private specs repository, and this repository carries no specs folder or submodule. Markdown is exempt from the brand check; still describe what works, in test mode, and never present a roadmap item as a feature.
 
 ## What we don't merge
 

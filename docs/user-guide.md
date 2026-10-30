@@ -37,7 +37,7 @@ Connect Veetlyn once (see [ai-plugin.md](ai-plugin.md)), then talk to your assis
 
 ## What the AI cannot do
 
-It never moves money: no capture, no payout, no refund without a person's explicit approval in PayPal or an admin's confirmation in the dashboard. Its permissions come from the seller's own operating model — role, record and business state decide which tools it sees; a stale widget cannot push through a guard. Disputes, refunds above the rulebook's cap, and any action marked "needs a person" in the action registry are outside its reach by construction.
+It never moves money: no capture, no payout, no refund without a person's explicit approval in PayPal or an admin's confirmation in the dashboard. Its permissions are enforced server-side on every call: each action in the registry carries an agent policy (`free`, `needs a person's confirmation`, or `never`), the caller's role is checked before anything runs, and business transitions are guarded by the state machine — no client, widget or prompt can route around them. Disputes, refunds above the rulebook's cap, and any action marked "needs a person" are outside its reach by construction.
 
 ## Limits of the alpha
 

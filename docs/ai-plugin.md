@@ -25,7 +25,7 @@ The first use runs Veetlyn's OAuth consent: it names the app, the permissions it
 ## Rules the connector cannot break
 
 - **An agent prepares, a person pays.** The agent has no tool that captures a payment. The pay page opens PayPal's checkout; you log in there and approve.
-- **The seller's operating model decides what it sees.** Role, record and business state are evaluated server-side per tool call; a seller's internal actions are not on the connector.
+- **Every tool call is evaluated server-side.** The action's agent policy and the caller's role are checked before anything runs, and sellers' internal actions are not on the connector at all.
 - **Everything is logged.** Each tool call lands in the action log with its actor and policy (`free`, `needs a person's confirmation`, or `never`).
 
 ## Troubleshooting
