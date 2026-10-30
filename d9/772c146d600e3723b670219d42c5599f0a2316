@@ -1,0 +1,21 @@
+CLAUDE.md
+  s_e5aab081112fbe::t_12f99e76f88e2d 7,9-12,14
+README.md
+  s_e5aab081112fbe::t_1671b406188318 125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9772c146d600e3723b670219d42c5599f0a2316",
+  "prompts": {},
+  "sessions": {
+    "s_e5aab081112fbe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18c38-98d0-7552-a459-08ed6e125e5f",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
