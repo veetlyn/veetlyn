@@ -63,7 +63,6 @@ packages/
   infra/          Alchemy stages, hosts and deploy scripts
   oss/            standalone MIT packages (rules engine, outbox, scheduler)
 plugins/veetlyn/  the Claude and ChatGPT plugin
-specs/            internal designs and plans (private submodule)
 ```
 
 ## Run it locally
@@ -123,7 +122,7 @@ Branch protection for `main` is saved in [`.github/main-protection.json`](.githu
 - Use [Conventional Commits](https://www.conventionalcommits.org).
 - Keep `pnpm check-types`, `pnpm lint` and `pnpm test` green; lint must stay at zero findings.
 - Read [`CLAUDE.md`](CLAUDE.md) for the code rules (money in integer minor units, untrusted input decoded with zod, no agent moves money without a person). They apply to people too.
-- Product designs and plans are kept in a private repository (`specs/` is a submodule for maintainers). Open an issue to discuss a change before building it.
+- Product designs and plans are kept in a separate private repository. Open an issue to discuss a change before building it.
 
 ## Security
 
