@@ -4,14 +4,14 @@ Veetlyn is the money flow and the trust around paid work: freelancers, teams and
 
 ## Read first, in this order
 
-`specs/` is the private `veetlyn/specs` repository, checked out as a submodule: run `git submodule update --init specs` in a new clone or worktree. Spec changes are committed and pushed there, then the submodule pointer is updated here.
+The private `veetlyn/specs` repository is a separate checkout. In the local workspace it is at `../../specs-repo` from this worktree. References to `specs/` below mean that repository; commit spec changes there.
 
-1. [`specs/PROGRESS.md`](specs/PROGRESS.md): where the build stands, the next step, the run board, how a run works, the environment, the decisions log.
-2. [`specs/BACKLOG.md`](specs/BACKLOG.md): open gaps with the run that owns them.
-3. [`specs/platform/2026-10-13-agentic-surfaces-program.md`](specs/platform/2026-10-13-agentic-surfaces-program.md): the program, the demo and the hackathon deliverables.
-4. The current run's design and plan (linked from `PROGRESS.md`), and [`specs/stories/`](specs/stories/README.md) for what the app must do.
+1. [`specs/PROGRESS.md`](https://github.com/veetlyn/specs/blob/main/PROGRESS.md): where the build stands, the next step, the run board, how a run works, the environment, the decisions log.
+2. [`specs/BACKLOG.md`](https://github.com/veetlyn/specs/blob/main/BACKLOG.md): open gaps with the run that owns them.
+3. [`specs/platform/2026-10-13-agentic-surfaces-program.md`](https://github.com/veetlyn/specs/blob/main/platform/2026-10-13-agentic-surfaces-program.md): the program, the demo and the hackathon deliverables.
+4. The current run's design and plan (linked from `PROGRESS.md`), and [`specs/stories/`](https://github.com/veetlyn/specs/blob/main/stories/README.md) for what the app must do.
 
-For anything else, [`specs/README.md`](specs/README.md) is the context index: what to read for each kind of work. Never read the whole `specs/` folder or send a helper agent to; `specs/archive/` is history, opened only through a link.
+For anything else, [`specs/README.md`](https://github.com/veetlyn/specs/blob/main/README.md) is the context index: what to read for each kind of work. Never read the whole `specs/` folder or send a helper agent to; `specs/archive/` is history, opened only through a link.
 
 Settled decisions are in the designs and the decisions log; do not reopen them without Mouhamed.
 

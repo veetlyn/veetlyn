@@ -63,7 +63,6 @@ packages/
   infra/          Alchemy stages, hosts and deploy scripts
   oss/            standalone MIT packages (rules engine, outbox, scheduler)
 plugins/veetlyn/  the Claude and ChatGPT plugin
-specs/            internal designs and plans (private submodule)
 ```
 
 ## Run it locally
@@ -117,13 +116,21 @@ Stage values live in ignored files (`packages/infra/.env`, `packages/infra/.env.
 
 Branch protection for `main` is saved in [`.github/main-protection.json`](.github/main-protection.json); reapply it with `gh api --method PUT repos/veetlyn/veetlyn/branches/main/protection --input .github/main-protection.json`.
 
+## Documentation
+
+- [docs/environments.md](docs/environments.md) — local, staging and production: what each stage is for, who can sign up, and the demo/sandbox rules
+- [docs/user-guide.md](docs/user-guide.md) — using Veetlyn as a seller (services, payouts) or a client (requests, quotes, payments)
+- [docs/ai-plugin.md](docs/ai-plugin.md) — connecting Claude and ChatGPT, what to ask, and the rules the connector cannot break
+- [docs/development.md](docs/development.md) — environment variables, the test database, migrations, code rules and project workflow
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to open issues and pull requests
+
 ## Contributing
 
 - Open pull requests against `dev`, the default branch. `main` only receives release merges.
 - Use [Conventional Commits](https://www.conventionalcommits.org).
 - Keep `pnpm check-types`, `pnpm lint` and `pnpm test` green; lint must stay at zero findings.
 - Read [`CLAUDE.md`](CLAUDE.md) for the code rules (money in integer minor units, untrusted input decoded with zod, no agent moves money without a person). They apply to people too.
-- Product designs and plans are kept in a private repository (`specs/` is a submodule for maintainers). Open an issue to discuss a change before building it.
+- Product designs and plans are kept in a separate private repository. Open an issue to discuss a change before building it.
 
 ## Security
 
