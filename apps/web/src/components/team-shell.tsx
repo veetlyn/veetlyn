@@ -9,6 +9,7 @@ import {
   HandCoins,
   Inbox,
   LayoutGrid,
+  MessagesSquare,
   Package,
   Settings,
   ShieldAlert,
@@ -38,6 +39,7 @@ const SEGMENT_LABELS = new Map<string, string>([
   ["members", "Members"],
   ["payouts", "Payouts"],
   ["payments", "Payments"],
+  ["calls", "Calls"],
   ["cases", "PayPal cases"],
   ["rules", "Rules"],
   ["operating-model", "Operating model"],
@@ -85,6 +87,7 @@ export default function TeamShell({
       label: "Work",
       items: [
         { href: `/${slug}`, label: "Overview", icon: LayoutGrid },
+        { href: `/${slug}/calls`, label: "Calls", icon: MessagesSquare, show: services },
         { href: `/${slug}/requests`, label: "Open requests", icon: HandCoins, show: services && !solo },
         { href: `/${slug}/projects`, label: "Projects", icon: FolderKanban, show: services },
       ],
