@@ -9,6 +9,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@jendal-workspace/auth": "workspace:*",
     "@jendal-workspace/core": "workspace:*",
     "@jendal-workspace/db": "workspace:*",
