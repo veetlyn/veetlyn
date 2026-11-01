@@ -2,7 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { clientRedirectOrigins, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
-import { createServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import { createServicesTeamSettings, forgetWorkspaceMember } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
 import {
@@ -246,6 +246,11 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
           },
           afterCreateTeam: async ({ team }) => {
             if (team.product === "services") await createServicesTeamSettings(database, team.id);
+          },
+          // Better Auth drops only its own team rows; a re-invited member would otherwise get back their old
+          // role, departments and shortlists.
+          afterRemoveMember: async ({ member }) => {
+            await forgetWorkspaceMember(database, { organizationId: member.organizationId, userId: member.userId });
           },
           // Store URLs and the KV cache are keyed by slug, so slugs cannot change until W1-C adds invalidation.
           // A team's product picks its repository filters and dashboard; changing it would strand its data.

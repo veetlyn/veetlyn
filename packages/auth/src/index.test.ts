@@ -1,8 +1,19 @@
 import { defaultServicesTeamSettings, type JsonObject } from "@jendal-workspace/core";
 import { user } from "@jendal-workspace/db/schema/auth";
-import { team } from "@jendal-workspace/db/schema/organization";
-import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
-import { createTestDb, hasTestDatabase, truncateAll } from "@jendal-workspace/db/testing/db";
+import { memberDepartment, requestShortlist } from "@jendal-workspace/db/schema/conversations";
+import { member, team } from "@jendal-workspace/db/schema/organization";
+import { teamPayoutTrustedMember } from "@jendal-workspace/db/schema/payouts";
+import { servicesDepartment } from "@jendal-workspace/db/schema/services-catalog";
+import { servicesTeamMember, servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
+import {
+  createTestDb,
+  hasTestDatabase,
+  seedOrganization,
+  seedProject,
+  seedServicesTeam,
+  seedServicesTeamMember,
+  truncateAll,
+} from "@jendal-workspace/db/testing/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -169,6 +180,61 @@ describe.skipIf(!hasTestDatabase)("stores as Better Auth teams", () => {
     const { organizationId } = await ownerWithOrganization();
 
     await expect(db.select().from(team).where(eq(team.organizationId, organizationId))).resolves.toEqual([]);
+  });
+});
+
+describe.skipIf(!hasTestDatabase)("leaving a workspace", () => {
+  const db = createTestDb();
+  const { auth } = createTestAuth(db);
+
+  beforeEach(() => truncateAll(db));
+  afterAll(() => db.$client.end());
+
+  // A freelancer with a role, a department, a shortlisted request and payout trust in a team.
+  async function placeIn(organizationId: string, slug: string, userId?: string) {
+    const crew = await seedServicesTeam(db, { organizationId, slug, status: "active" });
+    const freelancerId =
+      userId ?? (await seedServicesTeamMember(db, { organizationId, teamId: crew.id, role: "freelancer", name: "Aicha" }));
+    if (userId) await db.insert(servicesTeamMember).values({ id: crypto.randomUUID(), teamId: crew.id, userId, role: "freelancer" });
+    const [department] = await db.insert(servicesDepartment).values({ teamId: crew.id, name: "Design" }).returning();
+    if (!department) throw new Error("department was not created");
+    await db.insert(memberDepartment).values({ teamId: crew.id, userId: freelancerId, departmentId: department.id });
+    const projectId = await seedProject(db, { teamId: crew.id, status: "requested" });
+    await db.insert(requestShortlist).values({ projectId, userId: freelancerId });
+    await db.insert(teamPayoutTrustedMember).values({ teamId: crew.id, userId: freelancerId });
+    return { teamId: crew.id, freelancerId };
+  }
+
+  async function placesOf(userId: string) {
+    return {
+      roles: await db.select().from(servicesTeamMember).where(eq(servicesTeamMember.userId, userId)),
+      departments: await db.select().from(memberDepartment).where(eq(memberDepartment.userId, userId)),
+      shortlists: await db.select().from(requestShortlist).where(eq(requestShortlist.userId, userId)),
+      trust: await db.select().from(teamPayoutTrustedMember).where(eq(teamPayoutTrustedMember.userId, userId)),
+    };
+  }
+
+  it("drops the removed member's role, departments, shortlists and payout trust in that workspace only", async () => {
+    const owner = await signUpVerified(auth, db, "owner@example.com");
+    const workspace = await auth.api.createOrganization({ body: { name: "Walk", slug: "walk" }, headers: owner.headers });
+    if (!workspace) throw new Error("organization was not created");
+    const { freelancerId } = await placeIn(workspace.id, "walk-crew");
+    const elsewhere = await seedOrganization(db);
+    await db.insert(member).values({
+      id: crypto.randomUUID(), organizationId: elsewhere.organizationId, userId: freelancerId, role: "member", createdAt: new Date(),
+    });
+    const kept = await placeIn(elsewhere.organizationId, "other-crew", freelancerId);
+
+    await auth.api.removeMember({
+      body: { memberIdOrEmail: `${freelancerId}@example.com`, organizationId: workspace.id },
+      headers: owner.headers,
+    });
+
+    const left = await placesOf(freelancerId);
+    expect(left.roles.map((r) => r.teamId)).toEqual([kept.teamId]);
+    expect(left.departments.map((r) => r.teamId)).toEqual([kept.teamId]);
+    expect(left.shortlists).toHaveLength(1);
+    expect(left.trust.map((r) => r.teamId)).toEqual([kept.teamId]);
   });
 });
 
