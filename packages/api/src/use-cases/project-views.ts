@@ -136,7 +136,9 @@ export async function getTeamProjectView(
       : project,
     contacts: requestOnly ? [] : contacts,
     conversation,
-    quotes,
+    // Rival bids reach a freelancer only as the request space's one-line notice (conversations design §4); their
+    // lines, author and status stay with staff.
+    quotes: isProjectStaff(viewer.role) ? quotes : quotes.filter((q) => q.freelancerId === viewer.actorId),
     amendments,
     payments,
     deliveries: await withDeliveryFiles(db, deliveries),
