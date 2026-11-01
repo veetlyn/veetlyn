@@ -158,6 +158,15 @@ describe.skipIf(!hasTestDatabase)("conversations", () => {
     await expect(quote(aicha, projectId)).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("closes an abandoned project to messages from the client, staff and the assigned freelancer", async () => {
+    const { projectId, admin, aicha, client } = await setup();
+    await db.update(project).set({ status: "abandoned", assignedFreelancerId: aicha.actorId }).where(eq(project.id, projectId));
+    const closed = "This project ended without an answer from the client, so it takes no new messages.";
+    for (const author of [client, as(admin), as(aicha)]) {
+      await expect(postConversationMessage(db, author, { projectId, kind: "text", body: "Hello?" }, "web")).rejects.toThrow(closed);
+    }
+  });
+
   it("closes the request to the other freelancers at acceptance and lets the winner write unmasked", async () => {
     const { projectId, aicha, ben } = await setup();
     const { quoteId } = await quote(aicha, projectId);

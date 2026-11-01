@@ -116,6 +116,7 @@ export async function accessTo(db: Database, author: ConversationReader, row: Pr
 function closedReason(row: ProjectRow, space: ConversationSpace): string {
   if (row.status === "declined") return "The team declined this request, so it takes no new messages.";
   if (row.status === "expired") return "This request expired, so it takes no new messages.";
+  if (row.status === "abandoned") return "This project ended without an answer from the client, so it takes no new messages.";
   if (space === "request" && row.status !== "quoting") {
     return "The request closed when a quote was accepted; write in the project instead.";
   }
