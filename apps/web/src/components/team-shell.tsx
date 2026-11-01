@@ -3,15 +3,16 @@
 import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowDownToLine,
   ArrowUpFromLine,
   FolderKanban,
   HandCoins,
   Inbox,
   LayoutGrid,
-  MessagesSquare,
   Package,
-  ScrollText,
   Settings,
+  ShieldAlert,
+  Store,
   Tag,
   Users,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { trpc } from "@/utils/trpc";
 
 type NavItem = { href: string; label: string; icon: typeof Inbox; show?: boolean };
+type NavGroup = { label: string; items: NavItem[] };
 
 const SEGMENT_LABELS = new Map<string, string>([
   ["projects", "Projects"],
@@ -35,9 +37,12 @@ const SEGMENT_LABELS = new Map<string, string>([
   ["settings", "Settings"],
   ["members", "Members"],
   ["payouts", "Payouts"],
+  ["payments", "Payments"],
+  ["cases", "PayPal cases"],
   ["rules", "Rules"],
-  ["discord", "Discord"],
-  ["preview", "Preview"],
+  ["operating-model", "Operating model"],
+  ["channels", "Channels"],
+  ["preview", "Seller page"],
   ["new", "New"],
 ]);
 
@@ -73,21 +78,40 @@ export default function TeamShell({
   const initials = name.split(/\s+/).map((word) => word[0] ?? "").join("").slice(0, 2) || "?";
   const roleLabel = kind === "store" ? "Store" : data ? (SERVICES_TEAM_ROLE_LABELS[data.role] ?? data.role) : "";
 
-  const work: NavItem[] = [
-    { href: `/${slug}`, label: "Overview", icon: LayoutGrid },
-    { href: `/${slug}/requests`, label: "Open requests", icon: HandCoins, show: kind === "services" && !solo },
-    { href: `/${slug}/projects`, label: "Projects", icon: FolderKanban, show: kind === "services" },
-    { href: `/${slug}/services`, label: "Services", icon: Tag, show: kind === "services" },
-    { href: `/${slug}/products`, label: "Products", icon: Package, show: storeEnabled },
-    { href: `/${slug}/orders`, label: "Orders", icon: Inbox, show: kind === "services" && storeEnabled && admin },
+  // The context tree's sections (context graph inventory §1): work, money, what the seller offers, and the team.
+  const services = kind === "services";
+  const groups: NavGroup[] = [
+    {
+      label: "Work",
+      items: [
+        { href: `/${slug}`, label: "Overview", icon: LayoutGrid },
+        { href: `/${slug}/requests`, label: "Open requests", icon: HandCoins, show: services && !solo },
+        { href: `/${slug}/projects`, label: "Projects", icon: FolderKanban, show: services },
+      ],
+    },
+    {
+      label: "Money",
+      items: [
+        { href: `/${slug}/payments`, label: "Payments", icon: ArrowDownToLine, show: services && admin },
+        { href: `/${slug}/payouts`, label: "Payouts", icon: ArrowUpFromLine, show: services && !solo },
+        { href: `/${slug}/cases`, label: "PayPal cases", icon: ShieldAlert, show: services && admin },
+      ],
+    },
+    {
+      label: "Storefront",
+      items: [
+        { href: `/${slug}/services`, label: "Services", icon: Tag, show: services },
+        { href: `/${slug}/products`, label: "Products", icon: Package, show: storeEnabled },
+        { href: `/${slug}/orders`, label: "Orders", icon: Inbox, show: services && storeEnabled && admin },
+        { href: `/${slug}/preview`, label: "Seller page", icon: Store, show: services && admin },
+      ],
+    },
+    { label: "Team", items: [{ href: `/${slug}/members`, label: "Members", icon: Users, show: services && !solo }] },
+    { label: "", items: [{ href: `/${slug}/settings`, label: "Settings", icon: Settings, show: services }] },
   ];
-  const team_: NavItem[] = [
-    { href: `/${slug}/payouts`, label: "Payouts", icon: ArrowUpFromLine, show: kind === "services" && !solo },
-    { href: `/${slug}/members`, label: "Members", icon: Users, show: kind === "services" && !solo },
-    { href: `/${slug}/rules`, label: "Rules", icon: ScrollText, show: kind === "services" },
-    { href: `/${slug}/discord`, label: "Discord", icon: MessagesSquare, show: kind === "services" && admin },
-    { href: `/${slug}/settings`, label: "Settings", icon: Settings, show: kind === "services" },
-  ];
+  const shown = groups
+    .map((group) => ({ ...group, items: group.items.filter((item) => item.show !== false) }))
+    .filter((group) => group.items.length > 0);
 
   const segments = pathname.split("/").filter(Boolean).slice(1);
   const crumbs = [{ href: `/${slug}`, label: name }].concat(
@@ -101,9 +125,7 @@ export default function TeamShell({
     href === `/${slug}` ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   const navList = (items: NavItem[]) =>
-    items
-      .filter((item) => item.show !== false)
-      .map(({ href, label, icon: Icon }) => (
+    items.map(({ href, label, icon: Icon }) => (
         <Link
           key={href}
           href={href}
@@ -135,17 +157,14 @@ export default function TeamShell({
             <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
           </span>
         </div>
-        <nav aria-label="Work" className="grid gap-0.5">
-          {navList(work)}
-        </nav>
-        {team_.some((item) => item.show !== false) ? (
-          <>
-            <p className="px-2.5 pt-4 pb-1.5 text-xs font-medium text-muted-foreground">Team</p>
-            <nav aria-label="Team" className="grid gap-0.5">
-              {navList(team_)}
+        {shown.map((group, i) => (
+          <div key={group.label || "footer"} className={i > 0 ? "pt-3" : undefined}>
+            {group.label && i > 0 ? <p className="px-2.5 pb-1.5 text-xs font-medium text-muted-foreground">{group.label}</p> : null}
+            <nav aria-label={group.label || "Settings"} className="grid gap-0.5">
+              {navList(group.items)}
             </nav>
-          </>
-        ) : null}
+          </div>
+        ))}
       </aside>
       <div className="flex min-h-0 min-w-0 flex-col">
         <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-7">
@@ -173,8 +192,8 @@ export default function TeamShell({
           </div>
         </div>
         <nav aria-label="Sections" className="flex shrink-0 gap-1 overflow-x-auto [scrollbar-width:none] border-b px-3 py-2 md:hidden">
-          {[...work, ...team_]
-            .filter((item) => item.show !== false)
+          {shown
+            .flatMap((group) => group.items)
             .map(({ href, label }) => (
               <Link
                 key={href}
@@ -187,10 +206,10 @@ export default function TeamShell({
             ))}
         </nav>
         <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
-        {rules.data?.memberAccepted === false && pathname !== `/${slug}/rules` ? (
+        {rules.data?.memberAccepted === false && pathname !== `/${slug}/settings/operating-model` ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7" role="status">
             <p className="text-sm">Accept version {rules.data.published.version} of the member agreement before taking new work.</p>
-            <Link href={`/${slug}/rules#published-rules`} className="text-sm font-semibold underline underline-offset-4">Review team rules</Link>
+            <Link href={`/${slug}/settings/operating-model#published-rules`} className="text-sm font-semibold underline underline-offset-4">Review team rules</Link>
           </div>
         ) : null}
         {children}

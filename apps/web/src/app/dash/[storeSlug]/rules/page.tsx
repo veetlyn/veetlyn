@@ -1,12 +1,7 @@
-import { isServicesTeamSlug, requireSession } from "@/lib/server-api";
+import { redirect } from "next/navigation";
 
-import TeamNotFound from "@/components/services-team/team-not-found";
-
-import TeamRules from "./team-rules";
-
-export default async function TeamRulesPage({ params }: { params: Promise<{ storeSlug: string }> }) {
-  await requireSession();
+// The operating model moved under Settings; links already sent keep working.
+export default async function RulesMoved({ params }: { params: Promise<{ storeSlug: string }> }) {
   const { storeSlug } = await params;
-  if (!(await isServicesTeamSlug(storeSlug))) return <TeamNotFound />;
-  return <TeamRules teamSlug={storeSlug} />;
+  redirect(`/${storeSlug}/settings/operating-model`);
 }
