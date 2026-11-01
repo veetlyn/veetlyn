@@ -1750,6 +1750,31 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(await rowOf(id)).toMatchObject({ status: "sent" });
     });
 
+    it("sends nothing on payday when the admin who approved it was demoted, and waits for another approval", async () => {
+      const { organizationId, teamId, memberId, admin, paypal, services } = await payoutTeam();
+      const boId = await seedServicesTeamMember(db, { organizationId, teamId, role: "admin", name: "Bo" });
+      await admin.payouts.saveRules({ ...MANUAL, payday: "weekly", paydayWeekday: 5 });
+      const { id } = await callerFor(memberId, services, atWednesday).payouts.request({ ...TEAM, amount: "100.00" });
+      await expect(callerFor(boId, services, atWednesday).payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({
+        status: "queued",
+      });
+      await db
+        .update(servicesTeamMember)
+        .set({ role: "freelancer" })
+        .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, boId)));
+
+      await expect(sendDuePayouts({ db, payouts: services.payouts }, { now: new Date("2026-10-16T00:00:00Z") })).resolves.toMatchObject({
+        sent: 0,
+      });
+      expect(payoutPosts(paypal.requests)).toEqual([]);
+      expect(await rowOf(id)).toMatchObject({
+        status: "requested",
+        failureMessage: "An admin who approved this payout no longer approves payouts here, so it needs another approval.",
+      });
+      expect(await listed(admin)).toEqual([expect.objectContaining({ id, approvals: 0, approvalsNeeded: 1 })]);
+      await expect(admin.payouts.approve({ ...TEAM, requestId: id })).resolves.toMatchObject({ status: "queued" });
+    });
+
     it("holds an approved payout that would take the balance under the floor, then sends it when the balance allows", async () => {
       const { adminId, admin, member, answers, paypal, services } = await payoutTeam("US", { teamToken: readsBalance });
       await admin.payouts.saveRules({ ...MANUAL, balanceFloor: "4950.00" });
