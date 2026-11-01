@@ -31,7 +31,7 @@ import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
 import { deliveryFileUrl, pinnedRulebookRules, type ProjectActor } from "./projects";
 import { projectRuleSummary } from "./rulebooks";
-import { findLatestDisputeForProject, listProjectMemberMarks } from "@jendal-workspace/db/repositories/operating-model";
+import { findLatestDisputeForProject, listProjectMemberMarks, pendingScheduleRunAt } from "@jendal-workspace/db/repositories/operating-model";
 
 
 function qualityRefundCap(rules: RulebookRules | null, status: ProjectStatus, quoteMinor: number | undefined): number | null {
@@ -174,10 +174,9 @@ export async function getTeamProjectView(
   };
 }
 
-export const RESPONSE_WINDOW_MS = 48 * 3_600_000;
-
-// The Open requests board (conversations design §7): the quoting requests the viewer may answer, newest first,
-// with the 48-hour window shown (the reminder and the expiry run elsewhere).
+// The Open requests board (conversations design §7): the quoting requests the viewer may answer, newest first.
+// `respondBy` is when the pinned response rule expires the request: none once the team has answered, while a
+// PayPal case pauses it, or under no rulebook.
 export async function listOpenRequests(db: Database, viewer: ProjectActor) {
   const [rows, departments] = await Promise.all([
     listTeamProjects(db, viewer.teamId),
@@ -187,6 +186,7 @@ export async function listOpenRequests(db: Database, viewer: ProjectActor) {
   const visible = await visibleProjects(db, viewer, quoting);
   const facts = await accessFactsForRows(db, viewer.teamId, visible);
   const names = new Map(departments.map((d) => [d.id, d.name]));
+  const expiries = await pendingScheduleRunAt(db, { kind: "request.expire", subjectIds: visible.map((row) => row.id) });
   return visible.map((row) => {
     const departmentId = facts.get(row.id)?.departmentId ?? null;
     return {
@@ -195,7 +195,7 @@ export async function listOpenRequests(db: Database, viewer: ProjectActor) {
       brief: seesRequestOnly(viewer, row) ? maskContactDetails(row.brief).shown : row.brief,
       departmentName: departmentId ? (names.get(departmentId) ?? null) : null,
       createdAt: row.createdAt,
-      respondBy: new Date(row.createdAt.getTime() + RESPONSE_WINDOW_MS),
+      respondBy: expiries.get(row.id) ?? null,
     };
   });
 }
