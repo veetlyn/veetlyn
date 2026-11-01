@@ -3,6 +3,7 @@ import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Mailer } from "@jendal-workspace/email";
 import type { PayPalClient } from "@jendal-workspace/paypal";
+import type Anthropic from "@anthropic-ai/sdk";
 
 import type { CatalogServices } from "./catalog/service";
 
@@ -42,6 +43,16 @@ export type PayoutServices = {
   clientFor(input: { teamId: string; clientId: string; clientSecret: string }): PayPalClient;
 };
 
+// The model behind the dash's assistant. The client may point at Anthropic or at another Messages API provider;
+// `anthropicApi` says whether Anthropic-only parameters (effort, refusal fallbacks) may be sent.
+export type AgentServices = {
+  client: Anthropic;
+  model: string;
+  anthropicApi: boolean;
+  // The assistant's answers a team gets per UTC day.
+  dailyTurns: number;
+};
+
 export type Context = {
   session: Session | null;
   db: Database;
@@ -66,6 +77,8 @@ export type Context = {
   payouts?: PayoutServices;
   // The clock payout decisions read (paydays); tests fix it. Absent means the system clock.
   now?: () => Date;
+  // Absent when no model key is configured; the assistant then says it is not set up.
+  agent?: AgentServices;
   // Called when an action ran but its action_log row could not be written. Absent in tests.
   onActionLogError?: (cause: unknown) => void;
 };

@@ -146,6 +146,10 @@ export const server = Cloudflare.Worker("server", {
     FILES: Files,
     FILES_S3: Cloudflare.R2.S3Credentials(Files, { access: "read-write" }),
     CHANNEL3_API_KEY: Config.Redacted("CHANNEL3_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
+    AGENT_API_KEY: Config.Redacted("AGENT_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
+    AGENT_BASE_URL: optionalString("AGENT_BASE_URL"),
+    AGENT_MODEL: optionalString("AGENT_MODEL"),
+    AGENT_DAILY_TURNS: optionalString("AGENT_DAILY_TURNS"),
     PAYOUT_CREDENTIALS_KEY: Config.Redacted("PAYOUT_CREDENTIALS_KEY").pipe(Config.withDefault(Redacted.make(""))),
   },
   dev: {

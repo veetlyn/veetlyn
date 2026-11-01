@@ -7,6 +7,7 @@ import { connectedAppsRouter } from "./connected-apps";
 import { orderRouter } from "./order";
 import { paymentRouter } from "./payment";
 import { payoutDestinationRouter } from "./payout-destination";
+import { agentRouter } from "./agent";
 import { moneyRouter } from "./money";
 import { payoutsRouter } from "./payouts";
 import { paypalRouter } from "./paypal";
@@ -30,6 +31,7 @@ export const appRouter = router({
   payoutDestination: payoutDestinationRouter,
   payouts: payoutsRouter,
   money: moneyRouter,
+  agent: agentRouter,
   paypal: paypalRouter,
   project: projectRouter,
   rules: rulesRouter,
