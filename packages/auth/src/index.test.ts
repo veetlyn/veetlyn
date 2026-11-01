@@ -199,7 +199,7 @@ describe.skipIf(!hasTestDatabase)("leaving a workspace", () => {
     const [department] = await db.insert(servicesDepartment).values({ teamId: crew.id, name: "Design" }).returning();
     if (!department) throw new Error("department was not created");
     await db.insert(memberDepartment).values({ teamId: crew.id, userId: freelancerId, departmentId: department.id });
-    const projectId = await seedProject(db, { teamId: crew.id, status: "requested" });
+    const projectId = await seedProject(db, { teamId: crew.id, status: "quoting" });
     await db.insert(requestShortlist).values({ projectId, userId: freelancerId });
     await db.insert(teamPayoutTrustedMember).values({ teamId: crew.id, userId: freelancerId });
     return { teamId: crew.id, freelancerId };

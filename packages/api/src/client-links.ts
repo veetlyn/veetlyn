@@ -8,9 +8,11 @@ const encoder = new TextEncoder();
 const LEGACY_CLIENT_LINK_LABEL = "platform client link v1";
 const CLIENT_LINK_LABEL = "platform client link v2";
 // The same link handed to a signed-in client (their home, their AI) instead of emailed: it opens the page but
-// proves no address.
-const ACCOUNT_CLIENT_LINK_LABEL = "platform client link v2 account";
-const ACCOUNT_MARK = "a";
+// proves no address. It expires, because nothing revokes it when the client disconnects their AI or loses the
+// account; both places sign a fresh one each time they show the project.
+const ACCOUNT_CLIENT_LINK_LABEL = "platform client link v3 account";
+const ACCOUNT_LINK_SECONDS = 60 * 60;
+const ACCOUNT_MARK = /^a([1-9][0-9]{0,11})$/;
 const PAY_LINK_LABEL = "platform pay link v1";
 
 async function linkKey(secret: string, label: string): Promise<CryptoKey> {
@@ -69,7 +71,8 @@ export function signClientLink(secret: string, target: ClientLinkTarget): Promis
 }
 
 export function signAccountClientLink(secret: string, target: ClientLinkTarget): Promise<string> {
-  return signLink(secret, ACCOUNT_CLIENT_LINK_LABEL, `${target.projectId}.${target.contactId}.${target.version}.${ACCOUNT_MARK}`);
+  const expires = Math.floor(Date.now() / 1000) + ACCOUNT_LINK_SECONDS;
+  return signLink(secret, ACCOUNT_CLIENT_LINK_LABEL, `${target.projectId}.${target.contactId}.${target.version}.a${expires}`);
 }
 
 export function signLegacyClientLink(secret: string, projectId: string): Promise<string> {
@@ -84,7 +87,10 @@ export async function verifyClientLink(secret: string, token: string): Promise<V
   }
   const [projectId, contactId, version, mark] = segments;
   const emailed = segments.length === 4;
-  if (!emailed && (segments.length !== 5 || mark !== ACCOUNT_MARK)) return null;
+  if (!emailed) {
+    const expires = segments.length === 5 ? ACCOUNT_MARK.exec(mark ?? "")?.[1] : undefined;
+    if (!expires || Number(expires) * 1000 <= Date.now()) return null;
+  }
   if (!projectId || !contactId || !version) return null;
   if (!SEGMENT.test(projectId) || !SEGMENT.test(contactId) || !VERSION.test(version)) return null;
   if (!(await verifyLink(secret, emailed ? CLIENT_LINK_LABEL : ACCOUNT_CLIENT_LINK_LABEL, token))) return null;

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { signClientLink, signLegacyClientLink, signPayLink, verifyClientLink, verifyPayLink } from "./client-links";
+import { signAccountClientLink, signClientLink, signLegacyClientLink, signPayLink, verifyClientLink, verifyPayLink } from "./client-links";
 
 const SECRET = "test-secret-that-is-at-least-32-characters";
 const TARGET = { projectId: "proj-123", contactId: "contact-1", version: 2 };
@@ -26,6 +26,25 @@ describe("client links", () => {
     const legacy = await signLegacyClientLink(SECRET, "proj-123");
     await expect(verifyClientLink(SECRET, legacy)).resolves.toEqual({ projectId: "proj-123", contactId: null, version: 0, emailed: true });
     await expect(verifyClientLink(SECRET, legacy.replace("proj-123", "proj-999"))).resolves.toBeNull();
+  });
+});
+
+describe("account client links", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("open the page for an hour without proving an address, then stop", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-01T10:00:00Z") });
+    const token = await signAccountClientLink(SECRET, TARGET);
+    await expect(verifyClientLink(SECRET, token)).resolves.toEqual({ ...TARGET, emailed: false });
+    vi.setSystemTime(new Date("2026-11-01T11:00:00Z"));
+    await expect(verifyClientLink(SECRET, token)).resolves.toBeNull();
+  });
+
+  it("rejects a later expiry written into the token", async () => {
+    const token = await signAccountClientLink(SECRET, TARGET);
+    const [projectId, contactId, version, mark, signature] = token.split(".");
+    const later = `a${Number(mark?.slice(1)) + 86_400}`;
+    await expect(verifyClientLink(SECRET, [projectId, contactId, version, later, signature].join("."))).resolves.toBeNull();
   });
 });
 
