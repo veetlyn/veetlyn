@@ -31,7 +31,7 @@ import {
   replaceShortlist,
   shortlistsFor,
 } from "@jendal-workspace/db/repositories/conversations";
-import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
+import { findProjectById, listProjectQuotes, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import type { UnitOfWork } from "@jendal-workspace/db/repositories/unit-of-work";
 import { armProjectSchedule } from "./projects";
@@ -116,6 +116,7 @@ export async function accessTo(db: Database, author: ConversationReader, row: Pr
 function closedReason(row: ProjectRow, space: ConversationSpace): string {
   if (row.status === "declined") return "The team declined this request, so it takes no new messages.";
   if (row.status === "expired") return "This request expired, so it takes no new messages.";
+  if (row.status === "abandoned") return "This project ended without an answer from the client, so it takes no new messages.";
   if (space === "request" && row.status !== "quoting") {
     return "The request closed when a quote was accepted; write in the project instead.";
   }
@@ -370,7 +371,22 @@ function authorNameFor(m: ConversationMessageWithAuthor, viewer: Viewer, platfor
   }
 }
 
-function viewOf(m: ConversationMessageWithAuthor, viewer: Viewer, platformName: string): ConversationMessageView {
+const RIVAL_QUOTE = "Another freelancer sent a quote.";
+
+// Quote amounts are for the client and the team's staff; a freelancer sees their own quote and how many others came
+// in (contextual dash design, 2026-10-18).
+function shownBodyFor(m: ConversationMessageWithAuthor, viewer: Viewer, ownQuoteIds: ReadonlySet<string>): string {
+  const bidder = viewer.kind === "member" && !isProjectStaff(viewer.role);
+  if (bidder && m.kind === "event" && m.refType === "quote" && !ownQuoteIds.has(m.refId ?? "")) return RIVAL_QUOTE;
+  return m.shownBody;
+}
+
+function viewOf(
+  m: ConversationMessageWithAuthor,
+  viewer: Viewer,
+  platformName: string,
+  ownQuoteIds: ReadonlySet<string>,
+): ConversationMessageView {
   const member = viewer.kind === "member";
   const authorName = authorNameFor(m, viewer, platformName);
   return {
@@ -380,7 +396,7 @@ function viewOf(m: ConversationMessageWithAuthor, viewer: Viewer, platformName: 
     authorKind: m.authorKind,
     authorName,
     authorUserId: m.authorUserId,
-    body: m.shownBody,
+    body: shownBodyFor(m, viewer, ownQuoteIds),
     originalBody: member && viewer.role === "admin" && m.body !== m.shownBody ? m.body : null,
     replyToId: m.replyToId,
     refType: m.refType,
@@ -403,5 +419,9 @@ export async function conversationFor(
       ? { read: [], write: [] }
       : conversationAccess(viewer, await accessFactsFor(db, row));
   const messages = await listMessages(db, { projectId: row.id, spaces: readableSpaces(access) });
-  return { access, messages: messages.map((m) => viewOf(m, viewer, platformName)) };
+  const ownQuoteIds =
+    viewer.kind === "member" && !isProjectStaff(viewer.role)
+      ? new Set((await listProjectQuotes(db, row.id)).filter((q) => q.freelancerId === viewer.userId).map((q) => q.id))
+      : new Set<string>();
+  return { access, messages: messages.map((m) => viewOf(m, viewer, platformName, ownQuoteIds)) };
 }

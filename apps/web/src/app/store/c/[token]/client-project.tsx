@@ -42,7 +42,9 @@ export default function ClientProject({ token }: { token: string }) {
     return (
       <main className="mx-auto w-full max-w-2xl space-y-4 px-4 py-10 md:px-7 md:py-16">
         <h1 className="font-heading text-3xl">This link is not valid</h1>
-        <p className="text-sm text-muted-foreground">Ask the team to send you the project link again.</p>
+        <p className="text-sm text-muted-foreground">
+          Open the project again from your account or your AI assistant, or ask the team to send you the link again.
+        </p>
       </main>
     );
   }

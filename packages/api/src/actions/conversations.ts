@@ -27,6 +27,9 @@ function conversationSurface(surface: Surface): "web" | "mcp" | "discord" | "api
     case "discord":
     case "api":
       return surface;
+    // A person confirms a drafted message in a call on the dash.
+    case "agent":
+      return "web";
     case "slack":
     case "cron":
     case "webhook":

@@ -1,5 +1,5 @@
 import { isProjectStaff } from "../projects/permissions";
-import type { ProjectStatus } from "../projects/state-machine";
+import { isTerminalProjectStatus, type ProjectStatus } from "../projects/state-machine";
 import type { QuotingMode, ServicesTeamRole } from "../services-teams/types";
 import type { ConversationSpace } from "./types";
 
@@ -22,9 +22,6 @@ export type AccessFacts = {
 
 export type ConversationAccess = { read: ConversationSpace[]; write: ConversationSpace[] };
 
-// A project in one of these takes no new messages; what was said stays readable.
-const CLOSED: readonly ProjectStatus[] = ["completed", "cancelled", "declined", "expired"];
-
 function inRequestAudience(viewer: Extract<Viewer, { kind: "member" }>, facts: AccessFacts): boolean {
   if (viewer.userId === facts.assignedFreelancerId) return true;
   // Assigned mode keeps the request to staff and the assignee, as project visibility did before conversations.
@@ -38,7 +35,8 @@ function inRequestAudience(viewer: Extract<Viewer, { kind: "member" }>, facts: A
 // from acceptance.
 export function conversationAccess(viewer: Viewer, facts: AccessFacts): ConversationAccess {
   const quoting = facts.status === "quoting";
-  const open = !CLOSED.includes(facts.status);
+  // A finished project takes no new messages; what was said stays readable.
+  const open = !isTerminalProjectStatus(facts.status);
   const only = (allowed: boolean, space: ConversationSpace): ConversationSpace[] => (allowed ? [space] : []);
   switch (viewer.kind) {
     case "stranger":

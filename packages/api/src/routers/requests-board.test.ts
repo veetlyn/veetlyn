@@ -1,6 +1,7 @@
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore, HIDDEN_CONTACT } from "@jendal-workspace/core";
 import { memberDepartment } from "@jendal-workspace/db/schema/conversations";
+import { scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import { project } from "@jendal-workspace/db/schema/projects";
 import { servicesDepartment } from "@jendal-workspace/db/schema/services-catalog";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
@@ -60,18 +61,24 @@ describe.skipIf(!hasTestDatabase)("open requests board", () => {
     };
     const older = await request("Older logo", new Date("2026-10-19T10:00:00Z"));
     const newer = await request("Newer logo", new Date("2026-10-20T10:00:00Z"));
-    return { ownerId, designer, editor, older, newer };
+    return { ownerId, designer, editor, older, newer, teamId: team.id };
   }
 
-  it("shows a department's freelancer its requests newest first, masked, with the 48-hour window", async () => {
-    const { designer, older, newer } = await setup();
+  it("shows a department's freelancer its requests newest first, masked, with the pinned expiry as the deadline", async () => {
+    const { designer, older, newer, teamId } = await setup();
+    // A 72-hour pinned response rule, not the platform's 48 hours; the older request was already answered.
+    await db.insert(scheduleItem).values([
+      { teamId, subjectId: newer, kind: "request.expire", runAt: new Date("2026-10-23T10:00:00Z") },
+      { teamId, subjectId: older, kind: "request.expire", runAt: new Date("2026-10-22T10:00:00Z"), status: "cancelled" },
+    ]);
     const board = await callerFor(designer).project.openRequests({ teamSlug: "walk-crew" });
     expect(board.map((r) => r.id)).toEqual([newer, older]);
     expect(board[0]).toMatchObject({
       departmentName: "Design",
       brief: `Logo please, reach me at ${HIDDEN_CONTACT}`,
-      respondBy: new Date("2026-10-22T10:00:00Z"),
+      respondBy: new Date("2026-10-23T10:00:00Z"),
     });
+    expect(board[1]?.respondBy).toBeNull();
   });
 
   it("keeps the requests and the client's addresses from freelancers outside the audience", async () => {

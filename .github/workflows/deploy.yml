@@ -120,6 +120,10 @@ jobs:
       DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       CHANNEL3_API_KEY: ${{ secrets.CHANNEL3_API_KEY }}
+      AGENT_API_KEY: ${{ secrets.AGENT_API_KEY }}
+      AGENT_BASE_URL: ${{ vars.AGENT_BASE_URL }}
+      AGENT_MODEL: ${{ vars.AGENT_MODEL }}
+      AGENT_DAILY_TURNS: ${{ vars.AGENT_DAILY_TURNS }}
       PAYOUT_CREDENTIALS_KEY: ${{ secrets.PAYOUT_CREDENTIALS_KEY }}
       CLOUDFLARE_STORE_ZONE_ID: ${{ vars.CLOUDFLARE_STORE_ZONE_ID }}
       EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}

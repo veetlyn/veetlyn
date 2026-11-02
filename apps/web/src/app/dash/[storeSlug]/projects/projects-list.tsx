@@ -1,6 +1,6 @@
 "use client";
 
-import { projectStatusLabel } from "@jendal-workspace/core";
+import { isTerminalProjectStatus, projectStatusLabel } from "@jendal-workspace/core";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
@@ -11,7 +11,6 @@ import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { trpc } from "@/utils/trpc";
 import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
 
-const CLOSED = new Set(["completed", "cancelled", "declined", "expired"]);
 const FILTERS = [
   ["open", "Open"],
   ["closed", "Closed"],
@@ -54,7 +53,7 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
           <div role="group" aria-label="Show" className="inline-flex w-fit rounded-[10px] bg-tray p-0.5 well">
             {FILTERS.map(([key, label]) => {
               const count = projects.data.filter((project) =>
-                key === "all" ? true : key === "closed" ? CLOSED.has(project.status) : !CLOSED.has(project.status),
+                key === "all" ? true : key === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status),
               ).length;
               return (
                 <button
@@ -72,7 +71,7 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
           <ul className="panel divide-y overflow-hidden">
             {projects.data
               .filter((project) =>
-                filter === "all" ? true : filter === "closed" ? CLOSED.has(project.status) : !CLOSED.has(project.status),
+                filter === "all" ? true : filter === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status),
               )
               .map((project) => (
                 <li key={project.id}>

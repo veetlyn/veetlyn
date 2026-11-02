@@ -34,6 +34,25 @@ export function upsertPendingScheduleItems(db: DbExecutor, plan: ScheduleItemPla
   return reconcileScheduleRows(db, SCHEDULE_TABLE, plan);
 }
 
+// When each subject's pending rule of this kind runs. A cancelled, finished or dispute-paused rule has no time.
+export async function pendingScheduleRunAt(
+  db: DbExecutor,
+  input: { kind: (typeof scheduleItem.$inferSelect)["kind"]; subjectIds: string[] },
+): Promise<Map<string, Date>> {
+  if (input.subjectIds.length === 0) return new Map();
+  const rows = await db
+    .select({ subjectId: scheduleItem.subjectId, runAt: scheduleItem.runAt })
+    .from(scheduleItem)
+    .where(
+      and(
+        eq(scheduleItem.kind, input.kind),
+        eq(scheduleItem.status, "pending"),
+        inArray(scheduleItem.subjectId, input.subjectIds),
+      ),
+    );
+  return new Map(rows.map((r) => [r.subjectId, r.runAt]));
+}
+
 export function claimDueScheduleItems(db: DbExecutor, now: Date, limit: number): Promise<ClaimedScheduleRow[]> {
   return claimDueScheduleRows(db, SCHEDULE_TABLE, now, limit);
 }

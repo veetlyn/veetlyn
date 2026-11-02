@@ -35,7 +35,7 @@ type TeamContext = Context & { session: { user: { id: string } }; servicesTeam: 
 type Loose = { projectId?: string };
 type LooseDefinition = ActionDefinition<Loose, unknown, Loose>;
 
-function depsOf(ctx: Context): ActionDeps {
+export function depsOf(ctx: Context): ActionDeps {
   return {
     db: ctx.db,
     platformName: ctx.platformName,
@@ -49,7 +49,7 @@ function depsOf(ctx: Context): ActionDeps {
   };
 }
 
-function requestOf(ctx: Context) {
+export function requestOf(ctx: Context) {
   return { requestId: crypto.randomUUID(), ip: ctx.headers.get("cf-connecting-ip")?.trim() || null };
 }
 

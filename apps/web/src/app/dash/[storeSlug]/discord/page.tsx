@@ -1,13 +1,7 @@
-import { isServicesTeamSlug, requireSession } from "@/lib/server-api";
+import { redirect } from "next/navigation";
 
-import TeamNotFound from "@/components/services-team/team-not-found";
-
-import DiscordLink from "./discord-link";
-
-// Only services teams can link a server; a store slug here is a wrong turn.
-export default async function TeamDiscordPage({ params }: { params: Promise<{ storeSlug: string }> }) {
-  await requireSession();
+// Chat channels moved under Settings; links already sent keep working.
+export default async function DiscordMoved({ params }: { params: Promise<{ storeSlug: string }> }) {
   const { storeSlug } = await params;
-  if (!(await isServicesTeamSlug(storeSlug))) return <TeamNotFound />;
-  return <DiscordLink teamSlug={storeSlug} />;
+  redirect(`/${storeSlug}/settings/channels`);
 }

@@ -114,6 +114,15 @@ export const PROJECT_TRANSITIONS = {
   abandon: { from: ["delivered", "awaiting_balance"], to: () => "abandoned" },
 } satisfies Readonly<Record<ProjectEvent, TransitionRule>>;
 
+// No transition leaves these: the project's business is over, whatever surface or timer asks.
+export const TERMINAL_PROJECT_STATUSES: readonly ProjectStatus[] = PROJECT_STATUSES.filter(
+  (status) => !Object.values(PROJECT_TRANSITIONS).some((rule: TransitionRule) => rule.from.includes(status)),
+);
+
+export function isTerminalProjectStatus(status: ProjectStatus): boolean {
+  return TERMINAL_PROJECT_STATUSES.includes(status);
+}
+
 const NO_FACTS: ProjectFacts = { pendingAmendment: false, unpaidTopUp: false, balanceDueMinor: 0 };
 
 export function transitionProject(

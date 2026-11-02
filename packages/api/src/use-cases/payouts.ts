@@ -1,5 +1,6 @@
 import {
   balanceHold,
+  canServicesTeam,
   decidePayout,
   estimatePayoutFeeMinor,
   ledgerAccounts,
@@ -63,6 +64,7 @@ import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
 import { teamHasOpenDispute } from "@jendal-workspace/db/repositories/operating-model";
+import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { appendPayoutOutboxEvent } from "./outbox-dispatcher";
 import { credentialsMatchTeam, payoutClientFromCredentials } from "./payout-credentials";
 import { adminCountOf, decisionRules, type PayoutRulesTeam } from "./payout-rules";
@@ -513,6 +515,20 @@ export async function rejectPayoutRequest(
   return payoutRequestView(row);
 }
 
+// An approval carries the payout only while the admin who gave it still approves payouts for the team. A removed or
+// demoted admin's approval stays on record, and the payout waits for another.
+async function currentApproverIds(tx: DbExecutor, request: { id: string; teamId: string }): Promise<{ all: string[]; current: string[] }> {
+  const all = await listPayoutApproverIds(tx, request.id);
+  const current: string[] = [];
+  for (const id of all) {
+    const role = await servicesTeamRoleFor(tx, request.teamId, id);
+    if (role && canServicesTeam(role, "approve_payouts")) current.push(id);
+  }
+  return { all, current };
+}
+
+export const APPROVER_GONE = "An admin who approved this payout no longer approves payouts here, so it needs another approval.";
+
 // The approval stands even when the send that follows is held (low balance, floor) or refused: the returned request
 // carries the status and the message. A payout approved before its payday is sent then, and one of a team without
 // automatic payouts waits for an export.
@@ -539,7 +555,7 @@ export async function approvePayoutRequest(
         amountMinor: request.amountMinor,
         source: request.source,
         memberId: request.userId,
-        approverIds: await listPayoutApproverIds(tx, request.id),
+        approverIds: (await currentApproverIds(tx, request)).current,
         balanceMinor: null,
         now,
       },
@@ -567,6 +583,37 @@ export async function retryPayout(
   const wait = reviewHold(request) ?? paydayWait(request, nowOf(deps));
   if (wait) throw new TRPCError({ code: "BAD_REQUEST", message: wait });
   return payoutRequestView(await sendPayout(deps, input.team, input.requestId));
+}
+
+// A payout people approved goes back to waiting when the approvals of admins who still hold the authority no longer
+// meet the rules. One auto-approved by the rules carries no approval to withdraw.
+async function approvalWithdrawn(tx: Transaction, request: PayoutRequestRow): Promise<PayoutRequestRow | null> {
+  const { all, current } = await currentApproverIds(tx, request);
+  if (all.length === current.length) return null;
+  const rules = await getPayoutRules(tx, request.teamId);
+  const decision = decidePayout(
+    { ...rules, autoApproveUpToMinor: null, trustedMemberIds: [], minimumPayoutMinor: 0 },
+    { amountMinor: request.amountMinor, source: request.source, memberId: request.userId, approverIds: current, balanceMinor: null, now: new Date() },
+    request.currency,
+  );
+  if (decision.kind !== "needs_approval") return null;
+  return updatePayoutRequest(tx, request.id, {
+    status: "requested",
+    decidedByUserId: null,
+    decidedAt: null,
+    sendAfter: null,
+    failureMessage: APPROVER_GONE,
+  });
+}
+
+// Returns a queued payout whose approvals no longer meet the rules to the admins, as a fresh send would; true when it
+// did. Used before work that pays outside the send claim, such as a Payouts Web export.
+export async function returnUnsupportedApproval(db: Database, teamId: string, requestId: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const request = await lockTeamRequest(tx, teamId, requestId);
+    if (request.status !== "queued" || request.uncertainAt !== null) return false;
+    return (await approvalWithdrawn(tx, request)) !== null;
+  });
 }
 
 type SendClaim =
@@ -597,6 +644,8 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string, a
   // with PayPal, so it must go on with the same amount and record it.
   let amounts: SendAmounts | null = null;
   if (uncertainAt === null) {
+    const withdrawn = await approvalWithdrawn(tx, request);
+    if (withdrawn) return { kind: "held", request: withdrawn };
     const unpayable = await destinationHold(tx, request);
     amounts = await sendAmountsFor(tx, request);
     const hold = unpayable ?? payoutSentProblem(amounts.sentMinor);
@@ -1113,10 +1162,11 @@ export async function listTeamPayouts(
     listServicesTeamMembers(db, team),
   ]);
   const adminIds = members.filter((m) => m.role === "admin").map((m) => m.userId);
+  const counted = (row: TeamPayoutRequestRow) => ({ ...row, approverIds: row.approverIds.filter((id) => adminIds.includes(id)) });
   return {
     adminCount: adminCountOf(members),
     waitingForDestination: await listWaitingForDestination(db, team.id, rules, nowOf(deps)),
-    payouts: rows.map((row) => ({
+    payouts: rows.map(counted).map((row) => ({
       ...payoutRequestView(row),
       memberName: row.memberName,
       memberEmail: row.memberEmail,

@@ -17,6 +17,8 @@ import { evlog } from "evlog/hono";
 import { Hono, type ExecutionContext } from "hono";
 
 import type { AppEnv } from "./app-env";
+
+export { CallAgent } from "./agent/call-agent";
 import { createContext } from "./context";
 import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";

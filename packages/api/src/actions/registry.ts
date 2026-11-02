@@ -27,6 +27,7 @@ import {
   projectStart,
   projectWarningRecord,
 } from "./projects";
+import { MONEY_ACTIONS } from "./money";
 import { offeringSearch } from "./offerings";
 import { PAYOUT_ACTIONS } from "./payouts";
 import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
@@ -69,4 +70,5 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   requestListOpen,
   offeringSearch,
   ...PAYOUT_ACTIONS,
+  ...MONEY_ACTIONS,
 ];

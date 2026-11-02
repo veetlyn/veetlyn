@@ -3,6 +3,9 @@ import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Mailer } from "@jendal-workspace/email";
 import type { PayPalClient } from "@jendal-workspace/paypal";
+import type { LanguageModel } from "ai";
+
+import type { CallRuntime } from "./agent/runtime";
 
 import type { CatalogServices } from "./catalog/service";
 
@@ -42,6 +45,13 @@ export type PayoutServices = {
   clientFor(input: { teamId: string; clientId: string; clientSecret: string }): PayPalClient;
 };
 
+// The model behind the dash's assistant, from the AI SDK.
+export type AgentServices = {
+  model: LanguageModel;
+  // The questions a team may ask the assistant per UTC day.
+  dailyTurns: number;
+};
+
 export type Context = {
   session: Session | null;
   db: Database;
@@ -66,6 +76,8 @@ export type Context = {
   payouts?: PayoutServices;
   // The clock payout decisions read (paydays); tests fix it. Absent means the system clock.
   now?: () => Date;
+  // Where the assistant's turns run; absent when no model is configured, and the assistant then says it is not set up.
+  calls?: CallRuntime;
   // Called when an action ran but its action_log row could not be written. Absent in tests.
   onActionLogError?: (cause: unknown) => void;
 };
