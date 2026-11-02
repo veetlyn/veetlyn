@@ -12,6 +12,8 @@ export type SellerPlan = {
   // The platform's fee on each client payment and store order in basis points, taken as PayPal platform_fees.
   feeBps: number;
   members: number;
+  // Services teams the workspace may run on this plan.
+  servicesTeams: number;
   storageGb: number;
   aiDraftsPerMonth: number;
   customDomain: boolean;
@@ -33,6 +35,7 @@ export const SELLER_PLANS: readonly SellerPlan[] = [
     priceCents: { monthly: 1900, yearly: 1600 },
     feeBps: 100,
     members: 1,
+    servicesTeams: 1,
     storageGb: 5,
     aiDraftsPerMonth: 50,
     customDomain: false,
@@ -49,6 +52,7 @@ export const SELLER_PLANS: readonly SellerPlan[] = [
     priceCents: { monthly: 5900, yearly: 4900 },
     feeBps: 50,
     members: 10,
+    servicesTeams: 1,
     storageGb: 50,
     aiDraftsPerMonth: 300,
     customDomain: true,
@@ -65,6 +69,7 @@ export const SELLER_PLANS: readonly SellerPlan[] = [
     priceCents: { monthly: 19900, yearly: 16600 },
     feeBps: 25,
     members: 50,
+    servicesTeams: 5,
     storageGb: 500,
     aiDraftsPerMonth: 1500,
     customDomain: true,
