@@ -1,0 +1,55 @@
+packages/db/src/repositories/waitlist.ts
+  s_802cf14ac5fe1f::t_31260f0d004268 1-37
+apps/server/src/routes/waitlist.ts
+  s_802cf14ac5fe1f::t_31260f0d004268 2,15-16,37
+.github/workflows/deploy.yml
+  s_802cf14ac5fe1f::t_4673beaad7cb81 103
+apps/server/src/notice-wakeup.ts
+  s_802cf14ac5fe1f::t_31260f0d004268 7
+apps/server/src/waitlist-notifications.test.ts
+  s_802cf14ac5fe1f::t_5bf4e362802146 1-50
+packages/infra/.env.schema
+  s_802cf14ac5fe1f::t_4673beaad7cb81 1
+apps/server/src/notice-wakeup.test.ts
+  s_802cf14ac5fe1f::t_e974071876d232 14-27
+apps/server/src/index.ts
+  s_802cf14ac5fe1f::t_4673beaad7cb81 27,75-77,111,223,226-228
+apps/server/.env.schema
+  s_802cf14ac5fe1f::t_4673beaad7cb81 104-107
+docs/environments.md
+  s_802cf14ac5fe1f::t_b5d65f4344bbec 46,49-54
+packages/db/src/testing/db.ts
+  s_802cf14ac5fe1f::t_4673beaad7cb81 30
+packages/db/src/schema/waitlist.ts
+  s_802cf14ac5fe1f::t_31260f0d004268 1,8-20
+packages/email/src/waitlist.test.ts
+  s_802cf14ac5fe1f::t_5bf4e362802146 1-14
+packages/infra/alchemy.run.ts
+  s_802cf14ac5fe1f::t_4673beaad7cb81 127
+apps/server/src/waitlist-notifications.ts
+  s_802cf14ac5fe1f::t_31260f0d004268 1-25
+packages/email/src/templates.ts
+  s_802cf14ac5fe1f::t_31260f0d004268 3-23
+apps/server/src/routes/waitlist.test.ts
+  s_802cf14ac5fe1f::t_5bf4e362802146 2,16,32-34,46,53-59
+packages/db/src/migrations/20261102175036_waitlist_notifications/migration.sql
+  s_802cf14ac5fe1f::t_6230d7c28613d8 1-13
+packages/db/src/migrations/20261102175036_waitlist_notifications/snapshot.json
+  s_802cf14ac5fe1f::t_aab94522a48d3a 1-14777
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a71169cda132ebc1cc1cb1e564d10eeb377f5184",
+  "prompts": {},
+  "sessions": {
+    "s_802cf14ac5fe1f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19d31-54e4-79f1-8e43-cb2199f37137",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
