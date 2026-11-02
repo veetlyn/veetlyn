@@ -101,45 +101,62 @@ function startOfUtcDay(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
-// One turn of a call the person opened (calls design §5): their message, the model reading with their access and
-// proposing actions, and its answer. Nothing the model does changes a record; proposals wait for the person.
-export async function askInCall(
-  deps: TurnDeps,
+export type CallInput = { callId?: string; projectId?: string; message: string };
+
+// What the call's runtime needs to run one turn; plain data, so it can cross into the call's own Durable Object.
+export type TurnRequest = { callId: string; scope: CallScope; message: string; request: RequestMeta };
+
+function agentFor(scope: CallScope): Actor {
+  return { kind: "agent", agentId: AGENT_ID, onBehalfOf: { kind: "user", userId: scope.userId } };
+}
+
+// The project a call is about, as the person may currently see it; null once they may not.
+async function projectFor(deps: { actions: ActionDeps; request: RequestMeta }, scope: CallScope, projectId: string | null) {
+  if (!projectId) return null;
+  return perform(
+    { deps: deps.actions, actor: agentFor(scope), surface: "agent", request: deps.request, team: { id: scope.team.id } },
+    projectGet,
+    { projectId },
+  )
+    .then((view) => ({ id: view.project.id, title: view.project.title }))
+    .catch(() => null);
+}
+
+// Opens or finds the person's call before a turn runs (calls design §5): their own call in this team, or a new one at
+// the team or on a project they can see. The daily cap is checked here, before anything reaches the model.
+export async function openCall(
+  deps: { actions: ActionDeps; request: RequestMeta; dailyTurns: number },
   scope: CallScope,
-  input: { callId?: string; projectId?: string; message: string },
-): Promise<{ callId: string }> {
+  input: CallInput,
+): Promise<AgentCallRow> {
   const { db } = deps.actions;
-  const actor: Actor = { kind: "agent", agentId: AGENT_ID, onBehalfOf: { kind: "user", userId: scope.userId } };
   const now = deps.actions.now?.() ?? new Date();
-  if ((await countQuestionsSince(db, { teamId: scope.team.id, since: startOfUtcDay(now) })) >= deps.agent.dailyTurns) {
+  if ((await countQuestionsSince(db, { teamId: scope.team.id, since: startOfUtcDay(now) })) >= deps.dailyTurns) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "The team has used today's questions. They come back at midnight UTC." });
   }
-  let call: AgentCallRow | null = null;
   if (input.callId) {
-    call = await findOwnAgentCall(db, { callId: input.callId, teamId: scope.team.id, userId: scope.userId });
+    const call = await findOwnAgentCall(db, { callId: input.callId, teamId: scope.team.id, userId: scope.userId });
     if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
+    return call;
   }
   // The person's own access decides whether the project exists for them; a stale or foreign id is not found.
-  const projectId = call ? call.projectId : (input.projectId ?? null);
-  const project = projectId
-    ? await perform(
-        { deps: deps.actions, actor, surface: "agent", request: deps.request, team: { id: scope.team.id } },
-        projectGet,
-        { projectId },
-      )
-        .then((view) => ({ id: view.project.id, title: view.project.title }))
-        .catch(() => null)
-    : null;
-  if (projectId && !project && !call) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
-  call ??= await createAgentCall(db, {
-    teamId: scope.team.id,
-    userId: scope.userId,
-    projectId,
-    title: input.message.trim().slice(0, 80),
-  });
-  await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: input.message.trim() });
+  const projectId = input.projectId ?? null;
+  if (projectId && !(await projectFor(deps, scope, projectId))) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
+  return createAgentCall(db, { teamId: scope.team.id, userId: scope.userId, projectId, title: input.message.trim().slice(0, 80) });
+}
 
-  const state: TurnState = { call, actor, proposals: 0 };
+// One turn of a call: the person's message, the model reading with their access and proposing actions, and its
+// answer. Nothing the model does changes a record; proposals wait for the person. The call's runtime runs one turn at
+// a time per call.
+export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<void> {
+  const { db } = deps.actions;
+  const { scope } = turn;
+  const call = await findOwnAgentCall(db, { callId: turn.callId, teamId: scope.team.id, userId: scope.userId });
+  if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
+  const project = await projectFor(deps, scope, call.projectId);
+  await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
+
+  const state: TurnState = { call, actor: agentFor(scope), proposals: 0 };
   const tools = Object.fromEntries(
     toolsFor(scope.role).map((agentTool) => [
       agentTool.name,
@@ -171,11 +188,5 @@ export async function askInCall(
     // The provider's own words stay in the server log; the person's message is kept and can be sent again.
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The assistant did not answer. Try again in a moment.", cause });
   }
-  await insertAgentCallEntry(db, {
-    callId: call.id,
-    kind: "message",
-    author: "assistant",
-    body: answer.join("\n\n") || "Done.",
-  });
-  return { callId: call.id };
+  await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "assistant", body: answer.join("\n\n") || "Done." });
 }

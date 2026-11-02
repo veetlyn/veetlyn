@@ -119,6 +119,8 @@ export const server = Cloudflare.Worker("server", {
     CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata(),
     HYPERDRIVE: Database,
     STORE_CACHE: StoreCache,
+    // One Agent per dashboard call (apps/server/src/agent/call-agent.ts), SQLite-backed as the Agents SDK needs.
+    CALL_AGENT: Cloudflare.DurableObject("CallAgent"),
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: dashOrigin,
     RELEASE_SHA: optionalString("RELEASE_SHA"),

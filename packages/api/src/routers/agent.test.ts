@@ -7,6 +7,7 @@ import { createTestDb, hasTestDatabase, seedProject, truncateAll } from "@jendal
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { inProcessCallRuntime } from "../agent/runtime";
 import { createAgentServices } from "../agent/services";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
@@ -57,9 +58,11 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
         { apiKey: "test-key", baseUrl: "https://model.test/v1", model: "muse-spark", dailyTurns: String(dailyTurns) },
         model.fetch,
       );
+    const files = createFakeFileStore();
+    const calls = agent && inProcessCallRuntime({ db, platformName: "Platform", files, auth }, agent);
     return appRouter.createCaller({
       db, session: makeSession(userId), environment: "sandbox", platformName: "Platform", auth,
-      headers: new Headers(), catalog: createTestCatalogServices(), files: createFakeFileStore(), agent,
+      headers: new Headers(), catalog: createTestCatalogServices(), files, calls,
     });
   }
 

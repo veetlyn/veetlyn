@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { depsOf, requestOf } from "../actions/trpc";
 import { confirmProposal, declineProposal } from "../agent/proposals";
-import { askInCall } from "../agent/turn";
+import { openCall } from "../agent/turn";
 import { router } from "../index";
 import { servicesTeamProcedure } from "../services-team-procedure";
 
@@ -13,7 +13,7 @@ const entryInput = z.object({ entryId: z.string().min(1).max(64) });
 // The dash's assistant (calls design §5): calls a person opens, private to them, in one team.
 export const agentRouter = router({
   calls: servicesTeamProcedure.query(async ({ ctx }) => ({
-    available: ctx.agent !== undefined,
+    available: ctx.calls !== undefined,
     calls: await listOwnAgentCalls(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id }),
   })),
 
@@ -34,12 +34,14 @@ export const agentRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.agent) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The assistant is not set up on this server." });
-      return askInCall(
-        { actions: depsOf(ctx), agent: ctx.agent, request: requestOf(ctx) },
-        { team: ctx.servicesTeam, userId: ctx.session.user.id, role: ctx.servicesTeamRole },
-        input,
-      );
+      const calls = ctx.calls;
+      if (!calls) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The assistant is not set up on this server." });
+      const scope = { team: ctx.servicesTeam, userId: ctx.session.user.id, role: ctx.servicesTeamRole };
+      const request = requestOf(ctx);
+      const call = await openCall({ actions: depsOf(ctx), request, dailyTurns: calls.dailyTurns }, scope, input);
+      const outcome = await calls.run({ callId: call.id, scope: { ...scope, team: { id: scope.team.id, name: scope.team.name } }, message: input.message, request });
+      if (!outcome.ok) throw new TRPCError({ code: outcome.code, message: outcome.message });
+      return { callId: call.id };
     }),
 
   confirm: servicesTeamProcedure.input(entryInput).mutation(({ ctx, input }) =>
