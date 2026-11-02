@@ -118,23 +118,29 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
   it("refuses a confirmed proposal the person may no longer make, and keeps calls private", async () => {
     const { adminId, managerId, teamId, projectId } = await setup();
     await db.update(servicesTeamSettings).set({ quotingMode: "assigned" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const post = (id: string, body: string) => ({
+      type: "tool_use" as const,
+      id,
+      name: "propose_conversation_post",
+      input: { card: body, input: { projectId, body } },
+    });
     const model = scriptedModel([
-      use("propose_conversation_post", { card: "Thank the client.", input: { projectId, body: "Thanks!" } }),
-      say("Drafted."),
+      { content: [post("toolu_1", "Thanks for the brief."), post("toolu_2", "We start Monday.")], stop_reason: "tool_use" },
+      say("Drafted two messages."),
     ]);
     const { callId } = await callerFor(managerId, model).agent.ask({ ...TEAM, message: "Thank the client" });
-    const proposal = (await callerFor(managerId).agent.thread({ ...TEAM, callId })).entries.find((e) => e.kind === "proposal");
-    if (!proposal) throw new Error("no proposal");
+    const [first, second] = (await callerFor(managerId).agent.thread({ ...TEAM, callId })).entries.filter((e) => e.kind === "proposal");
+    if (!first || !second) throw new Error("expected two proposals");
 
     await expect(callerFor(adminId).agent.thread({ ...TEAM, callId })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(callerFor(adminId).agent.confirm({ ...TEAM, entryId: proposal.id })).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(callerFor(adminId).agent.confirm({ ...TEAM, entryId: first.id })).rejects.toMatchObject({ code: "CONFLICT" });
 
+    await expect(callerFor(managerId).agent.confirm({ ...TEAM, entryId: first.id })).resolves.toMatchObject({ status: "done" });
     await db
       .update(servicesTeamMember)
       .set({ role: "freelancer" })
       .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, managerId)));
-    const result = await callerFor(managerId).agent.confirm({ ...TEAM, entryId: proposal.id });
-    expect(result.status).toBe("failed");
-    expect(await db.select().from(conversationMessage)).toEqual([]);
+    await expect(callerFor(managerId).agent.confirm({ ...TEAM, entryId: second.id })).resolves.toMatchObject({ status: "failed" });
+    expect((await db.select().from(conversationMessage)).map((m) => m.body)).toEqual(["Thanks for the brief."]);
   });
 });
