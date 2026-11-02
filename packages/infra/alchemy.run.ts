@@ -126,6 +126,7 @@ export const server = Cloudflare.Worker("server", {
     RELEASE_SHA: optionalString("RELEASE_SHA"),
     DEPLOY_STAGE: deployStage ?? localStage ?? "dev",
     PUBLIC_ACCESS: publicAccess,
+    WAITLIST_NOTIFY_TO: optionalString("WAITLIST_NOTIFY_TO"),
     PLATFORM_DOMAIN: platformDomain,
     PLATFORM_NAME: Config.String("PLATFORM_NAME"),
     STORE_DOMAIN: storeDomain,
