@@ -1,0 +1,168 @@
+.github/workflows/deploy.yml
+  h_6877e5e7a06bc5 124-127
+apps/server/.env.schema
+  h_6877e5e7a06bc5 79-96
+apps/server/package.json
+  h_6877e5e7a06bc5 26
+apps/server/src/agent/call-agent.ts
+  h_6877e5e7a06bc5 1-63
+apps/server/src/context.ts
+  h_6877e5e7a06bc5 1-5,25-40,63
+apps/server/src/index.ts
+  h_6877e5e7a06bc5 20-21
+apps/web/src/app/dash/[storeSlug]/calls/page.tsx
+  h_6877e5e7a06bc5 1-20
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 1-204
+apps/web/src/app/dash/[storeSlug]/cases/page.tsx
+  h_6877e5e7a06bc5 1-14
+apps/web/src/app/dash/[storeSlug]/cases/team-cases.tsx
+  h_6877e5e7a06bc5 1-90
+apps/web/src/app/dash/[storeSlug]/discord/page.tsx
+  h_6877e5e7a06bc5 1,3-4,6
+apps/web/src/app/dash/[storeSlug]/payments/page.tsx
+  h_6877e5e7a06bc5 1-12
+apps/web/src/app/dash/[storeSlug]/payments/team-payments.tsx
+  h_6877e5e7a06bc5 1-77
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 314-319
+apps/web/src/app/dash/[storeSlug]/projects/projects-list.tsx
+  h_6877e5e7a06bc5 3,56,74
+apps/web/src/app/dash/[storeSlug]/requests/open-requests.tsx
+  h_6877e5e7a06bc5 11-13,15,58
+apps/web/src/app/dash/[storeSlug]/rules/page.tsx
+  h_6877e5e7a06bc5 1,3-4,6
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  h_6877e5e7a06bc5 53
+apps/web/src/app/dash/[storeSlug]/settings/channels/page.tsx
+  h_6877e5e7a06bc5 1-13
+apps/web/src/app/dash/[storeSlug]/settings/layout.tsx
+  h_6877e5e7a06bc5 1-17
+apps/web/src/app/dash/[storeSlug]/settings/operating-model/page.tsx
+  h_6877e5e7a06bc5 1-12
+apps/web/src/app/dash/[storeSlug]/settings/settings-tabs.tsx
+  h_6877e5e7a06bc5 1-28
+apps/web/src/app/dash/me/page.tsx
+  h_6877e5e7a06bc5 1-8
+apps/web/src/app/dash/me/personal-home.tsx
+  h_6877e5e7a06bc5 1-94
+apps/web/src/app/dash/page.tsx
+  h_6877e5e7a06bc5 5,7-9,11,17,30-50
+apps/web/src/app/dash/w/[organizationId]/page.tsx
+  h_6877e5e7a06bc5 1-43
+apps/web/src/app/store/c/[token]/client-project.tsx
+  h_6877e5e7a06bc5 45-47
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 6,15-16,30,41-43,45-47,83-113,115-117,131,163-167,169-170,198-199,212,215
+apps/web/src/components/workspace/workspace-sellers.tsx
+  h_6877e5e7a06bc5 1-45
+apps/web/src/lib/rules-ui.test.ts
+  h_6877e5e7a06bc5 13
+packages/api/package.json
+  h_6877e5e7a06bc5 12,22
+packages/api/src/actions/actors.ts
+  h_6877e5e7a06bc5 1,22-28
+packages/api/src/actions/conversations.ts
+  h_6877e5e7a06bc5 30-32
+packages/api/src/actions/money.ts
+  h_6877e5e7a06bc5 1-41
+packages/api/src/actions/perform.test.ts
+  h_6877e5e7a06bc5 184,186-188,190-202,204-208
+packages/api/src/actions/perform.ts
+  h_6877e5e7a06bc5 10-11,56-57,68,154-160
+packages/api/src/actions/registry.ts
+  h_6877e5e7a06bc5 30,73
+packages/api/src/actions/team-actor.ts
+  h_6877e5e7a06bc5 2,10-11,14
+packages/api/src/actions/trpc.ts
+  h_6877e5e7a06bc5 38,52
+packages/api/src/agent/effects.ts
+  h_6877e5e7a06bc5 1-61
+packages/api/src/agent/proposals.ts
+  h_6877e5e7a06bc5 1-52
+packages/api/src/agent/runtime.ts
+  h_6877e5e7a06bc5 1-40
+packages/api/src/agent/services.ts
+  h_6877e5e7a06bc5 1-20
+packages/api/src/agent/tools.ts
+  h_6877e5e7a06bc5 1-114
+packages/api/src/agent/turn.test.ts
+  h_6877e5e7a06bc5 1-25
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 1-198
+packages/api/src/client-links.test.ts
+  h_6877e5e7a06bc5 1,3,32-50
+packages/api/src/client-links.ts
+  h_6877e5e7a06bc5 11-15,74-75,90-93
+packages/api/src/context.ts
+  h_6877e5e7a06bc5 6-8,48-54,79-80
+packages/api/src/routers/agent.test.ts
+  h_6877e5e7a06bc5 1-173
+packages/api/src/routers/agent.ts
+  h_6877e5e7a06bc5 1-58
+packages/api/src/routers/index.ts
+  h_6877e5e7a06bc5 10-11,33-34
+packages/api/src/routers/money.test.ts
+  h_6877e5e7a06bc5 1-82
+packages/api/src/routers/money.ts
+  h_6877e5e7a06bc5 1-8
+packages/api/src/routers/payouts.test.ts
+  h_6877e5e7a06bc5 1753-1777,1955-1974
+packages/api/src/routers/project.test.ts
+  h_6877e5e7a06bc5 409-423
+packages/api/src/routers/requests-board.test.ts
+  h_6877e5e7a06bc5 4,64,67-73,79,81
+packages/api/src/use-cases/conversations.test.ts
+  h_6877e5e7a06bc5 25,162-170,191-205
+packages/api/src/use-cases/conversations.ts
+  h_6877e5e7a06bc5 34,119,374-389,399,422-426
+packages/api/src/use-cases/payouts-web.ts
+  h_6877e5e7a06bc5 24,34,87-91
+packages/api/src/use-cases/payouts.ts
+  h_6877e5e7a06bc5 3,67,518-531,558,588-618,647-648,1165,1169
+packages/api/src/use-cases/project-views.ts
+  h_6877e5e7a06bc5 34,139-141,177-179,189,198
+packages/auth/src/index.test.ts
+  h_6877e5e7a06bc5 3-16,186-253
+packages/auth/src/index.ts
+  h_6877e5e7a06bc5 5,112-113,166-174,261-265
+packages/core/src/conversations/access.ts
+  h_6877e5e7a06bc5 2,38-39
+packages/core/src/projects/state-machine.ts
+  h_6877e5e7a06bc5 117-125
+packages/db/src/migrations/20261102101707_agent_calls/migration.sql
+  h_6877e5e7a06bc5 1-32
+packages/db/src/migrations/20261102101707_agent_calls/snapshot.json
+  h_6877e5e7a06bc5 1-15035
+packages/db/src/repositories/calls.ts
+  h_6877e5e7a06bc5 1-115
+packages/db/src/repositories/money.ts
+  h_6877e5e7a06bc5 1-57
+packages/db/src/repositories/operating-model.ts
+  h_6877e5e7a06bc5 37-55
+packages/db/src/repositories/services-teams.ts
+  h_6877e5e7a06bc5 16,18-19,245-275
+packages/db/src/schema/calls.ts
+  h_6877e5e7a06bc5 1-59
+packages/db/src/schema/index.ts
+  h_6877e5e7a06bc5 24
+packages/db/src/testing/db.ts
+  h_6877e5e7a06bc5 30
+packages/infra/.env.schema
+  h_6877e5e7a06bc5 1
+packages/infra/alchemy.run.ts
+  h_6877e5e7a06bc5 122-123,152-155
+pnpm-lock.yaml
+  h_6877e5e7a06bc5 118,124,158-160,166,169,194,206,242,245,269,276,312,331-333,361-363,366,369,372,388,391,394,397,409,412,470,495,512,518,524,570,659,688-709,799-802,815-818,823-826,837-842,847-850,855-858,873-876,881-886,893-898,903-906,911-914,919-922,936-952,983-986,995-998,1003-1006,1011-1014,1145-1147,1862-1864,2006-2015,2151-2154,2676-2692,3139-3141,3218-3221,3312-3314,3498-3558,3950-3952,3966-3969,4357-4359,4833-4835,5201-5204,5209-5212,5222-5224,5311-5315,5450-5457,5501-5503,6154-6157,6413-6439,6455,6467-6488,6490,6500-6501,6526-6530,6561-6569,6574-6577,6599-6609,6612-6613,6621-6625,6646-6649,6652-6655,6665-6671,6679-6683,6686-6687,6690-6691,6703-6718,6759-6762,6771-6776,6789-6798,6804-6808,6832,6834-6836,6839,6850-6851,6853,6855,6858,6860,6862,6867,6869-6871,6878,6880,6883,6885,6888,6890,6893,6898,6900,6903,6905,6919-6920,7085,7089,7104,7107,7426-7430,7610,7629-7654,7772,7776,7780-7782,7950,7952,7954-7956,7958,7960,7962,7964,7966,7968,8062-8080,8459-8460,8528-8529,8532,8537,8541-8549,8654-8655,8749-8783,8804,8806,8844,8846-8847,8897,8899-8905,8918,8922,9093-9094,9109-9110,9192,9199,9372-9373,9382,9384,9800-9801,10308-10309,10312-10315,10322-10328,10357-10358,10524-10529,10556-10557,10674,10676-10680,10912,10919,11341-11342,11353,11358,11406,11423,11586-11589
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9c925f41a01b47c5a40a3e5dc772276564a9975b",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
