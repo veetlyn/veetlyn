@@ -43,5 +43,12 @@ Every stage reads its config from [Varlock](https://varlock.dev) `.env.schema` f
 | `PLATFORM_NAME` | the product name people read in UI, email and the plugin |
 | `PAYPAL_ENVIRONMENT` | `sandbox` everywhere today; `live` is the switch for real money |
 | `DEPLOY_STAGE` | set by the deploy; names the stage in logs |
+| `WAITLIST_NOTIFY_TO` | optional owner email address for new waitlist signup alerts; empty disables creation of new alerts |
 
 Secrets never enter the repository: see [development.md](development.md#environment-variables) for where the ignored files live.
+
+### Waitlist signup alerts
+
+Set `WAITLIST_NOTIFY_TO` in the stage's GitHub environment variables, then release normally. The API stores a notification alongside each new signup, attempts delivery in the background, and retries failures on the ten-minute maintenance schedule with backoff. Duplicate submissions and honeypots do not create alerts. Existing entries are not backfilled. The message contains the subscriber's email, signup time in UTC, and launch-notification consent context; it goes only to the configured owner, not to the subscriber.
+
+The additive `waitlist_notification` table records attempts and `sent_at`. Check unsent rows and their `next_attempt_at` when diagnosing delivery. Turning off the setting stops new alerts; already queued messages retain their original recipient and continue retrying. Rollback to the previous application version leaves waitlist collection working and pauses alert delivery; retain the new table so a later rollout can resume pending alerts.

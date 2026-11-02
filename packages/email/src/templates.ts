@@ -1,5 +1,26 @@
 export type EmailContent = { subject: string; text: string; html: string };
 
+export function waitlistEntryEmail(input: { platformName: string; email: string; joinedAt: Date }): EmailContent {
+  const joined = input.joinedAt.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+  const name = escapeHtml(input.platformName);
+  const email = escapeHtml(input.email);
+  return {
+    subject: `Someone joined the ${input.platformName} waitlist`.replace(/[\r\n]+/g, " "),
+    text: `A new person is waiting for ${input.platformName}.\n\nEmail: ${input.email}\nJoined: ${joined}\nSource: Website waitlist\n\nThey agreed to receive a launch notification. This is a new entry, not a duplicate submission.`,
+    html: `<!doctype html><html lang="en"><body style="margin:0;padding:32px 16px;background:#f4f5f0;font-family:Arial,sans-serif;color:#20251e">
+<table role="presentation" style="width:100%;max-width:540px;margin:0 auto;border-collapse:collapse"><tr><td style="padding:30px;background:#ffffff;border-top:5px solid #b9db79">
+<p style="margin:0 0 28px;font-size:17px;font-weight:bold">${name}</p>
+<p style="margin:0 0 10px;color:#4d6630;font-size:12px;font-weight:bold;letter-spacing:1px">NEW WAITLIST SIGN-UP</p>
+<h1 style="margin:0 0 14px;font-size:28px;line-height:1.2">Someone is looking forward to launch.</h1>
+<p style="margin:0 0 26px;color:#596051;line-height:1.6">One more person wants to hear when ${name} opens.</p>
+<table role="presentation" style="width:100%;background:#f4f5f0;border-collapse:collapse"><tr><td style="padding:20px">
+<p style="margin:0 0 6px;font-size:12px;color:#596051">EMAIL ADDRESS</p><p style="margin:0 0 20px;font-size:18px;word-break:break-all">${email}</p>
+<p style="margin:0 0 6px;font-size:12px;color:#596051">JOINED</p><p style="margin:0;font-size:14px">${joined}</p>
+</td></tr></table><p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#596051">Source: website waitlist.<br>Consent recorded for a launch notification.</p>
+</td></tr><tr><td style="padding:18px 0;font-size:12px;color:#777e70;text-align:center">${name} · Waitlist updates</td></tr></table></body></html>`,
+  };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

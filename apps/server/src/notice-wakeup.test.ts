@@ -11,6 +11,20 @@ import { deliverDueOutboxDeliveries } from "@jendal-workspace/api/use-cases/outb
 
 import { wakeNoticesAfterMutation } from "./notice-wakeup";
 
+it("wakes background delivery after a successful waitlist submission, but not a refusal", async () => {
+  const pending: Promise<unknown>[] = [];
+  const execution = fromPartial<ExecutionContext>({ waitUntil: (promise: Promise<unknown>) => { pending.push(promise); } });
+  let wakes = 0;
+  const app = new Hono();
+  app.use(wakeNoticesAfterMutation(async () => { wakes += 1; }));
+  app.post("/api/waitlist", (c) => c.req.header("Origin") ? c.json({ ok: true }) : c.json({ error: "forbidden" }, 403));
+  await app.request("/api/waitlist", { method: "POST" }, {}, execution);
+  expect(wakes).toBe(0);
+  await app.request("/api/waitlist", { method: "POST", headers: { Origin: "https://platform.test" } }, {}, execution);
+  await Promise.all(pending);
+  expect(wakes).toBe(1);
+});
+
 describe.skipIf(!hasTestDatabase)("request notice wake-up", () => {
   const db = createTestDb();
   beforeEach(() => truncateAll(db));

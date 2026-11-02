@@ -1,5 +1,5 @@
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
-import { launchWaitlist } from "@jendal-workspace/db/schema/waitlist";
+import { joinWaitlist } from "@jendal-workspace/db/repositories/waitlist";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -12,7 +12,8 @@ const input = z.object({
   website: z.string().max(200).optional(),
 });
 
-export function createWaitlistRoute(platformDomain: string) {
+export function createWaitlistRoute(platformDomain: string, alert?: { recipient: string; platformName: string }) {
+  if (alert) z.email().parse(alert.recipient);
   return new Hono<AppEnv>().post("/api/waitlist", bodyLimit({ maxSize: 1024 }), async (c) => {
     const origin = c.req.header("Origin");
     const allowed = [`https://${platformDomain}`, `https://www.${platformDomain}`];
@@ -33,7 +34,7 @@ export function createWaitlistRoute(platformDomain: string) {
     const parsed = input.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "invalid_email_or_consent" }, 400);
     if (!parsed.data.website) {
-      await c.get("db").insert(launchWaitlist).values({ email: parsed.data.email }).onConflictDoNothing();
+      await joinWaitlist(c.get("db"), parsed.data.email, alert);
     }
     // Identical response for new, duplicate and honeypot submissions; never disclose membership.
     return c.json({ ok: true });
