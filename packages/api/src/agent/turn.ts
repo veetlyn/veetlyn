@@ -67,7 +67,9 @@ function capped(text: string): string {
   return text.length > MAX_RESULT_CHARS ? `${text.slice(0, MAX_RESULT_CHARS)} [cut: ask for less]` : text;
 }
 
-type TurnState = { call: AgentCallRow; actor: Actor; proposals: number };
+// proposalQueue: the SDK runs one step's tool calls at once; proposals wait their turn here, so cards keep the
+// model's order and the per-turn cap holds.
+type TurnState = { call: AgentCallRow; actor: Actor; proposals: number; proposalQueue: Promise<unknown> };
 
 async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, rawInput: JsonObject): Promise<string> {
   const { call, actor } = state;
@@ -82,6 +84,13 @@ async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, r
       return toActionError(error).message;
     }
   }
+  const queued = state.proposalQueue.then(() => propose(deps, state, agentTool, rawInput));
+  state.proposalQueue = queued.catch(() => undefined);
+  return queued;
+}
+
+async function propose(deps: TurnDeps, state: TurnState, agentTool: AgentTool, rawInput: JsonObject): Promise<string> {
+  const { call } = state;
   if (state.proposals >= MAX_PROPOSALS_PER_TURN) return "No more proposals in this turn; tell the person what is left.";
   const proposal = proposalInput.safeParse(rawInput);
   if (!proposal.success) return "A proposal needs a card sentence and the action's input.";
@@ -162,7 +171,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   const project = await projectFor(deps, scope, call.projectId);
   await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
 
-  const state: TurnState = { call, actor: agentFor(scope), proposals: 0 };
+  const state: TurnState = { call, actor: agentFor(scope), proposals: 0, proposalQueue: Promise.resolve() };
   const tools = Object.fromEntries(
     toolsFor(scope.role).map((agentTool) => [
       agentTool.name,
