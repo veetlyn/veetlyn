@@ -22,6 +22,7 @@ import {
   answerQuestion,
   type ConversationAuthor,
   conversationFor,
+  type ConversationReader,
   declineRequest,
   postConversationMessage,
   setMemberDepartments,
@@ -185,6 +186,21 @@ describe.skipIf(!hasTestDatabase)("conversations", () => {
     ]);
     const mine = (await messagesOf(projectId)).find((m) => m.id === posted.messageId);
     expect(mine?.shownBody).toBe("Call +221 77 123 45 67");
+  });
+
+  it("shows quote amounts to staff and the client, and a bidding freelancer only their own", async () => {
+    const { projectId, admin, aicha, ben, client } = await setup();
+    await quote(aicha, projectId);
+    await quote(ben, projectId, 12_000);
+    const row = await findProjectById(db, projectId);
+    if (!row) throw new Error("no project");
+    const notices = async (reader: ConversationReader) =>
+      (await conversationFor(db, reader, row, "Platform")).messages.filter((m) => m.refType === "quote").map((m) => m.body);
+    const both = ["Aïcha sent a quote: $150.00, delivered in 4 days.", "Ben sent a quote: $120.00, delivered in 4 days."];
+
+    expect(await notices(as(admin))).toEqual(both);
+    expect(await notices(client)).toEqual(both);
+    expect(await notices(as(aicha))).toEqual(["Aïcha sent a quote: $150.00, delivered in 4 days.", "Another freelancer sent a quote."]);
   });
 
   it("records the delivery and the client's change request on the project timeline", async () => {
