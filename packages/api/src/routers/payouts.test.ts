@@ -1952,6 +1952,26 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       return { ...team, boId, adaPayoutId: ada.id, boPayoutId: bo.id };
     }
 
+    it("refuses to export a payout whose approving admin was demoted, and returns it to the admins", async () => {
+      const team = await payoutTeam();
+      const { organizationId, teamId, adminId, member, services } = team;
+      const admin = callerFor(adminId, services, atWednesday);
+      await admin.payouts.removeCredentials(TEAM);
+      const boId = await seedServicesTeamMember(db, { organizationId, teamId, role: "admin", name: "Bo" });
+      const { id } = await member.payouts.request({ ...TEAM, amount: "100.00" });
+      await callerFor(boId, services, atWednesday).payouts.approve({ ...TEAM, requestId: id });
+      await db
+        .update(servicesTeamMember)
+        .set({ role: "freelancer" })
+        .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, boId)));
+
+      await expect(admin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [id] })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "An admin who approved this payout no longer approves payouts here, so it needs another approval.",
+      });
+      expect(await rowOf(id)).toMatchObject({ status: "requested", offlineReference: null });
+    });
+
     it("exports approved payouts as PayPal's upload file, less the fee estimate, and marks them exported", async () => {
       const { adminId, adaPayoutId, boPayoutId, admin, paypal, services } = await exportTeam();
       expect(await listed(admin)).toEqual([

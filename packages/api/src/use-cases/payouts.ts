@@ -527,7 +527,7 @@ async function currentApproverIds(tx: DbExecutor, request: { id: string; teamId:
   return { all, current };
 }
 
-const APPROVER_GONE = "An admin who approved this payout no longer approves payouts here, so it needs another approval.";
+export const APPROVER_GONE = "An admin who approved this payout no longer approves payouts here, so it needs another approval.";
 
 // The approval stands even when the send that follows is held (low balance, floor) or refused: the returned request
 // carries the status and the message. A payout approved before its payday is sent then, and one of a team without
@@ -603,6 +603,16 @@ async function approvalWithdrawn(tx: Transaction, request: PayoutRequestRow): Pr
     decidedAt: null,
     sendAfter: null,
     failureMessage: APPROVER_GONE,
+  });
+}
+
+// Returns a queued payout whose approvals no longer meet the rules to the admins, as a fresh send would; true when it
+// did. Used before work that pays outside the send claim, such as a Payouts Web export.
+export async function returnUnsupportedApproval(db: Database, teamId: string, requestId: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const request = await lockTeamRequest(tx, teamId, requestId);
+    if (request.status !== "queued" || request.uncertainAt !== null) return false;
+    return (await approvalWithdrawn(tx, request)) !== null;
   });
 }
 
