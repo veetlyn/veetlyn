@@ -21,6 +21,7 @@ import { TRPCError } from "@trpc/server";
 
 import {
   applySettlement,
+  APPROVER_GONE,
   destinationHold,
   DISPUTE_PAUSE,
   lockTeamRequest,
@@ -30,6 +31,7 @@ import {
   type PayoutRequestView,
   payoutRequestView,
   type PayoutTeam,
+  returnUnsupportedApproval,
   sendAmountsFor,
   WAITING_FOR_EXPORT,
 } from "./payouts";
@@ -82,6 +84,11 @@ export async function exportPayoutsWeb(
   const now = nowOf(deps);
   if (await hasTeamPayoutCredentials(deps.db, input.team.id)) throw badRequest(AUTOMATIC_PAYOUTS_ON);
   const ids = [...new Set(input.requestIds)];
+  // An export pays outside the send claim, so it applies the claim's approver check first; a payout it returns to the
+  // admins refuses the whole file.
+  for (const id of ids) {
+    if (await returnUnsupportedApproval(deps.db, input.team.id, id)) throw badRequest(APPROVER_GONE);
+  }
   const offlineBatchId = crypto.randomUUID();
   const note = `Payout from ${input.team.name} via ${deps.platformName}`;
 

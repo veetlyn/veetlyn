@@ -181,18 +181,31 @@ describe.skipIf(!hasTestDatabase)("perform", () => {
     });
   });
 
-  it("refuses an agent whatever the grant and logs who it acted for", async () => {
+  it("lets an agent read with its person's role, refuses it anything else, and logs who it acted for", async () => {
     const { freelancerId, projectId } = await seedTeamProject();
-    const agent: Actor = { kind: "agent", agentId: "agent-1", onBehalfOf: { kind: "user", userId: freelancerId } };
-    const onBehalfOf = { kind: "user", id: freelancerId };
+    const outsider = await seedUser(db, "Outsider");
+    const agentFor = (userId: string): Actor => ({ kind: "agent", agentId: "agent-1", onBehalfOf: { kind: "user", userId } });
+    const neverAction = defineAction({ ...memberAction, name: "test.never", agent: "never" });
 
-    const refused = { code: "forbidden", message: "Agents cannot do this yet." };
-    await expect(perform(call(agent), publicAction, {})).rejects.toMatchObject(refused);
-    await expect(perform(call(agent), teamQuery, { projectId })).rejects.toMatchObject(refused);
+    await expect(perform(call(agentFor(freelancerId), "agent"), teamQuery, { projectId })).resolves.toEqual({
+      projectId,
+      role: "freelancer",
+    });
+    await expect(perform(call(agentFor(outsider), "agent"), teamQuery, { projectId })).rejects.toMatchObject({ code: "not_found" });
+    await expect(perform(call(agentFor(freelancerId), "agent"), publicAction, {})).rejects.toMatchObject({
+      code: "forbidden",
+      message: "This needs a person's confirmation.",
+    });
+    await expect(perform(call(agentFor(freelancerId), "agent"), neverAction, {})).rejects.toMatchObject({
+      code: "forbidden",
+      message: "Only a person can do this.",
+    });
     const rows = await logRows();
-    expect(rows.map((row) => [row.actorKind, row.actorId, row.onBehalfOf, row.outcome])).toEqual([
-      ["agent", "agent-1", onBehalfOf, "forbidden"],
-      ["agent", "agent-1", onBehalfOf, "forbidden"],
+    expect(rows.map((row) => [row.action, row.actorKind, row.onBehalfOf, row.outcome])).toEqual([
+      ["test.team_query", "agent", { kind: "user", id: freelancerId }, "ok"],
+      ["test.team_query", "agent", { kind: "user", id: outsider }, "not_found"],
+      ["test.public_action", "agent", { kind: "user", id: freelancerId }, "forbidden"],
+      ["test.never", "agent", { kind: "user", id: freelancerId }, "forbidden"],
     ]);
   });
 

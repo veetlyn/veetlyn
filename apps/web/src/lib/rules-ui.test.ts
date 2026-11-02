@@ -10,7 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import TeamRules from "../app/dash/[storeSlug]/rules/team-rules";
+import TeamRules from "../app/dash/[storeSlug]/settings/operating-model/team-rules";
 import { queryClient, trpc } from "../utils/trpc";
 
 type Outputs = inferRouterOutputs<AppRouter>;

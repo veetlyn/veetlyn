@@ -13,7 +13,10 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
 import { user } from "../schema/auth";
+import { memberDepartment, requestShortlist } from "../schema/conversations";
 import { member, organization, team } from "../schema/organization";
+import { teamPayoutTrustedMember } from "../schema/payouts";
+import { project } from "../schema/projects";
 import { servicesTeamMember, servicesTeamSettings } from "../schema/services-teams";
 
 const servicesTeamColumns = {
@@ -236,6 +239,37 @@ export async function listServicesTeamMembers(
   return rows.flatMap(({ workspaceRole, teamRole, ...person }) => {
     const role = effectiveServicesTeamRole(workspaceRole, teamRole);
     return role ? [{ ...person, role, workspaceAdmin: hasStoreWideRole(workspaceRole) }] : [];
+  });
+}
+
+// Leaving a workspace ends the person's place in every one of its teams: the team role, the departments they
+// answer requests for, request shortlists and payout trust. A later invitation starts from nothing.
+export async function forgetWorkspaceMember(
+  db: DbExecutor,
+  input: { organizationId: string; userId: string },
+): Promise<void> {
+  const teamIds = db.select({ id: team.id }).from(team).where(eq(team.organizationId, input.organizationId));
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(servicesTeamMember)
+      .where(and(eq(servicesTeamMember.userId, input.userId), inArray(servicesTeamMember.teamId, teamIds)));
+    await tx
+      .delete(memberDepartment)
+      .where(and(eq(memberDepartment.userId, input.userId), inArray(memberDepartment.teamId, teamIds)));
+    await tx
+      .delete(teamPayoutTrustedMember)
+      .where(and(eq(teamPayoutTrustedMember.userId, input.userId), inArray(teamPayoutTrustedMember.teamId, teamIds)));
+    await tx
+      .delete(requestShortlist)
+      .where(
+        and(
+          eq(requestShortlist.userId, input.userId),
+          inArray(
+            requestShortlist.projectId,
+            tx.select({ id: project.id }).from(project).where(inArray(project.teamId, teamIds)),
+          ),
+        ),
+      );
   });
 }
 

@@ -7,8 +7,8 @@ import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-
 
 import type { LinkSecretSource } from "../client-links";
 import type { EmailServices, PayoutServices, PayPalServices } from "../context";
-import { type Actor, isClientActor, type RequestMeta, type Surface } from "./actors";
-import type { ActionDefinition, Grant, ScopeRequest } from "./define";
+import { type Actor, isClientActor, personOf, type RequestMeta, type Surface } from "./actors";
+import { type ActionDefinition, agentPolicyOf, type Grant, type ScopeRequest } from "./define";
 import { ActionError, type ActionErrorCode, toActionError } from "./errors";
 
 export type ActionRuntime = {
@@ -53,8 +53,8 @@ async function loadScope(req: PerformRequest<ActionRuntime>, scopeRequest: Scope
     if (!project || (teamId && project.teamId !== teamId)) throw new ActionError("not_found", NOT_FOUND_PROJECT);
     teamId = project.teamId;
   }
-  const role =
-    teamId && req.actor.kind === "user" ? await servicesTeamRoleFor(req.deps.db, teamId, req.actor.userId) : null;
+  const person = personOf(req.actor);
+  const role = teamId && person ? await servicesTeamRoleFor(req.deps.db, teamId, person) : null;
   return { teamId, project, role };
 }
 
@@ -65,7 +65,7 @@ function passes(grant: Grant, actor: Actor, scope: Scope): boolean {
     case "client":
       return isClientActor(actor) && scope.project !== null && actor.token.projectId === scope.project.id;
     case "signed_in":
-      return actor.kind === "user";
+      return personOf(actor) !== null;
     case "anyone":
       return true;
     case "system":
@@ -151,8 +151,13 @@ export async function perform<Input, Result, Raw, Deps extends ActionRuntime = A
   const started = Date.now();
   let scope: Scope = { teamId: req.team?.id ?? null, project: null, role: null };
   try {
-    // Agents only propose once proposals exist; until then they are refused whatever the policy.
-    if (req.actor.kind === "agent") throw new ActionError("forbidden", "Agents cannot do this yet.");
+    // An agent reads what its person may read. It proposes everything else, and a person confirms it as themselves.
+    if (req.actor.kind === "agent") {
+      const policy = agentPolicyOf(definition);
+      if (policy === "never") throw new ActionError("forbidden", "Only a person can do this.");
+      if (policy === "confirm") throw new ActionError("forbidden", "This needs a person's confirmation.");
+      if (req.actor.onBehalfOf.kind !== "user") throw new ActionError("forbidden", "An agent works only for a signed-in person.");
+    }
     const parsed = definition.input.safeParse(rawInput);
     if (!parsed.success) {
       const details: Record<string, string[]> = {};

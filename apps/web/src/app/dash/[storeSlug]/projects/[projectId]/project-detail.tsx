@@ -311,7 +311,12 @@ export default function ProjectDetail({
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-x-8 gap-y-6 px-4 py-6 md:px-7 md:py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <div className="space-y-2 lg:col-span-2">
-        <h1 className="font-heading text-3xl">{project.title}</h1>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+          <h1 className="font-heading text-3xl">{project.title}</h1>
+          <Link href={`/${teamSlug}/calls?project=${projectId}`} className="text-sm underline underline-offset-4">
+            Ask about this
+          </Link>
+        </div>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge tone={TEAM_PROJECT_TONES[project.status]}>
             {projectStatusLabel(project.status)}

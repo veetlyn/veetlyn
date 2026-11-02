@@ -8,10 +8,11 @@ import { trpc } from "@/utils/trpc";
 
 const HOUR_MS = 3_600_000;
 
-// The response window is shown here only; the reminder and the expiry belong to the scheduled jobs.
-function windowLabel(respondBy: Date, now: number): string {
+// The time comes from the request's pending expiry under the team's pinned rules; none once the team answered.
+function windowLabel(respondBy: Date | null, now: number): string {
+  if (!respondBy) return "No answer deadline";
   const hours = Math.ceil((respondBy.getTime() - now) / HOUR_MS);
-  if (hours <= 0) return "Past the 48-hour window";
+  if (hours <= 0) return "Expiring now";
   return hours === 1 ? "1 hour left to answer" : `${hours} hours left to answer`;
 }
 
@@ -54,7 +55,7 @@ export default function OpenRequests({ teamSlug }: { teamSlug: string }) {
               >
                 <div className="flex items-baseline justify-between gap-4">
                   <p className="truncate font-medium">{request.title}</p>
-                  <p className="shrink-0 text-sm text-muted-foreground">{windowLabel(new Date(request.respondBy), now)}</p>
+                  <p className="shrink-0 text-sm text-muted-foreground">{windowLabel(request.respondBy ? new Date(request.respondBy) : null, now)}</p>
                 </div>
                 <p className="line-clamp-2 text-sm text-muted-foreground">{request.brief}</p>
                 <p className="text-sm text-muted-foreground">

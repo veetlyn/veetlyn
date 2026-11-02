@@ -1,4 +1,4 @@
-export type Surface = "web" | "api" | "mcp" | "discord" | "slack" | "cron" | "webhook";
+export type Surface = "web" | "api" | "mcp" | "discord" | "slack" | "cron" | "webhook" | "agent";
 
 export type ClientLinkToken = { projectId: string; contactId: string };
 
@@ -18,4 +18,11 @@ export type ClientActor = Extract<Actor, { kind: "client_link" | "client_account
 
 export function isClientActor(actor: Actor): actor is ClientActor {
   return actor.kind === "client_link" || actor.kind === "client_account";
+}
+
+// The signed-in person an actor stands for: the user, or the user an agent works for. Roles and grants are theirs.
+export function personOf(actor: Actor): string | null {
+  if (actor.kind === "user") return actor.userId;
+  if (actor.kind === "agent" && actor.onBehalfOf.kind === "user") return actor.onBehalfOf.userId;
+  return null;
 }

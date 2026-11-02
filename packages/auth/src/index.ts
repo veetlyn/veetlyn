@@ -2,7 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { clientRedirectOrigins, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
-import { createServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import { createServicesTeamSettings, forgetWorkspaceMember, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
 import * as schema from "@jendal-workspace/db/schema/index";
 import {
@@ -109,6 +109,8 @@ async function fetchCimdResource(input: RequestInfo | URL, init?: RequestInit): 
   return response;
 }
 
+const leftMember = z.object({ userId: z.string().min(1), organizationId: z.string().min(1) });
+
 export function createAuth(env: AuthConfig, database: Database, services: AuthServices) {
   const paypalLive = env.PAYPAL_ENVIRONMENT === "live";
   return betterAuth({
@@ -160,6 +162,15 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
         if (URL.canParse(clientId.data) && isCimdUrlAllowed(new URL(clientId.data))) return;
         const origins = await clientRedirectOrigins(database, clientId.data);
         if (!origins || origins.size > 1) return forceConsent;
+      }),
+      // Leaving a workspace ends the same team places as being removed from it, but Better Auth's leave endpoint
+      // calls no organization hook; the endpoint answers with the member it deleted.
+      after: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== "/organization/leave") return;
+        const left = leftMember.safeParse(ctx.context.returned);
+        if (!left.success) return;
+        if ((await workspaceRoleFor(database, left.data.organizationId, left.data.userId)) !== null) return;
+        await forgetWorkspaceMember(database, left.data);
       }),
     },
     rateLimit: {
@@ -246,6 +257,11 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
           },
           afterCreateTeam: async ({ team }) => {
             if (team.product === "services") await createServicesTeamSettings(database, team.id);
+          },
+          // Better Auth drops only its own team rows; a re-invited member would otherwise get back their old
+          // role, departments and shortlists.
+          afterRemoveMember: async ({ member }) => {
+            await forgetWorkspaceMember(database, { organizationId: member.organizationId, userId: member.userId });
           },
           // Store URLs and the KV cache are keyed by slug, so slugs cannot change until W1-C adds invalidation.
           // A team's product picks its repository filters and dashboard; changing it would strand its data.

@@ -406,6 +406,21 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(quotes.find((q) => q.id === staffQuote)).toMatchObject({ freelancerId: freelancer, authorId: userId });
   });
 
+  it("shows a bidding freelancer only their own quote records, and staff every quote", async () => {
+    const { userId, organizationId, teamId } = await seedServicesTeamWithAgreedAdmin(db);
+    await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const aicha = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const ben = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const { projectId } = await createProject(userId);
+    const { quoteId: aichaQuote } = await callerFor(aicha).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 7 });
+    const { quoteId: benQuote } = await callerFor(ben).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 5 });
+
+    const seenByAicha = await callerFor(aicha).project.get({ teamSlug: "team", projectId });
+    expect(seenByAicha.quotes.map((q) => q.id)).toEqual([aichaQuote]);
+    const seenByAdmin = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    expect(seenByAdmin.quotes.map((q) => q.id).toSorted()).toEqual([aichaQuote, benQuote].toSorted());
+  });
+
   it("lists and shows projects only to members who may see them", async () => {
     const { userId } = await seedServicesTeamWithAgreedAdmin(db);
     const { projectId } = await createProject(userId);

@@ -50,7 +50,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       services: `/${team.slug}/services`,
       connectPaypal: "#paypal",
       publish: "#publish",
-      linkDiscord: `/${team.slug}/discord`,
+      linkDiscord: `/${team.slug}/settings/channels`,
       payoutCredentials: `/${team.slug}/payouts`,
     },
   );
