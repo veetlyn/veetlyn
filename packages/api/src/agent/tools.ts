@@ -64,6 +64,23 @@ export function toolsFor(role: ServicesTeamRole): AgentTool[] {
   return AGENT_TOOLS.filter((tool) => !tool.needs || canServicesTeam(role, tool.needs));
 }
 
+// What the withheld tools cover, in the person's words: a missing tool gives the model no refusal to repeat.
+function withheldArea(action: ServicesTeamAction): string {
+  switch (action) {
+    case "approve_payouts":
+      return "the team's payouts, payout rules and client payments";
+    case "resolve_cases":
+      return "PayPal cases";
+    default:
+      return action.replaceAll("_", " ");
+  }
+}
+
+export function withheldAreas(role: ServicesTeamRole): string[] {
+  const missing = new Set(AGENT_TOOLS.flatMap((tool) => (tool.needs && !canServicesTeam(role, tool.needs) ? [tool.needs] : [])));
+  return [...missing].map(withheldArea);
+}
+
 // The tool that proposes a registry action, to run it once the person confirms.
 export function proposalTool(action: string): AgentTool | undefined {
   return AGENT_TOOLS.find((tool) => tool.mode === "propose" && tool.definition.name === action);
