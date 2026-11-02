@@ -3,7 +3,7 @@ import type { FileStore, TenantEnvironment } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Mailer } from "@jendal-workspace/email";
 import type { PayPalClient } from "@jendal-workspace/paypal";
-import type Anthropic from "@anthropic-ai/sdk";
+import type { LanguageModel } from "ai";
 
 import type { CatalogServices } from "./catalog/service";
 
@@ -43,13 +43,10 @@ export type PayoutServices = {
   clientFor(input: { teamId: string; clientId: string; clientSecret: string }): PayPalClient;
 };
 
-// The model behind the dash's assistant. The client may point at Anthropic or at another Messages API provider;
-// `anthropicApi` says whether Anthropic-only parameters (effort, refusal fallbacks) may be sent.
+// The model behind the dash's assistant, from the AI SDK.
 export type AgentServices = {
-  client: Anthropic;
-  model: string;
-  anthropicApi: boolean;
-  // The assistant's answers a team gets per UTC day.
+  model: LanguageModel;
+  // The questions a team may ask the assistant per UTC day.
   dailyTurns: number;
 };
 

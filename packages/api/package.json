@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.71",
-    "@anthropic-ai/sdk": "^0.135.0",
     "@jendal-workspace/auth": "workspace:*",
     "@jendal-workspace/core": "workspace:*",
     "@jendal-workspace/db": "workspace:*",

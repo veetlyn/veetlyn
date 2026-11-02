@@ -15,6 +15,7 @@ CREATE TABLE "agent_call_entry" (
 	"kind" text NOT NULL,
 	"author" text NOT NULL,
 	"body" text NOT NULL,
+	"note" text,
 	"action" text,
 	"input" jsonb,
 	"status" text,

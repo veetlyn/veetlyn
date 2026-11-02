@@ -81,26 +81,17 @@ export const proposalInput = z.object({
   input: toolInput,
 });
 
-function inputSchema(definition: AnyActionDefinition) {
-  const { $schema: _dialect, ...schema } = z.toJSONSchema(definition.input, { io: "input", unrepresentable: "any" });
-  return { ...schema, type: "object" as const };
+// The tool's input as the model sees it: the action's own schema, or for a proposal that schema beside a short note.
+export function toolSchema(tool: AgentTool) {
+  if (tool.mode === "read") return tool.definition.input;
+  return z.object({
+    card: z.string().trim().min(1).max(400).describe("One sentence for the person: why you propose this."),
+    input: tool.definition.input,
+  });
 }
 
-// The model's view of a tool. A proposal wraps the action's input with the sentence the person reads on the card.
-export function toolSpec(tool: AgentTool) {
-  if (tool.mode === "read") {
-    return { name: tool.name, description: tool.definition.summary, input_schema: inputSchema(tool.definition) };
-  }
-  return {
-    name: tool.name,
-    description: `Propose to the person, who confirms or declines it on a card: ${tool.definition.summary} Nothing happens until they confirm.`,
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        card: { type: "string", description: "One or two sentences the person reads on the card: what it does and why." },
-        input: inputSchema(tool.definition),
-      },
-      required: ["card", "input"],
-    },
-  };
+export function toolDescription(tool: AgentTool): string {
+  return tool.mode === "read"
+    ? tool.definition.summary
+    : `Propose to the person, who confirms or declines it on a card: ${tool.definition.summary} Nothing happens until they confirm.`;
 }

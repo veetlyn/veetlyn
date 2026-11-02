@@ -33,7 +33,8 @@ export const agentCall = pgTable(
 );
 
 // The call's thread: what the person and the assistant said, and the actions the assistant proposed. A proposal
-// runs only when the person confirms it, through the registry, as that person.
+// runs only when the person confirms it, through the registry, as that person. Its body is the server's account of the
+// stored input (what will run); the assistant's own words are only the note beside it.
 export const agentCallEntry = pgTable(
   "agent_call_entry",
   {
@@ -46,6 +47,7 @@ export const agentCallEntry = pgTable(
     kind: text("kind", { enum: AGENT_ENTRY_KINDS }).notNull(),
     author: text("author", { enum: ["person", "assistant"] }).notNull(),
     body: text("body").notNull(),
+    note: text("note"),
     action: text("action"),
     input: jsonb("input").$type<JsonObject>(),
     status: text("status", { enum: AGENT_PROPOSAL_STATUSES }),

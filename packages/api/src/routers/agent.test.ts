@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
@@ -8,32 +7,41 @@ import { createTestDb, hasTestDatabase, seedProject, truncateAll } from "@jendal
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import type { AgentServices } from "../context";
+import { createAgentServices } from "../agent/services";
 import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
 import { seedAgreedServicesTeamMember, seedServicesTeamWithAgreedAdmin } from "../testing/rulebooks";
 import { appRouter } from "./index";
 
-type Block = { type: "text"; text: string } | { type: "tool_use"; id: string; name: string; input: JsonObject };
+type Call = { id: string; name: string; input: JsonObject };
+type Answer = { text: string | null; calls: Call[] };
+type ChatRequest = { tools?: { function: { name: string } }[]; messages: { role: string; content: unknown }[] };
 
-// The model, faked at fetch: each request takes the next scripted answer and is kept for inspection.
-function scriptedModel(answers: { content: Block[]; stop_reason: string }[]) {
-  const requests: { tools: { name: string }[]; messages: { role: string; content: unknown }[] }[] = [];
+// The model, faked at fetch as an OpenAI-compatible chat endpoint: each request takes the next scripted answer and is
+// kept for inspection.
+function scriptedModel(answers: Answer[]) {
+  const requests: ChatRequest[] = [];
   const fetch = async (_url: RequestInfo | URL, init?: RequestInit) => {
     requests.push(JSON.parse(String(init?.body)));
     const next = answers.shift();
     if (!next) throw new Error("The model was called more often than scripted.");
-    const body = { id: `msg_${requests.length}`, type: "message", role: "assistant", model: "claude-opus-5-5", stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 }, ...next };
+    const toolCalls = next.calls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: JSON.stringify(c.input) } }));
+    const message = { role: "assistant", content: next.text, tool_calls: toolCalls.length > 0 ? toolCalls : undefined };
+    const body = {
+      id: `chat_${requests.length}`,
+      object: "chat.completion",
+      created: 1,
+      model: "muse-spark",
+      choices: [{ index: 0, message, finish_reason: next.calls.length > 0 ? "tool_calls" : "stop" }],
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    };
     return new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
   };
   return { fetch, requests };
 }
 
-const say = (text: string) => ({ content: [{ type: "text" as const, text }], stop_reason: "end_turn" });
-const use = (name: string, input: JsonObject) => ({
-  content: [{ type: "tool_use" as const, id: `toolu_${name}`, name, input }],
-  stop_reason: "tool_use",
-});
+const say = (text: string): Answer => ({ text, calls: [] });
+const use = (name: string, input: JsonObject, id = `call_${name}`): Answer => ({ text: null, calls: [{ id, name, input }] });
 
 describe.skipIf(!hasTestDatabase)("agent calls", () => {
   const db = createTestDb();
@@ -43,12 +51,12 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
   afterAll(() => db.$client.end());
 
   function callerFor(userId: string, model?: ReturnType<typeof scriptedModel>, dailyTurns = 50) {
-    const agent: AgentServices | undefined = model && {
-      client: new Anthropic({ apiKey: "test-key", fetch: model.fetch, maxRetries: 0 }),
-      model: "claude-opus-5-5",
-      anthropicApi: true,
-      dailyTurns,
-    };
+    const agent =
+      model &&
+      createAgentServices(
+        { apiKey: "test-key", baseUrl: "https://model.test/v1", model: "muse-spark", dailyTurns: String(dailyTurns) },
+        model.fetch,
+      );
     return appRouter.createCaller({
       db, session: makeSession(userId), environment: "sandbox", platformName: "Platform", auth,
       headers: new Headers(), catalog: createTestCatalogServices(), files: createFakeFileStore(), agent,
@@ -85,27 +93,47 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
 
     const freelancerModel = scriptedModel([say("Nothing for you yet.")]);
     await callerFor(freelancerId, freelancerModel).agent.ask({ ...TEAM, message: "Any payouts to approve?" });
-    const offered = freelancerModel.requests[0]?.tools.map((t) => t.name) ?? [];
+    const offered = freelancerModel.requests[0]?.tools?.map((t) => t.function.name) ?? [];
     expect(offered).toContain("project_list");
     expect(offered).not.toContain("payout_list");
     expect(offered).not.toContain("propose_payout_approve");
   });
 
-  it("changes nothing until the person confirms a proposal, then runs it once as them", async () => {
+  it("shows the card from the input that will run, changes nothing until confirmed, then runs it once as the person", async () => {
     const { adminId, projectId } = await setup();
+    const elsewhere = await seedServicesTeamWithAgreedAdmin(db, { slug: "rival" });
+    const rivalProject = await seedProject(db, { teamId: elsewhere.teamId, title: "Rival work", status: "quoting" });
     const model = scriptedModel([
-      use("propose_conversation_post", {
-        card: "Ask Lina which colours the logo should use.",
-        input: { projectId, kind: "question", body: "Which colours should the logo use?" },
-      }),
+      {
+        text: null,
+        calls: [
+          {
+            id: "call_1",
+            name: "propose_conversation_post",
+            input: { card: "Just a friendly hello.", input: { projectId, kind: "question", body: "Which colours should the logo use?" } },
+          },
+          {
+            id: "call_2",
+            name: "propose_conversation_post",
+            input: { card: "Thank the client.", input: { projectId: rivalProject, body: "Leaked text" } },
+          },
+        ],
+      },
       say("I drafted a question for Lina; confirm it to send."),
     ]);
     const { callId } = await callerFor(adminId, model).agent.ask({ ...TEAM, projectId, message: "Ask the client about colours" });
 
     expect(await db.select().from(conversationMessage)).toEqual([]);
     const { entries } = await callerFor(adminId).agent.thread({ ...TEAM, callId });
-    const proposal = entries.find((e) => e.kind === "proposal");
-    expect(proposal).toMatchObject({ body: "Ask Lina which colours the logo should use.", status: "pending" });
+    const proposals = entries.filter((e) => e.kind === "proposal");
+    expect(proposals).toEqual([
+      expect.objectContaining({
+        body: "Ask the client on “Baobab logo”: “Which colours should the logo use?”",
+        note: "Just a friendly hello.",
+        status: "pending",
+      }),
+    ]);
+    const proposal = proposals[0];
     if (!proposal) throw new Error("no proposal");
 
     await expect(callerFor(adminId).agent.confirm({ ...TEAM, entryId: proposal.id })).resolves.toEqual({ status: "done", outcome: "Done." });
@@ -118,16 +146,12 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
   it("refuses a confirmed proposal the person may no longer make, and keeps calls private", async () => {
     const { adminId, managerId, teamId, projectId } = await setup();
     await db.update(servicesTeamSettings).set({ quotingMode: "assigned" }).where(eq(servicesTeamSettings.teamId, teamId));
-    const post = (id: string, body: string) => ({
-      type: "tool_use" as const,
+    const post = (id: string, body: string): Call => ({
       id,
       name: "propose_conversation_post",
-      input: { card: body, input: { projectId, body } },
+      input: { card: "A reply.", input: { projectId, body } },
     });
-    const model = scriptedModel([
-      { content: [post("toolu_1", "Thanks for the brief."), post("toolu_2", "We start Monday.")], stop_reason: "tool_use" },
-      say("Drafted two messages."),
-    ]);
+    const model = scriptedModel([{ text: null, calls: [post("call_1", "Thanks for the brief."), post("call_2", "We start Monday.")] }, say("Drafted two messages.")]);
     const { callId } = await callerFor(managerId, model).agent.ask({ ...TEAM, message: "Thank the client" });
     const [first, second] = (await callerFor(managerId).agent.thread({ ...TEAM, callId })).entries.filter((e) => e.kind === "proposal");
     if (!first || !second) throw new Error("expected two proposals");

@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "0f5e25a4-3720-4e4d-8a50-19726cdafb77",
+  "id": "4c3ba2c5-2fbf-49a7-a73b-bc09360c008b",
   "prevIds": [
     "a79a250c-7eaf-4b29-ab88-71561c3ed459"
   ],
@@ -9412,6 +9412,19 @@
       "generated": null,
       "identity": null,
       "name": "body",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "agent_call_entry"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "note",
       "entityType": "columns",
       "schema": "public",
       "table": "agent_call_entry"

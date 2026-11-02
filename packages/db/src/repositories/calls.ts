@@ -53,6 +53,7 @@ export async function insertAgentCallEntry(
     kind: AgentCallEntryRow["kind"];
     author: AgentCallEntryRow["author"];
     body: string;
+    note?: string;
     action?: string;
     input?: JsonObject;
     status?: AgentCallEntryRow["status"];
@@ -95,8 +96,9 @@ export async function recordProposalOutcome(
   await db.update(agentCallEntry).set({ status: input.status, outcome: input.outcome }).where(eq(agentCallEntry.id, input.entryId));
 }
 
-// The assistant's answers in the team's calls since a time: what the daily cap counts.
-export async function countAssistantTurnsSince(db: DbExecutor, input: { teamId: string; since: Date }): Promise<number> {
+// The questions asked in the team's calls since a time: what the daily cap counts. A question is stored before the
+// model runs, so a failed or concurrent turn counts too.
+export async function countQuestionsSince(db: DbExecutor, input: { teamId: string; since: Date }): Promise<number> {
   const [row] = await db
     .select({ n: count() })
     .from(agentCallEntry)
@@ -104,7 +106,7 @@ export async function countAssistantTurnsSince(db: DbExecutor, input: { teamId: 
     .where(
       and(
         eq(agentCall.teamId, input.teamId),
-        eq(agentCallEntry.author, "assistant"),
+        eq(agentCallEntry.author, "person"),
         eq(agentCallEntry.kind, "message"),
         gte(agentCallEntry.createdAt, input.since),
       ),

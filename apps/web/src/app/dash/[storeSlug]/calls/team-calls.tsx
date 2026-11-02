@@ -31,9 +31,10 @@ function ProposalCard({ entry, teamSlug, onDecided }: { entry: Entry; teamSlug: 
   return (
     <div className="panel space-y-3 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="text-sm font-medium">{entry.body}</p>
+        <p className="text-sm font-medium whitespace-pre-wrap">{entry.body}</p>
         <Badge tone={state.tone}>{state.label}</Badge>
       </div>
+      {entry.note ? <p className="text-sm text-muted-foreground">{entry.note}</p> : null}
       {entry.outcome && entry.status !== "done" ? <p className="text-sm text-muted-foreground">{entry.outcome}</p> : null}
       {entry.status === "pending" ? (
         <div className="flex flex-wrap gap-2">
@@ -54,6 +55,7 @@ function ProposalCard({ entry, teamSlug, onDecided }: { entry: Entry; teamSlug: 
   );
 }
 
+// The card's first line is the server's account of exactly what Confirm runs; the assistant's reason sits below it.
 // Calls with the assistant (calls design §5–6): the person's own calls on the left, the thread in the middle. The
 // assistant reads with the person's access and drafts actions as cards; nothing happens until they confirm.
 export default function TeamCalls({
