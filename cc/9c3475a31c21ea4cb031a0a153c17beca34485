@@ -1,0 +1,16 @@
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 70-72,87-93,174
+packages/api/src/routers/agent.test.ts
+  h_6877e5e7a06bc5 149-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc9c3475a31c21ea4cb031a0a153c17beca34485",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
