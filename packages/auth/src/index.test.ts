@@ -236,6 +236,19 @@ describe.skipIf(!hasTestDatabase)("leaving a workspace", () => {
     expect(left.shortlists).toHaveLength(1);
     expect(left.trust.map((r) => r.teamId)).toEqual([kept.teamId]);
   });
+
+  it("drops the same places when the member leaves the workspace themselves", async () => {
+    const owner = await signUpVerified(auth, db, "owner@example.com");
+    const workspace = await auth.api.createOrganization({ body: { name: "Walk", slug: "walk" }, headers: owner.headers });
+    if (!workspace) throw new Error("organization was not created");
+    const leaver = await signUpVerified(auth, db, "aicha@example.com");
+    await auth.api.addMember({ body: { userId: leaver.userId, organizationId: workspace.id, role: "member" } });
+    await placeIn(workspace.id, "walk-crew", leaver.userId);
+
+    await auth.api.leaveOrganization({ body: { organizationId: workspace.id }, headers: leaver.headers });
+
+    expect(await placesOf(leaver.userId)).toEqual({ roles: [], departments: [], shortlists: [], trust: [] });
+  });
 });
 
 describe.skipIf(!hasTestDatabase)("email verification", () => {

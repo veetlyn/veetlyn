@@ -9,6 +9,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.71",
     "@anthropic-ai/sdk": "^0.135.0",
     "@jendal-workspace/auth": "workspace:*",
     "@jendal-workspace/core": "workspace:*",
@@ -19,6 +20,7 @@
     "@opmodel/engine-scheduler": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
+    "ai": "^7.0.143",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "evlog": "catalog:",
