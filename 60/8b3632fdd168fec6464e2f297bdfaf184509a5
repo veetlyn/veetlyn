@@ -1,0 +1,18 @@
+packages/api/src/agent/tools.ts
+  h_6877e5e7a06bc5 67-83
+packages/api/src/agent/turn.test.ts
+  h_6877e5e7a06bc5 1-25
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 20,36-37,45-49,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "608b3632fdd168fec6464e2f297bdfaf184509a5",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
