@@ -1,0 +1,40 @@
+packages/core/src/billing/entitlements.test.ts
+  h_6877e5e7a06bc5 1-104
+packages/core/src/billing/entitlements.ts
+  h_6877e5e7a06bc5 1-120
+packages/core/src/billing/plans.ts
+  h_6877e5e7a06bc5 14,16,30,33,50,53,63,66
+packages/core/src/billing/products.test.ts
+  h_6877e5e7a06bc5 1-26
+packages/core/src/billing/products.ts
+  h_6877e5e7a06bc5 1-56
+packages/core/src/billing/seller-plans.ts
+  h_6877e5e7a06bc5 15-16,38,55,72
+packages/core/src/index.ts
+  h_6877e5e7a06bc5 11-12
+packages/db/src/migrations/20261102235046_billing_accounts/migration.sql
+  h_6877e5e7a06bc5 1-43
+packages/db/src/migrations/20261102235046_billing_accounts/snapshot.json
+  h_6877e5e7a06bc5 1-15381
+packages/db/src/repositories/billing.test.ts
+  h_6877e5e7a06bc5 1-100
+packages/db/src/repositories/billing.ts
+  h_6877e5e7a06bc5 1-121
+packages/db/src/schema/billing.ts
+  h_6877e5e7a06bc5 1-44
+packages/db/src/schema/index.ts
+  h_6877e5e7a06bc5 25
+packages/db/src/testing/db.ts
+  h_6877e5e7a06bc5 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "50431fb8222a7a66d56464da90de6197c1e3f79f",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
