@@ -43,9 +43,9 @@ export const storeRouter = router({
     return { status: "available", slug: result.slug } as const;
   }),
 
-  // Spec §6.1: the store goes into the first organization the user can create stores in, or a new one.
+  // A new workspace, or one of the caller's when named (organizationForNewTeam).
   create: protectedProcedure
-    .input(z.object({ name: z.string().trim().min(2).max(80), slug: slugInput }))
+    .input(z.object({ name: z.string().trim().min(2).max(80), slug: slugInput, organizationId: z.string().min(1).max(128).optional() }))
     .mutation(async ({ ctx, input }) => {
       const slug = validateStoreSlug(input.slug);
       if (!slug.ok) throw new TRPCError({ code: "BAD_REQUEST", message: storeSlugProblem(slug.reason) });
@@ -55,7 +55,7 @@ export const storeRouter = router({
       }
 
       try {
-        const organizationId = await organizationForNewTeam(ctx, input.name);
+        const organizationId = await organizationForNewTeam(ctx, input.name, { organizationId: input.organizationId });
         // createTeam runs the slug and product hooks; if it fails, the organization stays for the retry.
         await ctx.auth.api.createTeam({
           body: { name: input.name, organizationId, slug: slug.slug, product: "store" },

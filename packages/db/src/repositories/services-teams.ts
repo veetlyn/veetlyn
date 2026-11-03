@@ -91,17 +91,6 @@ export async function deleteNewServicesTeam(db: Database, teamId: string): Promi
   await db.delete(team).where(and(eq(team.id, teamId), eq(team.product, "services")));
 }
 
-// A solo seller's workspace holds that seller alone (sellers design §3.1), so other teams go elsewhere.
-export async function organizationsWithSoloSellers(db: Database, organizationIds: string[]): Promise<Set<string>> {
-  if (organizationIds.length === 0) return new Set();
-  const rows = await db
-    .selectDistinct({ organizationId: team.organizationId })
-    .from(team)
-    .innerJoin(servicesTeamSettings, eq(servicesTeamSettings.teamId, team.id))
-    .where(and(inArray(team.organizationId, organizationIds), eq(servicesTeamSettings.solo, true)));
-  return new Set(rows.map((row) => row.organizationId));
-}
-
 // The bio is not part of the rates, so saving it does not count as "Set your rates" for the checklist.
 export async function saveServicesTeamBio(db: Database, teamId: string, bio: string): Promise<void> {
   const values = { bio };
@@ -180,6 +169,25 @@ export async function servicesTeamRoleFor(
     .limit(1);
   if (!row) return null;
   return effectiveServicesTeamRole(row.workspaceRole, row.teamRole);
+}
+
+// A workspace the user owns that has no seller yet: left behind when creating its first team failed. A retry reuses
+// it rather than leaving another empty workspace.
+export async function emptyOwnedWorkspace(db: Database, userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: organization.id })
+    .from(member)
+    .innerJoin(organization, eq(organization.id, member.organizationId))
+    .where(
+      and(
+        eq(member.userId, userId),
+        eq(member.role, "owner"),
+        sql`not exists (select 1 from ${team} where ${team.organizationId} = ${organization.id})`,
+      ),
+    )
+    .orderBy(organization.createdAt)
+    .limit(1);
+  return row?.id ?? null;
 }
 
 export async function workspaceRoleFor(db: Database, organizationId: string, userId: string): Promise<string | null> {

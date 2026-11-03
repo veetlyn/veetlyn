@@ -155,6 +155,14 @@ export async function billingAccountsToReconcile(db: DbExecutor, input: { before
   )).orderBy(billingAccount.organizationId).limit(input.limit);
 }
 
+export async function countWorkspaceTeams(db: DbExecutor, organizationId: string, product: "store" | "services"): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(team)
+    .where(and(eq(team.organizationId, organizationId), eq(team.product, product)));
+  return row?.n ?? 0;
+}
+
 // Bytes a team stores: every upload row, attached or not yet swept.
 export async function teamStorageBytes(db: DbExecutor, teamId: string): Promise<number> {
   const [row] = await db

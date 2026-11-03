@@ -20,7 +20,7 @@ const TONE_CLASS = {
   problem: "text-destructive",
 } as const;
 
-export default function CreateStoreForm({ urlParts }: { urlParts: StoreUrlParts }) {
+export default function CreateStoreForm({ urlParts, organizationId }: { urlParts: StoreUrlParts; organizationId?: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [typedSlug, setTypedSlug] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export default function CreateStoreForm({ urlParts }: { urlParts: StoreUrlParts 
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (canSubmit) create.mutate({ name: name.trim(), slug });
+    if (canSubmit) create.mutate({ name: name.trim(), slug, organizationId });
   }
 
   return (

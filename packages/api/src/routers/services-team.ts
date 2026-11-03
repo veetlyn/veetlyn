@@ -62,7 +62,14 @@ export const servicesTeamRouter = router({
 
   // Same organization rule as store.create (services spec §3).
   create: protectedProcedure
-    .input(z.object({ name: z.string().trim().min(2).max(80), slug: slugInput, solo: z.boolean().default(false) }))
+    .input(
+      z.object({
+        name: z.string().trim().min(2).max(80),
+        slug: slugInput,
+        solo: z.boolean().default(false),
+        organizationId: z.string().min(1).max(128).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const slug = validateStoreSlug(input.slug);
       if (!slug.ok) throw new TRPCError({ code: "BAD_REQUEST", message: teamSlugProblem(slug.reason, "services") });
@@ -72,7 +79,7 @@ export const servicesTeamRouter = router({
       }
 
       try {
-        const organizationId = await organizationForNewTeam(ctx, input.name, { solo: input.solo });
+        const organizationId = await organizationForNewTeam(ctx, input.name, { solo: input.solo, organizationId: input.organizationId });
         // createTeam runs the slug and product hooks and creates the default team settings.
         // A solo seller's settings get the solo defaults right after.
         const created = await ctx.auth.api.createTeam({

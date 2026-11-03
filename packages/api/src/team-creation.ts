@@ -1,26 +1,30 @@
 import { hasStoreWideRole } from "@jendal-workspace/core";
-import { organizationsWithSoloSellers } from "@jendal-workspace/db/repositories/services-teams";
-import { listOrganizationsWithStores } from "@jendal-workspace/db/repositories/stores";
+import { emptyOwnedWorkspace, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { APIError } from "better-auth/api";
 
 import type { Context } from "./context";
 
-// Store and services team creation share the rule (services spec §3): the first organization where the
-// user is owner or admin and no solo seller lives, else a new organization named after the team.
-// A solo seller always gets a new organization, so its owner is its only member (sellers design §3.1).
+// A workspace is like a Slack workspace: its own members, trial and subscription (billing design §2). Creating a
+// seller makes a new workspace unless the caller names one of theirs to add it to; the plan's limits then apply in
+// the createTeam hook. A solo seller always gets a workspace of its own, so its owner is its only member.
 export async function organizationForNewTeam(
   ctx: Context & { session: NonNullable<Context["session"]> },
   name: string,
-  options: { solo?: boolean } = {},
+  options: { solo?: boolean; organizationId?: string } = {},
 ): Promise<string> {
-  if (!options.solo) {
-    const organizations = await listOrganizationsWithStores(ctx.db, ctx.session.user.id);
-    const candidates = organizations.filter((o) => hasStoreWideRole(o.role)).map((o) => o.organization.id);
-    const soloHomes = await organizationsWithSoloSellers(ctx.db, candidates);
-    const existing = candidates.find((id) => !soloHomes.has(id));
-    if (existing) return existing;
+  if (options.organizationId) {
+    if (options.solo) throw new TRPCError({ code: "BAD_REQUEST", message: "A solo seller gets a workspace of its own." });
+    const role = await workspaceRoleFor(ctx.db, options.organizationId, ctx.session.user.id);
+    // Someone outside the workspace gets the same answer as a missing one.
+    if (!role) throw new TRPCError({ code: "NOT_FOUND", message: "Workspace not found." });
+    if (!hasStoreWideRole(role)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only workspace owners and admins can add sellers." });
+    }
+    return options.organizationId;
   }
+  const empty = await emptyOwnedWorkspace(ctx.db, ctx.session.user.id);
+  if (empty) return empty;
   // The organization slug is never shown; stores and teams carry the public addresses.
   const created = await ctx.auth.api.createOrganization({
     body: { name, slug: `org-${crypto.randomUUID()}` },
