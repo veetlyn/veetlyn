@@ -114,7 +114,10 @@ export const billingRouter = router({
       if (selected.length !== 1) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This plan is unavailable. Please try again later." });
       const product = selected[0]!;
       // Reuse open checkouts under the workspace lock, including one whose create response was lost.
-      for await (const checkout of polar.checkouts.iterList({ external_customer_id: input.organizationId, status: ["open", "confirmed"], limit: 100 })) {
+      // Polar's external_customer_id filter matches existing customers only, and a first-time workspace has none
+      // until its checkout succeeds; so open checkouts are matched on their own external id here.
+      for await (const checkout of polar.checkouts.iterList({ status: ["open", "confirmed"], limit: 100 })) {
+        if (checkout.external_customer_id !== input.organizationId) continue;
         if (checkout.status === "confirmed") throw new TRPCError({ code: "CONFLICT", message: "Your payment is still processing." });
         if (new Date(checkout.expires_at) <= new Date()) continue;
         const updated = await polar.checkouts.update(checkout.id, { product_id: product.id });
