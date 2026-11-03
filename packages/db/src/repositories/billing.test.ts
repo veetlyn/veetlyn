@@ -10,7 +10,7 @@ import {
   getBillingAccountForTeam,
   recordPolarWebhookEvent,
   type SubscriptionSnapshot,
-  teamStorageBytes,
+  workspaceStorageBytes,
 } from "./billing";
 
 describe.skipIf(!hasTestDatabase)("billing accounts", () => {
@@ -80,10 +80,12 @@ describe.skipIf(!hasTestDatabase)("billing accounts", () => {
     expect(await recordPolarWebhookEvent(db, { id: "wh_1", type: "subscription.updated" })).toBe(false);
   });
 
-  it("totals a team's stored bytes, attached or not, and no other team's", async () => {
+  it("totals a workspace's stored bytes across its teams, attached or not, and no other workspace's", async () => {
     const { organizationId } = await seedOrganization(db);
     const mine = await seedServicesTeam(db, { organizationId, slug: "mine" });
-    const theirs = await seedServicesTeam(db, { organizationId, slug: "theirs" });
+    const sibling = await seedServicesTeam(db, { organizationId, slug: "sibling" });
+    const elsewhere = await seedOrganization(db);
+    const theirs = await seedServicesTeam(db, { organizationId: elsewhere.organizationId, slug: "theirs" });
     const upload = (teamId: string, sizeBytes: number, attached: boolean) => ({
       teamId,
       purpose: "delivery" as const,
@@ -93,8 +95,13 @@ describe.skipIf(!hasTestDatabase)("billing accounts", () => {
       sizeBytes,
       attachedAt: attached ? now : null,
     });
-    await db.insert(fileUpload).values([upload(mine.id, 3_000_000_000, true), upload(mine.id, 500, false), upload(theirs.id, 7, true)]);
-    expect(await teamStorageBytes(db, mine.id)).toBe(3_000_000_500);
-    expect(await teamStorageBytes(db, "no-such-team")).toBe(0);
+    await db.insert(fileUpload).values([
+      upload(mine.id, 3_000_000_000, true),
+      upload(mine.id, 500, false),
+      upload(sibling.id, 20, true),
+      upload(theirs.id, 7, true),
+    ]);
+    expect(await workspaceStorageBytes(db, sibling.id)).toBe(3_000_000_520);
+    expect(await workspaceStorageBytes(db, "no-such-team")).toBe(0);
   });
 });

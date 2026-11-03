@@ -4,8 +4,8 @@ import { and, eq, gt, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import type { DbExecutor } from "../executor";
 import { billingAccount, polarWebhookEvent } from "../schema/billing";
 import { fileUpload } from "../schema/files";
-import { team } from "../schema/organization";
-import { servicesTeamSettings } from "../schema/services-teams";
+import { member, team } from "../schema/organization";
+import { servicesTeamMember, servicesTeamSettings } from "../schema/services-teams";
 
 export type BillingAccountRow = typeof billingAccount.$inferSelect;
 
@@ -163,11 +163,36 @@ export async function countWorkspaceTeams(db: DbExecutor, organizationId: string
   return row?.n ?? 0;
 }
 
-// Bytes a team stores: every upload row, attached or not yet swept.
-export async function teamStorageBytes(db: DbExecutor, teamId: string): Promise<number> {
+// People holding a services seat in a workspace: its owners and admins (admins of every services team) plus anyone on
+// one of its services teams, each counted once. Whether the given user already holds one comes back too.
+export async function servicesSeats(
+  db: DbExecutor,
+  input: { organizationId: string; userId: string },
+): Promise<{ used: number; holdsSeat: boolean }> {
+  const rows = await db.execute<{ user_id: string }>(sql`
+    select ${member.userId} as user_id from ${member}
+      where ${member.organizationId} = ${input.organizationId}
+        and (${member.role} like '%owner%' or ${member.role} like '%admin%')
+    union
+    select ${servicesTeamMember.userId} from ${servicesTeamMember}
+      join ${team} on ${team.id} = ${servicesTeamMember.teamId}
+      where ${team.organizationId} = ${input.organizationId}`);
+  const ids = new Set(rows.map((r) => r.user_id));
+  return { used: ids.size, holdsSeat: ids.has(input.userId) };
+}
+
+export async function countWorkspaceMembers(db: DbExecutor, organizationId: string): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(member).where(eq(member.organizationId, organizationId));
+  return row?.n ?? 0;
+}
+
+// Bytes a team's workspace stores across all its teams: every upload row, attached or not yet swept, so an upload
+// in flight counts against the limit.
+export async function workspaceStorageBytes(db: DbExecutor, teamId: string): Promise<number> {
   const [row] = await db
     .select({ total: sql<string>`coalesce(sum(${fileUpload.sizeBytes}), 0)` })
     .from(fileUpload)
-    .where(eq(fileUpload.teamId, teamId));
+    .innerJoin(team, eq(team.id, fileUpload.teamId))
+    .where(eq(team.organizationId, sql`(select ${team.organizationId} from ${team} where ${team.id} = ${teamId})`));
   return Number(row?.total ?? 0);
 }

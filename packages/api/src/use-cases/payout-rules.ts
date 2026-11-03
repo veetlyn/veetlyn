@@ -13,6 +13,8 @@ import { getPayoutRules, savePayoutRules, type StoredPayoutRules } from "@jendal
 import { getServicesTeamSettings, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 
+import { planLimitError, teamEntitlements } from "../billing/entitlements";
+
 // Amounts are minor units in `currency`; an auto-approve amount of ANY_AMOUNT_MINOR means any amount. Projects
 // completed before payCompletedProjectsSince are not paid out on their own.
 export type PayoutRulesView = Omit<PayoutRules, "trustedMemberIds"> & {
@@ -96,6 +98,12 @@ async function store(
   const rules = withPaydayFields(input.rules);
   const problem = payoutRulesProblem(rules, { adminCount: input.facts.adminCount, currency: input.facts.currency });
   if (problem) throw badRequest(problem);
+  // Billing design §6: rules that approve or pay without an admin are the payout agent (Agency). Manual approval
+  // always saves, so a team that downgrades can always switch the agent off.
+  const usesAgent = rules.autoApproveUpToMinor !== null || rules.secondApproverAboveMinor !== null || rules.payCompletedProjects;
+  if (usesAgent && !(await teamEntitlements(db, input.team.id)).entitlements.limits.payoutAgent) {
+    throw planLimitError("Payout rules and automatic payouts come with the Agency plan.");
+  }
   const stored: StoredPayoutRules = {
     ...rules,
     payCompletedProjectsSince: payCompletedProjectsSince(input.before, rules, input.now),

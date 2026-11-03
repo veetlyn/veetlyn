@@ -8,7 +8,7 @@ import {
   teamSlugProblem,
   validateStoreSlug,
 } from "@jendal-workspace/core";
-import { useSoloTrialTier } from "@jendal-workspace/db/repositories/billing";
+import { servicesSeats, useSoloTrialTier } from "@jendal-workspace/db/repositories/billing";
 import { countDigitalProducts } from "@jendal-workspace/db/repositories/catalog";
 import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
 import { hasTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
@@ -39,6 +39,7 @@ import { memberDepartments } from "../actions/conversations";
 import { teamProcedureFor } from "../actions/trpc";
 import { protectedProcedure, router } from "../index";
 import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
+import { planLimitError, teamEntitlements } from "../billing/entitlements";
 import { organizationForNewTeam, toTRPCError } from "../team-creation";
 
 const slugInput = z.string().max(100);
@@ -228,6 +229,13 @@ export const servicesTeamRouter = router({
       const workspaceRole = await workspaceRoleFor(ctx.db, ctx.servicesTeam.organizationId, found.id);
       if (workspaceRole && hasStoreWideRole(workspaceRole)) {
         throw new TRPCError({ code: "CONFLICT", message: "Workspace owners and admins are already team admins." });
+      }
+      // Someone already on another of the workspace's services teams holds a seat; anyone else needs a free one.
+      // Two concurrent adds can both pass; the overage shows on the Billing page.
+      const { members } = (await teamEntitlements(ctx.db, ctx.servicesTeam.id)).entitlements.limits;
+      const seats = await servicesSeats(ctx.db, { organizationId: ctx.servicesTeam.organizationId, userId: found.id });
+      if (!seats.holdsSeat && seats.used >= members) {
+        throw planLimitError(`This workspace's plan includes ${members} ${members === 1 ? "member" : "members"}.`);
       }
       if (!workspaceRole) {
         // The user must be in the workspace before they can hold a team role (services spec §4.1).

@@ -1,12 +1,14 @@
 import { applySubscriptionSnapshot, ensureBillingAccount } from "@jendal-workspace/db/repositories/billing";
 import { ensurePublishedRulebook } from "@jendal-workspace/db/repositories/operating-model";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
+import { fileUpload } from "@jendal-workspace/db/schema/files";
 import { payment, project, quote } from "@jendal-workspace/db/schema/projects";
-import { createTestDb, hasTestDatabase, seedProject, seedServicesTeamWithAdmin, truncateAll } from "@jendal-workspace/db/testing/db";
+import { createTestDb, hasTestDatabase, seedProject, seedServicesTeam, seedServicesTeamWithAdmin, truncateAll } from "@jendal-workspace/db/testing/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { acceptQuote, addQuote, assignFreelancer } from "../use-cases/projects";
+import { requireStorageFor } from "./entitlements";
 import { acceptMemberRulebook } from "../use-cases/rulebooks";
 
 const DAY = 86_400_000;
@@ -56,5 +58,20 @@ describe.skipIf(!hasTestDatabase)("selling and the workspace plan", () => {
     });
     await acceptQuote(db, { projectId, quoteId });
     expect(await db.select().from(payment)).toHaveLength(1);
+  });
+
+  it("refuses an upload that would take the workspace past its plan's storage, counting every team", async () => {
+    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    await ensureBillingAccount(db, { organizationId, product: "services", solo: true, now: new Date() });
+    const sibling = await seedServicesTeam(db, { organizationId, slug: "sibling" });
+    // Solo includes 5 GB; 4.9 GB already sits on the other team.
+    await db.insert(fileUpload).values({
+      teamId: sibling.id, purpose: "delivery", r2Key: "k1", fileName: "a.zip", contentType: "application/zip", sizeBytes: 4_900_000_000,
+    });
+    await requireStorageFor(db, teamId, 100_000_000);
+    await expect(requireStorageFor(db, teamId, 100_000_001)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "This workspace's plan includes 5 GB of files. Change the plan on the Billing page to add more.",
+    });
   });
 });

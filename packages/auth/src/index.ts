@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { entitlementsFor, isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
-import { billingSnapshot, countWorkspaceTeams, ensureBillingAccount, getBillingAccount } from "@jendal-workspace/db/repositories/billing";
+import { billingSnapshot, countWorkspaceMembers, countWorkspaceTeams, ensureBillingAccount, getBillingAccount } from "@jendal-workspace/db/repositories/billing";
 import { clientRedirectOrigins, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
 import { createServicesTeamSettings, forgetWorkspaceMember, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
@@ -129,6 +129,20 @@ async function checkTeamLimit(database: Database, organizationId: string, produc
   throw new APIError("FORBIDDEN", {
     code: "PLAN_LIMIT",
     message: `This workspace's plan includes ${what}. Change the plan on the Billing page to add another.`,
+  });
+}
+
+// Billing design §6: everyone in a workspace takes a seat: services members plus store staff accounts. A workspace
+// without a billing account is the one being created, whose creator always gets in.
+async function checkSeatLimit(database: Database, organizationId: string): Promise<void> {
+  const account = await getBillingAccount(database, organizationId);
+  if (!account) return;
+  const { limits } = entitlementsFor(billingSnapshot(account), new Date());
+  const allowed = limits.members + limits.staffSeats;
+  if ((await countWorkspaceMembers(database, organizationId)) < allowed) return;
+  throw new APIError("FORBIDDEN", {
+    code: "PLAN_LIMIT",
+    message: `This workspace's plan includes ${allowed} ${allowed === 1 ? "account" : "accounts"}. Change the plan on the Billing page to add more.`,
   });
 }
 
@@ -276,6 +290,12 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
                 supportEmail: user?.email ?? null,
               },
             };
+          },
+          beforeAddMember: async ({ member }) => {
+            await checkSeatLimit(database, member.organizationId);
+          },
+          beforeAcceptInvitation: async ({ organization }) => {
+            await checkSeatLimit(database, organization.id);
           },
           afterCreateTeam: async ({ team }) => {
             if (team.product === "services") await createServicesTeamSettings(database, team.id);

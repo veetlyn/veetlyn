@@ -11,6 +11,7 @@ import {
   seedStore,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
+import { user } from "@jendal-workspace/db/schema/auth";
 import { billingAccount } from "@jendal-workspace/db/schema/billing";
 import { member, team } from "@jendal-workspace/db/schema/organization";
 import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
@@ -386,6 +387,32 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
         quotingMode: "assigned",
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("holds the workspace to its plan's members, counting each person once across its services teams", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const other = await seedServicesTeam(db, { organizationId, slug: "acme-other" });
+    // The Team plan's trial includes 10: the owner plus nine on the other team.
+    const crew: string[] = [];
+    for (let n = 0; n < 9; n++) {
+      const userId = await addMember(db, { organizationId, role: "member" });
+      await addServicesTeamMember(db, { teamId: other.id, userId, role: "freelancer" });
+      crew.push(userId);
+    }
+    const [already] = await db.select({ email: user.email }).from(user).where(eq(user.id, crew[0] ?? ""));
+    await expect(
+      callerFor(ownerId).servicesTeam.addMember({ teamSlug: "acme-studio", email: already?.email ?? "", role: "freelancer" }),
+    ).resolves.toMatchObject({ userId: crew[0] });
+
+    await signUpVerified(auth, db, "eleventh@example.com", "Eleven");
+    await expect(
+      callerFor(ownerId).servicesTeam.addMember({ teamSlug: "acme-studio", email: "eleventh@example.com", role: "freelancer" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "This workspace's plan includes 10 members. Change the plan on the Billing page to add more.",
+    });
+    expect(await callerFor(ownerId).servicesTeam.listMembers({ teamSlug: studio.slug })).toHaveLength(2);
   });
 
   it("refuses to add a member to a solo seller", async () => {

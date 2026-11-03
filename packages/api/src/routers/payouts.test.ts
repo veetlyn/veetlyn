@@ -35,6 +35,8 @@ import {
 import { createPayPalClient, type FetchLike } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
 import { and, eq, sql } from "drizzle-orm";
+import { ensureBillingAccount } from "@jendal-workspace/db/repositories/billing";
+import { billingAccount } from "@jendal-workspace/db/schema/billing";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PayoutServices, PayPalServices } from "../context";
@@ -184,8 +186,15 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   beforeEach(() => truncateAll(db));
   afterAll(() => db.$client.end());
 
+  // Payout rules beyond manual approval come with Agency (billing design §6).
+  async function onAgency(organizationId: string) {
+    await ensureBillingAccount(db, { organizationId, product: "services", solo: false, now: new Date() });
+    await db.update(billingAccount).set({ servicesTier: "agency" }).where(eq(billingAccount.organizationId, organizationId));
+  }
+
   async function connectedTeam() {
     const seeded = await seedServicesTeamWithAdmin(db, { slug: "acme-studio" });
+    await onAgency(seeded.organizationId);
     await markTeamPayPalMerchant(db, { teamId: seeded.teamId, merchantId: MERCHANT_ID });
     return seeded;
   }
@@ -1301,6 +1310,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
     async function rulesTeam() {
       const { userId: adminId, organizationId, teamId } = await seedServicesTeamWithAdmin(db, { slug: "acme-studio" });
+      await onAgency(organizationId);
       const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
       return { adminId, organizationId, teamId, memberId, admin: callerFor(adminId) };
     }
@@ -1405,6 +1415,15 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       // The form still sends the stale id; the save succeeds and the stored list drops it.
       await admin.payouts.saveRules({ ...CUSTOM_RULES, holdDays: 3, trustedMemberIds: [memberId] });
       expect(await admin.payouts.rules(TEAM)).toMatchObject({ holdDays: 3, trustedMemberIds: [] });
+    });
+
+    it("keeps the payout agent to Agency, while manual approval always saves", async () => {
+      const { organizationId, admin } = await rulesTeam();
+      await db.update(billingAccount).set({ servicesTier: "team" }).where(eq(billingAccount.organizationId, organizationId));
+      const refused = { code: "FORBIDDEN", message: "Payout rules and automatic payouts come with the Agency plan. Change the plan on the Billing page to add more." };
+      await expect(admin.payouts.applyRulesPreset({ ...TEAM, preset: "automatic" })).rejects.toMatchObject(refused);
+      await expect(admin.payouts.saveRules({ ...CUSTOM_RULES, trustedMemberIds: [] })).rejects.toMatchObject(refused);
+      await expect(admin.payouts.applyRulesPreset({ ...TEAM, preset: "manual" })).resolves.toMatchObject({ preset: "manual" });
     });
 
     it("lets only admins read or change the rules", async () => {

@@ -68,7 +68,7 @@ import { planProjectSchedule } from "@opmodel/engine-scheduler";
 import { and, eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
-import { requireCanSell } from "../billing/entitlements";
+import { requireCanSell, requireStorageFor } from "../billing/entitlements";
 
 export type ProjectActor = { teamId: string; role: ServicesTeamRole; actorId: string };
 
@@ -678,6 +678,7 @@ export async function startDeliveryUpload(
     fail("FORBIDDEN", SUBMIT_DELIVERY_REFUSAL);
   }
   if (row.status !== "in_progress") fail("BAD_REQUEST", "Files can be added while the project is in progress.");
+  await requireStorageFor(db, row.teamId, input.sizeBytes);
   const uploadId = crypto.randomUUID();
   const key = `deliveries/${row.teamId}/${row.id}/${uploadId}`;
   await insertFileUpload(db, {

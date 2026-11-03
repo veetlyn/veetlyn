@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { type BillingAccountSnapshot, type Entitlements, entitlementsFor } from "@jendal-workspace/core";
 import type { DbExecutor } from "@jendal-workspace/db/executor";
-import { billingSnapshot, getBillingAccountForTeam, teamTrialBasis } from "@jendal-workspace/db/repositories/billing";
+import { billingSnapshot, getBillingAccountForTeam, teamTrialBasis, workspaceStorageBytes } from "@jendal-workspace/db/repositories/billing";
 
 const TRIAL_MS = 14 * 86_400_000;
 
@@ -47,4 +47,16 @@ export async function saleFeeBps(db: DbExecutor, teamId: string): Promise<number
 // For steps that commit the client to paying (accepting a quote or an amendment) before any payment starts.
 export async function requireCanSell(db: DbExecutor, teamId: string): Promise<void> {
   await saleFeeBps(db, teamId);
+}
+
+// Billing design §6: a hard block with an upgrade prompt, shown to the seller (never to clients).
+export function planLimitError(message: string): TRPCError {
+  return new TRPCError({ code: "FORBIDDEN", message: `${message} Change the plan on the Billing page to add more.` });
+}
+
+// Billing design §6: storage counts every upload in the workspace, including the one about to start.
+export async function requireStorageFor(db: DbExecutor, teamId: string, sizeBytes: number): Promise<void> {
+  const [{ entitlements }, used] = await Promise.all([teamEntitlements(db, teamId), workspaceStorageBytes(db, teamId)]);
+  const allowed = entitlements.limits.storageBytes;
+  if (used + sizeBytes > allowed) throw planLimitError(`This workspace's plan includes ${allowed / 1_000_000_000} GB of files.`);
 }

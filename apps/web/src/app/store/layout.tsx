@@ -4,13 +4,13 @@ import Link from "next/link";
 import { SELLER_POLICY_PAGES } from "@/content/seller-policies";
 import { STORE_POLICY_PAGES } from "@/content/store-policies";
 import { platformName } from "@/lib/platform";
-import { fetchStoreInfo, getPlatformOrigins } from "@/lib/server-api";
+import { fetchStoreHidesBadge, fetchStoreInfo, getPlatformOrigins } from "@/lib/server-api";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const info = await fetchStoreInfo();
   if (!info) return children;
 
-  const { site } = await getPlatformOrigins();
+  const [{ site }, hideBadge] = await Promise.all([getPlatformOrigins(), fetchStoreHidesBadge()]);
   const name = platformName();
   const pageFor = (policy: StorePolicy) =>
     info.product === "services" ? SELLER_POLICY_PAGES.get(policy) : STORE_POLICY_PAGES[policy];
@@ -33,9 +33,11 @@ export default async function StoreLayout({ children }: { children: React.ReactN
             ))}
           </nav>
           <nav aria-label={name} className="flex flex-wrap gap-x-5 gap-y-2">
-            <a href={site} className="hover:text-foreground">
-              Powered by {name}
-            </a>
+            {hideBadge ? null : (
+              <a href={site} className="hover:text-foreground">
+                Powered by {name}
+              </a>
+            )}
             {platformLinks.map(({ href, label }) => (
               <a key={href} href={href} className="hover:text-foreground">
                 {label}

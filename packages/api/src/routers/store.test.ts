@@ -182,6 +182,20 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
     expect(row?.organizationId).toBe(empty?.id);
   });
 
+  it("holds a Starter store's workspace to 2 accounts", async () => {
+    const caller = await signedInCaller("owner@acme.test");
+    await caller.store.create({ name: "Acme", slug: "acme" });
+    const [row] = await db.select().from(team).where(eq(team.slug, "acme"));
+    const organizationId = row?.organizationId ?? "";
+    const staff = await signUpVerified(auth, db, "staff@acme.test");
+    const extra = await signUpVerified(auth, db, "extra@acme.test");
+
+    await auth.api.addMember({ body: { userId: staff.userId, organizationId, role: "member" } });
+    await expect(auth.api.addMember({ body: { userId: extra.userId, organizationId, role: "member" } })).rejects.toMatchObject({
+      body: { code: "PLAN_LIMIT", message: "This workspace's plan includes 2 accounts. Change the plan on the Billing page to add more." },
+    });
+  });
+
   it("rejects an invalid address before creating anything", async () => {
     const caller = await signedInCaller();
 
