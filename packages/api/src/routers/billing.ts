@@ -1,11 +1,12 @@
 import { BILLING_PRODUCTS, entitlementsFor, hasStoreWideRole, parsePolarProductKey, polarProductKey, type PlanChoice } from "@jendal-workspace/core";
-import { applySubscriptionSnapshot, billingSnapshot, getBillingAccount, lockBillingAccount } from "@jendal-workspace/db/repositories/billing";
+import { applySubscriptionSnapshot, billingSnapshot, getBillingAccount, lockBillingAccount, teamWorkspaceForUser } from "@jendal-workspace/db/repositories/billing";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { type PolarClient, polarSubscription, productKeyOf, subscriptionSnapshot } from "../billing/polar";
+import { teamEntitlements } from "../billing/entitlements";
 import { protectedProcedure, router } from "../index";
 
 const workspaceInput = z.object({ organizationId: z.string().min(1).max(128) });
@@ -61,7 +62,32 @@ export function isDowngrade(current: PlanChoice, next: PlanChoice): boolean {
   return services(next) < services(current) || store(next) < store(current) || (current.interval === "yearly" && next.interval === "monthly");
 }
 
+const NOTICE_DAYS = 3;
+
 export const billingRouter = router({
+  // Billing design §7: the dashboard banner. Shown from 3 days before the trial ends, through grace, and while lapsed,
+  // to everyone in the workspace; only owners and admins get the way to fix it.
+  notice: protectedProcedure.input(z.object({ teamSlug: z.string().min(1).max(63) })).query(async ({ ctx, input }) => {
+    const found = await teamWorkspaceForUser(ctx.db, { slug: input.teamSlug.trim().toLowerCase(), userId: ctx.session.user.id });
+    if (!found) return null;
+    const { entitlements, product } = await teamEntitlements(ctx.db, found.teamId);
+    const now = (ctx.now ?? (() => new Date()))();
+    const account = await getBillingAccount(ctx.db, found.organizationId);
+    const trialEndsAt = account?.polarSubscriptionId === null ? account.trialEndsAt : null;
+    const trialEnding = entitlements.state === "trial" && trialEndsAt !== null && trialEndsAt.getTime() - now.getTime() <= NOTICE_DAYS * 86_400_000;
+    if (!trialEnding && entitlements.state !== "grace" && entitlements.state !== "lapsed") return null;
+    return {
+      state: entitlements.state,
+      subscribed: account?.polarSubscriptionId != null,
+      trialEndsAt,
+      graceEndsAt: entitlements.graceEndsAt,
+      product,
+      organizationId: found.organizationId,
+      canManage: hasStoreWideRole(found.role),
+    };
+  }),
+
+
   get: workspaceProcedure.query(({ ctx }) => ({
     choice: { servicesTier: ctx.billingAccount.servicesTier, storeTier: ctx.billingAccount.storeTier, interval: ctx.billingAccount.interval },
     entitlements: entitlementsFor(billingSnapshot(ctx.billingAccount), (ctx.now ?? (() => new Date()))()),

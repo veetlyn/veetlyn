@@ -181,6 +181,20 @@ export async function servicesSeats(
   return { used: ids.size, holdsSeat: ids.has(input.userId) };
 }
 
+// A team (store or services) by slug, with the caller's workspace role; null when they are not in its workspace.
+export async function teamWorkspaceForUser(
+  db: DbExecutor,
+  input: { slug: string; userId: string },
+): Promise<{ teamId: string; organizationId: string; role: string } | null> {
+  const [row] = await db
+    .select({ teamId: team.id, organizationId: team.organizationId, role: member.role })
+    .from(team)
+    .innerJoin(member, and(eq(member.organizationId, team.organizationId), eq(member.userId, input.userId)))
+    .where(eq(team.slug, input.slug))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function countWorkspaceMembers(db: DbExecutor, organizationId: string): Promise<number> {
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(member).where(eq(member.organizationId, organizationId));
   return row?.n ?? 0;
