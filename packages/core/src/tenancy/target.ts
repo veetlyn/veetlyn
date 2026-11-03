@@ -1,3 +1,4 @@
+import { sellerHostSuffix } from "./seller-host";
 import { validateStoreSlug } from "./slug";
 
 export type PlatformApp = "www" | "dash" | "admin" | "api" | "mcp";
@@ -49,6 +50,13 @@ export function parseRequestTarget(rawHostname: string, domains: HostDomains): R
   const app = platformLabel ? PLATFORM_APPS.get(platformLabel) : undefined;
   if (app) return { kind: "platform", app };
 
+  // Staging sellers at <slug>-staging.<zone> (seller-host.ts); in production the suffix is ".<store domain>".
+  const suffix = sellerHostSuffix(store);
+  if (suffix !== `.${store}` && hostname.endsWith(suffix)) {
+    const slug = exactSlug(hostname.slice(0, -suffix.length));
+    return slug ? { kind: "store", slug } : { kind: "unknown" };
+  }
+  // Also staging's older <slug>.staging.<zone> hosts, still attached for the STAGING_STORE_SLUGS sellers.
   const storeLabel = labelUnder(hostname, store);
   if (storeLabel !== null) {
     const slug = exactSlug(storeLabel);

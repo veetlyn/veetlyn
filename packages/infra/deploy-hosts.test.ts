@@ -20,8 +20,9 @@ describe("deployedHosts", () => {
     expect(hosts.fileOrigins).toEqual(["https://platform.test", "https://dash.platform.test"]);
   });
 
-  // A staging route on a production zone would take over production's seller sites.
-  it("keeps staging off the production hosts: named store hosts, no routes", () => {
+  // A broader staging route on the production zone would take over production's seller sites; production
+  // refuses slugs ending in -staging, so this pattern only ever matches staging sellers.
+  it("keeps staging off the production hosts: named store hosts and only the -staging seller route", () => {
     const hosts = deployedHosts("staging", ["walk-crew", "acme"], ZONES);
     expect(hosts.platformDomain).toBe("staging.platform.test");
     expect(hosts.storeDomain).toBe("staging.platform-store.test");
@@ -34,7 +35,7 @@ describe("deployedHosts", () => {
       "walk-crew.staging.platform-store.test",
       "acme.staging.platform-store.test",
     ]);
-    expect(hosts.web.routes).toEqual([]);
+    expect(hosts.web.routes).toEqual([{ pattern: "*-staging.platform-store.test/*", zoneName: "platform-store.test" }]);
     expect(hosts.api.domain).toBe("api.staging.platform.test");
   });
 
