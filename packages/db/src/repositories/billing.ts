@@ -1,5 +1,5 @@
 import type { BillingAccountSnapshot, PlanChoice, PolarSubscriptionStatus } from "@jendal-workspace/core";
-import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { billingAccount, polarWebhookEvent } from "../schema/billing";
@@ -26,6 +26,12 @@ export function billingSnapshot(row: BillingAccountRow): BillingAccountSnapshot 
 
 export async function getBillingAccount(db: DbExecutor, organizationId: string): Promise<BillingAccountRow | null> {
   const [row] = await db.select().from(billingAccount).where(eq(billingAccount.organizationId, organizationId)).limit(1);
+  return row ?? null;
+}
+
+// Serializes checkout and plan changes for a workspace across requests and Worker instances.
+export async function lockBillingAccount(db: DbExecutor, organizationId: string): Promise<BillingAccountRow | null> {
+  const [row] = await db.select().from(billingAccount).where(eq(billingAccount.organizationId, organizationId)).for("update");
   return row ?? null;
 }
 
@@ -112,7 +118,13 @@ export async function applySubscriptionSnapshot(db: DbExecutor, snap: Subscripti
       polarSubscriptionId: snap.subscriptionId,
       polarProductId: snap.productId,
       polarStatus: snap.status,
-      pastDueAt: snap.pastDueAt,
+      // If Polar omits its optional past_due_at, use the first snapshot's time. Retain it through the same delinquency;
+      // a successful renewal clears it so a later failed renewal gets a fresh grace period.
+      pastDueAt: snap.status === "past_due"
+        ? sql`case when ${billingAccount.polarStatus} = 'past_due' and ${billingAccount.polarSubscriptionId} = ${snap.subscriptionId}
+            then coalesce(${billingAccount.pastDueAt}, ${(snap.pastDueAt ?? snap.modifiedAt).toISOString()}::timestamptz)
+            else ${(snap.pastDueAt ?? snap.modifiedAt).toISOString()}::timestamptz end`
+        : null,
       currentPeriodEnd: snap.currentPeriodEnd,
       cancelAtPeriodEnd: snap.cancelAtPeriodEnd,
       endsAt: snap.endsAt,
@@ -132,6 +144,15 @@ export async function applySubscriptionSnapshot(db: DbExecutor, snap: Subscripti
 export async function recordPolarWebhookEvent(db: DbExecutor, input: { id: string; type: string }): Promise<boolean> {
   const inserted = await db.insert(polarWebhookEvent).values(input).onConflictDoNothing().returning({ id: polarWebhookEvent.id });
   return inserted.length > 0;
+}
+
+// Keyset pages ensure an unchanged subscription cannot keep later accounts out of the reconciliation sweep.
+export async function billingAccountsToReconcile(db: DbExecutor, input: { before: Date; afterOrganizationId: string; limit: number }) {
+  return db.select().from(billingAccount).where(and(
+    isNotNull(billingAccount.polarSubscriptionId),
+    gt(billingAccount.organizationId, input.afterOrganizationId),
+    or(eq(billingAccount.polarStatus, "past_due"), isNull(billingAccount.polarModifiedAt), lt(billingAccount.polarModifiedAt, input.before)),
+  )).orderBy(billingAccount.organizationId).limit(input.limit);
 }
 
 // Bytes a team stores: every upload row, attached or not yet swept.

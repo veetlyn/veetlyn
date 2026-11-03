@@ -1,4 +1,5 @@
 import type { CatalogServices } from "@jendal-workspace/api/catalog/service";
+import { createPolarClient } from "@jendal-workspace/api/billing/polar";
 import { databaseErrorFields } from "@jendal-workspace/api/use-cases/payments";
 import type { EmailServices, PayoutServices, PayPalServices } from "@jendal-workspace/api/context";
 import { createAuth as createConfiguredAuth } from "@jendal-workspace/auth";
@@ -22,6 +23,13 @@ import { createKvStoreCache } from "./tenant/kv-store-cache";
 
 export function getDb(): Database {
   return createDb({ DATABASE_URL: ENV.HYPERDRIVE.connectionString });
+}
+
+export function getPolarClient() {
+  // The binding is a plain string; anything but the two servers leaves billing off.
+  const server = ENV.POLAR_SERVER === "production" ? "production" : ENV.POLAR_SERVER === "sandbox" ? "sandbox" : null;
+  if (!ENV.POLAR_ACCESS_TOKEN || !server) return undefined;
+  return createPolarClient({ accessToken: ENV.POLAR_ACCESS_TOKEN, server });
 }
 
 export function createAuth(database: Database, executionCtx: ExecutionContext) {

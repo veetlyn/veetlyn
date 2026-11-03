@@ -36,6 +36,7 @@ export type MaintenanceDeps = {
   deliverOutboxNotices?: () => Promise<{ sent: number; failed: number; skipped: number }>;
   // The 10-minute rule scheduler (AGT-37); absent when rules are not served on this server.
   runScheduler?: () => Promise<{ fired: number; failed: number }>;
+  reconcileBilling?: () => Promise<{ checked: number; applied: number; failed: number }>;
   now?: () => Date;
 };
 
@@ -49,7 +50,8 @@ export type MaintenanceSweep =
   | "payoutSends"
   | "payouts"
   | "outboxNotices"
-  | "schedule";
+  | "schedule"
+  | "billing";
 
 export type MaintenanceReport = {
   webhookEventsRequeued: number;
@@ -205,6 +207,9 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     });
   }
 
+
+  const reconcileBilling = deps.reconcileBilling;
+  if (reconcileBilling) await sweep("billing", reconcileBilling);
 
   return report;
 }

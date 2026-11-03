@@ -15,6 +15,7 @@ import {
   getEmailServices,
   getPayoutServices,
   getPayPalServices,
+  getPolarClient,
   invalidateStoreLookup,
   logActionLogError,
 } from "./services";
@@ -47,6 +48,7 @@ export async function createContext(
   const auth = c.get("auth");
   const headers = c.req.raw.headers;
   const session = await auth.api.getSession({ headers });
+  const polar = getPolarClient();
   return {
     db: c.get("db"),
     session,
@@ -55,6 +57,7 @@ export async function createContext(
     auth,
     headers,
     paypal: getPayPalServices(),
+    billing: polar ? { polar, dashOrigin: ENV.BETTER_AUTH_URL } : undefined,
     catalog,
     files,
     onTeamStatusChanged: invalidateStoreLookup,

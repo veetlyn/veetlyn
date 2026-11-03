@@ -54,6 +54,7 @@ describe("billing state", () => {
     ],
     ["revoked", account({ trialEndsAt: at(-30), subscription: subscription({ status: "canceled", endsAt: at(-1) }) }), "lapsed", false, null],
     ["unpaid", account({ trialEndsAt: at(-30), subscription: subscription({ status: "unpaid" }) }), "lapsed", false, null],
+    ["paused", account({ subscription: subscription({ status: "paused" }) }), "lapsed", false, null],
     // A subscription replaces the trial: an unfinished first checkout does not keep the trial alive past its end.
     ["checkout incomplete after the trial", account({ trialEndsAt: at(-3), subscription: subscription({ status: "incomplete" }) }), "lapsed", false, null],
   ])("%s", (_name, snapshot, state, canSell, graceEndsAt) => {

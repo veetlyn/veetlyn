@@ -6,6 +6,7 @@ import type { PayPalClient } from "@jendal-workspace/paypal";
 import type { LanguageModel } from "ai";
 
 import type { CallRuntime } from "./agent/runtime";
+import type { PolarClient } from "./billing/polar";
 
 import type { CatalogServices } from "./catalog/service";
 
@@ -63,6 +64,7 @@ export type Context = {
   headers: Headers;
   // Absent in tests and when PayPal is not configured; the paypal router then fails with PRECONDITION_FAILED.
   paypal?: PayPalServices;
+  billing?: { polar: PolarClient; dashOrigin: string };
   // Ports the catalog procedures use; fakes in tests, the real adapters from the server app.
   catalog: CatalogServices;
   // Private files (delivery files); a fake in tests, the R2 adapter from the server app.

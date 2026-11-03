@@ -18,7 +18,7 @@ export const billingAccount = pgTable(
     polarSubscriptionId: text("polar_subscription_id").unique(),
     polarProductId: text("polar_product_id"),
     polarStatus: text("polar_status", {
-      enum: ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid"],
+      enum: ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid", "paused"],
     }),
     pastDueAt: timestamp("past_due_at", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),

@@ -22,6 +22,7 @@
     "@jendal-workspace/paypal": "workspace:*",
     "@modelcontextprotocol/ext-apps": "2.0.3",
     "@modelcontextprotocol/server": "2.3.1",
+    "@polar-sh/sdk": "1.0.2",
     "@trpc/server": "catalog:",
     "agents": "0.28.1",
     "aws4fetch": "^1.0.20",

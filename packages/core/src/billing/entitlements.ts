@@ -10,7 +10,7 @@ export const GRACE_DAYS = 2;
 const DAY_MS = 86_400_000;
 const BYTES_PER_GB = 1_000_000_000;
 
-export type PolarSubscriptionStatus = "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
+export type PolarSubscriptionStatus = "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid" | "paused";
 
 export type BillingSubscription = {
   status: PolarSubscriptionStatus;
@@ -83,6 +83,7 @@ function stateOf(account: BillingAccountSnapshot, now: Date): StateResult {
     case "canceled":
       return sub.endsAt && now < sub.endsAt ? { state: "active", graceEndsAt: null } : { state: "lapsed", graceEndsAt: null };
     case "unpaid":
+    case "paused":
       return { state: "lapsed", graceEndsAt: null };
   }
 }

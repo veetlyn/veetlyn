@@ -4,7 +4,7 @@ import { createPolar } from "@polar-sh/sdk/2026-10";
 import { z } from "zod";
 
 // Billing design §1: Polar's API and webhooks are pinned to 2026-10 (Current until early 2027). Upgrade between
-// January and March 2027, before 2026-10 is removed in July.
+// January and March 2027, before 2026-10 is removed in April.
 export type PolarClient = ReturnType<typeof createPolar>;
 export type PolarServer = "sandbox" | "production";
 
@@ -15,7 +15,7 @@ export function createPolarClient(input: { accessToken: string; server: PolarSer
   return createPolar({ accessToken: input.accessToken, environment: input.server });
 }
 
-const STATUSES = ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid"] as const satisfies readonly PolarSubscriptionStatus[];
+const STATUSES = ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid", "paused"] as const satisfies readonly PolarSubscriptionStatus[];
 
 const metadata = z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]));
 export type PolarMetadata = z.infer<typeof metadata>;
@@ -23,16 +23,16 @@ export type PolarMetadata = z.infer<typeof metadata>;
 // The parts of a Polar subscription (API 2026-10) the snapshot reads, parsed at the boundary: webhook bodies and
 // API answers both pass through here.
 export const polarSubscription = z.object({
-  id: z.string(),
-  status: z.string(),
-  customer_id: z.string(),
-  product_id: z.string(),
-  past_due_at: z.string().nullish(),
-  current_period_end: z.string().nullable(),
+  id: z.string().min(1),
+  status: z.enum(STATUSES),
+  customer_id: z.string().min(1),
+  product_id: z.string().min(1),
+  past_due_at: z.iso.datetime({ offset: true }).nullish(),
+  current_period_end: z.iso.datetime({ offset: true }).nullable(),
   cancel_at_period_end: z.boolean(),
-  ends_at: z.string().nullable(),
-  modified_at: z.string().nullable(),
-  created_at: z.string(),
+  ends_at: z.iso.datetime({ offset: true }).nullable(),
+  modified_at: z.iso.datetime({ offset: true }).nullable(),
+  created_at: z.iso.datetime({ offset: true }),
   metadata,
   customer: z.object({ external_id: z.string().nullable() }),
   product: z.object({ metadata }),
@@ -47,8 +47,8 @@ export function productKeyOf(fields: PolarMetadata): string | null {
 }
 
 // The workspace a subscription belongs to: the customer's external id, set at checkout to the organization id.
-// Null when it is not a subscription to one of our plans. Callers pass a validated subscription: the SDK's webhook
-// event or API answer, or a body run through polarSubscription.
+// Null when it is not a subscription to one of our plans. Callers parse the SDK's webhook or API answer through
+// polarSubscription: SDK types alone do not validate incoming JSON.
 export function subscriptionSnapshot(sub: PolarSubscriptionLike): SubscriptionSnapshot | null {
   const fromMetadata = z.string().safeParse(sub.metadata.organization_id);
   const organizationId = sub.customer.external_id ?? (fromMetadata.success ? fromMetadata.data : null);
