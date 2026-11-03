@@ -9,6 +9,8 @@ import { type PolarClient, polarSubscription, productKeyOf, subscriptionSnapshot
 import { teamEntitlements } from "../billing/entitlements";
 import { protectedProcedure, router } from "../index";
 
+const BILLING_UNAVAILABLE = "Billing is unavailable right now. Try again in a moment.";
+
 const workspaceInput = z.object({ organizationId: z.string().min(1).max(128) });
 const choiceInput = workspaceInput.extend({
   servicesTier: z.enum(["solo", "team", "agency"]).nullable(),
@@ -29,7 +31,12 @@ const providerProcedure = workspaceProcedure.use(async ({ ctx, input, next }) =>
   if (!(await hitRequestLimit(ctx.db, { key: `billing:${input.organizationId}`, windowMs: 60_000, max: 20 }))) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many billing requests. Try again in a minute." });
   }
-  return next({ ctx: { ...ctx, billing: ctx.billing } });
+  const result = await next({ ctx: { ...ctx, billing: ctx.billing } });
+  // Polar's error text names its own fields and ids; people get a plain answer, the server log keeps the cause.
+  if (!result.ok && result.error.code === "INTERNAL_SERVER_ERROR") {
+    throw new TRPCError({ code: "BAD_GATEWAY", message: BILLING_UNAVAILABLE, cause: result.error.cause ?? result.error });
+  }
+  return result;
 });
 
 function billingUrl(origin: string, organizationId: string) {
@@ -128,9 +135,9 @@ export const billingRouter = router({
       for await (const checkout of polar.checkouts.iterList({ status: ["open", "confirmed"], limit: 100 })) {
         if (checkout.external_customer_id !== input.organizationId) continue;
         if (checkout.status === "confirmed") throw new TRPCError({ code: "CONFLICT", message: "Your payment is still processing." });
-        if (new Date(checkout.expires_at) <= new Date()) continue;
-        const updated = await polar.checkouts.update(checkout.id, { product_id: product.id });
-        return { url: updated.url };
+        // A checkout offers one plan and Polar cannot switch it to another; a different choice gets a new checkout.
+        if (new Date(checkout.expires_at) <= new Date() || checkout.product_id !== product.id) continue;
+        return { url: checkout.url };
       }
       const returnUrl = billingUrl(dashOrigin, input.organizationId);
       const checkout = await polar.checkouts.create({
