@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import BillingNotice from "@/components/billing-notice";
 import { BrandMark, BrandWordmark } from "@/components/brand-mark";
 import { ModeToggle } from "@/components/mode-toggle";
 import UserMenu from "@/components/user-menu";
@@ -209,6 +210,7 @@ export default function TeamShell({
             ))}
         </nav>
         <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
+        <BillingNotice slug={slug} />
         {rules.data?.memberAccepted === false && pathname !== `/${slug}/settings/operating-model` ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7" role="status">
             <p className="text-sm">Accept version {rules.data.published.version} of the member agreement before taking new work.</p>
