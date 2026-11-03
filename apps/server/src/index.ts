@@ -27,6 +27,7 @@ import { runMaintenance } from "./maintenance";
 import { BRIDGE_PATH, bridgeResponse, createMcpRoute, widgetOriginsFor } from "./mcp/route";
 import { productionAuthGate } from "./launch-gate";
 import { createWaitlistRoute } from "./routes/waitlist";
+import { deliverWaitlistNotifications } from "./waitlist-notifications";
 import { noStoreByDefault } from "./no-store";
 import { wakeNoticesAfterMutation } from "./notice-wakeup";
 import { handlePayPalWebhookBatch } from "./paypal-webhook-queue";
@@ -76,7 +77,9 @@ async function deliverNotices(execution: ExecutionContext): Promise<void> {
   // Request connections can already be closing when background work begins.
   const db = getDb();
   try {
-    await deliverDueOutboxDeliveries({ db, email: getEmailServices(execution), secret: ENV.BETTER_AUTH_SECRET, limit: 5 });
+    const email = getEmailServices(execution);
+    await deliverWaitlistNotifications({ db, mailer: email.mailer });
+    await deliverDueOutboxDeliveries({ db, email, secret: ENV.BETTER_AUTH_SECRET, limit: 5 });
   } catch (error) {
     log.error({ action: "notices.wake", error: { name: errorName(error) } });
   } finally {
@@ -110,7 +113,7 @@ app.use(
   })),
 );
 
-app.route("/", createWaitlistRoute(ENV.PLATFORM_DOMAIN));
+app.route("/", createWaitlistRoute(ENV.PLATFORM_DOMAIN, ENV.WAITLIST_NOTIFY_TO ? { recipient: ENV.WAITLIST_NOTIFY_TO, platformName: ENV.PLATFORM_NAME } : undefined));
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw));
 
@@ -226,10 +229,12 @@ export default {
         createProjectPayouts: () => createProjectPayouts({ db, payouts }, { now: new Date() }),
         sendPayouts: payouts ? () => sendDuePayouts({ db, payouts }, { now: new Date() }) : undefined,
         settlePayouts: payouts ? () => settleSentPayouts({ db, payouts }) : undefined,
-        deliverOutboxNotices: () => {
+        deliverOutboxNotices: async () => {
           const email = getEmailServices(ctx);
           if (!email) return Promise.resolve({ sent: 0, failed: 0, skipped: 0 });
-          return deliverDueOutboxDeliveries({ db, email, secret: ENV.BETTER_AUTH_SECRET });
+          const waitlist = await deliverWaitlistNotifications({ db, mailer: email.mailer });
+          const notices = await deliverDueOutboxDeliveries({ db, email, secret: ENV.BETTER_AUTH_SECRET });
+          return { ...notices, sent: notices.sent + waitlist.sent, failed: notices.failed + waitlist.failed };
         },
         runScheduler: () => runDueScheduleItems({ db, now: () => new Date() }),
       });

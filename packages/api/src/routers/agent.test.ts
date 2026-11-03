@@ -146,6 +146,21 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(await db.select().from(conversationMessage)).toHaveLength(1);
   });
 
+  // The SDK runs one step's tool calls at once: cards drafted together must keep their order and the per-turn cap.
+  it("keeps cards drafted at once in the model's order, and at most three per turn", async () => {
+    const { adminId, projectId } = await setup();
+    const post = (n: number): Call => ({
+      id: `call_${n}`,
+      name: "propose_conversation_post",
+      input: { card: `Reply ${n}.`, input: { projectId, body: `Message ${n}` } },
+    });
+    const model = scriptedModel([{ text: null, calls: [post(1), post(2), post(3), post(4)] }, say("Drafted replies.")]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ ...TEAM, message: "Draft four replies" });
+
+    const proposals = (await callerFor(adminId).agent.thread({ ...TEAM, callId })).entries.filter((e) => e.kind === "proposal");
+    expect(proposals.map((p) => p.note)).toEqual(["Reply 1.", "Reply 2.", "Reply 3."]);
+  });
+
   it("refuses a confirmed proposal the person may no longer make, and keeps calls private", async () => {
     const { adminId, managerId, teamId, projectId } = await setup();
     await db.update(servicesTeamSettings).set({ quotingMode: "assigned" }).where(eq(servicesTeamSettings.teamId, teamId));
