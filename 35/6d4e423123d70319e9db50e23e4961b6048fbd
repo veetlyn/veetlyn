@@ -1,0 +1,40 @@
+apps/server/src/mcp/route.ts
+  h_6877e5e7a06bc5 1,63
+apps/server/src/store-origin.test.ts
+  h_6877e5e7a06bc5 6-11
+apps/server/src/store-origin.ts
+  h_6877e5e7a06bc5 1-2,7
+apps/web/src/lib/store-url.test.ts
+  h_6877e5e7a06bc5 23-26
+apps/web/src/lib/store-url.ts
+  h_6877e5e7a06bc5 1-2,9
+packages/core/src/index.ts
+  h_6877e5e7a06bc5 4
+packages/core/src/tenancy/seller-host.test.ts
+  h_6877e5e7a06bc5 1-16
+packages/core/src/tenancy/seller-host.ts
+  h_6877e5e7a06bc5 1-23
+packages/core/src/tenancy/slug.test.ts
+  h_6877e5e7a06bc5 86-91
+packages/core/src/tenancy/slug.ts
+  h_6877e5e7a06bc5 1,78-79
+packages/core/src/tenancy/target.test.ts
+  h_6877e5e7a06bc5 101-122
+packages/core/src/tenancy/target.ts
+  h_6877e5e7a06bc5 1,53-59
+packages/infra/deploy-hosts.test.ts
+  h_6877e5e7a06bc5 23-25,38
+packages/infra/deploy-hosts.ts
+  h_6877e5e7a06bc5 2-5,65-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "356d4e423123d70319e9db50e23e4961b6048fbd",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
