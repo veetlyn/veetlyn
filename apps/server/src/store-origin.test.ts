@@ -3,6 +3,12 @@ import { describe, expect, it } from "vitest";
 import { siteOriginFor, storeOriginFor } from "./store-origin";
 
 describe("storeOriginFor", () => {
+  it("links staging sellers at <slug>-staging.<zone>", () => {
+    expect(storeOriginFor({ storeDomain: "staging.platform.app", dashOrigin: "https://dash.staging.platform.test" })("acme")).toBe(
+      "https://acme-staging.platform.app",
+    );
+  });
+
   it("uses https and the store domain", () => {
     expect(storeOriginFor({ storeDomain: "platform.test", dashOrigin: "https://dash.platform.test" })("walk-crew")).toBe(
       "https://walk-crew.platform.test",

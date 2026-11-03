@@ -1,6 +1,8 @@
 // Hosts of the deployed stages. Production owns the apex domains; staging sits one label down, where
-// Universal SSL does not reach, so every staging host is a Worker custom domain with its own certificate
-// (seller sites only for the slugs listed in STAGING_STORE_SLUGS) and staging adds no zone routes.
+// Universal SSL does not reach, so its platform hosts are Worker custom domains with their own certificates.
+// Staging sellers live at <slug>-staging.<store zone> (core seller-host.ts), inside Universal SSL and the zone's
+// wildcard record, through one route narrow enough to leave production's sellers alone. The older
+// <slug>.staging.<store zone> custom domains stay for the slugs in STAGING_STORE_SLUGS.
 
 export type DeployedStage = "production" | "staging";
 
@@ -60,7 +62,11 @@ export function deployedHosts(stage: DeployedStage, stagingStoreSlugs: readonly 
         aliases: [`dash.${platformDomain}`, `admin.${platformDomain}`, storeDomain, `www.${storeDomain}`, ...storeHosts],
         redirects: [`www.${platformDomain}`],
       },
-      routes: stage === "production" ? [{ pattern: `*.${storeDomain}/*`, zoneName: zones.storeZone }] : [],
+      routes: [
+        stage === "production"
+          ? { pattern: `*.${storeDomain}/*`, zoneName: zones.storeZone }
+          : { pattern: `*-staging.${zones.storeZone}/*`, zoneName: zones.storeZone },
+      ],
     },
     api: { domain: `api.${platformDomain}` },
     fileOrigins: [`https://${platformDomain}`, `https://dash.${platformDomain}`],

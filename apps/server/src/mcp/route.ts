@@ -1,3 +1,4 @@
+import { sellerHostWildcard } from "@jendal-workspace/core";
 import { mcpResourceFor } from "@jendal-workspace/auth";
 import { consentGrantedAt } from "@jendal-workspace/db/repositories/oauth-grants";
 import { requireMcpAuth } from "@better-auth/mcp";
@@ -59,6 +60,6 @@ export function bridgeResponse(): Response {
 }
 
 export function widgetOriginsFor(input: { authUrl: string; storeDomain: string }): WidgetOrigins {
-  return { api: new URL(mcpResourceFor(input.authUrl)).origin, storeWildcard: `https://*.${input.storeDomain}` };
+  return { api: new URL(mcpResourceFor(input.authUrl)).origin, storeWildcard: `https://${sellerHostWildcard(input.storeDomain)}` };
 }
 

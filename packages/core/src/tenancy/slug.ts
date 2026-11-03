@@ -1,3 +1,4 @@
+import { STAGING_SELLER_SUFFIX } from "./seller-host";
 import type { TeamProduct } from "./team-product";
 
 export const RESERVED_SLUGS: readonly string[] = [
@@ -74,7 +75,8 @@ export function validateStoreSlug(input: string): SlugValidation {
   if (!SLUG_PATTERN.test(slug) || slug.includes("--")) {
     return { ok: false, reason: "format" };
   }
-  if (RESERVED_SLUGS.includes(slug)) {
+  // A production "acme-staging" would take staging's acme host (seller-host.ts).
+  if (RESERVED_SLUGS.includes(slug) || slug.endsWith(STAGING_SELLER_SUFFIX)) {
     return { ok: false, reason: "reserved" };
   }
   return { ok: true, slug };

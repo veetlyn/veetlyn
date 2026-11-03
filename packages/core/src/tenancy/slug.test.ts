@@ -83,6 +83,12 @@ describe("validateStoreSlug", () => {
     expect(validateStoreSlug(input)).toEqual({ ok: false, reason: "reserved" });
   });
 
+  // Staging sellers live at <slug>-staging.<zone>, so a production slug may not end that way.
+  it("reserves slugs ending in -staging", () => {
+    expect(validateStoreSlug("acme-staging")).toEqual({ ok: false, reason: "reserved" });
+    expect(validateStoreSlug("staging-acme")).toEqual({ ok: true, slug: "staging-acme" });
+  });
+
   it("can never produce the freelancer portal's /me path", () => {
     expect(validateStoreSlug("me")).toEqual({ ok: false, reason: "format" });
     expect(validateStoreSlug(" ME ")).toEqual({ ok: false, reason: "format" });

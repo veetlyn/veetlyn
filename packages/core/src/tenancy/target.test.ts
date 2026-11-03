@@ -98,3 +98,25 @@ describe("parseRequestTarget with a separate store domain", () => {
     expect(parseSplit("shop.example.com")).toEqual({ kind: "custom-domain", hostname: "shop.example.com" });
   });
 });
+
+describe("parseRequestTarget on staging", () => {
+  const STAGING = { platformDomain: "staging.platform.test", storeDomain: "staging.stores.test" };
+  const parseStaging = (hostname: string) => parseRequestTarget(hostname, STAGING);
+
+  it("maps <slug>-staging.<zone> to a store, and keeps the older <slug>.staging.<zone> hosts", () => {
+    expect(parseStaging("acme-staging.stores.test")).toEqual({ kind: "store", slug: "acme" });
+    expect(parseStaging("walk-crew-staging.stores.test")).toEqual({ kind: "store", slug: "walk-crew" });
+    expect(parseStaging("acme.staging.stores.test")).toEqual({ kind: "store", slug: "acme" });
+  });
+
+  it.each(["-staging.stores.test", "a.b-staging.stores.test", "www-staging.stores.test"])(
+    "returns unknown for %s",
+    (hostname) => {
+      expect(parseStaging(hostname)).toEqual({ kind: "unknown" });
+    },
+  );
+
+  it("looks up a production seller host as any other domain", () => {
+    expect(parseStaging("acme.stores.test")).toEqual({ kind: "custom-domain", hostname: "acme.stores.test" });
+  });
+});

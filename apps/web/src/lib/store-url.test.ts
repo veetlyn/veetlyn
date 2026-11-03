@@ -20,4 +20,8 @@ describe("storeUrl", () => {
   it("joins the slug with the parts", () => {
     expect(storeUrl("acme", { prefix: "https://", suffix: ".platform.site" })).toBe("https://acme.platform.site");
   });
+
+  it("puts staging sellers one label under the zone", () => {
+    expect(storeUrl("acme", storeUrlParts("staging.platform.app", "dash.staging.platform.test"))).toBe("https://acme-staging.platform.app");
+  });
 });
