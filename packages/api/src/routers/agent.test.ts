@@ -161,6 +161,22 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(proposals.map((p) => p.note)).toEqual(["Reply 1.", "Reply 2.", "Reply 3."]);
   });
 
+  // Walkthrough 2026-11-03: a thank-you drafted on a completed project was a card that Confirm could only refuse.
+  it("drafts no card for a message the project would refuse, and tells the model why", async () => {
+    const { adminId, teamId } = await setup();
+    const done = await seedProject(db, { teamId, title: "Finished logo", status: "completed" });
+    const model = scriptedModel([
+      use("propose_conversation_post", { card: "Thank the client.", input: { projectId: done, body: "Thanks, the files are ready." } }),
+      say("That project is closed to new messages."),
+    ]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ ...TEAM, message: "Thank the client of the finished logo" });
+
+    expect(JSON.stringify(model.requests[1]?.messages.at(-1)?.content)).toContain("Not proposed: This project is closed to new messages.");
+    const { entries } = await callerFor(adminId).agent.thread({ ...TEAM, callId });
+    expect(entries.filter((e) => e.kind === "proposal")).toEqual([]);
+    expect(await db.select().from(conversationMessage)).toEqual([]);
+  });
+
   it("refuses a confirmed proposal the person may no longer make, and keeps calls private", async () => {
     const { adminId, managerId, teamId, projectId } = await setup();
     await db.update(servicesTeamSettings).set({ quotingMode: "assigned" }).where(eq(servicesTeamSettings.teamId, teamId));

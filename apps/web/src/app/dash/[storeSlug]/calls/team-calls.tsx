@@ -6,7 +6,7 @@ import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -72,22 +72,34 @@ export default function TeamCalls({
   const router = useRouter();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
+  // A new call is shown as soon as the server names it: moving to ?call= reloads the server page, which can take a
+  // few seconds, and the question would otherwise vanish into an empty composer meanwhile.
+  const [startedCallId, setStartedCallId] = useState<string | null>(null);
+  const activeCallId = callId ?? startedCallId;
+  // Once the URL names the call it holds it, so a later "New call" (no ?call=) starts clean.
+  useEffect(() => {
+    if (callId) setStartedCallId(null);
+  }, [callId]);
   const calls = useQuery({ ...trpc.agent.calls.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const thread = useQuery({
-    ...trpc.agent.thread.queryOptions({ teamSlug, callId: callId ?? "" }),
-    enabled: callId !== null,
+    ...trpc.agent.thread.queryOptions({ teamSlug, callId: activeCallId ?? "" }),
+    enabled: activeCallId !== null,
     retry: false,
     meta: { silent: true },
   });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: trpc.agent.calls.queryKey({ teamSlug }) });
-    if (callId) void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ teamSlug, callId }) });
+    if (activeCallId) void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ teamSlug, callId: activeCallId }) });
   };
   const ask = useMutation(
     trpc.agent.ask.mutationOptions({
       onSuccess: (result) => {
         setMessage("");
-        if (result.callId !== callId) router.push(`/${teamSlug}/calls?call=${result.callId}`);
+        if (result.callId !== activeCallId) {
+          setStartedCallId(result.callId);
+          void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ teamSlug, callId: result.callId }) });
+          router.push(`/${teamSlug}/calls?call=${result.callId}`);
+        }
       },
       onSettled: refresh,
     }),
@@ -97,7 +109,7 @@ export default function TeamCalls({
     event.preventDefault();
     const text = message.trim();
     if (!text || ask.isPending) return;
-    ask.mutate({ teamSlug, message: text, ...(callId ? { callId } : projectId ? { projectId } : {}) });
+    ask.mutate({ teamSlug, message: text, ...(activeCallId ? { callId: activeCallId } : projectId ? { projectId } : {}) });
   }
 
   if (calls.isPending) return <Loader />;
@@ -118,7 +130,7 @@ export default function TeamCalls({
               <li key={c.id}>
                 <Link
                   href={`/${teamSlug}/calls?call=${c.id}`}
-                  aria-current={c.id === callId ? "page" : undefined}
+                  aria-current={c.id === activeCallId ? "page" : undefined}
                   className="block truncate rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
                 >
                   {c.title}
@@ -134,7 +146,7 @@ export default function TeamCalls({
         {!available ? (
           <p className="panel p-4 text-sm text-muted-foreground">The assistant is not set up on this server yet.</p>
         ) : null}
-        {current?.projectId || (!callId && projectId) ? (
+        {current?.projectId || (!activeCallId && projectId) ? (
           <p className="text-sm text-muted-foreground">
             On the table:{" "}
             <Link href={`/${teamSlug}/projects/${current?.projectId ?? projectId}`} className="underline underline-offset-4">
@@ -142,9 +154,9 @@ export default function TeamCalls({
             </Link>
           </p>
         ) : null}
-        {callId && thread.isPending ? <Loader /> : null}
+        {activeCallId && thread.isPending ? <Loader /> : null}
         {thread.isError ? <p className="text-sm text-muted-foreground">This call is not available.</p> : null}
-        {!callId ? (
+        {!activeCallId ? (
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Ask {assistantName}</h2>
             <p className="text-sm text-muted-foreground">
@@ -181,7 +193,7 @@ export default function TeamCalls({
             onKeyDown={(event) => {
               if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) event.currentTarget.form?.requestSubmit();
             }}
-            placeholder={callId ? "Reply" : "What do you need? For example: which payouts wait for me?"}
+            placeholder={activeCallId ? "Reply" : "What do you need? For example: which payouts wait for me?"}
             maxLength={4000}
             disabled={!available}
           />
