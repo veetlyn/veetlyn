@@ -1,0 +1,18 @@
+apps/web/src/content/legal/meta.ts
+  h_6877e5e7a06bc5 3
+apps/web/src/content/legal/privacy.mdx
+  h_6877e5e7a06bc5 27-28
+apps/web/src/content/legal/terms.mdx
+  h_6877e5e7a06bc5 15-21,24,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "32f2f74f6fbf87871285dca746023208ad45e2e5",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
