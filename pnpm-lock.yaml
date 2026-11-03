@@ -352,6 +352,9 @@ importers:
       '@opmodel/engine-scheduler':
         specifier: workspace:*
         version: link:../oss/engine-scheduler
+      '@polar-sh/sdk':
+        specifier: 1.0.2
+        version: 1.0.2
       '@trpc/client':
         specifier: 'catalog:'
         version: 11.19.0(@trpc/server@11.19.0(typescript@6.0.3))(typescript@6.0.3)
@@ -2412,6 +2415,10 @@ packages:
 
   '@paypal/paypal-js@11.2.1':
     resolution: {integrity: sha512-Oi9JAxXOZrTpPWvJtlf98r76AvjIsn5kud7ZgqaqCL0JUOS3rqNzCbPmmWt9eg9Gw0qMf3KpVX+sEusQGe09pw==}
+
+  '@polar-sh/sdk@1.0.2':
+    resolution: {integrity: sha512-c3jdqYloVfcejKsAqYfYcW4bG7KkXj5bXkgdsdx4GHlJPzHFV5tysfeZGf9V7dJReLBirAluchsuHWiAIBco8w==}
+    engines: {node: '>=22'}
 
   '@prisma/debug@7.2.0':
     resolution: {integrity: sha512-YSGTiSlBAVJPzX4ONZmMotL+ozJwQjRmZweQNIq/ER0tQJKJynNkRB3kyvt37eOfsbMCXk3gnLF6J9OJ4QWftw==}
@@ -7905,6 +7912,8 @@ snapshots:
   '@paypal/paypal-js@11.2.1':
     dependencies:
       promise-polyfill: 8.3.0
+
+  '@polar-sh/sdk@1.0.2': {}
 
   '@prisma/debug@7.2.0': {}
 
