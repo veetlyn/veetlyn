@@ -68,6 +68,8 @@ import { planProjectSchedule } from "@opmodel/engine-scheduler";
 import { and, eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
+import { requireCanSell, requireStorageFor } from "../billing/entitlements";
+
 export type ProjectActor = { teamId: string; role: ServicesTeamRole; actorId: string };
 
 // Exported for the sibling use-case modules (requests.ts) so every procedure fails the same way.
@@ -317,6 +319,7 @@ export async function acceptQuote(
   return runProjectTransaction(db, async (tx, uow) => {
     const row = await requireProject(tx, input.projectId);
     const status = checkTransition(row.status, "accept_quote");
+    await requireCanSell(tx, row.teamId);
     const [found] = await tx
       .select()
       .from(quote)
@@ -501,6 +504,7 @@ export async function acceptAmendment(
     const row = await requireProject(tx, input.projectId);
     const facts = await getProjectFacts(tx, row.id);
     checkTransition(row.status, "accept_amendment", facts);
+    await requireCanSell(tx, row.teamId);
     const [found] = await tx
       .select()
       .from(amendment)
@@ -674,6 +678,7 @@ export async function startDeliveryUpload(
     fail("FORBIDDEN", SUBMIT_DELIVERY_REFUSAL);
   }
   if (row.status !== "in_progress") fail("BAD_REQUEST", "Files can be added while the project is in progress.");
+  await requireStorageFor(db, row.teamId, input.sizeBytes);
   const uploadId = crypto.randomUUID();
   const key = `deliveries/${row.teamId}/${row.id}/${uploadId}`;
   await insertFileUpload(db, {

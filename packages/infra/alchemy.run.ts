@@ -154,6 +154,9 @@ export const server = Cloudflare.Worker("server", {
     AGENT_MODEL: optionalString("AGENT_MODEL"),
     AGENT_DAILY_TURNS: optionalString("AGENT_DAILY_TURNS"),
     PAYOUT_CREDENTIALS_KEY: Config.Redacted("PAYOUT_CREDENTIALS_KEY").pipe(Config.withDefault(Redacted.make(""))),
+    POLAR_SERVER: optionalString("POLAR_SERVER"),
+    POLAR_ACCESS_TOKEN: Config.Redacted("POLAR_ACCESS_TOKEN").pipe(Config.withDefault(Redacted.make(""))),
+    POLAR_WEBHOOK_SECRET: Config.Redacted("POLAR_WEBHOOK_SECRET").pipe(Config.withDefault(Redacted.make(""))),
   },
   dev: {
     port: ports.api,

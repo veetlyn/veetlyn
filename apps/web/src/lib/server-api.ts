@@ -49,6 +49,16 @@ export const fetchStoreInfo = cache(async (): Promise<StoreInfo | null> => {
   return parsed.success ? parsed.data : null;
 });
 
+const brandingSchema = z.object({ hideBadge: z.boolean() });
+
+// Whether the store footer drops "Powered by"; any failure keeps the badge.
+export async function fetchStoreHidesBadge(): Promise<boolean> {
+  const response = await callApi("/api/store/branding");
+  if (!response.ok) return false;
+  const parsed = brandingSchema.safeParse(await response.json());
+  return parsed.success && parsed.data.hideBadge;
+}
+
 const offeringSchema = z.object({
   id: z.string(),
   departmentId: z.string().nullable(),

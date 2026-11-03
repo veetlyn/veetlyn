@@ -6,7 +6,8 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "billing:sync-polar": "bun scripts/sync-polar-catalog.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.71",
@@ -17,6 +18,7 @@
     "@jendal-workspace/paypal": "workspace:*",
     "@opmodel/engine-rules": "workspace:*",
     "@opmodel/engine-scheduler": "workspace:*",
+    "@polar-sh/sdk": "1.0.2",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "ai": "^7.0.143",

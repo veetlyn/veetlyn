@@ -4,7 +4,6 @@ import {
   isProjectStaff,
   maskContactDetails,
   type ProjectStatus,
-  sellerPlanFor,
 } from "@jendal-workspace/core";
 import { checkQualityRefundCap, type RulebookRules } from "@opmodel/engine-rules";
 import { memberDepartmentIds, userDisplayName } from "@jendal-workspace/db/repositories/conversations";
@@ -26,6 +25,7 @@ import { listServicesDepartments } from "@jendal-workspace/db/repositories/servi
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 
+import { platformFeeBps, teamEntitlements } from "../billing/entitlements";
 import { type LinkSecretSource, linkSecret, signPayLink } from "../client-links";
 import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
@@ -167,7 +167,7 @@ export async function getTeamProjectView(
     solo: settings?.solo ?? false,
     viewerId: viewer.actorId,
     quoteCalculator: {
-      platformFeeBps: sellerPlanFor({ id: viewer.teamId, solo: settings?.solo ?? false }).feeBps,
+      platformFeeBps: platformFeeBps(await teamEntitlements(db, viewer.teamId)) ?? 0,
       senderCountry,
       receiverCountry: payee?.paypalCountry ?? null,
     },

@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
+import { entitlementsFor, isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { billingSnapshot, countWorkspaceMembers, countWorkspaceTeams, ensureBillingAccount, getBillingAccount } from "@jendal-workspace/db/repositories/billing";
 import { clientRedirectOrigins, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
 import { createServicesTeamSettings, forgetWorkspaceMember, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
@@ -110,6 +111,40 @@ async function fetchCimdResource(input: RequestInfo | URL, init?: RequestInit): 
 }
 
 const leftMember = z.object({ userId: z.string().min(1), organizationId: z.string().min(1) });
+
+// Billing design §6: services teams and stores per workspace come from its plan. A trial missing the product gets
+// it filled in on creation (ensureBillingAccount), so the check uses that tier. Two concurrent creations can both
+// pass; the window is one request and the extra team is visible on the Billing page.
+async function checkTeamLimit(database: Database, organizationId: string, product: TeamProduct): Promise<void> {
+  const account = await getBillingAccount(database, organizationId);
+  if (!account) return;
+  const trial = account.polarSubscriptionId === null;
+  const snapshot = billingSnapshot(account);
+  if (trial && product === "services") snapshot.servicesTier ??= "team";
+  if (trial && product === "store") snapshot.storeTier ??= "starter";
+  const { limits } = entitlementsFor(snapshot, new Date());
+  const allowed = product === "services" ? limits.servicesTeams : limits.stores;
+  if ((await countWorkspaceTeams(database, organizationId, product)) < allowed) return;
+  const what = product === "services" ? (allowed === 1 ? "1 services team" : `${allowed} services teams`) : allowed === 1 ? "1 store" : "no store";
+  throw new APIError("FORBIDDEN", {
+    code: "PLAN_LIMIT",
+    message: `This workspace's plan includes ${what}. Change the plan on the Billing page to add another.`,
+  });
+}
+
+// Billing design §6: everyone in a workspace takes a seat: services members plus store staff accounts. A workspace
+// without a billing account is the one being created, whose creator always gets in.
+async function checkSeatLimit(database: Database, organizationId: string): Promise<void> {
+  const account = await getBillingAccount(database, organizationId);
+  if (!account) return;
+  const { limits } = entitlementsFor(billingSnapshot(account), new Date());
+  const allowed = limits.members + limits.staffSeats;
+  if ((await countWorkspaceMembers(database, organizationId)) < allowed) return;
+  throw new APIError("FORBIDDEN", {
+    code: "PLAN_LIMIT",
+    message: `This workspace's plan includes ${allowed} ${allowed === 1 ? "account" : "accounts"}. Change the plan on the Billing page to add more.`,
+  });
+}
 
 export function createAuth(env: AuthConfig, database: Database, services: AuthServices) {
   const paypalLive = env.PAYPAL_ENVIRONMENT === "live";
@@ -242,6 +277,7 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
               });
             }
             const product: TeamProduct = team.product === "services" ? "services" : "store";
+            await checkTeamLimit(database, team.organizationId, product);
             const slug = await claimTeamSlug(database, slugInput.parse(team.slug), product);
             // Every seller starts as a draft (publishing, run 3b). The support email is the seller's contact
             // address on its policies and seller page, for stores and services teams alike.
@@ -255,8 +291,17 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
               },
             };
           },
+          beforeAddMember: async ({ member }) => {
+            await checkSeatLimit(database, member.organizationId);
+          },
+          beforeAcceptInvitation: async ({ organization }) => {
+            await checkSeatLimit(database, organization.id);
+          },
           afterCreateTeam: async ({ team }) => {
             if (team.product === "services") await createServicesTeamSettings(database, team.id);
+            // The workspace's first team starts its 14-day trial (billing design §5).
+            const product: TeamProduct = team.product === "services" ? "services" : "store";
+            await ensureBillingAccount(database, { organizationId: team.organizationId, product, solo: false, now: new Date() });
           },
           // Better Auth drops only its own team rows; a re-invited member would otherwise get back their old
           // role, departments and shortlists.

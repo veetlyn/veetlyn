@@ -23,13 +23,18 @@ export default async function WorkspaceHome({ params }: { params: Promise<{ orga
           <h1 className="font-heading text-3xl">{organization.name}</h1>
           <span className="flex flex-wrap gap-2">
             {organization.canCreateStores ? (
-              <Link href="/new" className={buttonVariants({ variant: "outline" })}>
-                Create a store
-              </Link>
+              <>
+                <Link href={`/w/${organization.id}/billing`} className={buttonVariants({ variant: "outline" })}>
+                  Billing
+                </Link>
+                <Link href={`/new?workspace=${organization.id}`} className={buttonVariants({ variant: "outline" })}>
+                  Add a store
+                </Link>
+                <Link href={`/new/services-team?workspace=${organization.id}`} className={buttonVariants({ variant: "outline" })}>
+                  Add a services team
+                </Link>
+              </>
             ) : null}
-            <Link href="/new/services-team" className={buttonVariants({ variant: "outline" })}>
-              Create a services team
-            </Link>
           </span>
         </div>
       </div>

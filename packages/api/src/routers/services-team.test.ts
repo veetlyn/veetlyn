@@ -11,6 +11,8 @@ import {
   seedStore,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
+import { user } from "@jendal-workspace/db/schema/auth";
+import { billingAccount } from "@jendal-workspace/db/schema/billing";
 import { member, team } from "@jendal-workspace/db/schema/organization";
 import { AGENCY_RULEBOOK_SPEC } from "@opmodel/engine-rules";
 import { eq, inArray } from "drizzle-orm";
@@ -106,11 +108,41 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
       split: { teamCutBps: 10_000, managerCutBps: 0, memberCutBps: 0 },
     });
 
-    // Later teams and stores stay out of the solo seller's workspace.
+    // Like Slack workspaces: each new seller gets a workspace, trial and plan of its own.
     await caller.servicesTeam.create({ name: "Zed Studio", slug: "zed-studio" });
     await caller.store.create({ name: "Acme Shop", slug: "acme-shop" });
     const later = await db.select().from(team).where(inArray(team.slug, ["zed-studio", "acme-shop"]));
-    expect(later.map((t) => t.organizationId)).toEqual([studio?.organizationId, studio?.organizationId]);
+    expect(new Set([studio?.organizationId, row?.organizationId, ...later.map((t) => t.organizationId)]).size).toBe(4);
+    expect(await db.select().from(billingAccount)).toHaveLength(4);
+  });
+
+  it("adds sellers to a named workspace within its plan, and only for its owners and admins", async () => {
+    const caller = await signedInCaller("agency@example.com");
+    await caller.servicesTeam.create({ name: "Team 1", slug: "team-1" });
+    const [first] = await db.select().from(team).where(eq(team.slug, "team-1"));
+    const organizationId = first?.organizationId ?? "";
+
+    // The Team plan includes one services team; the trial adds a store as a bundle, and one store is the limit.
+    await expect(caller.servicesTeam.create({ name: "Team 2", slug: "team-2", organizationId })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "This workspace's plan includes 1 services team. Change the plan on the Billing page to add another.",
+    });
+    await caller.store.create({ name: "Acme Shop", slug: "acme-shop-1", organizationId });
+    await expect(caller.store.create({ name: "Acme Shop 2", slug: "acme-shop-2", organizationId })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await db.select().from(billingAccount)).toEqual([expect.objectContaining({ organizationId, servicesTier: "team", storeTier: "starter" })]);
+
+    // Agency runs five.
+    await db.update(billingAccount).set({ servicesTier: "agency" }).where(eq(billingAccount.organizationId, organizationId));
+    for (const n of [2, 3, 4, 5]) await caller.servicesTeam.create({ name: `Team ${n}`, slug: `team-${n}`, organizationId });
+    await expect(caller.servicesTeam.create({ name: "Team 6", slug: "team-6", organizationId })).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    // Solo sellers keep a workspace of their own; outsiders and plain members cannot add to one.
+    await expect(caller.servicesTeam.create({ name: "Me", slug: "me", solo: true, organizationId })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const outsider = await signedInCaller("outsider@example.com");
+    await expect(outsider.store.create({ name: "Mine", slug: "mine", organizationId })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const memberId = await addMember(db, { organizationId, role: "member" });
+    await expect(callerFor(memberId).store.create({ name: "Mine", slug: "mine", organizationId })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await db.select().from(team).where(eq(team.organizationId, organizationId))).toHaveLength(6);
   });
 
   it("lets only admins save the bio, trims it, and refuses 281 characters", async () => {
@@ -355,6 +387,32 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
         quotingMode: "assigned",
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("holds the workspace to its plan's members, counting each person once across its services teams", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const other = await seedServicesTeam(db, { organizationId, slug: "acme-other" });
+    // The Team plan's trial includes 10: the owner plus nine on the other team.
+    const crew: string[] = [];
+    for (let n = 0; n < 9; n++) {
+      const userId = await addMember(db, { organizationId, role: "member" });
+      await addServicesTeamMember(db, { teamId: other.id, userId, role: "freelancer" });
+      crew.push(userId);
+    }
+    const [already] = await db.select({ email: user.email }).from(user).where(eq(user.id, crew[0] ?? ""));
+    await expect(
+      callerFor(ownerId).servicesTeam.addMember({ teamSlug: "acme-studio", email: already?.email ?? "", role: "freelancer" }),
+    ).resolves.toMatchObject({ userId: crew[0] });
+
+    await signUpVerified(auth, db, "eleventh@example.com", "Eleven");
+    await expect(
+      callerFor(ownerId).servicesTeam.addMember({ teamSlug: "acme-studio", email: "eleventh@example.com", role: "freelancer" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "This workspace's plan includes 10 members. Change the plan on the Billing page to add more.",
+    });
+    expect(await callerFor(ownerId).servicesTeam.listMembers({ teamSlug: studio.slug })).toHaveLength(2);
   });
 
   it("refuses to add a member to a solo seller", async () => {

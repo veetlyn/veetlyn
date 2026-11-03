@@ -1,5 +1,3 @@
-import type { StoreRecord } from "../tenancy/store";
-
 export type PlanId = "starter" | "grow" | "scale";
 export type BillingInterval = "monthly" | "yearly";
 
@@ -11,7 +9,9 @@ export type Plan = {
   // The platform's fee on each order in basis points (100 = 1%), taken through PayPal's partner fee.
   orderFeeBps: number;
   staffSeats: number;
+  storageGb: number;
   customDomain: boolean;
+  hideBadge: boolean;
   adminAgent: boolean;
   disputeAgent: boolean;
   highlights: readonly string[];
@@ -25,8 +25,10 @@ export const PLANS: readonly Plan[] = [
     name: "Starter",
     priceCents: { monthly: 1200, yearly: 900 },
     orderFeeBps: 200,
+    storageGb: 5,
     staffSeats: 2,
     customDomain: false,
+    hideBadge: false,
     adminAgent: false,
     disputeAgent: false,
     highlights: [
@@ -43,8 +45,10 @@ export const PLANS: readonly Plan[] = [
     name: "Grow",
     priceCents: { monthly: 3900, yearly: 2900 },
     orderFeeBps: 100,
+    storageGb: 50,
     staffSeats: 5,
     customDomain: true,
+    hideBadge: true,
     adminAgent: true,
     disputeAgent: true,
     highlights: ["Everything in Starter", "Custom domain", "Admin agent", "Dispute agent", "5 staff accounts", "More AI credits"],
@@ -54,8 +58,10 @@ export const PLANS: readonly Plan[] = [
     name: "Scale",
     priceCents: { monthly: 12900, yearly: 9900 },
     orderFeeBps: 50,
+    storageGb: 500,
     staffSeats: 15,
     customDomain: true,
+    hideBadge: true,
     adminAgent: true,
     disputeAgent: true,
     highlights: ["Everything in Grow", "15 staff accounts", "Priority support", "The most AI credits"],
@@ -66,11 +72,6 @@ export function getPlan(id: PlanId): Plan {
   const plan = PLANS.find((p) => p.id === id);
   if (!plan) throw new Error(`Unknown plan: ${id}`);
   return plan;
-}
-
-// Until billing ships (parent spec §6.7, Nov 2–8), every store is on Starter and the trial is not enforced.
-export function planFor(_store: Pick<StoreRecord, "id">): Plan {
-  return getPlan("starter");
 }
 
 export function formatOrderFee(bps: number): string {

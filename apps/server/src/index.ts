@@ -1,4 +1,5 @@
 import { createReadinessRoute } from "./routes/readiness";
+import { reconcileBilling } from "@jendal-workspace/api/billing/reconcile";
 import { releaseDescriptor } from "@jendal-workspace/core/release";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "@jendal-workspace/api/routers/index";
@@ -36,6 +37,7 @@ import { runDueScheduleItems } from "@jendal-workspace/api/use-cases/scheduler-s
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
+import { createPolarWebhookRoute } from "./routes/polar-webhooks";
 import { storeInfoRoute } from "./routes/store-info";
 import {
   createAuth,
@@ -44,6 +46,7 @@ import {
   getEmailServices,
   getPayoutServices,
   getPayPalServices,
+  getPolarClient,
   logActionLogError,
 } from "./services";
 import { createKvStoreCache } from "./tenant/kv-store-cache";
@@ -178,6 +181,8 @@ app.route(
   }),
 );
 
+app.route("/webhooks/polar", createPolarWebhookRoute({ secret: ENV.POLAR_WEBHOOK_SECRET ?? "" }));
+
 app.route("/", discordRoute);
 app.route("/", storeInfoRoute);
 app.route("/", createCatalogImagesRoute(ENV.PRODUCT_IMAGES));
@@ -212,9 +217,11 @@ export default {
   async scheduled(_controller, _env, ctx) {
     const db = getDb();
     const payouts = await getPayoutServices();
+    const polar = getPolarClient();
     try {
       await runMaintenance({
         db,
+        reconcileBilling: polar ? () => reconcileBilling(db, polar, new Date()) : undefined,
         enqueueWebhookEvents: (eventIds) =>
           ENV.PAYPAL_WEBHOOKS.sendBatch(eventIds.map((eventId) => ({ body: { eventId } }))).then(() => undefined),
         files: createFileStore(),

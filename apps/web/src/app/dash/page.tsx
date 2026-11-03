@@ -16,14 +16,12 @@ export default async function AccountHome() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-heading text-3xl">Your account</h1>
         <span className="flex flex-wrap gap-2">
-          {organizations.some((o) => o.canCreateStores) ? (
-            <Link href="/new" className={buttonVariants({ variant: "outline" })}>
-              Create your store
-            </Link>
-          ) : null}
-          {/* servicesTeam.create guarantees a home organization for every signed-in user, so no gate here */}
+          {/* Each creates a new workspace with its own trial and plan; adding to a workspace starts from its page. */}
+          <Link href="/new" className={buttonVariants({ variant: "outline" })}>
+            New store
+          </Link>
           <Link href="/new/services-team" className={buttonVariants({ variant: "outline" })}>
-            Create your services team
+            New services team
           </Link>
         </span>
       </div>

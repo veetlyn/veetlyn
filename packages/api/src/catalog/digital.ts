@@ -27,6 +27,7 @@ import {
 } from "@jendal-workspace/db/repositories/files";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 
+import { requireStorageFor } from "../billing/entitlements";
 import { CatalogValidationError } from "./errors";
 
 export type DigitalProductDetail = {
@@ -157,6 +158,7 @@ export async function startProductFileUpload(
   if (!checked.ok) throw new CatalogValidationError([{ field: "file", message: checked.problem }]);
   const allowed = await hitRequestLimit(db, { key: `product-upload:${userId}`, max: 20, windowMs: 600_000 });
   if (!allowed) throw new UploadLimitedError();
+  await requireStorageFor(db, tenant.storeId, input.sizeBytes);
   const uploadId = crypto.randomUUID();
   const key = `products/${tenant.storeId}/${input.productId}/${uploadId}`;
   await insertFileUpload(db, {

@@ -10,7 +10,6 @@ import {
   paymentCapturedTransfer,
   paymentFeesTransfer,
   platformFeeMinor,
-  sellerPlanFor,
   toPayPalValue,
   transitionProject,
   transitionRefusalMessage,
@@ -38,6 +37,7 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { log } from "evlog";
 
+import { saleFeeBps } from "../billing/entitlements";
 import type { PayPalServices } from "../context";
 import { armProjectSchedule, confirmedLateRefundMinor } from "./projects";
 import { captureFees, isRefundedCaptureStatus } from "./paypal-amounts";
@@ -439,7 +439,7 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
       throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });
     }
   }
-  const fee = platformFeeMinor(row.amountMinor, sellerPlanFor({ id: row.teamId, solo: seller.solo }).feeBps);
+  const fee = platformFeeMinor(row.amountMinor, await saleFeeBps(deps.db, row.teamId));
   const currentQuote = await getCurrentQuote(deps.db, row.projectId);
   const items = checkoutItems({
     title: projectRow.title,

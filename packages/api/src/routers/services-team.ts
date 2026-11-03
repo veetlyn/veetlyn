@@ -8,6 +8,7 @@ import {
   teamSlugProblem,
   validateStoreSlug,
 } from "@jendal-workspace/core";
+import { servicesSeats, useSoloTrialTier } from "@jendal-workspace/db/repositories/billing";
 import { countDigitalProducts } from "@jendal-workspace/db/repositories/catalog";
 import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
 import { hasTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
@@ -38,6 +39,7 @@ import { memberDepartments } from "../actions/conversations";
 import { teamProcedureFor } from "../actions/trpc";
 import { protectedProcedure, router } from "../index";
 import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
+import { planLimitError, teamEntitlements } from "../billing/entitlements";
 import { organizationForNewTeam, toTRPCError } from "../team-creation";
 
 const slugInput = z.string().max(100);
@@ -61,7 +63,14 @@ export const servicesTeamRouter = router({
 
   // Same organization rule as store.create (services spec §3).
   create: protectedProcedure
-    .input(z.object({ name: z.string().trim().min(2).max(80), slug: slugInput, solo: z.boolean().default(false) }))
+    .input(
+      z.object({
+        name: z.string().trim().min(2).max(80),
+        slug: slugInput,
+        solo: z.boolean().default(false),
+        organizationId: z.string().min(1).max(128).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const slug = validateStoreSlug(input.slug);
       if (!slug.ok) throw new TRPCError({ code: "BAD_REQUEST", message: teamSlugProblem(slug.reason, "services") });
@@ -71,7 +80,7 @@ export const servicesTeamRouter = router({
       }
 
       try {
-        const organizationId = await organizationForNewTeam(ctx, input.name, { solo: input.solo });
+        const organizationId = await organizationForNewTeam(ctx, input.name, { solo: input.solo, organizationId: input.organizationId });
         // createTeam runs the slug and product hooks and creates the default team settings.
         // A solo seller's settings get the solo defaults right after.
         const created = await ctx.auth.api.createTeam({
@@ -81,6 +90,7 @@ export const servicesTeamRouter = router({
         if (input.solo) {
           try {
             await applySoloTeamDefaults(ctx.db, created.id);
+            await useSoloTrialTier(ctx.db, organizationId);
           } catch (error) {
             // A half-made solo seller would be a team with team rates; the retry needs its slug back.
             // Better Auth's removeTeam refuses an organization's last team, so the row goes directly.
@@ -219,6 +229,13 @@ export const servicesTeamRouter = router({
       const workspaceRole = await workspaceRoleFor(ctx.db, ctx.servicesTeam.organizationId, found.id);
       if (workspaceRole && hasStoreWideRole(workspaceRole)) {
         throw new TRPCError({ code: "CONFLICT", message: "Workspace owners and admins are already team admins." });
+      }
+      // Someone already on another of the workspace's services teams holds a seat; anyone else needs a free one.
+      // Two concurrent adds can both pass; the overage shows on the Billing page.
+      const { members } = (await teamEntitlements(ctx.db, ctx.servicesTeam.id)).entitlements.limits;
+      const seats = await servicesSeats(ctx.db, { organizationId: ctx.servicesTeam.organizationId, userId: found.id });
+      if (!seats.holdsSeat && seats.used >= members) {
+        throw planLimitError(`This workspace's plan includes ${members} ${members === 1 ? "member" : "members"}.`);
       }
       if (!workspaceRole) {
         // The user must be in the workspace before they can hold a team role (services spec §4.1).

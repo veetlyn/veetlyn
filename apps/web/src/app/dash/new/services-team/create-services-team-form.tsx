@@ -19,9 +19,10 @@ const TONE_CLASS = {
   problem: "text-destructive",
 } as const;
 
-export default function CreateServicesTeamForm({ dashOrigin }: { dashOrigin: string }) {
+export default function CreateServicesTeamForm({ dashOrigin, organizationId }: { dashOrigin: string; organizationId?: string }) {
   const router = useRouter();
-  const [solo, setSolo] = useState(true);
+  // A solo seller gets a workspace of its own, so a team added to a workspace is always a team.
+  const [solo, setSolo] = useState(!organizationId);
   const [name, setName] = useState("");
   const [typedSlug, setTypedSlug] = useState<string | null>(null);
   // The address follows the name until the user edits it.
@@ -45,12 +46,12 @@ export default function CreateServicesTeamForm({ dashOrigin }: { dashOrigin: str
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (canSubmit) create.mutate({ name: name.trim(), slug, solo });
+    if (canSubmit) create.mutate({ name: name.trim(), slug, solo, organizationId });
   }
 
   return (
     <form onSubmit={handleSubmit} className="panel mt-6 grid gap-6 p-5">
-      <fieldset className="space-y-2">
+      <fieldset className="space-y-2" hidden={Boolean(organizationId)}>
         <legend className="text-sm font-medium">Who is selling?</legend>
         <div className="grid gap-2">
           <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-input p-3 transition-colors hover:bg-accent/60 has-[:checked]:border-brand has-[:checked]:bg-brand-wash">

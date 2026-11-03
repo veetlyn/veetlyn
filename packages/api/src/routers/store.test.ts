@@ -132,16 +132,17 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
     await expect(caller.store.checkSlug({ slug: "a_b" })).resolves.toEqual({ status: "invalid", reason: "format" });
   });
 
-  it("creates one organization, named after the first store, for all of a new merchant's stores", async () => {
+  it("gives each new store a workspace of its own, named after it", async () => {
     const caller = await signedInCaller();
 
     await expect(caller.store.create({ name: "Acme", slug: "acme" })).resolves.toEqual({ slug: "acme" });
     await expect(caller.store.create({ name: "Beta", slug: "beta" })).resolves.toEqual({ slug: "beta" });
 
     const organizations = await caller.store.listMine();
-    expect(organizations).toHaveLength(1);
-    expect(organizations[0]).toMatchObject({ name: "Acme", role: "owner" });
-    expect(organizations[0]?.stores.map((s) => s.slug).sort()).toEqual(["acme", "beta"]);
+    expect(organizations.map((o) => [o.name, o.role, o.stores.map((s) => s.slug)]).sort()).toEqual([
+      ["Acme", "owner", ["acme"]],
+      ["Beta", "owner", ["beta"]],
+    ]);
   });
 
   it("creates the store as a store product with the merchant's email for support", async () => {
@@ -153,7 +154,7 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
     expect(row).toMatchObject({ product: "store", supportEmail: "owner@acme.test" });
   });
 
-  it("reports a taken address and reuses the organization on retry", async () => {
+  it("reports a taken address and reuses an empty workspace on retry", async () => {
     const { organizationId } = await seedOrganization(db);
     await seedStore(db, { organizationId, slug: "acme" });
     const caller = await signedInCaller();
@@ -167,6 +168,32 @@ describe.skipIf(!hasTestDatabase)("store creation", () => {
     const organizations = await caller.store.listMine();
     expect(organizations).toHaveLength(1);
     expect(organizations[0]?.stores.map((s) => s.slug)).toEqual(["acme-shop"]);
+  });
+
+  it("puts the next store in a workspace left empty by a failed creation", async () => {
+    const { headers } = await signUpVerified(auth, db, "retry@example.com");
+    const empty = await auth.api.createOrganization({ body: { name: "Acme", slug: "org-empty" }, headers });
+    const caller = appRouter.createCaller({
+      db, session: await auth.api.getSession({ headers }), environment: "sandbox", platformName: "Platform", auth, headers,
+      catalog: createTestCatalogServices(), files: createFakeFileStore(),
+    });
+    await caller.store.create({ name: "Acme", slug: "acme-retry" });
+    const [row] = await db.select().from(team).where(eq(team.slug, "acme-retry"));
+    expect(row?.organizationId).toBe(empty?.id);
+  });
+
+  it("holds a Starter store's workspace to 2 accounts", async () => {
+    const caller = await signedInCaller("owner@acme.test");
+    await caller.store.create({ name: "Acme", slug: "acme" });
+    const [row] = await db.select().from(team).where(eq(team.slug, "acme"));
+    const organizationId = row?.organizationId ?? "";
+    const staff = await signUpVerified(auth, db, "staff@acme.test");
+    const extra = await signUpVerified(auth, db, "extra@acme.test");
+
+    await auth.api.addMember({ body: { userId: staff.userId, organizationId, role: "member" } });
+    await expect(auth.api.addMember({ body: { userId: extra.userId, organizationId, role: "member" } })).rejects.toMatchObject({
+      body: { code: "PLAN_LIMIT", message: "This workspace's plan includes 2 accounts. Change the plan on the Billing page to add more." },
+    });
   });
 
   it("rejects an invalid address before creating anything", async () => {
