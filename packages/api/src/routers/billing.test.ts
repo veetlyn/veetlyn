@@ -107,12 +107,21 @@ describe.skipIf(!hasTestDatabase)("billing router", () => {
     }));
 
     // Polar ignores the workspace in this listing (no customer exists yet), so another workspace's checkout comes too.
-    const open = fromPartial<Checkout>({ id: "co_open", status: "open", expires_at: "2999-01-01T00:00:00Z", external_customer_id: organizationId });
-    const others = fromPartial<Checkout>({ id: "co_other", status: "open", expires_at: "2999-01-01T00:00:00Z", external_customer_id: "another" });
-    const list = vi.spyOn(polar.checkouts, "iterList").mockImplementation(() => items([others, open]));
-    const update = vi.spyOn(polar.checkouts, "update").mockResolvedValue(fromPartial<Checkout>({ url: "https://polar.test/open" }));
+    // A checkout offers one plan and cannot be switched, so only one for the same plan is reused.
+    const open = fromPartial<Checkout>({
+      id: "co_open", status: "open", expires_at: "2999-01-01T00:00:00Z", external_customer_id: organizationId,
+      product_id: "prod_team:grow:yearly", url: "https://polar.test/open",
+    });
+    const otherPlan = fromPartial<Checkout>({
+      id: "co_plan", status: "open", expires_at: "2999-01-01T00:00:00Z", external_customer_id: organizationId, product_id: "prod_solo:-:monthly",
+    });
+    const others = fromPartial<Checkout>({
+      id: "co_other", status: "open", expires_at: "2999-01-01T00:00:00Z", external_customer_id: "another", product_id: "prod_team:grow:yearly",
+    });
+    const list = vi.spyOn(polar.checkouts, "iterList").mockImplementation(() => items([others, otherPlan, open]));
+    const update = vi.spyOn(polar.checkouts, "update");
     await expect(callerFor(userId).billing.startCheckout(choice)).resolves.toEqual({ url: "https://polar.test/open" });
-    expect(update).toHaveBeenCalledWith("co_open", { product_id: "prod_team:grow:yearly" });
+    expect(update).not.toHaveBeenCalled();
     expect(list).toHaveBeenCalledWith({ status: ["open", "confirmed"], limit: 100 });
     expect(create).toHaveBeenCalledTimes(1);
 
@@ -160,6 +169,14 @@ describe.skipIf(!hasTestDatabase)("billing router", () => {
       callerFor(userId).billing.startCheckout({ organizationId, servicesTier: "team", storeTier: null, interval: "monthly" }),
     ).resolves.toEqual({ url: "https://polar.test/again" });
     expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers a Polar failure with a plain message, never Polar's own text", async () => {
+    const { userId, organizationId } = await workspace();
+    vi.spyOn(polar.checkouts, "create").mockRejectedValue(new Error("Polar API returned an error: 422 - product_id not available"));
+    await expect(
+      callerFor(userId).billing.startCheckout({ organizationId, servicesTier: "team", storeTier: null, interval: "monthly" }),
+    ).rejects.toMatchObject({ code: "BAD_GATEWAY", message: "Billing is unavailable right now. Try again in a moment." });
   });
 
   it("refuses a change to the current plan", async () => {
