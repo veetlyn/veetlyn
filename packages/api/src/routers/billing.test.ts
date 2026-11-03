@@ -106,11 +106,14 @@ describe.skipIf(!hasTestDatabase)("billing router", () => {
       success_url: `http://dash.localhost:3001/w/${organizationId}/billing?checkout={CHECKOUT_ID}`,
     }));
 
-    const open = fromPartial<Checkout>({ id: "co_open", status: "open", expires_at: "2999-01-01T00:00:00Z" });
-    vi.spyOn(polar.checkouts, "iterList").mockImplementation(() => items([open]));
+    // Polar ignores the workspace in this listing (no customer exists yet), so another workspace's checkout comes too.
+    const open = fromPartial<Checkout>({ id: "co_open", status: "open", expires_at: "2999-01-01T00:00:00Z", external_customer_id: organizationId });
+    const others = fromPartial<Checkout>({ id: "co_other", status: "open", expires_at: "2999-01-01T00:00:00Z", external_customer_id: "another" });
+    const list = vi.spyOn(polar.checkouts, "iterList").mockImplementation(() => items([others, open]));
     const update = vi.spyOn(polar.checkouts, "update").mockResolvedValue(fromPartial<Checkout>({ url: "https://polar.test/open" }));
     await expect(callerFor(userId).billing.startCheckout(choice)).resolves.toEqual({ url: "https://polar.test/open" });
     expect(update).toHaveBeenCalledWith("co_open", { product_id: "prod_team:grow:yearly" });
+    expect(list).toHaveBeenCalledWith({ status: ["open", "confirmed"], limit: 100 });
     expect(create).toHaveBeenCalledTimes(1);
 
     // Polar is asked too: the checkout's webhook may not have arrived yet.
