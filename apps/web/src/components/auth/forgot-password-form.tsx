@@ -46,7 +46,7 @@ export default function ForgotPasswordForm() {
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" variant="mint" size="xl" className="w-full" disabled={pending}>
         {pending ? "Sending…" : "Send reset link"}
       </Button>
     </form>

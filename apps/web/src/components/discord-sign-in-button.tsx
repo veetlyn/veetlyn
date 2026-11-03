@@ -20,7 +20,7 @@ export default function DiscordSignInButton({ label }: { label: string }) {
   }
 
   return (
-    <Button type="button" variant="outline" className="w-full" onClick={signIn} disabled={pending}>
+    <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn} disabled={pending}>
       {pending ? "Redirecting to Discord…" : label}
     </Button>
   );

@@ -60,7 +60,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" variant="mint" size="xl" className="w-full" disabled={pending}>
         {pending ? "Saving…" : "Change password"}
       </Button>
     </form>

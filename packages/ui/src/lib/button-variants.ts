@@ -7,6 +7,8 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default: "main-surface hover:brightness-110",
+        // The site's mint pill, for the one action a screen exists for (log in, accept, pay).
+        mint: "key-mint rounded-[4px_999px_999px_4px] font-semibold active:not-aria-[haspopup]:translate-y-0",
         outline: "raised text-foreground hover:brightness-[0.98] aria-expanded:brightness-[0.97]",
         secondary: "raised text-foreground hover:brightness-[0.98]",
         ghost: "text-muted-foreground hover:bg-accent hover:text-foreground aria-expanded:bg-accent",
@@ -18,6 +20,7 @@ export const buttonVariants = cva(
         xs: "h-7 gap-1 rounded-[7px] px-2 text-xs [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1.5 rounded-[8px] px-3 text-[13px] [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-11 gap-2 rounded-[11px] px-5 text-[15px]",
+        xl: "h-12 gap-2 px-6 text-[15px]",
         icon: "size-9",
         "icon-xs": "size-7 rounded-[7px] [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8 rounded-[8px]",

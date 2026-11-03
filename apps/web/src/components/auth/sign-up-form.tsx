@@ -56,7 +56,7 @@ export default function SignUpForm({ siteOrigin }: { siteOrigin: string }) {
         </p>
       ) : null}
       <TermsNotice siteOrigin={siteOrigin} />
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" variant="mint" size="xl" className="w-full" disabled={pending}>
         {pending ? "Creating your account…" : "Create account"}
       </Button>
     </form>
