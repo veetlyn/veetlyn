@@ -136,6 +136,8 @@ jobs:
       PLATFORM_ZONE: ${{ vars.PLATFORM_ZONE }}
       STORE_ZONE: ${{ vars.STORE_ZONE }}
       STAGING_STORE_SLUGS: ${{ vars.STAGING_STORE_SLUGS }}
+      # Production only: routes every *.staging seller host to this staging web Worker (alchemy.run.ts).
+      STAGING_WEB_WORKER_NAME: ${{ vars.STAGING_WEB_WORKER_NAME }}
       SANDBOX_BUYER_EMAIL: ${{ vars.SANDBOX_BUYER_EMAIL }}
       SANDBOX_BUYER_PASSWORD: ${{ vars.SANDBOX_BUYER_PASSWORD }}
       SANDBOX_CARD_NUMBER: ${{ vars.SANDBOX_CARD_NUMBER }}

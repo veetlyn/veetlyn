@@ -242,9 +242,26 @@ export default Alchemy.Stack(
         zoneId: yield* storeZoneId,
         pattern: `staging.${zones.storeZone}/*`,
       }).pipe(Alchemy.AdoptPolicy.adopt(true));
+      // Every staging seller host, not only the STAGING_STORE_SLUGS custom domains: with the staging web Worker's name
+      // set, this route serves them from staging, over a proxied wildcard record. The hosts sit two labels down, so
+      // they need the zone's Advanced Certificate for *.staging.<store zone>; Universal SSL stops one label down.
+      // Unset, the route stays Worker-less and only the named staging hosts work. Kept under its old resource id so
+      // the route is updated in place, never deleted and recreated.
+      const stagingWebWorker = process.env.STAGING_WEB_WORKER_NAME?.trim() || undefined;
+      if (stagingWebWorker) {
+        yield* Cloudflare.DNS.Record("StagingStoreWildcard", {
+          zoneId: yield* storeZoneId,
+          name: `*.staging.${zones.storeZone}`,
+          type: "AAAA",
+          content: "100::",
+          proxied: true,
+          comment: "Staging seller sites, served by the staging web Worker's route",
+        }).pipe(Alchemy.AdoptPolicy.adopt(true));
+      }
       yield* Cloudflare.Workers.WorkerRoute("StagingStoresOptOut", {
         zoneId: yield* storeZoneId,
         pattern: `*.staging.${zones.storeZone}/*`,
+        script: stagingWebWorker,
       }).pipe(Alchemy.AdoptPolicy.adopt(true));
     }
     const web = yield* Web;
