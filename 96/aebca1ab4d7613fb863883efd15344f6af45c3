@@ -1,0 +1,32 @@
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 9,75-82,85-86,92,98-102,112,133,149,157,159,196
+packages/api/src/actions/payouts.ts
+  h_6877e5e7a06bc5 26,295-310,448
+packages/api/src/agent/tools.ts
+  h_6877e5e7a06bc5 8,54
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 17,19,74,94-108,118-119,193
+packages/api/src/routers/agent.test.ts
+  h_6877e5e7a06bc5 164-179
+packages/api/src/routers/payouts.test.ts
+  h_6877e5e7a06bc5 1292-1302
+packages/api/src/routers/payouts.ts
+  h_6877e5e7a06bc5 7,35
+packages/api/src/use-cases/conversations.ts
+  h_6877e5e7a06bc5 200-219,229-230
+packages/api/src/use-cases/payouts.ts
+  h_6877e5e7a06bc5 52-57,1186-1195
+packages/db/src/repositories/payouts.ts
+  h_6877e5e7a06bc5 125-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "96aebca1ab4d7613fb863883efd15344f6af45c3",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
