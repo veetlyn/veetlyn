@@ -1,0 +1,16 @@
+packages/api/src/routers/billing.ts
+  h_6877e5e7a06bc5 2,9,65-66,68-90
+packages/db/src/repositories/billing.ts
+  h_6877e5e7a06bc5 184-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "590640f2e41d1e4f9125ac7288a03ae9ae5a4387",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
