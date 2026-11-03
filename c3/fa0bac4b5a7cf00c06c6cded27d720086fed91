@@ -1,0 +1,42 @@
+apps/web/.impeccable/surfaces/src-app-dash-auth.md
+  h_6877e5e7a06bc5 1-24
+apps/web/PRODUCT.md
+  h_6877e5e7a06bc5 1-66
+apps/web/src/components/auth/auth-card.tsx
+  h_6877e5e7a06bc5 13-16
+apps/web/src/components/auth/auth-split.tsx
+  h_6877e5e7a06bc5 7-8,11,20
+apps/web/src/components/auth/auth-visual.tsx
+  h_6877e5e7a06bc5 1,3-8,11-12,18-28,30-70,72-80
+apps/web/src/components/auth/forgot-password-form.tsx
+  h_6877e5e7a06bc5 49
+apps/web/src/components/auth/reset-password-form.tsx
+  h_6877e5e7a06bc5 63
+apps/web/src/components/auth/sign-in-form.tsx
+  h_6877e5e7a06bc5 59
+apps/web/src/components/auth/sign-up-form.tsx
+  h_6877e5e7a06bc5 59
+apps/web/src/components/auth/text-field.tsx
+  h_6877e5e7a06bc5 12,14
+apps/web/src/components/auth/verify-email-panel.tsx
+  h_6877e5e7a06bc5 42
+apps/web/src/components/discord-sign-in-button.tsx
+  h_6877e5e7a06bc5 23
+apps/web/src/components/paypal-sign-in-button.tsx
+  h_6877e5e7a06bc5 24
+packages/ui/src/lib/button-variants.ts
+  h_6877e5e7a06bc5 10-11,23
+packages/ui/src/styles/globals.css
+  h_6877e5e7a06bc5 229-270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c3fa0bac4b5a7cf00c06c6cded27d720086fed91",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
