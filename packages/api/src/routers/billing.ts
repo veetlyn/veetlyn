@@ -32,7 +32,7 @@ const providerProcedure = workspaceProcedure.use(async ({ ctx, input, next }) =>
 });
 
 function billingUrl(origin: string, organizationId: string) {
-  return new URL(`/dash/w/${encodeURIComponent(organizationId)}/billing`, origin).href;
+  return new URL(`/w/${encodeURIComponent(organizationId)}/billing`, origin).href;
 }
 
 async function catalog(polar: PolarClient) {

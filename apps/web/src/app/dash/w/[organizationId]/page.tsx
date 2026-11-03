@@ -24,6 +24,9 @@ export default async function WorkspaceHome({ params }: { params: Promise<{ orga
           <span className="flex flex-wrap gap-2">
             {organization.canCreateStores ? (
               <>
+                <Link href={`/w/${organization.id}/billing`} className={buttonVariants({ variant: "outline" })}>
+                  Billing
+                </Link>
                 <Link href={`/new?workspace=${organization.id}`} className={buttonVariants({ variant: "outline" })}>
                   Add a store
                 </Link>

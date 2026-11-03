@@ -103,7 +103,7 @@ describe.skipIf(!hasTestDatabase)("billing router", () => {
       products: ["prod_team:grow:yearly"],
       external_customer_id: organizationId,
       allow_trial: false,
-      success_url: `http://dash.localhost:3001/dash/w/${organizationId}/billing?checkout={CHECKOUT_ID}`,
+      success_url: `http://dash.localhost:3001/w/${organizationId}/billing?checkout={CHECKOUT_ID}`,
     }));
 
     const open = fromPartial<Checkout>({ id: "co_open", status: "open", expires_at: "2999-01-01T00:00:00Z" });
