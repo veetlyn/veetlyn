@@ -1,0 +1,46 @@
+apps/web/src/app/dash/new/create-store-form.tsx
+  h_6877e5e7a06bc5 23,45
+apps/web/src/app/dash/new/page.tsx
+  h_6877e5e7a06bc5 1,5,7-9,14,16
+apps/web/src/app/dash/new/services-team/create-services-team-form.tsx
+  h_6877e5e7a06bc5 22,24-25,49,54
+apps/web/src/app/dash/new/services-team/page.tsx
+  h_6877e5e7a06bc5 3,7,9-11,16,20
+apps/web/src/app/dash/page.tsx
+  h_6877e5e7a06bc5 19-22,24
+apps/web/src/app/dash/w/[organizationId]/page.tsx
+  h_6877e5e7a06bc5 26-33
+packages/api/src/billing/entitlements.ts
+  h_6877e5e7a06bc5 3,13,35-43,46-50
+packages/api/src/billing/selling.test.ts
+  h_6877e5e7a06bc5 1-60
+packages/api/src/routers/services-team.test.ts
+  h_6877e5e7a06bc5 14,110,114-144
+packages/api/src/routers/services-team.ts
+  h_6877e5e7a06bc5 65-72,82
+packages/api/src/routers/store.test.ts
+  h_6877e5e7a06bc5 135,142-145,157,173-184
+packages/api/src/routers/store.ts
+  h_6877e5e7a06bc5 46,48,58
+packages/api/src/team-creation.ts
+  h_6877e5e7a06bc5 2,8-10,14,16-24,26-27
+packages/api/src/use-cases/projects.ts
+  h_6877e5e7a06bc5 71-72,322,507
+packages/auth/src/index.ts
+  h_6877e5e7a06bc5 2,4,115-134,266
+packages/db/src/repositories/billing.ts
+  h_6877e5e7a06bc5 158-165
+packages/db/src/repositories/services-teams.ts
+  h_6877e5e7a06bc5 174-192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "379894429a7a2f836d074748f6ae365d6228462e",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
