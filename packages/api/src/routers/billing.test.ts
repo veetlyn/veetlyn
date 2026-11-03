@@ -141,6 +141,27 @@ describe.skipIf(!hasTestDatabase)("billing router", () => {
     expect((await getBillingAccount(db, organizationId))?.polarProductId).toBe(`prod_${from}`);
   });
 
+  it("sends a workspace whose subscription ended back to checkout instead of a plan change", async () => {
+    const { userId, organizationId } = await workspace();
+    await subscribe(organizationId, "team:-:monthly");
+    await applySubscriptionSnapshot(db, {
+      organizationId, servicesTier: "team", storeTier: null, interval: "monthly", customerId: "cus_1", subscriptionId: "sub_1",
+      productId: "prod_team:-:monthly", status: "canceled", pastDueAt: null, currentPeriodEnd: null, cancelAtPeriodEnd: true,
+      endsAt: new Date("2026-11-02T00:00:00Z"), modifiedAt: new Date("2026-11-02T00:00:00Z"),
+    });
+    await expect(callerFor(userId).billing.get({ organizationId })).resolves.toMatchObject({ subscribed: false, entitlements: { state: "lapsed" } });
+    const update = vi.spyOn(polar.subscriptions, "update");
+    await expect(
+      callerFor(userId).billing.changePlan({ organizationId, servicesTier: "agency", storeTier: null, interval: "monthly" }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: "This subscription has ended. Choose a plan to subscribe again." });
+    expect(update).not.toHaveBeenCalled();
+    const create = vi.spyOn(polar.checkouts, "create").mockResolvedValue(fromPartial<Checkout>({ url: "https://polar.test/again" }));
+    await expect(
+      callerFor(userId).billing.startCheckout({ organizationId, servicesTier: "team", storeTier: null, interval: "monthly" }),
+    ).resolves.toEqual({ url: "https://polar.test/again" });
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
   it("refuses a change to the current plan", async () => {
     const { userId, organizationId } = await workspace();
     await subscribe(organizationId, "team:-:monthly");

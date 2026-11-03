@@ -1,5 +1,5 @@
 import { BILLING_PRODUCTS, entitlementsFor, hasStoreWideRole, parsePolarProductKey, polarProductKey, type PlanChoice } from "@jendal-workspace/core";
-import { applySubscriptionSnapshot, billingSnapshot, getBillingAccount, lockBillingAccount, teamWorkspaceForUser } from "@jendal-workspace/db/repositories/billing";
+import { applySubscriptionSnapshot, type BillingAccountRow, billingSnapshot, getBillingAccount, lockBillingAccount, teamWorkspaceForUser } from "@jendal-workspace/db/repositories/billing";
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
@@ -64,6 +64,15 @@ export function isDowngrade(current: PlanChoice, next: PlanChoice): boolean {
 
 const NOTICE_DAYS = 3;
 
+// A subscription that can still be changed or paid in Polar's portal. One that ended (revoked, canceled past its
+// period, expired or unpaid) is history: the workspace subscribes again through a new checkout.
+function hasLiveSubscription(account: BillingAccountRow, now: Date): boolean {
+  if (!account.polarSubscriptionId || !account.polarStatus) return false;
+  if (account.polarStatus === "incomplete_expired" || account.polarStatus === "unpaid") return false;
+  if (account.polarStatus === "canceled") return account.endsAt !== null && now < account.endsAt;
+  return true;
+}
+
 export const billingRouter = router({
   // Billing design §7: the dashboard banner. Shown from 3 days before the trial ends, through grace, and while lapsed,
   // to everyone in the workspace; only owners and admins get the way to fix it.
@@ -78,7 +87,7 @@ export const billingRouter = router({
     if (!trialEnding && entitlements.state !== "grace" && entitlements.state !== "lapsed") return null;
     return {
       state: entitlements.state,
-      subscribed: account?.polarSubscriptionId != null,
+      subscribed: account ? hasLiveSubscription(account, now) : false,
       trialEndsAt,
       graceEndsAt: entitlements.graceEndsAt,
       product,
@@ -94,7 +103,7 @@ export const billingRouter = router({
     trialEndsAt: ctx.billingAccount.trialEndsAt,
     currentPeriodEnd: ctx.billingAccount.currentPeriodEnd,
     cancelAtPeriodEnd: ctx.billingAccount.cancelAtPeriodEnd,
-    subscribed: ctx.billingAccount.polarSubscriptionId !== null,
+    subscribed: hasLiveSubscription(ctx.billingAccount, (ctx.now ?? (() => new Date()))()),
     configured: Boolean(ctx.billing),
   })),
 
@@ -143,6 +152,9 @@ export const billingRouter = router({
     return ctx.db.transaction(async (tx) => {
       const account = await lockBillingAccount(tx, input.organizationId);
       if (!account?.polarSubscriptionId) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Subscribe before changing plans." });
+      if (!hasLiveSubscription(account, new Date())) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This subscription has ended. Choose a plan to subscribe again." });
+      }
       const remote = await polar.subscriptions.get(account.polarSubscriptionId);
       const current = subscriptionSnapshot(polarSubscription.parse(remote));
       if (!current || current.organizationId !== input.organizationId) throw new TRPCError({ code: "CONFLICT", message: "The subscription does not match this workspace." });
@@ -165,7 +177,8 @@ export const billingRouter = router({
   }),
 
   pendingChange: providerProcedure.query(async ({ ctx, input }) => {
-    if (!ctx.billingAccount.polarSubscriptionId) return null;
+    if (!ctx.billingAccount.polarSubscriptionId || !hasLiveSubscription(ctx.billingAccount, new Date())) return null;
+    if (ctx.billingAccount.cancelAtPeriodEnd) return null;
     const sub = await ctx.billing.polar.subscriptions.get(ctx.billingAccount.polarSubscriptionId);
     const parsed = subscriptionSnapshot(polarSubscription.parse(sub));
     if (!parsed || parsed.organizationId !== input.organizationId) throw new TRPCError({ code: "CONFLICT" });
