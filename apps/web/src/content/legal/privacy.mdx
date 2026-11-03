@@ -24,7 +24,8 @@ For buyer data in a store, the merchant decides how it is used and is responsibl
 
 - **Cloudflare:** hosting, networking, storage and AI Gateway.
 - **Render:** the PostgreSQL database.
-- **PayPal:** payments, Log in with PayPal, and billing for <PlatformName /> plans.
+- **PayPal:** payments and Log in with PayPal.
+- **Polar:** sells and bills <PlatformName /> plans as merchant of record. It receives your workspace ID, name, email and billing details; card details go to Polar and its payment processor, not to us.
 - **Resend:** account emails.
 - **AI model providers**, reached through Cloudflare AI Gateway: they run the AI agents and receive only the data a task needs.
 
