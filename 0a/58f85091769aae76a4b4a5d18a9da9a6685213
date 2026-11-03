@@ -1,0 +1,54 @@
+.github/workflows/deploy.yml
+  h_6877e5e7a06bc5 103
+apps/server/.env.schema
+  h_6877e5e7a06bc5 123-126
+apps/server/src/index.ts
+  h_6877e5e7a06bc5 30,80-82,116,232,235-237
+apps/server/src/notice-wakeup.test.ts
+  h_6877e5e7a06bc5 14-27
+apps/server/src/notice-wakeup.ts
+  h_6877e5e7a06bc5 7
+apps/server/src/routes/waitlist.test.ts
+  h_6877e5e7a06bc5 2,16,32-34,46,53-59
+apps/server/src/routes/waitlist.ts
+  h_6877e5e7a06bc5 2,15-16,37
+apps/server/src/waitlist-notifications.test.ts
+  h_6877e5e7a06bc5 1-50
+apps/server/src/waitlist-notifications.ts
+  h_6877e5e7a06bc5 1-25
+docs/environments.md
+  h_6877e5e7a06bc5 46,49-54
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 70-72,87-93,174
+packages/api/src/routers/agent.test.ts
+  h_6877e5e7a06bc5 149-163
+packages/db/src/migrations/20261102175036_waitlist_notifications/migration.sql
+  h_6877e5e7a06bc5 1-13
+packages/db/src/migrations/20261102175036_waitlist_notifications/snapshot.json
+  h_6877e5e7a06bc5 1-14777
+packages/db/src/repositories/waitlist.ts
+  h_6877e5e7a06bc5 1-37
+packages/db/src/schema/waitlist.ts
+  h_6877e5e7a06bc5 1,8-20
+packages/db/src/testing/db.ts
+  h_6877e5e7a06bc5 30
+packages/email/src/templates.ts
+  h_6877e5e7a06bc5 3-23
+packages/email/src/waitlist.test.ts
+  h_6877e5e7a06bc5 1-14
+packages/infra/.env.schema
+  h_6877e5e7a06bc5 1
+packages/infra/alchemy.run.ts
+  h_6877e5e7a06bc5 129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a58f85091769aae76a4b4a5d18a9da9a6685213",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
