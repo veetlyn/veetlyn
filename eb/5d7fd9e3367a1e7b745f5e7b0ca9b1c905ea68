@@ -1,0 +1,42 @@
+apps/server/src/routes/store-info.ts
+  h_6877e5e7a06bc5 1,27-33
+apps/web/src/app/store/layout.tsx
+  h_6877e5e7a06bc5 7,13,36-40
+apps/web/src/lib/server-api.ts
+  h_6877e5e7a06bc5 52-61
+packages/api/src/billing/entitlements.ts
+  h_6877e5e7a06bc5 4,51-62
+packages/api/src/billing/selling.test.ts
+  h_6877e5e7a06bc5 4,6,11,62-76
+packages/api/src/catalog/digital.ts
+  h_6877e5e7a06bc5 30,161
+packages/api/src/routers/payouts.test.ts
+  h_6877e5e7a06bc5 38-39,189-194,197,1313,1420-1428
+packages/api/src/routers/services-team.test.ts
+  h_6877e5e7a06bc5 14,392-417
+packages/api/src/routers/services-team.ts
+  h_6877e5e7a06bc5 11,42,233-239
+packages/api/src/routers/store.test.ts
+  h_6877e5e7a06bc5 185-198
+packages/api/src/use-cases/payout-rules.ts
+  h_6877e5e7a06bc5 16-17,101-106
+packages/api/src/use-cases/projects.ts
+  h_6877e5e7a06bc5 71,681
+packages/auth/src/index.ts
+  h_6877e5e7a06bc5 4,135-148,294-299
+packages/db/src/repositories/billing.test.ts
+  h_6877e5e7a06bc5 13,83,86-88,98-105
+packages/db/src/repositories/billing.ts
+  h_6877e5e7a06bc5 7-8,166-191,195-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb5d7fd9e3367a1e7b745f5e7b0ca9b1c905ea68",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
