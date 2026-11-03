@@ -14,7 +14,9 @@ import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "a
 import type { Actor, RequestMeta } from "../actions/actors";
 import { toActionError } from "../actions/errors";
 import { type ActionDeps, perform } from "../actions/perform";
+import { conversationPost } from "../actions/conversations";
 import { projectGet } from "../actions/projects";
+import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
 import { proposalEffect } from "./effects";
 import { type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
@@ -69,7 +71,7 @@ function capped(text: string): string {
 
 // proposalQueue: the SDK runs one step's tool calls at once; proposals wait their turn here, so cards keep the
 // model's order and the per-turn cap holds.
-type TurnState = { call: AgentCallRow; actor: Actor; proposals: number; proposalQueue: Promise<unknown> };
+type TurnState = { call: AgentCallRow; actor: Actor; role: ServicesTeamRole; proposals: number; proposalQueue: Promise<unknown> };
 
 async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, rawInput: JsonObject): Promise<string> {
   const { call, actor } = state;
@@ -89,6 +91,21 @@ async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, r
   return queued;
 }
 
+// A card the person could confirm but the action would refuse is worse than no card: the same check the action
+// runs (with the person's current role) answers first. Only messages have a precondition worth checking here;
+// quotes and payout decisions recheck their state on confirm and say why there.
+async function refusalBeforeProposing(deps: TurnDeps, state: TurnState, action: string, input: JsonObject): Promise<string | null> {
+  if (action !== conversationPost.name) return null;
+  const post = conversationPost.input.safeParse(input);
+  if (!post.success) return null;
+  const author = { kind: "member" as const, actor: { teamId: state.call.teamId, role: state.role, actorId: state.call.userId } };
+  try {
+    return await messageRefusal(deps.actions.db, author, post.data);
+  } catch (error) {
+    return toActionError(error).message;
+  }
+}
+
 async function propose(deps: TurnDeps, state: TurnState, agentTool: AgentTool, rawInput: JsonObject): Promise<string> {
   const { call } = state;
   if (state.proposals >= MAX_PROPOSALS_PER_TURN) return "No more proposals in this turn; tell the person what is left.";
@@ -98,6 +115,8 @@ async function propose(deps: TurnDeps, state: TurnState, agentTool: AgentTool, r
   if (!checked.success) return `The input does not fit the action: ${checked.error.issues.map((i) => i.message).join("; ")}`;
   const effect = await proposalEffect(deps.actions.db, call.teamId, agentTool.definition.name, proposal.data.input);
   if (!effect) return "That record is not in this team.";
+  const refusal = await refusalBeforeProposing(deps, state, agentTool.definition.name, proposal.data.input);
+  if (refusal) return `Not proposed: ${refusal} Tell the person why; do not offer a card for it.`;
   state.proposals += 1;
   await insertAgentCallEntry(deps.actions.db, {
     callId: call.id,
@@ -171,7 +190,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   const project = await projectFor(deps, scope, call.projectId);
   await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
 
-  const state: TurnState = { call, actor: agentFor(scope), proposals: 0, proposalQueue: Promise.resolve() };
+  const state: TurnState = { call, actor: agentFor(scope), role: scope.role, proposals: 0, proposalQueue: Promise.resolve() };
   const tools = Object.fromEntries(
     toolsFor(scope.role).map((agentTool) => [
       agentTool.name,

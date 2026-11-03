@@ -197,6 +197,26 @@ async function requireReadable(db: Database, author: ConversationAuthor, project
   return { row, access };
 }
 
+type MessageInput = { projectId: string; kind: "text" | "question"; space?: ConversationSpace; teamOnly?: boolean };
+
+// Where a message would go, or why it may not be posted now. Posting refuses with this reason, and the assistant
+// checks it before drafting a message card, so a person is never asked to confirm a message that cannot be sent.
+async function messagePlacement(db: Database, author: ConversationAuthor, input: MessageInput) {
+  const { row, access } = await requireReadable(db, author, input.projectId);
+  if (author.kind === "client" && input.kind === "question") return { row, space: "project" as const, refusal: "Questions come from the team." };
+  const space: ConversationSpace =
+    author.kind === "client"
+      ? clientMessageSpace(row.status, input.teamOnly ?? false)
+      : (input.space ?? (access.write.includes("request") ? "request" : "project"));
+  // The client's request-space reply is a relay: the client writes the project space and the freelancers read it.
+  const writable = author.kind === "client" ? access.write.includes("project") : access.write.includes(space);
+  return { row, space, refusal: writable ? null : closedReason(row, space) };
+}
+
+export async function messageRefusal(db: Database, author: ConversationAuthor, input: MessageInput): Promise<string | null> {
+  return (await messagePlacement(db, author, input)).refusal;
+}
+
 // Conversations design §4: freelancers write in the request space, staff in either, the accepted freelancer in
 // the project space; the client writes once and the platform places the message.
 export async function postConversationMessage(
@@ -206,15 +226,8 @@ export async function postConversationMessage(
   surface: ConversationSurface,
 ): Promise<{ messageId: string; space: ConversationSpace }> {
   const body = cleanBody(input.body);
-  const { row, access } = await requireReadable(db, author, input.projectId);
-  if (author.kind === "client" && input.kind === "question") fail("BAD_REQUEST", "Questions come from the team.");
-  const space: ConversationSpace =
-    author.kind === "client"
-      ? clientMessageSpace(row.status, input.teamOnly ?? false)
-      : (input.space ?? (access.write.includes("request") ? "request" : "project"));
-  // The client's request-space reply is a relay: the client writes the project space and the freelancers read it.
-  const writable = author.kind === "client" ? access.write.includes("project") : access.write.includes(space);
-  if (!writable) fail("BAD_REQUEST", closedReason(row, space));
+  const { row, space, refusal } = await messagePlacement(db, author, input);
+  if (refusal) fail("BAD_REQUEST", refusal);
   // Backlog row 43: at most 10 messages per author per minute, whichever surface they come from.
   await requireWithinMessageRate(db, author, input.projectId);
   const posted = await runProjectTransaction(db, async (tx, uow) => {

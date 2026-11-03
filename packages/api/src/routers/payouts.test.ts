@@ -1289,6 +1289,17 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
     }
   });
 
+  // Walkthrough 2026-11-03: asked what a member earned, the assistant only had payout requests to go on.
+  it("shows staff each member's earnings in the team, and keeps them from freelancers", async () => {
+    const { userId: adminId, organizationId, teamId } = await seedServicesTeamWithAdmin(db, { slug: "acme-studio" });
+    const memberId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer", name: "Ada" });
+    await earn(teamId, memberId);
+    await expect(callerFor(adminId).payouts.balances(TEAM)).resolves.toEqual([
+      { memberName: "Ada", role: "freelancer", currency: "USD", availableMinor: 85_000, reservedMinor: 0, paidOutMinor: 0 },
+    ]);
+    await expect(callerFor(memberId).payouts.balances(TEAM)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   describe("payout rules", () => {
     const noTrustedMembers: string[] = [];
     const CUSTOM_RULES = {

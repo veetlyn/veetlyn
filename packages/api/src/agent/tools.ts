@@ -5,7 +5,7 @@ import type { ActionDefinition, AnyActionDefinition } from "../actions/define";
 import { type PerformRequest, perform } from "../actions/perform";
 import { conversationPost, requestListOpen } from "../actions/conversations";
 import { disputeList, paymentList } from "../actions/money";
-import { payoutApprove, payoutList, payoutReject, payoutRulesGet } from "../actions/payouts";
+import { payoutApprove, payoutBalances, payoutList, payoutReject, payoutRulesGet } from "../actions/payouts";
 import { projectGet, projectList } from "../actions/projects";
 import { quoteCreate } from "../actions/quotes";
 
@@ -51,6 +51,7 @@ export const AGENT_TOOLS: readonly AgentTool[] = [
   read(projectGet),
   read(requestListOpen),
   read(payoutList, "approve_payouts"),
+  read(payoutBalances, "approve_payouts"),
   read(payoutRulesGet, "approve_payouts"),
   read(paymentList, "approve_payouts"),
   read(disputeList, "resolve_cases"),

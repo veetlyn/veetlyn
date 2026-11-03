@@ -23,6 +23,7 @@ import { applyPayoutRulesPreset, getTeamPayoutRules, saveTeamPayoutRules } from 
 import {
   approvePayoutRequest,
   getMemberPayouts,
+  listTeamMemberBalances,
   listTeamPayouts,
   refreshPayout,
   rejectPayoutRequest,
@@ -291,6 +292,22 @@ export const payoutList = defineAction({
   },
 });
 
+export const payoutBalances = defineAction({
+  name: "payout.balances",
+  kind: "query",
+  summary:
+    "List what each member has earned in this team, in minor units: available to request, in progress (requested, not yet paid) and paid out.",
+  input: z.object({}),
+  output: null,
+  surfaces: ["web"],
+  scope: teamScope,
+  allow: member,
+  run: async (context) => {
+    const { team } = await teamFor(context, "approve_payouts", PAYOUTS_ONLY);
+    return listTeamMemberBalances(context.deps.db, team);
+  },
+});
+
 export const payoutReject = defineAction({
   name: "payout.reject",
   kind: "action",
@@ -428,6 +445,7 @@ export const PAYOUT_ACTIONS = [
   payoutRequest,
   payoutMine,
   payoutList,
+  payoutBalances,
   payoutReject,
   payoutApprove,
   payoutRetry,

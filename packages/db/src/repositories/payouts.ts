@@ -122,6 +122,33 @@ export async function listMemberEarnings(db: DbExecutor, userId: string): Promis
     .orderBy(team.name, ledgerBalance.currency);
 }
 
+export type MemberBalanceRow = { userId: string; currency: string; availableMinor: number; reservedMinor: number; paidOutMinor: number };
+
+// Each listed member's balances in one team, the same accounts their own Earnings card reads (listMemberEarnings).
+export async function listTeamMemberBalances(db: DbExecutor, teamId: string, userIds: readonly string[]): Promise<MemberBalanceRow[]> {
+  if (userIds.length === 0) return [];
+  const accountOf = new Map<string, { userId: string; field: "availableMinor" | "reservedMinor" | "paidOutMinor" }>();
+  for (const userId of userIds) {
+    accountOf.set(ledgerAccounts.owedAvailable(userId), { userId, field: "availableMinor" });
+    accountOf.set(ledgerAccounts.owedReserved(userId), { userId, field: "reservedMinor" });
+    accountOf.set(ledgerAccounts.paidOut(userId), { userId, field: "paidOutMinor" });
+  }
+  const rows = await db
+    .select({ account: ledgerBalance.account, currency: ledgerBalance.currency, balanceMinor: ledgerBalance.balanceMinor })
+    .from(ledgerBalance)
+    .where(and(eq(ledgerBalance.teamId, teamId), inArray(ledgerBalance.account, [...accountOf.keys()]), ne(ledgerBalance.balanceMinor, 0)));
+  const byMember = new Map<string, MemberBalanceRow>();
+  for (const row of rows) {
+    const owner = accountOf.get(row.account);
+    if (!owner) continue;
+    const key = `${owner.userId}:${row.currency}`;
+    const entry = byMember.get(key) ?? { userId: owner.userId, currency: row.currency, availableMinor: 0, reservedMinor: 0, paidOutMinor: 0 };
+    entry[owner.field] += row.balanceMinor;
+    byMember.set(key, entry);
+  }
+  return [...byMember.values()];
+}
+
 // "Log in with PayPal" (sign-up, sign-in or linkSocial) writes this Better Auth account row: `id` is
 // the row ID getAccessToken takes, `accountId` is PayPal's user_id, not the payer ID (Fact 14).
 // A PayPal account belongs to one user, but one user can link several PayPal accounts; the

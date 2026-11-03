@@ -49,7 +49,12 @@ import {
   updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
 import { getPayoutRules, type StoredPayoutRules } from "@jendal-workspace/db/repositories/payout-rules";
-import { getPayoutDestination, listMemberEarnings, type MemberEarningsRow } from "@jendal-workspace/db/repositories/payouts";
+import {
+  getPayoutDestination,
+  listMemberEarnings,
+  listTeamMemberBalances as listTeamMemberBalancesRows,
+  type MemberEarningsRow,
+} from "@jendal-workspace/db/repositories/payouts";
 import { getTeamPayPalCountry } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import {
   findServicesTeamBySlug,
@@ -1176,6 +1181,16 @@ export async function listTeamPayouts(
       eligibleApprovers: adminIds.filter((id) => id !== row.userId && !row.approverIds.includes(id)).length,
     })),
   };
+}
+
+// What each member of the team has earned there: available to request, in progress, and paid out (staff view).
+export async function listTeamMemberBalances(db: Database, team: PayoutRulesTeam) {
+  const members = await listServicesTeamMembers(db, team);
+  const balances = await listTeamMemberBalancesRows(db, team.id, members.map((m) => m.userId));
+  return balances.map(({ userId, ...amounts }) => {
+    const member = members.find((m) => m.userId === userId);
+    return { memberName: member?.name ?? "Former member", role: member?.role ?? null, ...amounts };
+  });
 }
 
 export async function getMemberPayouts(db: Database, userId: string): Promise<MemberPayoutsView> {
