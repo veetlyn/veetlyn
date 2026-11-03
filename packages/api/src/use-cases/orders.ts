@@ -19,7 +19,6 @@ import {
   parseMajorAmount,
   platformFeeMinor,
   refundFeesTransfer,
-  sellerPlanFor,
   toPayPalValue,
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
@@ -62,6 +61,7 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { log } from "evlog";
 
+import { saleFeeBps } from "../billing/entitlements";
 import type { EmailServices, PayPalServices } from "../context";
 import { captureFees, capturesIn, isRefundedCaptureStatus, postOnce, returnedFees } from "./paypal-amounts";
 import { CaptureFactConflict, databaseErrorFields, unconfirmedCapture } from "./payments";
@@ -182,8 +182,8 @@ export async function startCheckout(
     amountMinor: priceMinor,
     checkoutSecretHash: await hashToken(secret),
   });
-  // The platform's fee follows the seller's plan (pricing proposal §1): Solo 2%, Team 1%.
-  const fee = platformFeeMinor(priceMinor, sellerPlanFor({ id: team.id, solo: settings.solo }).feeBps);
+  // The platform's fee follows the seller's plan (billing design §4).
+  const fee = platformFeeMinor(priceMinor, await saleFeeBps(deps.db, team.id));
   const value = toPayPalValue(priceMinor);
   const paypalOrder = await deps.paypal.client.orders.create({
     requestId: `checkout:${order.id}`,

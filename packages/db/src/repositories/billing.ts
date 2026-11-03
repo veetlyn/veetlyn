@@ -5,6 +5,7 @@ import type { DbExecutor } from "../executor";
 import { billingAccount, polarWebhookEvent } from "../schema/billing";
 import { fileUpload } from "../schema/files";
 import { team } from "../schema/organization";
+import { servicesTeamSettings } from "../schema/services-teams";
 
 export type BillingAccountRow = typeof billingAccount.$inferSelect;
 
@@ -42,6 +43,20 @@ export async function getBillingAccountForTeam(
   return row ?? null;
 }
 
+// What a team without a billing account needs for its implied first trial.
+export async function teamTrialBasis(
+  db: DbExecutor,
+  teamId: string,
+): Promise<{ product: "store" | "services"; createdAt: Date; solo: boolean } | null> {
+  const [row] = await db
+    .select({ product: team.product, createdAt: team.createdAt, solo: servicesTeamSettings.solo })
+    .from(team)
+    .leftJoin(servicesTeamSettings, eq(servicesTeamSettings.teamId, team.id))
+    .where(eq(team.id, teamId))
+    .limit(1);
+  return row ? { product: row.product, createdAt: row.createdAt, solo: row.solo ?? false } : null;
+}
+
 // Starts the trial the first time a workspace gets a team. Later teams only fill a tier the trial is missing:
 // once a subscription exists, the plan changes through Polar.
 export async function ensureBillingAccount(
@@ -61,6 +76,14 @@ export async function ensureBillingAccount(
       },
       setWhere: isNull(billingAccount.polarSubscriptionId),
     });
+}
+
+// A "Just me" seller's trial runs on Solo; the plan changes through Polar once a subscription exists.
+export async function useSoloTrialTier(db: DbExecutor, organizationId: string): Promise<void> {
+  await db
+    .update(billingAccount)
+    .set({ servicesTier: "solo" })
+    .where(and(eq(billingAccount.organizationId, organizationId), isNull(billingAccount.polarSubscriptionId)));
 }
 
 export type SubscriptionSnapshot = PlanChoice & {

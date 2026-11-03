@@ -8,6 +8,7 @@ import {
   teamSlugProblem,
   validateStoreSlug,
 } from "@jendal-workspace/core";
+import { useSoloTrialTier } from "@jendal-workspace/db/repositories/billing";
 import { countDigitalProducts } from "@jendal-workspace/db/repositories/catalog";
 import { createDiscordLinkCode } from "@jendal-workspace/db/repositories/discord";
 import { hasTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
@@ -81,6 +82,7 @@ export const servicesTeamRouter = router({
         if (input.solo) {
           try {
             await applySoloTeamDefaults(ctx.db, created.id);
+            await useSoloTrialTier(ctx.db, organizationId);
           } catch (error) {
             // A half-made solo seller would be a team with team rates; the retry needs its slug back.
             // Better Auth's removeTeam refuses an organization's last team, so the row goes directly.

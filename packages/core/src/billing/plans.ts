@@ -1,5 +1,3 @@
-import type { StoreRecord } from "../tenancy/store";
-
 export type PlanId = "starter" | "grow" | "scale";
 export type BillingInterval = "monthly" | "yearly";
 
@@ -74,11 +72,6 @@ export function getPlan(id: PlanId): Plan {
   const plan = PLANS.find((p) => p.id === id);
   if (!plan) throw new Error(`Unknown plan: ${id}`);
   return plan;
-}
-
-// Until billing ships (parent spec §6.7, Nov 2–8), every store is on Starter and the trial is not enforced.
-export function planFor(_store: Pick<StoreRecord, "id">): Plan {
-  return getPlan("starter");
 }
 
 export function formatOrderFee(bps: number): string {

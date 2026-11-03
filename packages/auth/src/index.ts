@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { isTeamProduct, type TeamProduct, teamSlugProblem, validateStoreSlug } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { ensureBillingAccount } from "@jendal-workspace/db/repositories/billing";
 import { clientRedirectOrigins, revokeOAuthGrants } from "@jendal-workspace/db/repositories/oauth-grants";
 import { createServicesTeamSettings, forgetWorkspaceMember, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { isStoreSlugTaken } from "@jendal-workspace/db/repositories/stores";
@@ -257,6 +258,9 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
           },
           afterCreateTeam: async ({ team }) => {
             if (team.product === "services") await createServicesTeamSettings(database, team.id);
+            // The workspace's first team starts its 14-day trial (billing design §5).
+            const product: TeamProduct = team.product === "services" ? "services" : "store";
+            await ensureBillingAccount(database, { organizationId: team.organizationId, product, solo: false, now: new Date() });
           },
           // Better Auth drops only its own team rows; a re-invited member would otherwise get back their old
           // role, departments and shortlists.

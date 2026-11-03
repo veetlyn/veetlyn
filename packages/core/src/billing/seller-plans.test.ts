@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getSellerPlan, NETWORK_FEE_BPS, SELLER_PLANS, sellerPlanFor } from "./seller-plans";
+import { getSellerPlan, NETWORK_FEE_BPS, SELLER_PLANS } from "./seller-plans";
 
 describe("seller plans", () => {
   it("lists the published prices and fees", () => {
@@ -27,11 +27,6 @@ describe("seller plans", () => {
     ]);
   });
 
-  it("puts a solo seller on Solo and a team on Team until billing ships", () => {
-    expect(sellerPlanFor({ id: "team-1", solo: true })).toBe(getSellerPlan("solo"));
-    expect(sellerPlanFor({ id: "team-1", solo: false })).toBe(getSellerPlan("team"));
-    expect(sellerPlanFor({ id: "team-1" })).toBe(getSellerPlan("team"));
-  });
 
   it("rejects an unknown plan id", () => {
     // @ts-expect-error an id outside SellerPlanId reaches the runtime check

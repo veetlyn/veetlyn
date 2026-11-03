@@ -86,9 +86,3 @@ export function getSellerPlan(id: SellerPlanId): SellerPlan {
   if (!plan) throw new Error(`Unknown seller plan: ${id}`);
   return plan;
 }
-
-// Until billing ships the plan follows the seller's shape: a solo seller is on Solo,
-// a team on Team. Run 8 replaces this with the plan the seller subscribed to.
-export function sellerPlanFor(team: { id: string; solo?: boolean }): SellerPlan {
-  return getSellerPlan(team.solo ? "solo" : "team");
-}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatOrderFee, formatPlanPrice, getPlan, PLANS, planFor, TRIAL_DAYS } from "./plans";
+import { formatOrderFee, formatPlanPrice, PLANS, TRIAL_DAYS } from "./plans";
 
 describe("plans", () => {
   it("lists Starter, Grow and Scale with the prices and fees of parent spec §6.7", () => {
@@ -23,9 +23,6 @@ describe("plans", () => {
     expect(TRIAL_DAYS).toBe(14);
   });
 
-  it("puts every store on Starter until billing ships", () => {
-    expect(planFor({ id: "store-1" })).toBe(getPlan("starter"));
-  });
 
   it("formats fees and prices for display", () => {
     expect(formatOrderFee(200)).toBe("2%");
