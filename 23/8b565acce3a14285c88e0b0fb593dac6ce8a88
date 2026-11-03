@@ -1,0 +1,30 @@
+packages/db/src/repositories/billing.ts
+  h_6877e5e7a06bc5 8,46-59,81-88
+packages/core/src/billing/seller-plans.test.ts
+  h_6877e5e7a06bc5 3
+packages/auth/src/index.ts
+  h_6877e5e7a06bc5 4,261-263
+packages/api/src/routers/services-team.ts
+  h_6877e5e7a06bc5 11,85
+packages/api/src/use-cases/project-views.ts
+  h_6877e5e7a06bc5 28,170
+packages/api/src/use-cases/orders.ts
+  h_6877e5e7a06bc5 64,185-186
+packages/api/src/billing/entitlements.ts
+  h_6877e5e7a06bc5 1-40
+packages/core/src/billing/plans.test.ts
+  h_6877e5e7a06bc5 3
+packages/api/src/use-cases/payments.ts
+  h_6877e5e7a06bc5 40,442
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "238b565acce3a14285c88e0b0fb593dac6ce8a88",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
