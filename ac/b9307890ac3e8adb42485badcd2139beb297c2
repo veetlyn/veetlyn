@@ -1,0 +1,22 @@
+packages/api/package.json
+  h_6877e5e7a06bc5 9-10,21
+packages/api/scripts/sync-polar-catalog.ts
+  h_6877e5e7a06bc5 1-72
+packages/api/src/billing/polar.test.ts
+  h_6877e5e7a06bc5 1-84
+packages/api/src/billing/polar.ts
+  h_6877e5e7a06bc5 1-116
+pnpm-lock.yaml
+  h_6877e5e7a06bc5 355-357,2419-2422,7916-7917
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "acb9307890ac3e8adb42485badcd2139beb297c2",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
