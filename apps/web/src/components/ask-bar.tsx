@@ -7,6 +7,7 @@ import { ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
+import ComposerBox from "@/components/composer-box";
 import { usePlatformName } from "@/components/platform-name";
 import { trpc } from "@/utils/trpc";
 
@@ -36,55 +37,36 @@ export default function AskBar({
     }),
   );
 
-  function send(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submit() {
     const text = message.trim();
     if (text && !ask.isPending) ask.mutate({ node, message: text });
   }
 
+  function send(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    submit();
+  }
+
   if (hero) {
     return (
-      <form onSubmit={send} className="w-full">
-        <label htmlFor="ask-agent-hero" className="sr-only">
-          Ask {platform}
-        </label>
-        <div className="relative rounded-[18px] bg-card raised focus-within:ring-3 focus-within:ring-ring/25">
-          <textarea
-            id="ask-agent-hero"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
-            placeholder={placeholder}
-            maxLength={4000}
-            rows={2}
-            className="block w-full resize-none bg-transparent px-5 pt-4 pb-14 text-base outline-none placeholder:text-muted-foreground"
-          />
-          <span className="pointer-events-none absolute bottom-3.5 left-4 flex items-center gap-1.5 rounded-[7px] bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-            <AgentSpark className="size-3 text-brand" />
-            {hero.scope}
-          </span>
-          <Button
-            type="submit"
-            variant="mint"
-            size="icon-sm"
-            className="absolute right-3 bottom-3"
-            disabled={ask.isPending || message.trim() === ""}
-            aria-label={`Send to ${platform}`}
-          >
-            <ArrowUp aria-hidden="true" />
-          </Button>
-        </div>
+      <div className="w-full text-left">
+        <ComposerBox
+          id="ask-agent-hero"
+          label={`Ask ${platform}`}
+          value={message}
+          onChange={setMessage}
+          onSubmit={submit}
+          placeholder={placeholder}
+          scope={hero.scope}
+          busy={ask.isPending}
+          className="rounded-[18px]"
+        />
         {ask.error ? (
           <p role="alert" className="mt-1.5 text-sm text-destructive">
             {ask.error.message}
           </p>
         ) : null}
-      </form>
+      </div>
     );
   }
 

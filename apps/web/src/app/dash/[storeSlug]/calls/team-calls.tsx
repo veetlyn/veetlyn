@@ -3,18 +3,17 @@
 import type { ContextNode } from "@jendal-workspace/core/context/node";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
-import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { AgentIcon } from "@/components/agent-icon";
+import ComposerBox from "@/components/composer-box";
 import Loader from "@/components/loader";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
@@ -62,34 +61,28 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
   );
 }
 
-// Calls with the assistant (calls design §5–6, §12). With a subject (a project, a seller) the call is a split: the
-// conversation on the left, the thing it works on live on the right, as an editor beside its preview. Above the
-// sellers the conversation stands alone. The assistant reads with the person's access and drafts actions as cards;
-// nothing happens until they confirm.
+// Calls with the assistant (calls design §5–6): a conversation at one node of the tree, shaped like a chat. An empty
+// call greets the person with the composer under it; a running one keeps the composer at the foot. The assistant
+// reads with the person's access and drafts actions as cards; nothing happens until they confirm.
 export default function TeamCalls({
   listNode,
   askNode,
   callsPath,
-  backHref,
-  backLabel,
+  scopeName,
   projectHref,
   assistantName,
   callId,
-  subject,
 }: {
   // The node whose calls the list shows, and the one a new call opens at (a project's, when started from it).
   listNode: ContextNode;
   askNode: ContextNode;
   callsPath: string;
-  // Where the pane's back link leads: the node's own page.
-  backHref: string;
-  backLabel: string;
+  // What the call works on, named on the composer's chip.
+  scopeName: string;
   // A project's page, for "On the table"; null above the sellers.
   projectHref: ((projectId: string) => string) | null;
   assistantName: string;
   callId: string | null;
-  // What the right pane shows for the call's project (or none): absent when the node has nothing to show beside it.
-  subject?: (projectId: string | null) => React.ReactNode;
 }) {
   const router = useRouter();
   const { data: session } = authClient.useSession();
@@ -135,8 +128,7 @@ export default function TeamCalls({
     }),
   );
 
-  function send(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function send() {
     const text = message.trim();
     if (!text || ask.isPending) return;
     ask.mutate(activeCallId ? { node, message: text, callId: activeCallId } : { node, message: text });
@@ -148,73 +140,46 @@ export default function TeamCalls({
   const onTable = current?.projectId ?? (activeCallId ? null : projectId);
   const others = (calls.data?.calls ?? []).filter((c) => c.id !== activeCallId).slice(0, 6);
   const firstName = session?.user.name.split(/\s+/)[0] ?? "";
-  const scopeLabel = onTable ? "This project" : backLabel;
+  const scopeLabel = onTable ? "This project" : scopeName;
 
   const composer = (
-    <form onSubmit={send} className={activeCallId ? "shrink-0 px-3 pt-1 pb-3" : "w-full"}>
-      <label htmlFor="call-message" className="sr-only">
-        Message
-      </label>
-      <div className="relative">
-        <Textarea
-          id="call-message"
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) event.currentTarget.form?.requestSubmit();
-          }}
-          placeholder={activeCallId ? `Reply to ${assistantName}` : "What needs doing?"}
-          autoFocus={!activeCallId}
-          aria-keyshortcuts="Control+Enter Meta+Enter"
-          maxLength={4000}
-          disabled={!available}
-          className="min-h-28 rounded-[16px] pr-14 pb-12 text-[15px]"
-        />
-        <span className="pointer-events-none absolute bottom-3 left-3.5 flex items-center gap-1.5 rounded-[7px] bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-          <AgentIcon className="size-3 text-brand" />
-          {scopeLabel}
-        </span>
-        <Button
-          type="submit"
-          variant="mint"
-          size="icon-sm"
-          aria-label="Send"
-          className="absolute right-2.5 bottom-2.5"
-          disabled={!available || ask.isPending || message.trim() === ""}
-        >
-          <ArrowUp aria-hidden="true" />
-        </Button>
-      </div>
+    <div className={activeCallId ? "shrink-0 px-3 pt-1 pb-3" : "w-full"}>
+      <ComposerBox
+        id="call-message"
+        label="Message"
+        value={message}
+        onChange={setMessage}
+        onSubmit={send}
+        placeholder={activeCallId ? `Reply to ${assistantName}` : "What needs doing?"}
+        scope={scopeLabel}
+        busy={ask.isPending}
+        disabled={!available}
+        autoFocus={!activeCallId}
+        rows={activeCallId ? 2 : 3}
+      />
       {ask.error ? (
         <p role="alert" className="mt-1.5 text-sm text-destructive">
           {ask.error.message}
         </p>
       ) : null}
-    </form>
+    </div>
   );
 
   const conversation = (
     <section aria-label="Call" className="flex h-full min-h-0 min-w-0 flex-col">
-      <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
-        <Link
-          href={backHref}
-          className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{backLabel}</span>
-        </Link>
-        <span className="ml-auto truncate text-sm font-medium">{current?.title ?? ""}</span>
-        {activeCallId ? (
-          <Link href={callsPath} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+      {activeCallId ? (
+        <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
+          <span className="truncate text-sm font-medium">{current?.title ?? ""}</span>
+          <Link href={callsPath} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "ml-auto")}>
             New call
           </Link>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <div className={cn("min-h-0 flex-1 space-y-4 overflow-y-auto px-4", activeCallId ? "py-5" : "py-0")}>
         {!available ? (
           <p className="panel p-4 text-sm text-muted-foreground">The assistant is not set up on this server yet.</p>
         ) : null}
-        {projectHref && onTable && !subject ? (
+        {projectHref && onTable ? (
           <p className="text-sm text-muted-foreground">
             On the table:{" "}
             <Link href={projectHref(onTable)} className="underline underline-offset-4">
@@ -286,15 +251,5 @@ export default function TeamCalls({
     </section>
   );
 
-  if (!subject) {
-    return <div className="mx-auto min-h-0 w-full max-w-3xl flex-1">{conversation}</div>;
-  }
-  return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
-      <div className="min-h-0 lg:border-r">{conversation}</div>
-      <div aria-label="What this call works on" className="hidden min-h-0 overflow-y-auto bg-background lg:block">
-        {subject(onTable)}
-      </div>
-    </div>
-  );
+  return <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">{conversation}</div>;
 }

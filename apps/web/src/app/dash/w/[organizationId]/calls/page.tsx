@@ -18,8 +18,7 @@ export default async function WorkspaceCallsPage({
     <TeamCalls
       listNode={node}
       askNode={node}
-      backHref={`/w/${organizationId}`}
-      backLabel={"Workspace"}
+      scopeName={"Workspace"}
       callsPath={`/w/${organizationId}/calls`}
       projectHref={null}
       assistantName={platformName()}

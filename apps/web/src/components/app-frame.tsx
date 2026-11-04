@@ -17,7 +17,7 @@ export default function AppFrame({
   crumbs,
   ask,
   banner,
-  collapsed = false,
+  fill = false,
   children,
 }: {
   sidebar: React.ReactNode;
@@ -25,21 +25,16 @@ export default function AppFrame({
   crumbs: Crumb[];
   ask?: React.ReactNode;
   banner?: React.ReactNode;
-  // In a call the sidebar folds away and the conversation and its subject take the width.
-  collapsed?: boolean;
+  // A conversation holds its own scrolling: it takes the height left under the banners.
+  fill?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div
       data-app-shell
-      className={cn(
-        "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray",
-        !collapsed && "md:grid-cols-[256px_minmax(0,1fr)]",
-      )}
+      className={cn("grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray", "md:grid-cols-[256px_minmax(0,1fr)]")}
     >
-      <aside
-        className={cn("hidden min-h-0 flex-col gap-0.5 overflow-y-auto px-2.5 pt-2.5 pb-3", !collapsed && "md:flex")}
-      >
+      <aside className={cn("hidden min-h-0 flex-col gap-0.5 overflow-y-auto px-2.5 pt-2.5 pb-3", "md:flex")}>
         {sidebar}
         <div className="mt-auto pt-4">
           <Link href="/" className="flex items-center gap-2 px-2.5 text-sm text-muted-foreground hover:text-foreground">
@@ -52,7 +47,6 @@ export default function AppFrame({
       <div
         className={cn(
           "flex min-h-0 min-w-0 flex-col bg-card md:my-2 md:mr-2 md:frame md:rounded-[14px] md:shadow-[0_1px_2px_rgb(16_16_24/0.05)]",
-          collapsed && "md:ml-2",
         )}
       >
         <div className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4 md:px-6">
@@ -94,8 +88,8 @@ export default function AppFrame({
           id="page-scroll"
           className={cn(
             "min-h-0 flex-1 motion-safe:scroll-smooth",
-            // A call holds its own scrolling panes: the banners sit above it and it takes the height left.
-            collapsed ? "flex flex-col overflow-hidden" : "overflow-y-auto",
+            // A call holds its own scrolling pane: the banners sit above it and it takes the height left.
+            fill ? "flex flex-col overflow-hidden" : "overflow-y-auto",
           )}
         >
           {banner}

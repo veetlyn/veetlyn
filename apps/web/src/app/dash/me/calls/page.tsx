@@ -12,8 +12,7 @@ export default async function AccountCallsPage({ searchParams }: { searchParams:
     <TeamCalls
       listNode={NODE}
       askNode={NODE}
-      backHref={"/"}
-      backLabel={"Your account"}
+      scopeName={"Your account"}
       callsPath="/me/calls"
       projectHref={null}
       assistantName={platformName()}

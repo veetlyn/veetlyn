@@ -64,7 +64,7 @@ export default function AccountShell({
 
   return (
     <AppFrame
-      collapsed={pathname.startsWith("/me/calls")}
+      fill={pathname.startsWith("/me/calls")}
       crumbs={crumbs}
       sidebar={
         <>

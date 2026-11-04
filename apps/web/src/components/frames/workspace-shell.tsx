@@ -75,7 +75,7 @@ export default function WorkspaceShell({
 
   return (
     <AppFrame
-      collapsed={segment === "calls"}
+      fill={segment === "calls"}
       crumbs={crumbs}
       sidebar={
         <>
