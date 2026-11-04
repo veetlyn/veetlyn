@@ -1,0 +1,16 @@
+packages/core/src/context/node.test.ts
+  h_6877e5e7a06bc5 1-88
+packages/core/src/context/node.ts
+  h_6877e5e7a06bc5 1-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc722ed4bf577a91d4815f8ca19f1edeb8a1a58e",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
