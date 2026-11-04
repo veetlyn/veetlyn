@@ -6,6 +6,7 @@ import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
+import { cn } from "@jendal-workspace/ui/lib/utils";
 import type { inferRouterOutputs } from "@trpc/server";
 import { type FormEvent, useState } from "react";
 
@@ -15,7 +16,13 @@ import { ProjectProgress } from "@/components/project-progress";
 import { DeliveryLink } from "@/components/delivery-link";
 import { clientRefundLabel, paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
-import { AMENDMENT_STATUS_LABELS, CLIENT_PROJECT_TONES, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS } from "@/lib/status-labels";
+import {
+  AMENDMENT_STATUS_LABELS,
+  CLIENT_PROJECT_TONES,
+  PAYMENT_KIND_LABELS,
+  PAYMENT_STATUS_LABELS,
+  QUOTE_STATUS_LABELS,
+} from "@/lib/status-labels";
 
 export type ClientProjectData = inferRouterOutputs<AppRouter>["project"]["clientGet"];
 
@@ -82,8 +89,19 @@ function AnswerBox({
       }}
     >
       <Label htmlFor={`answer-${question.id}`}>Your answer</Label>
-      <Textarea id={`answer-${question.id}`} rows={2} maxLength={4000} value={body} onChange={(e) => setBody(e.target.value)} />
-      <Button type="submit" variant="outline" className="justify-self-start" disabled={!actions || actions.messageBusy || !body.trim()}>
+      <Textarea
+        id={`answer-${question.id}`}
+        rows={2}
+        maxLength={4000}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+      />
+      <Button
+        type="submit"
+        variant="outline"
+        className="justify-self-start"
+        disabled={!actions || actions.messageBusy || !body.trim()}
+      >
         Send answer
       </Button>
     </form>
@@ -106,7 +124,10 @@ function QuoteSummary({
       <div className="flex items-center justify-between">
         <p className="font-medium">
           <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
-          <span className="text-muted-foreground"> · delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`}</span>
+          <span className="text-muted-foreground">
+            {" "}
+            · delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`}
+          </span>
         </p>
         <Badge tone={quote.status === "proposed" ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
           {quote.status === "proposed" ? "Waiting for you" : QUOTE_STATUS_LABELS[quote.status]}
@@ -121,12 +142,88 @@ function QuoteSummary({
         ))}
       </ul>
       {quote.status === "proposed" && quoting ? (
-        <Button disabled={!actions || actions.quoteBusy} onClick={() => actions?.acceptQuote(quote.id)}>
+        <Button variant="mint" disabled={!actions || actions.quoteBusy} onClick={() => actions?.acceptQuote(quote.id)}>
           Accept quote
         </Button>
       ) : null}
     </div>
   );
+}
+
+// A section of the client's page: a frame panel with its title in the head row and its content inset.
+function Frame({
+  id,
+  title,
+  aside,
+  children,
+}: {
+  id?: string;
+  title: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} aria-label={title} className="frame frame-panel scroll-mt-4">
+      <div className="frame-head justify-between text-[13px]">
+        <h2 className="font-medium">{title}</h2>
+        {aside}
+      </div>
+      <div className="frame frame-body grid gap-4 p-4">{children}</div>
+    </section>
+  );
+}
+
+type NextStep = { title: string; detail: string; amount?: string; href?: string; target?: string; action?: string; pay?: boolean };
+
+// The one thing waiting for the client (product principle 4: whose turn it is, with the money at the moment of
+// decision), in the order the project needs them.
+function nextStep(data: ClientProjectData): NextStep | null {
+  const { project, quotes, amendments, payments, deliveries } = data;
+  const currency = project.currency;
+  const price = (minor: number) => formatMoney(money(currency, minor));
+  const payment = payments.find((p) => p.payable);
+  if (payment) {
+    return {
+      title: `Pay the ${PAYMENT_KIND_LABELS[payment.kind].toLowerCase()}`,
+      detail: payment.processing
+        ? "PayPal is still confirming this payment."
+        : "You approve it in PayPal. The team starts or continues once it is paid.",
+      amount: price(payment.amountMinor),
+      href: payment.payPath ?? undefined,
+      target: "payments",
+      action: payment.processing ? "See payment status" : "Pay with PayPal",
+      pay: !payment.processing,
+    };
+  }
+  const proposed = quotes.filter((q) => q.status === "proposed");
+  if (project.status === "quoting" && proposed.length > 0) {
+    return {
+      title: proposed.length === 1 ? "Accept the quote" : `Choose one of ${proposed.length} quotes`,
+      detail: "Accepting asks you for the deposit next. Nothing is charged until you pay in PayPal.",
+      amount: proposed.length === 1 && proposed[0] ? price(proposed[0].amountMinor) : undefined,
+      target: "responses",
+      action: proposed.length === 1 ? "See the quote" : "Compare quotes",
+    };
+  }
+  const amendment = amendments.find((a) => a.status === "pending");
+  if (amendment) {
+    return {
+      title: "Answer a change to the quote",
+      detail: `New total ${price(amendment.newAmountMinor)} if you accept.`,
+      amount: `${amendment.deltaMinor > 0 ? "+" : ""}${price(amendment.deltaMinor)}`,
+      target: "amendments",
+      action: "See the change",
+    };
+  }
+  if (project.status === "delivered" && deliveries.some((d) => d.status === "submitted")) {
+    return {
+      title: "Review the delivery",
+      detail: "Accept it, or ask for changes within your free rounds.",
+      target: "delivery",
+      action: "Review",
+    };
+  }
+  return null;
 }
 
 // The api prefixes rule refusals with a code for agents; people read the sentence after it.
@@ -148,8 +245,8 @@ export function ClientProjectView({
   const responses = responsesByFreelancer(quotes, conversation.messages);
   const answeredIds = new Set(conversation.messages.filter((m) => m.kind === "answer").map((m) => m.replyToId));
   const currency = project.currency;
-  const pendingPayments = payments.filter((p) => p.payable);
-  const awaitingDelivery = project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
+  const awaitingDelivery =
+    project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
   const deliveryBusy = !actions || actions.deliveryBusy;
   const changesNoteTooLong = changesNote.trim().length > MAX_DELIVERY_NOTE;
   const roundsUsed = project.revisionRounds !== null && project.revisionRounds.used >= project.revisionRounds.allowed;
@@ -168,50 +265,70 @@ export function ClientProjectView({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <h1 className="font-heading text-3xl">{project.title}</h1>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="font-heading text-[32px] leading-[1.1] tracking-[-0.03em]">{project.title}</h1>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Badge tone={CLIENT_PROJECT_TONES[project.status]}>
-            {projectStatusLabel(project.status)}
-          </Badge>
-          {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
+          <Badge tone={CLIENT_PROJECT_TONES[project.status]}>{projectStatusLabel(project.status)}</Badge>
+          {project.finalPriceMinor !== null
+            ? `Final price ${formatMoney(money(currency, project.finalPriceMinor))}`
+            : ""}
         </p>
-        {refund ? <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p> : null}
-        {project.brief ? <p className="text-sm">{project.brief}</p> : null}
-        {project.rules ? <p className="text-sm text-muted-foreground">Team rules: {project.rules}</p> : null}
+        {refund ? (
+          <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p>
+        ) : null}
       </div>
+
       {closedRequest ? (
-        <section className="panel space-y-2 p-4">
-          <p className="font-medium">
-            {project.status === "declined" ? "The team declined this request" : "This request expired without an answer"}
-          </p>
+        <Frame
+          title={
+            project.status === "declined" ? "The team declined this request" : "This request expired without an answer"
+          }
+        >
           {project.declinedReason ? <p className="text-sm whitespace-pre-wrap">{project.declinedReason}</p> : null}
-          <a href="/request" className={buttonVariants({ variant: "outline" })}>
+          <a href="/request" className={cn(buttonVariants({ variant: "outline" }), "justify-self-start")}>
             Send a new request
           </a>
-        </section>
-      ) : project.status !== "cancelled" ? (
+        </Frame>
+      ) : (
+        <NextStepPanel step={nextStep(data)} completed={project.status === "completed"} preview={actions === null} />
+      )}
+      {!closedRequest && project.status !== "cancelled" ? (
         <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
       ) : null}
 
+      {project.brief || project.rules ? (
+        <Frame title="Your request">
+          {project.brief ? <p className="text-sm whitespace-pre-wrap">{project.brief}</p> : null}
+          {project.rules ? <p className="text-sm text-muted-foreground">Team rules: {project.rules}</p> : null}
+        </Frame>
+      ) : null}
+
       {responses.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Responses</h2>
+        <section id="responses" aria-label="Responses" className="grid scroll-mt-4 gap-3">
           {responses.map(([key, response]) => (
-            <div key={key} className="space-y-3 panel p-4">
-              <p className="font-medium">{response.name}</p>
+            <Frame key={key} title={response.name}>
               {response.quotes.map((quote) => (
-                <QuoteSummary key={quote.id} quote={quote} currency={currency} quoting={project.status === "quoting"} actions={actions} />
+                <QuoteSummary
+                  key={quote.id}
+                  quote={quote}
+                  currency={currency}
+                  quoting={project.status === "quoting"}
+                  actions={actions}
+                />
               ))}
               {response.questions.map((question) => (
                 <div key={question.id} className="space-y-2 border-t pt-3">
                   <p className="text-sm font-medium">Question</p>
                   <p className="text-sm whitespace-pre-wrap">{question.body}</p>
-                  <AnswerBox question={question} answered={answeredIds.has(question.id)} actions={conversation.canWrite ? actions : null} />
+                  <AnswerBox
+                    question={question}
+                    answered={answeredIds.has(question.id)}
+                    actions={conversation.canWrite ? actions : null}
+                  />
                 </div>
               ))}
-            </div>
+            </Frame>
           ))}
         </section>
       ) : null}
@@ -221,17 +338,20 @@ export function ClientProjectView({
       ) : null}
 
       {amendments.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Amendments</h2>
+        <section id="amendments" aria-label="Changes to the quote" className="grid scroll-mt-4 gap-3">
           {amendments.map((amendment) => (
-            <div key={amendment.id} className="space-y-3 panel p-4">
+            <Frame key={amendment.id} title="Change to the quote">
               <div className="flex items-center justify-between">
                 <p className="font-medium">
                   {amendment.deltaMinor > 0 ? "+" : ""}
                   {formatMoney(money(currency, amendment.deltaMinor))} → new total{" "}
                   {formatMoney(money(currency, amendment.newAmountMinor))}
                 </p>
-                <span className="text-sm text-muted-foreground">{amendment.status === "pending" ? "Waiting for you" : (AMENDMENT_STATUS_LABELS[amendment.status] ?? amendment.status)}</span>
+                <span className="text-sm text-muted-foreground">
+                  {amendment.status === "pending"
+                    ? "Waiting for you"
+                    : (AMENDMENT_STATUS_LABELS[amendment.status] ?? amendment.status)}
+                </span>
               </div>
               {amendment.addItems.length > 0 ? (
                 <ul className="space-y-1 text-sm">
@@ -247,6 +367,7 @@ export function ClientProjectView({
               {amendment.status === "pending" ? (
                 <div className="flex gap-2">
                   <Button
+                    variant="mint"
                     disabled={!actions || actions.amendmentBusy}
                     onClick={() => actions?.acceptAmendment(amendment.id)}
                   >
@@ -261,20 +382,19 @@ export function ClientProjectView({
                   </Button>
                 </div>
               ) : null}
-            </div>
+            </Frame>
           ))}
         </section>
       ) : null}
 
       {deliveries.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Delivery</h2>
+        <section id="delivery" aria-label="Delivery" className="grid scroll-mt-4 gap-3">
           {newestFirst(deliveries).map((delivery) => (
-            <div key={delivery.id} className="space-y-3 panel p-4">
-              <div className="flex items-center justify-between text-sm">
-                <p className="font-medium">Delivered {new Date(delivery.createdAt).toLocaleString()}</p>
-                <span className="text-muted-foreground">{deliveryStatusLabel(delivery.status)}</span>
-              </div>
+            <Frame
+              key={delivery.id}
+              title={`Delivered ${new Date(delivery.createdAt).toLocaleString()}`}
+              aside={<span className="text-muted-foreground">{deliveryStatusLabel(delivery.status)}</span>}
+            >
               {delivery.note ? <p className="text-sm whitespace-pre-wrap">{delivery.note}</p> : null}
               <DeliveryLink link={delivery.link} className="text-sm" />
               {delivery.file ? <DeliveryFile file={delivery.file} getUrl={() => fileUrl(delivery.id)} /> : null}
@@ -322,31 +442,39 @@ export function ClientProjectView({
                   </form>
                 ) : (
                   <div className="space-y-2">
-                  {roundsUsed ? (
-                    <p className="text-sm text-muted-foreground">
-                      You used your {project.revisionRounds?.allowed === 1 ? "free round" : `${project.revisionRounds?.allowed} free rounds`} of changes.
-                      {project.revisionRounds && project.revisionRounds.paidPriceMinor > 0
-                        ? ` For more, ask the team for a paid revision (${formatMoney(money(currency, project.revisionRounds.paidPriceMinor))}) in a message; it arrives as a change to the quote.`
-                        : ""}
-                    </p>
-                  ) : null}
-                  <div className="flex gap-2">
-                    <Button disabled={deliveryBusy} onClick={() => actions?.acceptDelivery(delivery.id)}>
-                      Accept delivery
-                    </Button>
-                    {roundsUsed ? null : (
+                    {roundsUsed ? (
+                      <p className="text-sm text-muted-foreground">
+                        You used your{" "}
+                        {project.revisionRounds?.allowed === 1
+                          ? "free round"
+                          : `${project.revisionRounds?.allowed} free rounds`}{" "}
+                        of changes.
+                        {project.revisionRounds && project.revisionRounds.paidPriceMinor > 0
+                          ? ` For more, ask the team for a paid revision (${formatMoney(money(currency, project.revisionRounds.paidPriceMinor))}) in a message; it arrives as a change to the quote.`
+                          : ""}
+                      </p>
+                    ) : null}
+                    <div className="flex gap-2">
                       <Button
-                        variant="outline"
+                        variant="mint"
                         disabled={deliveryBusy}
-                        onClick={() => {
-                          actions?.resetDelivery();
-                          setChangesOpen(true);
-                        }}
+                        onClick={() => actions?.acceptDelivery(delivery.id)}
                       >
-                        Request changes
+                        Accept delivery
                       </Button>
-                    )}
-                  </div>
+                      {roundsUsed ? null : (
+                        <Button
+                          variant="outline"
+                          disabled={deliveryBusy}
+                          onClick={() => {
+                            actions?.resetDelivery();
+                            setChangesOpen(true);
+                          }}
+                        >
+                          Request changes
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )
               ) : null}
@@ -355,14 +483,13 @@ export function ClientProjectView({
                   {actions.deliveryError.message.replace(ERROR_CODE_PREFIX, "")}
                 </p>
               ) : null}
-            </div>
+            </Frame>
           ))}
         </section>
       ) : null}
 
       {payments.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Payments</h2>
+        <section id="payments" aria-label="Payments" className="grid scroll-mt-4 gap-3">
           {payments.map((payment) => {
             const label = payment.processing
               ? "See payment status"
@@ -370,11 +497,15 @@ export function ClientProjectView({
                 ? "Try paying again"
                 : "Pay with PayPal";
             return (
-              <div key={payment.id} className="space-y-3 panel p-4">
-                <div className="flex items-center justify-between text-sm">
-                  <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
-                  <span className="text-muted-foreground">{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</span>
-                </div>
+              <Frame
+                key={payment.id}
+                title={PAYMENT_KIND_LABELS[payment.kind]}
+                aside={
+                  <span className="text-muted-foreground">
+                    {paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}
+                  </span>
+                }
+              >
                 <ul className="space-y-1 text-sm">
                   {payment.lines.map((line, index) => (
                     <li key={index} className="flex justify-between gap-4">
@@ -382,57 +513,91 @@ export function ClientProjectView({
                       <span>{formatMoney(money(currency, line.amountMinor))}</span>
                     </li>
                   ))}
-                  <li className="flex justify-between gap-4 font-medium">
+                  <li className="flex justify-between gap-4 border-t pt-2 font-semibold">
                     <span>Total</span>
-                    <span>{formatMoney(money(currency, payment.amountMinor))}</span>
+                    <span className="font-tabular">{formatMoney(money(currency, payment.amountMinor))}</span>
                   </li>
                 </ul>
                 {payment.payPath ? (
-                  <a href={payment.payPath} className={buttonVariants()}>
+                  <a href={payment.payPath} className={buttonVariants({ variant: "mint", size: "lg" })}>
                     {label}
                   </a>
                 ) : payment.payable ? (
-                  <Button disabled>{label}</Button>
+                  <Button variant="mint" size="lg" disabled>
+                    {label}
+                  </Button>
                 ) : null}
-              </div>
+              </Frame>
             );
           })}
         </section>
       ) : null}
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Messages</h2>
-        <div className="panel grid gap-5 p-4">
-          <ConversationThread
-            messages={conversation.messages}
-            isMine={(m) => m.authorKind === "client"}
-            empty="No messages yet. Questions from the team show here and above, next to their quotes."
+      <Frame id="messages" title="Messages">
+        <ConversationThread
+          messages={conversation.messages}
+          isMine={(m) => m.authorKind === "client"}
+          empty="No messages yet. Questions from the team show here and above, next to their quotes."
+        />
+        {conversation.canWrite && actions ? (
+          <Composer
+            audience={
+              project.status === "quoting"
+                ? "The freelancers looking at your request read this (contact details are hidden until you accept a quote)."
+                : "Your freelancer and the team read this."
+            }
+            teamOnlyChoice={project.status === "quoting" ? "Send to the team only" : undefined}
+            busy={actions.messageBusy}
+            error={actions.messageError?.message ?? null}
+            onSend={({ body, teamOnly }) => actions.post({ body, teamOnly })}
           />
-          {conversation.canWrite && actions ? (
-            <Composer
-              audience={
-                project.status === "quoting"
-                  ? "The freelancers looking at your request read this (contact details are hidden until you accept a quote)."
-                  : "Your freelancer and the team read this."
-              }
-              teamOnlyChoice={project.status === "quoting" ? "Send to the team only" : undefined}
-              busy={actions.messageBusy}
-              error={actions.messageError?.message ?? null}
-              onSend={({ body, teamOnly }) => actions.post({ body, teamOnly })}
-            />
-          ) : null}
-        </div>
-      </section>
-
-      {project.status === "completed" ? (
-        <p className="text-sm text-muted-foreground">This project is complete. Thank you.</p>
-      ) : pendingPayments.length === 0 &&
-        !awaitingDelivery &&
-        quotes.every((q) => q.status !== "proposed") &&
-        amendments.every((a) => a.status !== "pending") ? (
-        <p className="text-sm text-muted-foreground">Nothing is waiting for you right now.</p>
-      ) : null}
+        ) : null}
+      </Frame>
       {actions?.actionError ? <p className="text-sm text-destructive">{actions.actionError.message}</p> : null}
+    </div>
+  );
+}
+
+// The top of the client's page: what is waiting for them, with its amount and the one button that does it.
+function NextStepPanel({ step, completed, preview }: { step: NextStep | null; completed: boolean; preview: boolean }) {
+  if (!step) {
+    return (
+      <div className="frame frame-panel">
+        <p className="frame-head text-[13px] font-medium">Your turn</p>
+        <p className="frame frame-body p-4 text-sm text-muted-foreground">
+          {completed
+            ? "This project is complete. Thank you."
+            : "Nothing is waiting for you right now. The team will email you when it is your turn."}
+        </p>
+      </div>
+    );
+  }
+  const jump = () =>
+    step.target ? document.getElementById(step.target)?.scrollIntoView({ block: "start" }) : undefined;
+  return (
+    <div className="frame frame-panel">
+      <p className="frame-head text-[13px] font-medium">Your turn</p>
+      <div className="frame frame-body flex flex-wrap items-center gap-x-6 gap-y-3 p-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-lg font-semibold">{step.title}</p>
+          <p className="text-sm text-muted-foreground">{step.detail}</p>
+        </div>
+        {step.amount ? <p className="font-tabular text-2xl font-semibold tracking-[-0.02em]">{step.amount}</p> : null}
+        {step.href && !preview ? (
+          <a href={step.href} className={buttonVariants({ variant: "mint", size: "xl" })}>
+            {step.action}
+          </a>
+        ) : step.action ? (
+          <Button
+            variant={step.pay ? "mint" : "outline"}
+            size={step.pay ? "xl" : "lg"}
+            onClick={jump}
+            disabled={preview && step.pay}
+          >
+            {step.action}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }
