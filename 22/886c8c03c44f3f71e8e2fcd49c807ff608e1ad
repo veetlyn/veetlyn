@@ -1,0 +1,20 @@
+apps/web/src/components/ask-bar.tsx
+  h_6877e5e7a06bc5 1-67
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 3,9,14,25,27,33-50,53-54,61-71,73-78,82-85,90,92-99,102-109,118-124,126-129,131-133,135-136,140-151,155-177,179-183,205-207,213,220-229,231-233,238-246
+packages/api/src/routers/agent.ts
+  h_6877e5e7a06bc5 3,45-51
+packages/db/src/repositories/teams.ts
+  h_6877e5e7a06bc5 42-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "22886c8c03c44f3f71e8e2fcd49c807ff608e1ad",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
