@@ -1,56 +1,83 @@
-import { PlatformName } from "@/components/platform-name";
+import { cn } from "@jendal-workspace/ui/lib/utils";
 
-// The right half of the sign-in pages: the platform mark repeated as fine contour lines on a dark stage.
-// Decorative only; everything a person needs is in the form beside it.
-const MARK = "M10.5 25.5V7.5h7a5.75 5.75 0 0 1 0 11.5h-7";
-const RINGS = Array.from({ length: 22 }, (_, i) => 0.5 + i * 0.075);
+// The right half of the sign-in pages: one sample project told in three beats, the way the marketing site's stage
+// tells it. A client asks Claude, accepts a quote and pays its deposit, and a member is paid after an approval.
+// The figures add up so the money reads true; the caption says they are examples. Hidden on phones, where the form
+// is the whole page.
+const beat =
+  "animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500 ease-out motion-reduce:animate-none";
 
 export default function AuthVisual({
-  headline = (
-    <>
-      Quote it. Get paid.
-      <br />
-      Pay your team.
-    </>
-  ),
-  subline = (
-    <>
-      <PlatformName /> keeps the money moving between your clients, your team and PayPal.
-    </>
-  ),
+  headline = "A request from Claude becomes a paid project.",
+  subline,
 }: {
   headline?: React.ReactNode;
   subline?: React.ReactNode;
 }) {
   return (
-    <div aria-hidden="true" className="relative hidden overflow-hidden rounded-[18px] bg-stage text-stage-ink lg:block">
-      <svg
-        viewBox="0 0 32 32"
-        preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 size-full [mask-image:radial-gradient(ellipse_at_60%_34%,black_18%,transparent_62%)]"
-      >
-        <g transform="translate(19 11.5)">
-          {RINGS.map((scale, i) => (
-            <path
-              key={scale}
-              d={MARK}
-              transform={`scale(${scale}) translate(-14 -13)`}
-              fill="none"
-              stroke={i === 0 ? "var(--brand)" : "var(--stage-ink)"}
-              strokeOpacity={i === 0 ? 1 : Math.max(0.06, 0.3 - i * 0.012)}
-              strokeWidth={i === 0 ? 1.6 : 1}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-        </g>
-      </svg>
+    <aside
+      aria-label="Example project"
+      className="hidden min-h-0 flex-col justify-center gap-5 overflow-hidden rounded-[24px] bg-stage px-14 py-12 text-stage-ink [--border:var(--stage-line)] [--card:var(--stage-card)] [--tray:var(--stage)] short:gap-4 short:py-8 lg:flex"
+    >
+      <div className="mx-auto flex w-full max-w-[440px] flex-col gap-5 short:gap-4">
+        <div>
+          <h2 className="max-w-[18ch] font-heading text-[31px] leading-[1.1] tracking-[-0.03em] short:text-[27px]">
+            {headline}
+          </h2>
+          {subline ? <p className="mt-3 max-w-sm text-sm text-stage-muted">{subline}</p> : null}
+        </div>
 
-      <div className="absolute inset-x-[10%] bottom-[9%]">
-        <p className="max-w-md font-heading text-[2rem] leading-[1.1]">{headline}</p>
-        <p className="mt-3 max-w-sm text-sm text-stage-muted">{subline}</p>
+        <figure className={cn(beat, "flex flex-col items-end gap-1.5 [animation-delay:120ms]")}>
+          <p className="max-w-[340px] rounded-[16px_16px_4px_16px] bg-band-raise px-4 py-3 text-[16px]">
+            Find someone to design a logo for my bakery, under $900.
+          </p>
+          <figcaption className="text-xs text-stage-muted">The client, asking Claude</figcaption>
+        </figure>
+
+        <div className={cn(beat, "frame frame-panel [animation-delay:320ms]")}>
+          <div className="frame-head text-[14px]">
+            <span className="font-medium">Walk Crew</span>
+            <span className="ml-auto text-stage-muted">Quote</span>
+          </div>
+          <div className="frame frame-body px-4 py-3.5">
+            <p className="font-semibold">Logo and brand kit</p>
+            <p className="text-[14px] text-stage-muted">10 days, 2 free revisions</p>
+            <dl className="mt-2 font-tabular text-sm">
+              <Row label="Total" value="$640.00" />
+              <Row label="Deposit now, 60%" value="$384.00" strong />
+            </dl>
+            <span className="key-mint mt-3 inline-flex h-9 items-center px-4 text-sm font-semibold">
+              Accept and pay deposit
+            </span>
+          </div>
+        </div>
+
+        <div className={cn(beat, "frame frame-panel [animation-delay:520ms]")}>
+          <div className="frame-head text-[14px]">
+            <span className="font-medium">Payout to Amadou</span>
+            <span className="ml-auto font-medium text-brand">Paid</span>
+          </div>
+          <div className="frame frame-body px-4 py-3">
+            <dl className="font-tabular text-sm">
+              <Row label="Project total" value="$640.00" />
+              <Row label="Team keeps 15%" value="−$96.00" />
+              <Row label="Sent to Amadou" value="$544.00" strong />
+            </dl>
+            <p className="mt-1.5 text-[14px] text-stage-muted">Approved by Ada, sent by PayPal.</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-stage-muted">Sample project. Names and amounts are examples.</p>
       </div>
+    </aside>
+  );
+}
+
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-1 shadow-[inset_0_-1px_0_var(--stage-line)] last:shadow-none">
+      <dt className={strong ? "text-stage-ink" : "text-stage-muted"}>{label}</dt>
+      <dd className={strong ? "font-semibold" : undefined}>{value}</dd>
     </div>
   );
 }

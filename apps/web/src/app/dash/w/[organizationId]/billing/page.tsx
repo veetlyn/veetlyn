@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -17,10 +16,10 @@ export default async function WorkspaceBillingPage({ params }: { params: Promise
   return (
     <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <Link href={`/w/${organizationId}`} className="text-sm text-muted-foreground hover:text-foreground">
-          {organization.name}
-        </Link>
         <h1 className="font-heading text-3xl">Billing</h1>
+        <p className="text-sm text-muted-foreground">
+          {organization.name} pays for its plan through Polar. Clients' payments go to your PayPal and never through it.
+        </p>
       </div>
       <Suspense fallback={<Loader />}>
         <BillingPanel organizationId={organizationId} />

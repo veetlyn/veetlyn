@@ -1,5 +1,6 @@
 import type { ContextNode } from "@jendal-workspace/core/context/node";
 import { findOwnAgentCall, listAgentCallEntries, listOwnAgentCalls } from "@jendal-workspace/db/repositories/calls";
+import { findTeamIdBySlug } from "@jendal-workspace/db/repositories/teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -39,6 +40,13 @@ export const agentRouter = router({
   node: protectedProcedure.input(z.object({ node: contextNodeInput })).query(async ({ ctx, input }) => {
     const scope = await resolved(ctx, input.node);
     return { available: ctx.calls !== undefined, scope };
+  }),
+
+  // A seller's node from its slug, as the dash frame addresses it: its sections for the person's plan and role.
+  seller: protectedProcedure.input(z.object({ slug: z.string().min(1).max(63) })).query(async ({ ctx, input }) => {
+    const teamId = await findTeamIdBySlug(ctx.db, input.slug);
+    if (!teamId) throw new TRPCError({ code: "NOT_FOUND", message: NOT_HERE });
+    return { available: ctx.calls !== undefined, scope: await resolved(ctx, { kind: "seller", teamId }) };
   }),
 
   calls: protectedProcedure.input(z.object({ node: contextNodeInput })).query(async ({ ctx, input }) => {

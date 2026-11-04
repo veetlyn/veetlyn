@@ -311,12 +311,7 @@ export default function ProjectDetail({
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-x-8 gap-y-6 px-4 py-6 md:px-7 md:py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <div className="space-y-2 lg:col-span-2">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-          <h1 className="font-heading text-3xl">{project.title}</h1>
-          <Link href={`/${teamSlug}/calls?project=${projectId}`} className="text-sm underline underline-offset-4">
-            Ask about this
-          </Link>
-        </div>
+        <h1 className="font-heading text-3xl">{project.title}</h1>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge tone={TEAM_PROJECT_TONES[project.status]}>
             {projectStatusLabel(project.status)}
@@ -324,10 +319,13 @@ export default function ProjectDetail({
           {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
+        <div className="max-w-3xl pt-2">
+          <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
+        </div>
         {dispute ? <DisputeCard dispute={dispute} currency={currency} paypalEnvironment={paypalEnvironment} /> : null}
         <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {project.source === "web" ? (
-          <section className="space-y-3 pt-3">
+          <section id="request" className="scroll-mt-4 space-y-3 pt-3">
             <h2 className="text-lg font-semibold">Request</h2>
             {primary ? (
             <p className="text-sm">
@@ -357,7 +355,7 @@ export default function ProjectDetail({
       ) : null}
 
       {!solo && canAssignFreelancer(role) && project.status === "quoting" ? (
-        <section className="space-y-3">
+        <section id="assignment" className="scroll-mt-4 space-y-3">
           <h2 className="text-lg font-semibold">Assignment</h2>
           <form onSubmit={handleAssign} className="flex items-end gap-2">
             <div className="space-y-2">
@@ -384,7 +382,7 @@ export default function ProjectDetail({
         </section>
       ) : null}
 
-      <section className="space-y-3">
+      <section id="quotes" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Quotes</h2>
         {quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotes yet.</p> : null}
         {quotes.map((quote) => (
@@ -449,7 +447,7 @@ export default function ProjectDetail({
         ) : null}
       </section>
 
-      <section className="space-y-3">
+      <section id="amendments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Amendments</h2>
         {revisionRounds && revisionRounds.used >= revisionRounds.allowed && revisionRounds.paidPriceMinor > 0 && project.status === "delivered" && !pendingAmendment ? (
           <div className="space-y-2">
@@ -520,7 +518,7 @@ export default function ProjectDetail({
         ) : null}
       </section>
 
-      <section className="space-y-3">
+      <section id="deliveries" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Deliveries</h2>
         {deliveries.length === 0 ? <p className="text-sm text-muted-foreground">No deliveries yet.</p> : null}
         {newestFirst(deliveries).map((delivery) => (
@@ -620,13 +618,12 @@ export default function ProjectDetail({
       </div>
 
       <aside className="grid min-w-0 gap-8">
-      <ProjectProgress status={project.status} paidUpfront={project.upfrontBps === 10_000} />
-      <section className="space-y-3">
+      <section id="payments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
         {payments.map((payment) => (
-          <div key={payment.id} className="panel p-4 text-sm">
-            <div className="flex items-center justify-between gap-4">
+          <div key={payment.id} className="frame frame-panel text-sm">
+            <div className="frame-head justify-between gap-4 text-[14px]">
               <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (
@@ -635,17 +632,17 @@ export default function ProjectDetail({
                 <Badge tone={payment.status === "captured" ? "good" : payment.status === "failed" ? "fail" : "neutral"}>{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</Badge>
               </div>
             </div>
-            <ul className="mt-2 space-y-1">
-              {payment.lines.map((line, index) => (
-                <li key={index} className="flex justify-between gap-4">
-                  <span>{line.label}</span>
-                  <span>{formatMoney(money(currency, line.amountMinor))}</span>
-                </li>
-              ))}
-            </ul>
-            {payment.status === "pending" ? (
-              <p className="mt-2 text-muted-foreground">Waiting for the client to pay.</p>
-            ) : null}
+            <div className="frame frame-body px-3.5 py-3">
+              <ul className="space-y-1">
+                {payment.lines.map((line, index) => (
+                  <li key={index} className="flex justify-between gap-4">
+                    <span>{line.label}</span>
+                    <span className="font-tabular">{formatMoney(money(currency, line.amountMinor))}</span>
+                  </li>
+                ))}
+              </ul>
+              {payment.status === "pending" ? <p className="mt-2 text-muted-foreground">Waiting for the client to pay.</p> : null}
+            </div>
           </div>
         ))}
       </section>

@@ -4,7 +4,6 @@ import "../index.css";
 import Providers from "@/components/providers";
 import PwaRegistration from "@/components/pwa-registration";
 import { PlatformNameProvider } from "@/components/platform-name";
-import SandboxBanner from "@/components/sandbox-banner";
 import { platformDomain, platformName, storeDomain } from "@/lib/platform";
 
 // The platform's type: Cal Sans UI for headings (self-hosted in public/fonts), Inter for text and numbers, Geist Mono for references.
@@ -39,7 +38,6 @@ export default function RootLayout({
       </head>
       <body className="flex min-h-svh flex-col antialiased has-[[data-app-shell]]:h-svh has-[[data-app-shell]]:overflow-hidden">
         <PwaRegistration />
-        <SandboxBanner />
         <PlatformNameProvider name={platformName()} domain={platformDomain()} storeDomain={storeDomain()}>
           <Providers>{children}</Providers>
         </PlatformNameProvider>

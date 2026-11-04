@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@jendal-workspace/ui/lib/utils";
+import type { ContextNode, SectionPage } from "@jendal-workspace/core/context/node";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
@@ -9,7 +9,7 @@ import {
   HandCoins,
   Inbox,
   LayoutGrid,
-  MessagesSquare,
+  type LucideIcon,
   Package,
   Settings,
   ShieldAlert,
@@ -20,206 +20,190 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import AppFrame, { navItemClass } from "@/components/app-frame";
+import AskBar from "@/components/ask-bar";
+import RecentCalls from "@/components/recent-calls";
 import BillingNotice from "@/components/billing-notice";
-import { BrandMark, BrandWordmark } from "@/components/brand-mark";
-import { ModeToggle } from "@/components/mode-toggle";
-import UserMenu from "@/components/user-menu";
-import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
+import ProjectNav from "@/components/project-nav";
+import { usePlatformName } from "@/components/platform-name";
+import { sellerOptions, useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
 import { trpc } from "@/utils/trpc";
 
-type NavItem = { href: string; label: string; icon: typeof Inbox; show?: boolean };
-type NavGroup = { label: string; items: NavItem[] };
+const PAGES = {
+  requests: { label: "Open requests", icon: HandCoins },
+  projects: { label: "Projects", icon: FolderKanban },
+  payments: { label: "Payments", icon: ArrowDownToLine },
+  payouts: { label: "Payouts", icon: ArrowUpFromLine },
+  cases: { label: "PayPal cases", icon: ShieldAlert },
+  services: { label: "Services", icon: Tag },
+  products: { label: "Products", icon: Package },
+  orders: { label: "Orders", icon: Inbox },
+  preview: { label: "Seller page", icon: Store },
+  members: { label: "Members", icon: Users },
+  settings: { label: "Settings", icon: Settings },
+} satisfies Record<SectionPage, { label: string; icon: LucideIcon }>;
+
+const SECTION_LABELS = {
+  requests: "Requests",
+  projects: "Projects",
+  money: "Money",
+  storefront: "Storefront",
+  team: "Team",
+  settings: "",
+};
+
+// Store pages that work for a store today; the others still read services-team data.
+const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
 
 const SEGMENT_LABELS = new Map<string, string>([
-  ["projects", "Projects"],
-  ["requests", "Open requests"],
-  ["services", "Services"],
-  ["products", "Products"],
-  ["orders", "Orders"],
-  ["settings", "Settings"],
-  ["members", "Members"],
-  ["payouts", "Payouts"],
-  ["payments", "Payments"],
-  ["calls", "Calls"],
-  ["cases", "PayPal cases"],
+  ...Object.entries(PAGES).map(([page, { label }]): [string, string] => [page, label]),
   ["rules", "Rules"],
   ["operating-model", "Operating model"],
   ["channels", "Channels"],
-  ["preview", "Seller page"],
   ["new", "New"],
 ]);
 
-// The frame around every team page: the sections on the left, where you are and your account on top.
+// The frame around every seller page (calls design §6): the seller's sections on the tray, the page on a framed canvas,
+// and the assistant at the foot of every page. What the sidebar lists comes from the seller's node: its product, the
+// workspace's plan and the person's role.
 export default function TeamShell({
   slug,
-  kind,
   children,
 }: {
   slug: string;
-  kind: "services" | "store";
+  kind?: "services" | "store";
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const team = useQuery({
-    ...trpc.servicesTeam.get.queryOptions({ teamSlug: slug }),
-    enabled: kind === "services",
-    retry: false,
-    meta: { silent: true },
-  });
-  const rules = useQuery({
-    ...trpc.rules.state.queryOptions({ teamSlug: slug }),
-    enabled: kind === "services" && team.isSuccess,
+  const platform = usePlatformName();
+  const seller = useQuery({ ...trpc.agent.seller.queryOptions({ slug }), retry: false, meta: { silent: true } });
+  const scope = seller.data?.scope;
+  const services = scope?.seller?.role.product === "services";
+  const teamId = scope?.seller?.id ?? "";
+  const calls = useQuery({
+    ...trpc.agent.calls.queryOptions({ node: { kind: "seller", teamId } }),
+    enabled: teamId !== "" && seller.data?.available === true,
     retry: false,
     meta: { silent: true },
   });
 
-  const data = team.data;
-  const solo = data?.settings?.solo ?? false;
-  const storeEnabled = kind === "store" || (data?.settings?.storeEnabled ?? false);
-  const admin = kind === "store" || data?.role === "admin";
-  const name = data?.team.name ?? slug.replace(/-/g, " ");
-  const initials = name.split(/\s+/).map((word) => word[0] ?? "").join("").slice(0, 2) || "?";
-  const roleLabel = kind === "store" ? "Store" : data ? (SERVICES_TEAM_ROLE_LABELS[data.role] ?? data.role) : "";
-
-  // The context tree's sections (context graph inventory §1): work, money, what the seller offers, and the team.
-  const services = kind === "services";
-  const groups: NavGroup[] = [
-    {
-      label: "Work",
-      items: [
-        { href: `/${slug}`, label: "Overview", icon: LayoutGrid },
-        { href: `/${slug}/calls`, label: "Calls", icon: MessagesSquare, show: services },
-        { href: `/${slug}/requests`, label: "Open requests", icon: HandCoins, show: services && !solo },
-        { href: `/${slug}/projects`, label: "Projects", icon: FolderKanban, show: services },
-      ],
-    },
-    {
-      label: "Money",
-      items: [
-        { href: `/${slug}/payments`, label: "Payments", icon: ArrowDownToLine, show: services && admin },
-        { href: `/${slug}/payouts`, label: "Payouts", icon: ArrowUpFromLine, show: services && !solo },
-        { href: `/${slug}/cases`, label: "PayPal cases", icon: ShieldAlert, show: services && admin },
-      ],
-    },
-    {
-      label: "Storefront",
-      items: [
-        { href: `/${slug}/services`, label: "Services", icon: Tag, show: services },
-        { href: `/${slug}/products`, label: "Products", icon: Package, show: storeEnabled },
-        { href: `/${slug}/orders`, label: "Orders", icon: Inbox, show: services && storeEnabled && admin },
-        { href: `/${slug}/preview`, label: "Seller page", icon: Store, show: services && admin },
-      ],
-    },
-    { label: "Team", items: [{ href: `/${slug}/members`, label: "Members", icon: Users, show: services && !solo }] },
-    { label: "", items: [{ href: `/${slug}/settings`, label: "Settings", icon: Settings, show: services }] },
-  ];
-  const shown = groups
-    .map((group) => ({ ...group, items: group.items.filter((item) => item.show !== false) }))
-    .filter((group) => group.items.length > 0);
+  const name = scope?.seller?.name ?? slug.replace(/-/g, " ");
+  const workspaces = useMyWorkspaces();
+  const organization = workspaces.find((w) => [...w.servicesTeams, ...w.stores].some((s) => s.slug === slug));
+  const sections = (scope?.seller?.sections ?? [])
+    .map((s) => ({ ...s, pages: services ? s.pages : s.pages.filter((p) => STORE_PAGES.has(p)) }))
+    .filter((s) => s.pages.length > 0);
+  // A section with one page needs no heading over it: its page joins the top group. Settings stays at the foot.
+  const single = sections.filter((s) => s.pages.length === 1 && s.section !== "settings").flatMap((s) => s.pages);
+  const grouped = sections.filter((s) => s.pages.length > 1 || s.section === "settings");
 
   const segments = pathname.split("/").filter(Boolean).slice(1);
-  const crumbs = [{ href: `/${slug}`, label: name }].concat(
-    segments.map((segment, i) => ({
-      href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
-      label: SEGMENT_LABELS.get(segment) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
-    })),
-  );
+  const projectId = segments[0] === "projects" && segments[1] && segments[1] !== "new" ? segments[1] : null;
+  // Where the assistant starts from on this page: the project open here, or the whole seller.
+  const node: ContextNode | null = !teamId
+    ? null
+    : projectId && services
+      ? { kind: "record", teamId, record: { type: "project", id: projectId } }
+      : { kind: "seller", teamId };
 
+  // Workspace › seller › section › record. The workspace and seller crumbs switch; the sidebar lists the sections.
+  const crumbs = [
+    ...(organization
+      ? [{ href: `/w/${organization.id}`, label: organization.name, options: workspaceOptions(workspaces), menuLabel: "Workspaces" }]
+      : []),
+    {
+      href: `/${slug}`,
+      label: name,
+      options: organization ? sellerOptions(organization) : undefined,
+      menuLabel: organization ? `Sellers in ${organization.name}` : undefined,
+    },
+    ...segments.map((segment, i) => ({
+      href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
+      label: (segment === "calls" ? "Chats" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
+    })),
+  ];
   const isActive = (href: string) =>
     href === `/${slug}` ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const link = (href: string, label: string, Icon: React.ComponentType<{ className?: string }>) => (
+    <Link
+      key={href}
+      href={href}
+      aria-current={isActive(href) ? "page" : undefined}
+      className={navItemClass(isActive(href))}
+    >
+      <Icon className="size-4" aria-hidden="true" />
+      {label}
+    </Link>
+  );
+  const recent = (calls.data?.calls ?? []).slice(0, 5);
 
-  const navList = (items: NavItem[]) =>
-    items.map(({ href, label, icon: Icon }) => (
+  const pageLinks = [
+    { href: `/${slug}`, label: "Overview" },
+    ...sections.flatMap((s) => s.pages.map((p) => ({ href: `/${slug}/${p}`, label: PAGES[p].label }))),
+  ];
+
+  return (
+    <AppFrame
+      fill={pathname.startsWith(`/${slug}/calls`)}
+      crumbs={crumbs}
+      chatsPath={services ? `/${slug}/calls` : undefined}
+      searchItems={[
+        ...pageLinks.map((l) => ({ ...l, detail: name })),
+        ...recent.map((c) => ({ href: `/${slug}/calls?call=${c.id}`, label: c.title, detail: "Chat" })),
+        ...workspaces.flatMap((w) => sellerOptions(w).map((o) => ({ ...o, detail: `${o.detail} in ${w.name}` }))),
+      ]}
+      sidebar={
+        <>
+          {projectId && services && teamId ? (
+            <ProjectNav slug={slug} projectId={projectId} teamId={teamId} />
+          ) : (
+            <>
+              <nav aria-label="Seller" className="grid gap-0.5">
+                {link(`/${slug}`, "Overview", LayoutGrid)}
+                {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
+              </nav>
+              {grouped.map(({ section, pages }) => (
+                <div key={section} className="pt-3">
+                  {SECTION_LABELS[section] ? (
+                    <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{SECTION_LABELS[section]}</p>
+                  ) : null}
+                  <nav aria-label={SECTION_LABELS[section] || "Settings"} className="grid gap-0.5">
+                    {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
+                  </nav>
+                </div>
+              ))}
+              <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Chats" />
+            </>
+          )}
+        </>
+      }
+      mobileNav={pageLinks.map(({ href, label }) => (
         <Link
           key={href}
           href={href}
           aria-current={isActive(href) ? "page" : undefined}
-          className={cn(
-            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-            "aria-[current=page]:bg-card aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_0_0_1px_var(--input)]",
-          )}
+          className="shrink-0 rounded-[9px] px-3 py-1.5 text-sm font-medium text-muted-foreground aria-[current=page]:raised aria-[current=page]:text-foreground"
         >
-          <Icon className="size-4" aria-hidden="true" />
           {label}
         </Link>
-      ));
+      ))}
+      banner={
+        <>
+          <BillingNotice slug={slug} />
 
-  return (
-    // The window stays still: the sidebar and the top bar hold their place and only the page content scrolls.
-    <div data-app-shell className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[248px_minmax(0,1fr)]">
-      <aside className="hidden min-h-0 flex-col gap-1 overflow-y-auto border-r bg-sidebar px-3 py-4 md:flex">
-        <Link href="/" className="mb-3 flex items-center gap-2 px-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <BrandWordmark className="font-heading text-base text-foreground" />
-          <span className="sr-only">All workspaces</span>
-        </Link>
-        <div className="mb-3 flex items-center gap-2.5 rounded-xl px-2 py-2 raised">
-          <span className="grid size-8 place-items-center rounded-lg main-surface text-xs font-semibold uppercase">
-            {initials}
-          </span>
-          <span className="grid min-w-0">
-            <b className="truncate text-sm font-semibold capitalize">{name}</b>
-            <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
-          </span>
-        </div>
-        {shown.map((group, i) => (
-          <div key={group.label || "footer"} className={i > 0 ? "pt-3" : undefined}>
-            {group.label && i > 0 ? <p className="px-2.5 pb-1.5 text-xs font-medium text-muted-foreground">{group.label}</p> : null}
-            <nav aria-label={group.label || "Settings"} className="grid gap-0.5">
-              {navList(group.items)}
-            </nav>
-          </div>
-        ))}
-      </aside>
-      <div className="flex min-h-0 min-w-0 flex-col">
-        <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-7">
-          <Link href="/" className="md:hidden">
-            <BrandMark className="size-6 text-foreground" />
-            <span className="sr-only">All workspaces</span>
-          </Link>
-          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-            {crumbs.map((crumb, i) => (
-              <span key={crumb.href} className={cn("min-w-0 items-center gap-1.5", i === crumbs.length - 1 ? "flex" : "hidden md:flex")}>
-                {i > 0 ? <span className="hidden text-border md:inline">/</span> : null}
-                {i === crumbs.length - 1 ? (
-                  <span className="truncate font-medium text-foreground capitalize">{crumb.label}</span>
-                ) : (
-                  <Link href={crumb.href} className="truncate capitalize hover:text-foreground">
-                    {crumb.label}
-                  </Link>
-                )}
-              </span>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <ModeToggle />
-            <UserMenu />
-          </div>
-        </div>
-        <nav aria-label="Sections" className="flex shrink-0 gap-1 overflow-x-auto [scrollbar-width:none] border-b px-3 py-2 md:hidden">
-          {shown
-            .flatMap((group) => group.items)
-            .map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={isActive(href) ? "page" : undefined}
-                className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-[current=page]:bg-card aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_0_0_1px_var(--input)]"
-              >
-                {label}
-              </Link>
-            ))}
-        </nav>
-        <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
-        <BillingNotice slug={slug} />
-        {rules.data?.memberAccepted === false && pathname !== `/${slug}/settings/operating-model` ? (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7" role="status">
-            <p className="text-sm">Accept version {rules.data.published.version} of the member agreement before taking new work.</p>
-            <Link href={`/${slug}/settings/operating-model#published-rules`} className="text-sm font-semibold underline underline-offset-4">Review team rules</Link>
-          </div>
-        ) : null}
-        {children}
-        </div>
-      </div>
-    </div>
+        </>
+      }
+      ask={
+        node && seller.data?.available && services && pathname !== `/${slug}` && !pathname.startsWith(`/${slug}/calls`) ? (
+          <AskBar
+            callsPath={`/${slug}/calls`}
+            node={node}
+            placeholder={projectId ? `Ask ${platform} about this project` : `Ask ${platform} about ${name}`}
+          />
+        ) : null
+      }
+    >
+      {children}
+    </AppFrame>
   );
 }

@@ -72,7 +72,7 @@ export function ClientsSection({
   }
 
   return (
-    <section className="space-y-3">
+    <section id="clients" className="scroll-mt-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Clients</h2>
         {manages ? (

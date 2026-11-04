@@ -46,7 +46,7 @@
   --info: oklch(42% 0.07 250);
   --info-wash: oklch(95% 0.02 250);
   --scrim: rgb(10 10 16 / 0.45);
-  --tray: #ececee;
+  --tray: #f1f1f3;
   --stage: #121215;
   --stage-ink: #f1f1f3;
   --stage-muted: #9a9aa3;
@@ -106,7 +106,7 @@
   --info: oklch(86% 0.05 250);
   --info-wash: oklch(30% 0.04 250);
   --scrim: rgb(0 0 0 / 0.6);
-  --tray: #151517;
+  --tray: #111113;
   --stage: #1a1a1e;
   --stage-card: #25252a;
   --band: #1f1f23;
@@ -225,6 +225,48 @@
   color: var(--primary-foreground);
   background: var(--main-bottom);
   box-shadow: 0 0 0 1px var(--main-edge);
+}
+/* Frames (after Quartz): the edge is drawn inside the box on a pseudo-element, so a frame nested 4px inside another
+   lines up with radius minus 4px. A frame panel is a tinted holder with a head row; its body sits inset on the card
+   colour. Surfaces stay flat: only keys carry light. */
+@property --frame-radius { syntax: "*"; inherits: false; }
+@utility frame {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  border-radius: var(--frame-radius, 10px);
+  &::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    border: 1px solid var(--frame-color, var(--border)); border-radius: inherit;
+  }
+}
+@utility frame-panel {
+  background: color-mix(in oklch, var(--tray) 70%, var(--card));
+}
+@utility frame-head {
+  display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 36px; padding-inline: 14px;
+}
+@utility frame-body {
+  margin: 0 4px 4px; background: var(--card); --frame-radius: 6px;
+}
+/* The mint key: the site's asymmetric pill, lit from above like Quartz's primary key (body gradient, inner edges,
+   a 1px sheen on top), pressing in on click. */
+@utility key-mint {
+  position: relative;
+  isolation: isolate;
+  color: var(--brand-foreground);
+  border-radius: 4px 999px 999px 4px;
+  background: linear-gradient(180deg, color-mix(in oklch, var(--brand) 86%, white), color-mix(in oklch, var(--brand) 92%, black));
+  box-shadow: inset 0 2px 0 -1px rgb(255 255 255 / 0.35), inset 0 -2px 0 -1px rgb(0 0 0 / 0.16),
+    inset 0 0 0 1px color-mix(in oklch, var(--brand) 78%, black), 0 1px 1px rgb(16 16 24 / 0.12), 0 2px 5px -2px rgb(16 16 24 / 0.2);
+  &::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+    background: linear-gradient(90deg, transparent 14%, rgb(255 255 255 / 0.5) 50%, transparent 86%) top / 100% 1px no-repeat,
+      linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0) 55%);
+  }
+  @media (hover: hover) { &:hover { background: linear-gradient(180deg, color-mix(in oklch, var(--brand) 80%, white), color-mix(in oklch, var(--brand) 96%, white)); } }
+  &:active { box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--brand) 78%, black), inset 0 1px 2px rgb(0 0 0 / 0.28); }
+  @media (forced-colors: active) { &::after { display: none; } }
 }
 /* Headings: Cal Sans UI at semibold with its geometric shapes, slightly tight. Never bold or black. */
 @utility font-heading {

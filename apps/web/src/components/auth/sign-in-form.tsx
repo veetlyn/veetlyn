@@ -56,7 +56,7 @@ export default function SignInForm({ siteOrigin }: { siteOrigin: string }) {
         </p>
       ) : null}
       <TermsNotice siteOrigin={siteOrigin} />
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" variant="mint" size="xl" className="w-full" disabled={pending}>
         {pending ? "Logging in…" : "Log in"}
       </Button>
     </form>

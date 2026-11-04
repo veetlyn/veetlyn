@@ -1,9 +1,12 @@
 "use client";
 
-import { servicesTeamSetupSteps } from "@jendal-workspace/core";
-import { Button } from "@jendal-workspace/ui/components/button";
+import { formatMoney, type MoneyCurrency, money, servicesTeamSetupSteps } from "@jendal-workspace/core";
+import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
+import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+
+import { AgentIcon } from "@/components/agent-icon";
 
 import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import Loader from "@/components/loader";
@@ -13,11 +16,72 @@ import TeamNotFound from "@/components/services-team/team-not-found";
 import SetupChecklist from "@/components/setup-checklist";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
+import AskBar from "@/components/ask-bar";
+import { usePlatformName } from "@/components/platform-name";
+import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
 
-export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug: string; urlParts: StoreUrlParts }) {
+const HOUR_MS = 3_600_000;
+const quiet = { retry: false, meta: { silent: true } } as const;
+
+type Need = {
+  key: string;
+  title: string;
+  detail: string;
+  amount?: string;
+  href: string;
+  action: string;
+  primary?: boolean;
+};
+
+// Sums per currency, so two currencies are never added together.
+function totals(rows: { currency: MoneyCurrency; amountMinor: number }[]): string {
+  const byCurrency = new Map<MoneyCurrency, number>();
+  for (const row of rows) byCurrency.set(row.currency, (byCurrency.get(row.currency) ?? 0) + row.amountMinor);
+  if (byCurrency.size === 0) return formatMoney(money("USD", 0));
+  return [...byCurrency].map(([currency, minor]) => formatMoney(money(currency, minor))).join(" + ");
+}
+
+function answerBy(respondBy: string | null, now: number): string {
+  if (!respondBy) return "No answer deadline";
+  const hours = Math.ceil((Date.parse(respondBy) - now) / HOUR_MS);
+  if (hours <= 0) return "Expiring now";
+  return hours === 1 ? "Answer within 1 hour" : `Answer within ${hours} hours`;
+}
+
+// The seller's home (calls design §6): the assistant's account of what needs the person, built only from the team's records,
+// the money that moved, and beside it the setup, the seller page, PayPal and the store.
+export default function ServicesTeamDashboard({
+  teamSlug,
+  urlParts,
+  embedded = false,
+}: {
+  teamSlug: string;
+  urlParts: StoreUrlParts;
+  // Beside a call the home shows without its own composer: the conversation is the composer.
+  embedded?: boolean;
+}) {
   const queryClient = useQueryClient();
-  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const platform = usePlatformName();
+  const { data: session } = authClient.useSession();
+  const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), ...quiet });
+  const role = result.data?.role;
+  const admin = role === "admin";
+  const solo = result.data?.settings?.solo ?? false;
+  const projects = useQuery({ ...trpc.project.list.queryOptions({ teamSlug }), enabled: result.isSuccess, ...quiet });
+  const requests = useQuery({
+    ...trpc.project.openRequests.queryOptions({ teamSlug }),
+    enabled: result.isSuccess && !solo,
+    ...quiet,
+  });
+  const payouts = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), enabled: admin && !solo, ...quiet });
+  const payments = useQuery({ ...trpc.money.payments.queryOptions({ teamSlug }), enabled: admin, ...quiet });
+  // Members who take work accept the published member agreement first; an admin accepts it by publishing.
+  const rules = useQuery({
+    ...trpc.rules.state.queryOptions({ teamSlug }),
+    enabled: result.isSuccess && !admin,
+    ...quiet,
+  });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
       onSuccess: () =>
@@ -32,8 +96,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings, offeringCount, productCount, payoutCredentialsSaved } = result.data;
-  const solo = settings?.solo ?? false;
+  const { team, settings, offeringCount, productCount, payoutCredentialsSaved } = result.data;
   const steps = servicesTeamSetupSteps(
     {
       status: team.status,
@@ -54,64 +117,238 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
       payoutCredentials: `/${team.slug}/payouts`,
     },
   );
-
   const url = storeUrl(team.slug, urlParts);
-
-  const sections = [
-    { href: `/${team.slug}/projects`, title: "Projects", text: "Quotes, deliveries and payments for each client.", show: true },
-    { href: `/${team.slug}/services`, title: "Services", text: "What you sell, with a usual price and time.", show: true },
-    { href: `/${team.slug}/payouts`, title: "Payouts", text: "Members ask; your payout rules decide who approves.", show: !solo },
-    { href: `/${team.slug}/members`, title: "Members", text: "Who is on the team, and their role.", show: !solo },
-    { href: `/${team.slug}/payouts/rules`, title: "Payout rules", text: "Who approves payouts, how much and when they go out.", show: !solo && role === "admin" },
-  ].filter((section) => section.show);
   const setupDone = steps.every((step) => step.done);
 
+  const now = Date.now();
+  const toApprove = (payouts.data?.payouts ?? []).filter(
+    (p) => p.status === "requested" && p.approvalsNeeded > 0 && p.eligibleApprovers > 0,
+  );
+  const toAnswer = requests.data ?? [];
+  const toDeliver = (projects.data ?? []).filter((p) => p.status === "in_progress");
+  const onClients = (projects.data ?? []).filter(
+    (p) => p.status === "awaiting_deposit" || p.status === "delivered" || p.status === "awaiting_balance",
+  );
+  const needs: Need[] = [
+    ...(rules.data?.memberAccepted === false
+      ? [
+          {
+            key: "agreement",
+            title: `Accept version ${rules.data.published.version} of the member agreement`,
+            detail: "You take new work once you have accepted it.",
+            href: `/${teamSlug}/settings/operating-model#published-rules`,
+            action: "Review",
+            primary: true,
+          },
+        ]
+      : []),
+    ...(toApprove.length > 0
+      ? [
+          {
+            key: "payouts",
+            title:
+              toApprove.length === 1
+                ? `Approve ${toApprove[0]?.memberName}'s payout`
+                : `Approve ${toApprove.length} payouts`,
+            detail:
+              toApprove.length === 1
+                ? (toApprove[0]?.projectTitle ?? "Balance payout")
+                : toApprove.map((p) => p.memberName).join(", "),
+            amount: totals(toApprove),
+            href: `/${team.slug}/payouts`,
+            action: "Review",
+            primary: true,
+          },
+        ]
+      : []),
+    ...toAnswer.slice(0, 3).map((r) => ({
+      key: `request-${r.id}`,
+      title: `Answer “${r.title}”`,
+      detail: answerBy(r.respondBy, now),
+      href: `/${team.slug}/projects/${r.id}`,
+      action: "Open",
+    })),
+    ...toDeliver.slice(0, 3).map((p) => ({
+      key: `deliver-${p.id}`,
+      title: `Deliver “${p.title}”`,
+      detail: p.clientName ? `In progress for ${p.clientName}` : "In progress",
+      href: `/${team.slug}/projects/${p.id}`,
+      action: "Open",
+    })),
+  ];
+  const loading = projects.isPending || (requests.isPending && !solo) || (payouts.isPending && admin && !solo);
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+  const paidThisMonth = (payments.data ?? []).filter(
+    (p) => p.status === "captured" && p.capturedAt && Date.parse(p.capturedAt) >= monthStart,
+  );
+  const headline = loading
+    ? "Looking at what needs you…"
+    : needs.length === 0
+      ? "Nothing needs you right now."
+      : needs.length === 1
+        ? "One thing needs you."
+        : `${needs.length} things need you.`;
+
+  const firstName = session?.user.name.split(/\s+/)[0] ?? "";
+  const hero = embedded ? null : (
+    <section
+      aria-label={`Ask ${platform}`}
+      className="mx-auto grid w-full max-w-2xl gap-5 px-4 pt-14 pb-10 text-center md:pt-20"
+    >
+      <h1 className="font-heading text-[33px] leading-[1.1] tracking-[-0.03em] md:text-[39px]">
+        What should {team.name} get done{firstName ? `, ${firstName}` : ""}?
+      </h1>
+      <AskBar
+        callsPath={`/${team.slug}/calls`}
+        node={{ kind: "seller", teamId: team.id }}
+        placeholder={`Ask ${platform} to draft a quote, chase a client or check payouts`}
+        hero={{ scope: team.name }}
+      />
+      <p className="text-sm text-muted-foreground">
+        {loading
+          ? "Looking at what needs you…"
+          : needs.length === 0
+            ? "Nothing needs you right now."
+            : `${headline.replace(/\.$/, "")}, below.`}
+      </p>
+    </section>
+  );
+
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 md:px-7 md:py-8">
-      <header className="grid gap-1.5">
-        <h1 className="font-heading text-3xl">{team.name}</h1>
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span>{SERVICES_TEAM_ROLE_LABELS[role] ?? role}</span>
-          <span aria-hidden="true">·</span>
-          <span>{solo ? "Selling as just me" : "Selling as a team"}</span>
-          <span aria-hidden="true">·</span>
-          <a href={url} target="_blank" rel="noreferrer" className="underline decoration-border underline-offset-4 hover:text-foreground">
-            {url.replace(/^https?:\/\//, "")}
-          </a>
-        </p>
-      </header>
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="grid gap-6">
-          {!setupDone ? <SetupChecklist steps={steps} title={solo ? "Set up your seller page" : "Set up your team"} /> : null}
-          <section aria-label="Sections" className="grid gap-3 sm:grid-cols-2">
-            {sections.map((section) => (
-              <Link
-                key={section.href}
-                href={section.href}
-                className="group panel grid content-start gap-1 p-4 transition-shadow hover:shadow-[0_0_0_1px_var(--input)]"
-              >
-                <span className="flex items-center justify-between font-semibold">
-                  {section.title}
-                  <span aria-hidden="true" className="text-muted-foreground transition-transform group-hover:translate-x-0.5">→</span>
+    <>
+      {hero}
+      <main className="mx-auto grid w-full max-w-6xl items-start gap-8 px-4 py-6 md:px-8 md:py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid min-w-0 gap-6">
+          {embedded ? (
+            <header className="grid gap-2">
+              <p className="flex items-center gap-2 text-[14px] text-muted-foreground">
+                <AgentIcon className="size-4 shrink-0" />
+                <span>
+                  <b className="font-semibold text-foreground">{platform}</b> for {team.name},{" "}
+                  {SERVICES_TEAM_ROLE_LABELS[role ?? "admin"] ?? role}
                 </span>
-                <span className="text-sm text-muted-foreground">{section.text}</span>
+              </p>
+              {embedded ? (
+                <h1 className="font-heading text-[31px] leading-[1.1] tracking-[-0.03em]">{headline}</h1>
+              ) : (
+                <h2 className="font-heading text-[23px] leading-[1.15] tracking-[-0.02em]">{headline}</h2>
+              )}
+              <p className="text-sm text-muted-foreground">
+                {solo ? "Selling as just me" : "Selling as a team"} on{" "}
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-border underline-offset-4 hover:text-foreground"
+                >
+                  {url.replace(/^https?:\/\//, "")}
+                </a>
+              </p>
+            </header>
+          ) : null}
+
+          {needs.length > 0 ? (
+            <section aria-labelledby="needs-h" className="frame frame-panel">
+              <div className="frame-head text-[14px]">
+                <h2 id="needs-h" className="font-medium">
+                  Needs you
+                </h2>
+                <span className="ml-auto text-muted-foreground">{needs.length}</span>
+              </div>
+              <ul className="frame frame-body">
+                {needs.map((need) => (
+                  <li key={need.key} className="flex items-center gap-3 border-b px-3.5 py-3 last:border-b-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{need.title}</p>
+                      <p className="truncate text-[14px] text-muted-foreground">{need.detail}</p>
+                    </div>
+                    {need.amount ? <span className="font-tabular font-semibold">{need.amount}</span> : null}
+                    <Link
+                      href={need.href}
+                      className={cn(
+                        buttonVariants({ variant: need.primary ? "mint" : "outline", size: "sm" }),
+                        need.primary && "px-4",
+                      )}
+                    >
+                      {need.action}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {onClients.length > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Waiting on clients: {onClients.length === 1 ? "1 project" : `${onClients.length} projects`} (
+              {(
+                [
+                  ["awaiting_deposit", "deposit due", "deposits due"],
+                  ["delivered", "delivery to review", "deliveries to review"],
+                  ["awaiting_balance", "balance due", "balances due"],
+                ] as const
+              )
+                .map(([status, one, many]) => ({ n: onClients.filter((p) => p.status === status).length, one, many }))
+                .filter(({ n }) => n > 0)
+                .map(({ n, one, many }) => `${n} ${n === 1 ? one : many}`)
+                .join(", ")}
+              ).{" "}
+              <Link
+                href={`/${team.slug}/projects`}
+                className="underline decoration-border underline-offset-4 hover:text-foreground"
+              >
+                See projects
               </Link>
-            ))}
+            </p>
+          ) : null}
+
+          <section aria-label="Figures" className="grid gap-3 sm:grid-cols-3">
+            {admin ? (
+              <Figure
+                label="Paid this month"
+                value={totals(paidThisMonth)}
+                note={paidThisMonth.length === 1 ? "1 payment" : `${paidThisMonth.length} payments`}
+              />
+            ) : null}
+            {admin && !solo ? (
+              <Figure
+                label="Payouts to approve"
+                value={totals(toApprove)}
+                note={toApprove.length === 1 ? "1 request" : `${toApprove.length} requests`}
+              />
+            ) : null}
+            <Figure
+              label="In progress"
+              value={String(toDeliver.length)}
+              note={toDeliver.length === 1 ? "project" : "projects"}
+            />
           </section>
-          {setupDone ? <SetupChecklist steps={steps} title={solo ? "Your seller page is set up" : "Your team is set up"} /> : null}
         </div>
-        <aside className="grid gap-4">
+
+        <aside aria-label={`About ${team.name}`} className="grid gap-4">
+          <SetupChecklist
+            steps={steps}
+            title={
+              setupDone
+                ? solo
+                  ? "Your seller page is set up"
+                  : "Your team is set up"
+                : solo
+                  ? "Set up your seller page"
+                  : "Set up your team"
+            }
+          />
           <PublishCard teamSlug={team.slug} publicUrl={url} />
           <PayPalConnectCard teamId={team.id} />
-          <section className="panel grid gap-2 p-4">
-            <div className="flex items-baseline justify-between gap-4">
-              <h2 className="font-semibold">Store</h2>
+          <section className="frame frame-panel">
+            <div className="frame-head text-[14px]">
+              <h2 className="font-medium">Store</h2>
               {settings?.storeEnabled ? (
-                <div className="flex gap-3 text-sm">
+                <div className="ml-auto flex gap-3">
                   <Link href={`/${team.slug}/products`} className="underline decoration-border underline-offset-4">
                     Products
                   </Link>
-                  {role === "admin" ? (
+                  {admin ? (
                     <Link href={`/${team.slug}/orders`} className="underline decoration-border underline-offset-4">
                       Orders
                     </Link>
@@ -119,32 +356,49 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
                 </div>
               ) : null}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Sell digital downloads, such as presets, templates and icons, from your seller page. Files can be up to 100 MB.
-            </p>
-            {!settings?.storeEnabled ? (
-              <div className="grid justify-items-start gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => enable.mutate({ teamSlug: team.slug, enabled: true })}
-                  disabled={role !== "admin" || enable.isPending}
-                >
-                  {enable.isPending ? "Turning on…" : "Turn on the store"}
-                </Button>
-                {role !== "admin" ? <p className="text-sm text-muted-foreground">Only an admin can turn on the store.</p> : null}
-                {enable.error ? (
-                  <p role="alert" className="text-sm text-destructive">
-                    {enable.error.message}
-                  </p>
-                ) : null}
-              </div>
-            ) : role === "admin" ? (
-              <TurnOffStoreButton teamSlug={team.slug} />
-            ) : null}
+            <div className="frame frame-body grid gap-2 p-4">
+              <p className="text-sm text-muted-foreground">
+                Sell digital downloads, such as presets, templates and icons, from your seller page. Files can be up to
+                100 MB.
+              </p>
+              {!settings?.storeEnabled ? (
+                <div className="grid justify-items-start gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => enable.mutate({ teamSlug: team.slug, enabled: true })}
+                    disabled={!admin || enable.isPending}
+                  >
+                    {enable.isPending ? "Turning on…" : "Turn on the store"}
+                  </Button>
+                  {!admin ? (
+                    <p className="text-sm text-muted-foreground">Only an admin can turn on the store.</p>
+                  ) : null}
+                  {enable.error ? (
+                    <p role="alert" className="text-sm text-destructive">
+                      {enable.error.message}
+                    </p>
+                  ) : null}
+                </div>
+              ) : admin ? (
+                <TurnOffStoreButton teamSlug={team.slug} />
+              ) : null}
+            </div>
           </section>
         </aside>
+      </main>
+    </>
+  );
+}
+
+function Figure({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="frame frame-panel">
+      <p className="frame-head text-[14px] font-medium">{label}</p>
+      <div className="frame frame-body px-3.5 py-3">
+        <p className="font-tabular text-[23px] font-semibold tracking-[-0.02em]">{value}</p>
+        <p className="text-[14px] text-muted-foreground">{note}</p>
       </div>
-    </main>
+    </div>
   );
 }

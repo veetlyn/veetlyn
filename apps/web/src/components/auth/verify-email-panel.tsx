@@ -39,7 +39,7 @@ export default function VerifyEmailPanel({ email }: { email: string }) {
           {message.text}
         </p>
       ) : null}
-      <Button type="button" variant="outline" className="w-full" onClick={resend} disabled={pending || remaining > 0}>
+      <Button type="button" variant="outline" size="lg" className="w-full" onClick={resend} disabled={pending || remaining > 0}>
         {remaining > 0 ? `Send a new link in ${remaining}s` : pending ? "Sending…" : "Send a new link"}
       </Button>
     </div>
