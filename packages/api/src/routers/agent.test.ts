@@ -210,19 +210,21 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     const store = await seedStore(db, { organizationId, slug: "clay-room", name: "Clay Room" });
     const system = (model: ReturnType<typeof scriptedModel>) => JSON.stringify(model.requests[0]?.messages[0]?.content);
 
-    const atStore = scriptedModel([say("I can't read the store's records yet.")]);
+    const offered = (model: ReturnType<typeof scriptedModel>) => (model.requests[0]?.tools ?? []).map((t) => t.function.name).sort();
+    const atStore = scriptedModel([say("No orders yet.")]);
     await callerFor(adminId, atStore).agent.ask({ node: { kind: "seller", teamId: store.id }, message: "How are sales?" });
-    expect(atStore.requests[0]?.tools ?? []).toEqual([]);
+    expect(offered(atStore)).toEqual(["order_list", "product_list"]);
     expect(system(atStore)).toContain('the store \\"Clay Room\\"');
 
     const atWorkspace = scriptedModel([say("Two sellers.")]);
     await callerFor(adminId, atWorkspace).agent.ask({ node: { kind: "workspace", organizationId }, message: "What is in here?" });
-    expect(atWorkspace.requests[0]?.tools ?? []).toEqual([]);
+    expect(offered(atWorkspace)).toEqual(["workspace_summary"]);
     expect(system(atWorkspace)).toContain("This call is about the whole workspace.");
 
     const atAccount = scriptedModel([say("Here is everything.")]);
     await callerFor(adminId, atAccount).agent.ask({ node: { kind: "account" }, message: "Anything for me?" });
     expect(system(atAccount)).toContain("at their account");
+    expect(offered(atAccount)).toEqual(["payout_mine", "project_client_list", "workspace_list_mine"]);
 
     const listed = async (node: Parameters<ReturnType<typeof callerFor>["agent"]["calls"]>[0]["node"]) =>
       (await callerFor(adminId).agent.calls({ node })).calls.map((c) => c.nodeKind).sort();

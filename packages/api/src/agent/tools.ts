@@ -6,8 +6,9 @@ import type { ActionDefinition, AnyActionDefinition } from "../actions/define";
 import { type PerformRequest, perform } from "../actions/perform";
 import { conversationPost, requestListOpen } from "../actions/conversations";
 import { disputeList, paymentList } from "../actions/money";
-import { payoutApprove, payoutBalances, payoutList, payoutReject, payoutRulesGet } from "../actions/payouts";
-import { projectGet, projectList } from "../actions/projects";
+import { payoutApprove, payoutBalances, payoutList, payoutMine, payoutReject, payoutRulesGet } from "../actions/payouts";
+import { projectClientList, projectGet, projectList } from "../actions/projects";
+import { orderList, productList, workspaceListMine, workspaceSummary } from "../actions/sellers";
 import { quoteCreate } from "../actions/quotes";
 
 // What the assistant may do with a registry action: read it now, as its person, or propose it for the person to
@@ -65,6 +66,12 @@ export const AGENT_TOOLS: readonly AgentTool[] = [
   propose(payoutReject, "approve_payouts"),
   propose(quoteCreate),
   propose(conversationPost),
+  read(productList, undefined, "store"),
+  read(orderList, undefined, "store"),
+  read(workspaceSummary, undefined, "workspace"),
+  read(workspaceListMine, undefined, "account"),
+  read(projectClientList, undefined, "account"),
+  read(payoutMine, undefined, "account"),
 ];
 
 // Where a resolved node puts the assistant: under a seller of either kind, in a workspace, or at the account.

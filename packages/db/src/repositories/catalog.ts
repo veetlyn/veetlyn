@@ -57,7 +57,7 @@ export async function lockProduct(tx: DbExecutor, tenant: TenantContext, id: str
   return row?.id ?? null;
 }
 
-export async function listProducts(db: Database, tenant: TenantContext): Promise<ProductRow[]> {
+export async function listProducts(db: Database, tenant: Pick<TenantContext, "storeId">): Promise<ProductRow[]> {
   return db.select().from(products).where(eq(products.storeId, tenant.storeId)).orderBy(products.createdAt);
 }
 
@@ -91,7 +91,7 @@ export async function setProductStatus(
   return row ?? null;
 }
 
-export async function listVariants(db: Database, tenant: TenantContext, productId: string): Promise<VariantRow[]> {
+export async function listVariants(db: Database, tenant: Pick<TenantContext, "storeId">, productId: string): Promise<VariantRow[]> {
   return db
     .select()
     .from(productVariants)
@@ -140,7 +140,7 @@ export async function updateVariantPrice(
     .where(and(eq(productVariants.id, variantId), eq(productVariants.storeId, tenant.storeId)));
 }
 
-export async function listImages(db: Database, tenant: TenantContext, productId: string): Promise<ProductImageRow[]> {
+export async function listImages(db: Database, tenant: Pick<TenantContext, "storeId">, productId: string): Promise<ProductImageRow[]> {
   return db
     .select()
     .from(productImages)

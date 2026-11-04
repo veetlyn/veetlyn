@@ -13,7 +13,7 @@ import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "a
 
 import type { Actor, RequestMeta } from "../actions/actors";
 import { toActionError } from "../actions/errors";
-import type { ActionDeps } from "../actions/perform";
+import type { ActionDeps, PerformRequest } from "../actions/perform";
 import { conversationPost } from "../actions/conversations";
 import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
@@ -103,15 +103,20 @@ function capped(text: string): string {
 // model's order and the per-turn cap holds.
 type TurnState = { call: AgentCallRow; scope: CallScope; actor: Actor; proposals: number; proposalQueue: Promise<unknown> };
 
-// Reads and proposals run at the call's seller; above the sellers no team is named.
-const teamOf = (call: AgentCallRow) => (call.teamId ? { team: { id: call.teamId } } : {});
+// Reads and proposals run at the call's seller, or in its workspace above the sellers.
+function placeFor(call: AgentCallRow): Pick<PerformRequest, "team" | "workspace"> {
+  const place: Pick<PerformRequest, "team" | "workspace"> = {};
+  if (call.teamId) place.team = { id: call.teamId };
+  else if (call.organizationId) place.workspace = { id: call.organizationId };
+  return place;
+}
 
 async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, rawInput: JsonObject): Promise<string> {
   const { call, actor } = state;
   if (agentTool.mode === "read") {
     try {
       const result = await agentTool.perform(
-        { deps: deps.actions, actor, surface: "agent", request: deps.request, ...teamOf(call) },
+        { deps: deps.actions, actor, surface: "agent", request: deps.request, ...placeFor(call) },
         rawInput,
       );
       return capped(result);

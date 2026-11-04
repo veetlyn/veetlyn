@@ -49,6 +49,8 @@ export type PerformRequest<Deps extends ActionRuntime = ActionDeps> = {
   request: RequestMeta;
   // Resolved by an adapter from a team slug; must match the project's team.
   team?: { id: string };
+  // The workspace a call stands in, for workspace actions that name none; must match the one an action names.
+  workspace?: { id: string };
 };
 
 const NOT_FOUND_PROJECT = "Project not found.";
@@ -73,10 +75,14 @@ async function loadScope(req: PerformRequest<ActionRuntime>, scopeRequest: Scope
     const access = await findTeamAccess(req.deps.db, { teamId, userId: person });
     if (access?.product === "store") store = storeRoleFor(access.role, access.isTeamMember);
   }
+  if (scopeRequest.organizationId && req.workspace && scopeRequest.organizationId !== req.workspace.id) {
+    throw new ActionError("not_found", "Workspace not found.");
+  }
+  const organizationId = scopeRequest.organizationId ?? req.workspace?.id ?? null;
   let workspace: Scope["workspace"] = null;
-  if (scopeRequest.organizationId && person) {
-    const workspaceRole = await workspaceRoleFor(req.deps.db, scopeRequest.organizationId, person);
-    if (workspaceRole !== null) workspace = { id: scopeRequest.organizationId, role: workspaceRole };
+  if (organizationId && person) {
+    const workspaceRole = await workspaceRoleFor(req.deps.db, organizationId, person);
+    if (workspaceRole !== null) workspace = { id: organizationId, role: workspaceRole };
   }
   return { teamId, project, role, store, workspace };
 }
@@ -102,7 +108,7 @@ function passes(grant: Grant, actor: Actor, scope: Scope): boolean {
 
 // Someone with no relation to the team or project learns nothing about it; a client link relates to its own
 // project only.
-function refusal(actor: Actor, scope: Scope, requested: ScopeRequest): ActionError {
+function refusal(actor: Actor, scope: Scope, requested: ScopeRequest, workspaceAsked: boolean): ActionError {
   const related =
     scope.role !== null ||
     scope.store !== null ||
@@ -110,7 +116,7 @@ function refusal(actor: Actor, scope: Scope, requested: ScopeRequest): ActionErr
     (isClientActor(actor) && actor.token.projectId === scope.project?.id);
   if (!related && scope.project) return new ActionError("not_found", NOT_FOUND_PROJECT);
   if (!related && scope.teamId) return new ActionError("not_found", "Team not found.");
-  if (!related && requested.organizationId) return new ActionError("not_found", "Workspace not found.");
+  if (!related && (requested.organizationId || workspaceAsked)) return new ActionError("not_found", "Workspace not found.");
   return new ActionError("forbidden", "You cannot do this.");
 }
 
@@ -200,7 +206,7 @@ export async function perform<Input, Result, Raw, Deps extends ActionRuntime = A
     }
     const requested = definition.scope(parsed.data);
     scope = await loadScope(req, requested);
-    if (!definition.allow.some((grant) => passes(grant, req.actor, scope))) throw refusal(req.actor, scope, requested);
+    if (!definition.allow.some((grant) => passes(grant, req.actor, scope))) throw refusal(req.actor, scope, requested, req.workspace !== undefined);
     const result = await definition.run(
       { deps: req.deps, actor: req.actor, scope, surface: req.surface, request: req.request },
       parsed.data,
