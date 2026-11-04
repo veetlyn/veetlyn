@@ -51,7 +51,7 @@ export default function SellerCalls({
               onTable ? (
                 <ProjectDetail teamSlug={slug} projectId={onTable} paypalEnvironment={paypalEnvironment} />
               ) : (
-                <ServicesTeamDashboard teamSlug={slug} urlParts={urlParts} />
+                <ServicesTeamDashboard teamSlug={slug} urlParts={urlParts} embedded />
               )
           : undefined
       }

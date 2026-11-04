@@ -195,7 +195,7 @@ export default function TeamShell({
         </>
       }
       ask={
-        node && seller.data?.available && services && !pathname.startsWith(`/${slug}/calls`) ? (
+        node && seller.data?.available && services && pathname !== `/${slug}` && !pathname.startsWith(`/${slug}/calls`) ? (
           <AskBar
             callsPath={`/${slug}/calls`}
             node={node}
