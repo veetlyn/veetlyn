@@ -149,6 +149,7 @@ export default function TeamShell({
 
   return (
     <AppFrame
+      collapsed={pathname.startsWith(`/${slug}/calls`)}
       crumbs={crumbs}
       sidebar={
         <>

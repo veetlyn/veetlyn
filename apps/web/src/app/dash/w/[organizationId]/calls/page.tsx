@@ -15,6 +15,15 @@ export default async function WorkspaceCallsPage({
   const { call } = await searchParams;
   const node = { kind: "workspace" as const, organizationId };
   return (
-    <TeamCalls listNode={node} askNode={node} callsPath={`/w/${organizationId}/calls`} projectHref={null} assistantName={platformName()} callId={call ?? null} />
+    <TeamCalls
+      listNode={node}
+      askNode={node}
+      backHref={`/w/${organizationId}`}
+      backLabel={"Workspace"}
+      callsPath={`/w/${organizationId}/calls`}
+      projectHref={null}
+      assistantName={platformName()}
+      callId={call ?? null}
+    />
   );
 }

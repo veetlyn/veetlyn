@@ -1,5 +1,7 @@
-import { requireSession } from "@/lib/server-api";
+import { env } from "cloudflare:workers";
+
 import { platformName } from "@/lib/platform";
+import { getStoreUrlParts, requireSession } from "@/lib/server-api";
 
 import SellerCalls from "./seller-calls";
 
@@ -14,6 +16,13 @@ export default async function TeamCallsPage({
   const { storeSlug } = await params;
   const { call, project } = await searchParams;
   return (
-    <SellerCalls slug={storeSlug} assistantName={platformName()} callId={call ?? null} projectId={project ?? null} />
+    <SellerCalls
+      slug={storeSlug}
+      assistantName={platformName()}
+      callId={call ?? null}
+      projectId={project ?? null}
+      urlParts={await getStoreUrlParts()}
+      paypalEnvironment={env.PAYPAL_ENVIRONMENT}
+    />
   );
 }

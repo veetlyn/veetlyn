@@ -8,5 +8,16 @@ const NODE = { kind: "account" as const };
 export default async function AccountCallsPage({ searchParams }: { searchParams: Promise<{ call?: string }> }) {
   await requireSession();
   const { call } = await searchParams;
-  return <TeamCalls listNode={NODE} askNode={NODE} callsPath="/me/calls" projectHref={null} assistantName={platformName()} callId={call ?? null} />;
+  return (
+    <TeamCalls
+      listNode={NODE}
+      askNode={NODE}
+      backHref={"/"}
+      backLabel={"Your account"}
+      callsPath="/me/calls"
+      projectHref={null}
+      assistantName={platformName()}
+      callId={call ?? null}
+    />
+  );
 }
