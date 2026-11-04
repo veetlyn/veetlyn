@@ -1,0 +1,18 @@
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  h_6877e5e7a06bc5 22-30,56-60,102-104,107-109,115-122,147-149,169-170,176-181,203-209,233-236,243-261,266-277,280-282,284,296-321
+apps/web/src/components/seller-page/publish-card.tsx
+  h_6877e5e7a06bc5 38-75,77-81
+packages/ui/src/components/card.tsx
+  h_6877e5e7a06bc5 14-15,28,41,71-75,83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a62220b68b4c06c1b48b206de882b9b58b87e90f",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
