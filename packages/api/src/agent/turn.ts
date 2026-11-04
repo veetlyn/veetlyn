@@ -1,4 +1,4 @@
-import type { JsonObject, ServicesTeamRole } from "@jendal-workspace/core";
+import type { JsonObject } from "@jendal-workspace/core";
 import {
   type AgentCallEntryRow,
   type AgentCallRow,
@@ -13,12 +13,12 @@ import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "a
 
 import type { Actor, RequestMeta } from "../actions/actors";
 import { toActionError } from "../actions/errors";
-import { type ActionDeps, perform } from "../actions/perform";
+import type { ActionDeps, PerformRequest } from "../actions/perform";
 import { conversationPost } from "../actions/conversations";
-import { projectGet } from "../actions/projects";
 import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
 import { proposalEffect } from "./effects";
+import { AGENT_ID, placeOf, type ResolvedNode } from "./node";
 import { type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
 
 // A turn reads, proposes and answers within this many model calls.
@@ -29,24 +29,54 @@ const MAX_PROPOSALS_PER_TURN = 3;
 const HISTORY_ENTRIES = 30;
 // Tool results longer than this are cut, so one large list cannot crowd out the conversation.
 const MAX_RESULT_CHARS = 24_000;
-const AGENT_ID = "dash-assistant";
 
-export type CallScope = { team: { id: string; name: string }; userId: string; role: ServicesTeamRole };
+// The node the call stands on, resolved for its person just before the turn.
+export type CallScope = ResolvedNode;
 
 export type TurnDeps = { actions: ActionDeps; agent: AgentServices; request: RequestMeta };
 
-export function systemPrompt(platformName: string, scope: CallScope, project: { id: string; title: string } | null): string {
-  const withheld = withheldAreas(scope.role);
+const SECTION_WORDS = {
+  requests: "open requests",
+  projects: "projects",
+  money: "payments, payouts and PayPal cases",
+  storefront: "services, products, orders and the seller page",
+  team: "members",
+  settings: "settings",
+} as const;
+
+// Who the person is and where they stand, in one sentence for each level of the tree.
+function whereLine(platformName: string, scope: CallScope): string {
+  const { seller, workspace } = scope;
+  if (!workspace) {
+    return `You are ${platformName}, the assistant inside the ${platformName} dashboard. You work for one person at their account: their workspaces, and what they buy and earn across them.`;
+  }
+  if (!seller) {
+    return `You are ${platformName}, the assistant inside the ${platformName} dashboard. You work for one person in the workspace "${workspace.name}".`;
+  }
+  const kind = seller.role.product === "services" ? "services team" : "store";
+  return `You are ${platformName}, the assistant inside the ${platformName} dashboard. You work for one person in the ${kind} "${seller.name}" of the workspace "${workspace.name}", where their role is ${seller.role.role}.`;
+}
+
+function focusLine(scope: CallScope): string {
+  if (scope.project) return `This call is about the project "${scope.project.title}" (id ${scope.project.id}). Start from it; bring in other records of the team when the question needs them.`;
+  if (scope.section) return `This call is about the ${SECTION_WORDS[scope.section]}. Start there; bring in other records when the question needs them.`;
+  if (scope.seller) return `This call is about the whole ${scope.seller.role.product === "services" ? "team" : "store"}.`;
+  return scope.workspace ? "This call is about the whole workspace." : "This call is about everything this person has.";
+}
+
+export function systemPrompt(platformName: string, scope: CallScope, toolCount: number): string {
+  const servicesRole = scope.seller?.role.product === "services" ? scope.seller.role.role : null;
+  const withheld = withheldAreas(servicesRole);
   return [
-    `You are ${platformName}, the assistant inside the ${platformName} dashboard. You work for one person in the services team "${scope.team.name}", where their role is ${scope.role}.`,
-    project
-      ? `This call is about the project "${project.title}" (id ${project.id}). Start from it; bring in other records of the team when the question needs them.`
-      : "This call is about the whole team.",
+    whereLine(platformName, scope),
+    focusLine(scope),
     "How you work:",
-    "- Your tools read the team's records with this person's own access. Answer from what they return; when a tool refuses, say plainly what the person cannot see or do.",
+    toolCount > 0
+      ? "- Your tools read records with this person's own access. Answer from what they return; when a tool refuses, say plainly what the person cannot see or do."
+      : "- You have no tools to read records here yet. Say so plainly when asked about them, and point the person to the page in the dashboard; never guess figures or records.",
     ...(withheld.length > 0
       ? [
-          `- As ${scope.role}, this person cannot see or act on ${withheld.join(", and ")}. When asked about them, say so and that a team admin handles them; do not point them to pages or steps they cannot use.`,
+          `- As ${servicesRole}, this person cannot see or act on ${withheld.join(", and ")}. When asked about them, say so and that a team admin handles them; do not point them to pages or steps they cannot use.`,
         ]
       : []),
     "- You never change anything yourself. To approve or reject a payout, send a quote or post a message, call the matching propose_ tool: the person sees a card and confirms or declines it. Say that it waits for their confirmation; never say it is done.",
@@ -71,14 +101,22 @@ function capped(text: string): string {
 
 // proposalQueue: the SDK runs one step's tool calls at once; proposals wait their turn here, so cards keep the
 // model's order and the per-turn cap holds.
-type TurnState = { call: AgentCallRow; actor: Actor; role: ServicesTeamRole; proposals: number; proposalQueue: Promise<unknown> };
+type TurnState = { call: AgentCallRow; scope: CallScope; actor: Actor; proposals: number; proposalQueue: Promise<unknown> };
+
+// Reads and proposals run at the call's seller, or in its workspace above the sellers.
+function placeFor(call: AgentCallRow): Pick<PerformRequest, "team" | "workspace"> {
+  const place: Pick<PerformRequest, "team" | "workspace"> = {};
+  if (call.teamId) place.team = { id: call.teamId };
+  else if (call.organizationId) place.workspace = { id: call.organizationId };
+  return place;
+}
 
 async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, rawInput: JsonObject): Promise<string> {
   const { call, actor } = state;
   if (agentTool.mode === "read") {
     try {
       const result = await agentTool.perform(
-        { deps: deps.actions, actor, surface: "agent", request: deps.request, team: { id: call.teamId } },
+        { deps: deps.actions, actor, surface: "agent", request: deps.request, ...placeFor(call) },
         rawInput,
       );
       return capped(result);
@@ -97,8 +135,9 @@ async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, r
 async function refusalBeforeProposing(deps: TurnDeps, state: TurnState, action: string, input: JsonObject): Promise<string | null> {
   if (action !== conversationPost.name) return null;
   const post = conversationPost.input.safeParse(input);
-  if (!post.success) return null;
-  const author = { kind: "member" as const, actor: { teamId: state.call.teamId, role: state.role, actorId: state.call.userId } };
+  const seller = state.scope.seller;
+  if (!post.success || !seller || seller.role.product !== "services") return null;
+  const author = { kind: "member" as const, actor: { teamId: seller.id, role: seller.role.role, actorId: state.call.userId } };
   try {
     return await messageRefusal(deps.actions.db, author, post.data);
   } catch (error) {
@@ -113,7 +152,7 @@ async function propose(deps: TurnDeps, state: TurnState, agentTool: AgentTool, r
   if (!proposal.success) return "A proposal needs a card sentence and the action's input.";
   const checked = agentTool.definition.input.safeParse(proposal.data.input);
   if (!checked.success) return `The input does not fit the action: ${checked.error.issues.map((i) => i.message).join("; ")}`;
-  const effect = await proposalEffect(deps.actions.db, call.teamId, agentTool.definition.name, proposal.data.input);
+  const effect = call.teamId ? await proposalEffect(deps.actions.db, call.teamId, agentTool.definition.name, proposal.data.input) : null;
   if (!effect) return "That record is not in this team.";
   const refusal = await refusalBeforeProposing(deps, state, agentTool.definition.name, proposal.data.input);
   if (refusal) return `Not proposed: ${refusal} Tell the person why; do not offer a card for it.`;
@@ -135,7 +174,7 @@ function startOfUtcDay(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
-export type CallInput = { callId?: string; projectId?: string; message: string };
+export type CallInput = { callId?: string; message: string };
 
 // What the call's runtime needs to run one turn; plain data, so it can cross into the call's own Durable Object.
 export type TurnRequest = { callId: string; scope: CallScope; message: string; request: RequestMeta };
@@ -144,20 +183,9 @@ function agentFor(scope: CallScope): Actor {
   return { kind: "agent", agentId: AGENT_ID, onBehalfOf: { kind: "user", userId: scope.userId } };
 }
 
-// The project a call is about, as the person may currently see it; null once they may not.
-async function projectFor(deps: { actions: ActionDeps; request: RequestMeta }, scope: CallScope, projectId: string | null) {
-  if (!projectId) return null;
-  return perform(
-    { deps: deps.actions, actor: agentFor(scope), surface: "agent", request: deps.request, team: { id: scope.team.id } },
-    projectGet,
-    { projectId },
-  )
-    .then((view) => ({ id: view.project.id, title: view.project.title }))
-    .catch(() => null);
-}
-
-// Opens or finds the person's call before a turn runs (calls design §5): their own call in this team, or a new one at
-// the team or on a project they can see. The daily cap is checked here, before anything reaches the model.
+// Opens or finds the person's call before a turn runs (calls design §5): their own call at this node, or a new one
+// there. The node was resolved for the person just before, so they may open it now. The daily cap counts the
+// workspace's questions (the person's own at their account), checked before anything reaches the model.
 export async function openCall(
   deps: { actions: ActionDeps; request: RequestMeta; dailyTurns: number },
   scope: CallScope,
@@ -165,18 +193,17 @@ export async function openCall(
 ): Promise<AgentCallRow> {
   const { db } = deps.actions;
   const now = deps.actions.now?.() ?? new Date();
-  if ((await countQuestionsSince(db, { teamId: scope.team.id, since: startOfUtcDay(now) })) >= deps.dailyTurns) {
-    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "The team has used today's questions. They come back at midnight UTC." });
+  const organizationId = scope.workspace?.id ?? null;
+  if ((await countQuestionsSince(db, { organizationId, userId: scope.userId, since: startOfUtcDay(now) })) >= deps.dailyTurns) {
+    const who = organizationId ? "This workspace has" : "You have";
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `${who} used today's questions. They come back at midnight UTC.` });
   }
   if (input.callId) {
-    const call = await findOwnAgentCall(db, { callId: input.callId, teamId: scope.team.id, userId: scope.userId });
+    const call = await findOwnAgentCall(db, { callId: input.callId, userId: scope.userId });
     if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
     return call;
   }
-  // The person's own access decides whether the project exists for them; a stale or foreign id is not found.
-  const projectId = input.projectId ?? null;
-  if (projectId && !(await projectFor(deps, scope, projectId))) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
-  return createAgentCall(db, { teamId: scope.team.id, userId: scope.userId, projectId, title: input.message.trim().slice(0, 80) });
+  return createAgentCall(db, { ...placeOf(scope), userId: scope.userId, title: input.message.trim().slice(0, 80) });
 }
 
 // One turn of a call: the person's message, the model reading with their access and proposing actions, and its
@@ -185,14 +212,14 @@ export async function openCall(
 export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<void> {
   const { db } = deps.actions;
   const { scope } = turn;
-  const call = await findOwnAgentCall(db, { callId: turn.callId, teamId: scope.team.id, userId: scope.userId });
+  const call = await findOwnAgentCall(db, { callId: turn.callId, userId: scope.userId });
   if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
-  const project = await projectFor(deps, scope, call.projectId);
   await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
 
-  const state: TurnState = { call, actor: agentFor(scope), role: scope.role, proposals: 0, proposalQueue: Promise.resolve() };
+  const state: TurnState = { call, scope, actor: agentFor(scope), proposals: 0, proposalQueue: Promise.resolve() };
+  const offered = toolsFor(scope);
   const tools = Object.fromEntries(
-    toolsFor(scope.role).map((agentTool) => [
+    offered.map((agentTool) => [
       agentTool.name,
       tool({
         description: toolDescription(agentTool),
@@ -209,7 +236,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   try {
     const result = await generateText({
       model: deps.agent.model,
-      system: systemPrompt(deps.actions.platformName, scope, project),
+      system: systemPrompt(deps.actions.platformName, scope, offered.length),
       messages: historyMessages(await listAgentCallEntries(db, call.id)),
       tools,
       stopWhen: stepCountIs(MAX_MODEL_CALLS),

@@ -1,25 +1,30 @@
 import type { JsonObject } from "@jendal-workspace/core";
-import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { NODE_KINDS, SECTIONS } from "@jendal-workspace/core/context/node";
+import { sql } from "drizzle-orm";
+import { check, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
-import { team } from "./organization";
+import { organization, team } from "./organization";
 import { project } from "./projects";
 
 export const AGENT_CALL_STATUSES = ["open", "done"] as const;
 export const AGENT_ENTRY_KINDS = ["message", "proposal"] as const;
 export const AGENT_PROPOSAL_STATUSES = ["pending", "done", "declined", "failed"] as const;
 
-// A call a person opened with the platform's assistant (calls design §5, "started by a person"), at the team or on
-// one project. It stays private to that person: what it read came from their own access.
+// A call a person opened with the platform's assistant (calls design §5, "started by a person"), at one node of the
+// context tree: their account, a workspace, a seller, one of its sections, or a project. It stays private to that
+// person: what it read came from their own access, which is checked again each time the call is read or continued.
 export const agentCall = pgTable(
   "agent_call",
   {
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    teamId: text("team_id")
-      .notNull()
-      .references(() => team.id, { onDelete: "cascade" }),
+    nodeKind: text("node_kind", { enum: NODE_KINDS }).notNull(),
+    // Every node below the account sits in a workspace; the seller below the workspace.
+    organizationId: text("organization_id").references(() => organization.id, { onDelete: "cascade" }),
+    teamId: text("team_id").references(() => team.id, { onDelete: "cascade" }),
+    section: text("section", { enum: SECTIONS }),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -29,7 +34,21 @@ export const agentCall = pgTable(
     openedAt: timestamp("opened_at").notNull().defaultNow(),
     closedAt: timestamp("closed_at"),
   },
-  (t) => [index("agent_call_team_user_idx").on(t.teamId, t.userId, t.openedAt)],
+  (t) => [
+    index("agent_call_team_user_idx").on(t.teamId, t.userId, t.openedAt),
+    index("agent_call_user_org_idx").on(t.userId, t.organizationId, t.openedAt),
+    // Each kind names exactly the places its node needs. A record call keeps its kind if its project is ever removed.
+    check(
+      "agent_call_node_check",
+      sql`case ${t.nodeKind}
+        when 'account' then ${t.organizationId} is null and ${t.teamId} is null and ${t.section} is null and ${t.projectId} is null
+        when 'workspace' then ${t.organizationId} is not null and ${t.teamId} is null and ${t.section} is null and ${t.projectId} is null
+        when 'seller' then ${t.organizationId} is not null and ${t.teamId} is not null and ${t.section} is null and ${t.projectId} is null
+        when 'section' then ${t.organizationId} is not null and ${t.teamId} is not null and ${t.section} is not null and ${t.projectId} is null
+        when 'record' then ${t.organizationId} is not null and ${t.teamId} is not null and ${t.section} is null
+        else false end`,
+    ),
+  ],
 );
 
 // The call's thread: what the person and the assistant said, and the actions the assistant proposed. A proposal

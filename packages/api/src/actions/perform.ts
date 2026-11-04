@@ -3,7 +3,9 @@ import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor } from "@jendal-workspace/db/executor";
 import { insertActionLog } from "@jendal-workspace/db/repositories/action-log";
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
-import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
+import { servicesTeamRoleFor, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
+import { findTeamAccess } from "@jendal-workspace/db/repositories/teams";
+import { type StoreRole, storeRoleFor } from "@jendal-workspace/core/context/node";
 
 import type { LinkSecretSource } from "../client-links";
 import type { EmailServices, PayoutServices, PayPalServices } from "../context";
@@ -27,7 +29,18 @@ export type ActionDeps = ActionRuntime & {
   now?: () => Date;
 };
 
-export type Scope = { teamId: string | null; project: ProjectRow | null; role: ServicesTeamRole | null };
+export type Scope = {
+  teamId: string | null;
+  project: ProjectRow | null;
+  // The person's role in the services team; null in a store.
+  role: ServicesTeamRole | null;
+  // The person's role in the store; null in a services team.
+  store: StoreRole | null;
+  // The workspace an action names, with the person's role in it.
+  workspace: { id: string; role: string } | null;
+};
+
+export const EMPTY_SCOPE: Scope = { teamId: null, project: null, role: null, store: null, workspace: null };
 
 export type PerformRequest<Deps extends ActionRuntime = ActionDeps> = {
   deps: Deps;
@@ -36,6 +49,8 @@ export type PerformRequest<Deps extends ActionRuntime = ActionDeps> = {
   request: RequestMeta;
   // Resolved by an adapter from a team slug; must match the project's team.
   team?: { id: string };
+  // The workspace a call stands in, for workspace actions that name none; must match the one an action names.
+  workspace?: { id: string };
 };
 
 const NOT_FOUND_PROJECT = "Project not found.";
@@ -55,13 +70,31 @@ async function loadScope(req: PerformRequest<ActionRuntime>, scopeRequest: Scope
   }
   const person = personOf(req.actor);
   const role = teamId && person ? await servicesTeamRoleFor(req.deps.db, teamId, person) : null;
-  return { teamId, project, role };
+  let store: StoreRole | null = null;
+  if (teamId && person && role === null) {
+    const access = await findTeamAccess(req.deps.db, { teamId, userId: person });
+    if (access?.product === "store") store = storeRoleFor(access.role, access.isTeamMember);
+  }
+  if (scopeRequest.organizationId && req.workspace && scopeRequest.organizationId !== req.workspace.id) {
+    throw new ActionError("not_found", "Workspace not found.");
+  }
+  const organizationId = scopeRequest.organizationId ?? req.workspace?.id ?? null;
+  let workspace: Scope["workspace"] = null;
+  if (organizationId && person) {
+    const workspaceRole = await workspaceRoleFor(req.deps.db, organizationId, person);
+    if (workspaceRole !== null) workspace = { id: organizationId, role: workspaceRole };
+  }
+  return { teamId, project, role, store, workspace };
 }
 
 function passes(grant: Grant, actor: Actor, scope: Scope): boolean {
   switch (grant.grant) {
     case "member":
       return scope.role !== null;
+    case "store_member":
+      return scope.store !== null;
+    case "workspace_member":
+      return scope.workspace !== null;
     case "client":
       return isClientActor(actor) && scope.project !== null && actor.token.projectId === scope.project.id;
     case "signed_in":
@@ -75,11 +108,15 @@ function passes(grant: Grant, actor: Actor, scope: Scope): boolean {
 
 // Someone with no relation to the team or project learns nothing about it; a client link relates to its own
 // project only.
-function refusal(actor: Actor, scope: Scope): ActionError {
+function refusal(actor: Actor, scope: Scope, requested: ScopeRequest, workspaceAsked: boolean): ActionError {
   const related =
-    scope.role !== null || (isClientActor(actor) && actor.token.projectId === scope.project?.id);
+    scope.role !== null ||
+    scope.store !== null ||
+    scope.workspace !== null ||
+    (isClientActor(actor) && actor.token.projectId === scope.project?.id);
   if (!related && scope.project) return new ActionError("not_found", NOT_FOUND_PROJECT);
   if (!related && scope.teamId) return new ActionError("not_found", "Team not found.");
+  if (!related && (requested.organizationId || workspaceAsked)) return new ActionError("not_found", "Workspace not found.");
   return new ActionError("forbidden", "You cannot do this.");
 }
 
@@ -140,7 +177,7 @@ export async function logRefusal(
   message: string,
 ): Promise<void> {
   const project = (await findProjectById(req.deps.db, projectId)) ?? null;
-  await writeLog(req, definition, { teamId: project?.teamId ?? null, project, role: null }, "forbidden", message, Date.now());
+  await writeLog(req, definition, { ...EMPTY_SCOPE, teamId: project?.teamId ?? null, project }, "forbidden", message, Date.now());
 }
 
 export async function perform<Input, Result, Raw, Deps extends ActionRuntime = ActionDeps>(
@@ -149,7 +186,7 @@ export async function perform<Input, Result, Raw, Deps extends ActionRuntime = A
   rawInput: Raw,
 ): Promise<Result> {
   const started = Date.now();
-  let scope: Scope = { teamId: req.team?.id ?? null, project: null, role: null };
+  let scope: Scope = { ...EMPTY_SCOPE, teamId: req.team?.id ?? null };
   try {
     // An agent reads what its person may read. It proposes everything else, and a person confirms it as themselves.
     if (req.actor.kind === "agent") {
@@ -167,8 +204,9 @@ export async function perform<Input, Result, Raw, Deps extends ActionRuntime = A
       }
       throw new ActionError("invalid", "Check the highlighted fields.", { details });
     }
-    scope = await loadScope(req, definition.scope(parsed.data));
-    if (!definition.allow.some((grant) => passes(grant, req.actor, scope))) throw refusal(req.actor, scope);
+    const requested = definition.scope(parsed.data);
+    scope = await loadScope(req, requested);
+    if (!definition.allow.some((grant) => passes(grant, req.actor, scope))) throw refusal(req.actor, scope, requested, req.workspace !== undefined);
     const result = await definition.run(
       { deps: req.deps, actor: req.actor, scope, surface: req.surface, request: req.request },
       parsed.data,

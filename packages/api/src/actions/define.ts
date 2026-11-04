@@ -3,8 +3,12 @@ import type { z } from "zod";
 import type { Actor, RequestMeta, Surface } from "./actors";
 import type { ActionDeps, ActionRuntime, Scope } from "./perform";
 
+// member: a role in the services team; store_member: an admin or staff of the store; workspace_member: any member of
+// the workspace. Each is checked against its own kind of seller, so one never stands in for another.
 export type Grant =
   | { grant: "member" }
+  | { grant: "store_member" }
+  | { grant: "workspace_member" }
   | { grant: "client" }
   | { grant: "signed_in" }
   | { grant: "anyone" }
@@ -12,7 +16,7 @@ export type Grant =
 
 export type AgentPolicy = "free" | "confirm" | "never";
 
-export type ScopeRequest = { projectId?: string; teamId?: string };
+export type ScopeRequest = { projectId?: string; teamId?: string; organizationId?: string };
 
 export type ActionDefinition<Input, Result, Raw = Input, Deps extends ActionRuntime = ActionDeps> = {
   name: string;

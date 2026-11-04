@@ -203,7 +203,7 @@ export async function getProductDetail(
 }
 
 // One query per product is fine at admin scale (a handful of rows per store).
-export async function listProductSummaries(db: Database, tenant: TenantContext): Promise<ProductSummary[]> {
+export async function listProductSummaries(db: Database, tenant: Pick<TenantContext, "storeId">): Promise<ProductSummary[]> {
   const rows = await listProducts(db, tenant);
   const summaries: ProductSummary[] = [];
   for (const product of rows) {

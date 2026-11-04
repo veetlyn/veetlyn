@@ -1,6 +1,7 @@
 import type { StoreRecord, TeamProduct } from "@jendal-workspace/core";
 import { and, eq } from "drizzle-orm";
 
+import type { DbExecutor } from "../executor";
 import type { Database } from "../index";
 import { member, team, teamMember } from "../schema/organization";
 
@@ -19,7 +20,7 @@ export type TeamAccessRow = { team: StoreRecord; product: TeamProduct; role: str
 // Null when the team does not exist or the user is not a member of its organization.
 // Same access shape as findStoreAccess, keyed by team id instead of slug.
 export async function findTeamAccess(
-  db: Database,
+  db: DbExecutor,
   input: { teamId: string; userId: string },
 ): Promise<TeamAccessRow | null> {
   const [row] = await db
