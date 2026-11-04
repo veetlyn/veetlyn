@@ -1,0 +1,30 @@
+packages/api/src/actions/perform.ts
+  h_6877e5e7a06bc5 52-53,78-81,83-85,111,119,209
+packages/api/src/actions/registry.ts
+  h_6877e5e7a06bc5 35,75
+packages/api/src/actions/sellers.test.ts
+  h_6877e5e7a06bc5 1-92
+packages/api/src/actions/sellers.ts
+  h_6877e5e7a06bc5 1-126
+packages/api/src/agent/tools.ts
+  h_6877e5e7a06bc5 9-11,69-74
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 16,106-112,119
+packages/api/src/catalog/service.ts
+  h_6877e5e7a06bc5 206
+packages/api/src/routers/agent.test.ts
+  h_6877e5e7a06bc5 213-214,216,221,227
+packages/db/src/repositories/catalog.ts
+  h_6877e5e7a06bc5 60,94,143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5d557767c90a77d65819a6ab204f845394a6a4fa",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
