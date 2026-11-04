@@ -1,9 +1,7 @@
-import { isServicesTeamSlug, requireSession } from "@/lib/server-api";
+import { requireSession } from "@/lib/server-api";
 import { platformName } from "@/lib/platform";
 
-import TeamNotFound from "@/components/services-team/team-not-found";
-
-import TeamCalls from "./team-calls";
+import SellerCalls from "./seller-calls";
 
 export default async function TeamCallsPage({
   params,
@@ -15,6 +13,7 @@ export default async function TeamCallsPage({
   await requireSession();
   const { storeSlug } = await params;
   const { call, project } = await searchParams;
-  if (!(await isServicesTeamSlug(storeSlug))) return <TeamNotFound />;
-  return <TeamCalls teamSlug={storeSlug} assistantName={platformName()} callId={call ?? null} projectId={project ?? null} />;
+  return (
+    <SellerCalls slug={storeSlug} assistantName={platformName()} callId={call ?? null} projectId={project ?? null} />
+  );
 }

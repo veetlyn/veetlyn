@@ -13,7 +13,10 @@ const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password", "/reset-pas
 export default function Header() {
   const params = useParams();
   const pathname = usePathname();
-  if (params.storeSlug || AUTH_PATHS.has(pathname) || AUTH_PATHS.has(pathname.replace(/^\/dash/, ""))) return null;
+  const path = pathname.replace(/^\/dash/, "") || "/";
+  // Pages inside the context tree have their own frame: the account, its personal pages, a workspace, a seller.
+  const framed = path === "/" || path === "/me" || path.startsWith("/me/") || path.startsWith("/w/");
+  if (params.storeSlug || framed || AUTH_PATHS.has(pathname) || AUTH_PATHS.has(path)) return null;
   return (
     <header className="flex h-14 items-center justify-between border-b px-4 md:px-7">
       <Link href="/" className="flex items-center gap-2">

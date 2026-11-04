@@ -11,14 +11,14 @@ import { trpc } from "@/utils/trpc";
 
 // Veetlyn at the foot of a page (calls design §12, "Veetlyn on every page"): a question asked here starts a call at
 // this page's node and opens it.
-export default function AskBar({ slug, node, placeholder }: { slug: string; node: ContextNode; placeholder: string }) {
+export default function AskBar({ callsPath, node, placeholder }: { callsPath: string; node: ContextNode; placeholder: string }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const ask = useMutation(
     trpc.agent.ask.mutationOptions({
       onSuccess: ({ callId }) => {
         setMessage("");
-        router.push(`/${slug}/calls?call=${callId}`);
+        router.push(`${callsPath}?call=${callId}`);
       },
     }),
   );

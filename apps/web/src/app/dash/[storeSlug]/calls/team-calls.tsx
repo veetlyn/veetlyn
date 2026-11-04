@@ -1,5 +1,6 @@
 "use client";
 
+import type { ContextNode } from "@jendal-workspace/core/context/node";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
@@ -35,7 +36,9 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
         <Badge tone={state.tone}>{state.label}</Badge>
       </div>
       {entry.note ? <p className="text-sm text-muted-foreground">{entry.note}</p> : null}
-      {entry.outcome && entry.status !== "done" ? <p className="text-sm text-muted-foreground">{entry.outcome}</p> : null}
+      {entry.outcome && entry.status !== "done" ? (
+        <p className="text-sm text-muted-foreground">{entry.outcome}</p>
+      ) : null}
       {entry.status === "pending" ? (
         <div className="flex flex-wrap gap-2">
           <Button size="sm" disabled={busy} onClick={() => confirm.mutate({ entryId: entry.id })}>
@@ -59,15 +62,21 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
 // Calls with the assistant (calls design §5–6): the person's own calls on the left, the thread in the middle. The
 // assistant reads with the person's access and drafts actions as cards; nothing happens until they confirm.
 export default function TeamCalls({
-  teamSlug,
+  listNode,
+  askNode,
+  callsPath,
+  projectHref,
   assistantName,
   callId,
-  projectId,
 }: {
-  teamSlug: string;
+  // The node whose calls the list shows, and the one a new call opens at (a project's, when started from it).
+  listNode: ContextNode;
+  askNode: ContextNode;
+  callsPath: string;
+  // A project's page, for "On the table"; null above the sellers.
+  projectHref: ((projectId: string) => string) | null;
   assistantName: string;
   callId: string | null;
-  projectId: string | null;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -80,12 +89,13 @@ export default function TeamCalls({
   useEffect(() => {
     if (callId) setStartedCallId(null);
   }, [callId]);
-  // The team's node, or the project's when the call was opened from a project page.
-  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
-  const teamId = team.data?.team.id ?? "";
-  const teamNode = { kind: "seller" as const, teamId };
-  const node = projectId ? { kind: "record" as const, teamId, record: { type: "project" as const, id: projectId } } : teamNode;
-  const calls = useQuery({ ...trpc.agent.calls.queryOptions({ node: teamNode }), enabled: teamId !== "", retry: false, meta: { silent: true } });
+  const node = askNode;
+  const projectId = askNode.kind === "record" ? askNode.record.id : null;
+  const calls = useQuery({
+    ...trpc.agent.calls.queryOptions({ node: listNode }),
+    retry: false,
+    meta: { silent: true },
+  });
   const thread = useQuery({
     ...trpc.agent.thread.queryOptions({ callId: activeCallId ?? "" }),
     enabled: activeCallId !== null,
@@ -93,8 +103,9 @@ export default function TeamCalls({
     meta: { silent: true },
   });
   const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: trpc.agent.calls.queryKey({ node: teamNode }) });
-    if (activeCallId) void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ callId: activeCallId }) });
+    void queryClient.invalidateQueries({ queryKey: trpc.agent.calls.queryKey({ node: listNode }) });
+    if (activeCallId)
+      void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ callId: activeCallId }) });
   };
   const ask = useMutation(
     trpc.agent.ask.mutationOptions({
@@ -103,7 +114,7 @@ export default function TeamCalls({
         if (result.callId !== activeCallId) {
           setStartedCallId(result.callId);
           void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ callId: result.callId }) });
-          router.push(`/${teamSlug}/calls?call=${result.callId}`);
+          router.push(`${callsPath}?call=${result.callId}`);
         }
       },
       onSettled: refresh,
@@ -117,7 +128,7 @@ export default function TeamCalls({
     ask.mutate(activeCallId ? { node, message: text, callId: activeCallId } : { node, message: text });
   }
 
-  if (team.isPending || calls.isPending) return <Loader />;
+  if (calls.isPending) return <Loader />;
   const available = calls.data?.available ?? false;
   const current = thread.data?.call ?? null;
   return (
@@ -125,7 +136,7 @@ export default function TeamCalls({
       <nav aria-label="Calls" className="space-y-2">
         <div className="flex items-center justify-between gap-2">
           <h1 className="font-heading text-2xl">Calls</h1>
-          <Link href={`/${teamSlug}/calls`} className="text-sm underline underline-offset-4">
+          <Link href={callsPath} className="text-sm underline underline-offset-4">
             New call
           </Link>
         </div>
@@ -134,7 +145,7 @@ export default function TeamCalls({
             {calls.data.calls.map((c) => (
               <li key={c.id}>
                 <Link
-                  href={`/${teamSlug}/calls?call=${c.id}`}
+                  href={`${callsPath}?call=${c.id}`}
                   aria-current={c.id === activeCallId ? "page" : undefined}
                   className="block truncate rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
                 >
@@ -151,10 +162,10 @@ export default function TeamCalls({
         {!available ? (
           <p className="panel p-4 text-sm text-muted-foreground">The assistant is not set up on this server yet.</p>
         ) : null}
-        {current?.projectId || (!activeCallId && projectId) ? (
+        {projectHref && (current?.projectId || (!activeCallId && projectId)) ? (
           <p className="text-sm text-muted-foreground">
             On the table:{" "}
-            <Link href={`/${teamSlug}/projects/${current?.projectId ?? projectId}`} className="underline underline-offset-4">
+            <Link href={projectHref(current?.projectId ?? projectId ?? "")} className="underline underline-offset-4">
               this project
             </Link>
           </p>
@@ -165,8 +176,8 @@ export default function TeamCalls({
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Ask {assistantName}</h2>
             <p className="text-sm text-muted-foreground">
-              It reads what you can see in this team, answers, and drafts payout decisions, quotes and messages for you to
-              confirm. Nothing is sent until you confirm it.
+              It reads what you can see in this team, answers, and drafts payout decisions, quotes and messages for you
+              to confirm. Nothing is sent until you confirm it.
             </p>
           </div>
         ) : null}
@@ -178,8 +189,14 @@ export default function TeamCalls({
               </li>
             ) : (
               <li key={entry.id} className={entry.author === "person" ? "ml-auto max-w-[85%]" : "max-w-[85%]"}>
-                <p className="mb-1 text-xs text-muted-foreground">{entry.author === "person" ? "You" : assistantName}</p>
-                <p className={entry.author === "person" ? "panel p-3 text-sm whitespace-pre-wrap" : "text-sm whitespace-pre-wrap"}>
+                <p className="mb-1 text-xs text-muted-foreground">
+                  {entry.author === "person" ? "You" : assistantName}
+                </p>
+                <p
+                  className={
+                    entry.author === "person" ? "panel p-3 text-sm whitespace-pre-wrap" : "text-sm whitespace-pre-wrap"
+                  }
+                >
                   {entry.body}
                 </p>
               </li>

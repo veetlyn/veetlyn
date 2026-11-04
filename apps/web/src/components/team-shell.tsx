@@ -1,12 +1,10 @@
 "use client";
 
 import type { ContextNode, SectionPage } from "@jendal-workspace/core/context/node";
-import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  ChevronsUpDown,
   FolderKanban,
   HandCoins,
   Inbox,
@@ -22,12 +20,12 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import AppFrame, { initialsOf, navItemClass, Switcher } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
+import RecentCalls from "@/components/recent-calls";
+import { VeetlynIcon } from "@/components/veetlyn-icon";
 import BillingNotice from "@/components/billing-notice";
-import { BrandWordmark } from "@/components/brand-mark";
-import { ModeToggle } from "@/components/mode-toggle";
 import ProjectNav from "@/components/project-nav";
-import UserMenu from "@/components/user-menu";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { trpc } from "@/utils/trpc";
 
@@ -66,13 +64,6 @@ const SEGMENT_LABELS = new Map<string, string>([
   ["new", "New"],
 ]);
 
-function navItem(active: boolean) {
-  return cn(
-    "flex items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-    active ? "raised text-foreground" : "hover:bg-foreground/[0.04]",
-  );
-}
-
 // The frame around every seller page (calls design §6): the seller's sections on the tray, the page on a framed canvas,
 // and Veetlyn at the foot of every page. What the sidebar lists comes from the seller's node: its product, the
 // workspace's plan and the person's role.
@@ -103,12 +94,7 @@ export default function TeamShell({
   });
 
   const name = scope?.seller?.name ?? slug.replace(/-/g, " ");
-  const initials =
-    name
-      .split(/\s+/)
-      .map((word) => word[0] ?? "")
-      .join("")
-      .slice(0, 2) || "?";
+  const initials = initialsOf(name);
   const role = scope?.seller?.role;
   const roleLabel = !role
     ? ""
@@ -142,129 +128,72 @@ export default function TeamShell({
   const isActive = (href: string) =>
     href === `/${slug}` ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
   const link = (href: string, label: string, Icon: React.ComponentType<{ className?: string }>) => (
-    <Link key={href} href={href} aria-current={isActive(href) ? "page" : undefined} className={navItem(isActive(href))}>
+    <Link
+      key={href}
+      href={href}
+      aria-current={isActive(href) ? "page" : undefined}
+      className={navItemClass(isActive(href))}
+    >
       <Icon className="size-4" aria-hidden="true" />
       {label}
     </Link>
   );
   const recent = (calls.data?.calls ?? []).slice(0, 5);
 
-  return (
-    // The window stays still: the tray and the canvas hold their place and only the page scrolls.
-    <div
-      data-app-shell
-      className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray md:grid-cols-[256px_minmax(0,1fr)]"
-    >
-      <aside className="hidden min-h-0 flex-col gap-0.5 overflow-y-auto px-2.5 pt-2.5 pb-3 md:flex">
-        <Link
-          href="/"
-          className="mb-2 flex items-center gap-2.5 rounded-[11px] px-2 py-1.5 raised transition-[filter] hover:brightness-[0.98]"
-          aria-label={`${name}, ${roleLabel}. All workspaces`}
-        >
-          <span className="grid size-8 shrink-0 place-items-center rounded-[8px] main-surface text-xs font-semibold uppercase">
-            {initials}
-          </span>
-          <span className="grid min-w-0 flex-1">
-            <b className="truncate text-sm font-semibold capitalize">{name}</b>
-            <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
-          </span>
-          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        </Link>
-        {projectId && services && teamId ? (
-          <ProjectNav slug={slug} projectId={projectId} teamId={teamId} />
-        ) : (
-          <>
-            <nav aria-label="Seller" className="grid gap-0.5">
-              {services ? link(`/${slug}/calls`, "Veetlyn", VeetlynIcon) : null}
-              {link(`/${slug}`, "Overview", LayoutGrid)}
-              {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
-            </nav>
-            {grouped.map(({ section, pages }) => (
-              <div key={section} className="pt-3">
-                {SECTION_LABELS[section] ? (
-                  <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{SECTION_LABELS[section]}</p>
-                ) : null}
-                <nav aria-label={SECTION_LABELS[section] || "Settings"} className="grid gap-0.5">
-                  {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
-                </nav>
-              </div>
-            ))}
-            {recent.length > 0 ? (
-              <div className="pt-4">
-                <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Calls</p>
-                <ul className="grid gap-0.5">
-                  {recent.map((c) => (
-                    <li key={c.id}>
-                      <Link
-                        href={`/${slug}/calls?call=${c.id}`}
-                        className="block truncate rounded-[9px] px-2.5 py-1.5 text-[13px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
-                      >
-                        {c.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </>
-        )}
-        <div className="mt-auto pt-4">
-          <Link href="/" className="flex items-center gap-2 px-2.5 text-sm text-muted-foreground hover:text-foreground">
-            <BrandWordmark className="font-heading text-[15px] text-foreground" />
-            <span className="sr-only">All workspaces</span>
-          </Link>
-        </div>
-      </aside>
+  const pageLinks = [
+    ...(services ? [{ href: `/${slug}/calls`, label: "Veetlyn" }] : []),
+    { href: `/${slug}`, label: "Overview" },
+    ...sections.flatMap((s) => s.pages.map((p) => ({ href: `/${slug}/${p}`, label: PAGES[p].label }))),
+  ];
 
-      <div className="flex min-h-0 min-w-0 flex-col bg-card md:my-2 md:mr-2 md:frame md:rounded-[14px] md:shadow-[0_1px_2px_rgb(16_16_24/0.05)]">
-        <div className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4 md:px-6">
-          <Link href="/" className="font-heading text-[15px] md:hidden">
-            {initials}
-            <span className="sr-only">All workspaces</span>
-          </Link>
-          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-            {crumbs.map((crumb, i) => (
-              <span
-                key={crumb.href}
-                className={cn("min-w-0 items-center gap-1.5", i === crumbs.length - 1 ? "flex" : "hidden md:flex")}
-              >
-                {i > 0 ? <span className="hidden text-border md:inline">/</span> : null}
-                {i === crumbs.length - 1 ? (
-                  <span className="truncate font-medium text-foreground capitalize">{crumb.label}</span>
-                ) : (
-                  <Link href={crumb.href} className="truncate capitalize hover:text-foreground">
-                    {crumb.label}
-                  </Link>
-                )}
-              </span>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <ModeToggle />
-            <UserMenu />
-          </div>
-        </div>
-        <nav
-          aria-label="Sections"
-          className="flex shrink-0 gap-1 overflow-x-auto border-b px-3 py-2 [scrollbar-width:none] md:hidden"
+  return (
+    <AppFrame
+      crumbs={crumbs}
+      sidebar={
+        <>
+          <Switcher
+            href="/"
+            initials={initials}
+            name={name}
+            detail={roleLabel}
+            label={`${name}, ${roleLabel}. All workspaces`}
+          />
+          {projectId && services && teamId ? (
+            <ProjectNav slug={slug} projectId={projectId} teamId={teamId} />
+          ) : (
+            <>
+              <nav aria-label="Seller" className="grid gap-0.5">
+                {services ? link(`/${slug}/calls`, "Veetlyn", VeetlynIcon) : null}
+                {link(`/${slug}`, "Overview", LayoutGrid)}
+                {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
+              </nav>
+              {grouped.map(({ section, pages }) => (
+                <div key={section} className="pt-3">
+                  {SECTION_LABELS[section] ? (
+                    <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{SECTION_LABELS[section]}</p>
+                  ) : null}
+                  <nav aria-label={SECTION_LABELS[section] || "Settings"} className="grid gap-0.5">
+                    {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
+                  </nav>
+                </div>
+              ))}
+              <RecentCalls calls={recent} callsPath={`/${slug}/calls`} />
+            </>
+          )}
+        </>
+      }
+      mobileNav={pageLinks.map(({ href, label }) => (
+        <Link
+          key={href}
+          href={href}
+          aria-current={isActive(href) ? "page" : undefined}
+          className="shrink-0 rounded-[9px] px-3 py-1.5 text-sm font-medium text-muted-foreground aria-[current=page]:raised aria-[current=page]:text-foreground"
         >
-          {[
-            ...(services ? [{ href: `/${slug}/calls`, label: "Veetlyn" }] : []),
-            { href: `/${slug}`, label: "Overview" },
-          ]
-            .concat(sections.flatMap((s) => s.pages.map((p) => ({ href: `/${slug}/${p}`, label: PAGES[p].label }))))
-            .map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={isActive(href) ? "page" : undefined}
-                className="shrink-0 rounded-[9px] px-3 py-1.5 text-sm font-medium text-muted-foreground aria-[current=page]:raised aria-[current=page]:text-foreground"
-              >
-                {label}
-              </Link>
-            ))}
-        </nav>
-        <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
+          {label}
+        </Link>
+      ))}
+      banner={
+        <>
           <BillingNotice slug={slug} />
           {rules.data?.memberAccepted === false && pathname !== `/${slug}/settings/operating-model` ? (
             <div
@@ -282,25 +211,19 @@ export default function TeamShell({
               </Link>
             </div>
           ) : null}
-          {children}
-        </div>
-        {node && seller.data?.available && services && !pathname.startsWith(`/${slug}/calls`) ? (
+        </>
+      }
+      ask={
+        node && seller.data?.available && services && !pathname.startsWith(`/${slug}/calls`) ? (
           <AskBar
-            slug={slug}
+            callsPath={`/${slug}/calls`}
             node={node}
             placeholder={projectId ? "Ask Veetlyn about this project" : `Ask Veetlyn about ${name}`}
           />
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-// Veetlyn's own item: the four-point spark the site uses for the agent.
-function VeetlynIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
-      <path d="M8 1.5 9.4 6.6 14.5 8 9.4 9.4 8 14.5 6.6 9.4 1.5 8 6.6 6.6Z" fill="currentColor" />
-    </svg>
+        ) : null
+      }
+    >
+      {children}
+    </AppFrame>
   );
 }
