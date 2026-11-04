@@ -319,6 +319,9 @@ export default function ProjectDetail({
           {primary?.name ?? "No client"}
           {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
+        <div className="max-w-3xl pt-2">
+          <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
+        </div>
         {dispute ? <DisputeCard dispute={dispute} currency={currency} paypalEnvironment={paypalEnvironment} /> : null}
         <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {project.source === "web" ? (
@@ -615,13 +618,12 @@ export default function ProjectDetail({
       </div>
 
       <aside className="grid min-w-0 gap-8">
-      <ProjectProgress status={project.status} paidUpfront={project.upfrontBps === 10_000} />
       <section id="payments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
         {payments.map((payment) => (
-          <div key={payment.id} className="panel p-4 text-sm">
-            <div className="flex items-center justify-between gap-4">
+          <div key={payment.id} className="frame frame-panel text-sm">
+            <div className="frame-head justify-between gap-4 text-[13px]">
               <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (
@@ -630,17 +632,17 @@ export default function ProjectDetail({
                 <Badge tone={payment.status === "captured" ? "good" : payment.status === "failed" ? "fail" : "neutral"}>{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</Badge>
               </div>
             </div>
-            <ul className="mt-2 space-y-1">
-              {payment.lines.map((line, index) => (
-                <li key={index} className="flex justify-between gap-4">
-                  <span>{line.label}</span>
-                  <span>{formatMoney(money(currency, line.amountMinor))}</span>
-                </li>
-              ))}
-            </ul>
-            {payment.status === "pending" ? (
-              <p className="mt-2 text-muted-foreground">Waiting for the client to pay.</p>
-            ) : null}
+            <div className="frame frame-body px-3.5 py-3">
+              <ul className="space-y-1">
+                {payment.lines.map((line, index) => (
+                  <li key={index} className="flex justify-between gap-4">
+                    <span>{line.label}</span>
+                    <span className="font-tabular">{formatMoney(money(currency, line.amountMinor))}</span>
+                  </li>
+                ))}
+              </ul>
+              {payment.status === "pending" ? <p className="mt-2 text-muted-foreground">Waiting for the client to pay.</p> : null}
+            </div>
           </div>
         ))}
       </section>
