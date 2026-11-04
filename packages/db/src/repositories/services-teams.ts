@@ -190,7 +190,7 @@ export async function emptyOwnedWorkspace(db: Database, userId: string): Promise
   return row?.id ?? null;
 }
 
-export async function workspaceRoleFor(db: Database, organizationId: string, userId: string): Promise<string | null> {
+export async function workspaceRoleFor(db: DbExecutor, organizationId: string, userId: string): Promise<string | null> {
   const [row] = await db
     .select({ role: member.role })
     .from(member)
