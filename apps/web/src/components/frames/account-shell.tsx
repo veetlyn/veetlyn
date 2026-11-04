@@ -5,10 +5,9 @@ import { Building2, HandCoins, LayoutGrid, ShoppingBag, UserRound } from "lucide
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import AppFrame, { initialsOf, navItemClass, Switcher } from "@/components/app-frame";
+import AppFrame, { navItemClass } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
-import { AgentIcon } from "@/components/agent-icon";
 import type { WorkspaceOrganization } from "@/lib/workspaces";
 import { usePlatformName } from "@/components/platform-name";
 import { trpc } from "@/utils/trpc";
@@ -18,7 +17,6 @@ const NODE = { kind: "account" as const };
 // The frame of the account, the top of the context tree: the person's own purchases and earnings, their workspaces,
 // and the assistant looking across all of them.
 export default function AccountShell({
-  personName,
   workspaces,
   children,
 }: {
@@ -48,7 +46,6 @@ export default function AccountShell({
       {label}
     </Link>
   );
-  const name = personName;
   const crumbs = [
     { href: "/", label: "Your account" },
     ...(pathname === "/me"
@@ -58,7 +55,7 @@ export default function AccountShell({
         : pathname.startsWith("/me/payouts")
           ? [{ href: "/me/payouts", label: "Your earnings" }]
           : pathname.startsWith("/me/calls")
-            ? [{ href: "/me/calls", label: platform }]
+            ? [{ href: "/me/calls", label: "Chats" }]
             : []),
   ];
 
@@ -66,17 +63,18 @@ export default function AccountShell({
     <AppFrame
       fill={pathname.startsWith("/me/calls")}
       crumbs={crumbs}
+      chatsPath="/me/calls"
+      searchItems={[
+        { href: "/", label: "Overview", detail: "Your account" },
+        { href: "/me", label: "Personal", detail: "Your account" },
+        { href: "/me/projects", label: "Your projects", detail: "Your account" },
+        { href: "/me/payouts", label: "Your earnings", detail: "Your account" },
+        { href: "/account", label: "Account settings", detail: "Your account" },
+        ...workspaces.map((w) => ({ href: `/w/${w.id}`, label: w.name, detail: "Workspace" })),
+      ]}
       sidebar={
         <>
-          <Switcher
-            href="/"
-            initials={initialsOf(name)}
-            name={name}
-            detail="Your account"
-            label={`${name}. Your account`}
-          />
           <nav aria-label="Account" className="grid gap-0.5">
-            {link("/me/calls", platform, AgentIcon)}
             {link("/", "Overview", LayoutGrid)}
             {link("/me", "Personal", UserRound)}
             {link("/me/projects", "Your projects", ShoppingBag)}
@@ -90,7 +88,7 @@ export default function AccountShell({
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/calls" />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/calls" label="Chats" />
         </>
       }
       ask={

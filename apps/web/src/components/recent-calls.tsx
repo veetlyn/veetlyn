@@ -11,7 +11,7 @@ export default function RecentCalls({ calls, callsPath, label = "Calls" }: { cal
           <li key={c.id}>
             <Link
               href={`${callsPath}?call=${c.id}`}
-              className="block truncate rounded-[9px] px-2.5 py-1.5 text-[13px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
+              className="block truncate rounded-[9px] px-2.5 py-1.5 text-[14px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
             >
               {c.title}
             </Link>

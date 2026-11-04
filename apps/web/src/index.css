@@ -1,4 +1,5 @@
 @import "@jendal-workspace/ui/globals.css";
+@import "./dash.css";
 
 /* The bowl of the P: a straight side closed by a half-round. The platform's one shape. */
 @utility bowl {

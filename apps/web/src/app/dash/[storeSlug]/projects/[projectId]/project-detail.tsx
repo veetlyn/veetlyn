@@ -623,7 +623,7 @@ export default function ProjectDetail({
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
         {payments.map((payment) => (
           <div key={payment.id} className="frame frame-panel text-sm">
-            <div className="frame-head justify-between gap-4 text-[13px]">
+            <div className="frame-head justify-between gap-4 text-[14px]">
               <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (

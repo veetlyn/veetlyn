@@ -5,12 +5,12 @@ import { CreditCard, LayoutGrid, Store, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import AppFrame, { initialsOf, navItemClass, Switcher } from "@/components/app-frame";
+import AppFrame, { navItemClass } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
-import { AgentIcon } from "@/components/agent-icon";
 import type { WorkspaceOrganization } from "@/lib/workspaces";
 import { usePlatformName } from "@/components/platform-name";
+import { useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
 import { trpc } from "@/utils/trpc";
 
 const ROLE_LABELS = new Map([
@@ -63,13 +63,14 @@ export default function WorkspaceShell({
     ...organization.stores.map((s) => ({ slug: s.slug, name: s.name, icon: Store })),
   ];
   const segment = pathname.slice(base.length).split("/").filter(Boolean)[0];
+  const workspaces = useMyWorkspaces();
+  // Workspace › section. The workspace crumb switches; the sidebar already lists this workspace's sellers.
   const crumbs = [
-    { href: "/", label: "Your account" },
-    { href: base, label: organization.name },
+    { href: base, label: organization.name, options: workspaceOptions(workspaces), menuLabel: "Workspaces" },
     ...(segment === "billing"
       ? [{ href: `${base}/billing`, label: "Billing" }]
       : segment === "calls"
-        ? [{ href: `${base}/calls`, label: platform }]
+        ? [{ href: `${base}/calls`, label: "Chats" }]
         : []),
   ];
 
@@ -77,17 +78,16 @@ export default function WorkspaceShell({
     <AppFrame
       fill={segment === "calls"}
       crumbs={crumbs}
+      chatsPath={`${base}/calls`}
+      searchItems={[
+        { href: base, label: "Overview", detail: organization.name },
+        ...(organization.canCreateStores ? [{ href: `${base}/billing`, label: "Billing", detail: organization.name }] : []),
+        ...sellers.map((s) => ({ href: `/${s.slug}`, label: s.name, detail: `Seller in ${organization.name}` })),
+        ...workspaceOptions(workspaces),
+      ]}
       sidebar={
         <>
-          <Switcher
-            href="/"
-            initials={initialsOf(organization.name)}
-            name={organization.name}
-            detail={`Workspace, ${workspaceRoleLabel(organization.role).toLowerCase()}`}
-            label={`${organization.name}. All workspaces`}
-          />
           <nav aria-label="Workspace" className="grid gap-0.5">
-            {link(`${base}/calls`, platform, AgentIcon)}
             {link(base, "Overview", LayoutGrid)}
             {organization.canCreateStores ? link(`${base}/billing`, "Billing", CreditCard) : null}
           </nav>
@@ -99,7 +99,7 @@ export default function WorkspaceShell({
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/calls`} />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/calls`} label="Chats" />
         </>
       }
       ask={

@@ -1,0 +1,77 @@
+/* The dashboard's Quartz layer (the marketing site keeps the Relief tokens). It applies to the whole document while a
+   dash page is mounted, so menus, dialogs and toasts rendered at the end of the body get it too. Kept from the platform:
+   the tray colours, Cal Sans headings and the mint asymmetric key. Values from Quartz's tokens.css. */
+:root:has([data-dash]) {
+  --q-ink: 20% 0.024 262;
+  --q-paper: 99.7% 0.001 250;
+  --q-grey: 95.6% 0.004 255;
+  --background: oklch(var(--q-paper));
+  --foreground: oklch(var(--q-ink));
+  --card: oklch(var(--q-paper));
+  --card-foreground: oklch(var(--q-ink));
+  --popover: oklch(var(--q-paper));
+  --popover-foreground: oklch(var(--q-ink));
+  --primary: oklch(var(--q-ink));
+  --primary-foreground: oklch(var(--q-paper));
+  --secondary: oklch(var(--q-grey));
+  --muted: oklch(var(--q-grey));
+  --accent: oklch(var(--q-ink) / 0.06);
+  --muted-foreground: oklch(var(--q-ink) / 0.68);
+  --border: oklch(var(--q-ink) / 0.09);
+  --input: oklch(var(--q-ink) / 0.16);
+  --ring: oklch(var(--q-ink));
+  --warning: oklch(49% 0.1 68);
+  --destructive: oklch(51% 0.18 26);
+  --surface-top: oklch(var(--q-paper));
+  --surface-bottom: oklch(var(--q-paper));
+  --raise: none;
+  --drop: none;
+  --float: 0 0 0 1px oklch(var(--q-ink) / 0.14), 0 12px 24px -12px oklch(var(--q-ink) / 0.2);
+  --radius: 0.375rem;
+  /* Every type step one pixel up in the dash. */
+  --text-xs: 13px;
+  --text-sm: 15px;
+  --text-base: 17px;
+  --text-lg: 19px;
+  --text-xl: 21px;
+  --text-2xl: 25px;
+  --text-3xl: 31px;
+}
+:root.dark:has([data-dash]) {
+  --q-ink: 96.5% 0.006 250;
+  --q-paper: 18.5% 0.016 262;
+  --q-grey: 23.5% 0.018 262;
+  --card: oklch(16.5% 0.014 262);
+  --background: oklch(16.5% 0.014 262);
+  --popover: oklch(var(--q-paper));
+  --surface-top: oklch(var(--q-paper));
+  --surface-bottom: oklch(var(--q-paper));
+  --border: oklch(var(--q-ink) / 0.1);
+  --input: oklch(var(--q-ink) / 0.18);
+  --warning: oklch(80% 0.13 68);
+  --destructive: oklch(76% 0.14 26);
+  --float: 0 0 0 1px oklch(var(--q-ink) / 0.2), 0 12px 24px -12px oklch(0% 0 0 / 0.6);
+}
+
+/* Scrollbars stay hidden until the area is hovered or scrolled, in a reserved gutter, so nothing shifts. The gutter
+   doubles as the side gap. */
+[data-dash] [data-scroll] {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s;
+}
+[data-dash] [data-scroll]:hover,
+[data-dash] [data-scroll]:focus-within {
+  scrollbar-color: oklch(var(--q-ink) / 0.22) transparent;
+}
+
+/* Labels: tinted words with 4px corners, never pills or dots. */
+[data-dash] [data-slot="badge"] {
+  border-radius: 4px;
+  padding: 1px 6px;
+  background: oklch(var(--q-ink) / 0.06);
+}
+[data-dash] [data-slot="badge"].text-brand-text { background: color-mix(in oklch, var(--brand) 14%, transparent); }
+[data-dash] [data-slot="badge"].text-warning { background: color-mix(in oklch, var(--warning) 12%, transparent); }
+[data-dash] [data-slot="badge"].text-destructive { background: color-mix(in oklch, var(--destructive) 12%, transparent); }

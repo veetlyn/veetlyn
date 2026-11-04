@@ -20,14 +20,14 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import AppFrame, { initialsOf, navItemClass, Switcher } from "@/components/app-frame";
+import AppFrame, { navItemClass } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
-import { AgentIcon } from "@/components/agent-icon";
 import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { usePlatformName } from "@/components/platform-name";
+import { sellerOptions, useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
 import { trpc } from "@/utils/trpc";
 
 const PAGES = {
@@ -89,7 +89,8 @@ export default function TeamShell({
   });
 
   const name = scope?.seller?.name ?? slug.replace(/-/g, " ");
-  const initials = initialsOf(name);
+  const workspaces = useMyWorkspaces();
+  const organization = workspaces.find((w) => [...w.servicesTeams, ...w.stores].some((s) => s.slug === slug));
   const role = scope?.seller?.role;
   const roleLabel = !role
     ? ""
@@ -114,12 +115,22 @@ export default function TeamShell({
       ? { kind: "record", teamId, record: { type: "project", id: projectId } }
       : { kind: "seller", teamId };
 
-  const crumbs = [{ href: `/${slug}`, label: name }].concat(
-    segments.map((segment, i) => ({
+  // Workspace › seller › section › record. The workspace and seller crumbs switch; the sidebar lists the sections.
+  const crumbs = [
+    ...(organization
+      ? [{ href: `/w/${organization.id}`, label: organization.name, options: workspaceOptions(workspaces), menuLabel: "Workspaces" }]
+      : []),
+    {
+      href: `/${slug}`,
+      label: name,
+      options: organization ? sellerOptions(organization) : undefined,
+      menuLabel: organization ? `Sellers in ${organization.name}` : undefined,
+    },
+    ...segments.map((segment, i) => ({
       href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
-      label: (segment === "calls" ? platform : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
+      label: (segment === "calls" ? "Chats" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
     })),
-  );
+  ];
   const isActive = (href: string) =>
     href === `/${slug}` ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
   const link = (href: string, label: string, Icon: React.ComponentType<{ className?: string }>) => (
@@ -136,7 +147,6 @@ export default function TeamShell({
   const recent = (calls.data?.calls ?? []).slice(0, 5);
 
   const pageLinks = [
-    ...(services ? [{ href: `/${slug}/calls`, label: platform }] : []),
     { href: `/${slug}`, label: "Overview" },
     ...sections.flatMap((s) => s.pages.map((p) => ({ href: `/${slug}/${p}`, label: PAGES[p].label }))),
   ];
@@ -145,21 +155,19 @@ export default function TeamShell({
     <AppFrame
       fill={pathname.startsWith(`/${slug}/calls`)}
       crumbs={crumbs}
+      chatsPath={services ? `/${slug}/calls` : undefined}
+      searchItems={[
+        ...pageLinks.map((l) => ({ ...l, detail: name })),
+        ...recent.map((c) => ({ href: `/${slug}/calls?call=${c.id}`, label: c.title, detail: "Chat" })),
+        ...workspaces.flatMap((w) => sellerOptions(w).map((o) => ({ ...o, detail: `${o.detail} in ${w.name}` }))),
+      ]}
       sidebar={
         <>
-          <Switcher
-            href="/"
-            initials={initials}
-            name={name}
-            detail={roleLabel}
-            label={`${name}, ${roleLabel}. All workspaces`}
-          />
           {projectId && services && teamId ? (
             <ProjectNav slug={slug} projectId={projectId} teamId={teamId} />
           ) : (
             <>
               <nav aria-label="Seller" className="grid gap-0.5">
-                {services ? link(`/${slug}/calls`, platform, AgentIcon) : null}
                 {link(`/${slug}`, "Overview", LayoutGrid)}
                 {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
               </nav>
@@ -173,7 +181,7 @@ export default function TeamShell({
                   </nav>
                 </div>
               ))}
-              <RecentCalls calls={recent} callsPath={`/${slug}/calls`} />
+              <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Chats" />
             </>
           )}
         </>

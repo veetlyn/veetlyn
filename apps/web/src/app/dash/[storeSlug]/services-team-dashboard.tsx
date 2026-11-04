@@ -6,6 +6,8 @@ import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { AgentIcon } from "@/components/agent-icon";
+
 import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import Loader from "@/components/loader";
 import PayPalConnectCard from "@/components/paypal-connect-card";
@@ -193,7 +195,7 @@ export default function ServicesTeamDashboard({
       aria-label={`Ask ${platform}`}
       className="mx-auto grid w-full max-w-2xl gap-5 px-4 pt-14 pb-10 text-center md:pt-20"
     >
-      <h1 className="font-heading text-[32px] leading-[1.1] tracking-[-0.03em] md:text-[38px]">
+      <h1 className="font-heading text-[33px] leading-[1.1] tracking-[-0.03em] md:text-[39px]">
         What should {team.name} get done{firstName ? `, ${firstName}` : ""}?
       </h1>
       <AskBar
@@ -219,21 +221,17 @@ export default function ServicesTeamDashboard({
         <div className="grid min-w-0 gap-6">
           {embedded ? (
             <header className="grid gap-2">
-              <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-                <span className="grid size-5 place-items-center rounded-[5px] bg-brand text-brand-foreground">
-                  <svg viewBox="0 0 16 16" className="size-3" aria-hidden="true">
-                    <path d="M8 1.5 9.4 6.6 14.5 8 9.4 9.4 8 14.5 6.6 9.4 1.5 8 6.6 6.6Z" fill="currentColor" />
-                  </svg>
-                </span>
+              <p className="flex items-center gap-2 text-[14px] text-muted-foreground">
+                <AgentIcon className="size-4 shrink-0" />
                 <span>
                   <b className="font-semibold text-foreground">{platform}</b> for {team.name},{" "}
                   {SERVICES_TEAM_ROLE_LABELS[role ?? "admin"] ?? role}
                 </span>
               </p>
               {embedded ? (
-                <h1 className="font-heading text-[30px] leading-[1.1] tracking-[-0.03em]">{headline}</h1>
+                <h1 className="font-heading text-[31px] leading-[1.1] tracking-[-0.03em]">{headline}</h1>
               ) : (
-                <h2 className="font-heading text-[22px] leading-[1.15] tracking-[-0.02em]">{headline}</h2>
+                <h2 className="font-heading text-[23px] leading-[1.15] tracking-[-0.02em]">{headline}</h2>
               )}
               <p className="text-sm text-muted-foreground">
                 {solo ? "Selling as just me" : "Selling as a team"} on{" "}
@@ -251,7 +249,7 @@ export default function ServicesTeamDashboard({
 
           {needs.length > 0 ? (
             <section aria-labelledby="needs-h" className="frame frame-panel">
-              <div className="frame-head text-[13px]">
+              <div className="frame-head text-[14px]">
                 <h2 id="needs-h" className="font-medium">
                   Needs you
                 </h2>
@@ -262,7 +260,7 @@ export default function ServicesTeamDashboard({
                   <li key={need.key} className="flex items-center gap-3 border-b px-3.5 py-3 last:border-b-0">
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{need.title}</p>
-                      <p className="truncate text-[13px] text-muted-foreground">{need.detail}</p>
+                      <p className="truncate text-[14px] text-muted-foreground">{need.detail}</p>
                     </div>
                     {need.amount ? <span className="font-tabular font-semibold">{need.amount}</span> : null}
                     <Link
@@ -343,7 +341,7 @@ export default function ServicesTeamDashboard({
           <PublishCard teamSlug={team.slug} publicUrl={url} />
           <PayPalConnectCard teamId={team.id} />
           <section className="frame frame-panel">
-            <div className="frame-head text-[13px]">
+            <div className="frame-head text-[14px]">
               <h2 className="font-medium">Store</h2>
               {settings?.storeEnabled ? (
                 <div className="ml-auto flex gap-3">
@@ -396,10 +394,10 @@ export default function ServicesTeamDashboard({
 function Figure({ label, value, note }: { label: string; value: string; note: string }) {
   return (
     <div className="frame frame-panel">
-      <p className="frame-head text-[13px] font-medium">{label}</p>
+      <p className="frame-head text-[14px] font-medium">{label}</p>
       <div className="frame frame-body px-3.5 py-3">
-        <p className="font-tabular text-[22px] font-semibold tracking-[-0.02em]">{value}</p>
-        <p className="text-[13px] text-muted-foreground">{note}</p>
+        <p className="font-tabular text-[23px] font-semibold tracking-[-0.02em]">{value}</p>
+        <p className="text-[14px] text-muted-foreground">{note}</p>
       </div>
     </div>
   );

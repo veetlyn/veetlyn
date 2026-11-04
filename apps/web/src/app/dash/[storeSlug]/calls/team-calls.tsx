@@ -138,7 +138,6 @@ export default function TeamCalls({
   const available = calls.data?.available ?? false;
   const current = thread.data?.call ?? null;
   const onTable = current?.projectId ?? (activeCallId ? null : projectId);
-  const others = (calls.data?.calls ?? []).filter((c) => c.id !== activeCallId).slice(0, 6);
   const firstName = session?.user.name.split(/\s+/)[0] ?? "";
   const scopeLabel = onTable ? "This project" : scopeName;
 
@@ -166,12 +165,12 @@ export default function TeamCalls({
   );
 
   const conversation = (
-    <section aria-label="Call" className="flex h-full min-h-0 min-w-0 flex-col">
+    <section aria-label="Chat" className="flex h-full min-h-0 min-w-0 flex-col">
       {activeCallId ? (
         <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
           <span className="truncate text-sm font-medium">{current?.title ?? ""}</span>
           <Link href={callsPath} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "ml-auto")}>
-            New call
+            New chat
           </Link>
         </div>
       ) : null}
@@ -188,35 +187,18 @@ export default function TeamCalls({
           </p>
         ) : null}
         {activeCallId && thread.isPending ? <Loader /> : null}
-        {thread.isError ? <p className="text-sm text-muted-foreground">This call is not available.</p> : null}
+        {thread.isError ? <p className="text-sm text-muted-foreground">This chat isn’t available.</p> : null}
         {!activeCallId ? (
           <div className="mx-auto flex min-h-full max-w-2xl flex-col justify-center gap-6 py-8">
-            <h1 className="flex items-center justify-center gap-3 text-center font-heading text-[28px] leading-tight tracking-[-0.02em]">
-              <AgentIcon className="size-7 shrink-0 text-brand" />
+            <h1 className="flex items-center justify-center gap-3 text-center font-heading text-[29px] leading-tight tracking-[-0.02em]">
+              <AgentIcon className="size-7 shrink-0" />
               {firstName ? `Hello, ${firstName}` : "Hello"}
             </h1>
             {composer}
-            <p className="text-center text-[13px] text-muted-foreground">
+            <p className="text-center text-[14px] text-muted-foreground">
               {assistantName} reads what you can see and drafts quotes, messages and payout decisions. Nothing is sent
               until you confirm it.
             </p>
-            {others.length > 0 ? (
-              <div>
-                <p className="pb-1 text-xs font-medium text-muted-foreground">Recent calls</p>
-                <ul className="grid gap-0.5">
-                  {others.map((c) => (
-                    <li key={c.id}>
-                      <Link
-                        href={`${callsPath}?call=${c.id}`}
-                        className="block truncate rounded-[9px] px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
-                      >
-                        {c.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </div>
         ) : null}
         {activeCallId ? (
@@ -236,7 +218,7 @@ export default function TeamCalls({
               ) : (
                 <li key={entry.id} className="space-y-1">
                   <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <AgentIcon className="size-3.5 text-brand" />
+                    <AgentIcon className="size-3.5" />
                     {assistantName}
                   </p>
                   <p className="text-sm whitespace-pre-wrap">{entry.body}</p>

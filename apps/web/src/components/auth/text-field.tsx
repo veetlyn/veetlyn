@@ -11,7 +11,7 @@ export default function TextField({
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input className="h-11 rounded-[10px] text-base lg:text-[15px]" id={id} aria-describedby={hint ? hintId : undefined} {...input} />
+      <Input className="h-11 rounded-[10px] text-base lg:text-[16px]" id={id} aria-describedby={hint ? hintId : undefined} {...input} />
       {hint ? (
         <p id={hintId} className="text-xs text-muted-foreground">
           {hint}

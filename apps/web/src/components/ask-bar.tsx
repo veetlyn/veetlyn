@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { AgentIcon } from "@/components/agent-icon";
 
 import ComposerBox from "@/components/composer-box";
 import { usePlatformName } from "@/components/platform-name";
@@ -73,7 +74,7 @@ export default function AskBar({
   return (
     <form onSubmit={send} className="shrink-0 px-3 pt-1 pb-3 md:px-6">
       <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-[12px] bg-card py-1 pr-1 pl-3.5 raised focus-within:ring-3 focus-within:ring-ring/25">
-        <AgentSpark className="size-4 shrink-0 text-brand" />
+        <AgentIcon className="size-4 shrink-0 text-brand" />
         <label htmlFor="ask-agent" className="sr-only">
           Ask {platform}
         </label>
@@ -102,13 +103,5 @@ export default function AskBar({
         </p>
       ) : null}
     </form>
-  );
-}
-
-function AgentSpark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
-      <path d="M8 1.5 9.4 6.6 14.5 8 9.4 9.4 8 14.5 6.6 9.4 1.5 8 6.6 6.6Z" fill="currentColor" />
-    </svg>
   );
 }

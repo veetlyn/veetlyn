@@ -55,7 +55,7 @@ export default function ComposerBox({
         rows={rows}
         disabled={disabled}
         autoFocus={autoFocus}
-        className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-base outline-none placeholder:text-muted-foreground disabled:opacity-60 md:text-[15px]"
+        className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-base outline-none placeholder:text-muted-foreground disabled:opacity-60 md:text-[16px]"
       />
       <div className="flex items-center gap-2 px-3 pb-3">
         <span className="flex h-7 min-w-0 items-center gap-1.5 rounded-[8px] bg-secondary px-2.5 text-xs text-muted-foreground">
