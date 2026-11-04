@@ -4,6 +4,7 @@ import type { ContextNode } from "@jendal-workspace/core/context/node";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
+import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowUp } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 
 import { AgentIcon } from "@/components/agent-icon";
 import Loader from "@/components/loader";
+import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
 
 type Entry = inferRouterOutputs<AppRouter>["agent"]["thread"]["entries"][number];
@@ -90,6 +92,7 @@ export default function TeamCalls({
   subject?: (projectId: string | null) => React.ReactNode;
 }) {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   // A new call is shown as soon as the server names it: moving to ?call= reloads the server page, which can take a
@@ -143,7 +146,52 @@ export default function TeamCalls({
   const available = calls.data?.available ?? false;
   const current = thread.data?.call ?? null;
   const onTable = current?.projectId ?? (activeCallId ? null : projectId);
-  const others = (calls.data?.calls ?? []).filter((c) => c.id !== activeCallId).slice(0, 8);
+  const others = (calls.data?.calls ?? []).filter((c) => c.id !== activeCallId).slice(0, 6);
+  const firstName = session?.user.name.split(/\s+/)[0] ?? "";
+  const scopeLabel = onTable ? "This project" : backLabel;
+
+  const composer = (
+    <form onSubmit={send} className={activeCallId ? "shrink-0 px-3 pt-1 pb-3" : "w-full"}>
+      <label htmlFor="call-message" className="sr-only">
+        Message
+      </label>
+      <div className="relative">
+        <Textarea
+          id="call-message"
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) event.currentTarget.form?.requestSubmit();
+          }}
+          placeholder={activeCallId ? `Reply to ${assistantName}` : "What needs doing?"}
+          autoFocus={!activeCallId}
+          aria-keyshortcuts="Control+Enter Meta+Enter"
+          maxLength={4000}
+          disabled={!available}
+          className="min-h-28 rounded-[16px] pr-14 pb-12 text-[15px]"
+        />
+        <span className="pointer-events-none absolute bottom-3 left-3.5 flex items-center gap-1.5 rounded-[7px] bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+          <AgentIcon className="size-3 text-brand" />
+          {scopeLabel}
+        </span>
+        <Button
+          type="submit"
+          variant="mint"
+          size="icon-sm"
+          aria-label="Send"
+          className="absolute right-2.5 bottom-2.5"
+          disabled={!available || ask.isPending || message.trim() === ""}
+        >
+          <ArrowUp aria-hidden="true" />
+        </Button>
+      </div>
+      {ask.error ? (
+        <p role="alert" className="mt-1.5 text-sm text-destructive">
+          {ask.error.message}
+        </p>
+      ) : null}
+    </form>
+  );
 
   const conversation = (
     <section aria-label="Call" className="flex h-full min-h-0 min-w-0 flex-col">
@@ -162,7 +210,7 @@ export default function TeamCalls({
           </Link>
         ) : null}
       </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-5">
+      <div className={cn("min-h-0 flex-1 space-y-4 overflow-y-auto px-4", activeCallId ? "py-5" : "py-0")}>
         {!available ? (
           <p className="panel p-4 text-sm text-muted-foreground">The assistant is not set up on this server yet.</p>
         ) : null}
@@ -177,17 +225,19 @@ export default function TeamCalls({
         {activeCallId && thread.isPending ? <Loader /> : null}
         {thread.isError ? <p className="text-sm text-muted-foreground">This call is not available.</p> : null}
         {!activeCallId ? (
-          <div className="space-y-4 pt-6">
-            <div className="space-y-1.5">
-              <h1 className="font-heading text-2xl">What needs doing?</h1>
-              <p className="text-sm text-muted-foreground">
-                {assistantName} reads what you can see here, answers, and drafts payout decisions, quotes and messages
-                for you to confirm. Nothing is sent until you confirm it.
-              </p>
-            </div>
+          <div className="mx-auto flex min-h-full max-w-2xl flex-col justify-center gap-6 py-8">
+            <h1 className="flex items-center justify-center gap-3 text-center font-heading text-[28px] leading-tight tracking-[-0.02em]">
+              <AgentIcon className="size-7 shrink-0 text-brand" />
+              {firstName ? `Hello, ${firstName}` : "Hello"}
+            </h1>
+            {composer}
+            <p className="text-center text-[13px] text-muted-foreground">
+              {assistantName} reads what you can see and drafts quotes, messages and payout decisions. Nothing is sent
+              until you confirm it.
+            </p>
             {others.length > 0 ? (
               <div>
-                <p className="pb-1 text-xs font-medium text-muted-foreground">Your calls</p>
+                <p className="pb-1 text-xs font-medium text-muted-foreground">Recent calls</p>
                 <ul className="grid gap-0.5">
                   {others.map((c) => (
                     <li key={c.id}>
@@ -204,67 +254,35 @@ export default function TeamCalls({
             ) : null}
           </div>
         ) : null}
-        <ol className="space-y-4">
-          {thread.data?.entries.map((entry) =>
-            entry.kind === "proposal" ? (
-              <li key={entry.id}>
-                <ProposalCard entry={entry} onDecided={refresh} />
-              </li>
-            ) : entry.author === "person" ? (
-              <li
-                key={entry.id}
-                className="ml-auto max-w-[85%] rounded-[14px_14px_4px_14px] bg-secondary px-3.5 py-2.5 text-sm whitespace-pre-wrap"
-              >
-                {entry.body}
-              </li>
-            ) : (
-              <li key={entry.id} className="space-y-1">
-                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <AgentIcon className="size-3.5 text-brand" />
-                  {assistantName}
-                </p>
-                <p className="text-sm whitespace-pre-wrap">{entry.body}</p>
-              </li>
-            ),
-          )}
-          {ask.isPending ? <li className="text-sm text-muted-foreground">{assistantName} is looking…</li> : null}
-        </ol>
-      </div>
-      <form onSubmit={send} className="shrink-0 px-3 pt-1 pb-3">
-        <label htmlFor="call-message" className="sr-only">
-          Message
-        </label>
-        <div className="relative">
-          <Textarea
-            id="call-message"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) event.currentTarget.form?.requestSubmit();
-            }}
-            placeholder={activeCallId ? `Reply to ${assistantName}` : `Ask ${assistantName}`}
-            aria-keyshortcuts="Control+Enter Meta+Enter"
-            maxLength={4000}
-            disabled={!available}
-            className="min-h-24 rounded-[14px] pr-14 pb-3"
-          />
-          <Button
-            type="submit"
-            variant="mint"
-            size="icon-sm"
-            aria-label="Send"
-            className="absolute right-2.5 bottom-2.5"
-            disabled={!available || ask.isPending || message.trim() === ""}
-          >
-            <ArrowUp aria-hidden="true" />
-          </Button>
-        </div>
-        {ask.error ? (
-          <p role="alert" className="mt-1.5 text-sm text-destructive">
-            {ask.error.message}
-          </p>
+        {activeCallId ? (
+          <ol className="space-y-4">
+            {thread.data?.entries.map((entry) =>
+              entry.kind === "proposal" ? (
+                <li key={entry.id}>
+                  <ProposalCard entry={entry} onDecided={refresh} />
+                </li>
+              ) : entry.author === "person" ? (
+                <li
+                  key={entry.id}
+                  className="ml-auto max-w-[85%] rounded-[14px_14px_4px_14px] bg-secondary px-3.5 py-2.5 text-sm whitespace-pre-wrap"
+                >
+                  {entry.body}
+                </li>
+              ) : (
+                <li key={entry.id} className="space-y-1">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <AgentIcon className="size-3.5 text-brand" />
+                    {assistantName}
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">{entry.body}</p>
+                </li>
+              ),
+            )}
+            {ask.isPending ? <li className="text-sm text-muted-foreground">{assistantName} is looking…</li> : null}
+          </ol>
         ) : null}
-      </form>
+      </div>
+      {activeCallId ? composer : null}
     </section>
   );
 

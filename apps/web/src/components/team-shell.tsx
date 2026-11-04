@@ -80,12 +80,6 @@ export default function TeamShell({
   const seller = useQuery({ ...trpc.agent.seller.queryOptions({ slug }), retry: false, meta: { silent: true } });
   const scope = seller.data?.scope;
   const services = scope?.seller?.role.product === "services";
-  const rules = useQuery({
-    ...trpc.rules.state.queryOptions({ teamSlug: slug }),
-    enabled: services,
-    retry: false,
-    meta: { silent: true },
-  });
   const teamId = scope?.seller?.id ?? "";
   const calls = useQuery({
     ...trpc.agent.calls.queryOptions({ node: { kind: "seller", teamId } }),
@@ -197,22 +191,7 @@ export default function TeamShell({
       banner={
         <>
           <BillingNotice slug={slug} />
-          {rules.data?.memberAccepted === false && pathname !== `/${slug}/settings/operating-model` ? (
-            <div
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7"
-              role="status"
-            >
-              <p className="text-sm">
-                Accept version {rules.data.published.version} of the member agreement before taking new work.
-              </p>
-              <Link
-                href={`/${slug}/settings/operating-model#published-rules`}
-                className="text-sm font-semibold underline underline-offset-4"
-              >
-                Review team rules
-              </Link>
-            </div>
-          ) : null}
+
         </>
       }
       ask={

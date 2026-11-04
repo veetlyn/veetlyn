@@ -62,6 +62,8 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   });
   const payouts = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), enabled: admin && !solo, ...quiet });
   const payments = useQuery({ ...trpc.money.payments.queryOptions({ teamSlug }), enabled: admin, ...quiet });
+  // Members who take work accept the published member agreement first; an admin accepts it by publishing.
+  const rules = useQuery({ ...trpc.rules.state.queryOptions({ teamSlug }), enabled: result.isSuccess && !admin, ...quiet });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
       onSuccess: () =>
@@ -110,6 +112,18 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
     (p) => p.status === "awaiting_deposit" || p.status === "delivered" || p.status === "awaiting_balance",
   );
   const needs: Need[] = [
+    ...(rules.data?.memberAccepted === false
+      ? [
+          {
+            key: "agreement",
+            title: `Accept version ${rules.data.published.version} of the member agreement`,
+            detail: "You take new work once you have accepted it.",
+            href: `/${teamSlug}/settings/operating-model#published-rules`,
+            action: "Review",
+            primary: true,
+          },
+        ]
+      : []),
     ...(toApprove.length > 0
       ? [
           {
