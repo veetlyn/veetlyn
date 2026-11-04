@@ -39,3 +39,9 @@ export async function findTeamById(db: Database, teamId: string): Promise<StoreR
   const [row] = await db.select(teamColumns).from(team).where(eq(team.id, teamId)).limit(1);
   return row ?? null;
 }
+
+// The seller (services team or store) a slug names, of either kind; access is checked by the caller.
+export async function findTeamIdBySlug(db: DbExecutor, slug: string): Promise<string | null> {
+  const [row] = await db.select({ id: team.id }).from(team).where(eq(team.slug, slug)).limit(1);
+  return row?.id ?? null;
+}
