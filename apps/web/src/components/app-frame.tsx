@@ -10,7 +10,7 @@ import UserMenu from "@/components/user-menu";
 export type Crumb = { href: string; label: string };
 
 // The dash frame at every level of the context tree (calls design §6): the node's sidebar on the tray, the page on a
-// framed canvas with where you are on top, and Veetlyn at the foot. Only the canvas scrolls.
+// framed canvas with where you are on top, and the assistant at the foot. Only the canvas scrolls.
 export default function AppFrame({
   sidebar,
   mobileNav,

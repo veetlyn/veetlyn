@@ -49,7 +49,7 @@ function usePresentParts(): string[] {
 }
 
 // The sidebar on a project (calls design §6): the second switcher names the project and jumps to another, then the
-// way back to the projects, the project's parts and its calls with Veetlyn.
+// way back to the projects, the project's parts and its calls with the assistant.
 export default function ProjectNav({ slug, projectId, teamId }: { slug: string; projectId: string; teamId: string }) {
   const router = useRouter();
   const detail = useQuery({

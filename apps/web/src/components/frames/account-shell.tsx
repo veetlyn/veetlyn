@@ -8,14 +8,15 @@ import { usePathname } from "next/navigation";
 import AppFrame, { initialsOf, navItemClass, Switcher } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
-import { VeetlynIcon } from "@/components/veetlyn-icon";
+import { AgentIcon } from "@/components/agent-icon";
 import type { WorkspaceOrganization } from "@/lib/workspaces";
+import { usePlatformName } from "@/components/platform-name";
 import { trpc } from "@/utils/trpc";
 
 const NODE = { kind: "account" as const };
 
 // The frame of the account, the top of the context tree: the person's own purchases and earnings, their workspaces,
-// and Veetlyn looking across all of them.
+// and the assistant looking across all of them.
 export default function AccountShell({
   personName,
   workspaces,
@@ -26,6 +27,7 @@ export default function AccountShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const platform = usePlatformName();
   const scope = useQuery({ ...trpc.agent.node.queryOptions({ node: NODE }), retry: false, meta: { silent: true } });
   const calls = useQuery({
     ...trpc.agent.calls.queryOptions({ node: NODE }),
@@ -56,7 +58,7 @@ export default function AccountShell({
         : pathname.startsWith("/me/payouts")
           ? [{ href: "/me/payouts", label: "Your earnings" }]
           : pathname.startsWith("/me/calls")
-            ? [{ href: "/me/calls", label: "Veetlyn" }]
+            ? [{ href: "/me/calls", label: platform }]
             : []),
   ];
 
@@ -73,7 +75,7 @@ export default function AccountShell({
             label={`${name}. Your account`}
           />
           <nav aria-label="Account" className="grid gap-0.5">
-            {link("/me/calls", "Veetlyn", VeetlynIcon)}
+            {link("/me/calls", platform, AgentIcon)}
             {link("/", "Overview", LayoutGrid)}
             {link("/me", "Personal", UserRound)}
             {link("/me/projects", "Your projects", ShoppingBag)}
@@ -92,7 +94,7 @@ export default function AccountShell({
       }
       ask={
         scope.data?.available && !pathname.startsWith("/me/calls") ? (
-          <AskBar callsPath="/me/calls" node={NODE} placeholder="Ask Veetlyn about everything you have" />
+          <AskBar callsPath="/me/calls" node={NODE} placeholder={`Ask ${platform} about everything you have`} />
         ) : null
       }
     >

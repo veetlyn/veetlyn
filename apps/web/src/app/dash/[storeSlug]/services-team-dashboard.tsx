@@ -14,6 +14,7 @@ import TeamNotFound from "@/components/services-team/team-not-found";
 import SetupChecklist from "@/components/setup-checklist";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
+import { usePlatformName } from "@/components/platform-name";
 import { trpc } from "@/utils/trpc";
 
 const HOUR_MS = 3_600_000;
@@ -44,10 +45,11 @@ function answerBy(respondBy: string | null, now: number): string {
   return hours === 1 ? "Answer within 1 hour" : `Answer within ${hours} hours`;
 }
 
-// The seller's home (calls design §6): Veetlyn's account of what needs the person, built only from the team's records,
+// The seller's home (calls design §6): the assistant's account of what needs the person, built only from the team's records,
 // the money that moved, and beside it the setup, the seller page, PayPal and the store.
 export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug: string; urlParts: StoreUrlParts }) {
   const queryClient = useQueryClient();
+  const platform = usePlatformName();
   const result = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), ...quiet });
   const role = result.data?.role;
   const admin = role === "admin";
@@ -166,7 +168,7 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
               </svg>
             </span>
             <span>
-              <b className="font-semibold text-foreground">Veetlyn</b> for {team.name},{" "}
+              <b className="font-semibold text-foreground">{platform}</b> for {team.name},{" "}
               {SERVICES_TEAM_ROLE_LABELS[role ?? "admin"] ?? role}
             </span>
           </p>

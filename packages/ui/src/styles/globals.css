@@ -46,7 +46,7 @@
   --info: oklch(42% 0.07 250);
   --info-wash: oklch(95% 0.02 250);
   --scrim: rgb(10 10 16 / 0.45);
-  --tray: #ececee;
+  --tray: #f1f1f3;
   --stage: #121215;
   --stage-ink: #f1f1f3;
   --stage-muted: #9a9aa3;
@@ -106,7 +106,7 @@
   --info: oklch(86% 0.05 250);
   --info-wash: oklch(30% 0.04 250);
   --scrim: rgb(0 0 0 / 0.6);
-  --tray: #151517;
+  --tray: #111113;
   --stage: #1a1a1e;
   --stage-card: #25252a;
   --band: #1f1f23;

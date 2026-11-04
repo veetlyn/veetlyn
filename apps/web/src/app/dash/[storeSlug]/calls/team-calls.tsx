@@ -5,6 +5,7 @@ import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
@@ -208,29 +209,36 @@ export default function TeamCalls({
           <label htmlFor="call-message" className="sr-only">
             Message
           </label>
-          <Textarea
-            id="call-message"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) event.currentTarget.form?.requestSubmit();
-            }}
-            placeholder={activeCallId ? "Reply" : "What do you need? For example: which payouts wait for me?"}
-            maxLength={4000}
-            disabled={!available}
-          />
-          <div className="flex items-center justify-between gap-3">
-            {ask.error ? (
-              <p role="alert" className="text-sm text-destructive">
-                {ask.error.message}
-              </p>
-            ) : (
-              <span className="text-xs text-muted-foreground">Ctrl or ⌘ + Enter sends</span>
-            )}
-            <Button type="submit" disabled={!available || ask.isPending || message.trim() === ""}>
-              Send
+          <div className="relative">
+            <Textarea
+              id="call-message"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) event.currentTarget.form?.requestSubmit();
+              }}
+              placeholder={activeCallId ? "Reply" : "What do you need? For example: which payouts wait for me?"}
+              aria-keyshortcuts="Control+Enter Meta+Enter"
+              maxLength={4000}
+              disabled={!available}
+              className="min-h-24 pr-14 pb-3"
+            />
+            <Button
+              type="submit"
+              variant="mint"
+              size="icon-sm"
+              aria-label="Send"
+              className="absolute right-2.5 bottom-2.5"
+              disabled={!available || ask.isPending || message.trim() === ""}
+            >
+              <ArrowUp aria-hidden="true" />
             </Button>
           </div>
+          {ask.error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {ask.error.message}
+            </p>
+          ) : null}
         </form>
       </section>
     </main>

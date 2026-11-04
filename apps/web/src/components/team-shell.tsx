@@ -23,10 +23,11 @@ import { usePathname } from "next/navigation";
 import AppFrame, { initialsOf, navItemClass, Switcher } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
-import { VeetlynIcon } from "@/components/veetlyn-icon";
+import { AgentIcon } from "@/components/agent-icon";
 import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
+import { usePlatformName } from "@/components/platform-name";
 import { trpc } from "@/utils/trpc";
 
 const PAGES = {
@@ -57,7 +58,6 @@ const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
 
 const SEGMENT_LABELS = new Map<string, string>([
   ...Object.entries(PAGES).map(([page, { label }]): [string, string] => [page, label]),
-  ["calls", "Veetlyn"],
   ["rules", "Rules"],
   ["operating-model", "Operating model"],
   ["channels", "Channels"],
@@ -65,7 +65,7 @@ const SEGMENT_LABELS = new Map<string, string>([
 ]);
 
 // The frame around every seller page (calls design §6): the seller's sections on the tray, the page on a framed canvas,
-// and Veetlyn at the foot of every page. What the sidebar lists comes from the seller's node: its product, the
+// and the assistant at the foot of every page. What the sidebar lists comes from the seller's node: its product, the
 // workspace's plan and the person's role.
 export default function TeamShell({
   slug,
@@ -76,6 +76,7 @@ export default function TeamShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const platform = usePlatformName();
   const seller = useQuery({ ...trpc.agent.seller.queryOptions({ slug }), retry: false, meta: { silent: true } });
   const scope = seller.data?.scope;
   const services = scope?.seller?.role.product === "services";
@@ -112,7 +113,7 @@ export default function TeamShell({
 
   const segments = pathname.split("/").filter(Boolean).slice(1);
   const projectId = segments[0] === "projects" && segments[1] && segments[1] !== "new" ? segments[1] : null;
-  // Where Veetlyn starts from on this page: the project open here, or the whole seller.
+  // Where the assistant starts from on this page: the project open here, or the whole seller.
   const node: ContextNode | null = !teamId
     ? null
     : projectId && services
@@ -122,7 +123,7 @@ export default function TeamShell({
   const crumbs = [{ href: `/${slug}`, label: name }].concat(
     segments.map((segment, i) => ({
       href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
-      label: SEGMENT_LABELS.get(segment) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
+      label: (segment === "calls" ? platform : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
     })),
   );
   const isActive = (href: string) =>
@@ -141,7 +142,7 @@ export default function TeamShell({
   const recent = (calls.data?.calls ?? []).slice(0, 5);
 
   const pageLinks = [
-    ...(services ? [{ href: `/${slug}/calls`, label: "Veetlyn" }] : []),
+    ...(services ? [{ href: `/${slug}/calls`, label: platform }] : []),
     { href: `/${slug}`, label: "Overview" },
     ...sections.flatMap((s) => s.pages.map((p) => ({ href: `/${slug}/${p}`, label: PAGES[p].label }))),
   ];
@@ -163,7 +164,7 @@ export default function TeamShell({
           ) : (
             <>
               <nav aria-label="Seller" className="grid gap-0.5">
-                {services ? link(`/${slug}/calls`, "Veetlyn", VeetlynIcon) : null}
+                {services ? link(`/${slug}/calls`, platform, AgentIcon) : null}
                 {link(`/${slug}`, "Overview", LayoutGrid)}
                 {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
               </nav>
@@ -218,7 +219,7 @@ export default function TeamShell({
           <AskBar
             callsPath={`/${slug}/calls`}
             node={node}
-            placeholder={projectId ? "Ask Veetlyn about this project" : `Ask Veetlyn about ${name}`}
+            placeholder={projectId ? `Ask ${platform} about this project` : `Ask ${platform} about ${name}`}
           />
         ) : null
       }
