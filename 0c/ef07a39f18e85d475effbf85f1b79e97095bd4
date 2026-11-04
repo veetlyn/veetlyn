@@ -1,0 +1,28 @@
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/clients-section.tsx
+  h_6877e5e7a06bc5 75
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/conversation-section.tsx
+  h_6877e5e7a06bc5 154
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/member-marks.tsx
+  h_6877e5e7a06bc5 58
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 314,325,355,382,447,518,619
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/refund-section.tsx
+  h_6877e5e7a06bc5 48
+apps/web/src/components/page-sections-nav.tsx
+  h_6877e5e7a06bc5 9
+apps/web/src/components/project-nav.tsx
+  h_6877e5e7a06bc5 1-153
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 29,48-55,79-86,106-111,113-119,154-157,164-166,173-180,182-210,227-230,247-254,270-280,288-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0cef07a39f18e85d475effbf85f1b79e97095bd4",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
