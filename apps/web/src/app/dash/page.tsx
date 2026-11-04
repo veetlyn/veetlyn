@@ -8,13 +8,13 @@ import { listMyWorkspaces, requireSession } from "@/lib/server-api";
 // The account: the person's own purchases and earnings first, then each workspace they belong to. A workspace's
 // sellers sit one level down, so the account level exists even for someone with one workspace.
 export default async function AccountHome() {
-  await requireSession();
+  const session = await requireSession();
   const workspaces = await listMyWorkspaces();
   const organizations = workspaces.filter((o) => o.stores.length + o.servicesTeams.length > 0);
   if (organizations.length === 0) redirect("/new/services-team");
 
   return (
-    <AccountShell workspaces={organizations}>
+    <AccountShell personName={session.user.name} workspaces={organizations}>
       <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6 md:px-7 md:py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="font-heading text-3xl">Your account</h1>

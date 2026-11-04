@@ -3,7 +3,7 @@ import { listMyWorkspaces, requireSession } from "@/lib/server-api";
 
 // The person's own pages sit in the account's frame.
 export default async function PersonalLayout({ children }: { children: React.ReactNode }) {
-  await requireSession();
+  const session = await requireSession();
   const workspaces = await listMyWorkspaces();
-  return <AccountShell workspaces={workspaces}>{children}</AccountShell>;
+  return <AccountShell personName={session.user.name} workspaces={workspaces}>{children}</AccountShell>;
 }

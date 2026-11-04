@@ -5,11 +5,10 @@ import { Building2, HandCoins, LayoutGrid, ShoppingBag, UserRound } from "lucide
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import AppFrame, { navItemClass, Switcher } from "@/components/app-frame";
+import AppFrame, { initialsOf, navItemClass, Switcher } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
 import { VeetlynIcon } from "@/components/veetlyn-icon";
-import { authClient } from "@/lib/auth-client";
 import type { WorkspaceOrganization } from "@/lib/workspaces";
 import { trpc } from "@/utils/trpc";
 
@@ -18,14 +17,15 @@ const NODE = { kind: "account" as const };
 // The frame of the account, the top of the context tree: the person's own purchases and earnings, their workspaces,
 // and Veetlyn looking across all of them.
 export default function AccountShell({
+  personName,
   workspaces,
   children,
 }: {
+  personName: string;
   workspaces: WorkspaceOrganization[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { data: session } = authClient.useSession();
   const scope = useQuery({ ...trpc.agent.node.queryOptions({ node: NODE }), retry: false, meta: { silent: true } });
   const calls = useQuery({
     ...trpc.agent.calls.queryOptions({ node: NODE }),
@@ -46,7 +46,7 @@ export default function AccountShell({
       {label}
     </Link>
   );
-  const name = session?.user.name ?? "Your account";
+  const name = personName;
   const crumbs = [
     { href: "/", label: "Your account" },
     ...(pathname === "/me"
@@ -67,7 +67,7 @@ export default function AccountShell({
         <>
           <Switcher
             href="/"
-            initials={name.slice(0, 1)}
+            initials={initialsOf(name)}
             name={name}
             detail="Your account"
             label={`${name}. Your account`}
