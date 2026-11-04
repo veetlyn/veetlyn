@@ -1,14 +1,18 @@
 // Pictures for the home page's terms, in the home pictures' language (site.css "home-*" and "terms-*" keyframes).
 
-const BOWL = "M52 12H56.0A10 10 0 0 1 56 32H52A6 6 0 0 1 46 26V18A6 6 0 0 1 52 12Z";
-const BOWL_P = "M52 28v-11h5a3 3 0 0 1 0 6h-5";
+import { LogoPathsMono } from "@/components/brand-paths";
 
+const BOWL = "M52 12H56.0A10 10 0 0 1 56 32H52A6 6 0 0 1 46 26V18A6 6 0 0 1 52 12Z";
+
+// The platform in a picture: the mint bowl with the mark, between the client and the people paid.
 function Bowl({ x, y, size }: { x: number; y: number; size: number }) {
   const k = size / 20;
   return (
     <g transform={`translate(${x - 56 * k} ${y - 22 * k}) scale(${k})`}>
       <path d={BOWL} fill="var(--brand)" />
-      <path d={BOWL_P} fill="none" stroke="var(--brand-foreground)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <g transform="translate(48.3 14.6) scale(0.24)">
+        <LogoPathsMono fill="var(--brand-foreground)" />
+      </g>
     </g>
   );
 }
