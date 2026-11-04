@@ -19,7 +19,15 @@ import { trpc } from "@/utils/trpc";
 const HOUR_MS = 3_600_000;
 const quiet = { retry: false, meta: { silent: true } } as const;
 
-type Need = { key: string; title: string; detail: string; amount?: string; href: string; action: string; primary?: boolean };
+type Need = {
+  key: string;
+  title: string;
+  detail: string;
+  amount?: string;
+  href: string;
+  action: string;
+  primary?: boolean;
+};
 
 // Sums per currency, so two currencies are never added together.
 function totals(rows: { currency: MoneyCurrency; amountMinor: number }[]): string {
@@ -45,7 +53,11 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   const admin = role === "admin";
   const solo = result.data?.settings?.solo ?? false;
   const projects = useQuery({ ...trpc.project.list.queryOptions({ teamSlug }), enabled: result.isSuccess, ...quiet });
-  const requests = useQuery({ ...trpc.project.openRequests.queryOptions({ teamSlug }), enabled: result.isSuccess && !solo, ...quiet });
+  const requests = useQuery({
+    ...trpc.project.openRequests.queryOptions({ teamSlug }),
+    enabled: result.isSuccess && !solo,
+    ...quiet,
+  });
   const payouts = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), enabled: admin && !solo, ...quiet });
   const payments = useQuery({ ...trpc.money.payments.queryOptions({ teamSlug }), enabled: admin, ...quiet });
   const enable = useMutation(
@@ -87,17 +99,27 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   const setupDone = steps.every((step) => step.done);
 
   const now = Date.now();
-  const toApprove = (payouts.data?.payouts ?? []).filter((p) => p.status === "requested" && p.approvalsNeeded > 0 && p.eligibleApprovers > 0);
+  const toApprove = (payouts.data?.payouts ?? []).filter(
+    (p) => p.status === "requested" && p.approvalsNeeded > 0 && p.eligibleApprovers > 0,
+  );
   const toAnswer = requests.data ?? [];
   const toDeliver = (projects.data ?? []).filter((p) => p.status === "in_progress");
-  const onClients = (projects.data ?? []).filter((p) => p.status === "awaiting_deposit" || p.status === "delivered" || p.status === "awaiting_balance");
+  const onClients = (projects.data ?? []).filter(
+    (p) => p.status === "awaiting_deposit" || p.status === "delivered" || p.status === "awaiting_balance",
+  );
   const needs: Need[] = [
     ...(toApprove.length > 0
       ? [
           {
             key: "payouts",
-            title: toApprove.length === 1 ? `Approve ${toApprove[0]?.memberName}'s payout` : `Approve ${toApprove.length} payouts`,
-            detail: toApprove.length === 1 ? (toApprove[0]?.projectTitle ?? "Balance payout") : toApprove.map((p) => p.memberName).join(", "),
+            title:
+              toApprove.length === 1
+                ? `Approve ${toApprove[0]?.memberName}'s payout`
+                : `Approve ${toApprove.length} payouts`,
+            detail:
+              toApprove.length === 1
+                ? (toApprove[0]?.projectTitle ?? "Balance payout")
+                : toApprove.map((p) => p.memberName).join(", "),
             amount: totals(toApprove),
             href: `/${team.slug}/payouts`,
             action: "Review",
@@ -122,7 +144,9 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
   ];
   const loading = projects.isPending || (requests.isPending && !solo) || (payouts.isPending && admin && !solo);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
-  const paidThisMonth = (payments.data ?? []).filter((p) => p.status === "captured" && p.capturedAt && Date.parse(p.capturedAt) >= monthStart);
+  const paidThisMonth = (payments.data ?? []).filter(
+    (p) => p.status === "captured" && p.capturedAt && Date.parse(p.capturedAt) >= monthStart,
+  );
   const headline = loading
     ? "Looking at what needs you…"
     : needs.length === 0
@@ -142,13 +166,19 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
               </svg>
             </span>
             <span>
-              <b className="font-semibold text-foreground">Veetlyn</b> for {team.name}, {SERVICES_TEAM_ROLE_LABELS[role ?? "admin"] ?? role}
+              <b className="font-semibold text-foreground">Veetlyn</b> for {team.name},{" "}
+              {SERVICES_TEAM_ROLE_LABELS[role ?? "admin"] ?? role}
             </span>
           </p>
           <h1 className="font-heading text-[30px] leading-[1.1] tracking-[-0.03em]">{headline}</h1>
           <p className="text-sm text-muted-foreground">
             {solo ? "Selling as just me" : "Selling as a team"} on{" "}
-            <a href={url} target="_blank" rel="noreferrer" className="underline decoration-border underline-offset-4 hover:text-foreground">
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-border underline-offset-4 hover:text-foreground"
+            >
               {url.replace(/^https?:\/\//, "")}
             </a>
           </p>
@@ -170,7 +200,13 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
                     <p className="truncate text-[13px] text-muted-foreground">{need.detail}</p>
                   </div>
                   {need.amount ? <span className="font-tabular font-semibold">{need.amount}</span> : null}
-                  <Link href={need.href} className={cn(buttonVariants({ variant: need.primary ? "mint" : "outline", size: "sm" }), need.primary && "px-4")}>
+                  <Link
+                    href={need.href}
+                    className={cn(
+                      buttonVariants({ variant: need.primary ? "mint" : "outline", size: "sm" }),
+                      need.primary && "px-4",
+                    )}
+                  >
                     {need.action}
                   </Link>
                 </li>
@@ -194,28 +230,58 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
               .map(({ n, one, many }) => `${n} ${n === 1 ? one : many}`)
               .join(", ")}
             ).{" "}
-            <Link href={`/${team.slug}/projects`} className="underline decoration-border underline-offset-4 hover:text-foreground">
+            <Link
+              href={`/${team.slug}/projects`}
+              className="underline decoration-border underline-offset-4 hover:text-foreground"
+            >
               See projects
             </Link>
           </p>
         ) : null}
 
         <section aria-label="Figures" className="grid gap-3 sm:grid-cols-3">
-          {admin ? <Figure label="Paid this month" value={totals(paidThisMonth)} note={paidThisMonth.length === 1 ? "1 payment" : `${paidThisMonth.length} payments`} /> : null}
-          {admin && !solo ? <Figure label="Payouts to approve" value={totals(toApprove)} note={toApprove.length === 1 ? "1 request" : `${toApprove.length} requests`} /> : null}
-          <Figure label="In progress" value={String(toDeliver.length)} note={toDeliver.length === 1 ? "project" : "projects"} />
+          {admin ? (
+            <Figure
+              label="Paid this month"
+              value={totals(paidThisMonth)}
+              note={paidThisMonth.length === 1 ? "1 payment" : `${paidThisMonth.length} payments`}
+            />
+          ) : null}
+          {admin && !solo ? (
+            <Figure
+              label="Payouts to approve"
+              value={totals(toApprove)}
+              note={toApprove.length === 1 ? "1 request" : `${toApprove.length} requests`}
+            />
+          ) : null}
+          <Figure
+            label="In progress"
+            value={String(toDeliver.length)}
+            note={toDeliver.length === 1 ? "project" : "projects"}
+          />
         </section>
       </div>
 
       <aside aria-label={`About ${team.name}`} className="grid gap-4">
-        <SetupChecklist steps={steps} title={setupDone ? (solo ? "Your seller page is set up" : "Your team is set up") : solo ? "Set up your seller page" : "Set up your team"} />
+        <SetupChecklist
+          steps={steps}
+          title={
+            setupDone
+              ? solo
+                ? "Your seller page is set up"
+                : "Your team is set up"
+              : solo
+                ? "Set up your seller page"
+                : "Set up your team"
+          }
+        />
         <PublishCard teamSlug={team.slug} publicUrl={url} />
         <PayPalConnectCard teamId={team.id} />
-        <section className="panel grid gap-2 p-4">
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 className="font-semibold">Store</h2>
+        <section className="frame frame-panel">
+          <div className="frame-head text-[13px]">
+            <h2 className="font-medium">Store</h2>
             {settings?.storeEnabled ? (
-              <div className="flex gap-3 text-sm">
+              <div className="ml-auto flex gap-3">
                 <Link href={`/${team.slug}/products`} className="underline decoration-border underline-offset-4">
                   Products
                 </Link>
@@ -227,24 +293,32 @@ export default function ServicesTeamDashboard({ teamSlug, urlParts }: { teamSlug
               </div>
             ) : null}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Sell digital downloads, such as presets, templates and icons, from your seller page. Files can be up to 100 MB.
-          </p>
-          {!settings?.storeEnabled ? (
-            <div className="grid justify-items-start gap-2">
-              <Button type="button" variant="outline" onClick={() => enable.mutate({ teamSlug: team.slug, enabled: true })} disabled={!admin || enable.isPending}>
-                {enable.isPending ? "Turning on…" : "Turn on the store"}
-              </Button>
-              {!admin ? <p className="text-sm text-muted-foreground">Only an admin can turn on the store.</p> : null}
-              {enable.error ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {enable.error.message}
-                </p>
-              ) : null}
-            </div>
-          ) : admin ? (
-            <TurnOffStoreButton teamSlug={team.slug} />
-          ) : null}
+          <div className="frame frame-body grid gap-2 p-4">
+            <p className="text-sm text-muted-foreground">
+              Sell digital downloads, such as presets, templates and icons, from your seller page. Files can be up to
+              100 MB.
+            </p>
+            {!settings?.storeEnabled ? (
+              <div className="grid justify-items-start gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => enable.mutate({ teamSlug: team.slug, enabled: true })}
+                  disabled={!admin || enable.isPending}
+                >
+                  {enable.isPending ? "Turning on…" : "Turn on the store"}
+                </Button>
+                {!admin ? <p className="text-sm text-muted-foreground">Only an admin can turn on the store.</p> : null}
+                {enable.error ? (
+                  <p role="alert" className="text-sm text-destructive">
+                    {enable.error.message}
+                  </p>
+                ) : null}
+              </div>
+            ) : admin ? (
+              <TurnOffStoreButton teamSlug={team.slug} />
+            ) : null}
+          </div>
         </section>
       </aside>
     </main>

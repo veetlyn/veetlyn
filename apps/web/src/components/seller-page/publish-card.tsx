@@ -35,50 +35,52 @@ export default function PublishCard({ teamSlug, publicUrl }: { teamSlug: string;
   }
 
   return (
-    <section id="publish" className="grid scroll-mt-6 gap-3 panel p-4">
-      <h2 className="font-semibold">{product === "services" ? "Seller page" : "Storefront"}</h2>
-      <p className="text-sm">
-        {sellerStatus === "draft" ? (
-          "Draft: only your team can see it."
-        ) : sellerStatus === "active" ? (
-          <>
-            Live at{" "}
-            <a href={publicUrl} target="_blank" rel="noreferrer" className="underline underline-offset-4">
-              {publicUrl}
-            </a>
-          </>
-        ) : (
-          "Suspended"
-        )}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Link href={`/${teamSlug}/preview`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-          Preview
-        </Link>
-        {canManage && sellerStatus === "draft" ? (
-          <Button
-            size="sm"
-            onClick={() => publish.mutate({ teamSlug })}
-            disabled={problem !== null || publish.isPending}
-          >
-            {publish.isPending ? "Publishing…" : "Publish"}
-          </Button>
+    <section id="publish" className="frame frame-panel scroll-mt-6">
+      <h2 className="frame-head text-[13px] font-medium">{product === "services" ? "Seller page" : "Storefront"}</h2>
+      <div className="frame frame-body grid gap-3 p-4">
+        <p className="text-sm">
+          {sellerStatus === "draft" ? (
+            "Draft: only your team can see it."
+          ) : sellerStatus === "active" ? (
+            <>
+              Live at{" "}
+              <a href={publicUrl} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+                {publicUrl}
+              </a>
+            </>
+          ) : (
+            "Suspended"
+          )}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/${teamSlug}/preview`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            Preview
+          </Link>
+          {canManage && sellerStatus === "draft" ? (
+            <Button
+              size="sm"
+              onClick={() => publish.mutate({ teamSlug })}
+              disabled={problem !== null || publish.isPending}
+            >
+              {publish.isPending ? "Publishing…" : "Publish"}
+            </Button>
+          ) : null}
+          {canManage && sellerStatus === "active" ? (
+            <Button size="sm" variant="outline" onClick={handleUnpublish} disabled={unpublish.isPending}>
+              {unpublish.isPending ? "Unpublishing…" : "Unpublish"}
+            </Button>
+          ) : null}
+        </div>
+        {canManage && sellerStatus === "draft" && problem ? (
+          <p className="text-sm text-muted-foreground">{problem}</p>
         ) : null}
-        {canManage && sellerStatus === "active" ? (
-          <Button size="sm" variant="outline" onClick={handleUnpublish} disabled={unpublish.isPending}>
-            {unpublish.isPending ? "Unpublishing…" : "Unpublish"}
-          </Button>
+        {!canManage ? <p className="text-sm text-muted-foreground">An admin publishes the page.</p> : null}
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error.message}
+          </p>
         ) : null}
       </div>
-      {canManage && sellerStatus === "draft" && problem ? (
-        <p className="text-sm text-muted-foreground">{problem}</p>
-      ) : null}
-      {!canManage ? <p className="text-sm text-muted-foreground">An admin publishes the page.</p> : null}
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error.message}
-        </p>
-      ) : null}
     </section>
   );
 }
