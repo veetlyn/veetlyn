@@ -2,13 +2,17 @@ import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
+import { teamMember } from "@jendal-workspace/db/schema/organization";
 import {
+  addMember,
   createTestDb,
   hasTestDatabase,
   seedProject,
   seedServicesTeam,
   seedServicesTeamMember,
+  seedOrganization,
   seedServicesTeamWithAdmin,
+  seedStore,
   seedUser,
   truncateAll,
 } from "@jendal-workspace/db/testing/db";
@@ -62,6 +66,29 @@ const teamAction = defineAction({
   scope: (input) => ({ teamId: input.teamId }),
   allow: [{ grant: "member" }],
   run: async ({ scope }) => ({ teamId: scope.teamId }),
+});
+
+// A store's own action and a workspace's: each grant is checked against its own kind of place only.
+const storeAction = defineAction({
+  name: "test.store_action",
+  kind: "query",
+  summary: "Store action",
+  input: z.object({ teamId: z.uuid() }),
+  output: null,
+  scope: (input) => ({ teamId: input.teamId }),
+  allow: [{ grant: "store_member" }],
+  run: async ({ scope }) => ({ store: scope.store, role: scope.role }),
+});
+
+const workspaceAction = defineAction({
+  name: "test.workspace_action",
+  kind: "query",
+  summary: "Workspace action",
+  input: z.object({ organizationId: z.uuid() }),
+  output: null,
+  scope: (input) => ({ organizationId: input.organizationId }),
+  allow: [{ grant: "workspace_member" }],
+  run: async ({ scope }) => ({ workspace: scope.workspace?.role ?? null }),
 });
 
 const publicAction = unscopedAction("test.public_action", [{ grant: "anyone" }]);
@@ -254,5 +281,36 @@ describe.skipIf(!hasTestDatabase)("perform", () => {
 
     expect(result).toEqual({ projectId, role: "freelancer" });
     expect(onLogError).toHaveBeenCalledOnce();
+  });
+
+  it("gives a store's admins and staff a store role, and nobody a services role there", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db, { role: "owner" });
+    const store = await seedStore(db, { organizationId, slug: "clay-room" });
+    const staffId = await addMember(db, { organizationId, role: "member" });
+    await db.insert(teamMember).values({ id: crypto.randomUUID(), teamId: store.id, userId: staffId, createdAt: new Date() });
+    const outsiderId = await addMember(db, { organizationId, role: "member" });
+
+    await expect(perform(call({ kind: "user", userId: ownerId }), storeAction, { teamId: store.id })).resolves.toEqual({ store: "admin", role: null });
+    await expect(perform(call({ kind: "user", userId: staffId }), storeAction, { teamId: store.id })).resolves.toEqual({ store: "staff", role: null });
+    await expect(perform(call({ kind: "user", userId: outsiderId }), storeAction, { teamId: store.id })).rejects.toMatchObject({ code: "not_found" });
+    // A services team's member grant never opens a store, even to its owner (who knows the store, so is refused).
+    await expect(perform(call({ kind: "user", userId: ownerId }), teamAction, { teamId: store.id })).rejects.toMatchObject({ code: "forbidden" });
+  });
+
+  it("never lets a store role stand in for a services one", async () => {
+    const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
+    const freelancerId = await seedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+
+    await expect(perform(call({ kind: "user", userId: freelancerId }), storeAction, { teamId })).rejects.toMatchObject({ code: "forbidden" });
+  });
+
+  it("lets a workspace's members through a workspace grant, and tells anyone else it does not exist", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db, { role: "owner" });
+    const memberId = await addMember(db, { organizationId, role: "member" });
+    const { userId: strangerId } = await seedOrganization(db, { role: "owner" });
+
+    await expect(perform(call({ kind: "user", userId: ownerId }), workspaceAction, { organizationId })).resolves.toEqual({ workspace: "owner" });
+    await expect(perform(call({ kind: "user", userId: memberId }), workspaceAction, { organizationId })).resolves.toEqual({ workspace: "member" });
+    await expect(perform(call({ kind: "user", userId: strangerId }), workspaceAction, { organizationId })).rejects.toMatchObject({ code: "not_found", message: "Workspace not found." });
   });
 });

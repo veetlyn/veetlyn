@@ -3,7 +3,7 @@ import { createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
 import { servicesTeamMember, servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
-import { createTestDb, hasTestDatabase, seedProject, truncateAll } from "@jendal-workspace/db/testing/db";
+import { createTestDb, hasTestDatabase, seedOrganization, seedProject, seedStore, truncateAll } from "@jendal-workspace/db/testing/db";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -71,18 +71,21 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     const freelancerId = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
     const managerId = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
     const projectId = await seedProject(db, { teamId, title: "Baobab logo", status: "quoting" });
-    return { adminId, freelancerId, managerId, teamId, projectId };
+    current = { kind: "seller", teamId };
+    return { adminId, freelancerId, managerId, organizationId, teamId, projectId };
   }
-  const TEAM = { teamSlug: "walk-crew" };
+  // The node the test's calls open at: the team set up last.
+  let current = { kind: "seller" as const, teamId: "" };
+  const onProject = (id: string) => ({ kind: "record" as const, teamId: current.teamId, record: { type: "project" as const, id } });
 
   it("reads with the person's own access, offers only their tools, logs the reads, and stops at the daily cap", async () => {
     const { adminId, freelancerId } = await setup();
     const model = scriptedModel([use("project_list", {}), say("You have one request: Baobab logo.")]);
-    const { callId } = await callerFor(adminId, model, 1).agent.ask({ ...TEAM, message: "What needs me?" });
+    const { callId } = await callerFor(adminId, model, 1).agent.ask({ node: current, message: "What needs me?" });
 
     const toolResult = JSON.stringify(model.requests[1]?.messages.at(-1)?.content);
     expect(toolResult).toContain("Baobab logo");
-    const { entries } = await callerFor(adminId).agent.thread({ ...TEAM, callId });
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
     expect(entries.map((e) => [e.author, e.body])).toEqual([
       ["person", "What needs me?"],
       ["assistant", "You have one request: Baobab logo."],
@@ -90,12 +93,12 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(await db.select({ action: actionLog.action, actorKind: actionLog.actorKind, onBehalfOf: actionLog.onBehalfOf }).from(actionLog)).toEqual([
       { action: "project.list", actorKind: "agent", onBehalfOf: { kind: "user", id: adminId } },
     ]);
-    await expect(callerFor(adminId, scriptedModel([]), 1).agent.ask({ ...TEAM, callId, message: "And?" })).rejects.toMatchObject({
+    await expect(callerFor(adminId, scriptedModel([]), 1).agent.ask({ node: current, callId, message: "And?" })).rejects.toMatchObject({
       code: "TOO_MANY_REQUESTS",
     });
 
     const freelancerModel = scriptedModel([say("Nothing for you yet.")]);
-    await callerFor(freelancerId, freelancerModel).agent.ask({ ...TEAM, message: "Any payouts to approve?" });
+    await callerFor(freelancerId, freelancerModel).agent.ask({ node: current, message: "Any payouts to approve?" });
     const offered = freelancerModel.requests[0]?.tools?.map((t) => t.function.name) ?? [];
     expect(offered).toContain("project_list");
     expect(offered).not.toContain("payout_list");
@@ -124,10 +127,10 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
       },
       say("I drafted a question for Lina; confirm it to send."),
     ]);
-    const { callId } = await callerFor(adminId, model).agent.ask({ ...TEAM, projectId, message: "Ask the client about colours" });
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: onProject(projectId), message: "Ask the client about colours" });
 
     expect(await db.select().from(conversationMessage)).toEqual([]);
-    const { entries } = await callerFor(adminId).agent.thread({ ...TEAM, callId });
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
     const proposals = entries.filter((e) => e.kind === "proposal");
     expect(proposals).toEqual([
       expect.objectContaining({
@@ -139,10 +142,10 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     const proposal = proposals[0];
     if (!proposal) throw new Error("no proposal");
 
-    await expect(callerFor(adminId).agent.confirm({ ...TEAM, entryId: proposal.id })).resolves.toEqual({ status: "done", outcome: "Done." });
+    await expect(callerFor(adminId).agent.confirm({ entryId: proposal.id })).resolves.toEqual({ status: "done", outcome: "Done." });
     const posted = await db.select().from(conversationMessage);
     expect(posted.map((m) => [m.kind, m.body, m.authorUserId])).toEqual([["question", "Which colours should the logo use?", adminId]]);
-    await expect(callerFor(adminId).agent.confirm({ ...TEAM, entryId: proposal.id })).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(callerFor(adminId).agent.confirm({ entryId: proposal.id })).rejects.toMatchObject({ code: "CONFLICT" });
     expect(await db.select().from(conversationMessage)).toHaveLength(1);
   });
 
@@ -155,9 +158,9 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
       input: { card: `Reply ${n}.`, input: { projectId, body: `Message ${n}` } },
     });
     const model = scriptedModel([{ text: null, calls: [post(1), post(2), post(3), post(4)] }, say("Drafted replies.")]);
-    const { callId } = await callerFor(adminId, model).agent.ask({ ...TEAM, message: "Draft four replies" });
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: current, message: "Draft four replies" });
 
-    const proposals = (await callerFor(adminId).agent.thread({ ...TEAM, callId })).entries.filter((e) => e.kind === "proposal");
+    const proposals = (await callerFor(adminId).agent.thread({ callId })).entries.filter((e) => e.kind === "proposal");
     expect(proposals.map((p) => p.note)).toEqual(["Reply 1.", "Reply 2.", "Reply 3."]);
   });
 
@@ -169,10 +172,10 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
       use("propose_conversation_post", { card: "Thank the client.", input: { projectId: done, body: "Thanks, the files are ready." } }),
       say("That project is closed to new messages."),
     ]);
-    const { callId } = await callerFor(adminId, model).agent.ask({ ...TEAM, message: "Thank the client of the finished logo" });
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: current, message: "Thank the client of the finished logo" });
 
     expect(JSON.stringify(model.requests[1]?.messages.at(-1)?.content)).toContain("Not proposed: This project is closed to new messages.");
-    const { entries } = await callerFor(adminId).agent.thread({ ...TEAM, callId });
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
     expect(entries.filter((e) => e.kind === "proposal")).toEqual([]);
     expect(await db.select().from(conversationMessage)).toEqual([]);
   });
@@ -186,19 +189,72 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
       input: { card: "A reply.", input: { projectId, body } },
     });
     const model = scriptedModel([{ text: null, calls: [post("call_1", "Thanks for the brief."), post("call_2", "We start Monday.")] }, say("Drafted two messages.")]);
-    const { callId } = await callerFor(managerId, model).agent.ask({ ...TEAM, message: "Thank the client" });
-    const [first, second] = (await callerFor(managerId).agent.thread({ ...TEAM, callId })).entries.filter((e) => e.kind === "proposal");
+    const { callId } = await callerFor(managerId, model).agent.ask({ node: current, message: "Thank the client" });
+    const [first, second] = (await callerFor(managerId).agent.thread({ callId })).entries.filter((e) => e.kind === "proposal");
     if (!first || !second) throw new Error("expected two proposals");
 
-    await expect(callerFor(adminId).agent.thread({ ...TEAM, callId })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(callerFor(adminId).agent.confirm({ ...TEAM, entryId: first.id })).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(callerFor(adminId).agent.thread({ callId })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(callerFor(adminId).agent.confirm({ entryId: first.id })).rejects.toMatchObject({ code: "CONFLICT" });
 
-    await expect(callerFor(managerId).agent.confirm({ ...TEAM, entryId: first.id })).resolves.toMatchObject({ status: "done" });
+    await expect(callerFor(managerId).agent.confirm({ entryId: first.id })).resolves.toMatchObject({ status: "done" });
     await db
       .update(servicesTeamMember)
       .set({ role: "freelancer" })
       .where(and(eq(servicesTeamMember.teamId, teamId), eq(servicesTeamMember.userId, managerId)));
-    await expect(callerFor(managerId).agent.confirm({ ...TEAM, entryId: second.id })).resolves.toMatchObject({ status: "failed" });
+    await expect(callerFor(managerId).agent.confirm({ entryId: second.id })).resolves.toMatchObject({ status: "failed" });
     expect((await db.select().from(conversationMessage)).map((m) => m.body)).toEqual(["Thanks for the brief."]);
+  });
+
+  it("opens calls at a store, the workspace and the account, each with only that place's tools", async () => {
+    const { adminId, organizationId } = await setup();
+    const store = await seedStore(db, { organizationId, slug: "clay-room", name: "Clay Room" });
+    const system = (model: ReturnType<typeof scriptedModel>) => JSON.stringify(model.requests[0]?.messages[0]?.content);
+
+    const atStore = scriptedModel([say("I can't read the store's records yet.")]);
+    await callerFor(adminId, atStore).agent.ask({ node: { kind: "seller", teamId: store.id }, message: "How are sales?" });
+    expect(atStore.requests[0]?.tools ?? []).toEqual([]);
+    expect(system(atStore)).toContain('the store \\"Clay Room\\"');
+
+    const atWorkspace = scriptedModel([say("Two sellers.")]);
+    await callerFor(adminId, atWorkspace).agent.ask({ node: { kind: "workspace", organizationId }, message: "What is in here?" });
+    expect(atWorkspace.requests[0]?.tools ?? []).toEqual([]);
+    expect(system(atWorkspace)).toContain("This call is about the whole workspace.");
+
+    const atAccount = scriptedModel([say("Here is everything.")]);
+    await callerFor(adminId, atAccount).agent.ask({ node: { kind: "account" }, message: "Anything for me?" });
+    expect(system(atAccount)).toContain("at their account");
+
+    const listed = async (node: Parameters<ReturnType<typeof callerFor>["agent"]["calls"]>[0]["node"]) =>
+      (await callerFor(adminId).agent.calls({ node })).calls.map((c) => c.nodeKind).sort();
+    expect(await listed({ kind: "account" })).toEqual(["account", "seller", "workspace"]);
+    expect(await listed({ kind: "workspace", organizationId })).toEqual(["seller", "workspace"]);
+    expect(await listed({ kind: "seller", teamId: store.id })).toEqual(["seller"]);
+  });
+
+  it("tells someone outside a workspace that its nodes do not exist", async () => {
+    const { organizationId, teamId, projectId } = await setup();
+    const { userId: strangerId } = await seedOrganization(db);
+    const stranger = callerFor(strangerId, scriptedModel([]));
+
+    for (const node of [
+      { kind: "workspace" as const, organizationId },
+      { kind: "seller" as const, teamId },
+      { kind: "section" as const, teamId, section: "money" as const },
+      { kind: "record" as const, teamId, record: { type: "project" as const, id: projectId } },
+    ]) {
+      await expect(stranger.agent.ask({ node, message: "Hello?" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(stranger.agent.calls({ node })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    }
+  });
+
+  it("keeps a freelancer out of the sections their role does not hold", async () => {
+    const { freelancerId, teamId } = await setup();
+    const caller = callerFor(freelancerId, scriptedModel([say("Your projects.")]));
+
+    await expect(caller.agent.node({ node: { kind: "section", teamId, section: "settings" } })).resolves.toMatchObject({ scope: { section: "settings" } });
+    await expect(caller.agent.node({ node: { kind: "section", teamId, section: "money" } })).resolves.toMatchObject({ scope: { section: "money" } });
+    // Payments and PayPal cases stay hidden inside Money; the section opens on the freelancer's own payouts.
+    const { scope } = await caller.agent.node({ node: { kind: "seller", teamId } });
+    expect(scope.seller?.sections.find((s) => s.section === "money")?.pages).toEqual(["payouts"]);
   });
 });

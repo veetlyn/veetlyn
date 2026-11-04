@@ -1,58 +1,80 @@
+import type { ContextNode } from "@jendal-workspace/core/context/node";
 import { findOwnAgentCall, listAgentCallEntries, listOwnAgentCalls } from "@jendal-workspace/db/repositories/calls";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { depsOf, requestOf } from "../actions/trpc";
+import { callsUnder, contextNodeInput, nodeOfCall, type ResolvedNode, resolveNode } from "../agent/node";
 import { confirmProposal, declineProposal } from "../agent/proposals";
 import { openCall } from "../agent/turn";
-import { router } from "../index";
-import { servicesTeamProcedure } from "../services-team-procedure";
+import { type Context } from "../context";
+import { protectedProcedure, router } from "../index";
 
+const callId = z.string().min(1).max(64);
 const entryInput = z.object({ entryId: z.string().min(1).max(64) });
 
-// The dash's assistant (calls design §5): calls a person opens, private to them, in one team.
-export const agentRouter = router({
-  calls: servicesTeamProcedure.query(async ({ ctx }) => ({
-    available: ctx.calls !== undefined,
-    calls: await listOwnAgentCalls(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id }),
-  })),
+type SignedIn = Context & { session: NonNullable<Context["session"]> };
 
-  thread: servicesTeamProcedure.input(z.object({ callId: z.string().min(1).max(64) })).query(async ({ ctx, input }) => {
-    const call = await findOwnAgentCall(ctx.db, { callId: input.callId, teamId: ctx.servicesTeam.id, userId: ctx.session.user.id });
-    if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
-    const entries = await listAgentCallEntries(ctx.db, call.id);
-    // The stored action input stays server-side; the card shows the assistant's sentence and the outcome.
-    return { call, entries: entries.map(({ input: _input, ...entry }) => entry) };
+const NOT_HERE = "Not found.";
+
+async function resolved(ctx: SignedIn, node: ContextNode): Promise<ResolvedNode> {
+  const found = await resolveNode({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, node);
+  if (!found) throw new TRPCError({ code: "NOT_FOUND", message: NOT_HERE });
+  return found;
+}
+
+// The person's call, at a node they may still open: access lost since the call was opened hides it too.
+async function ownCall(ctx: SignedIn, id: string) {
+  const call = await findOwnAgentCall(ctx.db, { callId: id, userId: ctx.session.user.id });
+  const node = call ? nodeOfCall(call) : null;
+  if (!call || !node) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
+  const scope = await resolveNode({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, node);
+  if (!scope) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
+  return { call, scope };
+}
+
+// The dash's assistant (calls design §5): calls a person opens at any node of their context tree, private to them.
+export const agentRouter = router({
+  // The node as the person may open it: what the frame shows around a call and what the assistant knows there.
+  node: protectedProcedure.input(z.object({ node: contextNodeInput })).query(async ({ ctx, input }) => {
+    const scope = await resolved(ctx, input.node);
+    return { available: ctx.calls !== undefined, scope };
   }),
 
-  ask: servicesTeamProcedure
-    .input(
-      z.object({
-        callId: z.string().min(1).max(64).optional(),
-        projectId: z.string().min(1).max(64).optional(),
-        message: z.string().trim().min(1).max(4_000),
-      }),
-    )
+  calls: protectedProcedure.input(z.object({ node: contextNodeInput })).query(async ({ ctx, input }) => {
+    await resolved(ctx, input.node);
+    return {
+      available: ctx.calls !== undefined,
+      calls: await listOwnAgentCalls(ctx.db, { userId: ctx.session.user.id, under: callsUnder(input.node) }),
+    };
+  }),
+
+  thread: protectedProcedure.input(z.object({ callId })).query(async ({ ctx, input }) => {
+    const { call, scope } = await ownCall(ctx, input.callId);
+    const entries = await listAgentCallEntries(ctx.db, call.id);
+    // The stored action input stays server-side; the card shows the assistant's sentence and the outcome.
+    return { call, scope, entries: entries.map(({ input: _input, ...entry }) => entry) };
+  }),
+
+  // A new call at the node, or the next turn of one of the person's calls (which keeps the node it was opened at).
+  ask: protectedProcedure
+    .input(z.object({ node: contextNodeInput, callId: callId.optional(), message: z.string().trim().min(1).max(4_000) }))
     .mutation(async ({ ctx, input }) => {
       const calls = ctx.calls;
       if (!calls) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The assistant is not set up on this server." });
-      const scope = { team: ctx.servicesTeam, userId: ctx.session.user.id, role: ctx.servicesTeamRole };
+      const scope = input.callId ? (await ownCall(ctx, input.callId)).scope : await resolved(ctx, input.node);
       const request = requestOf(ctx);
       const call = await openCall({ actions: depsOf(ctx), request, dailyTurns: calls.dailyTurns }, scope, input);
-      const outcome = await calls.run({ callId: call.id, scope: { ...scope, team: { id: scope.team.id, name: scope.team.name } }, message: input.message, request });
+      const outcome = await calls.run({ callId: call.id, scope, message: input.message, request });
       if (!outcome.ok) throw new TRPCError({ code: outcome.code, message: outcome.message });
       return { callId: call.id };
     }),
 
-  confirm: servicesTeamProcedure.input(entryInput).mutation(({ ctx, input }) =>
-    confirmProposal(
-      { actions: depsOf(ctx), request: requestOf(ctx) },
-      { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id },
-      input.entryId,
-    ),
+  confirm: protectedProcedure.input(entryInput).mutation(({ ctx, input }) =>
+    confirmProposal({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, input.entryId),
   ),
 
-  decline: servicesTeamProcedure.input(entryInput).mutation(({ ctx, input }) =>
-    declineProposal(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id }, input.entryId),
+  decline: protectedProcedure.input(entryInput).mutation(({ ctx, input }) =>
+    declineProposal({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, input.entryId),
   ),
 });

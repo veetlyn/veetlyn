@@ -23,7 +23,7 @@ const CARD_STATE = {
   failed: { label: "Refused", tone: "fail" },
 } as const;
 
-function ProposalCard({ entry, teamSlug, onDecided }: { entry: Entry; teamSlug: string; onDecided: () => void }) {
+function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => void }) {
   const confirm = useMutation(trpc.agent.confirm.mutationOptions({ onSettled: onDecided }));
   const decline = useMutation(trpc.agent.decline.mutationOptions({ onSettled: onDecided }));
   const state = CARD_STATE[entry.status ?? "pending"];
@@ -38,10 +38,10 @@ function ProposalCard({ entry, teamSlug, onDecided }: { entry: Entry; teamSlug: 
       {entry.outcome && entry.status !== "done" ? <p className="text-sm text-muted-foreground">{entry.outcome}</p> : null}
       {entry.status === "pending" ? (
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" disabled={busy} onClick={() => confirm.mutate({ teamSlug, entryId: entry.id })}>
+          <Button size="sm" disabled={busy} onClick={() => confirm.mutate({ entryId: entry.id })}>
             Confirm
           </Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => decline.mutate({ teamSlug, entryId: entry.id })}>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => decline.mutate({ entryId: entry.id })}>
             Not now
           </Button>
         </div>
@@ -80,16 +80,21 @@ export default function TeamCalls({
   useEffect(() => {
     if (callId) setStartedCallId(null);
   }, [callId]);
-  const calls = useQuery({ ...trpc.agent.calls.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  // The team's node, or the project's when the call was opened from a project page.
+  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const teamId = team.data?.team.id ?? "";
+  const teamNode = { kind: "seller" as const, teamId };
+  const node = projectId ? { kind: "record" as const, teamId, record: { type: "project" as const, id: projectId } } : teamNode;
+  const calls = useQuery({ ...trpc.agent.calls.queryOptions({ node: teamNode }), enabled: teamId !== "", retry: false, meta: { silent: true } });
   const thread = useQuery({
-    ...trpc.agent.thread.queryOptions({ teamSlug, callId: activeCallId ?? "" }),
+    ...trpc.agent.thread.queryOptions({ callId: activeCallId ?? "" }),
     enabled: activeCallId !== null,
     retry: false,
     meta: { silent: true },
   });
   const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: trpc.agent.calls.queryKey({ teamSlug }) });
-    if (activeCallId) void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ teamSlug, callId: activeCallId }) });
+    void queryClient.invalidateQueries({ queryKey: trpc.agent.calls.queryKey({ node: teamNode }) });
+    if (activeCallId) void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ callId: activeCallId }) });
   };
   const ask = useMutation(
     trpc.agent.ask.mutationOptions({
@@ -97,7 +102,7 @@ export default function TeamCalls({
         setMessage("");
         if (result.callId !== activeCallId) {
           setStartedCallId(result.callId);
-          void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ teamSlug, callId: result.callId }) });
+          void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ callId: result.callId }) });
           router.push(`/${teamSlug}/calls?call=${result.callId}`);
         }
       },
@@ -109,10 +114,10 @@ export default function TeamCalls({
     event.preventDefault();
     const text = message.trim();
     if (!text || ask.isPending) return;
-    ask.mutate({ teamSlug, message: text, ...(activeCallId ? { callId: activeCallId } : projectId ? { projectId } : {}) });
+    ask.mutate(activeCallId ? { node, message: text, callId: activeCallId } : { node, message: text });
   }
 
-  if (calls.isPending) return <Loader />;
+  if (team.isPending || calls.isPending) return <Loader />;
   const available = calls.data?.available ?? false;
   const current = thread.data?.call ?? null;
   return (
@@ -169,7 +174,7 @@ export default function TeamCalls({
           {thread.data?.entries.map((entry) =>
             entry.kind === "proposal" ? (
               <li key={entry.id}>
-                <ProposalCard entry={entry} teamSlug={teamSlug} onDecided={refresh} />
+                <ProposalCard entry={entry} onDecided={refresh} />
               </li>
             ) : (
               <li key={entry.id} className={entry.author === "person" ? "ml-auto max-w-[85%]" : "max-w-[85%]"}>

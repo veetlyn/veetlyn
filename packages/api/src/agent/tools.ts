@@ -1,4 +1,5 @@
 import { canServicesTeam, type JsonObject, type JsonValue, type ServicesTeamAction, type ServicesTeamRole } from "@jendal-workspace/core";
+import type { SellerRole } from "@jendal-workspace/core/context/node";
 import { z } from "zod";
 
 import type { ActionDefinition, AnyActionDefinition } from "../actions/define";
@@ -13,9 +14,14 @@ import { quoteCreate } from "../actions/quotes";
 // confirm. Actions marked never for agents are not listed at all.
 export type AgentToolMode = "read" | "propose";
 
+// The nodes a tool serves: a services team and everything below it, a store and everything below it, a workspace, or
+// the person's account.
+export type ToolPlace = "services" | "store" | "workspace" | "account";
+
 export type AgentTool = {
   name: string;
   mode: AgentToolMode;
+  place: ToolPlace;
   definition: AnyActionDefinition;
   // Offered only to roles that hold this; the action's own checks still run when it is performed.
   needs?: ServicesTeamAction;
@@ -36,12 +42,12 @@ function performer<Schema extends z.ZodType, Result>(definition: Typed<Schema, R
 // Tool names allow letters, digits, _ and -; registry names use dots.
 const toolName = (definition: { name: string }) => definition.name.replaceAll(".", "_");
 
-function read<Schema extends z.ZodType, Result>(definition: Typed<Schema, Result>, needs?: ServicesTeamAction): AgentTool {
-  return { name: toolName(definition), mode: "read", definition, needs, perform: performer(definition) };
+function read<Schema extends z.ZodType, Result>(definition: Typed<Schema, Result>, needs?: ServicesTeamAction, place: ToolPlace = "services"): AgentTool {
+  return { name: toolName(definition), mode: "read", place, definition, needs, perform: performer(definition) };
 }
 
 function propose<Schema extends z.ZodType, Result>(definition: Typed<Schema, Result>, needs?: ServicesTeamAction): AgentTool {
-  return { name: `propose_${toolName(definition)}`, mode: "propose", definition, needs, perform: performer(definition) };
+  return { name: `propose_${toolName(definition)}`, mode: "propose", place: "services", definition, needs, perform: performer(definition) };
 }
 
 // The first slice (calls design §11, "scope of the work"): intake and money answers, and the decisions the demo
@@ -61,8 +67,18 @@ export const AGENT_TOOLS: readonly AgentTool[] = [
   propose(conversationPost),
 ];
 
-export function toolsFor(role: ServicesTeamRole): AgentTool[] {
-  return AGENT_TOOLS.filter((tool) => !tool.needs || canServicesTeam(role, tool.needs));
+// Where a resolved node puts the assistant: under a seller of either kind, in a workspace, or at the account.
+export function toolPlaceOf(node: { seller: { role: SellerRole } | null; workspace: unknown }): ToolPlace {
+  if (node.seller) return node.seller.role.product;
+  return node.workspace ? "workspace" : "account";
+}
+
+// The tools at a node, for the person's role there. Services tools also need the role's permission; the action's own
+// checks still run when it is performed.
+export function toolsFor(node: { seller: { role: SellerRole } | null; workspace: unknown }): AgentTool[] {
+  const place = toolPlaceOf(node);
+  const role = node.seller?.role.product === "services" ? node.seller.role.role : null;
+  return AGENT_TOOLS.filter((tool) => tool.place === place && (!tool.needs || canServicesTeam(role, tool.needs)));
 }
 
 // What the withheld tools cover, in the person's words: a missing tool gives the model no refusal to repeat.
@@ -77,7 +93,8 @@ function withheldArea(action: ServicesTeamAction): string {
   }
 }
 
-export function withheldAreas(role: ServicesTeamRole): string[] {
+export function withheldAreas(role: ServicesTeamRole | null): string[] {
+  if (role === null) return [];
   const missing = new Set(AGENT_TOOLS.flatMap((tool) => (tool.needs && !canServicesTeam(role, tool.needs) ? [tool.needs] : [])));
   return [...missing].map(withheldArea);
 }
