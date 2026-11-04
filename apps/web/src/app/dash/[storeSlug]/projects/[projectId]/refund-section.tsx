@@ -45,7 +45,7 @@ export function RefundSection({
   }
 
   return (
-    <section className="space-y-3">
+    <section id="refund" className="scroll-mt-4 space-y-3">
       <h2 className="text-lg font-semibold">Refund to the client</h2>
       {refund.status === "completed" && refund.completedAt !== null ? (
         <p className="text-sm">

@@ -26,6 +26,7 @@ import AskBar from "@/components/ask-bar";
 import BillingNotice from "@/components/billing-notice";
 import { BrandWordmark } from "@/components/brand-mark";
 import { ModeToggle } from "@/components/mode-toggle";
+import ProjectNav from "@/components/project-nav";
 import UserMenu from "@/components/user-menu";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { trpc } from "@/utils/trpc";
@@ -44,7 +45,14 @@ const PAGES = {
   settings: { label: "Settings", icon: Settings },
 } satisfies Record<SectionPage, { label: string; icon: LucideIcon }>;
 
-const SECTION_LABELS = { requests: "Requests", projects: "Projects", money: "Money", storefront: "Storefront", team: "Team", settings: "" };
+const SECTION_LABELS = {
+  requests: "Requests",
+  projects: "Projects",
+  money: "Money",
+  storefront: "Storefront",
+  team: "Team",
+  settings: "",
+};
 
 // Store pages that work for a store today; the others still read services-team data.
 const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
@@ -68,7 +76,14 @@ function navItem(active: boolean) {
 // The frame around every seller page (calls design §6): the seller's sections on the tray, the page on a framed canvas,
 // and Veetlyn at the foot of every page. What the sidebar lists comes from the seller's node: its product, the
 // workspace's plan and the person's role.
-export default function TeamShell({ slug, children }: { slug: string; kind?: "services" | "store"; children: React.ReactNode }) {
+export default function TeamShell({
+  slug,
+  children,
+}: {
+  slug: string;
+  kind?: "services" | "store";
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const seller = useQuery({ ...trpc.agent.seller.queryOptions({ slug }), retry: false, meta: { silent: true } });
   const scope = seller.data?.scope;
@@ -88,9 +103,20 @@ export default function TeamShell({ slug, children }: { slug: string; kind?: "se
   });
 
   const name = scope?.seller?.name ?? slug.replace(/-/g, " ");
-  const initials = name.split(/\s+/).map((word) => word[0] ?? "").join("").slice(0, 2) || "?";
+  const initials =
+    name
+      .split(/\s+/)
+      .map((word) => word[0] ?? "")
+      .join("")
+      .slice(0, 2) || "?";
   const role = scope?.seller?.role;
-  const roleLabel = !role ? "" : role.product === "store" ? (role.role === "admin" ? "Store admin" : "Store staff") : (SERVICES_TEAM_ROLE_LABELS[role.role] ?? role.role);
+  const roleLabel = !role
+    ? ""
+    : role.product === "store"
+      ? role.role === "admin"
+        ? "Store admin"
+        : "Store staff"
+      : (SERVICES_TEAM_ROLE_LABELS[role.role] ?? role.role);
   const sections = (scope?.seller?.sections ?? [])
     .map((s) => ({ ...s, pages: services ? s.pages : s.pages.filter((p) => STORE_PAGES.has(p)) }))
     .filter((s) => s.pages.length > 0);
@@ -125,50 +151,63 @@ export default function TeamShell({ slug, children }: { slug: string; kind?: "se
 
   return (
     // The window stays still: the tray and the canvas hold their place and only the page scrolls.
-    <div data-app-shell className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray md:grid-cols-[256px_minmax(0,1fr)]">
+    <div
+      data-app-shell
+      className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray md:grid-cols-[256px_minmax(0,1fr)]"
+    >
       <aside className="hidden min-h-0 flex-col gap-0.5 overflow-y-auto px-2.5 pt-2.5 pb-3 md:flex">
         <Link
           href="/"
           className="mb-2 flex items-center gap-2.5 rounded-[11px] px-2 py-1.5 raised transition-[filter] hover:brightness-[0.98]"
           aria-label={`${name}, ${roleLabel}. All workspaces`}
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-[8px] main-surface text-xs font-semibold uppercase">{initials}</span>
+          <span className="grid size-8 shrink-0 place-items-center rounded-[8px] main-surface text-xs font-semibold uppercase">
+            {initials}
+          </span>
           <span className="grid min-w-0 flex-1">
             <b className="truncate text-sm font-semibold capitalize">{name}</b>
             <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
           </span>
           <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Link>
-        <nav aria-label="Seller" className="grid gap-0.5">
-          {services ? link(`/${slug}/calls`, "Veetlyn", VeetlynIcon) : null}
-          {link(`/${slug}`, "Overview", LayoutGrid)}
-          {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
-        </nav>
-        {grouped.map(({ section, pages }) => (
-          <div key={section} className="pt-3">
-            {SECTION_LABELS[section] ? <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{SECTION_LABELS[section]}</p> : null}
-            <nav aria-label={SECTION_LABELS[section] || "Settings"} className="grid gap-0.5">
-              {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
+        {projectId && services && teamId ? (
+          <ProjectNav slug={slug} projectId={projectId} teamId={teamId} />
+        ) : (
+          <>
+            <nav aria-label="Seller" className="grid gap-0.5">
+              {services ? link(`/${slug}/calls`, "Veetlyn", VeetlynIcon) : null}
+              {link(`/${slug}`, "Overview", LayoutGrid)}
+              {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
             </nav>
-          </div>
-        ))}
-        {recent.length > 0 ? (
-          <div className="pt-4">
-            <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Calls</p>
-            <ul className="grid gap-0.5">
-              {recent.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    href={`/${slug}/calls?call=${c.id}`}
-                    className="block truncate rounded-[9px] px-2.5 py-1.5 text-[13px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
-                  >
-                    {c.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+            {grouped.map(({ section, pages }) => (
+              <div key={section} className="pt-3">
+                {SECTION_LABELS[section] ? (
+                  <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{SECTION_LABELS[section]}</p>
+                ) : null}
+                <nav aria-label={SECTION_LABELS[section] || "Settings"} className="grid gap-0.5">
+                  {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
+                </nav>
+              </div>
+            ))}
+            {recent.length > 0 ? (
+              <div className="pt-4">
+                <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Calls</p>
+                <ul className="grid gap-0.5">
+                  {recent.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/${slug}/calls?call=${c.id}`}
+                        className="block truncate rounded-[9px] px-2.5 py-1.5 text-[13px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
+                      >
+                        {c.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </>
+        )}
         <div className="mt-auto pt-4">
           <Link href="/" className="flex items-center gap-2 px-2.5 text-sm text-muted-foreground hover:text-foreground">
             <BrandWordmark className="font-heading text-[15px] text-foreground" />
@@ -185,7 +224,10 @@ export default function TeamShell({ slug, children }: { slug: string; kind?: "se
           </Link>
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
             {crumbs.map((crumb, i) => (
-              <span key={crumb.href} className={cn("min-w-0 items-center gap-1.5", i === crumbs.length - 1 ? "flex" : "hidden md:flex")}>
+              <span
+                key={crumb.href}
+                className={cn("min-w-0 items-center gap-1.5", i === crumbs.length - 1 ? "flex" : "hidden md:flex")}
+              >
                 {i > 0 ? <span className="hidden text-border md:inline">/</span> : null}
                 {i === crumbs.length - 1 ? (
                   <span className="truncate font-medium text-foreground capitalize">{crumb.label}</span>
@@ -202,8 +244,14 @@ export default function TeamShell({ slug, children }: { slug: string; kind?: "se
             <UserMenu />
           </div>
         </div>
-        <nav aria-label="Sections" className="flex shrink-0 gap-1 overflow-x-auto border-b px-3 py-2 [scrollbar-width:none] md:hidden">
-          {[...(services ? [{ href: `/${slug}/calls`, label: "Veetlyn" }] : []), { href: `/${slug}`, label: "Overview" }]
+        <nav
+          aria-label="Sections"
+          className="flex shrink-0 gap-1 overflow-x-auto border-b px-3 py-2 [scrollbar-width:none] md:hidden"
+        >
+          {[
+            ...(services ? [{ href: `/${slug}/calls`, label: "Veetlyn" }] : []),
+            { href: `/${slug}`, label: "Overview" },
+          ]
             .concat(sections.flatMap((s) => s.pages.map((p) => ({ href: `/${slug}/${p}`, label: PAGES[p].label }))))
             .map(({ href, label }) => (
               <Link
@@ -219,9 +267,17 @@ export default function TeamShell({ slug, children }: { slug: string; kind?: "se
         <div id="page-scroll" className="min-h-0 flex-1 overflow-y-auto motion-safe:scroll-smooth">
           <BillingNotice slug={slug} />
           {rules.data?.memberAccepted === false && pathname !== `/${slug}/settings/operating-model` ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7" role="status">
-              <p className="text-sm">Accept version {rules.data.published.version} of the member agreement before taking new work.</p>
-              <Link href={`/${slug}/settings/operating-model#published-rules`} className="text-sm font-semibold underline underline-offset-4">
+            <div
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-tray px-4 py-2.5 md:px-7"
+              role="status"
+            >
+              <p className="text-sm">
+                Accept version {rules.data.published.version} of the member agreement before taking new work.
+              </p>
+              <Link
+                href={`/${slug}/settings/operating-model#published-rules`}
+                className="text-sm font-semibold underline underline-offset-4"
+              >
                 Review team rules
               </Link>
             </div>
@@ -229,7 +285,11 @@ export default function TeamShell({ slug, children }: { slug: string; kind?: "se
           {children}
         </div>
         {node && seller.data?.available && services && !pathname.startsWith(`/${slug}/calls`) ? (
-          <AskBar slug={slug} node={node} placeholder={projectId ? "Ask Veetlyn about this project" : `Ask Veetlyn about ${name}`} />
+          <AskBar
+            slug={slug}
+            node={node}
+            placeholder={projectId ? "Ask Veetlyn about this project" : `Ask Veetlyn about ${name}`}
+          />
         ) : null}
       </div>
     </div>

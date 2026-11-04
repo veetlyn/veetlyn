@@ -151,7 +151,7 @@ export function ConversationSection({
   const canWrite = conversation.access.write.includes(tab);
 
   return (
-    <section className="space-y-4">
+    <section id="conversation" className="scroll-mt-4 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Conversation</h2>
         {readable.length > 1 ? (

@@ -55,7 +55,7 @@ export function MemberMarks({
   }
 
   return (
-    <section className="space-y-3">
+    <section id="marks" className="scroll-mt-4 space-y-3">
       <h2 className="text-lg font-semibold">Member marks</h2>
       {marks.length === 0 ? (
         <p className="text-sm text-muted-foreground">No marks on this project.</p>

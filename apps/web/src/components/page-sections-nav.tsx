@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 export type PageSection = { id: string; label: string; children?: { id: string; label: string }[] };
 
 // The section in view: the first one, in page order, whose top has reached the upper part of the screen.
-function useActiveSection(ids: string[]): string | null {
+export function useActiveSection(ids: string[]): string | null {
   const [active, setActive] = useState<string | null>(ids[0] ?? null);
   const key = ids.join(" ");
   useEffect(() => {
