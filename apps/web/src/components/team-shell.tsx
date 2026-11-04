@@ -25,7 +25,6 @@ import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
 import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
-import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { usePlatformName } from "@/components/platform-name";
 import { sellerOptions, useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
 import { trpc } from "@/utils/trpc";
@@ -91,14 +90,6 @@ export default function TeamShell({
   const name = scope?.seller?.name ?? slug.replace(/-/g, " ");
   const workspaces = useMyWorkspaces();
   const organization = workspaces.find((w) => [...w.servicesTeams, ...w.stores].some((s) => s.slug === slug));
-  const role = scope?.seller?.role;
-  const roleLabel = !role
-    ? ""
-    : role.product === "store"
-      ? role.role === "admin"
-        ? "Store admin"
-        : "Store staff"
-      : (SERVICES_TEAM_ROLE_LABELS[role.role] ?? role.role);
   const sections = (scope?.seller?.sections ?? [])
     .map((s) => ({ ...s, pages: services ? s.pages : s.pages.filter((p) => STORE_PAGES.has(p)) }))
     .filter((s) => s.pages.length > 0);
