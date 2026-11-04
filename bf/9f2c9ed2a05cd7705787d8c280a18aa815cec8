@@ -1,0 +1,26 @@
+packages/db/src/migrations/20261104010647_agent_call_nodes/migration.sql
+  h_6877e5e7a06bc5 1-18
+packages/db/src/migrations/20261104010647_agent_call_nodes/snapshot.json
+  h_6877e5e7a06bc5 1-15645
+packages/db/src/repositories/calls.ts
+  h_6877e5e7a06bc5 2-3,11-20,26-28,32,37-66,70,102-116,120,128,144-149,156-158
+packages/db/src/repositories/services-teams.ts
+  h_6877e5e7a06bc5 193
+packages/db/src/repositories/teams.ts
+  h_6877e5e7a06bc5 4,23
+packages/db/src/repositories/workspaces.ts
+  h_6877e5e7a06bc5 1-20
+packages/db/src/schema/calls.ts
+  h_6877e5e7a06bc5 2-4,7,14-16,23-27,37-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf9f2c9ed2a05cd7705787d8c280a18aa815cec8",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
