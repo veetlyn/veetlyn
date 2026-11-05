@@ -102,7 +102,7 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{product.title}</p>
                   <p className="truncate text-sm text-muted-foreground">
-                    {product.status === "published" ? "Published" : "Draft"} · {formatMinor(product.priceMinor, currency)} ·{" "}
+                    {product.status === "published" ? "Published" : "Draft"} — {formatMinor(product.priceMinor, currency)} —{" "}
                     {product.fileName ?? "No file"}
                   </p>
                 </div>

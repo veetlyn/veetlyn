@@ -39,8 +39,8 @@ export default function ClientHome() {
                 <div className="min-w-0">
                   <p className="truncate font-medium">{project.title}</p>
                   <p className="truncate text-sm text-muted-foreground">
-                    {project.teamName} · {new Date(project.createdAt).toLocaleDateString()}
-                    {project.briefStart ? ` · ${project.briefStart}` : ""}
+                    {project.teamName} — {new Date(project.createdAt).toLocaleDateString()}
+                    {project.briefStart ? ` — ${project.briefStart}` : ""}
                   </p>
                 </div>
                 <Badge tone={CLIENT_PROJECT_TONES[project.status]}>{projectStatusLabel(project.status)}</Badge>

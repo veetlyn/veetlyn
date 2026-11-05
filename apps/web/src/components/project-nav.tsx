@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useActiveSection } from "@/components/page-sections-nav";
+import RecentCalls from "@/components/recent-calls";
 import { trpc } from "@/utils/trpc";
 
 // The project's own parts, in page order; only those the page shows are listed.
@@ -81,7 +82,7 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
           aria-label={project ? `${project.title}. Switch project` : "Switch project"}
         >
           <span className="grid size-6 shrink-0 place-items-center rounded-[6px] bg-card text-[12px] font-semibold uppercase shadow-[inset_0_0_0_1px_var(--border)]">
-            {project?.title.slice(0, 1) ?? "·"}
+            {project?.title.slice(0, 1) ?? "?"}
           </span>
           <span className="grid min-w-0 flex-1">
             <b className="truncate text-[14px] font-semibold">{project?.title ?? "Project"}</b>
@@ -131,23 +132,7 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
           </a>
         ))}
       </nav>
-      {(calls.data?.calls.length ?? 0) > 0 ? (
-        <div className="pt-4">
-          <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Chats about this project</p>
-          <ul className="grid gap-0.5">
-            {(calls.data?.calls ?? []).slice(0, 5).map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/${slug}/calls?call=${c.id}`}
-                  className="block truncate rounded-[9px] px-2.5 py-1.5 text-[14px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
-                >
-                  {c.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 15)} callsPath={`/${slug}/calls`} label="Chats about this project" />
     </>
   );
 }

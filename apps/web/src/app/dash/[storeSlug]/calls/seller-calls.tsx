@@ -33,6 +33,7 @@ export default function SellerCalls({
       askNode={projectId ? { kind: "record", teamId, record: { type: "project", id: projectId } } : listNode}
       callsPath={`/${slug}/calls`}
       scopeName={scope.name}
+      teamSlug={slug}
       projectHref={(id) => `/${slug}/projects/${id}`}
       assistantName={assistantName}
       callId={callId}

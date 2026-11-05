@@ -22,7 +22,7 @@ export function WorkspaceSellers({ organization, urlParts }: { organization: Wor
             <Link href={`/${store.slug}`} className="font-medium underline-offset-4 hover:underline">
               {store.name}
             </Link>
-            <p className="truncate text-sm text-muted-foreground">Store · {storeUrl(store.slug, urlParts)}</p>
+            <p className="truncate text-sm text-muted-foreground">Store — {storeUrl(store.slug, urlParts)}</p>
           </div>
           <Badge tone={store.status === "active" ? "good" : store.status === "suspended" ? "warn" : "neutral"}>
             {STATUS_LABEL.get(store.status) ?? store.status}

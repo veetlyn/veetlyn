@@ -27,8 +27,8 @@ function CaseRows({ cases, teamSlug, paypalEnvironment }: { cases: Case[]; teamS
           </div>
           <p className="text-sm text-muted-foreground">
             Opened {new Date(c.openedAt).toLocaleDateString(undefined, DATE)}
-            {c.amountMinor !== null && c.currency ? ` · ${formatMinor(c.amountMinor, c.currency)}` : ""}
-            {" · "}
+            {c.amountMinor !== null && c.currency ? ` — ${formatMinor(c.amountMinor, c.currency)}` : ""}
+            {" — "}
             {c.projectId ? (
               <Link href={`/${teamSlug}/projects/${c.projectId}`} className="underline underline-offset-4">
                 {c.projectTitle}
@@ -38,7 +38,7 @@ function CaseRows({ cases, teamSlug, paypalEnvironment }: { cases: Case[]; teamS
             ) : (
               "Not matched to a project"
             )}
-            {" · "}
+            {" — "}
             <a href={disputeCaseUrl(paypalEnvironment, c.paypalDisputeId)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
               {c.paypalDisputeId}
             </a>

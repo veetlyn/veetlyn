@@ -22,7 +22,7 @@ export default function SandboxCheckoutHelp() {
         <div className="flex flex-wrap gap-x-2">
           <dt className="font-medium">Test card</dt>
           <dd className="font-mono">
-            {content.card.number} · {content.card.expiry} · CVV {content.card.cvv}
+            {content.card.number} — {content.card.expiry} — CVV {content.card.cvv}
           </dd>
         </div>
       </dl>

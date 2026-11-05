@@ -126,7 +126,7 @@ function QuoteSummary({
           <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
           <span className="text-muted-foreground">
             {" "}
-            · delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`}
+            — delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`}
           </span>
         </p>
         <Badge tone={quote.status === "proposed" ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>

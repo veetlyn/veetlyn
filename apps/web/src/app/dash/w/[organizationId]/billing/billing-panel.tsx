@@ -129,7 +129,7 @@ export default function BillingPanel({ organizationId }: { organizationId: strin
             {[entitlements.services?.name, entitlements.store?.name].filter(Boolean).join(" + ") || "No plan"}
             <span className="text-muted-foreground">
               {" "}
-              · {view.choice.interval === "yearly" ? "billed yearly" : "billed monthly"}
+              — {view.choice.interval === "yearly" ? "billed yearly" : "billed monthly"}
             </span>
           </p>
           {entitlements.servicesFeeBps !== null || entitlements.storeFeeBps !== null ? (

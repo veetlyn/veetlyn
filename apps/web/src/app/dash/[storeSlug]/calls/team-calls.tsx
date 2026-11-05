@@ -69,6 +69,7 @@ export default function TeamCalls({
   askNode,
   callsPath,
   scopeName,
+  teamSlug,
   projectHref,
   assistantName,
   callId,
@@ -79,6 +80,7 @@ export default function TeamCalls({
   callsPath: string;
   // What the call works on, named on the composer's chip.
   scopeName: string;
+  teamSlug?: string;
   // A project's page, for "On the table"; null above the sellers.
   projectHref: ((projectId: string) => string) | null;
   assistantName: string;
@@ -138,8 +140,14 @@ export default function TeamCalls({
   const available = calls.data?.available ?? false;
   const current = thread.data?.call ?? null;
   const onTable = current?.projectId ?? (activeCallId ? null : projectId);
+  const project = useQuery({
+    ...trpc.project.get.queryOptions({ teamSlug: teamSlug ?? "", projectId: onTable ?? "" }),
+    enabled: Boolean(teamSlug && onTable),
+    retry: false,
+    meta: { silent: true },
+  });
   const firstName = session?.user.name.split(/\s+/)[0] ?? "";
-  const scopeLabel = onTable ? "This project" : scopeName;
+  const scopeLabel = onTable ? project.data?.project.title ?? "Project" : scopeName;
 
   const composer = (
     <div className={activeCallId ? "shrink-0 px-3 pt-1 pb-3" : "w-full"}>
@@ -182,7 +190,7 @@ export default function TeamCalls({
           <p className="text-sm text-muted-foreground">
             On the table:{" "}
             <Link href={projectHref(onTable)} className="underline underline-offset-4">
-              this project
+              {project.data?.project.title ?? "this project"}
             </Link>
           </p>
         ) : null}

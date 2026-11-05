@@ -75,3 +75,38 @@
 [data-dash] [data-slot="badge"].text-brand-text { background: color-mix(in oklch, var(--brand) 14%, transparent); }
 [data-dash] [data-slot="badge"].text-warning { background: color-mix(in oklch, var(--warning) 12%, transparent); }
 [data-dash] [data-slot="badge"].text-destructive { background: color-mix(in oklch, var(--destructive) 12%, transparent); }
+
+/* Keep the existing screens' data and actions, but carry them on Quartz's flat, quiet chassis. */
+[data-dash] .panel,
+[data-dash] [data-slot="card"] {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: none;
+}
+[data-dash] .raised {
+  background: color-mix(in oklch, var(--card) 70%, var(--secondary));
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-dash] [data-slot="button"] { border-radius: 6px; }
+[data-dash] [data-slot="button"].key-mint { border-radius: 4px 999px 999px 4px; }
+[data-dash] input:not([type="checkbox"]):not([type="radio"]),
+[data-dash] textarea,
+[data-dash] select {
+  border-radius: 6px;
+}
+[data-dash] :is(input, textarea, select):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+[data-dash] table { border-collapse: separate; border-spacing: 0; }
+[data-dash] th { font-weight: 500; }
+[data-dash] dialog {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--float);
+}
+[data-dash] ::selection { background: color-mix(in oklch, var(--brand) 24%, var(--card)); }
+[data-dash] input::placeholder,
+[data-dash] textarea::placeholder { color: var(--muted-foreground); opacity: 0.82; }
+[data-dash] [data-slot="button"]:disabled { cursor: not-allowed; }

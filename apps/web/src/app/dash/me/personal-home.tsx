@@ -81,7 +81,7 @@ export default function PersonalHome() {
               <li key={`${e.teamId}-${e.currency}`} className="grid gap-0.5 py-2.5">
                 <p className="font-medium">{e.teamName}</p>
                 <p className="text-sm text-muted-foreground tabular-nums">
-                  {formatMinor(e.availableMinor, e.currency)} to request · {formatMinor(e.reservedMinor, e.currency)} on its way ·{" "}
+                  {formatMinor(e.availableMinor, e.currency)} to request — {formatMinor(e.reservedMinor, e.currency)} on its way —{" "}
                   {formatMinor(e.paidOutMinor, e.currency)} paid out
                 </p>
               </li>

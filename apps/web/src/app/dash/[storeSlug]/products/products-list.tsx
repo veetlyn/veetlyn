@@ -65,7 +65,7 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {product.variantCount}{" "}
-                    {product.variantCount === 1 ? "variant" : "variants"} · {product.totalStock} in stock
+                    {product.variantCount === 1 ? "variant" : "variants"} — {product.totalStock} in stock
                   </p>
                 </div>
                 <p className="font-tabular text-sm">
