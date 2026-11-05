@@ -197,7 +197,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                 </div>
                 {member.workspaceAdmin ? (
                   <span className="shrink-0 text-sm text-muted-foreground" title="Set by the workspace">
-                    Admin · workspace
+                    Admin — workspace
                   </span>
                 ) : isAdmin ? (
                   <select

@@ -121,7 +121,7 @@ function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; curre
     <div className="panel p-4">
       <div className="flex items-center justify-between">
         <p className="font-medium">
-          Quote v{quote.version} · {formatMoney(money(currency, quote.amountMinor))}
+          Quote v{quote.version} — {formatMoney(money(currency, quote.amountMinor))}
         </p>
         <Badge tone={quote.status === "accepted" ? "good" : "neutral"}>{QUOTE_STATUS_LABELS[quote.status]}</Badge>
       </div>
@@ -317,7 +317,7 @@ export default function ProjectDetail({
             {projectStatusLabel(project.status)}
           </Badge>
           {primary?.name ?? "No client"}
-          {project.finalPriceMinor !== null ? ` · Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
+          {project.finalPriceMinor !== null ? ` — Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
         <div className="max-w-3xl pt-2">
           <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />

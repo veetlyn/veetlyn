@@ -44,7 +44,7 @@ export default async function AccountHome() {
                   className="grid gap-0.5 px-4 py-3.5 transition-colors hover:bg-accent/60"
                 >
                   <span className="font-medium">{organization.name}</span>
-                  <span className="truncate text-sm text-muted-foreground">Workspace · {sellers.join(", ")}</span>
+                  <span className="truncate text-sm text-muted-foreground">Workspace — {sellers.join(", ")}</span>
                 </Link>
               </li>
             );

@@ -147,8 +147,8 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
             {offering.active && !offering.listed ? <Badge>Not in AI assistants</Badge> : null}
           </p>
           <p className="text-sm text-muted-foreground">
-            {priceLabel(offering, currency)} · {daysLabel(offering)} · {FULFILMENT_LABELS[offering.fulfilment]}
-            {questionCount > 0 ? ` · ${questionCount} ${questionCount === 1 ? "question" : "questions"}` : ""}
+            {priceLabel(offering, currency)} — {daysLabel(offering)} — {FULFILMENT_LABELS[offering.fulfilment]}
+            {questionCount > 0 ? ` — ${questionCount} ${questionCount === 1 ? "question" : "questions"}` : ""}
           </p>
         </Link>
         {isAdmin ? (

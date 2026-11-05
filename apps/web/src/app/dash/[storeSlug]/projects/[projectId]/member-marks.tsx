@@ -65,7 +65,7 @@ export function MemberMarks({
             <li key={mark.id}>
               <span className="font-medium">{mark.memberName}</span>
               <span className="text-muted-foreground">
-                {" "}· {MARK_KIND_LABELS[mark.kind]}{mark.note ? ` · ${mark.note}` : ""} · {new Date(mark.createdAt).toLocaleDateString()}
+                {" "}— {MARK_KIND_LABELS[mark.kind]}{mark.note ? ` — ${mark.note}` : ""} — {new Date(mark.createdAt).toLocaleDateString()}
               </span>
             </li>
           ))}

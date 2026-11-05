@@ -120,7 +120,7 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
                       onCheckedChange={(checked) => toggle(request.id, checked === true)}
                     />
                     <span>
-                      <span className="font-medium">{request.memberName}</span> ·{" "}
+                      <span className="font-medium">{request.memberName}</span> —{" "}
                       {formatMinor(request.amountMinor, request.currency)}
                       {request.sentMinor !== null && request.feeEstimateMinor !== null ? (
                         <span className="block text-muted-foreground">

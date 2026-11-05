@@ -60,7 +60,7 @@ export function RefundSection({
             <li key={part.paymentId} className="panel p-3">
               <div className="flex items-center justify-between gap-4">
                 <span>
-                  {kindOf.get(part.paymentId) ?? "Payment"} · {formatMinor(part.amountMinor, refund.currency)}
+                  {kindOf.get(part.paymentId) ?? "Payment"} — {formatMinor(part.amountMinor, refund.currency)}
                 </span>
                 <span className="text-muted-foreground">{refundPartStatusLabel(part.status)}</span>
               </div>

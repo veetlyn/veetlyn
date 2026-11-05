@@ -59,7 +59,7 @@ export default function OpenRequests({ teamSlug }: { teamSlug: string }) {
                 </div>
                 <p className="line-clamp-2 text-sm text-muted-foreground">{request.brief}</p>
                 <p className="text-sm text-muted-foreground">
-                  {request.departmentName ?? "Any department"} · Sent {new Date(request.createdAt).toLocaleDateString()}
+                  {request.departmentName ?? "Any department"} — Sent {new Date(request.createdAt).toLocaleDateString()}
                 </p>
               </Link>
             </li>

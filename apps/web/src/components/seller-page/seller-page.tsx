@@ -49,8 +49,8 @@ function OfferingCard({
       <p className="text-sm">
         <span className="text-muted-foreground">Usually </span>
         <span className="font-tabular font-semibold">{priceLabel(offering, page.currency)}</span>
-        <span className="text-muted-foreground"> · {daysLabel(offering)}</span>
-        <span className="text-muted-foreground"> · {FULFILMENT_LABELS[offering.fulfilment]}</span>
+        <span className="text-muted-foreground"> — {daysLabel(offering)}</span>
+        <span className="text-muted-foreground"> — {FULFILMENT_LABELS[offering.fulfilment]}</span>
       </p>
       <a
         href={`${page.pageBase}/request?offering=${offering.id}`}

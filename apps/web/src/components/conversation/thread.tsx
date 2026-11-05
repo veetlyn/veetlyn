@@ -21,7 +21,7 @@ export type ThreadMessage = {
 
 const MAX_MESSAGE = 4000;
 
-const KIND_LABELS = { text: "", question: " · Question", answer: " · Answer", event: "" } satisfies Record<
+const KIND_LABELS = { text: "", question: " — Question", answer: " — Answer", event: "" } satisfies Record<
   ThreadMessage["kind"],
   string
 >;
@@ -56,7 +56,7 @@ export function ConversationThread<M extends ThreadMessage>({
         if (message.kind === "event") {
           return (
             <p key={message.id} className="text-center text-sm text-muted-foreground">
-              {message.body} <span className="whitespace-nowrap">· {when(message.createdAt)}</span>
+              {message.body} <span className="whitespace-nowrap">— {when(message.createdAt)}</span>
             </p>
           );
         }
@@ -68,7 +68,7 @@ export function ConversationThread<M extends ThreadMessage>({
             <MessageContent>
               <MessageHeader>
                 {message.authorName}
-                {label} · {when(message.createdAt)}
+                {label} — {when(message.createdAt)}
               </MessageHeader>
               {question ? (
                 <p className="px-2.5 text-sm text-muted-foreground">Re: {question.body.slice(0, 120)}</p>

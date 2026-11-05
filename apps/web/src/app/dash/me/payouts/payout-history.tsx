@@ -28,7 +28,7 @@ export function PayoutHistory() {
               <li key={request.id} className="space-y-1 px-4 py-3.5">
                 <div className="flex items-center justify-between gap-4">
                   <span className="font-medium">
-                    {request.teamName} · <span className="font-tabular">{formatMinor(request.amountMinor, request.currency)}</span>
+                    {request.teamName} — <span className="font-tabular">{formatMinor(request.amountMinor, request.currency)}</span>
                   </span>
                   <Badge tone={PAYOUT_STATUS_TONES[request.status]}>{MEMBER_STATUS_LABELS[request.status]}</Badge>
                 </div>
