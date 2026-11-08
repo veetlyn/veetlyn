@@ -37,6 +37,11 @@ export default function SellerCalls({
       projectHref={(id) => `/${slug}/projects/${id}`}
       assistantName={assistantName}
       callId={callId}
+      starters={
+        scope.role.product === "services"
+          ? ["What needs me today?", "Draft a quote for my newest request", "Which projects are at risk?"]
+          : ["What needs me today?", "How are orders this week?"]
+      }
     />
   );
 }
