@@ -55,7 +55,7 @@ export default function AccountShell({
         : pathname.startsWith("/me/payouts")
           ? [{ href: "/me/payouts", label: "Your earnings" }]
           : pathname.startsWith("/me/calls")
-            ? [{ href: "/me/calls", label: "Chats" }]
+            ? [{ href: "/me/calls", label: "Threads" }]
             : []),
   ];
 
@@ -88,7 +88,7 @@ export default function AccountShell({
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/calls" label="Chats" />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/calls" label="Your threads" />
         </>
       }
       ask={
