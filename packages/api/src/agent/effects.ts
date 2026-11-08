@@ -21,6 +21,52 @@ async function teamPayout(db: DbExecutor, teamId: string, requestId: string) {
   return { amount: formatMoney(money(request.currency, request.amountMinor)), member: await userDisplayName(db, request.userId) };
 }
 
+// A proposal's facts for its card, read from the exact input that runs on confirm, never from the assistant's words.
+// The button names the action, so the person always knows what pressing it does. Null when the input no longer fits.
+export type ProposalCard =
+  | { kind: "quote"; cta: string; project: string; lines: { label: string; amount: string }[]; total: string; delivery: string }
+  | { kind: "payout"; cta: string; decision: "approve" | "reject"; member: string; amount: string }
+  | { kind: "message"; cta: string; project: string; audience: string; body: string };
+
+export async function proposalCard(db: DbExecutor, teamId: string, action: string, input: JsonObject): Promise<ProposalCard | null> {
+  switch (action) {
+    case conversationPost.name: {
+      const post = conversationPost.input.safeParse(input);
+      if (!post.success) return null;
+      const project = await teamProject(db, teamId, post.data.projectId);
+      if (!project) return null;
+      const audience = post.data.teamOnly ? "Team only" : post.data.space ? `${post.data.space} space` : "Client";
+      return { kind: "message", cta: post.data.kind === "question" ? "Ask the client" : "Post message", project: project.title, audience, body: post.data.body };
+    }
+    case quoteCreate.name: {
+      const quote = quoteCreate.input.safeParse(input);
+      if (!quote.success) return null;
+      const project = await teamProject(db, teamId, quote.data.projectId);
+      if (!project) return null;
+      const amount = (minor: number) => formatMoney(money(project.currency, minor));
+      return {
+        kind: "quote",
+        cta: "Send quote",
+        project: project.title,
+        lines: quote.data.items.map((item) => ({ label: item.description, amount: amount(item.amountMinor) })),
+        total: amount(quote.data.items.reduce((sum, item) => sum + item.amountMinor, 0)),
+        delivery: days(quote.data.deliveryDays),
+      };
+    }
+    case payoutApprove.name:
+    case payoutReject.name: {
+      const parsed = payoutApprove.input.safeParse(input);
+      if (!parsed.success) return null;
+      const payout = await teamPayout(db, teamId, parsed.data.requestId);
+      if (!payout) return null;
+      const approve = action === payoutApprove.name;
+      return { kind: "payout", cta: approve ? `Approve ${payout.amount}` : "Reject payout", decision: approve ? "approve" : "reject", ...payout };
+    }
+    default:
+      return null;
+  }
+}
+
 // What a proposal will do, written by the server from the exact input that runs on confirm, with the record it
 // targets: the card shows this, so the person never confirms the assistant's description of an action. Null when the
 // input does not fit its action or names a record outside the team.

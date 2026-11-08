@@ -114,6 +114,20 @@ export async function findOwnProposal(
   return row ?? null;
 }
 
+// The decisions waiting on a person across a place, newest first, each with the call it sits in.
+export async function listOwnPendingProposals(
+  db: DbExecutor,
+  input: { userId: string; under: CallsUnder; limit: number },
+): Promise<{ entry: AgentCallEntryRow; call: AgentCallRow }[]> {
+  return db
+    .select({ entry: agentCallEntry, call: agentCall })
+    .from(agentCallEntry)
+    .innerJoin(agentCall, eq(agentCall.id, agentCallEntry.callId))
+    .where(and(eq(agentCall.userId, input.userId), underClause(input.under), eq(agentCallEntry.kind, "proposal"), eq(agentCallEntry.status, "pending")))
+    .orderBy(desc(agentCallEntry.createdAt))
+    .limit(input.limit);
+}
+
 // Claims a pending proposal of the person's own call for one decision: a second confirm or decline finds nothing.
 export async function claimPendingProposal(
   db: DbExecutor,
