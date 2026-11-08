@@ -149,6 +149,39 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(await db.select().from(conversationMessage)).toHaveLength(1);
   });
 
+  it("gives a card its facts from the stored input and lists it as waiting on its person only", async () => {
+    const { adminId, freelancerId, projectId, teamId } = await setup();
+    const model = scriptedModel([
+      use("propose_quote_create", {
+        card: "Priced from the brief, and this sentence is not the price.",
+        input: { projectId, items: [{ description: "Logo", amountMinor: 90_000 }, { description: "Guide", amountMinor: 25_000 }], deliveryDays: 12 },
+      }),
+      say("I drafted a quote; review it."),
+    ]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: onProject(projectId), message: "Draft the quote" });
+
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
+    const expected = {
+      kind: "quote",
+      cta: "Send quote",
+      project: "Baobab logo",
+      lines: [{ label: "Logo", amount: "$900.00" }, { label: "Guide", amount: "$250.00" }],
+      total: "$1,150.00",
+      delivery: "12 days",
+    };
+    const proposal = entries.find((e) => e.kind === "proposal");
+    expect(proposal?.card).toEqual(expected);
+    expect(proposal).not.toHaveProperty("input");
+
+    const node = { kind: "seller" as const, teamId };
+    const { pending } = await callerFor(adminId).agent.pending({ node });
+    expect(pending).toEqual([expect.objectContaining({ callId, title: "Draft the quote", card: expected })]);
+    await expect(callerFor(freelancerId).agent.pending({ node })).resolves.toEqual({ pending: [] });
+
+    await callerFor(adminId).agent.decline({ entryId: proposal?.id ?? "" });
+    await expect(callerFor(adminId).agent.pending({ node })).resolves.toEqual({ pending: [] });
+  });
+
   // The SDK runs one step's tool calls at once: cards drafted together must keep their order and the per-turn cap.
   it("keeps cards drafted at once in the model's order, and at most three per turn", async () => {
     const { adminId, projectId } = await setup();
