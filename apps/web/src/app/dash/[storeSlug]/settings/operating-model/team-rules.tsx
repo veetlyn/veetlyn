@@ -4,6 +4,7 @@ import { RULE_SECTIONS, RulebookEditor, ruleAnchor } from "@opmodel/admin-rules/
 import { RulebookSummaryView } from "@opmodel/admin-rules/RulebookSummaryView";
 import type { RulebookSpec } from "@opmodel/engine-rules";
 import { Button } from "@jendal-workspace/ui/components/button";
+import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
@@ -12,14 +13,14 @@ import { type PageSection, PageSectionsRail } from "@/components/page-sections-n
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { trpc } from "@/utils/trpc";
 
-// What the assistant is able to do today, as the server enforces it; not settings.
+// What the assistant may do, as the server enforces it. Rows with a key are the team's to switch off.
 const AGENT_LIMITS = [
-  ["What it can see", "Only what the person asking can already open.", "Same as that person"],
-  ["Quotes", "Drafted from the brief and your services.", "Drafts, a person sends"],
-  ["Client messages", "Questions and updates to clients.", "Drafts, a person sends"],
-  ["Payouts", "It prepares approvals and rejections.", "A person decides"],
-  ["Refunds and disputes", "Handled in the dashboard.", "People only"],
-  ["Client payments", "Clients approve each payment themselves.", "Never touches them"],
+  { what: "What it can see", how: "Only what the person asking can already open.", limit: "Same as that person", key: null },
+  { what: "Quotes", how: "Drafted from the brief and your services.", limit: "Drafts, a person sends", key: "agentQuotes" },
+  { what: "Client messages", how: "Questions and updates to clients.", limit: "Drafts, a person sends", key: "agentMessages" },
+  { what: "Payouts", how: "It prepares approvals and rejections.", limit: "Prepares, a person decides", key: "agentPayouts" },
+  { what: "Refunds and disputes", how: "Handled in the dashboard.", limit: "People only", key: null },
+  { what: "Client payments", how: "Clients approve each payment themselves.", limit: "Never touches them", key: null },
 ] as const;
 
 export default function TeamRules({ teamSlug }: { teamSlug: string }) {
@@ -33,6 +34,11 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
   useEffect(() => setDraft(null), [state.data?.draft?.id, state.data?.draft?.version, state.data?.published.id, state.data?.published.version]);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.rules.state.queryKey({ teamSlug }) });
+  const setLimits = useMutation(
+    trpc.agent.setLimits.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
+    }),
+  );
   const save = useMutation(trpc.rules.saveDraft.mutationOptions({ onSuccess: refresh }));
   const publish = useMutation(trpc.rules.publish.mutationOptions({ onSuccess: refresh }));
   const accept = useMutation(trpc.rules.acceptMember.mutationOptions({ onSuccess: refresh }));
@@ -105,13 +111,39 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
               </h2>
             </div>
             <dl className="frame frame-body text-[14px]">
-              {AGENT_LIMITS.map(([what, how, limit]) => (
-                <div key={what} className="flex items-baseline justify-between gap-6 border-b px-3.5 py-3 last:border-b-0">
+              {AGENT_LIMITS.map(({ what, how, limit, key }) => (
+                <div key={what} className="flex items-center justify-between gap-6 border-b px-3.5 py-3 last:border-b-0">
                   <dt className="min-w-0">
                     <span className="font-medium">{what}</span>
                     <span className="block text-muted-foreground">{how}</span>
                   </dt>
-                  <dd className="shrink-0">{limit}</dd>
+                  <dd className="shrink-0">
+                    {key && isAdmin && team.data.settings ? (
+                      <label className="flex items-center gap-2">
+                        <Checkbox
+                          checked={team.data.settings[key]}
+                          disabled={setLimits.isPending}
+                          aria-label={`Let the agent prepare: ${what}`}
+                          onCheckedChange={(checked) => {
+                            const settings = team.data.settings;
+                            if (!settings) return;
+                            setLimits.mutate({
+                              teamId: team.data.team.id,
+                              agentQuotes: settings.agentQuotes,
+                              agentMessages: settings.agentMessages,
+                              agentPayouts: settings.agentPayouts,
+                              [key]: checked === true,
+                            });
+                          }}
+                        />
+                        {team.data.settings[key] ? limit : "Off"}
+                      </label>
+                    ) : key && team.data.settings && !team.data.settings[key] ? (
+                      "Off"
+                    ) : (
+                      limit
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>

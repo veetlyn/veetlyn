@@ -217,6 +217,22 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(model.requests[0]?.messages.at(-1)?.role).toBe("user");
   });
 
+  it("offers no tool the team switched off, and prepares no quote then; only an admin can switch", async () => {
+    const { adminId, freelancerId, teamId } = await setup();
+    await db.update(servicesTeamSettings).set({ quotingMode: "team" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const limits = { teamId, agentQuotes: false, agentMessages: true, agentPayouts: false };
+    await expect(callerFor(freelancerId).agent.setLimits(limits)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await callerFor(adminId).agent.setLimits(limits);
+
+    await expect(callerFor(adminId, scriptedModel([])).agent.prepareDrafts({ teamId })).resolves.toEqual({ drafted: null });
+    const model = scriptedModel([say("That is off for this team.")]);
+    await callerFor(adminId, model).agent.ask({ node: { kind: "seller", teamId }, message: "Draft a quote" });
+    const names = model.requests[0]?.tools?.map((t) => t.function.name) ?? [];
+    expect(names).toContain("propose_conversation_post");
+    expect(names).not.toContain("propose_quote_create");
+    expect(names).not.toContain("propose_payout_approve");
+  });
+
   // The SDK runs one step's tool calls at once: cards drafted together must keep their order and the per-turn cap.
   it("keeps cards drafted at once in the model's order, and at most three per turn", async () => {
     const { adminId, projectId } = await setup();

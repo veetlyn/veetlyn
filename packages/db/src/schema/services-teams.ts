@@ -56,6 +56,10 @@ export const servicesTeamSettings = pgTable(
       .default("assigned")
       .notNull(),
     settingsSavedAt: timestamp("settings_saved_at"),
+    // What the team's agent may prepare; a person still confirms everything it prepares.
+    agentQuotes: boolean("agent_quotes").default(true).notNull(),
+    agentMessages: boolean("agent_messages").default(true).notNull(),
+    agentPayouts: boolean("agent_payouts").default(true).notNull(),
     // S2: the guild this team is linked to; one server per team and one team per server (unique).
     discordGuildId: text("discord_guild_id").unique(),
   },

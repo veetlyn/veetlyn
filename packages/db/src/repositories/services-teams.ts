@@ -41,6 +41,9 @@ const settingsColumns = {
   managementFeeBps: servicesTeamSettings.managementFeeBps,
   quotingMode: servicesTeamSettings.quotingMode,
   settingsSavedAt: servicesTeamSettings.settingsSavedAt,
+  agentQuotes: servicesTeamSettings.agentQuotes,
+  agentMessages: servicesTeamSettings.agentMessages,
+  agentPayouts: servicesTeamSettings.agentPayouts,
   discordGuildId: servicesTeamSettings.discordGuildId,
 };
 
@@ -60,6 +63,14 @@ export async function findServicesTeamById(db: DbExecutor, id: string): Promise<
     .where(and(eq(team.id, id), eq(team.product, "services")))
     .limit(1);
   return row ?? null;
+}
+
+export async function setAgentLimits(
+  db: DbExecutor,
+  input: { teamId: string; agentQuotes: boolean; agentMessages: boolean; agentPayouts: boolean },
+): Promise<void> {
+  const { teamId, ...limits } = input;
+  await db.update(servicesTeamSettings).set(limits).where(eq(servicesTeamSettings.teamId, teamId));
 }
 
 export async function getServicesTeamSettings(db: DbExecutor, teamId: string): Promise<ServicesTeamSettings | null> {

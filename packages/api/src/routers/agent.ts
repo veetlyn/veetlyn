@@ -5,6 +5,7 @@ import {
   listOwnAgentCalls,
   listOwnPendingProposals,
 } from "@jendal-workspace/db/repositories/calls";
+import { setAgentLimits } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamIdBySlug } from "@jendal-workspace/db/repositories/teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -93,6 +94,17 @@ export const agentRouter = router({
     );
     return { pending: cards.filter((card) => card !== null) };
   }),
+
+  // What this team's agent may prepare, set by an admin. Everything it prepares still waits for a person.
+  setLimits: protectedProcedure
+    .input(z.object({ teamId: z.string().min(1).max(64), agentQuotes: z.boolean(), agentMessages: z.boolean(), agentPayouts: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const scope = await resolved(ctx, { kind: "seller", teamId: input.teamId });
+      if (scope.seller?.role.product !== "services" || scope.seller.role.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin can change what the agent may prepare." });
+      }
+      await setAgentLimits(ctx.db, input);
+    }),
 
   // Prepares the next unanswered request's quote for this person; the page asks again until nothing is left.
   prepareDrafts: protectedProcedure.input(z.object({ teamId: z.string().min(1).max(64) })).mutation(async ({ ctx, input }) => {
