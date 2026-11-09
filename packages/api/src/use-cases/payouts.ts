@@ -2,6 +2,7 @@ import {
   balanceHold,
   canServicesTeam,
   decidePayout,
+  SECOND_APPROVER_WINDOW_DAYS,
   estimatePayoutFeeMinor,
   ledgerAccounts,
   LedgerError,
@@ -36,6 +37,7 @@ import {
   type CompletedProjectWithoutPayout,
   earningsOnHoldMinor,
   getPayoutRequest,
+  memberOtherPayoutsMinorSince,
   insertPayoutApproval,
   insertPayoutRequest,
   listCompletedProjectsWithoutPayout,
@@ -68,7 +70,7 @@ import { TRPCError } from "@trpc/server";
 import { log } from "evlog";
 
 import type { PayoutServices } from "../context";
-import { teamHasOpenDispute } from "@jendal-workspace/db/repositories/operating-model";
+import { openDisputedMinor, openDisputeHoldsPayout } from "@jendal-workspace/db/repositories/operating-model";
 import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { appendPayoutOutboxEvent } from "./outbox-dispatcher";
 import { credentialsMatchTeam, payoutClientFromCredentials } from "./payout-credentials";
@@ -152,7 +154,11 @@ export type RequestPayoutDeps = Omit<PayoutDeps, "payouts"> & { payouts?: Payout
 
 const NO_CREDENTIALS = "Turn on automatic payouts to pay requests.";
 export const WAITING_FOR_EXPORT = "Waiting for export or for automatic payouts.";
-export const DISPUTE_PAUSE = "An open PayPal dispute pauses this team's payouts.";
+export const DISPUTE_PAUSE = "An open PayPal dispute involves this member's work, so this payout waits for it.";
+
+function recentOtherPayouts(db: DbExecutor, input: { teamId: string; userId: string; excludeRequestId?: string }, now: Date): Promise<number> {
+  return memberOtherPayoutsMinorSince(db, { ...input, since: new Date(now.getTime() - SECOND_APPROVER_WINDOW_DAYS * DAY_MS) });
+}
 const OTHER_ACCOUNT =
   "Automatic payouts are on for another PayPal account than the one connected to this team. Turn them on again.";
 const SEALED_SECRET_UNREADABLE = "The team's automatic payouts connection could not be read. Turn on automatic payouts again.";
@@ -341,7 +347,7 @@ export async function requestPayout(
   const team = await findServicesTeamBySlug(db, input.teamSlug);
   if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found." });
   // An open PayPal case can claw paid money back, so payouts wait until it resolves (AGT-54).
-  if (await teamHasOpenDispute(db, team.id)) {
+  if (await openDisputeHoldsPayout(db, { teamId: team.id, userId, projectId: null })) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: DISPUTE_PAUSE });
   }
   const settings = await getServicesTeamSettings(db, team.id);
@@ -359,7 +365,8 @@ export async function requestPayout(
   }
   const currency = settings?.currency ?? "USD";
   const rules = await decisionRules(db, team);
-  const facts: PayoutFacts = { amountMinor, source: "member", memberId: userId, approverIds: [], balanceMinor: null, now };
+  const recentOtherMinor = await recentOtherPayouts(db, { teamId: team.id, userId }, now);
+  const facts: PayoutFacts = { amountMinor, source: "member", memberId: userId, approverIds: [], balanceMinor: null, now, recentOtherMinor };
   // Read before the transaction so no lock is held across PayPal's answer.
   const balanceMinor = await balanceForAutoApproval(deps, team, { rules, facts, currency });
 
@@ -469,7 +476,7 @@ export async function createProjectPayout(
     if (payoutSentProblem(sentMinor)) return null;
     const decision = decidePayout(
       rules,
-      { amountMinor, source: "project", memberId, approverIds: [], balanceMinor, now },
+      { amountMinor, source: "project", memberId, approverIds: [], balanceMinor, now, recentOtherMinor: await recentOtherPayouts(tx, { teamId: team.id, userId: memberId }, now) },
       project.currency,
     );
     if (decision.kind === "refused") return null;
@@ -563,6 +570,7 @@ export async function approvePayoutRequest(
         approverIds: (await currentApproverIds(tx, request)).current,
         balanceMinor: null,
         now,
+        recentOtherMinor: await recentOtherPayouts(tx, { teamId: request.teamId, userId: request.userId, excludeRequestId: request.id }, now),
       },
       request.currency,
     );
@@ -598,7 +606,15 @@ async function approvalWithdrawn(tx: Transaction, request: PayoutRequestRow): Pr
   const rules = await getPayoutRules(tx, request.teamId);
   const decision = decidePayout(
     { ...rules, autoApproveUpToMinor: null, trustedMemberIds: [], minimumPayoutMinor: 0 },
-    { amountMinor: request.amountMinor, source: request.source, memberId: request.userId, approverIds: current, balanceMinor: null, now: new Date() },
+    {
+      amountMinor: request.amountMinor,
+      source: request.source,
+      memberId: request.userId,
+      approverIds: current,
+      balanceMinor: null,
+      now: new Date(),
+      recentOtherMinor: await recentOtherPayouts(tx, { teamId: request.teamId, userId: request.userId, excludeRequestId: request.id }, new Date()),
+    },
     request.currency,
   );
   if (decision.kind !== "needs_approval") return null;
@@ -680,7 +696,7 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string, a
   }
   // A dispute takes the credentials row before it opens a case, so a case that opened since sendPayout's first check
   // is seen here, and none can open between this check and the claim's commit.
-  if (await teamHasOpenDispute(tx, team.id)) return { kind: "held", request };
+  if (await openDisputeHoldsPayout(tx, { teamId: team.id, userId: request.userId, projectId: request.projectId })) return { kind: "held", request };
   // updated_at identifies this claim when its answer is recorded, so it must differ from every earlier claim's.
   const claimedAt = new Date(Math.max(now, request.updatedAt.getTime() + 1));
   const claimed = await updatePayoutRequest(tx, request.id, {
@@ -829,7 +845,11 @@ async function holdForBalance(
   if (!request || request.teamId !== team.id || request.status !== "queued" || request.uncertainAt !== null) return null;
   const credentials = await getTeamPayoutCredentials(deps.db, team.id);
   if (!credentials || !credentialsMatchTeam(credentials, team)) return null;
-  const hold = balanceHold(await getPayoutRules(deps.db, team.id), {
+  // Whatever else is paid, the balance keeps enough to cover the money PayPal may take back.
+  const rules = await getPayoutRules(deps.db, team.id);
+  const disputedMinor = await openDisputedMinor(deps.db, { teamId: team.id, currency: request.currency });
+  const reserved = disputedMinor > 0 ? { ...rules, balanceFloorMinor: (rules.balanceFloorMinor ?? 0) + disputedMinor } : rules;
+  const hold = balanceHold(reserved, {
     amountMinor: request.amountMinor,
     balanceMinor: await readTeamBalanceMinor(deps, team, request.currency),
     currency: request.currency,
@@ -847,8 +867,9 @@ async function holdForBalance(
 // try: 15 minutes, 1 hour, 6 hours, then daily.
 export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: string): Promise<PayoutRequestRow> {
   const now = nowOf(deps);
-  // An open case holds the team's payouts (AGT-54); the sweep retries after it resolves.
-  if (await teamHasOpenDispute(deps.db, team.id)) {
+  // An open case holds the payouts of the work it is about (AGT-54); the sweep retries after it resolves.
+  const toSend = await getPayoutRequest(deps.db, requestId);
+  if (toSend?.teamId === team.id && (await openDisputeHoldsPayout(deps.db, { teamId: team.id, userId: toSend.userId, projectId: toSend.projectId }))) {
     const [waiting] = await deps.db.select().from(payoutRequest).where(and(eq(payoutRequest.id, requestId), eq(payoutRequest.teamId, team.id))).limit(1);
     if (!waiting) throw notFound();
     return waiting;
@@ -1118,7 +1139,7 @@ export async function refreshPayout(
 
 // Approvals a requested payout still needs under the current rules. Auto-approval had its chance when the payout
 // was made, and the minimum is checked again on approval, so neither counts here.
-function approvalsStillNeeded(rules: PayoutRules, row: TeamPayoutRequestRow): number {
+function approvalsStillNeeded(rules: PayoutRules, row: TeamPayoutRequestRow, all: readonly TeamPayoutRequestRow[]): number {
   if (row.status !== "requested") return 0;
   const decision = decidePayout(
     { ...rules, autoApproveUpToMinor: null, trustedMemberIds: [], minimumPayoutMinor: 0 },
@@ -1129,6 +1150,16 @@ function approvalsStillNeeded(rules: PayoutRules, row: TeamPayoutRequestRow): nu
       approverIds: row.approverIds,
       balanceMinor: null,
       now: new Date(),
+      recentOtherMinor: all
+        .filter(
+          (other) =>
+            other.id !== row.id &&
+            other.userId === row.userId &&
+            other.status !== "rejected" &&
+            other.status !== "failed" &&
+            other.createdAt.getTime() >= Date.now() - SECOND_APPROVER_WINDOW_DAYS * DAY_MS,
+        )
+        .reduce((sum, other) => sum + other.amountMinor, 0),
     },
     row.currency,
   );
@@ -1177,7 +1208,7 @@ export async function listTeamPayouts(
       memberEmail: row.memberEmail,
       projectTitle: row.projectTitle,
       approvals: row.approverIds.length,
-      approvalsNeeded: approvalsStillNeeded(rules, row),
+      approvalsNeeded: approvalsStillNeeded(rules, row, rows),
       eligibleApprovers: adminIds.filter((id) => id !== row.userId && !row.approverIds.includes(id)).length,
     })),
   };

@@ -7,7 +7,7 @@ import {
   getMemberNoticeEnabled,
   insertOutboxDeliveries,
   skipOutboxDelivery,
-  teamHasOpenDispute,
+  openDisputeHoldsPayout,
   type OutboxDeliveryRow,
 } from "@jendal-workspace/db/repositories/operating-model";
 import { runInTransaction, type OutboxRow } from "@jendal-workspace/db/repositories/unit-of-work";
@@ -294,7 +294,7 @@ export async function deliverDueOutboxDeliveries(
         result.skipped += 1;
         continue;
       }
-      if (PAYOUT_EVENTS.has(event.type) && await teamHasOpenDispute(deps.db, event.teamId)) {
+      if (PAYOUT_EVENTS.has(event.type) && await openDisputeHoldsPayout(deps.db, { teamId: event.teamId, userId: readString.parse(event.data.memberUserId), projectId: null })) {
         await deps.db.update(outboxDelivery).set({
           nextAttemptAt: new Date(clock().getTime() + 600_000), claimToken: null, claimExpiresAt: null,
           firstAttemptAt: record.attempts === 0 && record.message === null ? null : record.firstAttemptAt,
