@@ -35,6 +35,21 @@ export function upsertPendingScheduleItems(db: DbExecutor, plan: ScheduleItemPla
   return reconcileScheduleRows(db, SCHEDULE_TABLE, plan);
 }
 
+// What will run on its own for this project, soonest first. A step held by a dispute is listed with its status.
+export async function listProjectSchedule(db: DbExecutor, input: { teamId: string; projectId: string }) {
+  return db
+    .select({ kind: scheduleItem.kind, runAt: scheduleItem.runAt, status: scheduleItem.status })
+    .from(scheduleItem)
+    .where(
+      and(
+        eq(scheduleItem.teamId, input.teamId),
+        eq(scheduleItem.subjectId, input.projectId),
+        inArray(scheduleItem.status, ["pending", "paused"]),
+      ),
+    )
+    .orderBy(scheduleItem.runAt);
+}
+
 // When each subject's pending rule of this kind runs. A cancelled, finished or dispute-paused rule has no time.
 export async function pendingScheduleRunAt(
   db: DbExecutor,

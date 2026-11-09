@@ -46,6 +46,8 @@ import { ProjectProgress } from "@/components/project-progress";
 import { ClientsSection } from "./clients-section";
 import { ConversationSection } from "./conversation-section";
 import PreparedBanner from "@/components/prepared-banner";
+import { scheduleLabel, scheduleWhen } from "@/lib/project-schedule";
+
 import { DisputeCard } from "./dispute-card";
 import { QuoteCalculator } from "./quote-calculator";
 import { MemberMarks } from "./member-marks";
@@ -243,6 +245,7 @@ export default function ProjectDetail({
     refund,
     dispute,
     marks,
+    schedule,
     revisionRounds,
     qualityRefundCapMinor,
     role,
@@ -620,6 +623,22 @@ export default function ProjectDetail({
       </div>
 
       <aside className="grid min-w-0 gap-8">
+      {schedule.length > 0 ? (
+        <section id="scheduled" className="scroll-mt-4 space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Scheduled</h2>
+            <p className="text-sm text-muted-foreground">These run on their own.</p>
+          </div>
+          <ul className="panel divide-y text-sm">
+            {schedule.map((item) => (
+              <li key={item.kind} className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
+                <span>{scheduleLabel(item.kind)}</span>
+                <span className="shrink-0 text-right text-muted-foreground">{scheduleWhen(item)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <section id="payments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
