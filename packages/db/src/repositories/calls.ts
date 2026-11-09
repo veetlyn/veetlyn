@@ -1,6 +1,6 @@
 import type { JsonObject } from "@jendal-workspace/core";
 import type { NodeKind, Section } from "@jendal-workspace/core/context/node";
-import { and, asc, count, desc, eq, gte, isNull, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNull, or, sql, type SQL } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { agentCall, agentCallEntry } from "../schema/calls";
@@ -30,6 +30,27 @@ export async function findOwnAgentCall(db: DbExecutor, input: { callId: string; 
     .select()
     .from(agentCall)
     .where(and(eq(agentCall.id, input.callId), eq(agentCall.userId, input.userId)))
+    .limit(1);
+  return row ?? null;
+}
+
+// The person's newest call at exactly this place with this title, for a retry of a first question that failed.
+export async function findLatestOwnCallAt(db: DbExecutor, input: CallPlace & { userId: string; title: string }): Promise<AgentCallRow | null> {
+  const [row] = await db
+    .select()
+    .from(agentCall)
+    .where(
+      and(
+        eq(agentCall.userId, input.userId),
+        eq(agentCall.title, input.title),
+        eq(agentCall.nodeKind, input.nodeKind),
+        sql`${agentCall.organizationId} is not distinct from ${input.organizationId}`,
+        sql`${agentCall.teamId} is not distinct from ${input.teamId}`,
+        sql`${agentCall.section} is not distinct from ${input.section}`,
+        sql`${agentCall.projectId} is not distinct from ${input.projectId}`,
+      ),
+    )
+    .orderBy(desc(agentCall.openedAt))
     .limit(1);
   return row ?? null;
 }

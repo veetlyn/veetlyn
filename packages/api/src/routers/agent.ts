@@ -87,7 +87,7 @@ export const agentRouter = router({
     const cards = await Promise.all(
       rows.map(async ({ entry, call }) => {
         const card = call.teamId && entry.action ? await proposalCard(ctx.db, call.teamId, entry.action, entry.input ?? {}) : null;
-        return card ? { id: entry.id, callId: call.id, title: call.title, note: entry.note, card } : null;
+        return card ? { id: entry.id, callId: call.id, note: entry.note, card } : null;
       }),
     );
     return { pending: cards.filter((card) => card !== null) };
