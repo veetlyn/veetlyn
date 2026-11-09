@@ -1,4 +1,4 @@
-import { defaultServicesTeamSettings, createFakeFileStore } from "@jendal-workspace/core";
+import { createFakeFileStore, defaultServicesTeamSettings, FULL_ACCESS } from "@jendal-workspace/core";
 import { createTestAuth, signUpVerified } from "@jendal-workspace/auth/testing";
 import { addServicesTeamMember } from "@jendal-workspace/db/repositories/services-teams";
 import {
@@ -334,6 +334,7 @@ describe.skipIf(!hasTestDatabase)("servicesTeam router", () => {
     await expect(callerFor(userId).servicesTeam.get({ teamSlug: " ACME-STUDIO " })).resolves.toEqual({
       team: studio,
       role: "admin",
+      access: FULL_ACCESS,
       settings: { ...defaultServicesTeamSettings(studio.id), settingsSavedAt: null },
       offeringCount: 0,
       productCount: 0,
