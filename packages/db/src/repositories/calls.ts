@@ -1,9 +1,10 @@
 import type { JsonObject } from "@jendal-workspace/core";
 import type { NodeKind, Section } from "@jendal-workspace/core/context/node";
-import { and, asc, count, desc, eq, gte, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { agentCall, agentCallEntry } from "../schema/calls";
+import { outbox } from "../schema/outbox";
 
 export type AgentCallRow = typeof agentCall.$inferSelect;
 export type AgentCallEntryRow = typeof agentCallEntry.$inferSelect;
@@ -21,6 +22,72 @@ export async function createAgentCall(db: DbExecutor, input: CallPlace & { userI
   const [row] = await db.insert(agentCall).values(input).returning();
   if (!row) throw new Error("Insert into agent_call returned no row");
   return row;
+}
+
+// Opens the call a quote is prepared in, or null if this person already has one for the request.
+export async function startDraftCall(
+  db: DbExecutor,
+  input: CallPlace & { userId: string; title: string; now: Date },
+): Promise<AgentCallRow | null> {
+  const { now, ...place } = input;
+  const [row] = await db.insert(agentCall).values({ ...place, draftStartedAt: now }).onConflictDoNothing().returning();
+  return row ?? null;
+}
+
+// Takes over a draft call that holds nothing yet, if no one is working on it now.
+export async function resumeDraftCall(
+  db: DbExecutor,
+  input: { callId: string; now: Date; startedBefore: Date },
+): Promise<AgentCallRow | null> {
+  const [row] = await db
+    .update(agentCall)
+    .set({ draftStartedAt: input.now })
+    .where(
+      and(
+        eq(agentCall.id, input.callId),
+        or(isNull(agentCall.draftStartedAt), lt(agentCall.draftStartedAt, input.startedBefore)),
+      ),
+    )
+    .returning();
+  return row ?? null;
+}
+
+// A draft that failed can be tried again at once.
+export async function releaseDraftCall(db: DbExecutor, callId: string): Promise<void> {
+  await db.update(agentCall).set({ draftStartedAt: null }).where(eq(agentCall.id, callId));
+}
+
+export async function countDraftsSince(db: DbExecutor, input: { teamId: string; since: Date }): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(agentCall)
+    .where(and(eq(agentCall.teamId, input.teamId), gte(agentCall.draftStartedAt, input.since)));
+  return row?.n ?? 0;
+}
+
+// Takes the newest arrivals nobody has picked up. One statement, so two sweeps never take the same event.
+export async function claimArrivedRequests(
+  db: DbExecutor,
+  input: { since: Date; now: Date; limit: number },
+): Promise<{ teamId: string; projectId: string | null }[]> {
+  const due = db
+    .select({ id: outbox.id })
+    .from(outbox)
+    .where(
+      and(
+        isNull(outbox.agentDraftsProcessedAt),
+        inArray(outbox.type, ["project.created", "project.assigned"]),
+        gte(outbox.createdAt, input.since),
+      ),
+    )
+    .orderBy(outbox.createdAt, outbox.id)
+    .limit(input.limit)
+    .for("update", { skipLocked: true });
+  return db
+    .update(outbox)
+    .set({ agentDraftsProcessedAt: input.now })
+    .where(inArray(outbox.id, due))
+    .returning({ teamId: outbox.teamId, projectId: outbox.projectId });
 }
 
 // A call belongs to the person who opened it; anyone else gets nothing. The caller still checks that the person may

@@ -142,6 +142,8 @@ describe.skipIf(!hasTestDatabase)("runMaintenance", () => {
       outboxNoticesFailed: 0,
       scheduleFired: 0,
       scheduleFailed: 0,
+      agentDrafted: 0,
+      agentDraftsFailed: 0,
       errors: [],
     });
     expect(ran).toEqual(["createProjectPayouts", "sendPayouts", "settlePayouts"]);

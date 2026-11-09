@@ -1,7 +1,7 @@
 import type { JsonObject } from "@jendal-workspace/core";
 import { NODE_KINDS, SECTIONS } from "@jendal-workspace/core/context/node";
 import { sql } from "drizzle-orm";
-import { check, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { check, index, uniqueIndex, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { organization, team } from "./organization";
@@ -33,9 +33,13 @@ export const agentCall = pgTable(
     status: text("status", { enum: AGENT_CALL_STATUSES }).notNull().default("open"),
     openedAt: timestamp("opened_at").notNull().defaultNow(),
     closedAt: timestamp("closed_at"),
+    // Set while the agent is preparing a quote in this call, and kept once it has. Null on every other call.
+    draftStartedAt: timestamp("draft_started_at"),
   },
   (t) => [
     index("agent_call_team_user_idx").on(t.teamId, t.userId, t.openedAt),
+    // One prepared quote per person and request, whichever of the arrival and a visit to Home gets there first.
+    uniqueIndex("agent_call_one_draft_idx").on(t.userId, t.projectId).where(sql`${t.draftStartedAt} is not null`),
     index("agent_call_user_org_idx").on(t.userId, t.organizationId, t.openedAt),
     // Each kind names exactly the places its node needs. A record call keeps its kind if its project is ever removed.
     check(

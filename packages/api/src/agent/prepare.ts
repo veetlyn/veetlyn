@@ -1,13 +1,23 @@
-import { formatMoney, money, quoteAuthor } from "@jendal-workspace/core";
-import { createAgentCall, findLatestOwnCallAt, listAgentCallEntries } from "@jendal-workspace/db/repositories/calls";
-import { listTeamProjects, listProjectQuotes } from "@jendal-workspace/db/repositories/projects";
+import { formatMoney, isProjectStaff, money, quoteAuthor } from "@jendal-workspace/core";
+import {
+  claimArrivedRequests,
+  countDraftsSince,
+  findLatestOwnCallAt,
+  listAgentCallEntries,
+  releaseDraftCall,
+  resumeDraftCall,
+  startDraftCall,
+} from "@jendal-workspace/db/repositories/calls";
+import { findProjectById, listProjectQuotes, listTeamProjects } from "@jendal-workspace/db/repositories/projects";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 
 import type { RequestMeta } from "../actions/actors";
 import type { ActionDeps } from "../actions/perform";
-import { placeOf, resolveNode, type ResolvedNode } from "./node";
+import { teamPeople } from "../use-cases/outbox-dispatcher";
+import { placeOf, resolveNode, type ResolvedNode, type ResolvedSeller } from "./node";
 import type { CallRuntime } from "./runtime";
+import { startOfUtcDay } from "./turn";
 
 type Deps = { actions: ActionDeps; request: RequestMeta; calls: CallRuntime };
 
@@ -27,9 +37,56 @@ async function draftDirective(deps: Deps, project: { id: string; teamId: string;
   ].join("\n");
 }
 
+type Row = Awaited<ReturnType<typeof listTeamProjects>>[number];
+type Settings = NonNullable<Awaited<ReturnType<typeof getServicesTeamSettings>>>;
+type Drafted = "drafted" | "failed" | "exists" | "refused";
+
+// Long enough for a turn to finish; an older claim with nothing written belongs to a turn that died.
+const DRAFT_LEASE_MS = 5 * 60_000;
+// Events older than this are left to Home: a person told about a day-old request may already have answered it.
+const ARRIVAL_WINDOW_MS = 60 * 60_000;
+
+async function claimDraft(deps: Deps, place: Parameters<typeof startDraftCall>[1], now: Date) {
+  const { db } = deps.actions;
+  const earlier = await findLatestOwnCallAt(db, place);
+  if (!earlier) return startDraftCall(db, { ...place, now });
+  if ((await listAgentCallEntries(db, earlier.id)).length > 0) return null;
+  return resumeDraftCall(db, { callId: earlier.id, now, startedBefore: new Date(now.getTime() - DRAFT_LEASE_MS) });
+}
+
+// One quote, as this person and only proposing. The quoting mode decides as it will on confirm: a draft this person
+// could never send is worse than none.
+async function draftQuote(deps: Deps, seller: ResolvedSeller, settings: Settings, userId: string, row: Row): Promise<Drafted> {
+  if (seller.role.product !== "services") return "refused";
+  const { db } = deps.actions;
+  if ((await listProjectQuotes(db, row.id)).length > 0) return "exists";
+  const author = quoteAuthor({
+    role: seller.role.role,
+    actorId: userId,
+    quotingMode: settings.quotingMode,
+    assignedFreelancerId: row.assignedFreelancerId,
+    // Unassigned work is drafted as the person preparing it; the card names them, and they can ask for someone else.
+    freelancerId: row.assignedFreelancerId ?? userId,
+    solo: settings.solo,
+  });
+  if (!author.ok) return "refused";
+  const node = await resolveNode(deps, userId, { kind: "record", teamId: seller.id, record: { type: "project", id: row.id } });
+  if (!node) return "refused";
+  const place = { ...placeOf(node), userId, title: `Quote for ${row.title}`.slice(0, 80) };
+  const call = await claimDraft(deps, place, deps.actions.now?.() ?? new Date());
+  if (!call) return "exists";
+  let drafted = false;
+  try {
+    const message = await draftDirective(deps, row, author.freelancerId);
+    drafted = (await deps.calls.run({ callId: call.id, scope: node, message, request: deps.request, directive: true })).ok;
+  } finally {
+    if (!drafted) await releaseDraftCall(db, call.id);
+  }
+  return drafted ? "drafted" : "failed";
+}
+
 // Prepares a quote for the next open request this person can answer and has no draft for: at most one per call, one
-// ever per person and request, as that person and only proposing. It runs when they arrive, so it needs no one
-// else's identity, and only people who can send a quote spend model calls.
+// ever per person and request. It runs when they open Home, and catches whatever an arrival could not prepare.
 export async function prepareNextDraft(deps: Deps, scope: ResolvedNode): Promise<{ title: string } | null> {
   const seller = scope.seller;
   if (!seller || seller.role.product !== "services") return null;
@@ -38,27 +95,49 @@ export async function prepareNextDraft(deps: Deps, scope: ResolvedNode): Promise
   if (!settings?.agentQuotes) return null;
   const quoting = (await listTeamProjects(db, seller.id)).filter((row) => row.status === "quoting");
   for (const row of quoting) {
-    if ((await listProjectQuotes(db, row.id)).length > 0) continue;
-    // A draft this person could never send is worse than none: the quoting mode decides, as it will on confirm.
-    const author = quoteAuthor({
-      role: seller.role.role,
-      actorId: scope.userId,
-      quotingMode: settings.quotingMode,
-      assignedFreelancerId: row.assignedFreelancerId,
-      // Unassigned work is drafted as the person preparing it; the card names them, and they can ask for someone else.
-      freelancerId: row.assignedFreelancerId ?? scope.userId,
-      solo: settings.solo,
-    });
-    if (!author.ok) continue;
-    const node = await resolveNode(deps, scope.userId, { kind: "record", teamId: seller.id, record: { type: "project", id: row.id } });
-    if (!node) continue;
-    const place = { ...placeOf(node), userId: scope.userId, title: `Quote for ${row.title}`.slice(0, 80) };
-    const earlier = await findLatestOwnCallAt(db, place);
-    // A draft that failed before writing anything is tried again in the same thread.
-    if (earlier && (await listAgentCallEntries(db, earlier.id)).length > 0) continue;
-    const call = earlier ?? (await createAgentCall(db, place));
-    const outcome = await deps.calls.run({ callId: call.id, scope: node, message: await draftDirective(deps, row, author.freelancerId), request: deps.request, directive: true });
-    return outcome.ok ? { title: row.title } : null;
+    const result = await draftQuote(deps, seller, settings, scope.userId, row);
+    if (result === "drafted") return { title: row.title };
+    if (result === "failed") return null;
   }
   return null;
+}
+
+// The assigned person first, then whoever on the staff the quoting mode lets answer, admins before managers.
+function draftCandidates(row: Row, people: Awaited<ReturnType<typeof teamPeople>>): string[] {
+  const staff = people.filter((person) => isProjectStaff(person.role));
+  const ordered = [...staff.filter((person) => person.role === "admin"), ...staff.filter((person) => person.role !== "admin")];
+  return [...new Set([...(row.assignedFreelancerId ? [row.assignedFreelancerId] : []), ...ordered.map((person) => person.userId)])];
+}
+
+async function draftArrival(deps: Deps, event: { teamId: string; projectId: string | null }, now: Date): Promise<Drafted> {
+  const { db } = deps.actions;
+  const row = event.projectId ? await findProjectById(db, event.projectId) : null;
+  // Client requests only: a project the team opened itself has no brief to price.
+  if (!row || row.teamId !== event.teamId || row.status !== "quoting" || row.source !== "web") return "refused";
+  const settings = await getServicesTeamSettings(db, row.teamId);
+  if (!settings?.agentQuotes) return "refused";
+  // Anyone can send a request, so what a stranger can spend on the model has a ceiling. Past it, Home still prepares.
+  if ((await countDraftsSince(db, { teamId: row.teamId, since: startOfUtcDay(now) })) >= deps.calls.dailyTurns) return "refused";
+  for (const userId of draftCandidates(row, await teamPeople(db, row.teamId))) {
+    const node = await resolveNode(deps, userId, { kind: "seller", teamId: row.teamId });
+    if (!node?.seller) continue;
+    const result = await draftQuote(deps, node.seller, settings, userId, row);
+    if (result !== "refused") return result;
+  }
+  return "refused";
+}
+
+// Prepares quotes for requests that just arrived or were just assigned, as the person who would answer them. Each
+// event is picked up once; if the turn fails, the person's next visit to Home prepares it instead.
+export async function draftArrivedRequests(deps: Deps, input: { limit: number }): Promise<{ drafted: number; failed: number }> {
+  const now = deps.actions.now?.() ?? new Date();
+  const since = new Date(now.getTime() - ARRIVAL_WINDOW_MS);
+  const events = await claimArrivedRequests(deps.actions.db, { since, now, limit: input.limit });
+  const totals = { drafted: 0, failed: 0 };
+  for (const event of events) {
+    const result = await draftArrival(deps, event, now).catch((): Drafted => "failed");
+    if (result === "drafted") totals.drafted += 1;
+    if (result === "failed") totals.failed += 1;
+  }
+  return totals;
 }

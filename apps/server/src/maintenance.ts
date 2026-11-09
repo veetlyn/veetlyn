@@ -36,6 +36,7 @@ export type MaintenanceDeps = {
   deliverOutboxNotices?: () => Promise<{ sent: number; failed: number; skipped: number }>;
   // The 10-minute rule scheduler (AGT-37); absent when rules are not served on this server.
   runScheduler?: () => Promise<{ fired: number; failed: number }>;
+  draftArrivedRequests?: () => Promise<{ drafted: number; failed: number }>;
   reconcileBilling?: () => Promise<{ checked: number; applied: number; failed: number }>;
   now?: () => Date;
 };
@@ -51,6 +52,7 @@ export type MaintenanceSweep =
   | "payouts"
   | "outboxNotices"
   | "schedule"
+  | "agentDrafts"
   | "billing";
 
 export type MaintenanceReport = {
@@ -68,6 +70,8 @@ export type MaintenanceReport = {
   outboxNoticesFailed: number;
   scheduleFired: number;
   scheduleFailed: number;
+  agentDrafted: number;
+  agentDraftsFailed: number;
   errors: MaintenanceSweep[];
 };
 
@@ -89,6 +93,8 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
     outboxNoticesFailed: 0,
     scheduleFired: 0,
     scheduleFailed: 0,
+    agentDrafted: 0,
+    agentDraftsFailed: 0,
     errors: [],
   };
 
@@ -193,6 +199,17 @@ export async function runMaintenance(deps: MaintenanceDeps): Promise<Maintenance
       report.scheduleFired = fired;
       report.scheduleFailed = failed;
       return { fired, failed };
+    });
+  }
+
+  // Requests whose wake-up after the mutation was lost.
+  const draftArrived = deps.draftArrivedRequests;
+  if (draftArrived) {
+    await sweep("agentDrafts", async () => {
+      const { drafted, failed } = await draftArrived();
+      report.agentDrafted = drafted;
+      report.agentDraftsFailed = failed;
+      return { drafted, failed };
     });
   }
 

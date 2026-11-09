@@ -187,7 +187,7 @@ async function propose(deps: TurnDeps, state: TurnState, agentTool: AgentTool, r
   return `Proposed: ${effect}. The person now sees a card to confirm or decline; nothing has happened yet.`;
 }
 
-function startOfUtcDay(now: Date): Date {
+export function startOfUtcDay(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
