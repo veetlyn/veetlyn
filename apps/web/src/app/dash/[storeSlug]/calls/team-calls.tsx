@@ -44,7 +44,10 @@ function CardFacts({ card }: { card: Card }) {
           ))}
         </ul>
         <div className="flex items-baseline justify-between gap-4 px-3.5 py-2.5 font-medium">
-          <span>Total, delivered in {card.delivery}</span>
+          <span>
+            Total, delivered in {card.delivery}
+            {card.freelancer ? ` by ${card.freelancer}` : ""}
+          </span>
           <span className="font-tabular text-[16px] whitespace-nowrap">{card.total}</span>
         </div>
         <div className="flex items-baseline justify-between gap-4 border-t px-3.5 py-2.5 text-muted-foreground">

@@ -60,7 +60,7 @@ export default function TeamCases({ teamSlug, paypalEnvironment }: { teamSlug: s
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <h1 className="font-heading text-3xl">PayPal cases</h1>
+        <h1 className="font-heading text-3xl">Disputes</h1>
         <p className="text-sm text-muted-foreground">Disputes clients opened with PayPal. Answer them on PayPal with the team's account.</p>
       </div>
       {cases.isError ? (

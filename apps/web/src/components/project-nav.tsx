@@ -110,7 +110,7 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
         className="flex items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-sm font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
-        Projects
+        Back to Projects
       </Link>
       <nav aria-label="This project" className="grid gap-0.5 pt-2">
         {PARTS.filter((part) => present.includes(part.id)).map((part) => (

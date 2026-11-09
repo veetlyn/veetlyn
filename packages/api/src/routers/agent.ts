@@ -12,6 +12,7 @@ import { z } from "zod";
 import { depsOf, requestOf } from "../actions/trpc";
 import { callsUnder, contextNodeInput, nodeOfCall, type ResolvedNode, resolveNode } from "../agent/node";
 import { proposalCard } from "../agent/effects";
+import { prepareNextDraft } from "../agent/prepare";
 import { confirmProposal, declineProposal } from "../agent/proposals";
 import { openCall } from "../agent/turn";
 import { type Context } from "../context";
@@ -91,6 +92,13 @@ export const agentRouter = router({
       }),
     );
     return { pending: cards.filter((card) => card !== null) };
+  }),
+
+  // Prepares the next unanswered request's quote for this person; the page asks again until nothing is left.
+  prepareDrafts: protectedProcedure.input(z.object({ teamId: z.string().min(1).max(64) })).mutation(async ({ ctx, input }) => {
+    if (!ctx.calls) return { drafted: null };
+    const scope = await resolved(ctx, { kind: "seller", teamId: input.teamId });
+    return { drafted: await prepareNextDraft({ actions: depsOf(ctx), request: requestOf(ctx), calls: ctx.calls }, scope) };
   }),
 
   // A new call at the node, or the next turn of one of the person's calls (which keeps the node it was opened at).

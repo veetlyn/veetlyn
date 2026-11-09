@@ -169,6 +169,7 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
       lines: [{ label: "Logo", amount: "$900.00" }, { label: "Guide", amount: "$250.00" }],
       total: "$1,150.00",
       delivery: "12 days",
+      freelancer: null,
       deposit: expect.objectContaining({ percent: expect.any(Number), total: expect.stringMatching(/^\$/) }),
     };
     const proposal = entries.find((e) => e.kind === "proposal");
@@ -195,6 +196,25 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(calls.map((c) => c.id)).toEqual([callId]);
     const { entries } = await callerFor(adminId).agent.thread({ callId });
     expect(entries.map((e) => [e.author, e.body])).toEqual([["person", "What needs me?"], ["assistant", "Two quotes."]]);
+  });
+
+  it("prepares one quote per open request as a card, once, and only for someone who can send it", async () => {
+    const { adminId, freelancerId, projectId, teamId } = await setup();
+    await db.update(servicesTeamSettings).set({ quotingMode: "team" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const draft = { projectId, items: [{ description: "Logo", amountMinor: 90_000 }], deliveryDays: 10 };
+    const model = scriptedModel([
+      use("propose_quote_create", { card: "The brief asks for a logo only.", input: draft }),
+      say("I prepared a quote."),
+    ]);
+    await expect(callerFor(freelancerId, scriptedModel([])).agent.prepareDrafts({ teamId })).resolves.toEqual({ drafted: null });
+    await expect(callerFor(adminId, model).agent.prepareDrafts({ teamId })).resolves.toEqual({ drafted: { title: "Baobab logo" } });
+    await expect(callerFor(adminId, scriptedModel([])).agent.prepareDrafts({ teamId })).resolves.toEqual({ drafted: null });
+
+    const { pending } = await callerFor(adminId).agent.pending({ node: { kind: "seller", teamId } });
+    expect(pending).toEqual([expect.objectContaining({ note: "The brief asks for a logo only.", card: expect.objectContaining({ title: "Quote for Baobab logo" }) })]);
+    const { entries } = await callerFor(adminId).agent.thread({ callId: pending[0]?.callId ?? "" });
+    expect(entries.map((e) => e.author)).toEqual(["assistant", "assistant"]);
+    expect(model.requests[0]?.messages.at(-1)?.role).toBe("user");
   });
 
   // The SDK runs one step's tool calls at once: cards drafted together must keep their order and the per-turn cap.
