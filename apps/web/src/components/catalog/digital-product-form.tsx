@@ -69,12 +69,12 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
 
   return (
     <div className="space-y-6">
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="space-y-1">
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <div className="min-w-0 space-y-1">
           <Link href={`/${teamSlug}/products`} className="text-sm text-muted-foreground">
             Products
           </Link>
-          <h1 className="font-heading text-3xl">{product.title}</h1>
+          <h1 className="break-words font-heading text-3xl">{product.title}</h1>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{published ? "Published" : "Draft"}</span>
@@ -94,17 +94,19 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
         </p>
       )}
       <DetailsForm
+        key={`details-${productId}`}
         teamSlug={teamSlug}
         productId={productId}
         initial={{ title: product.title, description: product.description, price: minorToPriceInput(product.priceMinor) }}
       />
-      <FileSection teamSlug={teamSlug} productId={productId} fileName={product.fileName} />
+      <FileSection key={`file-${productId}`} teamSlug={teamSlug} productId={productId} fileName={product.fileName} />
     </div>
   );
 }
 
 function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; productId?: string; initial: Fields }) {
   const router = useRouter();
+  const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const invalidate = useInvalidateDigital(teamSlug, productId);
   // Seeded once from the loaded product; a refetch after publishing must not overwrite unsaved edits.
   const [fields, setFields] = useState<Fields>(initial);
@@ -164,7 +166,8 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
+    <form onSubmit={handleSubmit}>
+      <fieldset disabled={saving} className="grid min-w-0 gap-5">
       <div className="grid gap-1">
         <Label htmlFor="digital-title">Title</Label>
         <Input
@@ -185,7 +188,7 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
         />
       </div>
       <div className="grid gap-1 sm:max-w-48">
-        <Label htmlFor="digital-price">Price</Label>
+        <Label htmlFor="digital-price">Price{team.data ? ` (${team.data.settings?.currency ?? "USD"})` : " (seller currency)"}</Label>
         <Input
           id="digital-price"
           inputMode="decimal"
@@ -216,6 +219,7 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
           {saving ? "Saving…" : productId ? "Save changes" : "Save product"}
         </Button>
       </div>
+      </fieldset>
     </form>
   );
 }
@@ -256,7 +260,7 @@ function FileSection({ teamSlug, productId, fileName }: { teamSlug: string; prod
   return (
     <section className="grid gap-2 panel p-4">
       <h2 className="font-medium">File buyers download</h2>
-      {fileName ? <p className="text-sm">{fileName}</p> : <p className="text-sm text-muted-foreground">No file yet.</p>}
+      {fileName ? <p className="break-all text-sm">{fileName}</p> : <p className="text-sm text-muted-foreground">Add the file buyers receive before publishing.</p>}
       <Label htmlFor="digital-file" className="sr-only">
         {fileName ? "Replace the file" : "Choose a file"}
       </Label>
@@ -265,7 +269,7 @@ function FileSection({ teamSlug, productId, fileName }: { teamSlug: string; prod
         id="digital-file"
         type="file"
         accept={FILE_ACCEPT}
-        className="text-sm"
+        className="min-w-0 max-w-full text-sm file:mr-3 file:rounded-lg file:border file:border-border file:bg-card file:px-3 file:py-2 file:text-foreground hover:file:bg-accent"
         disabled={upload.isPending}
         onChange={(event) => {
           setFile(event.target.files?.[0] ?? null);
@@ -278,6 +282,7 @@ function FileSection({ teamSlug, productId, fileName }: { teamSlug: string; prod
           {problem}
         </p>
       )}
+      {upload.isSuccess ? <p role="status" className="text-sm text-brand-text">Download file uploaded.</p> : null}
       <div>
         <Button
           type="button"
