@@ -224,7 +224,6 @@ export default function TeamCalls({
     ask.mutate(activeCallId ? { node, message: text, callId: activeCallId } : { node, message: text });
   }
 
-  if (calls.isPending) return <Loader />;
   const available = calls.data?.available ?? false;
   const current = thread.data?.call ?? null;
   const onTable = current?.projectId ?? (activeCallId ? null : projectId);
@@ -234,6 +233,8 @@ export default function TeamCalls({
     retry: false,
     meta: { silent: true },
   });
+  // Every hook above runs on each render; only now may the first load stop here.
+  if (calls.isPending) return <Loader />;
   const firstName = session?.user.name.split(/\s+/)[0] ?? "";
   const scopeLabel = onTable ? project.data?.project.title ?? "Project" : scopeName;
 
@@ -276,7 +277,7 @@ export default function TeamCalls({
         ) : null}
         {projectHref && onTable ? (
           <p className="text-sm text-muted-foreground">
-            On the table:{" "}
+            About:{" "}
             <Link href={projectHref(onTable)} className="underline underline-offset-4">
               {project.data?.project.title ?? "this project"}
             </Link>
@@ -330,6 +331,7 @@ export default function TeamCalls({
                   <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <AgentIcon className="size-3.5" />
                     {assistantName}
+                    {entry.note ? <span className="font-normal"> · {entry.note}</span> : null}
                   </p>
                   <AgentText text={entry.body} />
                 </li>
