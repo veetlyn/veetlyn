@@ -4,6 +4,7 @@ import {
   type AgentCallRow,
   countQuestionsSince,
   createAgentCall,
+  findLatestOwnCallAt,
   findOwnAgentCall,
   insertAgentCallEntry,
   listAgentCallEntries,
@@ -174,6 +175,12 @@ function startOfUtcDay(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
+// The thread ends on this same question, so its turn never got an answer.
+function isUnanswered(entries: AgentCallEntryRow[], message: string): boolean {
+  const last = entries.at(-1);
+  return last?.kind === "message" && last.author === "person" && last.body === message.trim();
+}
+
 export type CallInput = { callId?: string; message: string };
 
 // What the call's runtime needs to run one turn; plain data, so it can cross into the call's own Durable Object.
@@ -203,7 +210,14 @@ export async function openCall(
     if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
     return call;
   }
-  return createAgentCall(db, { ...placeOf(scope), userId: scope.userId, title: input.message.trim().slice(0, 80) });
+  const place = { ...placeOf(scope), userId: scope.userId, title: input.message.trim().slice(0, 80) };
+  // A first question whose turn failed left a call holding only that question: sending it again continues there.
+  const earlier = await findLatestOwnCallAt(db, place);
+  if (earlier) {
+    const entries = await listAgentCallEntries(db, earlier.id);
+    if (entries.length === 1 && isUnanswered(entries, input.message)) return earlier;
+  }
+  return createAgentCall(db, place);
 }
 
 // One turn of a call: the person's message, the model reading with their access and proposing actions, and its
@@ -214,7 +228,10 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   const { scope } = turn;
   const call = await findOwnAgentCall(db, { callId: turn.callId, userId: scope.userId });
   if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
-  await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
+  // A retry after a failed turn: the question is already in the thread.
+  if (!isUnanswered(await listAgentCallEntries(db, call.id), turn.message)) {
+    await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
+  }
 
   const state: TurnState = { call, scope, actor: agentFor(scope), proposals: 0, proposalQueue: Promise.resolve() };
   const offered = toolsFor(scope);

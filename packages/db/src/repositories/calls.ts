@@ -1,6 +1,6 @@
 import type { JsonObject } from "@jendal-workspace/core";
 import type { NodeKind, Section } from "@jendal-workspace/core/context/node";
-import { and, asc, count, desc, eq, gte, isNull, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNull, or, sql, type SQL } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
 import { agentCall, agentCallEntry } from "../schema/calls";
@@ -30,6 +30,27 @@ export async function findOwnAgentCall(db: DbExecutor, input: { callId: string; 
     .select()
     .from(agentCall)
     .where(and(eq(agentCall.id, input.callId), eq(agentCall.userId, input.userId)))
+    .limit(1);
+  return row ?? null;
+}
+
+// The person's newest call at exactly this place with this title, for a retry of a first question that failed.
+export async function findLatestOwnCallAt(db: DbExecutor, input: CallPlace & { userId: string; title: string }): Promise<AgentCallRow | null> {
+  const [row] = await db
+    .select()
+    .from(agentCall)
+    .where(
+      and(
+        eq(agentCall.userId, input.userId),
+        eq(agentCall.title, input.title),
+        eq(agentCall.nodeKind, input.nodeKind),
+        sql`${agentCall.organizationId} is not distinct from ${input.organizationId}`,
+        sql`${agentCall.teamId} is not distinct from ${input.teamId}`,
+        sql`${agentCall.section} is not distinct from ${input.section}`,
+        sql`${agentCall.projectId} is not distinct from ${input.projectId}`,
+      ),
+    )
+    .orderBy(desc(agentCall.openedAt))
     .limit(1);
   return row ?? null;
 }
@@ -112,6 +133,20 @@ export async function findOwnProposal(
     .where(and(eq(agentCallEntry.id, input.entryId), eq(agentCallEntry.kind, "proposal"), eq(agentCall.userId, input.userId)))
     .limit(1);
   return row ?? null;
+}
+
+// The decisions waiting on a person across a place, newest first, each with the call it sits in.
+export async function listOwnPendingProposals(
+  db: DbExecutor,
+  input: { userId: string; under: CallsUnder; limit: number },
+): Promise<{ entry: AgentCallEntryRow; call: AgentCallRow }[]> {
+  return db
+    .select({ entry: agentCallEntry, call: agentCall })
+    .from(agentCallEntry)
+    .innerJoin(agentCall, eq(agentCall.id, agentCallEntry.callId))
+    .where(and(eq(agentCall.userId, input.userId), underClause(input.under), eq(agentCallEntry.kind, "proposal"), eq(agentCallEntry.status, "pending")))
+    .orderBy(desc(agentCallEntry.createdAt))
+    .limit(input.limit);
 }
 
 // Claims a pending proposal of the person's own call for one decision: a second confirm or decline finds nothing.

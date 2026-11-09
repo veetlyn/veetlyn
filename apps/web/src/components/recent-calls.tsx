@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // The person's latest calls at this node, under the sidebar's pages.
-export default function RecentCalls({ calls, callsPath, label = "Chats" }: { calls: { id: string; title: string }[]; callsPath: string; label?: string }) {
+export default function RecentCalls({ calls, callsPath, label = "Your threads" }: { calls: { id: string; title: string }[]; callsPath: string; label?: string }) {
   if (calls.length === 0) return null;
   return (
     <section className="pt-4" aria-label={label}>

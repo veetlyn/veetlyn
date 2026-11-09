@@ -82,6 +82,11 @@ export default function ServicesTeamDashboard({
     enabled: result.isSuccess && !admin,
     ...quiet,
   });
+  const prepared = useQuery({
+    ...trpc.agent.pending.queryOptions({ node: { kind: "seller", teamId: result.data?.team.id ?? "" } }),
+    enabled: result.isSuccess,
+    ...quiet,
+  });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
       onSuccess: () =>
@@ -245,6 +250,36 @@ export default function ServicesTeamDashboard({
                 </a>
               </p>
             </header>
+          ) : null}
+
+          {(prepared.data?.pending.length ?? 0) > 0 ? (
+            <section aria-labelledby="prepared-h" className="frame frame-panel">
+              <div className="frame-head flex items-center gap-2 text-[14px]">
+                <AgentIcon className="size-4 shrink-0" />
+                <h2 id="prepared-h" className="font-medium">
+                  Prepared by {platform}, waiting for you
+                </h2>
+                <span className="ml-auto text-muted-foreground">{prepared.data?.pending.length}</span>
+              </div>
+              <ul className="frame frame-body">
+                {prepared.data?.pending.map((item) => (
+                  <li key={item.id} className="flex items-center gap-3 border-b px-3.5 py-3 last:border-b-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{item.card.title}</p>
+                      {item.note ? <p className="truncate text-[14px] text-muted-foreground">{item.note}</p> : null}
+                    </div>
+                    {item.card.kind === "quote" ? <span className="font-tabular font-semibold">{item.card.total}</span> : null}
+                    {item.card.kind === "payout" ? <span className="font-tabular font-semibold">{item.card.amount}</span> : null}
+                    <Link
+                      href={`/${team.slug}/calls?call=${item.callId}`}
+                      className={cn(buttonVariants({ variant: "mint", size: "sm" }), "px-4")}
+                    >
+                      Review
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
 
           {needs.length > 0 ? (

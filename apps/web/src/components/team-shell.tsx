@@ -119,7 +119,7 @@ export default function TeamShell({
     },
     ...segments.map((segment, i) => ({
       href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
-      label: (segment === "calls" ? "Chats" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
+      label: (segment === "calls" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
     })),
   ];
   const isActive = (href: string) =>
@@ -149,7 +149,7 @@ export default function TeamShell({
       chatsPath={services ? `/${slug}/calls` : undefined}
       searchItems={[
         ...pageLinks.map((l) => ({ ...l, detail: name })),
-        ...recent.map((c) => ({ href: `/${slug}/calls?call=${c.id}`, label: c.title, detail: "Chat" })),
+        ...recent.map((c) => ({ href: `/${slug}/calls?call=${c.id}`, label: c.title, detail: "Thread" })),
         ...workspaces.flatMap((w) => sellerOptions(w).map((o) => ({ ...o, detail: `${o.detail} in ${w.name}` }))),
       ]}
       sidebar={
@@ -172,7 +172,7 @@ export default function TeamShell({
                   </nav>
                 </div>
               ))}
-              <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Chats" />
+              <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Your threads" />
             </>
           )}
         </>

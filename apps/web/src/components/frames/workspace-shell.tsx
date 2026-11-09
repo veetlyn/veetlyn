@@ -70,7 +70,7 @@ export default function WorkspaceShell({
     ...(segment === "billing"
       ? [{ href: `${base}/billing`, label: "Billing" }]
       : segment === "calls"
-        ? [{ href: `${base}/calls`, label: "Chats" }]
+        ? [{ href: `${base}/calls`, label: "Threads" }]
         : []),
   ];
 
@@ -99,7 +99,7 @@ export default function WorkspaceShell({
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/calls`} label="Chats" />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/calls`} label="Your threads" />
         </>
       }
       ask={

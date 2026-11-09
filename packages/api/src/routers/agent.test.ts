@@ -149,6 +149,54 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(await db.select().from(conversationMessage)).toHaveLength(1);
   });
 
+  it("gives a card its facts from the stored input and lists it as waiting on its person only", async () => {
+    const { adminId, freelancerId, projectId, teamId } = await setup();
+    const model = scriptedModel([
+      use("propose_quote_create", {
+        card: "Priced from the brief, and this sentence is not the price.",
+        input: { projectId, items: [{ description: "Logo", amountMinor: 90_000 }, { description: "Guide", amountMinor: 25_000 }], deliveryDays: 12 },
+      }),
+      say("I drafted a quote; review it."),
+    ]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: onProject(projectId), message: "Draft the quote" });
+
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
+    const expected = {
+      kind: "quote",
+      title: "Quote for Baobab logo",
+      cta: "Send quote",
+      project: "Baobab logo",
+      lines: [{ label: "Logo", amount: "$900.00" }, { label: "Guide", amount: "$250.00" }],
+      total: "$1,150.00",
+      delivery: "12 days",
+      deposit: expect.objectContaining({ percent: expect.any(Number), total: expect.stringMatching(/^\$/) }),
+    };
+    const proposal = entries.find((e) => e.kind === "proposal");
+    expect(proposal?.card).toEqual(expected);
+    expect(proposal).not.toHaveProperty("input");
+
+    const node = { kind: "seller" as const, teamId };
+    const { pending } = await callerFor(adminId).agent.pending({ node });
+    expect(pending).toEqual([expect.objectContaining({ callId, card: expected })]);
+    await expect(callerFor(freelancerId).agent.pending({ node })).resolves.toEqual({ pending: [] });
+
+    await callerFor(adminId).agent.decline({ entryId: proposal?.id ?? "" });
+    await expect(callerFor(adminId).agent.pending({ node })).resolves.toEqual({ pending: [] });
+  });
+
+  it("keeps one question and one thread when a failed first turn is sent again", async () => {
+    const { adminId, teamId } = await setup();
+    const node = { kind: "seller" as const, teamId };
+    const failing = scriptedModel([]);
+    await expect(callerFor(adminId, failing).agent.ask({ node, message: "What needs me?" })).rejects.toMatchObject({ code: "BAD_GATEWAY" });
+
+    const { callId } = await callerFor(adminId, scriptedModel([say("Two quotes.")])).agent.ask({ node, message: "What needs me?" });
+    const { calls } = await callerFor(adminId).agent.calls({ node });
+    expect(calls.map((c) => c.id)).toEqual([callId]);
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
+    expect(entries.map((e) => [e.author, e.body])).toEqual([["person", "What needs me?"], ["assistant", "Two quotes."]]);
+  });
+
   // The SDK runs one step's tool calls at once: cards drafted together must keep their order and the per-turn cap.
   it("keeps cards drafted at once in the model's order, and at most three per turn", async () => {
     const { adminId, projectId } = await setup();

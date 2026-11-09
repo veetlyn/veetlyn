@@ -40,7 +40,7 @@ export default function AppFrame({
   sidebar: React.ReactNode;
   mobileNav?: React.ReactNode;
   crumbs: Crumb[];
-  // Where "New chat" goes at this node; no button when the node has no assistant.
+  // Where "New thread" goes at this node; no button when the node has no assistant.
   chatsPath?: string;
   searchItems?: SearchItem[];
   ask?: React.ReactNode;
@@ -65,7 +65,7 @@ export default function AppFrame({
             className="mb-1 flex items-center gap-2.5 rounded-[6px] px-2.5 py-[7px] text-[15px] font-medium text-foreground hover:bg-foreground/[0.05]"
           >
             <SquarePen className="size-4" aria-hidden="true" />
-            New chat
+            New thread
           </Link>
         ) : null}
         {sidebar}

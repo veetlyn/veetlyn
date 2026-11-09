@@ -132,7 +132,7 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
           </a>
         ))}
       </nav>
-      <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 15)} callsPath={`/${slug}/calls`} label="Chats about this project" />
+      <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 15)} callsPath={`/${slug}/calls`} label="Threads on this project" />
     </>
   );
 }
