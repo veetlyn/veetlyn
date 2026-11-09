@@ -142,6 +142,7 @@ export const projectList = defineAction({
       status: z.enum(PROJECT_STATUSES),
       currency: z.enum(CURRENCIES),
       clientName: z.string().nullable(),
+      clientHomeSurface: z.enum(["web", "mcp"]),
       createdAt: z.iso.datetime(),
     }),
   ),

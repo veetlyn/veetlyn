@@ -26,7 +26,7 @@ import { trpc } from "@/utils/trpc";
 import { ConfirmDialog } from "./confirm-dialog";
 
 type TeamPayouts = inferRouterOutputs<AppRouter>["payouts"]["list"];
-type TeamPayoutRequest = TeamPayouts["payouts"][number];
+export type TeamPayoutRequest = TeamPayouts["payouts"][number];
 
 // What approving does next: wait for another admin, wait for an export (no automatic payouts), or send.
 function approveDialogCopy(request: TeamPayoutRequest, amount: string, automaticPayoutsOn: boolean) {
@@ -74,44 +74,18 @@ function RequestRow({
   automaticPayoutsOn: boolean;
   ownPayout: boolean;
 }) {
-  const queryClient = useQueryClient();
-  const approveDialogRef = useRef<HTMLDialogElement>(null);
-  const cancelExportDialogRef = useRef<HTMLDialogElement>(null);
-  // onSettled: a failed send still changes the request (held, or left unconfirmed), so the row must reload either way.
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: trpc.payouts.list.queryKey({ teamSlug }) });
-  const approve = useMutation(
-    trpc.payouts.approve.mutationOptions({
-      onSuccess: (result) => {
-        if (result.approvalsNeeded > 0) toast.success("Approved. Waiting for a second admin.");
-      },
-      onSettled: invalidate,
-    }),
-  );
-  const reject = useMutation(trpc.payouts.reject.mutationOptions({ onSettled: invalidate }));
-  const retry = useMutation(trpc.payouts.retry.mutationOptions({ onSettled: invalidate }));
-  const refresh = useMutation(trpc.payouts.refresh.mutationOptions({ onSettled: invalidate }));
-  const cancelExport = useMutation(trpc.payouts.cancelExport.mutationOptions({ onSettled: invalidate }));
-
-  const mutations = [approve, reject, retry, refresh, cancelExport];
-  const pending = mutations.some((mutation) => mutation.isPending);
-  const error = mutations.find((mutation) => mutation.error)?.error ?? null;
-  const actions = payoutActions(request, automaticPayoutsOn);
   const amount = formatMinor(request.amountMinor, request.currency);
   const fee = payoutFeeLine(request);
   const sentMinor = payoutSentMinor(request);
   const waiting = waitingLine(request, new Date());
   const approval = approvalState(request);
-  const dialog = approveDialogCopy(request, amount, automaticPayoutsOn);
-  const input = { teamSlug, requestId: request.id };
-
-  function resetErrors() {
-    for (const mutation of mutations) mutation.reset();
-  }
 
   return (
     <tr className="align-top">
       <td className="px-4 py-3">
-        <p className="font-medium">{request.memberName}</p>
+        <Link href={`/${teamSlug}/payouts/${request.id}`} className="font-medium hover:underline">
+          {request.memberName}
+        </Link>
         <p className="text-muted-foreground">{request.memberEmail}</p>
       </td>
       <td className="px-4 py-3">
@@ -141,13 +115,58 @@ function RequestRow({
         {request.reviewReason ? (
           <Badge tone="warn">Needs review</Badge>
         ) : null}
-        {error ? (
-          <p role="alert" className="text-destructive">
-            {error.message}
-          </p>
-        ) : null}
       </td>
       <td className="px-4 py-3">
+        <PayoutActions teamSlug={teamSlug} request={request} automaticPayoutsOn={automaticPayoutsOn} ownPayout={ownPayout} />
+      </td>
+    </tr>
+  );
+}
+
+// The decisions a payout allows, in the table and on its own page.
+export function PayoutActions({
+  teamSlug,
+  request,
+  automaticPayoutsOn,
+  ownPayout,
+}: {
+  teamSlug: string;
+  request: TeamPayoutRequest;
+  automaticPayoutsOn: boolean;
+  ownPayout: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const approveDialogRef = useRef<HTMLDialogElement>(null);
+  const cancelExportDialogRef = useRef<HTMLDialogElement>(null);
+  // onSettled: a failed send still changes the request (held, or left unconfirmed), so the row must reload either way.
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: trpc.payouts.list.queryKey({ teamSlug }) });
+  const approve = useMutation(
+    trpc.payouts.approve.mutationOptions({
+      onSuccess: (result) => {
+        if (result.approvalsNeeded > 0) toast.success("Approved. Waiting for a second admin.");
+      },
+      onSettled: invalidate,
+    }),
+  );
+  const reject = useMutation(trpc.payouts.reject.mutationOptions({ onSettled: invalidate }));
+  const retry = useMutation(trpc.payouts.retry.mutationOptions({ onSettled: invalidate }));
+  const refresh = useMutation(trpc.payouts.refresh.mutationOptions({ onSettled: invalidate }));
+  const cancelExport = useMutation(trpc.payouts.cancelExport.mutationOptions({ onSettled: invalidate }));
+
+  const mutations = [approve, reject, retry, refresh, cancelExport];
+  const pending = mutations.some((mutation) => mutation.isPending);
+  const error = mutations.find((mutation) => mutation.error)?.error ?? null;
+  const actions = payoutActions(request, automaticPayoutsOn);
+  const amount = formatMinor(request.amountMinor, request.currency);
+  const dialog = approveDialogCopy(request, amount, automaticPayoutsOn);
+  const input = { teamSlug, requestId: request.id };
+
+  function resetErrors() {
+    for (const mutation of mutations) mutation.reset();
+  }
+
+  return (
+    <>
         <div className="flex justify-end gap-2">
           {actions.includes("approve") && !ownPayout ? (
             <Button
@@ -234,8 +253,12 @@ function RequestRow({
           confirmLabel="Cancel export"
           onConfirm={() => cancelExport.mutate(input)}
         />
-      </td>
-    </tr>
+      {error ? (
+        <p role="alert" className="mt-2 text-sm text-destructive">
+          {error.message}
+        </p>
+      ) : null}
+    </>
   );
 }
 

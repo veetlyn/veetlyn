@@ -68,6 +68,7 @@ const SEGMENT_LABELS = new Map<string, string>([
   ["operating-model", "Operating model"],
   ["channels", "Channels"],
   ["new", "New"],
+  ["from-ai", "From AI"],
 ]);
 
 // The frame around every seller page (calls design §6): the seller's sections on the tray, the page on a framed canvas,
@@ -136,7 +137,7 @@ export default function TeamShell({
     },
     ...segments.map((segment, i) => ({
       href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
-      label: (segment === "calls" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : "Details"),
+      label: (segment === "calls" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : i > 0 && segments[i - 1] === "payouts" ? "Payout" : "Details"),
     })),
   ];
   const isActive = (href: string) =>
@@ -189,7 +190,7 @@ export default function TeamShell({
                   if (only === undefined) return null;
                   if (pages.length === 1) return link(`/${slug}/${only}`, only === "settings" ? "Settings" : PAGES[only].label, place.icon);
                   const recentProjects = place.label === "Projects" ? (projectsList.data ?? []).slice(0, RECENT_PROJECTS) : [];
-                  const open = pages.some((page) => isActive(`/${slug}/${page}`));
+                  const open = pages.some((page) => isActive(`/${slug}/${page}`)) || (place.label === "Shop" && isActive(`/${slug}/from-ai`));
                   const Icon = place.icon;
                   return (
                     <details key={place.label} name="seller-places" open={open} className="group/place">
@@ -209,6 +210,11 @@ export default function TeamShell({
                             </Link>
                           );
                         })}
+                        {place.label === "Shop" && services && allowed.has("services") ? (
+                          <Link href={`/${slug}/from-ai`} aria-current={isActive(`/${slug}/from-ai`) ? "page" : undefined} className={navItemClass(isActive(`/${slug}/from-ai`))}>
+                            From AI
+                          </Link>
+                        ) : null}
                         {recentProjects.map((project) => (
                           <Link key={project.id} href={`/${slug}/projects/${project.id}`} className={cn(navItemClass(false), "grid gap-0 leading-5")}>
                             <span className="truncate">{project.title}</span>
