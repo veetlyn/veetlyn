@@ -4,10 +4,12 @@ import { isTerminalProjectStatus, projectStatusLabel } from "@jendal-workspace/c
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+import { Search } from "lucide-react";
 
 import Loader from "@/components/loader";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
+import { Input } from "@jendal-workspace/ui/components/input";
 import { trpc } from "@/utils/trpc";
 import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
 
@@ -19,6 +21,7 @@ const FILTERS = [
 
 export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number][0]>("open");
+  const [search, setSearch] = useState("");
   const projects = useQuery({ ...trpc.project.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   if (projects.isPending) return <Loader />;
@@ -27,9 +30,15 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
         <h1 className="font-heading text-3xl">Projects unavailable</h1>
         <p className="text-sm text-muted-foreground">{projects.error.message}</p>
+        <button type="button" onClick={() => void projects.refetch()} className={buttonVariants({ variant: "outline" })}>Try again</button>
       </main>
     );
   }
+
+  const matching = projects.data.filter((project) => {
+    const statusMatches = filter === "all" || (filter === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status));
+    return statusMatches && `${project.title} ${project.clientName ?? ""}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+  });
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
@@ -50,7 +59,13 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
         </div>
       ) : (
         <>
-          <div role="group" aria-label="Show" className="inline-flex w-fit rounded-[10px] bg-tray p-0.5 well">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="relative w-full sm:max-w-64">
+            <span className="sr-only">Search projects by title or client</span>
+            <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" aria-hidden="true" />
+            <Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search projects…" className="pl-9" />
+          </label>
+          <div role="group" aria-label="Show" className="inline-flex w-fit rounded-[8px] border p-0.5">
             {FILTERS.map(([key, label]) => {
               const count = projects.data.filter((project) =>
                 key === "all" ? true : key === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status),
@@ -68,11 +83,17 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
               );
             })}
           </div>
+          </div>
+          <p role="status" className="sr-only">{matching.length} projects shown</p>
+          {matching.length === 0 ? (
+            <div className="rounded-[10px] border px-5 py-10 text-center">
+              <h2 className="font-heading text-lg">No matching projects</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Try another title, client or status.</p>
+              <button type="button" onClick={() => { setSearch(""); setFilter("all"); }} className={buttonVariants({ variant: "outline", className: "mt-4" })}>Clear filters</button>
+            </div>
+          ) : (
           <ul className="panel divide-y overflow-hidden">
-            {projects.data
-              .filter((project) =>
-                filter === "all" ? true : filter === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status),
-              )
+            {matching
               .map((project) => (
                 <li key={project.id}>
                   <Link
@@ -90,6 +111,7 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
                 </li>
               ))}
           </ul>
+          )}
         </>
       )}
     </main>

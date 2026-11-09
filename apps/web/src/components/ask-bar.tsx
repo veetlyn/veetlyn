@@ -24,7 +24,7 @@ export default function AskBar({
   callsPath: string;
   node: ContextNode;
   placeholder: string;
-  hero?: { scope: string };
+  hero?: { scope: string; suggestions?: { label: string; message: string }[] };
 }) {
   const router = useRouter();
   const platform = usePlatformName();
@@ -61,8 +61,27 @@ export default function AskBar({
           scope={hero.scope}
           node={node}
           busy={ask.isPending}
-          className="rounded-[18px]"
+          className="rounded-[10px]"
         />
+        {hero.suggestions ? (
+          <div className="mt-3 flex flex-wrap justify-center gap-2" aria-label="Suggested questions">
+            {hero.suggestions.map((suggestion) => (
+              <Button
+                key={suggestion.label}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setMessage(suggestion.message);
+                  document.getElementById("ask-agent-hero")?.focus();
+                }}
+                disabled={ask.isPending}
+              >
+                {suggestion.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
         {ask.error ? (
           <p role="alert" className="mt-1.5 text-sm text-destructive">
             {ask.error.message}

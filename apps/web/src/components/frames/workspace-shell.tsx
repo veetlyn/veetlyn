@@ -78,7 +78,6 @@ export default function WorkspaceShell({
     <AppFrame
       fill={segment === "calls"}
       crumbs={crumbs}
-      chatsPath={`${base}/calls`}
       searchItems={[
         { href: base, label: "Overview", detail: organization.name },
         ...(organization.canCreateStores ? [{ href: `${base}/billing`, label: "Billing", detail: organization.name }] : []),

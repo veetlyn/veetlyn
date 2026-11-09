@@ -73,9 +73,28 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
   const active = useActiveSection(present);
   const project = detail.data?.project;
   const others = (projects.data ?? []).filter((p) => p.id !== projectId).slice(0, 10);
+  const noProjects = projects.isPending ? "Loading projects…" : projects.isError ? "Projects couldn’t be loaded." : "No other projects.";
 
   return (
     <>
+      <details className="mb-2 min-w-0 rounded-lg border md:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
+          <span className="grid min-w-0 flex-1">
+            <span className="truncate text-sm font-semibold">{project?.title ?? "Project"}</span>
+            <span className="text-xs text-muted-foreground">{project ? projectStatusLabel(project.status) : "Loading…"}</span>
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0" aria-hidden="true" />
+          <span className="sr-only">Switch project</span>
+        </summary>
+        <nav aria-label="Switch project" className="grid max-h-64 min-w-0 gap-1 overflow-y-auto border-t p-1">
+          {others.map((item) => <Link key={item.id} href={`/${slug}/projects/${item.id}`} className="grid min-w-0 gap-1 rounded-lg px-2 py-3 hover:bg-accent">
+            <span className="truncate text-sm">{item.title}</span>
+            <span className="text-xs text-muted-foreground">{projectStatusLabel(item.status)}</span>
+          </Link>)}
+          {others.length === 0 ? <p role="status" className="p-2 text-sm text-muted-foreground">{noProjects}</p> : null}
+        </nav>
+      </details>
+      <div className="hidden md:block">
       <DropdownMenu>
         <DropdownMenuTrigger
           className="mb-1 flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-1.5 text-left hover:bg-foreground/[0.04]"
@@ -94,7 +113,7 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64 bg-card">
           <DropdownMenuLabel>Projects</DropdownMenuLabel>
-          {others.length === 0 ? <p className="px-2 py-1.5 text-sm text-muted-foreground">No other projects.</p> : null}
+          {others.length === 0 ? <p role="status" className="px-2 py-1.5 text-sm text-muted-foreground">{noProjects}</p> : null}
           {others.map((p) => (
             <DropdownMenuItem key={p.id} onClick={() => router.push(`/${slug}/projects/${p.id}`)}>
               <span className="grid min-w-0">
@@ -105,6 +124,7 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
       <Link
         href={`/${slug}/projects`}
         className="flex items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-sm font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
@@ -132,7 +152,7 @@ export default function ProjectNav({ slug, projectId, teamId }: { slug: string; 
           </a>
         ))}
       </nav>
-      <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 15)} callsPath={`/${slug}/calls`} label="Threads on this project" />
+      <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 15)} callsPath={`/${slug}/calls`} newThreadHref={`/${slug}/calls?project=${projectId}`} label="Threads on this project" />
     </>
   );
 }

@@ -63,7 +63,6 @@ export default function AccountShell({
     <AppFrame
       fill={pathname.startsWith("/me/calls")}
       crumbs={crumbs}
-      chatsPath="/me/calls"
       searchItems={[
         { href: "/", label: "Overview", detail: "Your account" },
         { href: "/me", label: "Personal", detail: "Your account" },

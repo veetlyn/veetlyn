@@ -73,7 +73,7 @@ export default function ServicesTeamDashboard({
   const projects = useQuery({ ...trpc.project.list.queryOptions({ teamSlug }), enabled: result.isSuccess, ...quiet });
   const requests = useQuery({
     ...trpc.project.openRequests.queryOptions({ teamSlug }),
-    enabled: result.isSuccess && !solo,
+    enabled: result.isSuccess && !solo && !result.data.access.hidden.includes("requests"),
     ...quiet,
   });
   const payouts = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), enabled: admin && !solo, ...quiet });
@@ -205,7 +205,7 @@ export default function ServicesTeamDashboard({
       action: "Open",
     })),
   ];
-  const loading = projects.isPending || (requests.isPending && !solo) || (payouts.isPending && admin && !solo);
+  const loading = projects.isLoading || requests.isLoading || payouts.isLoading;
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
   const paidThisMonth = (payments.data ?? []).filter(
     (p) => p.status === "captured" && p.capturedAt && Date.parse(p.capturedAt) >= monthStart,
@@ -222,32 +222,35 @@ export default function ServicesTeamDashboard({
   const hero = embedded ? null : (
     <section
       aria-label={`Ask ${platform}`}
-      className="mx-auto grid w-full max-w-2xl gap-5 px-4 pt-14 pb-10 text-center md:pt-20"
+      className="mx-auto grid w-full max-w-[660px] gap-6 pt-8 pb-4 text-center md:pt-12"
     >
-      <h1 className="font-heading text-[33px] leading-[1.1] tracking-[-0.03em] md:text-[39px]">
-        What should {team.name} get done{firstName ? `, ${firstName}` : ""}?
+      <p className="text-sm text-muted-foreground">{firstName ? `Hello, ${firstName}` : "Welcome back"}</p>
+      <h1 className="font-heading text-[30px] leading-[1.15] tracking-[-0.03em] md:text-[36px]">
+        What’s next for {team.name}?
       </h1>
       <AskBar
         callsPath={`/${team.slug}/calls`}
         node={{ kind: "seller", teamId: team.id }}
         placeholder={`Ask ${platform} to draft a quote, chase a client or check payouts`}
-        hero={{ scope: team.name }}
+        hero={{
+          scope: team.name,
+          suggestions: [
+            { label: "Catch me up", message: `What needs my attention at ${team.name} today?` },
+            { label: "Draft a quote", message: "Help me draft a quote for a new request." },
+            admin && !solo
+              ? { label: "Review payouts", message: "Review the payouts that need my approval." }
+              : { label: "Plan my week", message: "What should I work on first this week?" },
+          ],
+        }}
       />
-      <p className="text-sm text-muted-foreground">
-        {loading
-          ? "Looking at what needs you…"
-          : needs.length === 0
-            ? "Nothing needs you right now."
-            : `${headline.replace(/\.$/, "")}, below.`}
-      </p>
     </section>
   );
 
   return (
-    <>
+    <main className="mx-auto w-full min-w-0 max-w-[724px] px-4 pb-12 md:px-8">
       {hero}
-      <main className="mx-auto grid w-full max-w-6xl items-start gap-8 px-4 py-6 md:px-8 md:py-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="grid min-w-0 gap-6">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-10 pt-6">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
           {embedded ? (
             <header className="grid gap-2">
               <p className="flex items-center gap-2 text-[14px] text-muted-foreground">
@@ -283,27 +286,38 @@ export default function ServicesTeamDashboard({
             </p>
           ) : null}
 
+          {projects.isError || requests.isError || payouts.isError ? (
+            <div role="alert" className="space-y-2 rounded-[10px] border p-4 text-sm">
+              <p>Some work couldn’t be loaded. This list may be incomplete.</p>
+              <Button variant="outline" size="sm" type="button" onClick={() => {
+                if (projects.isError) void projects.refetch();
+                if (requests.isError) void requests.refetch();
+                if (payouts.isError) void payouts.refetch();
+              }}>Try again</Button>
+            </div>
+          ) : null}
+
           {(prepared.data?.pending.length ?? 0) > 0 ? (
-            <section aria-labelledby="prepared-h" className="frame frame-panel">
-              <div className="frame-head flex items-center gap-2 text-[14px]">
+            <section aria-labelledby="prepared-h" className="min-w-0">
+              <div className="mb-3 flex items-center gap-2">
                 <AgentIcon className="size-4 shrink-0" />
-                <h2 id="prepared-h" className="font-medium">
+                <h2 id="prepared-h" className="font-heading text-lg">
                   Prepared by {platform}, waiting for you
                 </h2>
                 <span className="ml-auto text-muted-foreground">{prepared.data?.pending.length}</span>
               </div>
-              <ul className="frame frame-body">
+              <ul className="min-w-0 divide-y rounded-[10px] border">
                 {prepared.data?.pending.map((item) => (
-                  <li key={item.id} className="flex items-center gap-3 border-b px-3.5 py-3 last:border-b-0">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{item.card.title}</p>
-                      {item.note ? <p className="truncate text-[14px] text-muted-foreground">{item.note}</p> : null}
+                  <li key={item.id} className="flex min-w-0 flex-wrap items-center gap-3 p-4 sm:flex-nowrap">
+                    <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                      <p className="break-words font-medium">{item.card.title}</p>
+                      {item.note ? <p className="mt-1 line-clamp-2 break-words text-sm text-muted-foreground">{item.note}</p> : null}
                     </div>
                     {item.card.kind === "quote" ? <span className="font-tabular font-semibold">{item.card.total}</span> : null}
                     {item.card.kind === "payout" ? <span className="font-tabular font-semibold">{item.card.amount}</span> : null}
                     <Link
                       href={`/${team.slug}/calls?call=${item.callId}`}
-                      className={cn(buttonVariants({ variant: "mint", size: "sm" }), "px-4")}
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
                     >
                       Review
                     </Link>
@@ -314,25 +328,26 @@ export default function ServicesTeamDashboard({
           ) : null}
 
           {needs.length > 0 ? (
-            <section aria-labelledby="needs-h" className="frame frame-panel">
-              <div className="frame-head text-[14px]">
-                <h2 id="needs-h" className="font-medium">
+            <section aria-labelledby="needs-h" className="min-w-0">
+              <div className="mb-3 flex items-center gap-2">
+                <h2 id="needs-h" className="font-heading text-lg">
                   Needs you
                 </h2>
                 <span className="ml-auto text-muted-foreground">{needs.length}</span>
               </div>
-              <ul className="frame frame-body">
+              <ul className="min-w-0 divide-y rounded-[10px] border">
                 {needs.map((need) => (
-                  <li key={need.key} className="flex items-center gap-3 border-b px-3.5 py-3 last:border-b-0">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{need.title}</p>
-                      <p className="truncate text-[14px] text-muted-foreground">{need.detail}</p>
+                  <li key={need.key} className="flex min-w-0 flex-wrap items-center gap-3 p-4 sm:flex-nowrap">
+                    <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                      <p className="break-words font-medium">{need.title}</p>
+                      <p className="break-words text-sm text-muted-foreground">{need.detail}</p>
                     </div>
                     {need.amount ? <span className="font-tabular font-semibold">{need.amount}</span> : null}
                     <Link
                       href={need.href}
                       className={cn(
-                        buttonVariants({ variant: need.primary ? "mint" : "outline", size: "sm" }),
+                        buttonVariants({ variant: "outline", size: "sm" }),
+                        "ml-auto shrink-0 sm:ml-0",
                         need.primary && "px-4",
                       )}
                     >
@@ -342,7 +357,12 @@ export default function ServicesTeamDashboard({
                 ))}
               </ul>
             </section>
-          ) : null}
+          ) : !loading ? (
+            <section aria-labelledby="needs-h" className="space-y-3">
+              <h2 id="needs-h" className="font-heading text-lg">Needs you</h2>
+              <p className="rounded-[10px] border p-5 text-sm text-muted-foreground">Nothing needs you right now.</p>
+            </section>
+          ) : <p role="status" className="text-sm text-muted-foreground">Looking at what needs you…</p>}
 
           {onClients.length > 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -372,26 +392,28 @@ export default function ServicesTeamDashboard({
             {admin ? (
               <Figure
                 label="Paid this month"
-                value={totals(paidThisMonth)}
-                note={paidThisMonth.length === 1 ? "1 payment" : `${paidThisMonth.length} payments`}
+                value={payments.isPending ? "…" : payments.isError ? "Unavailable" : totals(paidThisMonth)}
+                note={payments.isPending ? "Loading payments" : payments.isError ? "Check Finances" : paidThisMonth.length === 1 ? "1 payment" : `${paidThisMonth.length} payments`}
               />
             ) : null}
             {admin && !solo ? (
               <Figure
                 label="Payouts to approve"
-                value={totals(toApprove)}
-                note={toApprove.length === 1 ? "1 request" : `${toApprove.length} requests`}
+                value={payouts.isPending ? "…" : payouts.isError ? "Unavailable" : totals(toApprove)}
+                note={payouts.isPending ? "Loading payouts" : payouts.isError ? "Check Finances" : toApprove.length === 1 ? "1 request" : `${toApprove.length} requests`}
               />
             ) : null}
             <Figure
               label="In progress"
-              value={String(toDeliver.length)}
+              value={projects.isPending ? "…" : projects.isError ? "Unavailable" : String(toDeliver.length)}
               note={toDeliver.length === 1 ? "project" : "projects"}
             />
           </section>
         </div>
 
-        <aside aria-label={`About ${team.name}`} className="grid gap-4">
+        {admin ? <details className="min-w-0 border-t pt-5">
+          <summary className="cursor-pointer text-sm font-medium">Manage {team.name}{!setupDone ? " · Finish setup" : ""}</summary>
+          <div className="mt-4 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
           <SetupChecklist
             steps={steps}
             title={
@@ -451,9 +473,10 @@ export default function ServicesTeamDashboard({
               ) : null}
             </div>
           </section>
-        </aside>
-      </main>
-    </>
+          </div>
+        </details> : null}
+      </div>
+    </main>
   );
 }
 

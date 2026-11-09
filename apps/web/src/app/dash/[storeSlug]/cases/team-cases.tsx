@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@jendal-workspace/ui/components/badge";
+import { Button } from "@jendal-workspace/ui/components/button";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
@@ -64,11 +65,15 @@ export default function TeamCases({ teamSlug, paypalEnvironment }: { teamSlug: s
         <p className="text-sm text-muted-foreground">Disputes clients opened with the payment provider. Answer them there, with the team's account.</p>
       </div>
       {cases.isError ? (
-        <p className="text-sm text-muted-foreground">
-          {cases.error.data?.code === "FORBIDDEN" ? "Only an admin can see disputes." : cases.error.message}
-        </p>
+        <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm">
+          <p>{cases.error.data?.code === "FORBIDDEN" ? "You don’t have access to Disputes. A team admin can change your access." : cases.error.message}</p>
+          {cases.error.data?.code !== "FORBIDDEN" ? <Button type="button" variant="outline" size="sm" onClick={() => void cases.refetch()}>Try again</Button> : null}
+        </div>
       ) : cases.data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No disputes. When a client opens one, it shows here.</p>
+        <section className="rounded-[10px] border px-5 py-10 text-center">
+          <h2 className="font-heading text-lg">No disputes</h2>
+          <p className="mt-2 text-sm text-muted-foreground">If a client opens a dispute, its status and any payout hold will appear here.</p>
+        </section>
       ) : (
         <>
           {open.length > 0 ? (

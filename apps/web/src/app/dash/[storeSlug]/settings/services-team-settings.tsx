@@ -18,7 +18,6 @@ import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
@@ -28,6 +27,18 @@ import { rateField } from "@/lib/services-team-settings-form";
 import { trpc } from "@/utils/trpc";
 
 const SELECT_CLASS = `w-full ${nativeSelectClass}`;
+
+function SettingsRow({ id, label, description, children }: { id: string; label: string; description: string; children: React.ReactNode }) {
+  return (
+    <div className="grid min-w-0 gap-4 border-b py-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] sm:gap-8">
+      <div className="space-y-1.5">
+        <Label htmlFor={id}>{label}</Label>
+        <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
+      </div>
+      <div className="min-w-0 space-y-3">{children}</div>
+    </div>
+  );
+}
 
 function RateInput({
   id,
@@ -42,8 +53,7 @@ function RateInput({
 }) {
   const field = rateField(value);
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+    <SettingsRow id={id} label={label} description={id === "team-cut" ? "The percentage of the quoted price kept by the team." : "The percentage added to the quoted price and paid by the client."}>
       <Input
         id={id}
         value={value}
@@ -53,10 +63,10 @@ function RateInput({
         aria-describedby={`${id}-problem`}
         required
       />
-      <p id={`${id}-problem`} className="min-h-5 text-sm text-destructive">
+      <p id={`${id}-problem`} className="text-sm text-destructive">
         {field.problem}
       </p>
-    </div>
+    </SettingsRow>
   );
 }
 
@@ -95,7 +105,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings } = result.data;
+  const { role, settings } = result.data;
   const current = settings ?? undefined;
   const solo = current?.solo ?? false;
   const values = {
@@ -108,9 +118,12 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
 
   const teamCutField = rateField(values.teamCut);
   const managementFeeField = rateField(values.managementFee);
-  const canSave = solo
+  const settingsChanged = current?.settingsSavedAt == null || values.currency !== current.currency || (!solo && (
+    teamCutField.bps !== current.teamCutBps || managementFeeField.bps !== current.managementFeeBps || values.quotingMode !== current.quotingMode
+  ));
+  const canSave = settingsChanged && (solo
     ? role === "admin" && !save.isPending
-    : role === "admin" && teamCutField.bps !== null && managementFeeField.bps !== null && !save.isPending;
+    : role === "admin" && teamCutField.bps !== null && managementFeeField.bps !== null && !save.isPending);
   const bioUnchanged = values.bio.trim() === (current?.bio ?? "");
   const bioTooLong = values.bio.trim().length > MAX_BIO_CHARS;
   const canSaveBio = role === "admin" && !saveBio.isPending && !bioUnchanged && !bioTooLong;
@@ -139,14 +152,15 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-6 [&>*]:max-w-3xl md:px-7 md:py-8">
-      <h1 className="font-heading text-3xl">{solo ? "Settings" : "Team settings"}</h1>
+    <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+      <h1 className="font-heading text-3xl">General</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Your seller page, currency and defaults for new work.</p>
       {role !== "admin" ? (
         <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
       ) : null}
-      <form onSubmit={handleSubmit} className="mt-6 panel grid gap-6 p-6">
-        <div className="space-y-2">
-          <Label htmlFor="bio">About you</Label>
+      <form onSubmit={handleSubmit} className="mt-6">
+        <fieldset disabled={role !== "admin"} className="min-w-0">
+        <SettingsRow id="bio" label="About you" description="Tell clients what you make, for whom, and how you work. This appears on your seller page.">
           <Textarea
             id="bio"
             value={values.bio}
@@ -166,7 +180,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
               {saveBio.error.message}
             </p>
           ) : null}
-          {saveBio.isSuccess ? <p className="text-sm font-medium text-brand-text">Saved.</p> : null}
+          {saveBio.isSuccess ? <p role="status" className="text-sm font-medium text-brand-text">Saved.</p> : null}
           <Button
             type="button"
             onClick={() => saveBio.mutate({ teamSlug, bio: values.bio })}
@@ -175,15 +189,14 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           >
             {saveBio.isPending ? "Saving…" : "Save bio"}
           </Button>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="currency">Currency</Label>
+        </SettingsRow>
+        <SettingsRow id="currency" label="Currency" description="The default currency for new quotes. Existing projects keep their currency.">
           <select
             id="currency"
             className={SELECT_CLASS}
             value={values.currency}
             onChange={(e) => {
-              if (isCurrency(e.target.value)) setCurrency(e.target.value);
+              if (isCurrency(e.target.value)) { setCurrency(e.target.value); save.reset(); }
             }}
           >
             {CURRENCIES.map((c) => (
@@ -192,7 +205,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
               </option>
             ))}
           </select>
-        </div>
+        </SettingsRow>
         {solo ? (
           <p className="panel p-3 text-sm text-muted-foreground">
             You work alone, so you keep the whole price. Switch to a team to set a team cut, a management fee and
@@ -200,21 +213,20 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           </p>
         ) : (
           <>
-            <RateInput id="team-cut" label="Team cut (%)" value={values.teamCut} onChange={setTeamCut} />
+            <RateInput id="team-cut" label="Team cut (%)" value={values.teamCut} onChange={(value) => { setTeamCut(value); save.reset(); }} />
             <RateInput
               id="management-fee"
               label="Management fee (%)"
               value={values.managementFee}
-              onChange={setManagementFee}
+              onChange={(value) => { setManagementFee(value); save.reset(); }}
             />
-            <div className="space-y-2">
-              <Label htmlFor="quoting-mode">Quoting</Label>
+            <SettingsRow id="quoting-mode" label="Who can quote" description="Choose who prepares and sends quotes for new requests.">
               <select
                 id="quoting-mode"
                 className={SELECT_CLASS}
                 value={values.quotingMode}
                 onChange={(e) => {
-                  if (isQuotingMode(e.target.value)) setQuotingMode(e.target.value);
+                  if (isQuotingMode(e.target.value)) { setQuotingMode(e.target.value); save.reset(); }
                 }}
               >
                 {QUOTING_MODES.map((mode) => (
@@ -223,17 +235,17 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
                   </option>
                 ))}
               </select>
-            </div>
-            <Link href={`/${team.slug}/payouts/rules`} className="text-sm underline underline-offset-4">
-              Payout rules
-            </Link>
+            </SettingsRow>
           </>
         )}
-        {save.error ? <p className="text-sm text-destructive">{save.error.message}</p> : null}
-        {save.isSuccess ? <p className="text-sm font-medium text-brand-text">Settings saved.</p> : null}
-        <Button type="submit" disabled={!canSave} className="justify-self-start">
+        <div className="flex flex-wrap items-center justify-end gap-4 pt-5">
+        {save.error ? <p role="alert" className="text-sm text-destructive">{save.error.message}</p> : null}
+        {save.isSuccess ? <p role="status" className="text-sm font-medium text-brand-text">Settings saved.</p> : null}
+        <Button type="submit" disabled={!canSave}>
           {save.isPending ? "Saving…" : "Save settings"}
         </Button>
+        </div>
+        </fieldset>
       </form>
       {solo && role === "admin" ? (
         <section className="mt-10 grid gap-3 panel p-4">
