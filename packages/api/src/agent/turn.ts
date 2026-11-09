@@ -282,6 +282,8 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
       maxRetries: 1,
     });
     answer = result.steps.map((step) => step.text.trim()).filter((text) => text !== "");
+    // A turn nobody typed reports its result; the narration between its tool calls is not worth reading.
+    if (turn.directive) answer = answer.slice(-1);
     if (result.finishReason === "tool-calls") answer.push("I stopped here to keep this short. Ask me to go on.");
   } catch (cause) {
     // The provider's own words stay in the server log; the person's message is kept and can be sent again.
