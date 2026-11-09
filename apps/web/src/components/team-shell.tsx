@@ -1,14 +1,15 @@
 "use client";
 
 import type { ContextNode, SectionPage } from "@jendal-workspace/core/context/node";
+import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
+  ChevronRight,
   FolderKanban,
   HandCoins,
   Inbox,
-  LayoutGrid,
   type LucideIcon,
   Package,
   Settings,
@@ -16,10 +17,12 @@ import {
   Store,
   Tag,
   Users,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { AgentIcon } from "@/components/agent-icon";
 import AppFrame, { navItemClass } from "@/components/app-frame";
 import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
@@ -27,6 +30,7 @@ import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
 import { usePlatformName } from "@/components/platform-name";
 import { sellerOptions, useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
+import { projectStatusLabel } from "@jendal-workspace/core";
 import { trpc } from "@/utils/trpc";
 
 const PAGES = {
@@ -34,23 +38,25 @@ const PAGES = {
   projects: { label: "Projects", icon: FolderKanban },
   payments: { label: "Payments", icon: ArrowDownToLine },
   payouts: { label: "Payouts", icon: ArrowUpFromLine },
-  cases: { label: "PayPal cases", icon: ShieldAlert },
+  cases: { label: "Disputes", icon: ShieldAlert },
   services: { label: "Services", icon: Tag },
   products: { label: "Products", icon: Package },
   orders: { label: "Orders", icon: Inbox },
   preview: { label: "Seller page", icon: Store },
-  members: { label: "Members", icon: Users },
+  members: { label: "Team", icon: Users },
   settings: { label: "Settings", icon: Settings },
 } satisfies Record<SectionPage, { label: string; icon: LucideIcon }>;
 
-const SECTION_LABELS = {
-  requests: "Requests",
-  projects: "Projects",
-  money: "Money",
-  storefront: "Storefront",
-  team: "Team",
-  settings: "",
-};
+// The seller's sidebar: Home, then four places that open into a tree, one at a time. A place holding a single page for
+// this person is a plain row.
+const PLACES: { label: string; icon: LucideIcon; pages: SectionPage[] }[] = [
+  { label: "Projects", icon: FolderKanban, pages: ["projects", "requests"] },
+  { label: "Shop", icon: Store, pages: ["services", "products", "orders", "preview"] },
+  { label: "Finances", icon: Wallet, pages: ["payments", "payouts", "cases"] },
+  { label: "Settings", icon: Settings, pages: ["settings", "members"] },
+];
+const CHILD_LABELS: Partial<Record<SectionPage, string>> = { projects: "All projects", requests: "Requests", settings: "General" };
+const RECENT_PROJECTS = 3;
 
 // Store pages that work for a store today; the others still read services-team data.
 const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
@@ -93,9 +99,19 @@ export default function TeamShell({
   const sections = (scope?.seller?.sections ?? [])
     .map((s) => ({ ...s, pages: services ? s.pages : s.pages.filter((p) => STORE_PAGES.has(p)) }))
     .filter((s) => s.pages.length > 0);
-  // A section with one page needs no heading over it: its page joins the top group. Settings stays at the foot.
-  const single = sections.filter((s) => s.pages.length === 1 && s.section !== "settings").flatMap((s) => s.pages);
-  const grouped = sections.filter((s) => s.pages.length > 1 || s.section === "settings");
+  const allowed = new Set(sections.flatMap((s) => s.pages));
+  const projectsList = useQuery({
+    ...trpc.project.list.queryOptions({ teamSlug: slug }),
+    enabled: services && allowed.has("projects"),
+    retry: false,
+    meta: { silent: true },
+  });
+  const prepared = useQuery({
+    ...trpc.agent.pending.queryOptions({ node: { kind: "seller", teamId } }),
+    enabled: teamId !== "" && seller.data?.available === true,
+    retry: false,
+    meta: { silent: true },
+  });
 
   const segments = pathname.split("/").filter(Boolean).slice(1);
   const projectId = segments[0] === "projects" && segments[1] && segments[1] !== "new" ? segments[1] : null;
@@ -138,7 +154,7 @@ export default function TeamShell({
   const recent = (calls.data?.calls ?? []).slice(0, 5);
 
   const pageLinks = [
-    { href: `/${slug}`, label: "Overview" },
+    { href: `/${slug}`, label: "Home" },
     ...sections.flatMap((s) => s.pages.map((p) => ({ href: `/${slug}/${p}`, label: PAGES[p].label }))),
   ];
 
@@ -159,19 +175,50 @@ export default function TeamShell({
           ) : (
             <>
               <nav aria-label="Seller" className="grid gap-0.5">
-                {link(`/${slug}`, "Overview", LayoutGrid)}
-                {single.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
-              </nav>
-              {grouped.map(({ section, pages }) => (
-                <div key={section} className="pt-3">
-                  {SECTION_LABELS[section] ? (
-                    <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{SECTION_LABELS[section]}</p>
+                <Link href={`/${slug}`} aria-current={isActive(`/${slug}`) ? "page" : undefined} className={navItemClass(isActive(`/${slug}`))}>
+                  <AgentIcon className="size-4" />
+                  Home
+                  {(prepared.data?.pending.length ?? 0) > 0 ? (
+                    <span className="ml-auto text-xs font-tabular text-muted-foreground">{prepared.data?.pending.length}</span>
                   ) : null}
-                  <nav aria-label={SECTION_LABELS[section] || "Settings"} className="grid gap-0.5">
-                    {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
-                  </nav>
-                </div>
-              ))}
+                </Link>
+                {PLACES.map((place) => {
+                  const pages = place.pages.filter((page) => allowed.has(page));
+                  const only = pages[0];
+                  if (only === undefined) return null;
+                  if (pages.length === 1) return link(`/${slug}/${only}`, only === "settings" ? "Settings" : PAGES[only].label, place.icon);
+                  const recentProjects = place.label === "Projects" ? (projectsList.data ?? []).slice(0, RECENT_PROJECTS) : [];
+                  const open = pages.some((page) => isActive(`/${slug}/${page}`));
+                  const Icon = place.icon;
+                  return (
+                    <details key={place.label} name="seller-places" open={open} className="group/place">
+                      <summary className={cn(navItemClass(false), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
+                        <Icon className="size-4" aria-hidden="true" />
+                        {place.label}
+                        <ChevronRight className="ml-auto size-3.5 text-muted-foreground group-open/place:rotate-90" aria-hidden="true" />
+                      </summary>
+                      <div className="mt-0.5 mb-1 ml-[17px] grid gap-0.5 border-l pl-2.5">
+                        {pages.map((page) => {
+                          const href = `/${slug}/${page}`;
+                          // "All projects" stays quiet on a project's own page, which has its own sidebar.
+                          const current = isActive(href);
+                          return (
+                            <Link key={page} href={href} aria-current={current ? "page" : undefined} className={navItemClass(current)}>
+                              {CHILD_LABELS[page] ?? PAGES[page].label}
+                            </Link>
+                          );
+                        })}
+                        {recentProjects.map((project) => (
+                          <Link key={project.id} href={`/${slug}/projects/${project.id}`} className={cn(navItemClass(false), "grid gap-0 leading-5")}>
+                            <span className="truncate">{project.title}</span>
+                            <span className="truncate text-xs font-normal text-muted-foreground">{projectStatusLabel(project.status)}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })}
+              </nav>
               <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Your threads" />
             </>
           )}
