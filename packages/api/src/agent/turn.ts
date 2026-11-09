@@ -290,6 +290,6 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     kind: "message",
     author: "assistant",
     body: answer.join("\n\n") || "Done.",
-    note: state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : null,
+    note: state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : undefined,
   });
 }
