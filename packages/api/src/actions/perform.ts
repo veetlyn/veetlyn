@@ -1,9 +1,17 @@
-import type { FileStore, ServicesTeamRole } from "@jendal-workspace/core";
+import {
+  accessRefuses,
+  effectiveMemberAccess,
+  FULL_ACCESS,
+  type FileStore,
+  type MemberAccess,
+  projectHidden,
+  type ServicesTeamRole,
+} from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor } from "@jendal-workspace/db/executor";
 import { insertActionLog } from "@jendal-workspace/db/repositories/action-log";
 import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
-import { servicesTeamRoleFor, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
+import { getMemberAccess, servicesTeamRoleFor, workspaceRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamAccess } from "@jendal-workspace/db/repositories/teams";
 import { type StoreRole, storeRoleFor } from "@jendal-workspace/core/context/node";
 
@@ -34,13 +42,15 @@ export type Scope = {
   project: ProjectRow | null;
   // The person's role in the services team; null in a store.
   role: ServicesTeamRole | null;
+  // What an admin set for this member beyond the role.
+  access: MemberAccess;
   // The person's role in the store; null in a services team.
   store: StoreRole | null;
   // The workspace an action names, with the person's role in it.
   workspace: { id: string; role: string } | null;
 };
 
-export const EMPTY_SCOPE: Scope = { teamId: null, project: null, role: null, store: null, workspace: null };
+export const EMPTY_SCOPE: Scope = { teamId: null, project: null, role: null, access: FULL_ACCESS, store: null, workspace: null };
 
 export type PerformRequest<Deps extends ActionRuntime = ActionDeps> = {
   deps: Deps;
@@ -70,6 +80,10 @@ async function loadScope(req: PerformRequest<ActionRuntime>, scopeRequest: Scope
   }
   const person = personOf(req.actor);
   const role = teamId && person ? await servicesTeamRoleFor(req.deps.db, teamId, person) : null;
+  const access =
+    teamId && person && role !== null && role !== "admin"
+      ? effectiveMemberAccess(role, await getMemberAccess(req.deps.db, { teamId, userId: person }))
+      : FULL_ACCESS;
   let store: StoreRole | null = null;
   if (teamId && person && role === null) {
     const access = await findTeamAccess(req.deps.db, { teamId, userId: person });
@@ -84,7 +98,7 @@ async function loadScope(req: PerformRequest<ActionRuntime>, scopeRequest: Scope
     const workspaceRole = await workspaceRoleFor(req.deps.db, organizationId, person);
     if (workspaceRole !== null) workspace = { id: organizationId, role: workspaceRole };
   }
-  return { teamId, project, role, store, workspace };
+  return { teamId, project, role, access, store, workspace };
 }
 
 function passes(grant: Grant, actor: Actor, scope: Scope): boolean {
@@ -118,6 +132,16 @@ function refusal(actor: Actor, scope: Scope, requested: ScopeRequest, workspaceA
   if (!related && scope.teamId) return new ActionError("not_found", "Team not found.");
   if (!related && (requested.organizationId || workspaceAsked)) return new ActionError("not_found", "Workspace not found.");
   return new ActionError("forbidden", "You cannot do this.");
+}
+
+// A team member's limits apply to the person and to the agent acting for them. A project they may not see is reported
+// like a missing one.
+function assertMemberAccess(definition: { name: string; allow: readonly Grant[] }, actor: Actor, scope: Scope): void {
+  if (scope.role === null || (actor.kind !== "user" && actor.kind !== "agent")) return;
+  if (!definition.allow.some((grant) => grant.grant === "member")) return;
+  if (!accessRefuses(definition.name, scope.access, scope.project?.status ?? null)) return;
+  if (scope.project && projectHidden(scope.access, scope.project.status)) throw new ActionError("not_found", NOT_FOUND_PROJECT);
+  throw new ActionError("forbidden", "You cannot do this.");
 }
 
 function actorId(actor: Actor): string | null {
@@ -207,6 +231,7 @@ export async function perform<Input, Result, Raw, Deps extends ActionRuntime = A
     const requested = definition.scope(parsed.data);
     scope = await loadScope(req, requested);
     if (!definition.allow.some((grant) => passes(grant, req.actor, scope))) throw refusal(req.actor, scope, requested, req.workspace !== undefined);
+    assertMemberAccess(definition, req.actor, scope);
     const result = await definition.run(
       { deps: req.deps, actor: req.actor, scope, surface: req.surface, request: req.request },
       parsed.data,

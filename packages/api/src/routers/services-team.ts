@@ -1,5 +1,7 @@
 import {
   bioProblem,
+  effectiveMemberAccess,
+  HIDEABLE_AREAS,
   hasStoreWideRole,
   MAX_RATE_BPS,
   SERVICES_TEAM_ROLES,
@@ -18,6 +20,10 @@ import {
   deleteNewServicesTeam,
   findUserByEmail,
   getServicesTeamSettings,
+  getMemberAccess,
+  listMemberAccess,
+  setMemberAccess,
+  servicesTeamRoleFor,
   listOrganizationsWithServicesTeams,
   listServicesTeamMembers,
   saveServicesTeamBio,
@@ -114,7 +120,10 @@ export const servicesTeamRouter = router({
     }),
 
   get: servicesTeamProcedure.query(async ({ ctx }) => {
-    const [settings, offeringCount, productCount, payoutCredentialsSaved] = await Promise.all([
+    const [access, settings, offeringCount, productCount, payoutCredentialsSaved] = await Promise.all([
+      getMemberAccess(ctx.db, { teamId: ctx.servicesTeam.id, userId: ctx.session.user.id }).then((stored) =>
+        effectiveMemberAccess(ctx.servicesTeamRole, stored),
+      ),
       getServicesTeamSettings(ctx.db, ctx.servicesTeam.id),
       // All offerings count: a draft service still counts as "added" to the checklist.
       countServicesOfferings(ctx.db, ctx.servicesTeam.id),
@@ -125,6 +134,7 @@ export const servicesTeamRouter = router({
     return {
       team: ctx.servicesTeam,
       role: ctx.servicesTeamRole,
+      access,
       settings: settings ? { ...settings, settingsSavedAt: isoOrNull(settings.settingsSavedAt) } : null,
       offeringCount,
       productCount,
@@ -270,6 +280,31 @@ export const servicesTeamRouter = router({
       });
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "This user is not on the team." });
       return { userId: input.userId, role: input.role };
+    }),
+
+  // What each member may see beyond their role. Admins are never limited, so they are not listed.
+  memberAccess: servicesTeamProcedure.query(async ({ ctx }) => {
+    requireAction(ctx.servicesTeamRole, "manage_members", "Only an admin can manage members.");
+    return Object.fromEntries(await listMemberAccess(ctx.db, ctx.servicesTeam.id));
+  }),
+
+  setMemberAccess: servicesTeamProcedure
+    .input(
+      z.object({
+        userId: z.string().min(1),
+        hidden: z.array(z.enum(HIDEABLE_AREAS)).max(HIDEABLE_AREAS.length),
+        hideProjectFinances: z.boolean(),
+        moneyViewer: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "manage_members", "Only an admin can manage members.");
+      const { userId, ...access } = input;
+      const role = await servicesTeamRoleFor(ctx.db, ctx.servicesTeam.id, userId);
+      if (role === "admin") throw new TRPCError({ code: "BAD_REQUEST", message: "An admin always has full access." });
+      const updated = await setMemberAccess(ctx.db, { teamId: ctx.servicesTeam.id, userId, access: { ...access, hidden: [...new Set(access.hidden)] } });
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "This user is not on the team." });
+      return { userId };
     }),
 
   // Sellers design §4.1: a free-text label shown next to the member's name; an empty string clears it.

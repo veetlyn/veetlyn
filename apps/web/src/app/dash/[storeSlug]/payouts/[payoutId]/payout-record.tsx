@@ -130,7 +130,7 @@ export default function PayoutRecord({ teamSlug, payoutId, viewerId }: { teamSlu
           {request.failureMessage ? <p className="text-destructive">{request.failureMessage}</p> : null}
           {waiting ? <p className="text-muted-foreground">{waiting}</p> : null}
           {approval.note ? <p className="text-muted-foreground">{approval.note}</p> : null}
-          {payoutActions(request, credentials.data != null).length > 0 ? (
+          {list.data?.canDecide && payoutActions(request, credentials.data != null).length > 0 ? (
             <div className="border-t pt-4 [&>div]:justify-start">
               <PayoutActions
                 teamSlug={teamSlug}

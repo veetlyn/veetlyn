@@ -137,6 +137,7 @@ export function PayoutActions({
 }) {
   const queryClient = useQueryClient();
   const approveDialogRef = useRef<HTMLDialogElement>(null);
+  const authority = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
   const cancelExportDialogRef = useRef<HTMLDialogElement>(null);
   // onSettled: a failed send still changes the request (held, or left unconfirmed), so the row must reload either way.
   const invalidate = () => queryClient.invalidateQueries({ queryKey: trpc.payouts.list.queryKey({ teamSlug }) });
@@ -164,6 +165,8 @@ export function PayoutActions({
   function resetErrors() {
     for (const mutation of mutations) mutation.reset();
   }
+
+  if (!authority.data?.canDecide) return null;
 
   return (
     <>

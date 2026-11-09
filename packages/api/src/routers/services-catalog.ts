@@ -28,7 +28,9 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { router } from "../index";
-import { requireAction, servicesTeamProcedure } from "../services-team-procedure";
+import { requireAction, servicesAreaProcedure } from "../services-team-procedure";
+
+const servicesTeamProcedure = servicesAreaProcedure("storefront");
 
 const ADMIN_ONLY = "Only an admin can manage the catalog.";
 

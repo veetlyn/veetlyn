@@ -1,5 +1,6 @@
+import type { HideableArea } from "@jendal-workspace/core";
 import { sql } from "drizzle-orm";
-import { boolean, check, index, integer, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { team } from "./organization";
@@ -21,6 +22,12 @@ export const servicesTeamMember = pgTable(
     role: text("role", { enum: ["admin", "manager", "freelancer"] }).notNull(),
     // Sellers design §4.1: a free-text label ("Brand designer") shown next to the member's name.
     title: text("title"),
+    // What an admin set beyond the role. Ignored for admins.
+    // jsonb, as elsewhere: with fetch_types off, postgres.js returns text[] as an unparsed "{...}" string.
+    hiddenAreas: jsonb("hidden_areas").$type<HideableArea[]>().notNull().default([]),
+    hideProjectFinances: boolean("hide_project_finances").notNull().default(false),
+    moneyViewer: boolean("money_viewer").notNull().default(false),
+    accessChangedAt: timestamp("access_changed_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

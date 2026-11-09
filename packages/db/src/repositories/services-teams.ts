@@ -3,6 +3,7 @@ import {
   hasStoreWideRole,
   SOLO_MANAGEMENT_FEE_BPS,
   SOLO_TEAM_CUT_BPS,
+  type MemberAccess,
   type ServicesTeamRecord,
   type ServicesTeamRole,
   type ServicesTeamSettings,
@@ -180,6 +181,53 @@ export async function servicesTeamRoleFor(
     .limit(1);
   if (!row) return null;
   return effectiveServicesTeamRole(row.workspaceRole, row.teamRole);
+}
+
+const memberAccessColumns = {
+  userId: servicesTeamMember.userId,
+  hidden: servicesTeamMember.hiddenAreas,
+  hideProjectFinances: servicesTeamMember.hideProjectFinances,
+  moneyViewer: servicesTeamMember.moneyViewer,
+};
+
+// What an admin set for this member; null without a member row (workspace admins have none).
+export async function getMemberAccess(db: DbExecutor, input: { teamId: string; userId: string }): Promise<MemberAccess | null> {
+  const [row] = await db
+    .select(memberAccessColumns)
+    .from(servicesTeamMember)
+    .where(and(eq(servicesTeamMember.teamId, input.teamId), eq(servicesTeamMember.userId, input.userId)))
+    .limit(1);
+  return row ? { hidden: row.hidden, hideProjectFinances: row.hideProjectFinances, moneyViewer: row.moneyViewer } : null;
+}
+
+// Saved conversations may contain facts read under earlier permissions. Require a new thread after access changes.
+export async function memberHistorySince(db: DbExecutor, input: { teamId: string; userId: string }): Promise<Date | null> {
+  const [row] = await db.select({ changedAt: servicesTeamMember.accessChangedAt }).from(servicesTeamMember)
+    .where(and(eq(servicesTeamMember.teamId, input.teamId), eq(servicesTeamMember.userId, input.userId))).limit(1);
+  return row?.changedAt ?? null;
+}
+
+export async function listMemberAccess(db: DbExecutor, teamId: string): Promise<Map<string, MemberAccess>> {
+  const rows = await db.select(memberAccessColumns).from(servicesTeamMember).where(eq(servicesTeamMember.teamId, teamId));
+  return new Map(rows.map(({ userId, ...access }) => [userId, access]));
+}
+
+// False when the user has no member row in this team.
+export async function setMemberAccess(
+  db: DbExecutor,
+  input: { teamId: string; userId: string; access: MemberAccess },
+): Promise<boolean> {
+  const updated = await db
+    .update(servicesTeamMember)
+    .set({
+      hiddenAreas: [...input.access.hidden],
+      hideProjectFinances: input.access.hideProjectFinances,
+      moneyViewer: input.access.moneyViewer,
+      accessChangedAt: new Date(),
+    })
+    .where(and(eq(servicesTeamMember.teamId, input.teamId), eq(servicesTeamMember.userId, input.userId)))
+    .returning({ id: servicesTeamMember.id });
+  return updated.length > 0;
 }
 
 // A workspace the user owns that has no seller yet: left behind when creating its first team failed. A retry reuses

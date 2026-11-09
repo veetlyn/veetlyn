@@ -1616,6 +1616,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
       await expect(admin.payouts.list(TEAM)).resolves.toEqual({
         adminCount: 1,
+        canDecide: true,
         waitingForDestination: [],
         payouts: [
           expect.objectContaining({
@@ -1783,6 +1784,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       await expect(sweep()).resolves.toEqual({ created: 0 });
       await expect(clockedAdmin.payouts.list(TEAM)).resolves.toEqual({
         adminCount: 1,
+        canDecide: true,
         payouts: [],
         waitingForDestination: [{ projectId, title: "Website", memberName: "Ada", earningsMinor: 85_000, currency: "USD" }],
       });

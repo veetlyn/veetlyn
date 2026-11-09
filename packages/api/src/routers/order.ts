@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { publicProcedure, router } from "../index";
-import { servicesTeamProcedure } from "../services-team-procedure";
+import { servicesAreaProcedure } from "../services-team-procedure";
 import { downloadOrderFile, getOrderPage, listOrders, sendNewOrderLink } from "../use-cases/orders";
 
 const linkInput = z.object({ token: z.string().min(20).max(100), slug: z.string().min(1).max(63) });
@@ -20,7 +20,7 @@ export const orderRouter = router({
     .input(linkInput)
     .mutation(({ ctx, input }) => sendNewOrderLink({ db: ctx.db, email: ctx.email }, input)),
 
-  list: servicesTeamProcedure.query(({ ctx }) => {
+  list: servicesAreaProcedure("storefront").query(({ ctx }) => {
     if (!canServicesTeam(ctx.servicesTeamRole, "manage_settings")) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin can see orders." });
     }

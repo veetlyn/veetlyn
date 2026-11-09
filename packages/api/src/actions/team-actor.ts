@@ -11,5 +11,5 @@ export function teamActorOf(context: { actor: Actor; scope: Scope }): ProjectAct
   if (person === null || scope.teamId === null || scope.role === null) {
     throw new ActionError("internal", "A team action ran without a team member.");
   }
-  return { teamId: scope.teamId, role: scope.role, actorId: person };
+  return { teamId: scope.teamId, role: scope.role, actorId: person, access: scope.access };
 }

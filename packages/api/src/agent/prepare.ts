@@ -58,7 +58,7 @@ async function claimDraft(deps: Deps, place: CallPlace & { userId: string; title
 // One quote, as this person and only proposing. The quoting mode decides as it will on confirm: a draft this person
 // could never send is worse than none.
 async function draftQuote(deps: Deps, seller: ResolvedSeller, settings: Settings, userId: string, row: Row): Promise<Drafted> {
-  if (seller.role.product !== "services") return "refused";
+  if (seller.role.product !== "services" || seller.access.hideProjectFinances) return "refused";
   const { db } = deps.actions;
   if ((await listProjectQuotes(db, row.id)).length > 0) return "exists";
   const author = quoteAuthor({
