@@ -27,6 +27,9 @@ describe("defaultServicesTeamSettings", () => {
       quotingMode: "assigned",
       settingsSavedAt: null,
       discordGuildId: null,
+      agentQuotes: true,
+      agentMessages: true,
+      agentPayouts: true,
     });
   });
 
