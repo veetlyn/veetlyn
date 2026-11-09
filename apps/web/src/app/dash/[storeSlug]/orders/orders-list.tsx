@@ -2,22 +2,26 @@
 
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
+import { Input } from "@jendal-workspace/ui/components/input";
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
 function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString() : "";
+  return value ? new Date(value).toLocaleDateString() : "Date not available";
 }
 
 // The buyer's confirmation email, with a fresh download link, sent again through the outbox.
 function ResendEmail({ teamSlug, orderId }: { teamSlug: string; orderId: string }) {
   const resend = useMutation(trpc.store.resendOrderEmail.mutationOptions());
   return (
-    <div className="flex items-center justify-end gap-2">
-      {resend.isSuccess ? <p className="text-sm text-muted-foreground">Email sent again.</p> : null}
+    <div className="mt-3 grid justify-items-start gap-2 sm:justify-items-end">
+      {resend.isSuccess && resend.data.sent ? <p role="status" className="text-sm text-muted-foreground">Email sent again.</p> : null}
+      {resend.isSuccess && !resend.data.sent ? <p role="alert" className="max-w-xs text-sm text-destructive">The email wasn’t sent. Try again.</p> : null}
       {resend.error ? <p role="alert" className="text-sm text-destructive">{resend.error.message}</p> : null}
       <Button
         type="button"
@@ -34,27 +38,36 @@ function ResendEmail({ teamSlug, orderId }: { teamSlug: string; orderId: string 
 
 export default function OrdersList({ teamSlug }: { teamSlug: string }) {
   const orders = useQuery({ ...trpc.order.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const matching = (orders.data ?? []).filter((order) =>
+    (status === "all" || (status === "review" ? Boolean(order.reviewReason) : order.status === status)) && `${order.productTitle} ${order.buyerEmail}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+  );
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <h1 className="font-heading text-3xl">Orders</h1>
+      <header className="space-y-1"><h1 className="font-heading text-3xl">Orders</h1><p className="text-sm text-muted-foreground">Paid downloads, buyer details and confirmation emails.</p></header>
+      {orders.isSuccess && orders.data.length > 0 ? <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="w-full sm:max-w-72"><span className="sr-only">Search orders by product or buyer</span><Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search orders…" /></label>
+        <label><span className="sr-only">Order status</span><select value={status} onChange={(event) => setStatus(event.target.value)} className={nativeSelectClass}><option value="all">All orders</option><option value="paid">Paid</option><option value="refunded">Refunded</option><option value="review">Needs review</option></select></label>
+      </div> : null}
       {orders.isPending ? (
         <Loader />
       ) : orders.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {orders.error.message}
-        </p>
+        <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm"><p>{orders.error.message}</p>{orders.error.data?.code !== "FORBIDDEN" ? <Button type="button" variant="outline" size="sm" onClick={() => void orders.refetch()}>Try again</Button> : null}</div>
       ) : orders.data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No orders yet. They show up here once a buyer pays.</p>
+        <section className="rounded-[10px] border px-5 py-10 text-center"><h2 className="font-heading text-lg">No orders yet</h2><p className="mt-2 text-sm text-muted-foreground">Orders appear here once a buyer pays for a download.</p></section>
+      ) : matching.length === 0 ? (
+        <section className="rounded-[10px] border px-5 py-10 text-center"><h2 className="font-heading text-lg">No matching orders</h2><p className="mt-2 text-sm text-muted-foreground">Try another product, buyer or status.</p><Button type="button" variant="outline" className="mt-4" onClick={() => { setSearch(""); setStatus("all"); }}>Clear filters</Button></section>
       ) : (
         <ul className="panel divide-y overflow-hidden">
-          {orders.data.map((order) => (
-            <li key={order.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{order.productTitle}</p>
-                <p className="truncate text-sm text-muted-foreground">{order.buyerEmail}</p>
+          {matching.map((order) => (
+            <li key={order.id} className="flex flex-wrap items-start justify-between gap-4 p-4 sm:flex-nowrap">
+              <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                <p className="break-words font-medium">{order.productTitle}</p>
+                <p className="mt-1 break-all text-sm text-muted-foreground">{order.buyerEmail}</p>
               </div>
-              <div className="shrink-0 text-right">
+              <div className="min-w-0 text-left sm:shrink-0 sm:text-right">
                 <p className="font-tabular text-sm font-medium">{formatMinor(order.amountMinor, order.currency)}</p>
                 <div className="flex items-center justify-end gap-2">
                   {order.status === "refunded" ? (

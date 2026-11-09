@@ -83,9 +83,9 @@ function DepartmentRow({
           Delete
         </Button>
       </div>
-      {rename.error ?? setListed.error ? (
+      {rename.error ?? setListed.error ?? remove.error ? (
         <p role="alert" className="text-sm text-destructive">
-          {(rename.error ?? setListed.error)?.message}
+          {(rename.error ?? setListed.error ?? remove.error)?.message}
         </p>
       ) : null}
     </li>
@@ -98,6 +98,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   const catalog = useQuery({ ...trpc.servicesCatalog.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   const [departmentName, setDepartmentName] = useState("");
+  const [search, setSearch] = useState("");
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: trpc.servicesCatalog.list.queryKey({ teamSlug }) });
@@ -123,9 +124,10 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   const currency = team.data.settings?.currency ?? "USD";
   const departments = catalog.data?.departments ?? [];
   const offerings = catalog.data?.offerings ?? [];
+  const matching = offerings.filter((offering) => `${offering.name} ${offering.description}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
 
   const byDepartment = new Map<string, typeof offerings>();
-  for (const offering of offerings) {
+  for (const offering of matching) {
     const key = offering.departmentId ?? "";
     byDepartment.set(key, [...(byDepartment.get(key) ?? []), offering]);
   }
@@ -140,8 +142,8 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
     const questionCount = offering.intakeQuestions.length;
     return (
       <li key={offering.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
-        <Link href={`/${teamSlug}/services/${offering.id}`} className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 font-medium">
+        <Link href={`/${teamSlug}/services/${offering.id}`} className="min-w-0 flex-1 basis-full sm:basis-auto">
+          <p className="flex flex-wrap items-center gap-2 font-medium">
             <span className="truncate">{offering.name}</span>
             {!offering.active ? <Badge>Hidden</Badge> : null}
             {offering.active && !offering.listed ? <Badge>Not in AI assistants</Badge> : null}
@@ -156,7 +158,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
             <Button
               type="button"
               variant="outline"
-              disabled={setOfferingActive.isPending}
+              disabled={setOfferingActive.isPending || deleteOffering.isPending}
               onClick={() =>
                 setOfferingActive.mutate({ teamSlug, offeringId: offering.id, active: !offering.active })
               }
@@ -166,7 +168,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
             <Button
               type="button"
               variant="outline"
-              disabled={deleteOffering.isPending}
+              disabled={deleteOffering.isPending || setOfferingActive.isPending}
               onClick={() => {
                 if (window.confirm("Delete this service? Projects that used it keep their records.")) {
                   deleteOffering.mutate({ teamSlug, offeringId: offering.id });
@@ -183,9 +185,10 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0 flex-1 basis-full space-y-1 sm:basis-auto">
           <h1 className="font-heading text-3xl">Services</h1>
+          <p className="text-sm text-muted-foreground">What clients can request from your seller page.</p>
         </div>
         {isAdmin ? (
           <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>
@@ -195,10 +198,15 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
       </div>
 
       {catalog.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          The services couldn't be loaded.
-        </p>
+        <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm">
+          <p>The services couldn’t be loaded.</p>
+          <Button type="button" variant="outline" size="sm" onClick={() => void catalog.refetch()}>Try again</Button>
+        </div>
       )}
+      {setOfferingActive.error ?? deleteOffering.error ? <p role="alert" className="text-sm text-destructive">{(setOfferingActive.error ?? deleteOffering.error)?.message}</p> : null}
+      {!catalog.isError && offerings.length > 0 ? (
+        <label className="block w-full sm:max-w-72"><span className="sr-only">Search services</span><Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services…" /></label>
+      ) : null}
 
       {!catalog.isError && offerings.length === 0 && (
         <section className="panel grid justify-items-center gap-2 p-10 text-center">
@@ -216,19 +224,21 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
       )}
 
       {!catalog.isError && (isAdmin || departments.length > 0) && (
-        <section className="panel space-y-3 p-5">
-          <h2 className="font-medium">Departments</h2>
+        <details className="rounded-[10px] border p-4">
+          <summary className="cursor-pointer text-sm font-medium">{isAdmin ? "Manage departments" : "Departments"} <span className="font-normal text-muted-foreground">({departments.length})</span></summary>
+          <div className="mt-4 space-y-3">
           <p className="text-sm text-muted-foreground">
             Optional groups for your seller page. A service can also stand alone.
           </p>
           {isAdmin ? (
             <>
-              <form onSubmit={handleAddDepartment} className="flex items-center gap-2">
+              <form onSubmit={handleAddDepartment} className="flex flex-wrap items-center gap-2">
                 <Input
                   aria-label="New department name"
                   value={departmentName}
                   maxLength={MAX_DEPARTMENT_NAME}
                   placeholder="New department"
+                  className="min-w-0 sm:flex-1"
                   onChange={(e) => {
                     setDepartmentName(e.target.value);
                     addDepartment.reset();
@@ -253,7 +263,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
                     key={department.id}
                     teamSlug={teamSlug}
                     department={department}
-                    offeringCount={(byDepartment.get(department.id) ?? []).length}
+                    offeringCount={offerings.filter((offering) => offering.departmentId === department.id).length}
                   />
                 ))}
               </ul>
@@ -264,11 +274,17 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
                 ))}
               </ul>
             ))}
-        </section>
+          </div>
+        </details>
       )}
 
       {offerings.length > 0 && (
         <div className="space-y-6">
+          {matching.length === 0 ? <section className="rounded-[10px] border px-5 py-10 text-center">
+            <h2 className="font-heading text-lg">No matching services</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Try another service name or description.</p>
+            <Button type="button" variant="outline" className="mt-4" onClick={() => setSearch("")}>Clear search</Button>
+          </section> : null}
           {departments
             .filter((department) => (byDepartment.get(department.id) ?? []).length > 0)
             .map((department) => (
