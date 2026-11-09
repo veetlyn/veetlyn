@@ -184,7 +184,8 @@ function isUnanswered(entries: AgentCallEntryRow[], message: string): boolean {
 export type CallInput = { callId?: string; message: string };
 
 // What the call's runtime needs to run one turn; plain data, so it can cross into the call's own Durable Object.
-export type TurnRequest = { callId: string; scope: CallScope; message: string; request: RequestMeta };
+// A directive starts a turn nobody typed (the agent preparing work): it reaches the model but never the thread.
+export type TurnRequest = { callId: string; scope: CallScope; message: string; request: RequestMeta; directive?: boolean };
 
 function agentFor(scope: CallScope): Actor {
   return { kind: "agent", agentId: AGENT_ID, onBehalfOf: { kind: "user", userId: scope.userId } };
@@ -229,7 +230,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   const call = await findOwnAgentCall(db, { callId: turn.callId, userId: scope.userId });
   if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
   // A retry after a failed turn: the question is already in the thread.
-  if (!isUnanswered(await listAgentCallEntries(db, call.id), turn.message)) {
+  if (!turn.directive && !isUnanswered(await listAgentCallEntries(db, call.id), turn.message)) {
     await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
   }
 
@@ -254,7 +255,10 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     const result = await generateText({
       model: deps.agent.model,
       system: systemPrompt(deps.actions.platformName, scope, offered.length),
-      messages: historyMessages(await listAgentCallEntries(db, call.id)),
+      messages: [
+        ...historyMessages(await listAgentCallEntries(db, call.id)),
+        ...(turn.directive ? [{ role: "user" as const, content: turn.message }] : []),
+      ],
       tools,
       stopWhen: stepCountIs(MAX_MODEL_CALLS),
       maxOutputTokens: 4_000,

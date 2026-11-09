@@ -5,6 +5,7 @@ import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 
 import { AgentIcon } from "@/components/agent-icon";
 
@@ -22,6 +23,7 @@ import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/utils/trpc";
 
 const HOUR_MS = 3_600_000;
+const MAX_DRAFTS_PER_VISIT = 3;
 const quiet = { retry: false, meta: { silent: true } } as const;
 
 type Need = {
@@ -87,6 +89,28 @@ export default function ServicesTeamDashboard({
     enabled: result.isSuccess,
     ...quiet,
   });
+  const teamId = result.data?.team.id;
+  const drafting = useMutation(
+    trpc.agent.prepareDrafts.mutationOptions({
+      onSuccess: ({ drafted }) => {
+        if (!drafted || !teamId) return;
+        void queryClient.invalidateQueries({ queryKey: trpc.agent.pending.queryKey() });
+        void queryClient.invalidateQueries({ queryKey: trpc.agent.calls.queryKey() });
+        // One request at a time; a page visit prepares a few at most.
+        draftsThisVisit.current += 1;
+        if (draftsThisVisit.current < MAX_DRAFTS_PER_VISIT) drafting.mutate({ teamId });
+      },
+      meta: { silent: true },
+    }),
+  );
+  const draftsThisVisit = useRef(0);
+  const started = useRef(false);
+  const requestCount = projects.data?.filter((p) => p.status === "quoting").length ?? 0;
+  useEffect(() => {
+    if (started.current || !admin || !teamId || requestCount === 0) return;
+    started.current = true;
+    drafting.mutate({ teamId });
+  }, [admin, teamId, requestCount, drafting]);
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
       onSuccess: () =>
@@ -250,6 +274,13 @@ export default function ServicesTeamDashboard({
                 </a>
               </p>
             </header>
+          ) : null}
+
+          {drafting.isPending ? (
+            <p role="status" className="flex items-center gap-2 text-[14px] text-muted-foreground">
+              <AgentIcon className="size-4 shrink-0 motion-safe:animate-pulse" />
+              {platform} is preparing a quote for your newest request…
+            </p>
           ) : null}
 
           {(prepared.data?.pending.length ?? 0) > 0 ? (

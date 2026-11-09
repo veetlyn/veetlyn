@@ -35,6 +35,7 @@ export type ProposalCard =
       lines: { label: string; amount: string }[];
       total: string;
       delivery: string;
+      freelancer: string | null;
       // What the client pays on accepting, as the acceptance will compute it.
       deposit: { percent: number; quotePart: string; managementFee: string | null; total: string };
     }
@@ -71,6 +72,7 @@ export async function proposalCard(db: DbExecutor, teamId: string, action: strin
         lines: quote.data.items.map((item) => ({ label: item.description, amount: amount(item.amountMinor) })),
         total: amount(totalMinor),
         delivery: days(quote.data.deliveryDays),
+        freelancer: quote.data.freelancerId ? await userDisplayName(db, quote.data.freelancerId) : null,
         deposit: {
           percent: upfrontBps / 100,
           quotePart: amount(deposit.quotePartMinor),
