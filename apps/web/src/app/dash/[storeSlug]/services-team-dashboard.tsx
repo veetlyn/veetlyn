@@ -265,7 +265,7 @@ export default function ServicesTeamDashboard({
                 {prepared.data?.pending.map((item) => (
                   <li key={item.id} className="flex items-center gap-3 border-b px-3.5 py-3 last:border-b-0">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{item.title}</p>
+                      <p className="truncate font-medium">{item.card.title}</p>
                       {item.note ? <p className="truncate text-[14px] text-muted-foreground">{item.note}</p> : null}
                     </div>
                     {item.card.kind === "quote" ? <span className="font-tabular font-semibold">{item.card.total}</span> : null}

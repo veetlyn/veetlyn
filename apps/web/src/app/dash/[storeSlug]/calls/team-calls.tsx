@@ -30,13 +30,6 @@ const CARD_STATE = {
 
 type Card = NonNullable<Entry["card"]>;
 
-const CARD_TITLE = (card: Card) =>
-  card.kind === "quote"
-    ? `Quote for ${card.project}`
-    : card.kind === "message"
-      ? `Message on ${card.project}`
-      : `${card.decision === "approve" ? "Approve" : "Reject"} payout to ${card.member}`;
-
 // The facts come from the server's reading of what will run; the assistant's own words are only the note under them.
 function CardFacts({ card }: { card: Card }) {
   if (card.kind === "quote")
@@ -53,6 +46,13 @@ function CardFacts({ card }: { card: Card }) {
         <div className="flex items-baseline justify-between gap-4 px-3.5 py-2.5 font-medium">
           <span>Total, delivered in {card.delivery}</span>
           <span className="font-tabular text-[16px] whitespace-nowrap">{card.total}</span>
+        </div>
+        <div className="flex items-baseline justify-between gap-4 border-t px-3.5 py-2.5 text-muted-foreground">
+          <span>
+            Client pays on accepting: {card.deposit.percent}% deposit {card.deposit.quotePart}
+            {card.deposit.managementFee ? ` + management fee ${card.deposit.managementFee}` : ""}
+          </span>
+          <span className="font-tabular whitespace-nowrap text-foreground">{card.deposit.total}</span>
         </div>
       </div>
     );
@@ -77,10 +77,13 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
   const state = CARD_STATE[entry.status ?? "pending"];
   const busy = confirm.isPending || decline.isPending;
   const card = entry.card;
+  // Money takes two presses: the first says exactly what the second will do.
+  const [armed, setArmed] = useState(false);
+  const twoStep = card?.kind === "payout";
   return (
     <div className="frame frame-panel" aria-label="Decision">
       <div className="frame-head flex items-center gap-3 text-[14px]">
-        <h3 className="min-w-0 truncate font-medium">{card ? CARD_TITLE(card) : "Proposed action"}</h3>
+        <h3 className="min-w-0 truncate font-medium">{card?.title ?? "Proposed action"}</h3>
         <Badge tone={state.tone} className="ml-auto shrink-0">
           {state.label}
         </Badge>
@@ -100,13 +103,21 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
         {entry.outcome && entry.status !== "done" ? <p className="text-[14px] text-muted-foreground">{entry.outcome}</p> : null}
         {entry.status === "pending" ? (
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="mint" disabled={busy} onClick={() => confirm.mutate({ entryId: entry.id })}>
-              {confirm.isPending ? "Working…" : (card?.cta ?? "Confirm")}
+            {twoStep && !armed ? (
+              <Button size="sm" variant="mint" disabled={busy} onClick={() => setArmed(true)}>
+                {card.cta}
+              </Button>
+            ) : (
+              <Button size="sm" variant="mint" disabled={busy} onClick={() => confirm.mutate({ entryId: entry.id })}>
+                {confirm.isPending ? "Working…" : twoStep ? `Yes, ${card.cta.toLowerCase()}` : (card?.cta ?? "Confirm")}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => (armed ? setArmed(false) : decline.mutate({ entryId: entry.id }))}>
+              {armed ? "Go back" : "Not now"}
             </Button>
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => decline.mutate({ entryId: entry.id })}>
-              Not now
-            </Button>
-            <span className="text-[13px] text-muted-foreground">Nothing happens until you press this.</span>
+            <span className="text-[13px] text-muted-foreground">
+              {armed ? "Press again to confirm." : "Nothing happens until you press this."}
+            </span>
           </div>
         ) : null}
         {confirm.error || decline.error ? (
