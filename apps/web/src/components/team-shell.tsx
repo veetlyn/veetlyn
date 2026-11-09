@@ -55,7 +55,8 @@ const PLACES: { label: string; icon: LucideIcon; pages: SectionPage[] }[] = [
   { label: "Finances", icon: Wallet, pages: ["payments", "payouts", "cases"] },
   { label: "Settings", icon: Settings, pages: ["settings", "members"] },
 ];
-const CHILD_LABELS: Partial<Record<SectionPage, string>> = { projects: "All projects", requests: "Requests", settings: "General" };
+const childLabel = (page: SectionPage) =>
+  page === "projects" ? "All projects" : page === "requests" ? "Requests" : page === "settings" ? "General" : PAGES[page].label;
 const RECENT_PROJECTS = 3;
 
 // Store pages that work for a store today; the others still read services-team data.
@@ -204,7 +205,7 @@ export default function TeamShell({
                           const current = isActive(href);
                           return (
                             <Link key={page} href={href} aria-current={current ? "page" : undefined} className={navItemClass(current)}>
-                              {CHILD_LABELS[page] ?? PAGES[page].label}
+                              {childLabel(page)}
                             </Link>
                           );
                         })}

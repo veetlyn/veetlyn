@@ -200,6 +200,7 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
 
   it("prepares one quote per open request as a card, once, and only for someone who can send it", async () => {
     const { adminId, freelancerId, projectId, teamId } = await setup();
+    await db.update(servicesTeamSettings).set({ quotingMode: "team" }).where(eq(servicesTeamSettings.teamId, teamId));
     const draft = { projectId, items: [{ description: "Logo", amountMinor: 90_000 }], deliveryDays: 10 };
     const model = scriptedModel([
       use("propose_quote_create", { card: "The brief asks for a logo only.", input: draft }),

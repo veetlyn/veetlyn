@@ -107,10 +107,10 @@ export default function ServicesTeamDashboard({
   const started = useRef(false);
   const requestCount = projects.data?.filter((p) => p.status === "quoting").length ?? 0;
   useEffect(() => {
-    if (started.current || !admin || !teamId || requestCount === 0) return;
+    if (started.current || !teamId || requestCount === 0) return;
     started.current = true;
     drafting.mutate({ teamId });
-  }, [admin, teamId, requestCount, drafting]);
+  }, [teamId, requestCount, drafting]);
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
       onSuccess: () =>

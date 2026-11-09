@@ -32,7 +32,7 @@ async function draftDirective(deps: Deps, project: { id: string; teamId: string;
 // else's identity, and only people who can send a quote spend model calls.
 export async function prepareNextDraft(deps: Deps, scope: ResolvedNode): Promise<{ title: string } | null> {
   const seller = scope.seller;
-  if (!seller || seller.role.product !== "services" || seller.role.role !== "admin") return null;
+  if (!seller || seller.role.product !== "services") return null;
   const { db } = deps.actions;
   const settings = await getServicesTeamSettings(db, seller.id);
   if (!settings) return null;
