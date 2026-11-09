@@ -31,7 +31,7 @@ import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
 import { deliveryFileUrl, pinnedRulebookRules, type ProjectActor } from "./projects";
 import { projectRuleSummary } from "./rulebooks";
-import { findLatestDisputeForProject, listProjectMemberMarks, pendingScheduleRunAt } from "@jendal-workspace/db/repositories/operating-model";
+import { findLatestDisputeForProject, listProjectMemberMarks, listProjectSchedule, pendingScheduleRunAt } from "@jendal-workspace/db/repositories/operating-model";
 
 
 function qualityRefundCap(rules: RulebookRules | null, status: ProjectStatus, quoteMinor: number | undefined): number | null {
@@ -111,7 +111,7 @@ export async function getTeamProjectView(
   const seesPayee = viewer.role === "admin" || payeeId === viewer.actorId;
   const seesMarks = viewer.role === "admin" || viewer.role === "manager";
   const rules = await pinnedRulebookRules(db, row.rulebookId);
-  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee, latestDispute, marks] = await Promise.all([
+  const [contacts, quotes, amendments, payments, deliveries, refund, senderCountry, payee, latestDispute, marks, schedule] = await Promise.all([
     listProjectContacts(db, row.id),
     listProjectQuotes(db, row.id),
     listProjectAmendments(db, row.id),
@@ -122,6 +122,7 @@ export async function getTeamProjectView(
     payeeId && seesPayee ? getPayoutDestination(db, payeeId) : null,
     findLatestDisputeForProject(db, row.id),
     seesMarks ? listProjectMemberMarks(db, { teamId: viewer.teamId, projectId: row.id }) : [],
+    listProjectSchedule(db, { teamId: viewer.teamId, projectId: row.id }),
   ]);
   // The legacy client columns stay server-side: the contacts say who the client is.
   const { clientEmail: _email, clientName: _name, clientDiscordId: _discord, ...project } = row;
@@ -163,6 +164,8 @@ export async function getTeamProjectView(
       resolvedAt: latestDispute.resolvedAt,
     },
     marks,
+    // What will run on its own. Someone who only sees the request sees only the request's own timers.
+    schedule: requestOnly ? schedule.filter((item) => item.kind.startsWith("request.")) : schedule,
     role: viewer.role,
     quotingMode: settings?.quotingMode ?? "assigned",
     solo: settings?.solo ?? false,

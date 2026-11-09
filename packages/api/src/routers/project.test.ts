@@ -27,7 +27,7 @@ import {
 import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limits";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { user } from "@jendal-workspace/db/schema/auth";
-import { outboxDelivery, rulebookAcceptance } from "@jendal-workspace/db/schema/operating-model";
+import { outboxDelivery, rulebookAcceptance, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import { ensurePublishedRulebook, publishRulebook, recordMemberMark, saveRulebookDraft, upsertDispute } from "@jendal-workspace/db/repositories/operating-model";
 import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
@@ -419,6 +419,26 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(seenByAicha.quotes.map((q) => q.id)).toEqual([aichaQuote]);
     const seenByAdmin = await callerFor(userId).project.get({ teamSlug: "team", projectId });
     expect(seenByAdmin.quotes.map((q) => q.id).toSorted()).toEqual([aichaQuote, benQuote].toSorted());
+  });
+
+  it("shows what will run on its own, soonest first, and only the request's timers to someone seeing just the request", async () => {
+    const { userId, teamId, organizationId } = await seedServicesTeamWithAgreedAdmin(db);
+    const { projectId } = await createProject(userId);
+    await db.delete(scheduleItem).where(eq(scheduleItem.subjectId, projectId));
+    const steps = [
+      { kind: "project.abandon", runAt: new Date("2026-12-20T00:00:00Z"), status: "pending" },
+      { kind: "request.expire", runAt: new Date("2026-12-10T00:00:00Z"), status: "paused" },
+      { kind: "request.remind", runAt: new Date("2026-12-01T00:00:00Z"), status: "done" },
+    ] as const;
+    await db.insert(scheduleItem).values(steps.map((step) => ({ ...step, teamId, subjectId: projectId })));
+
+    const view = await callerFor(userId).project.get({ teamSlug: "team", projectId });
+    expect(view.schedule.map((item) => [item.kind, item.status])).toEqual([["request.expire", "paused"], ["project.abandon", "pending"]]);
+
+    const freelancer = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const seen = await callerFor(freelancer).project.get({ teamSlug: "team", projectId });
+    expect(seen.schedule.map((item) => item.kind)).toEqual(["request.expire"]);
   });
 
   it("lists and shows projects only to members who may see them", async () => {

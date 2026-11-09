@@ -17,6 +17,7 @@ import AgentText from "@/components/agent-text";
 import ComposerBox from "@/components/composer-box";
 import Loader from "@/components/loader";
 import { authClient } from "@/lib/auth-client";
+import { scheduleLabel, scheduleWhen } from "@/lib/project-schedule";
 import { trpc } from "@/utils/trpc";
 
 type Entry = inferRouterOutputs<AppRouter>["agent"]["thread"]["entries"][number];
@@ -236,6 +237,7 @@ export default function TeamCalls({
   // Every hook above runs on each render; only now may the first load stop here.
   if (calls.isPending) return <Loader />;
   const firstName = session?.user.name.split(/\s+/)[0] ?? "";
+  const nextScheduled = project.data?.schedule[0] ?? null;
   const scopeLabel = onTable ? project.data?.project.title ?? "Project" : scopeName;
 
   const composer = (
@@ -282,6 +284,7 @@ export default function TeamCalls({
             <Link href={projectHref(onTable)} className="underline underline-offset-4">
               {project.data?.project.title ?? "this project"}
             </Link>
+            {nextScheduled ? ` · Scheduled: ${scheduleLabel(nextScheduled.kind)}, ${scheduleWhen(nextScheduled)}` : null}
           </p>
         ) : null}
         {activeCallId && thread.isPending ? <Loader /> : null}
