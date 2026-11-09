@@ -220,6 +220,37 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     expect(model.requests[0]?.messages.at(-1)?.role).toBe("user");
   });
 
+  it("suggests only what this person can reach, and gives the model only the projects they could mention", async () => {
+    const { adminId, freelancerId, projectId, teamId } = await setup();
+    await db.update(project).set({ assignedFreelancerId: freelancerId }).where(eq(project.id, projectId));
+    const hidden = await seedProject(db, { teamId, title: "Payroll audit", status: "in_progress" });
+    const node = { kind: "seller" as const, teamId };
+
+    const forAdmin = await callerFor(adminId).agent.composer({ node });
+    expect(forAdmin.records.map((record) => record.title).sort()).toEqual(["Baobab logo", "Payroll audit"]);
+    expect(forAdmin.actions.map((action) => action.label)).toContain("Approve a payout");
+
+    const forFreelancer = await callerFor(freelancerId).agent.composer({ node });
+    expect(forFreelancer.records.map((record) => record.id)).not.toContain(hidden);
+    expect(forFreelancer.actions.map((action) => action.label)).not.toContain("Approve a payout");
+
+    await db.update(servicesTeamSettings).set({ agentPayouts: false }).where(eq(servicesTeamSettings.teamId, teamId));
+    expect((await callerFor(adminId).agent.composer({ node })).actions.map((action) => action.label)).not.toContain("Approve a payout");
+
+    const model = scriptedModel([say("Looking.")]);
+    await callerFor(freelancerId, model).agent.ask({ node, message: "What about @Payroll audit and @Baobab logo?" });
+    const sent = JSON.stringify(model.requests[0]?.messages);
+    expect(sent).not.toContain(hidden);
+    expect(sent).toContain(projectId);
+
+    const twin = await seedProject(db, { teamId, title: "Baobab logo", status: "quoting" });
+    const tagged = scriptedModel([say("That one.")]);
+    await callerFor(adminId, tagged).agent.ask({ node, message: `Quote @Baobab logo #${twin.slice(0, 4)} please` });
+    const taggedSent = JSON.stringify(tagged.requests[0]?.messages);
+    expect(taggedSent).toContain(twin);
+    expect(taggedSent).not.toContain(projectId);
+  });
+
   describe("when a request arrives", () => {
     const quote = (projectId: string) => [
       use("propose_quote_create", { card: "A logo only.", input: { projectId, items: [{ description: "Logo", amountMinor: 90_000 }], deliveryDays: 10 } }),

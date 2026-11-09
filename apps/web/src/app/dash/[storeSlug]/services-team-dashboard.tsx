@@ -246,7 +246,7 @@ export default function ServicesTeamDashboard({
   return (
     <>
       {hero}
-      <main className="mx-auto grid w-full max-w-6xl items-start gap-8 px-4 py-6 md:px-8 md:py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <main className="mx-auto grid w-full max-w-6xl items-start gap-8 px-4 py-6 md:px-8 md:py-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid min-w-0 gap-6">
           {embedded ? (
             <header className="grid gap-2">

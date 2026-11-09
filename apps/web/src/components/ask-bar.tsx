@@ -59,6 +59,7 @@ export default function AskBar({
           onSubmit={submit}
           placeholder={placeholder}
           scope={hero.scope}
+          node={node}
           busy={ask.isPending}
           className="rounded-[18px]"
         />

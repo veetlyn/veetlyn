@@ -248,6 +248,7 @@ export default function TeamCalls({
         onSubmit={() => send()}
         placeholder={activeCallId ? `Reply to ${assistantName}` : "What should we get done?"}
         scope={scopeLabel}
+        node={node}
         busy={ask.isPending}
         disabled={!available}
         autoFocus={!activeCallId}

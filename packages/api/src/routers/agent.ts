@@ -1,3 +1,4 @@
+import type { ProjectStatus } from "@jendal-workspace/core";
 import type { ContextNode } from "@jendal-workspace/core/context/node";
 import {
   findOwnAgentCall,
@@ -5,16 +6,19 @@ import {
   listOwnAgentCalls,
   listOwnPendingProposals,
 } from "@jendal-workspace/db/repositories/calls";
-import { setAgentLimits } from "@jendal-workspace/db/repositories/services-teams";
+import { getServicesTeamSettings, setAgentLimits } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamIdBySlug } from "@jendal-workspace/db/repositories/teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { perform } from "../actions/perform";
+import { projectList } from "../actions/projects";
 import { depsOf, requestOf } from "../actions/trpc";
 import { callsUnder, contextNodeInput, nodeOfCall, type ResolvedNode, resolveNode } from "../agent/node";
 import { proposalCard } from "../agent/effects";
 import { prepareNextDraft } from "../agent/prepare";
 import { confirmProposal, declineProposal } from "../agent/proposals";
+import { composerActions } from "../agent/tools";
 import { openCall } from "../agent/turn";
 import { type Context } from "../context";
 import { protectedProcedure, router } from "../index";
@@ -26,6 +30,8 @@ type SignedIn = Context & { session: NonNullable<Context["session"]> };
 
 const NOT_HERE = "Not found.";
 const PENDING_ON_HOME = 5;
+const MAX_COMPOSER_RECORDS = 200;
+const isFinished = (status: ProjectStatus) => ["completed", "cancelled", "declined", "expired", "abandoned"].includes(status);
 
 async function resolved(ctx: SignedIn, node: ContextNode): Promise<ResolvedNode> {
   const found = await resolveNode({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, node);
@@ -93,6 +99,29 @@ export const agentRouter = router({
       }),
     );
     return { pending: cards.filter((card) => card !== null) };
+  }),
+
+  // What the composer suggests after @ and /, for this person here. Suggestions only: everything is checked on send.
+  composer: protectedProcedure.input(z.object({ node: contextNodeInput })).query(async ({ ctx, input }) => {
+    const scope = await resolved(ctx, input.node);
+    const seller = scope.seller;
+    if (!seller || seller.role.product !== "services") return { records: [], actions: [] };
+    const [limits, projects] = await Promise.all([
+      getServicesTeamSettings(ctx.db, seller.id),
+      perform(
+        { deps: depsOf(ctx), actor: { kind: "user", userId: ctx.session.user.id }, surface: "web", request: requestOf(ctx), team: { id: seller.id } },
+        projectList,
+        {},
+      ),
+    ]);
+    return {
+      // Open work first, then the newest: what someone is likely to be talking about.
+      records: projects
+        .toSorted((a, b) => Number(isFinished(a.status)) - Number(isFinished(b.status)) || b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, MAX_COMPOSER_RECORDS)
+        .map(({ id, title, status, clientName }) => ({ id, title, status, clientName })),
+      actions: composerActions(scope, limits),
+    };
   }),
 
   // What this team's agent may prepare, set by an admin. Everything it prepares still waits for a person.
