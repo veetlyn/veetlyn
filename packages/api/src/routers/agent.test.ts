@@ -2,11 +2,14 @@ import { createTestAuth } from "@jendal-workspace/auth/testing";
 import { createFakeFileStore, type JsonObject } from "@jendal-workspace/core";
 import { actionLog } from "@jendal-workspace/db/schema/action-log";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
+import { outbox } from "@jendal-workspace/db/schema/outbox";
+import { project } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamMember, servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import { createTestDb, hasTestDatabase, seedOrganization, seedProject, seedStore, truncateAll } from "@jendal-workspace/db/testing/db";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { draftArrivedRequests } from "../agent/prepare";
 import { inProcessCallRuntime } from "../agent/runtime";
 import { createAgentServices } from "../agent/services";
 import { makeSession } from "../testing";
@@ -215,6 +218,99 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     const { entries } = await callerFor(adminId).agent.thread({ callId: pending[0]?.callId ?? "" });
     expect(entries.map((e) => e.author)).toEqual(["assistant", "assistant"]);
     expect(model.requests[0]?.messages.at(-1)?.role).toBe("user");
+  });
+
+  describe("when a request arrives", () => {
+    const quote = (projectId: string) => [
+      use("propose_quote_create", { card: "A logo only.", input: { projectId, items: [{ description: "Logo", amountMinor: 90_000 }], deliveryDays: 10 } }),
+      say("I prepared a quote."),
+    ];
+    function arrivalDeps(model: ReturnType<typeof scriptedModel>, dailyTurns = 50) {
+      const agent = createAgentServices(
+        { apiKey: "test-key", baseUrl: "https://model.test/v1", model: "muse-spark", dailyTurns: String(dailyTurns) },
+        model.fetch,
+      );
+      if (!agent) throw new Error("agent services");
+      const actions = { db, platformName: "Platform", files: createFakeFileStore(), auth };
+      return { actions, request: { requestId: "arrival", ip: null }, calls: inProcessCallRuntime(actions, agent) };
+    }
+    let sequence = 0;
+    async function arrives(teamId: string, projectId: string, type = "project.created", createdAt = new Date()) {
+      sequence += 1;
+      await db.insert(outbox).values({ teamId, projectId, type, sequence: 1_000 + sequence, createdAt, data: {} });
+    }
+    async function clientRequest(teamId: string, projectId: string, quotingMode: "team" | "assigned") {
+      await db.update(servicesTeamSettings).set({ quotingMode }).where(eq(servicesTeamSettings.teamId, teamId));
+      await db.update(project).set({ source: "web" }).where(eq(project.id, projectId));
+    }
+
+    it("prepares the quote once, as the first admin who can send it, and a visit to Home adds nothing", async () => {
+      const { adminId, freelancerId, projectId, teamId } = await setup();
+      await clientRequest(teamId, projectId, "team");
+      await arrives(teamId, projectId);
+      const model = scriptedModel(quote(projectId));
+
+      await expect(draftArrivedRequests(arrivalDeps(model), { limit: 1 })).resolves.toEqual({ drafted: 1, failed: 0 });
+
+      const { pending } = await callerFor(adminId).agent.pending({ node: { kind: "seller", teamId } });
+      expect(pending).toEqual([expect.objectContaining({ card: expect.objectContaining({ title: "Quote for Baobab logo" }) })]);
+      expect((await callerFor(freelancerId).agent.pending({ node: { kind: "seller", teamId } })).pending).toEqual([]);
+      const nothing = scriptedModel([]);
+      await expect(draftArrivedRequests(arrivalDeps(nothing), { limit: 1 })).resolves.toEqual({ drafted: 0, failed: 0 });
+      await arrives(teamId, projectId, "project.assigned");
+      await expect(draftArrivedRequests(arrivalDeps(nothing), { limit: 1 })).resolves.toEqual({ drafted: 0, failed: 0 });
+      await expect(callerFor(adminId, nothing).agent.prepareDrafts({ teamId })).resolves.toEqual({ drafted: null });
+      expect(nothing.requests).toEqual([]);
+    });
+
+    it("waits for the assignment where the assigned person quotes, then prepares it as them", async () => {
+      const { freelancerId, projectId, teamId } = await setup();
+      await clientRequest(teamId, projectId, "assigned");
+      await arrives(teamId, projectId);
+      const none = scriptedModel([]);
+      await expect(draftArrivedRequests(arrivalDeps(none), { limit: 1 })).resolves.toEqual({ drafted: 0, failed: 0 });
+      expect(none.requests).toEqual([]);
+
+      await db.update(project).set({ assignedFreelancerId: freelancerId }).where(eq(project.id, projectId));
+      await arrives(teamId, projectId, "project.assigned");
+      await expect(draftArrivedRequests(arrivalDeps(scriptedModel(quote(projectId))), { limit: 1 })).resolves.toEqual({ drafted: 1, failed: 0 });
+      expect((await callerFor(freelancerId).agent.pending({ node: { kind: "seller", teamId } })).pending).toHaveLength(1);
+    });
+
+    it("ignores old events, projects the team opened itself, and anything past the team's daily ceiling", async () => {
+      const { projectId, teamId } = await setup();
+      await db.update(servicesTeamSettings).set({ quotingMode: "team" }).where(eq(servicesTeamSettings.teamId, teamId));
+      const none = scriptedModel([]);
+      await arrives(teamId, projectId);
+      await expect(draftArrivedRequests(arrivalDeps(none), { limit: 1 })).resolves.toEqual({ drafted: 0, failed: 0 });
+
+      await db.update(project).set({ source: "web" }).where(eq(project.id, projectId));
+      await arrives(teamId, projectId, "project.created", new Date(Date.now() - 2 * 3_600_000));
+      await expect(draftArrivedRequests(arrivalDeps(none), { limit: 1 })).resolves.toEqual({ drafted: 0, failed: 0 });
+
+      const other = await seedProject(db, { teamId, title: "Second request", status: "quoting" });
+      await db.update(project).set({ source: "web" }).where(eq(project.id, other));
+      await arrives(teamId, projectId);
+      await arrives(teamId, other);
+      await expect(draftArrivedRequests(arrivalDeps(scriptedModel(quote(projectId)), 1), { limit: 1 })).resolves.toMatchObject({ drafted: 1 });
+      await expect(draftArrivedRequests(arrivalDeps(none, 1), { limit: 1 })).resolves.toEqual({ drafted: 0, failed: 0 });
+      expect(none.requests).toEqual([]);
+    });
+
+    it("lets only one of two visits at once prepare a request, and tries again after a failed turn", async () => {
+      const { adminId, projectId, teamId } = await setup();
+      await clientRequest(teamId, projectId, "team");
+      const failing = scriptedModel([]);
+      await callerFor(adminId, failing).agent.prepareDrafts({ teamId }).catch(() => null);
+
+      const model = scriptedModel(quote(projectId));
+      const results = await Promise.all([
+        callerFor(adminId, model).agent.prepareDrafts({ teamId }),
+        callerFor(adminId, model).agent.prepareDrafts({ teamId }),
+      ]);
+      expect(results.filter((result) => result.drafted !== null)).toHaveLength(1);
+      expect((await callerFor(adminId).agent.pending({ node: { kind: "seller", teamId } })).pending).toHaveLength(1);
+    });
   });
 
   it("offers no tool the team switched off, and prepares no quote then; only an admin can switch", async () => {

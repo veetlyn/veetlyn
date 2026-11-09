@@ -91,7 +91,7 @@ async function projectClientRecipients(db: DbExecutor, projectId: string, teamId
     .where(and(eq(projectClient.projectId, projectId), eq(project.teamId, teamId), eq(clientContact.teamId, teamId)));
 }
 
-async function teamPeople(db: DbExecutor, teamId: string) {
+export async function teamPeople(db: DbExecutor, teamId: string) {
   const [owner] = await db.select({ id: team.id, organizationId: team.organizationId }).from(team).where(eq(team.id, teamId)).limit(1);
   if (!owner) return [];
   return listServicesTeamMembers(db, owner);

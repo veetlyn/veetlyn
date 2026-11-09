@@ -35,7 +35,7 @@ const agent = createAgentServices({
 const callAgents = ENV.CALL_AGENT as DurableObjectNamespace<CallAgent>;
 
 // Turns run in the call's own Agent, so a call takes one turn at a time wherever its requests land.
-const calls: CallRuntime | undefined = agent && {
+export const calls: CallRuntime | undefined = agent && {
   dailyTurns: agent.dailyTurns,
   run: async (turn) => (await getAgentByName<Env, CallAgent>(callAgents, turn.callId)).runTurn(turn),
 };

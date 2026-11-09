@@ -1,4 +1,5 @@
 import type { JsonObject } from "@jendal-workspace/core";
+import { sql } from "drizzle-orm";
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { team } from "./organization";
@@ -20,11 +21,16 @@ export const outbox = pgTable(
     sequence: integer("sequence").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     noticesProcessedAt: timestamp("notices_processed_at"),
+    // When the agent picked up this request. Only arrivals are ever set; a failed pickup is left to the next Home visit.
+    agentDraftsProcessedAt: timestamp("agent_drafts_processed_at"),
     data: jsonb("data").$type<JsonObject>().notNull(),
   },
   (t) => [
     uniqueIndex("outbox_project_sequence_idx").on(t.projectId, t.sequence),
     index("outbox_teamId_createdAt_idx").on(t.teamId, t.createdAt),
     index("outbox_notices_pending_idx").on(t.noticesProcessedAt, t.createdAt),
+    index("outbox_agent_drafts_pending_idx")
+      .on(t.createdAt)
+      .where(sql`${t.agentDraftsProcessedAt} is null and ${t.type} in ('project.created', 'project.assigned')`),
   ],
 );

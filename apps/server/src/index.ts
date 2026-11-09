@@ -1,4 +1,5 @@
 import { createReadinessRoute } from "./routes/readiness";
+import { draftArrivedRequests } from "@jendal-workspace/api/agent/prepare";
 import { reconcileBilling } from "@jendal-workspace/api/billing/reconcile";
 import { releaseDescriptor } from "@jendal-workspace/core/release";
 import { trpcServer } from "@hono/trpc-server";
@@ -20,7 +21,8 @@ import { Hono, type ExecutionContext } from "hono";
 import type { AppEnv } from "./app-env";
 
 export { CallAgent } from "./agent/call-agent";
-import { createContext } from "./context";
+import { calls, createContext } from "./context";
+import { agentActionDeps } from "./agent/action-deps";
 import { discordRoute } from "./discord/route";
 import { ENV } from "./env.server";
 import { runMaintenance } from "./maintenance";
@@ -66,7 +68,7 @@ const app = new Hono<AppEnv>();
 app.use(evlog());
 app.use(noStoreByDefault);
 app.use("/api/auth/*", productionAuthGate(ENV.PUBLIC_ACCESS));
-app.use(wakeNoticesAfterMutation(deliverNotices));
+app.use(wakeNoticesAfterMutation((execution) => Promise.all([deliverNotices(execution), draftArrivals(execution, 1)]).then(() => undefined)));
 app.route("/", createReadinessRoute(async () => {
   const db = getDb();
   try { await db.$client`select 1`; }
@@ -87,6 +89,21 @@ async function deliverNotices(execution: ExecutionContext): Promise<void> {
   }
 }
 
+
+// A new or newly assigned request gets its quote prepared now, without waiting for someone to open Home.
+async function draftArrivals(execution: ExecutionContext, limit: number): Promise<{ drafted: number; failed: number }> {
+  if (!calls) return { drafted: 0, failed: 0 };
+  const db = getDb();
+  try {
+    const actions = await agentActionDeps(db, execution);
+    return await draftArrivedRequests({ actions, calls, request: { requestId: crypto.randomUUID(), ip: null } }, { limit });
+  } catch (error) {
+    log.error({ action: "agent.draft_arrivals", error: { name: errorName(error) } });
+    return { drafted: 0, failed: 0 };
+  } finally {
+    await db.$client.end();
+  }
+}
 
 app.use("*", async (c, next) => {
   const db = getDb();
@@ -237,6 +254,7 @@ export default {
           return { ...notices, sent: notices.sent + waitlist.sent, failed: notices.failed + waitlist.failed };
         },
         runScheduler: () => runDueScheduleItems({ db, now: () => new Date() }),
+        draftArrivedRequests: () => draftArrivals(ctx, 3),
       });
     } finally {
       ctx.waitUntil(db.$client.end());

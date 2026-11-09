@@ -5,19 +5,10 @@ import type { TurnRequest } from "@jendal-workspace/api/agent/turn";
 import { Agent } from "agents";
 
 import { ENV } from "../env.server";
-import {
-  createAuth,
-  createFileStore,
-  getDb,
-  getEmailServices,
-  getPayoutServices,
-  getPayPalServices,
-  logActionLogError,
-} from "../services";
+import { getDb } from "../services";
+import { agentActionDeps } from "./action-deps";
 
 export type CallAgentState = { turning: boolean };
-
-const files = createFileStore();
 
 // One Agent per call, named by the call's id (agentic dash design §6.4, Agents SDK). Postgres holds the call and its
 // thread; the Agent runs the call's turns one at a time and is where scheduled and event-driven turns will run. It is
@@ -40,20 +31,10 @@ export class CallAgent extends Agent<Env, CallAgentState> {
       dailyTurns: ENV.AGENT_DAILY_TURNS,
     });
     if (!agent) return { ok: false, code: "BAD_GATEWAY", message: "The assistant is not set up on this server." };
-    const waitUntil = { waitUntil: (promise: Promise<unknown>) => this.ctx.waitUntil(promise) };
     const db = getDb();
     this.setState({ turning: true });
     try {
-      const actions = {
-        db,
-        platformName: ENV.PLATFORM_NAME,
-        files,
-        auth: createAuth(db, { ...waitUntil, passThroughOnException: () => undefined, props: {} }),
-        paypal: getPayPalServices(),
-        payouts: await getPayoutServices(),
-        email: getEmailServices(waitUntil),
-        onLogError: logActionLogError,
-      };
+      const actions = await agentActionDeps(db, { waitUntil: (promise) => this.ctx.waitUntil(promise) });
       return await turnOutcome({ actions, agent, request: turn.request }, turn);
     } finally {
       this.setState({ turning: false });
