@@ -7,6 +7,7 @@ import {
   releaseDraftCall,
   resumeDraftCall,
   startDraftCall,
+  type CallPlace,
 } from "@jendal-workspace/db/repositories/calls";
 import { findProjectById, listProjectQuotes, listTeamProjects } from "@jendal-workspace/db/repositories/projects";
 import { findServicesOffering } from "@jendal-workspace/db/repositories/services-catalog";
@@ -46,7 +47,7 @@ const DRAFT_LEASE_MS = 5 * 60_000;
 // Events older than this are left to Home: a person told about a day-old request may already have answered it.
 const ARRIVAL_WINDOW_MS = 60 * 60_000;
 
-async function claimDraft(deps: Deps, place: Parameters<typeof startDraftCall>[1], now: Date) {
+async function claimDraft(deps: Deps, place: CallPlace & { userId: string; title: string }, now: Date) {
   const { db } = deps.actions;
   const earlier = await findLatestOwnCallAt(db, place);
   if (!earlier) return startDraftCall(db, { ...place, now });
