@@ -34,7 +34,7 @@ import { projectStatusLabel } from "@jendal-workspace/core";
 import { trpc } from "@/utils/trpc";
 
 const PAGES = {
-  requests: { label: "Open requests", icon: HandCoins },
+  requests: { label: "Requests", icon: HandCoins },
   projects: { label: "Projects", icon: FolderKanban },
   payments: { label: "Payments", icon: ArrowDownToLine },
   payouts: { label: "Payouts", icon: ArrowUpFromLine },

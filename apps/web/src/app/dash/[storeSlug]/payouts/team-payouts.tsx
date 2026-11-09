@@ -44,9 +44,9 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
             </Link>
             <span className="text-muted-foreground">: who approves payouts, and when they are sent.</span>
           </p>
+          <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
           <PayoutCredentialsCard teamSlug={team.slug} />
           <PayoutsWebSection teamSlug={team.slug} />
-          <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
         </>
       )}
     </main>

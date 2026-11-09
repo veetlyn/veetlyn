@@ -33,7 +33,7 @@ export default function OpenRequests({ teamSlug }: { teamSlug: string }) {
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
-        <h1 className="font-heading text-3xl">Open requests</h1>
+        <h1 className="font-heading text-3xl">Requests</h1>
         <p className="text-sm text-muted-foreground">
           Requests you can answer: ask the client a question, send a quote, or leave it to the team.
         </p>

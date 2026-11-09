@@ -22,6 +22,20 @@ import { proposalEffect } from "./effects";
 import { AGENT_ID, placeOf, type ResolvedNode } from "./node";
 import { type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
 
+// What a read tool is called on the thread's "Read …" line.
+const READ_LABELS = new Map([
+  ["project_list", "projects"],
+  ["project_get", "the project"],
+  ["request_list_open", "open requests"],
+  ["payout_list", "payouts"],
+  ["payout_balances", "payout balances"],
+  ["payout_rules_get", "payout rules"],
+  ["payment_list", "payments"],
+  ["dispute_list", "disputes"],
+  ["product_list", "products"],
+  ["order_list", "orders"],
+]);
+
 // A turn reads, proposes and answers within this many model calls.
 const MAX_MODEL_CALLS = 6;
 // Cards one turn may add, so text in a record cannot flood the person with proposals.
@@ -102,7 +116,7 @@ function capped(text: string): string {
 
 // proposalQueue: the SDK runs one step's tool calls at once; proposals wait their turn here, so cards keep the
 // model's order and the per-turn cap holds.
-type TurnState = { call: AgentCallRow; scope: CallScope; actor: Actor; proposals: number; proposalQueue: Promise<unknown> };
+type TurnState = { call: AgentCallRow; scope: CallScope; actor: Actor; proposals: number; proposalQueue: Promise<unknown>; labels: Set<string> };
 
 // Reads and proposals run at the call's seller, or in its workspace above the sellers.
 function placeFor(call: AgentCallRow): Pick<PerformRequest, "team" | "workspace"> {
@@ -120,6 +134,7 @@ async function runTool(deps: TurnDeps, state: TurnState, agentTool: AgentTool, r
         { deps: deps.actions, actor, surface: "agent", request: deps.request, ...placeFor(call) },
         rawInput,
       );
+      state.labels.add(READ_LABELS.get(agentTool.name) ?? "records");
       return capped(result);
     } catch (error) {
       return toActionError(error).message;
@@ -234,7 +249,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });
   }
 
-  const state: TurnState = { call, scope, actor: agentFor(scope), proposals: 0, proposalQueue: Promise.resolve() };
+  const state: TurnState = { call, scope, actor: agentFor(scope), proposals: 0, proposalQueue: Promise.resolve(), labels: new Set() };
   const offered = toolsFor(scope);
   const tools = Object.fromEntries(
     offered.map((agentTool) => [
@@ -270,5 +285,11 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     // The provider's own words stay in the server log; the person's message is kept and can be sent again.
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The assistant did not answer. Try again in a moment.", cause });
   }
-  await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "assistant", body: answer.join("\n\n") || "Done." });
+  await insertAgentCallEntry(db, {
+    callId: call.id,
+    kind: "message",
+    author: "assistant",
+    body: answer.join("\n\n") || "Done.",
+    note: state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : undefined,
+  });
 }
