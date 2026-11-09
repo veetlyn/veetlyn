@@ -16,6 +16,7 @@ import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { DbExecutor } from "../executor";
 import { dispute, memberMark, memberNoticePreference, outboxDelivery, rulebook, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
 import { user } from "../schema/auth";
+import { project } from "../schema/projects";
 import { servicesTeamSettings } from "../schema/services-teams";
 
 export type RulebookRow = typeof rulebook.$inferSelect;
@@ -431,6 +432,43 @@ export async function pauseProjectSchedule(db: DbExecutor, input: { teamId: stri
     eq(scheduleItem.subjectId, input.projectId),
     eq(scheduleItem.status, "pending"),
   ));
+}
+
+const OPEN_DISPUTE_STATUSES = ["open", "waiting_for_seller", "under_review"] as const;
+
+// Whether an open case is about this payout's work: its project, or a project the member delivered or managed, since
+// a member's request draws on pooled earnings. A case with no project cannot be scoped, so it holds everyone.
+export async function openDisputeHoldsPayout(
+  db: DbExecutor,
+  input: { teamId: string; userId: string; projectId: string | null },
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: dispute.id })
+    .from(dispute)
+    .leftJoin(project, eq(project.id, dispute.projectId))
+    .where(
+      and(
+        eq(dispute.teamId, input.teamId),
+        inArray(dispute.status, OPEN_DISPUTE_STATUSES),
+        or(
+          isNull(dispute.projectId),
+          input.projectId ? eq(dispute.projectId, input.projectId) : undefined,
+          eq(project.assignedFreelancerId, input.userId),
+          eq(project.managerId, input.userId),
+        ),
+      ),
+    )
+    .limit(1);
+  return row !== undefined;
+}
+
+// The money open cases could take back, in one currency.
+export async function openDisputedMinor(db: DbExecutor, input: { teamId: string; currency: string }): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<number>`coalesce(sum(${dispute.amountMinor}), 0)::bigint`.mapWith(Number) })
+    .from(dispute)
+    .where(and(eq(dispute.teamId, input.teamId), eq(dispute.currency, input.currency), inArray(dispute.status, OPEN_DISPUTE_STATUSES)));
+  return row?.total ?? 0;
 }
 
 export async function teamHasOpenDispute(db: DbExecutor, teamId: string): Promise<boolean> {

@@ -35,7 +35,7 @@ export async function prepareNextDraft(deps: Deps, scope: ResolvedNode): Promise
   if (!seller || seller.role.product !== "services") return null;
   const { db } = deps.actions;
   const settings = await getServicesTeamSettings(db, seller.id);
-  if (!settings) return null;
+  if (!settings?.agentQuotes) return null;
   const quoting = (await listTeamProjects(db, seller.id)).filter((row) => row.status === "quoting");
   for (const row of quoting) {
     if ((await listProjectQuotes(db, row.id)).length > 0) continue;

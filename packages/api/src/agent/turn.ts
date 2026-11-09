@@ -9,6 +9,7 @@ import {
   insertAgentCallEntry,
   listAgentCallEntries,
 } from "@jendal-workspace/db/repositories/calls";
+import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "ai";
 
@@ -20,7 +21,7 @@ import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
 import { proposalEffect } from "./effects";
 import { AGENT_ID, placeOf, type ResolvedNode } from "./node";
-import { type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
+import { allowedByTeam, type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
 
 // What a read tool is called on the thread's "Read …" line.
 const READ_LABELS = new Map([
@@ -250,7 +251,8 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   }
 
   const state: TurnState = { call, scope, actor: agentFor(scope), proposals: 0, proposalQueue: Promise.resolve(), labels: new Set() };
-  const offered = toolsFor(scope);
+  const limits = scope.seller?.role.product === "services" ? await getServicesTeamSettings(db, scope.seller.id) : null;
+  const offered = toolsFor(scope).filter((agentTool) => allowedByTeam(agentTool, limits));
   const tools = Object.fromEntries(
     offered.map((agentTool) => [
       agentTool.name,
@@ -269,7 +271,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   try {
     const result = await generateText({
       model: deps.agent.model,
-      system: systemPrompt(deps.actions.platformName, scope, offered.length),
+      system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.`,
       messages: [
         ...historyMessages(await listAgentCallEntries(db, call.id)),
         ...(turn.directive ? [{ role: "user" as const, content: turn.message }] : []),
@@ -280,6 +282,8 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
       maxRetries: 1,
     });
     answer = result.steps.map((step) => step.text.trim()).filter((text) => text !== "");
+    // A turn nobody typed reports its result; the narration between its tool calls is not worth reading.
+    if (turn.directive) answer = answer.slice(-1);
     if (result.finishReason === "tool-calls") answer.push("I stopped here to keep this short. Ask me to go on.");
   } catch (cause) {
     // The provider's own words stay in the server log; the person's message is kept and can be sent again.

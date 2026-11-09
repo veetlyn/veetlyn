@@ -9,7 +9,7 @@ import {
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
-import { teamHasOpenDispute } from "@jendal-workspace/db/repositories/operating-model";
+import { openDisputeHoldsPayout } from "@jendal-workspace/db/repositories/operating-model";
 import { hasTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import {
   lockPayoutRequestByOfflineReference,
@@ -94,12 +94,14 @@ export async function exportPayoutsWeb(
 
   const csv = await deps.db.transaction(async (tx) => {
     // An open PayPal case can claw paid money back, so a file waits for it like an automatic send does.
-    if (await teamHasOpenDispute(tx, input.team.id)) {
-      throw new TRPCError({ code: "PRECONDITION_FAILED", message: DISPUTE_PAUSE });
-    }
     // Locked in id order so two overlapping exports cannot deadlock; the file keeps the order the admin chose.
     const locked = new Map<string, PayoutRequestRow>();
     for (const id of [...ids].sort()) locked.set(id, await lockTeamRequest(tx, input.team.id, id));
+    for (const request of locked.values()) {
+      if (await openDisputeHoldsPayout(tx, { teamId: input.team.id, userId: request.userId, projectId: request.projectId })) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: DISPUTE_PAUSE });
+      }
+    }
     const rows: PayoutsWebRow[] = [];
     for (const request of ids.flatMap((id) => locked.get(id) ?? [])) {
       const refusal = exportRefusal(request, now) ?? (await destinationHold(tx, request));

@@ -1,20 +1,4 @@
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  gt,
-  gte,
-  inArray,
-  isNotNull,
-  isNull,
-  lt,
-  lte,
-  or,
-  type SQL,
-  sql,
-  type SQLWrapper,
-} from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, or, type SQL, sql, type SQLWrapper, ne, notInArray } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
@@ -377,4 +361,24 @@ export async function listCompletedProjectsWithoutPayout(
     .orderBy(asc(ledgerTransfer.createdAt), asc(project.id))
     .limit(input.limit);
   return rows.flatMap(({ freelancerId, ...row }) => (freelancerId === null ? [] : [{ ...row, freelancerId }]));
+}
+
+// What a member was paid or is being paid since a time, other than one request: rejected and failed payouts moved nothing.
+export async function memberOtherPayoutsMinorSince(
+  db: DbExecutor,
+  input: { teamId: string; userId: string; since: Date; excludeRequestId?: string },
+): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<number>`coalesce(sum(${payoutRequest.amountMinor}), 0)::bigint`.mapWith(Number) })
+    .from(payoutRequest)
+    .where(
+      and(
+        eq(payoutRequest.teamId, input.teamId),
+        eq(payoutRequest.userId, input.userId),
+        gte(payoutRequest.createdAt, input.since),
+        notInArray(payoutRequest.status, ["rejected", "failed"]),
+        input.excludeRequestId ? ne(payoutRequest.id, input.excludeRequestId) : undefined,
+      ),
+    );
+  return row?.total ?? 0;
 }

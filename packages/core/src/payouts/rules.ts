@@ -99,7 +99,12 @@ export type PayoutFacts = {
   approverIds: readonly string[];
   balanceMinor: number | null;
   now: Date;
+  // The member's other payouts in the last SECOND_APPROVER_WINDOW_DAYS that were not rejected or failed: splitting a
+  // payout into smaller requests must not skip the second admin.
+  recentOtherMinor?: number;
 };
+
+export const SECOND_APPROVER_WINDOW_DAYS = 7;
 
 export type PayoutDecision =
   | { kind: "refused"; reason: string }
@@ -114,7 +119,7 @@ export function decidePayout(rules: PayoutRules, facts: PayoutFacts, currency: M
   const required =
     rules.secondApproverAboveMinor !== null &&
     applies(rules.secondApproverScope, facts.source) &&
-    facts.amountMinor > rules.secondApproverAboveMinor
+    facts.amountMinor + (facts.recentOtherMinor ?? 0) > rules.secondApproverAboveMinor
       ? 2
       : 1;
   const approvals = new Set(facts.approverIds.filter((id) => id !== facts.memberId)).size;

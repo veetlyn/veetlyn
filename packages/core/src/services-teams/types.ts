@@ -38,6 +38,10 @@ export type ServicesTeamSettings = {
   quotingMode: QuotingMode;
   // Null until an admin saves the settings once; the setup checklist reads it.
   settingsSavedAt: Date | null;
+  // What the team's agent may prepare for a person to confirm.
+  agentQuotes: boolean;
+  agentMessages: boolean;
+  agentPayouts: boolean;
   // S2: the guild this team is linked to; unique across teams (one server per team, one team per server).
   discordGuildId: string | null;
 };
@@ -65,6 +69,9 @@ export function defaultServicesTeamSettings(teamId: string): ServicesTeamSetting
     managerCutBps: 0,
     quotingMode: "assigned",
     settingsSavedAt: null,
+    agentQuotes: true,
+    agentMessages: true,
+    agentPayouts: true,
     discordGuildId: null,
   };
 }

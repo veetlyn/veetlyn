@@ -1580,6 +1580,31 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(await rowOf(id)).toMatchObject({ decidedByUserId: secondAdminId });
     });
 
+    it("counts a member's recent payouts toward the second admin, so splitting a payout does not skip it", async () => {
+      const { organizationId, teamId, admin, member } = await payoutTeam();
+      await seedServicesTeamMember(db, { organizationId, teamId, role: "admin", name: "Bo" });
+      await admin.payouts.saveRules({ ...MANUAL, secondApproverAbove: "500.00" });
+      const first = await member.payouts.request({ ...TEAM, amount: "300.00" });
+      await expect(admin.payouts.approve({ ...TEAM, requestId: first.id })).resolves.toMatchObject({ status: "sent", approvalsNeeded: 0 });
+      await db.update(payoutRequest).set({ status: "succeeded" }).where(eq(payoutRequest.id, first.id));
+
+      const second = await member.payouts.request({ ...TEAM, amount: "300.00" });
+      await expect(admin.payouts.approve({ ...TEAM, requestId: second.id })).resolves.toMatchObject({ status: "requested", approvalsNeeded: 1 });
+    });
+
+    it("holds only the payouts of the people on a disputed project", async () => {
+      const { teamId, memberId, admin, member } = await payoutTeam();
+      await admin.payouts.saveRules(MANUAL);
+      const elsewhere = await seedProject(db, { teamId, title: "Someone else's work", status: "in_progress" });
+      await upsertDispute(db, { teamId, projectId: elsewhere, paypalDisputeId: "PP-D-9", reason: "Not received", status: "open", amountMinor: null, currency: null });
+      const first = await member.payouts.request({ ...TEAM, amount: "10.00" });
+      await expect(admin.payouts.approve({ ...TEAM, requestId: first.id })).resolves.toMatchObject({ status: "sent" });
+      await db.update(payoutRequest).set({ status: "succeeded" }).where(eq(payoutRequest.id, first.id));
+
+      await db.update(project).set({ assignedFreelancerId: memberId }).where(eq(project.id, elsewhere));
+      await expect(member.payouts.request({ ...TEAM, amount: "10.00" })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    });
+
     it("lists the approvals a payout still needs and the team's admin count after an admin leaves", async () => {
       const { organizationId, teamId, admin, member } = await payoutTeam();
       const secondAdminId = await seedServicesTeamMember(db, { organizationId, teamId, role: "admin", name: "Bo" });
@@ -2080,7 +2105,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
 
       await expect(
         callerFor(adminId, services, atWednesday).payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId] }),
-      ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: "An open PayPal dispute pauses this team's payouts." });
+      ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: "An open PayPal dispute involves this member's work, so this payout waits for it." });
       expect(await rowOf(adaPayoutId)).toMatchObject({ status: "queued", offlineReference: null, offlineBatchId: null });
     });
 

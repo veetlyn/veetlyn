@@ -88,6 +88,14 @@ export function toolsFor(node: { seller: { role: SellerRole } | null; workspace:
   return AGENT_TOOLS.filter((tool) => tool.place === place && (!tool.needs || canServicesTeam(role, tool.needs)));
 }
 
+// The propose tools a team has switched off for its agent.
+export function allowedByTeam(tool: AgentTool, limits: { agentQuotes: boolean; agentMessages: boolean; agentPayouts: boolean } | null): boolean {
+  if (!limits || tool.mode !== "propose") return true;
+  if (tool.definition.name === quoteCreate.name) return limits.agentQuotes;
+  if (tool.definition.name === conversationPost.name) return limits.agentMessages;
+  return limits.agentPayouts;
+}
+
 // What the withheld tools cover, in the person's words: a missing tool gives the model no refusal to repeat.
 function withheldArea(action: ServicesTeamAction): string {
   switch (action) {

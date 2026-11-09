@@ -37,7 +37,7 @@ export function disputeIsOpen(status: DisputeStatus): boolean {
 
 // What the case does to the project, in the words the team needs.
 export function disputeEffect(status: DisputeStatus): string {
-  if (disputeIsOpen(status)) return "Timers and payouts are paused until PayPal closes the case.";
+  if (disputeIsOpen(status)) return "This project's timers and its people's payouts are paused until PayPal closes the case.";
   if (status === "resolved_seller") return "Timers and payouts resumed.";
   return "The project's timers stopped. PayPal returns the disputed amount to the client.";
 }
