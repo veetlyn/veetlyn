@@ -7,8 +7,9 @@ import {
   type Section,
   storeRoleFor,
 } from "@jendal-workspace/core/context/node";
+import { effectiveMemberAccess, FULL_ACCESS, type MemberAccess } from "@jendal-workspace/core";
 import type { AgentCallRow, CallPlace, CallsUnder } from "@jendal-workspace/db/repositories/calls";
-import { getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
+import { getMemberAccess, getServicesTeamSettings, servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamAccess } from "@jendal-workspace/db/repositories/teams";
 import { findWorkspaceMembership } from "@jendal-workspace/db/repositories/workspaces";
 import { z } from "zod";
@@ -33,6 +34,7 @@ export type ResolvedSeller = {
   name: string;
   slug: string;
   role: SellerRole;
+  access: MemberAccess;
   sections: SellerSection[];
 };
 
@@ -61,14 +63,15 @@ async function sellerFor(deps: Deps, userId: string, teamId: string): Promise<{ 
     if (!role) return null;
     const settings = await getServicesTeamSettings(db, teamId);
     const seller: SellerRole = { product: "services", role };
-    const sections = sellerSections({ seller, solo: settings?.solo ?? false, storeEnabled: settings?.storeEnabled ?? false });
-    return { seller: { id: team.id, name: team.name, slug: team.slug, role: seller, sections }, organizationId: team.organizationId };
+    const memberAccess = effectiveMemberAccess(role, await getMemberAccess(deps.actions.db, { teamId, userId }));
+    const sections = sellerSections({ seller, access: memberAccess, solo: settings?.solo ?? false, storeEnabled: settings?.storeEnabled ?? false });
+    return { seller: { id: team.id, name: team.name, slug: team.slug, role: seller, access: memberAccess, sections }, organizationId: team.organizationId };
   }
   const role = storeRoleFor(access.role, access.isTeamMember);
   if (!role) return null;
   const seller: SellerRole = { product: "store", role };
   const sections = sellerSections({ seller, solo: false, storeEnabled: true });
-  return { seller: { id: team.id, name: team.name, slug: team.slug, role: seller, sections }, organizationId: team.organizationId };
+  return { seller: { id: team.id, name: team.name, slug: team.slug, role: seller, access: FULL_ACCESS, sections }, organizationId: team.organizationId };
 }
 
 // The project as the person may see it now, through the registry like every other read.

@@ -70,7 +70,7 @@ import { TRPCError } from "@trpc/server";
 
 import { requireCanSell, requireStorageFor } from "../billing/entitlements";
 
-export type ProjectActor = { teamId: string; role: ServicesTeamRole; actorId: string };
+export type ProjectActor = { teamId: string; role: ServicesTeamRole; access?: import("@jendal-workspace/core").MemberAccess; actorId: string };
 
 // Exported for the sibling use-case modules (requests.ts) so every procedure fails the same way.
 export function fail(code: "NOT_FOUND" | "FORBIDDEN" | "BAD_REQUEST" | "TOO_MANY_REQUESTS", message: string): never {

@@ -9,7 +9,7 @@ import {
   insertAgentCallEntry,
   listAgentCallEntries,
 } from "@jendal-workspace/db/repositories/calls";
-import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import { getServicesTeamSettings, memberHistorySince } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "ai";
 
@@ -21,7 +21,7 @@ import { conversationPost } from "../actions/conversations";
 import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
 import { proposalEffect } from "./effects";
-import { AGENT_ID, placeOf, type ResolvedNode } from "./node";
+import { AGENT_ID, placeOf, resolveNode, type ResolvedNode } from "./node";
 import { allowedByTeam, type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
 
 // What a read tool is called on the thread's "Read …" line.
@@ -262,9 +262,14 @@ async function mentionedRecords(deps: TurnDeps, state: TurnState, turn: TurnRequ
 // a time per call.
 export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<void> {
   const { db } = deps.actions;
-  const { scope } = turn;
+  const scope = await resolveNode(deps, turn.scope.userId, turn.scope.node);
+  if (!scope) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
   const call = await findOwnAgentCall(db, { callId: turn.callId, userId: scope.userId });
   if (!call) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
+  if (call.teamId) {
+    const since = await memberHistorySince(db, { teamId: call.teamId, userId: scope.userId });
+    if (since && call.openedAt <= since) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
+  }
   // A retry after a failed turn: the question is already in the thread.
   if (!turn.directive && !isUnanswered(await listAgentCallEntries(db, call.id), turn.message)) {
     await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "person", body: turn.message.trim() });

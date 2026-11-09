@@ -18,7 +18,7 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
   if (result.isPending) return <Loader />;
   if (result.isError) return <TeamNotFound />;
 
-  const { team, role, settings } = result.data;
+  const { team, role, settings, access } = result.data;
   const solo = settings?.solo ?? false;
 
   return (
@@ -28,7 +28,7 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
         <p className="text-sm text-muted-foreground">
           Payouts are for teams. As a solo seller, clients pay you directly in your PayPal account.
         </p>
-      ) : !canServicesTeam(role, "approve_payouts") ? (
+      ) : !canServicesTeam(role, "approve_payouts") && !access.moneyViewer ? (
         <p className="text-sm text-muted-foreground">
           Only an admin can manage payouts. You can ask for a payout of your own earnings on{" "}
           <Link href="/me/payouts" className="underline underline-offset-4">
@@ -38,15 +38,19 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
         </p>
       ) : (
         <>
-          <p className="text-sm">
-            <Link href={`/${team.slug}/payouts/rules`} className="underline underline-offset-4">
-              Payout rules
-            </Link>
-            <span className="text-muted-foreground">: who approves payouts, and when they are sent.</span>
-          </p>
+          {canServicesTeam(role, "approve_payouts") ? (
+            <p className="text-sm">
+              <Link href={`/${team.slug}/payouts/rules`} className="underline underline-offset-4">
+                Payout rules
+              </Link>
+              <span className="text-muted-foreground">: who approves payouts, and when they are sent.</span>
+            </p>
+          ) : null}
           <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
-          <PayoutCredentialsCard teamSlug={team.slug} />
-          <PayoutsWebSection teamSlug={team.slug} />
+          {canServicesTeam(role, "approve_payouts") ? <>
+            <PayoutCredentialsCard teamSlug={team.slug} />
+            <PayoutsWebSection teamSlug={team.slug} />
+          </> : <p className="text-sm text-muted-foreground">Read-only access. An admin handles approvals and sends.</p>}
         </>
       )}
     </main>

@@ -246,6 +246,7 @@ export default function ProjectDetail({
     dispute,
     marks,
     schedule,
+    financesHidden,
     revisionRounds,
     qualityRefundCapMinor,
     role,
@@ -387,6 +388,7 @@ export default function ProjectDetail({
         </section>
       ) : null}
 
+      {financesHidden ? null : (
       <section id="quotes" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Quotes</h2>
         {quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotes yet.</p> : null}
@@ -451,7 +453,9 @@ export default function ProjectDetail({
           </form>
         ) : null}
       </section>
+      )}
 
+      {financesHidden ? null : (
       <section id="amendments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Amendments</h2>
         {revisionRounds && revisionRounds.used >= revisionRounds.allowed && revisionRounds.paidPriceMinor > 0 && project.status === "delivered" && !pendingAmendment ? (
@@ -522,6 +526,7 @@ export default function ProjectDetail({
           </form>
         ) : null}
       </section>
+      )}
 
       <section id="deliveries" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Deliveries</h2>
@@ -639,6 +644,7 @@ export default function ProjectDetail({
           </ul>
         </section>
       ) : null}
+      {financesHidden ? null : (
       <section id="payments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
@@ -667,6 +673,7 @@ export default function ProjectDetail({
           </div>
         ))}
       </section>
+      )}
 
       {refund ? (
         <RefundSection
@@ -680,7 +687,7 @@ export default function ProjectDetail({
         />
       ) : null}
 
-      <QualityRefundForm teamSlug={teamSlug} project={project} role={role} capMinor={qualityRefundCapMinor} onChanged={refresh} />
+      {financesHidden ? null : <QualityRefundForm teamSlug={teamSlug} project={project} role={role} capMinor={qualityRefundCapMinor} onChanged={refresh} />}
 
       <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} />
       </aside>

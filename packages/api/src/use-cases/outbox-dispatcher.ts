@@ -1,4 +1,4 @@
-import { conversationAccess, errorName, readableSpaces } from "@jendal-workspace/core";
+import { conversationAccess, effectiveMemberAccess, errorName, projectHidden, readableSpaces } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor } from "@jendal-workspace/db/executor";
 import {
@@ -21,7 +21,7 @@ import { project } from "@jendal-workspace/db/schema/projects";
 import { conversationMessage, memberDepartment } from "@jendal-workspace/db/schema/conversations";
 import { memberNoticePreference } from "@jendal-workspace/db/schema/operating-model";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
-import { listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
+import { listMemberAccess, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 import {
   clientNoticeEmail,
   disputeAlertEmail,
@@ -77,6 +77,7 @@ const MEMBER_NOTICE_EVENTS = new Map<string, MemberNoticeKey>([
 ]);
 
 const PAYOUT_EVENTS = new Set(["payout.requested", "payout.approved", "payout.queued", "payout.sent", "payout.failed"]);
+const PROJECT_MONEY_NOTICES = new Set(["quote.accepted", "payment.captured", "project.late_refund_proposed"]);
 const DISPUTE_EVENTS = new Set(["dispute.opened", "dispute.updated", "dispute.resolved"]);
 
 type ClientRecipient = { email: string; name: string; contactId: string; linkVersion: number };
@@ -136,13 +137,16 @@ async function memberRecipients(db: DbExecutor, event: OutboxRow): Promise<strin
   if (event.type === "project.assigned" && row.status !== "quoting") return [];
   const message = await eventMessage(db, event);
   if (!memberNoticeKey(event, message)) return [];
-  const [people, departments, facts] = await Promise.all([
+  const [people, departments, facts, limits] = await Promise.all([
     teamPeople(db, event.teamId),
     db.select().from(memberDepartment).where(eq(memberDepartment.teamId, event.teamId)),
     accessFactsFor(db, row),
+    listMemberAccess(db, event.teamId),
   ]);
   const space = message?.space ?? (["project.created", "project.assigned", "request.remind"].includes(event.type) ? "request" : "project");
   const emails = people.filter((person) => {
+    const access = effectiveMemberAccess(person.role, limits.get(person.userId) ?? null);
+    if (projectHidden(access, row.status) || (access.hideProjectFinances && PROJECT_MONEY_NOTICES.has(event.type))) return false;
     if (event.type === "project.assigned" && person.userId !== row.assignedFreelancerId) return false;
     return readableSpaces(conversationAccess({
       kind: "member", role: person.role, userId: person.userId,

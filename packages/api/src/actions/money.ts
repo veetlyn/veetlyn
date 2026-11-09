@@ -1,4 +1,4 @@
-import { canServicesTeam } from "@jendal-workspace/core";
+import { canReadMoney, canServicesTeam, FULL_ACCESS } from "@jendal-workspace/core";
 import { listTeamDisputes, listTeamPayments } from "@jendal-workspace/db/repositories/money";
 import { z } from "zod";
 
@@ -17,7 +17,7 @@ export const paymentList = defineAction({
   allow: [{ grant: "member" }],
   run: async (context) => {
     const actor = teamActorOf(context);
-    if (!canServicesTeam(actor.role, "approve_payouts")) throw new ActionError("forbidden", "Only an admin can see payments.");
+    if (!canReadMoney(actor.role, actor.access ?? FULL_ACCESS)) throw new ActionError("forbidden", "Only an admin can see payments.");
     return listTeamPayments(context.deps.db, actor.teamId);
   },
 });
@@ -33,7 +33,7 @@ export const disputeList = defineAction({
   allow: [{ grant: "member" }],
   run: async (context) => {
     const actor = teamActorOf(context);
-    if (!canServicesTeam(actor.role, "resolve_cases")) throw new ActionError("forbidden", "Only an admin can see PayPal cases.");
+    if (!canServicesTeam(actor.role, "resolve_cases") && !actor.access?.moneyViewer) throw new ActionError("forbidden", "Only an admin can see PayPal cases.");
     return listTeamDisputes(context.deps.db, actor.teamId);
   },
 });

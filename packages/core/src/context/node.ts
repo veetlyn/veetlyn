@@ -1,3 +1,4 @@
+import { FULL_ACCESS, type HideableArea, type MemberAccess } from "../services-teams/access";
 import { canServicesTeam } from "../services-teams/permissions";
 import type { ServicesTeamRole } from "../services-teams/types";
 import { hasStoreWideRole } from "../tenancy/access";
@@ -57,6 +58,8 @@ export type SectionPage = "requests" | "projects" | "payments" | "payouts" | "ca
 
 export type SellerFacts = {
   seller: SellerRole;
+  // What an admin set for this member; everyone else has full access.
+  access?: MemberAccess;
   // A services team run by one person: no open requests, payouts or members.
   solo: boolean;
   // A services team that also sells downloads (a store is always selling them).
@@ -69,24 +72,27 @@ export type SellerSection = { section: Section; pages: SectionPage[] };
 // dash frame and the assistant both read this, so the sidebar and what the assistant offers never disagree. Sections
 // with no page are left out.
 export function sellerSections(facts: SellerFacts): SellerSection[] {
-  const { seller, solo, storeEnabled } = facts;
+  const { seller, solo, storeEnabled, access = FULL_ACCESS } = facts;
+  const shown = (area: HideableArea) => !access.hidden.includes(area);
   const pages: Record<Section, (SectionPage | false)[]> =
     seller.product === "services"
       ? {
-          requests: [!solo && "requests"],
-          projects: ["projects"],
+          requests: [!solo && shown("requests") && "requests"],
+          projects: [shown("projects") && "projects"],
           money: [
-            canServicesTeam(seller.role, "approve_payouts") && "payments",
+            (canServicesTeam(seller.role, "approve_payouts") || access.moneyViewer) && "payments",
             !solo && "payouts",
-            canServicesTeam(seller.role, "resolve_cases") && "cases",
+            (canServicesTeam(seller.role, "resolve_cases") || access.moneyViewer) && "cases",
           ],
           // Services, Members and Settings open for every role; those pages show each role what it may change.
-          storefront: [
-            "services",
-            storeEnabled && "products",
-            storeEnabled && canServicesTeam(seller.role, "manage_settings") && "orders",
-            canServicesTeam(seller.role, "manage_settings") && "preview",
-          ],
+          storefront: shown("storefront")
+            ? [
+                "services",
+                storeEnabled && "products",
+                storeEnabled && canServicesTeam(seller.role, "manage_settings") && "orders",
+                canServicesTeam(seller.role, "manage_settings") && "preview",
+              ]
+            : [],
           team: [!solo && "members"],
           settings: ["settings"],
         }

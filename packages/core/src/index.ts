@@ -17,6 +17,7 @@ export * from "./sellers/publish";
 export * from "./sellers/quote-request";
 export * from "./services-teams/types";
 export * from "./services-teams/rates";
+export * from "./services-teams/access";
 export * from "./services-teams/permissions";
 export * from "./services-teams/setup-steps";
 export * from "./services-teams/catalog";

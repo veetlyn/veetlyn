@@ -30,7 +30,7 @@ import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
 import { usePlatformName } from "@/components/platform-name";
 import { sellerOptions, useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
-import { projectStatusLabel } from "@jendal-workspace/core";
+import { type HideableArea, projectStatusLabel } from "@jendal-workspace/core";
 import { trpc } from "@/utils/trpc";
 
 const PAGES = {
@@ -58,6 +58,17 @@ const PLACES: { label: string; icon: LucideIcon; pages: SectionPage[] }[] = [
 const childLabel = (page: SectionPage) =>
   page === "projects" ? "All projects" : page === "requests" ? "Requests" : page === "settings" ? "General" : PAGES[page].label;
 const RECENT_PROJECTS = 3;
+
+// The pages a limit can hide. A single project is decided by the server, by its stage.
+const AREA_OF_PAGE = new Map<string, HideableArea>([
+  ["requests", "requests"],
+  ["projects", "projects"],
+  ["services", "storefront"],
+  ["products", "storefront"],
+  ["orders", "storefront"],
+  ["preview", "storefront"],
+  ["from-ai", "storefront"],
+]);
 
 // Store pages that work for a store today; the others still read services-team data.
 const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
@@ -117,6 +128,8 @@ export default function TeamShell({
 
   const segments = pathname.split("/").filter(Boolean).slice(1);
   const projectId = segments[0] === "projects" && segments[1] && segments[1] !== "new" ? segments[1] : null;
+  const hiddenArea = projectId ? undefined : AREA_OF_PAGE.get(segments[0] ?? "");
+  const pageHidden = services && hiddenArea !== undefined && scope?.seller?.access.hidden.includes(hiddenArea) === true;
   // Where the assistant starts from on this page: the project open here, or the whole seller.
   const node: ContextNode | null = !teamId
     ? null
@@ -257,7 +270,17 @@ export default function TeamShell({
         ) : null
       }
     >
-      {children}
+      {pageHidden ? (
+        <main className="mx-auto w-full max-w-3xl space-y-3 px-4 py-6 md:px-7 md:py-8">
+          <h1 className="font-heading text-3xl">This page isn’t available to you</h1>
+          <p className="text-sm text-muted-foreground">An admin of {name} can change what you have access to.</p>
+          <Link href={`/${slug}`} className="text-sm underline underline-offset-4">
+            Back to Home
+          </Link>
+        </main>
+      ) : (
+        children
+      )}
     </AppFrame>
   );
 }

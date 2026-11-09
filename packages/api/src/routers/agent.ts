@@ -1,4 +1,4 @@
-import type { ProjectStatus } from "@jendal-workspace/core";
+import { hasNoLimits, isFinanceAction, type ProjectStatus } from "@jendal-workspace/core";
 import type { ContextNode } from "@jendal-workspace/core/context/node";
 import {
   findOwnAgentCall,
@@ -6,7 +6,7 @@ import {
   listOwnAgentCalls,
   listOwnPendingProposals,
 } from "@jendal-workspace/db/repositories/calls";
-import { getServicesTeamSettings, setAgentLimits } from "@jendal-workspace/db/repositories/services-teams";
+import { getServicesTeamSettings, memberHistorySince, setAgentLimits } from "@jendal-workspace/db/repositories/services-teams";
 import { findTeamIdBySlug } from "@jendal-workspace/db/repositories/teams";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -46,7 +46,24 @@ async function ownCall(ctx: SignedIn, id: string) {
   if (!call || !node) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
   const scope = await resolveNode({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, node);
   if (!scope) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
+  if (!(await stillVisible(ctx, scope, call, null))) throw new TRPCError({ code: "NOT_FOUND", message: "Call not found." });
   return { call, scope };
+}
+
+const hiddenFinance = (scope: ResolvedNode, action: string) =>
+  Boolean(scope.seller?.access.hideProjectFinances) && isFinanceAction(action);
+
+// A proposal made before an admin set a limit stops showing, on the same terms as anything else the person asks for.
+async function stillVisible(ctx: SignedIn, scope: ResolvedNode, call: { teamId: string | null; projectId: string | null; openedAt: Date }, action: string | null) {
+  if (call.teamId) {
+    const since = await memberHistorySince(ctx.db, { teamId: call.teamId, userId: ctx.session.user.id });
+    if (since && call.openedAt <= since) return false;
+  }
+  if (action && hiddenFinance(scope, action)) return false;
+  // Each check below reads the project as an agent read, so it runs only for someone an admin has limited.
+  if (!call.teamId || !call.projectId || (scope.seller && hasNoLimits(scope.seller.access))) return true;
+  const node = { kind: "record" as const, teamId: call.teamId, record: { type: "project" as const, id: call.projectId } };
+  return (await resolveNode({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, node)) !== null;
 }
 
 // The dash's assistant (calls design §5): calls a person opens at any node of their context tree, private to them.
@@ -65,10 +82,12 @@ export const agentRouter = router({
   }),
 
   calls: protectedProcedure.input(z.object({ node: contextNodeInput })).query(async ({ ctx, input }) => {
-    await resolved(ctx, input.node);
+    const scope = await resolved(ctx, input.node);
+    const rows = await listOwnAgentCalls(ctx.db, { userId: ctx.session.user.id, under: callsUnder(input.node) });
+    const shown = await Promise.all(rows.map(async (call) => (await stillVisible(ctx, scope, call, null)) ? call : null));
     return {
       available: ctx.calls !== undefined,
-      calls: await listOwnAgentCalls(ctx.db, { userId: ctx.session.user.id, under: callsUnder(input.node) }),
+      calls: shown.filter((call) => call !== null),
     };
   }),
 
@@ -82,7 +101,7 @@ export const agentRouter = router({
       entries: await Promise.all(
         entries.map(async ({ input: stored, ...entry }) => ({
           ...entry,
-          card: entry.kind === "proposal" && call.teamId && entry.action ? await proposalCard(ctx.db, call.teamId, entry.action, stored ?? {}) : null,
+          card: entry.kind === "proposal" && call.teamId && entry.action && !hiddenFinance(scope, entry.action) ? await proposalCard(ctx.db, call.teamId, entry.action, stored ?? {}) : null,
         })),
       ),
     };
@@ -90,10 +109,11 @@ export const agentRouter = router({
 
   // The decisions the assistant has prepared for this person at a node, for the home page's Needs you.
   pending: protectedProcedure.input(z.object({ node: contextNodeInput })).query(async ({ ctx, input }) => {
-    await resolved(ctx, input.node);
+    const scope = await resolved(ctx, input.node);
     const rows = await listOwnPendingProposals(ctx.db, { userId: ctx.session.user.id, under: callsUnder(input.node), limit: PENDING_ON_HOME });
     const cards = await Promise.all(
       rows.map(async ({ entry, call }) => {
+        if (!(await stillVisible(ctx, scope, call, entry.action))) return null;
         const card = call.teamId && entry.action ? await proposalCard(ctx.db, call.teamId, entry.action, entry.input ?? {}) : null;
         return card ? { id: entry.id, callId: call.id, note: entry.note, card } : null;
       }),

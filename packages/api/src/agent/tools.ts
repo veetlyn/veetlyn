@@ -1,4 +1,13 @@
-import { canServicesTeam, type JsonObject, type JsonValue, type ServicesTeamAction, type ServicesTeamRole } from "@jendal-workspace/core";
+import {
+  accessRefuses,
+  canServicesTeam,
+  FULL_ACCESS,
+  type JsonObject,
+  type JsonValue,
+  type MemberAccess,
+  type ServicesTeamAction,
+  type ServicesTeamRole,
+} from "@jendal-workspace/core";
 import type { SellerRole } from "@jendal-workspace/core/context/node";
 import { z } from "zod";
 
@@ -82,10 +91,15 @@ export function toolPlaceOf(node: { seller: { role: SellerRole } | null; workspa
 
 // The tools at a node, for the person's role there. Services tools also need the role's permission; the action's own
 // checks still run when it is performed.
-export function toolsFor(node: { seller: { role: SellerRole } | null; workspace: unknown }): AgentTool[] {
+export function toolsFor(node: { seller: { role: SellerRole; access?: MemberAccess } | null; workspace: unknown }): AgentTool[] {
   const place = toolPlaceOf(node);
   const role = node.seller?.role.product === "services" ? node.seller.role.role : null;
-  return AGENT_TOOLS.filter((tool) => tool.place === place && (!tool.needs || canServicesTeam(role, tool.needs)));
+  const access = node.seller?.access ?? FULL_ACCESS;
+  const roleAllows = (tool: AgentTool) =>
+    !tool.needs ||
+    canServicesTeam(role, tool.needs) ||
+    (access.moneyViewer && tool.mode === "read" && (tool.needs === "approve_payouts" || tool.needs === "resolve_cases"));
+  return AGENT_TOOLS.filter((tool) => tool.place === place && roleAllows(tool) && !accessRefuses(tool.definition.name, access, null));
 }
 
 // The propose tools a team has switched off for its agent.

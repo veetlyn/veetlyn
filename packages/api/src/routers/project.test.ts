@@ -31,6 +31,7 @@ import { outboxDelivery, rulebookAcceptance, scheduleItem } from "@jendal-worksp
 import { ensurePublishedRulebook, publishRulebook, recordMemberMark, saveRulebookDraft, upsertDispute } from "@jendal-workspace/db/repositories/operating-model";
 import { clientContact, clientIdentity, projectClient } from "@jendal-workspace/db/schema/contacts";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
+import { fanOutOutboxEvents } from "../use-cases/outbox-dispatcher";
 import { team as teamTable } from "@jendal-workspace/db/schema/organization";
 import { payment, project } from "@jendal-workspace/db/schema/projects";
 import { ledgerBalance, ledgerEntry, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
@@ -419,6 +420,44 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
     expect(seenByAicha.quotes.map((q) => q.id)).toEqual([aichaQuote]);
     const seenByAdmin = await callerFor(userId).project.get({ teamSlug: "team", projectId });
     expect(seenByAdmin.quotes.map((q) => q.id).toSorted()).toEqual([aichaQuote, benQuote].toSorted());
+  });
+
+  it("hides a project's money from a member limited that way, in the record, the conversation and the actions", async () => {
+    const { userId, teamId, organizationId } = await seedServicesTeamWithAgreedAdmin(db);
+    const { projectId } = await createProject(userId);
+    await db.update(servicesTeamSettings).set({ quotingMode: "team" }).where(eq(servicesTeamSettings.teamId, teamId));
+    await callerFor(userId).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14, freelancerId: userId });
+    const manager = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "manager" });
+    expect((await callerFor(manager).project.get({ teamSlug: "team", projectId })).quotes).toHaveLength(1);
+
+    await callerFor(userId).servicesTeam.setMemberAccess({ teamSlug: "team", userId: manager, hidden: [], hideProjectFinances: true, moneyViewer: false });
+    const view = await callerFor(manager).project.get({ teamSlug: "team", projectId });
+    expect(view).toMatchObject({ quotes: [], payments: [], amendments: [], refund: null, financesHidden: true });
+    expect(JSON.stringify(view.conversation.messages)).not.toMatch(/\$|sent a quote/);
+    await expect(
+      callerFor(manager).project.addQuote({ teamSlug: "team", projectId, items: ITEMS, deliveryDays: 14, freelancerId: userId }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      callerFor(userId).servicesTeam.setMemberAccess({ teamSlug: "team", userId, hidden: ["projects"], hideProjectFinances: false, moneyViewer: false }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("emails a new request only to members who can still see requests", async () => {
+    const { userId, teamId, organizationId } = await seedServicesTeamWithAgreedAdmin(db);
+    const { projectId } = await createProject(userId);
+    await db.update(project).set({ source: "web" }).where(eq(project.id, projectId));
+    await db.update(servicesTeamSettings).set({ quotingMode: "open" }).where(eq(servicesTeamSettings.teamId, teamId));
+    const open = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    const limited = await seedAgreedServicesTeamMember(db, { organizationId, teamId, role: "freelancer" });
+    await callerFor(userId).servicesTeam.setMemberAccess({ teamSlug: "team", userId: limited, hidden: ["requests"], hideProjectFinances: false, moneyViewer: false });
+    const [event] = await db.insert(outbox).values({ teamId, projectId, type: "project.created", sequence: 500, data: {} }).returning();
+    await db.delete(outboxDelivery);
+    await fanOutOutboxEvents({ db }, [event!]);
+
+    const sent = (await db.select({ to: outboxDelivery.recipient }).from(outboxDelivery)).map((row) => row.to);
+    const [openEmail, limitedEmail] = await Promise.all([open, limited].map(async (id) => (await db.select({ email: user.email }).from(user).where(eq(user.id, id)))[0]?.email));
+    expect(sent).toContain(openEmail);
+    expect(sent).not.toContain(limitedEmail);
   });
 
   it("shows what will run on its own, soonest first, and only the request's timers to someone seeing just the request", async () => {

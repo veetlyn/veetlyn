@@ -79,6 +79,38 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
   }
   // The node the test's calls open at: the team set up last.
   let current = { kind: "seller" as const, teamId: "" };
+
+  it("revokes saved threads and direct project reads while granting Money reads without payout authority", async () => {
+    const { adminId, managerId, projectId, teamId } = await setup();
+    const before = await callerFor(managerId, scriptedModel([say("Private project details.")])).agent.ask({
+      node: { kind: "seller", teamId }, message: "Show my work",
+    });
+    await callerFor(adminId).servicesTeam.setMemberAccess({
+      teamSlug: "walk-crew", userId: managerId, hidden: ["projects", "requests"], hideProjectFinances: true, moneyViewer: true,
+    });
+    const member = callerFor(managerId);
+    await expect(member.project.get({ teamSlug: "walk-crew", projectId })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await member.project.list({ teamSlug: "walk-crew" })).toEqual([]);
+    await expect(member.agent.thread({ callId: before.callId })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect((await member.agent.calls({ node: { kind: "seller", teamId } })).calls).toEqual([]);
+    await expect(member.money.payments({ teamSlug: "walk-crew" })).resolves.toBeDefined();
+    await expect(member.payouts.list({ teamSlug: "walk-crew" })).resolves.toMatchObject({ canDecide: false });
+    await expect(member.payouts.approve({ teamSlug: "walk-crew", requestId: crypto.randomUUID() })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const suggestions = await member.agent.composer({ node: { kind: "seller", teamId } });
+    expect(suggestions.records).toEqual([]);
+    expect(suggestions.actions).toEqual([]);
+    await expect(member.servicesTeam.setMemberAccess({
+      teamSlug: "walk-crew", userId: managerId, hidden: [], hideProjectFinances: false, moneyViewer: true,
+    })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("blocks private catalog routes when Shop is hidden", async () => {
+    const { adminId, managerId } = await setup();
+    await callerFor(adminId).servicesTeam.setMemberAccess({
+      teamSlug: "walk-crew", userId: managerId, hidden: ["storefront"], hideProjectFinances: false, moneyViewer: false,
+    });
+    await expect(callerFor(managerId).servicesCatalog.list({ teamSlug: "walk-crew" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
   const onProject = (id: string) => ({ kind: "record" as const, teamId: current.teamId, record: { type: "project" as const, id } });
 
   it("reads with the person's own access, offers only their tools, logs the reads, and stops at the daily cap", async () => {

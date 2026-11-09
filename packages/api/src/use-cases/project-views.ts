@@ -31,6 +31,7 @@ import { getClientRefundView, getStaffRefundView } from "./client-refunds";
 import { accessFactsForRows, type ConversationMessageView, conversationFor } from "./conversations";
 import { deliveryFileUrl, pinnedRulebookRules, type ProjectActor } from "./projects";
 import { projectRuleSummary } from "./rulebooks";
+import { FULL_ACCESS, projectHidden } from "@jendal-workspace/core";
 import { findLatestDisputeForProject, listProjectMemberMarks, listProjectSchedule, pendingScheduleRunAt } from "@jendal-workspace/db/repositories/operating-model";
 
 
@@ -41,12 +42,13 @@ function qualityRefundCap(rules: RulebookRules | null, status: ProjectStatus, qu
 // The team's projects the viewer may see: staff see all, freelancers what is assigned to them and the requests
 // the conversation audience rule opens to them.
 async function visibleProjects(db: Database, viewer: ProjectActor, rows: ProjectRow[]): Promise<ProjectRow[]> {
-  if (isProjectStaff(viewer.role)) return rows;
+  const shown = rows.filter((row) => !projectHidden(viewer.access ?? FULL_ACCESS, row.status));
+  if (isProjectStaff(viewer.role)) return shown;
   const [facts, departmentIds] = await Promise.all([
-    accessFactsForRows(db, viewer.teamId, rows),
+    accessFactsForRows(db, viewer.teamId, shown),
     memberDepartmentIds(db, { teamId: viewer.teamId, userId: viewer.actorId }),
   ]);
-  return rows.filter((row) => {
+  return shown.filter((row) => {
     const rowFacts = facts.get(row.id);
     return rowFacts !== undefined && canSeeProject({ role: viewer.role, actorId: viewer.actorId, departmentIds, facts: rowFacts });
   });
@@ -127,6 +129,7 @@ export async function getTeamProjectView(
   // The legacy client columns stay server-side: the contacts say who the client is.
   const { clientEmail: _email, clientName: _name, clientDiscordId: _discord, ...project } = row;
   const requestOnly = seesRequestOnly(viewer, row);
+  const financesHidden = viewer.access?.hideProjectFinances ?? false;
   const conversation = await conversationFor(db, { kind: "member", actor: viewer }, row, deps.platformName);
   return {
     project: requestOnly
@@ -135,25 +138,27 @@ export async function getTeamProjectView(
           brief: maskContactDetails(project.brief).shown,
           requestAnswers: project.requestAnswers.map((a) => ({ ...a, answer: maskContactDetails(a.answer).shown })),
         }
-      : project,
+      : financesHidden
+        ? { ...project, managementFeeBps: 0, teamCutBps: 0, managerCutBps: 0, upfrontBps: 0 }
+        : project,
     contacts: requestOnly ? [] : contacts,
     conversation,
     // Rival bids reach a freelancer only as the request space's one-line notice (conversations design §4); their
     // lines, author and status stay with staff.
-    quotes: isProjectStaff(viewer.role) ? quotes : quotes.filter((q) => q.freelancerId === viewer.actorId),
-    amendments,
-    payments,
+    quotes: financesHidden ? [] : isProjectStaff(viewer.role) ? quotes : quotes.filter((q) => q.freelancerId === viewer.actorId),
+    amendments: financesHidden ? [] : amendments,
+    payments: financesHidden ? [] : payments,
     deliveries: await withDeliveryFiles(db, deliveries),
-    refund,
+    refund: financesHidden ? null : refund,
     // The free rounds of changes and the paid revision price (AGT-49); null for projects without team rules.
-    revisionRounds: rules && {
+    revisionRounds: !financesHidden && rules ? {
       allowed: row.revisions,
       used: deliveries.filter((d) => d.status === "changes_requested").length,
       paidPriceMinor: rules.revisions.paidRevisionPriceMinor,
-    },
+    } : null,
     // The most a quality refund may take at the project's current stage (AGT-53); null when none can be set.
-    qualityRefundCapMinor: qualityRefundCap(rules, row.status, quotes.find((q) => q.status === "accepted")?.amountMinor),
-    dispute: latestDispute && {
+    qualityRefundCapMinor: financesHidden ? null : qualityRefundCap(rules, row.status, quotes.find((q) => q.status === "accepted")?.amountMinor),
+    dispute: latestDispute && !financesHidden ? {
       paypalDisputeId: latestDispute.paypalDisputeId,
       reason: latestDispute.reason,
       status: latestDispute.status,
@@ -162,8 +167,9 @@ export async function getTeamProjectView(
       currency: latestDispute.currency,
       openedAt: latestDispute.openedAt,
       resolvedAt: latestDispute.resolvedAt,
-    },
+    } : null,
     marks,
+    financesHidden,
     // What will run on its own. Someone who only sees the request sees only the request's own timers.
     schedule: requestOnly ? schedule.filter((item) => item.kind.startsWith("request.")) : schedule,
     role: viewer.role,

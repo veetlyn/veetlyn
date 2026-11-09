@@ -1,6 +1,8 @@
 import {
   ANY_AMOUNT_MINOR,
+  canReadMoney,
   canServicesTeam,
+  FULL_ACCESS,
   PAYDAYS,
   parseMajorAmount,
   PAYOUT_RULE_SCOPES,
@@ -89,6 +91,15 @@ async function teamFor(
   const team = await findServicesTeamById(context.deps.db, actor.teamId);
   if (!team) throw new ActionError("not_found", "Team not found.");
   return { team, userId: actor.actorId };
+}
+
+// Reading Money: admins, and anyone an admin made a money viewer. Everything that changes money uses teamFor.
+async function moneyTeamFor(context: TeamContext, refusal: string): Promise<ServicesTeamRecord> {
+  const actor = teamActorOf(context);
+  if (!canReadMoney(actor.role, actor.access ?? FULL_ACCESS)) throw new ActionError("forbidden", refusal);
+  const team = await findServicesTeamById(context.deps.db, actor.teamId);
+  if (!team) throw new ActionError("not_found", "Team not found.");
+  return team;
 }
 
 function requirePayPal(paypal: PayPalServices | undefined): PayPalServices {
@@ -191,8 +202,7 @@ export const payoutRulesGet = defineAction({
   scope: teamScope,
   allow: member,
   run: async (context) => {
-    const { team } = await teamFor(context, "manage_settings", SETTINGS_ONLY);
-    return getTeamPayoutRules(context.deps.db, team);
+    return getTeamPayoutRules(context.deps.db, await moneyTeamFor(context, SETTINGS_ONLY));
   },
 });
 
@@ -287,8 +297,9 @@ export const payoutList = defineAction({
   scope: teamScope,
   allow: member,
   run: async (context) => {
-    const { team } = await teamFor(context, "approve_payouts", PAYOUTS_ONLY);
-    return listTeamPayouts({ db: context.deps.db, now: context.deps.now }, team);
+    const team = await moneyTeamFor(context, PAYOUTS_ONLY);
+    const canDecide = canServicesTeam(teamActorOf(context).role, "approve_payouts");
+    return { ...(await listTeamPayouts({ db: context.deps.db, now: context.deps.now }, team)), canDecide };
   },
 });
 
@@ -303,8 +314,7 @@ export const payoutBalances = defineAction({
   scope: teamScope,
   allow: member,
   run: async (context) => {
-    const { team } = await teamFor(context, "approve_payouts", PAYOUTS_ONLY);
-    return listTeamMemberBalances(context.deps.db, team);
+    return listTeamMemberBalances(context.deps.db, await moneyTeamFor(context, PAYOUTS_ONLY));
   },
 });
 

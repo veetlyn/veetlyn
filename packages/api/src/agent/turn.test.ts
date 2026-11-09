@@ -1,4 +1,4 @@
-import type { ServicesTeamRole } from "@jendal-workspace/core";
+import { FULL_ACCESS, type ServicesTeamRole } from "@jendal-workspace/core";
 import { sellerSections } from "@jendal-workspace/core/context/node";
 import { describe, expect, it } from "vitest";
 
@@ -10,7 +10,7 @@ function inTeam(role: ServicesTeamRole): CallScope {
     node: { kind: "seller", teamId: "team-1" },
     userId: "u-1",
     workspace: { id: "org-1", name: "Walk Crew studio", role: "member" },
-    seller: { id: "team-1", name: "Walk Crew", slug: "walk-crew", role: seller, sections: sellerSections({ seller, solo: false, storeEnabled: false }) },
+    seller: { id: "team-1", name: "Walk Crew", slug: "walk-crew", role: seller, access: FULL_ACCESS, sections: sellerSections({ seller, solo: false, storeEnabled: false }) },
     section: null,
     project: null,
   };

@@ -109,6 +109,8 @@ function MemberDepartments({
   );
 }
 
+import MemberAccessEditor from "./member-access";
+
 export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
   const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
@@ -178,6 +180,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                 <div className="min-w-0">
                   <p className="truncate font-medium">{member.name}</p>
                   <p className="truncate text-sm text-muted-foreground">{member.email}</p>
+                  {isAdmin && member.role !== "admin" ? <MemberAccessEditor teamSlug={teamSlug} userId={member.userId} name={member.name} /> : null}
                   {/* Workspace admins have no team member row, so there is no title to save. */}
                   {isAdmin && !member.workspaceAdmin ? (
                     <MemberTitle teamSlug={teamSlug} member={member} />

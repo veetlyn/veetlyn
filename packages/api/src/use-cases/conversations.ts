@@ -385,10 +385,13 @@ function authorNameFor(m: ConversationMessageWithAuthor, viewer: Viewer, platfor
 }
 
 const RIVAL_QUOTE = "Another freelancer sent a quote.";
+const MONEY_EVENT = "A price or payment changed.";
+const MONEY_REFS = new Set(["quote", "amendment", "late_refund", "quality_refund"]);
 
 // Quote amounts are for the client and the team's staff; a freelancer sees their own quote and how many others came
 // in (contextual dash design, 2026-10-18).
-function shownBodyFor(m: ConversationMessageWithAuthor, viewer: Viewer, ownQuoteIds: ReadonlySet<string>): string {
+function shownBodyFor(m: ConversationMessageWithAuthor, viewer: Viewer, ownQuoteIds: ReadonlySet<string>, financesHidden: boolean): string {
+  if (financesHidden && m.kind === "event" && m.refType && MONEY_REFS.has(m.refType)) return MONEY_EVENT;
   const bidder = viewer.kind === "member" && !isProjectStaff(viewer.role);
   if (bidder && m.kind === "event" && m.refType === "quote" && !ownQuoteIds.has(m.refId ?? "")) return RIVAL_QUOTE;
   return m.shownBody;
@@ -399,6 +402,7 @@ function viewOf(
   viewer: Viewer,
   platformName: string,
   ownQuoteIds: ReadonlySet<string>,
+  financesHidden: boolean,
 ): ConversationMessageView {
   const member = viewer.kind === "member";
   const authorName = authorNameFor(m, viewer, platformName);
@@ -409,7 +413,7 @@ function viewOf(
     authorKind: m.authorKind,
     authorName,
     authorUserId: m.authorUserId,
-    body: shownBodyFor(m, viewer, ownQuoteIds),
+    body: shownBodyFor(m, viewer, ownQuoteIds, financesHidden),
     originalBody: member && viewer.role === "admin" && m.body !== m.shownBody ? m.body : null,
     replyToId: m.replyToId,
     refType: m.refType,
@@ -436,5 +440,6 @@ export async function conversationFor(
     viewer.kind === "member" && !isProjectStaff(viewer.role)
       ? new Set((await listProjectQuotes(db, row.id)).filter((q) => q.freelancerId === viewer.userId).map((q) => q.id))
       : new Set<string>();
-  return { access, messages: messages.map((m) => viewOf(m, viewer, platformName, ownQuoteIds)) };
+  const financesHidden = author.kind === "member" && (author.actor.access?.hideProjectFinances ?? false);
+  return { access, messages: messages.map((m) => viewOf(m, viewer, platformName, ownQuoteIds, financesHidden)) };
 }
