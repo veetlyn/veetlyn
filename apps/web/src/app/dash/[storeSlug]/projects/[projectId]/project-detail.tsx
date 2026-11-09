@@ -45,6 +45,7 @@ import { ProjectProgress } from "@/components/project-progress";
 
 import { ClientsSection } from "./clients-section";
 import { ConversationSection } from "./conversation-section";
+import PreparedBanner from "@/components/prepared-banner";
 import { DisputeCard } from "./dispute-card";
 import { QuoteCalculator } from "./quote-calculator";
 import { MemberMarks } from "./member-marks";
@@ -322,6 +323,7 @@ export default function ProjectDetail({
         <div className="max-w-3xl pt-2">
           <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
         </div>
+        <PreparedBanner teamId={project.teamId} projectId={project.id} slug={teamSlug} />
         {dispute ? <DisputeCard dispute={dispute} currency={currency} paypalEnvironment={paypalEnvironment} /> : null}
         <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
         {project.source === "web" ? (

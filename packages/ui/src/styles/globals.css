@@ -13,6 +13,13 @@
    done, focus) rather than a fill; warm colours only for trouble. Cal Sans UI for headings (served from apps/web's
    public/fonts), Inter for text and numbers, Geist Mono for references (both loaded in apps/web's root layout). */
 @font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-3.19-roman.var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: "Cal Sans UI";
   src: url("/fonts/CalSansUI-Variable.woff2") format("woff2");
   font-weight: 300 700;
@@ -46,7 +53,7 @@
   --info: oklch(42% 0.07 250);
   --info-wash: oklch(95% 0.02 250);
   --scrim: rgb(10 10 16 / 0.45);
-  --tray: #f1f1f3;
+  --tray: var(--card);
   --stage: #121215;
   --stage-ink: #f1f1f3;
   --stage-muted: #9a9aa3;
@@ -106,7 +113,7 @@
   --info: oklch(86% 0.05 250);
   --info-wash: oklch(30% 0.04 250);
   --scrim: rgb(0 0 0 / 0.6);
-  --tray: #111113;
+  --tray: var(--card);
   --stage: #1a1a1e;
   --stage-card: #25252a;
   --band: #1f1f23;
@@ -241,7 +248,7 @@
   }
 }
 @utility frame-panel {
-  background: color-mix(in oklch, var(--tray) 70%, var(--card));
+  background: color-mix(in oklch, var(--foreground) 4%, var(--card));
 }
 @utility frame-head {
   display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 36px; padding-inline: 14px;

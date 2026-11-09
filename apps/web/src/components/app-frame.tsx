@@ -262,8 +262,8 @@ function SearchBar({ items }: { items: SearchItem[] }) {
 // A sidebar item, raised when it is the page you are on.
 export function navItemClass(active: boolean) {
   return cn(
-    "flex items-center gap-2.5 rounded-[6px] px-2.5 py-[7px] text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-    active ? "raised text-foreground" : "hover:bg-foreground/[0.04]",
+    "flex items-center gap-2.5 rounded-[6px] px-2.5 py-[7px] text-[14px] font-medium text-foreground [&_svg:first-child]:size-[18px]",
+    active ? "raised" : "hover:bg-foreground/[0.04]",
   );
 }
 

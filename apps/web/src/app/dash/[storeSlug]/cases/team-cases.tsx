@@ -61,14 +61,14 @@ export default function TeamCases({ teamSlug, paypalEnvironment }: { teamSlug: s
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
       <div className="space-y-1">
         <h1 className="font-heading text-3xl">Disputes</h1>
-        <p className="text-sm text-muted-foreground">Disputes clients opened with PayPal. Answer them on PayPal with the team's account.</p>
+        <p className="text-sm text-muted-foreground">Disputes clients opened with the payment provider. Answer them there, with the team's account.</p>
       </div>
       {cases.isError ? (
         <p className="text-sm text-muted-foreground">
-          {cases.error.data?.code === "FORBIDDEN" ? "Only an admin can see PayPal cases." : cases.error.message}
+          {cases.error.data?.code === "FORBIDDEN" ? "Only an admin can see disputes." : cases.error.message}
         </p>
       ) : cases.data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No PayPal cases. When a client opens one, it shows here.</p>
+        <p className="text-sm text-muted-foreground">No disputes. When a client opens one, it shows here.</p>
       ) : (
         <>
           {open.length > 0 ? (

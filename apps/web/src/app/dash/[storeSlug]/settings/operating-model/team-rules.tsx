@@ -12,6 +12,16 @@ import { type PageSection, PageSectionsRail } from "@/components/page-sections-n
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { trpc } from "@/utils/trpc";
 
+// What the assistant is able to do today, as the server enforces it; not settings.
+const AGENT_LIMITS = [
+  ["What it can see", "Only what the person asking can already open.", "Same as that person"],
+  ["Quotes", "Drafted from the brief and your services.", "Drafts, a person sends"],
+  ["Client messages", "Questions and updates to clients.", "Drafts, a person sends"],
+  ["Payouts", "It prepares approvals and rejections.", "A person decides"],
+  ["Refunds and disputes", "Handled in the dashboard.", "People only"],
+  ["Client payments", "Clients approve each payment themselves.", "Never touches them"],
+] as const;
+
 export default function TeamRules({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
   const state = useQuery({ ...trpc.rules.state.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
@@ -44,6 +54,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
   const hasLeavingNotice = published.rules.leavingNotice.days > 0;
   const noticeEnd = data.leavingNoticeEffectiveAt;
   const sections: PageSection[] = [
+    { id: "agent-limits", label: "What your agent can do" },
     ...(isAdmin
       ? [
           {
@@ -78,7 +89,7 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
       <PageSectionsRail sections={sections} />
       <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-1">
       <header className="space-y-2">
-        <h1 className="font-heading text-3xl">Team rules</h1>
+        <h1 className="font-heading text-3xl">Operating model</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
           {isAdmin
             ? "Edit a draft of the team's rules and publish it; new projects take the published version."
@@ -87,6 +98,25 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
       </header>
 
         <div className="contents">
+          <section id="agent-limits" className="scroll-mt-16 frame frame-panel" aria-labelledby="agent-limits-heading">
+            <div className="frame-head text-[14px]">
+              <h2 id="agent-limits-heading" className="font-medium">
+                What your agent can do
+              </h2>
+            </div>
+            <dl className="frame frame-body text-[14px]">
+              {AGENT_LIMITS.map(([what, how, limit]) => (
+                <div key={what} className="flex items-baseline justify-between gap-6 border-b px-3.5 py-3 last:border-b-0">
+                  <dt className="min-w-0">
+                    <span className="font-medium">{what}</span>
+                    <span className="block text-muted-foreground">{how}</span>
+                  </dt>
+                  <dd className="shrink-0">{limit}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
           {isAdmin ? (
             <section id="manage-rules" className="scroll-mt-16 panel" aria-labelledby="manage-rules-heading">
               <div className="space-y-5 p-5">
