@@ -15,6 +15,7 @@ import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
 import { trpc } from "@/utils/trpc";
+import MemberAccessEditor from "./member-access";
 
 const SELECT_CLASS = `${nativeSelectClass}`;
 
@@ -109,8 +110,6 @@ function MemberDepartments({
   );
 }
 
-import MemberAccessEditor from "./member-access";
-
 export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) {
   const queryClient = useQueryClient();
   const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
@@ -153,8 +152,11 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-6 [&>*]:max-w-3xl md:px-7 md:py-8">
-      <h1 className="font-heading text-3xl">Members</h1>
+    <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+      <h1 className="font-heading text-3xl">Team & access</h1>
+      <p className="mt-2 text-sm text-muted-foreground">The people you work with and what they can see and do.</p>
+      {setRole.error ? <p role="alert" className="mt-4 text-sm text-destructive">{setRole.error.message}</p> : null}
+      {setRole.isSuccess ? <p role="status" className="mt-4 text-sm text-brand-text">Role updated.</p> : null}
 
       {solo ? (
         <div className="panel mt-6 grid gap-2 p-6">
@@ -168,7 +170,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
         </div>
       ) : listForbidden ? (
         <p className="mt-6 text-sm text-muted-foreground">Only managers and admins can see the member list.</p>
-      ) : members.isError ? (
+      ) : members.isPending ? <Loader /> : members.isError ? (
         <p role="alert" className="mt-6 text-sm text-destructive">
           {members.error.message}
         </p>
@@ -176,8 +178,8 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
         <>
           <ul className="mt-6 panel divide-y overflow-hidden">
             {(members.data ?? []).map((member) => (
-              <li key={member.userId} className="flex items-center justify-between gap-4 px-4 py-3">
-                <div className="min-w-0">
+              <li key={member.userId} className="flex flex-wrap items-start justify-between gap-4 px-4 py-5 sm:flex-nowrap">
+                <div className="min-w-0 flex-1 basis-52">
                   <p className="truncate font-medium">{member.name}</p>
                   <p className="truncate text-sm text-muted-foreground">{member.email}</p>
                   {isAdmin && member.role !== "admin" ? <MemberAccessEditor teamSlug={teamSlug} userId={member.userId} name={member.name} /> : null}
@@ -235,7 +237,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                 They need a <PlatformName /> account already; ask them to sign up first.
               </p>
               <div className="flex flex-wrap items-end gap-3">
-                <div className="min-w-60 grow space-y-2">
+                <div className="min-w-0 basis-60 grow space-y-2">
                   <Label htmlFor="member-email">Email</Label>
                   <Input
                     id="member-email"
@@ -274,6 +276,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                   {add.error.message}
                 </p>
               ) : null}
+              {add.isSuccess ? <p role="status" className="text-sm text-brand-text">Member added.</p> : null}
             </form>
           ) : null}
         </>
