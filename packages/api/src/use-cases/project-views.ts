@@ -92,6 +92,7 @@ export async function listVisibleProjects(db: Database, viewer: ProjectActor) {
       currency: row.currency,
       // Before acceptance a freelancer knows the client only as "Client", as in the request's conversation.
       clientName: seesRequestOnly(viewer, row) ? "Client" : (clientNames.get(row.id) ?? null),
+      clientHomeSurface: row.clientHomeSurface,
       createdAt: row.createdAt,
     }));
 }

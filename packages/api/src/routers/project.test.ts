@@ -433,7 +433,7 @@ describe.skipIf(!hasTestDatabase)("project router", () => {
 
     const list = await callerFor(userId).project.list({ teamSlug: "team" });
     expect(list).toEqual([
-      { id: projectId, title: "Website redesign", status: "quoting", currency: "USD", clientName: "client", createdAt: expect.any(Date) },
+      { id: projectId, title: "Website redesign", status: "quoting", currency: "USD", clientName: "client", clientHomeSurface: "web", createdAt: expect.any(Date) },
     ]);
     const detail = await callerFor(userId).project.get({ teamSlug: "team", projectId });
     expect(detail.project.id).toBe(projectId);
