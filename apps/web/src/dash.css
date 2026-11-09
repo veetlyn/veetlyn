@@ -88,8 +88,13 @@
   background: color-mix(in oklch, var(--card) 70%, var(--secondary));
   box-shadow: inset 0 0 0 1px var(--border);
 }
-[data-dash] [data-slot="button"] { border-radius: 6px; }
-[data-dash] [data-slot="button"].key-mint { border-radius: 4px 999px 999px 4px; }
+[data-dash] [data-slot="button"] { border-radius: 8px; }
+[data-dash] [data-slot="button"].key-mint {
+  border-radius: 8px;
+  background: var(--brand);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-dash] [data-slot="button"].key-mint::after { display: none; }
 [data-dash] input:not([type="checkbox"]):not([type="radio"]),
 [data-dash] textarea,
 [data-dash] select {
@@ -105,6 +110,12 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: var(--float);
+}
+[data-dash] dialog[data-navigation-drawer] {
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
 }
 [data-dash] ::selection { background: color-mix(in oklch, var(--brand) 24%, var(--card)); }
 [data-dash] input::placeholder,

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
+  ArrowLeft,
   ChevronRight,
   FolderKanban,
   HandCoins,
@@ -119,14 +120,9 @@ export default function TeamShell({
     retry: false,
     meta: { silent: true },
   });
-  const prepared = useQuery({
-    ...trpc.agent.pending.queryOptions({ node: { kind: "seller", teamId } }),
-    enabled: teamId !== "" && seller.data?.available === true,
-    retry: false,
-    meta: { silent: true },
-  });
 
   const segments = pathname.split("/").filter(Boolean).slice(1);
+  const settingsMode = segments[0] === "settings" || segments[0] === "members" || (segments[0] === "payouts" && segments[1] === "rules");
   const projectId = segments[0] === "projects" && segments[1] && segments[1] !== "new" ? segments[1] : null;
   const hiddenArea = projectId ? undefined : AREA_OF_PAGE.get(segments[0] ?? "");
   const pageHidden = services && hiddenArea !== undefined && scope?.seller?.access.hidden.includes(hiddenArea) === true;
@@ -177,7 +173,6 @@ export default function TeamShell({
     <AppFrame
       fill={pathname.startsWith(`/${slug}/calls`)}
       crumbs={crumbs}
-      chatsPath={services ? `/${slug}/calls` : undefined}
       searchItems={[
         ...pageLinks.map((l) => ({ ...l, detail: name })),
         ...recent.map((c) => ({ href: `/${slug}/calls?call=${c.id}`, label: c.title, detail: "Thread" })),
@@ -185,7 +180,28 @@ export default function TeamShell({
       ]}
       sidebar={
         <>
-          {projectId && services && teamId ? (
+          <div className="mb-3 grid min-w-0 gap-4 border-b pb-3">
+            <Link href={organization ? `/w/${organization.id}` : "/"} className={navItemClass(false)}>
+              <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">Back to {organization?.name ?? "your account"}</span>
+            </Link>
+            <p className="truncate px-2.5 text-sm font-semibold">{name}</p>
+          </div>
+          {settingsMode ? (
+            <nav aria-label="Seller settings" className="grid gap-1">
+              <Link href={`/${slug}`} className={navItemClass(false)}><ArrowLeft className="size-4" aria-hidden="true" />Back to Home</Link>
+              <h2 className="px-2.5 pt-4 pb-2 text-xs text-muted-foreground">Settings</h2>
+              {[
+                { href: `/${slug}/settings`, label: "General" },
+                { href: `/${slug}/settings/operating-model`, label: "Operating model" },
+                { href: `/${slug}/settings/channels`, label: "Channels" },
+                ...(allowed.has("members") ? [{ href: `/${slug}/members`, label: "Team & access" }] : []),
+                ...(services && scope?.seller?.role.role === "admin" ? [{ href: `/${slug}/payouts/rules`, label: "Payout rules" }] : []),
+              ].map((item) => (
+                <Link key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined} className={navItemClass(pathname === item.href)}>{item.label}</Link>
+              ))}
+            </nav>
+          ) : projectId && services && teamId ? (
             <ProjectNav slug={slug} projectId={projectId} teamId={teamId} />
           ) : (
             <>
@@ -193,9 +209,6 @@ export default function TeamShell({
                 <Link href={`/${slug}`} aria-current={isActive(`/${slug}`) ? "page" : undefined} className={navItemClass(isActive(`/${slug}`))}>
                   <AgentIcon className="size-4" />
                   Home
-                  {(prepared.data?.pending.length ?? 0) > 0 ? (
-                    <span className="ml-auto text-xs font-tabular text-muted-foreground">{prepared.data?.pending.length}</span>
-                  ) : null}
                 </Link>
                 {PLACES.map((place) => {
                   const pages = place.pages.filter((page) => allowed.has(page));
@@ -239,21 +252,11 @@ export default function TeamShell({
                   );
                 })}
               </nav>
-              <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Your threads" />
+              {services ? <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Your threads" /> : null}
             </>
           )}
         </>
       }
-      mobileNav={pageLinks.map(({ href, label }) => (
-        <Link
-          key={href}
-          href={href}
-          aria-current={isActive(href) ? "page" : undefined}
-          className="shrink-0 rounded-[9px] px-3 py-1.5 text-sm font-medium text-muted-foreground aria-[current=page]:raised aria-[current=page]:text-foreground"
-        >
-          {label}
-        </Link>
-      ))}
       banner={
         <>
           <BillingNotice slug={slug} />
@@ -261,7 +264,7 @@ export default function TeamShell({
         </>
       }
       ask={
-        node && seller.data?.available && services && pathname !== `/${slug}` && !pathname.startsWith(`/${slug}/calls`) ? (
+        node && seller.data?.available && services && !settingsMode && pathname !== `/${slug}` && !pathname.startsWith(`/${slug}/calls`) ? (
           <AskBar
             callsPath={`/${slug}/calls`}
             node={node}
