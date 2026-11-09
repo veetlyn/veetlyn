@@ -15,7 +15,8 @@ import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "a
 
 import type { Actor, RequestMeta } from "../actions/actors";
 import { toActionError } from "../actions/errors";
-import type { ActionDeps, PerformRequest } from "../actions/perform";
+import { type ActionDeps, type PerformRequest, perform } from "../actions/perform";
+import { projectList } from "../actions/projects";
 import { conversationPost } from "../actions/conversations";
 import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
@@ -237,6 +238,25 @@ export async function openCall(
   return createAgentCall(db, place);
 }
 
+const MAX_MENTIONS = 5;
+
+// What @ points at. Only projects this person can see can match, so a typed name reaches nothing the list would not show.
+async function mentionedRecords(deps: TurnDeps, state: TurnState, turn: TurnRequest): Promise<string | null> {
+  const seller = state.scope.seller;
+  if (!turn.message.includes("@") || seller?.role.product !== "services") return null;
+  const visible = await perform(
+    { deps: deps.actions, actor: state.actor, surface: "agent", request: turn.request, team: { id: seller.id } },
+    projectList,
+    {},
+  ).catch(() => []);
+  const byName = visible.filter((project) => turn.message.includes(`@${project.title}`));
+  // A tag picks one project among those sharing a name.
+  const tagged = byName.filter((project) => turn.message.includes(`@${project.title} #${project.id.slice(0, 4)}`));
+  const named = byName.filter((project) => tagged.includes(project) || !tagged.some((other) => other.title === project.title)).slice(0, MAX_MENTIONS);
+  if (named.length === 0) return null;
+  return `Records the person named with @, for reading with project_get: ${JSON.stringify(named.map(({ id, title }) => ({ id, title })))}`;
+}
+
 // One turn of a call: the person's message, the model reading with their access and proposing actions, and its
 // answer. Nothing the model does changes a record; proposals wait for the person. The call's runtime runs one turn at
 // a time per call.
@@ -267,6 +287,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
       }),
     ]),
   );
+  const mentions = turn.directive ? null : await mentionedRecords(deps, state, turn);
   let answer: string[];
   try {
     const result = await generateText({
@@ -274,6 +295,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
       system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.`,
       messages: [
         ...historyMessages(await listAgentCallEntries(db, call.id)),
+        ...(mentions ? [{ role: "user" as const, content: mentions }] : []),
         ...(turn.directive ? [{ role: "user" as const, content: turn.message }] : []),
       ],
       tools,

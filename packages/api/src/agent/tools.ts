@@ -96,6 +96,25 @@ export function allowedByTeam(tool: AgentTool, limits: { agentQuotes: boolean; a
   return limits.agentPayouts;
 }
 
+// The actions `/` offers, in the words it writes into the message. Plain language reaches the same tools.
+const SHORTCUTS = new Map<string, { label: string; phrase: string }>([
+  [quoteCreate.name, { label: "Prepare a quote", phrase: "Prepare a quote for " }],
+  [conversationPost.name, { label: "Draft a message to the client", phrase: "Draft a message to the client on " }],
+  [payoutApprove.name, { label: "Approve a payout", phrase: "Approve the payout for " }],
+  [payoutReject.name, { label: "Reject a payout", phrase: "Reject the payout for " }],
+]);
+
+// What this person can start from the composer at this node. A suggestion only: every action is checked again when it runs.
+export function composerActions(
+  node: Parameters<typeof toolsFor>[0],
+  limits: Parameters<typeof allowedByTeam>[1],
+): { label: string; phrase: string }[] {
+  return toolsFor(node).flatMap((tool) => {
+    const shortcut = tool.mode === "propose" && allowedByTeam(tool, limits) ? SHORTCUTS.get(tool.definition.name) : undefined;
+    return shortcut ? [shortcut] : [];
+  });
+}
+
 // What the withheld tools cover, in the person's words: a missing tool gives the model no refusal to repeat.
 function withheldArea(action: ServicesTeamAction): string {
   switch (action) {
