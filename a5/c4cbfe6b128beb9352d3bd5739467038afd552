@@ -1,0 +1,44 @@
+apps/web/src/app/dash/[storeSlug]/calls/page.tsx
+  h_6877e5e7a06bc5 1,4,16-18
+apps/web/src/app/dash/[storeSlug]/calls/seller-calls.tsx
+  h_6877e5e7a06bc5 1-39
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 3,39-41,65-68,72-77,92-98,106-108,117,131,139,148,165,168,179-180,192-199
+apps/web/src/app/dash/me/calls/page.tsx
+  h_6877e5e7a06bc5 1-12
+apps/web/src/app/dash/me/layout.tsx
+  h_6877e5e7a06bc5 1-9
+apps/web/src/app/dash/page.tsx
+  h_6877e5e7a06bc5 5,12-13,17-54
+apps/web/src/app/dash/w/[organizationId]/calls/page.tsx
+  h_6877e5e7a06bc5 1-20
+apps/web/src/app/dash/w/[organizationId]/layout.tsx
+  h_6877e5e7a06bc5 1-19
+apps/web/src/components/app-frame.tsx
+  h_6877e5e7a06bc5 1-107
+apps/web/src/components/ask-bar.tsx
+  h_6877e5e7a06bc5 14,21
+apps/web/src/components/frames/account-shell.tsx
+  h_6877e5e7a06bc5 1-102
+apps/web/src/components/frames/workspace-shell.tsx
+  h_6877e5e7a06bc5 1-111
+apps/web/src/components/header.tsx
+  h_6877e5e7a06bc5 16-19
+apps/web/src/components/recent-calls.tsx
+  h_6877e5e7a06bc5 1-23
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 23,25-26,97,131-136,143-148,150-185,187-190,192,194-196,214-217,219,223-227
+apps/web/src/components/veetlyn-icon.tsx
+  h_6877e5e7a06bc5 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a5c4cbfe6b128beb9352d3bd5739467038afd552",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
