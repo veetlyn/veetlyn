@@ -27,6 +27,7 @@ export default function ClientProject({ token }: { token: string }) {
   const requestChanges = useMutation(trpc.project.clientRequestChanges.mutationOptions({ onSuccess: refresh }));
   const post = useMutation(trpc.project.clientPost.mutationOptions({ onSuccess: refresh }));
   const answer = useMutation(trpc.project.clientAnswer.mutationOptions({ onSuccess: refresh }));
+  const review = useMutation(trpc.project.clientReview.mutationOptions({ onSuccess: refresh }));
 
   if (view.isPending) return <Loader />;
   // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
@@ -79,6 +80,11 @@ export default function ClientProject({ token }: { token: string }) {
           },
           messageBusy: post.isPending || answer.isPending,
           messageError: post.error ?? answer.error,
+          review: async (rating, body) => {
+            await review.mutateAsync({ token, rating, body });
+          },
+          reviewBusy: review.isPending,
+          reviewError: review.error,
         }}
       />
     </main>

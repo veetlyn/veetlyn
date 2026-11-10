@@ -43,6 +43,9 @@ export type ClientProjectActions = {
   answer: (questionId: string, body: string) => Promise<void>;
   messageBusy: boolean;
   messageError: { message: string } | null;
+  review: (rating: number, body: string) => Promise<void>;
+  reviewBusy: boolean;
+  reviewError: { message: string } | null;
 };
 
 type Quote = ClientProjectData["quotes"][number];
@@ -173,6 +176,80 @@ function Frame({
   );
 }
 
+const STAR_WORDS = ["", "Poor", "Fair", "Good", "Very good", "Excellent"] as const;
+
+// P design §1: the client of a completed project rates the seller once, and may change it for 30 days.
+function ReviewSection({ data, actions }: { data: ClientProjectData; actions: ClientProjectActions | null }) {
+  const { review } = data;
+  const [editing, setEditing] = useState(false);
+  const [rating, setRating] = useState(review.review?.rating ?? 0);
+  const [body, setBody] = useState(review.review?.body ?? "");
+  if (data.project.status !== "completed") return null;
+  const posted = review.review;
+  const writing = review.canReview && actions !== null && (!posted || editing);
+  return (
+    <Frame id="review" title={posted ? "Your review" : "How did it go?"}>
+      {review.problem ? <p className="text-sm text-muted-foreground">{review.problem}</p> : null}
+      {posted && !writing ? (
+        <div className="grid gap-2">
+          <p className="text-sm font-medium" aria-label={`${posted.rating} out of 5 stars`}>
+            {"★".repeat(posted.rating)}
+            <span className="text-muted-foreground">{"★".repeat(5 - posted.rating)}</span> {STAR_WORDS[posted.rating]}
+          </p>
+          {posted.body ? <p className="text-sm whitespace-pre-line">{posted.body}</p> : null}
+          <p className="text-xs text-muted-foreground">
+            Shown on the seller&apos;s page with your first name and initial.{" "}
+            {posted.editable ? `You can change it until ${new Date(posted.editableUntil).toLocaleDateString()}.` : "It is now final."}
+          </p>
+          {posted.editable && review.canReview && actions ? (
+            <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setEditing(true)}>
+              Edit review
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      {writing ? (
+        <form
+          className="grid gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (rating < 1) return;
+            void actions.review(rating, body).then(() => setEditing(false), () => undefined);
+          }}
+        >
+          <fieldset className="grid gap-2">
+            <legend className="text-sm">Rate the seller</legend>
+            <div className="flex flex-wrap gap-1.5">
+              {[1, 2, 3, 4, 5].map((stars) => (
+                <label key={stars} className="cursor-pointer rounded-[8px] border px-3 py-1.5 text-sm has-checked:border-foreground has-checked:bg-accent has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring">
+                  <input type="radio" name="stars" value={stars} checked={rating === stars} onChange={() => setRating(stars)} className="sr-only" />
+                  {"★".repeat(stars)} <span className="text-muted-foreground">{STAR_WORDS[stars]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label className="grid gap-1.5 text-sm">
+            <span>Review (optional, public)</span>
+            <Textarea value={body} maxLength={1000} onChange={(event) => setBody(event.target.value)} placeholder="What went well, and what could be better?" />
+          </label>
+          <p className="text-xs text-muted-foreground">Shown on the seller&apos;s page with your first name and initial. Do not include personal or contact details.</p>
+          {actions.reviewError ? <p role="alert" className="text-sm text-destructive">{actions.reviewError.message}</p> : null}
+          <div className="flex gap-2">
+            <Button type="submit" disabled={rating < 1 || actions.reviewBusy}>
+              {actions.reviewBusy ? "Posting…" : posted ? "Save review" : "Post review"}
+            </Button>
+            {posted ? (
+              <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+                Cancel
+              </Button>
+            ) : null}
+          </div>
+        </form>
+      ) : null}
+    </Frame>
+  );
+}
+
 type NextStep = { title: string; detail: string; amount?: string; href?: string; target?: string; action?: string; pay?: boolean };
 
 // The one thing waiting for the client (product principle 4: whose turn it is, with the money at the moment of
@@ -222,6 +299,14 @@ function nextStep(data: ClientProjectData): NextStep | null {
       detail: "Accept it, or ask for changes within your free rounds.",
       target: "delivery",
       action: "Review",
+    };
+  }
+  if (project.status === "completed" && data.review.canReview && !data.review.review) {
+    return {
+      title: "Rate the seller",
+      detail: "A few words help other clients choose. Your review is public with your first name and initial.",
+      target: "review",
+      action: "Rate",
     };
   }
   return null;
@@ -533,6 +618,8 @@ export function ClientProjectView({
           })}
         </section>
       ) : null}
+
+      <ReviewSection data={data} actions={actions} />
 
       <Frame id="messages" title="Messages">
         <ConversationThread

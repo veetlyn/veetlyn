@@ -53,6 +53,7 @@ import { scheduleLabel, scheduleWhen } from "@/lib/project-schedule";
 import { DisputeCard } from "./dispute-card";
 import { QuoteCalculator } from "./quote-calculator";
 import { MemberMarks } from "./member-marks";
+import { ProjectRatings } from "./project-ratings";
 import { LateRefundNotice, QualityRefundForm } from "./price-adjustments";
 import { RefundSection } from "./refund-section";
 
@@ -769,6 +770,7 @@ export default function ProjectDetail({
         </section>
       ) : null}
 
+      {view === "activity" ? <ProjectRatings key={projectId} teamSlug={teamSlug} projectId={projectId} ratings={detail.data.ratings} onChanged={refresh} /> : null}
       {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
       </aside>
     </main>
