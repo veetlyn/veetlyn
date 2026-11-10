@@ -6,12 +6,14 @@ import {
   createAgentCall,
   findLatestOwnCallAt,
   findOwnAgentCall,
+  deleteAgentCallEntry,
   insertAgentCallEntry,
   listAgentCallEntries,
+  updateAgentCallEntry,
 } from "@jendal-workspace/db/repositories/calls";
 import { getServicesTeamSettings, memberHistorySince } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
-import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "ai";
+import { type ModelMessage, stepCountIs, streamText, tool, zodSchema } from "ai";
 
 import type { Actor, RequestMeta } from "../actions/actors";
 import { toActionError } from "../actions/errors";
@@ -21,6 +23,7 @@ import { conversationPost } from "../actions/conversations";
 import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
 import { sanitizeAgentAnswer } from "./answer";
+import { skillLines } from "./skills";
 import { proposalEffect } from "./effects";
 import { AGENT_ID, placeOf, resolveNode, type ResolvedNode } from "./node";
 import { allowedByTeam, type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
@@ -303,10 +306,13 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     pendingCards.length > 0 ? `${pendingCards.length} proposal card(s) are still waiting for the person's decision in this thread. Do not propose the same thing again.` : null,
   ].filter((line) => line !== null).join("\n");
   let answer: string[];
+  // Progressive answer: the draft entry appears as the model writes and is finished at the end, so a long answer
+  // renders while it is made. The thread polls while a turn runs (team-calls).
+  let draftId: string | null = null;
   try {
-    const result = await generateText({
+    const result = streamText({
       model: deps.agent.model,
-      system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.`,
+      system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.${skillLines(offered.map((agentTool) => agentTool.name)).length > 0 ? `\n${skillLines(offered.map((agentTool) => agentTool.name)).join("\n")}` : ""}`,
       messages: [
         ...historyMessages(priorEntries),
         ...(contextPack ? [{ role: "user" as const, content: contextPack }] : []),
@@ -318,19 +324,29 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
       maxOutputTokens: 4_000,
       maxRetries: 1,
     });
-    answer = result.steps.map((step) => step.text.trim()).filter((text) => text !== "");
+    let streamed = "";
+    let savedLength = 0;
+    for await (const chunk of result.textStream) {
+      streamed += chunk;
+      if (streamed.length - savedLength >= 120) {
+        savedLength = streamed.length;
+        const body = sanitizeAgentAnswer(streamed) || "…";
+        if (draftId) await updateAgentCallEntry(db, { entryId: draftId, body });
+        else draftId = (await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "assistant", body })).id;
+      }
+    }
+    const steps = await result.steps;
+    answer = steps.map((step) => step.text.trim()).filter((text) => text !== "");
     // A turn nobody typed reports its result; the narration between its tool calls is not worth reading.
     if (turn.directive) answer = answer.slice(-1);
-    if (result.finishReason === "tool-calls") answer.push("I stopped here to keep this short. Ask me to go on.");
+    if ((await result.finishReason) === "tool-calls") answer.push("I stopped here to keep this short. Ask me to go on.");
   } catch (cause) {
+    if (draftId) await deleteAgentCallEntry(db, draftId).catch(() => undefined);
     // The provider's own words stay in the server log; the person's message is kept and can be sent again.
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The assistant did not answer. Try again in a moment.", cause });
   }
-  await insertAgentCallEntry(db, {
-    callId: call.id,
-    kind: "message",
-    author: "assistant",
-    body: sanitizeAgentAnswer(answer.join("\n\n")) || "Done.",
-    note: state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : undefined,
-  });
+  const finalBody = sanitizeAgentAnswer(answer.join("\n\n")) || "Done.";
+  const finalNote = state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : undefined;
+  if (draftId) await updateAgentCallEntry(db, { entryId: draftId, body: finalBody, note: finalNote });
+  else await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "assistant", body: finalBody, note: finalNote });
 }

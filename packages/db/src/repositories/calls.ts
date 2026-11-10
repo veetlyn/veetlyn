@@ -188,6 +188,15 @@ export async function insertAgentCallEntry(
   return row;
 }
 
+// Progressive answers: a draft entry is updated as the model writes, then finished (or removed on failure).
+export async function updateAgentCallEntry(db: DbExecutor, input: { entryId: string; body: string; note?: string }): Promise<void> {
+  await db.update(agentCallEntry).set({ body: input.body, note: input.note }).where(eq(agentCallEntry.id, input.entryId));
+}
+
+export async function deleteAgentCallEntry(db: DbExecutor, entryId: string): Promise<void> {
+  await db.delete(agentCallEntry).where(eq(agentCallEntry.id, entryId));
+}
+
 // The pending proposal and the call it sits in, for its person to decide on. The caller checks the call's place before
 // claiming it.
 export async function findOwnProposal(
