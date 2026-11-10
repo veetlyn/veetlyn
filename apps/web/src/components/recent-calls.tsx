@@ -8,7 +8,7 @@ export default function RecentCalls({ calls, callsPath, newThreadHref = callsPat
         <h2>{label}</h2>
         <Link href={newThreadHref} className="rounded px-1 py-1 hover:text-foreground">+ New</Link>
       </div>
-      {calls.length === 0 ? <p className="px-2.5 py-2 text-xs text-muted-foreground">Your conversations will appear here.</p> : null}
+      {calls.length === 0 ? <p className="px-2.5 py-2 text-xs text-muted-foreground">No threads yet</p> : null}
       <ul className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5">
         {calls.map((call) => (
           <li key={call.id} className="min-w-0">

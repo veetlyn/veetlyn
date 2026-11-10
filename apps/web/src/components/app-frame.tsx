@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@jendal-workspace/ui/components/dropdown-menu";
 import { cn } from "@jendal-workspace/ui/lib/utils";
-import { ChevronDown, ChevronRight, Menu, Search, X } from "lucide-react";
+import { ChevronsUpDown, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +21,7 @@ import UserMenu from "@/components/user-menu";
 export type CrumbOption = { href: string; label: string; detail?: string };
 // A crumb with options is a switcher: its menu lists the places at the same level. Crumbs whose choices the sidebar
 // already lists stay plain links.
-export type Crumb = { href: string; label: string; options?: CrumbOption[]; menuLabel?: string };
+export type Crumb = { href: string; label: string; options?: CrumbOption[]; menuLabel?: string; kind?: "workspace" | "seller" };
 export type SearchItem = { href: string; label: string; detail?: string };
 const MOBILE_NAV_QUERY = "(width < 48rem)";
 
@@ -31,7 +31,6 @@ export default function AppFrame({
   sidebar,
   crumbs,
   searchItems = [],
-  ask,
   banner,
   fill = false,
   children,
@@ -39,7 +38,6 @@ export default function AppFrame({
   sidebar: React.ReactNode;
   crumbs: Crumb[];
   searchItems?: SearchItem[];
-  ask?: React.ReactNode;
   banner?: React.ReactNode;
   // A conversation holds its own scrolling: it takes the height left under the banners.
   fill?: boolean;
@@ -139,7 +137,6 @@ export default function AppFrame({
           {banner}
           {children}
         </div>
-        {ask}
       </div>
     </div>
   );
@@ -152,7 +149,7 @@ function Breadcrumb({ crumbs }: { crumbs: Crumb[] }) {
         const last = i === crumbs.length - 1;
         return (
           <span key={`${crumb.href}-${i}`} className={cn("min-w-0 items-center gap-1", last ? "flex" : "hidden md:flex")}>
-            {i > 0 ? <ChevronRight className="hidden size-3.5 shrink-0 text-muted-foreground/60 md:block" aria-hidden="true" /> : null}
+            {i > 0 ? <span className="hidden px-1 text-muted-foreground/40 md:block" aria-hidden="true">/</span> : null}
             {crumb.options && crumb.options.length > 1 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -162,8 +159,9 @@ function Breadcrumb({ crumbs }: { crumbs: Crumb[] }) {
                   )}
                   aria-label={`${crumb.label}. Switch ${crumb.menuLabel ?? "place"}`}
                 >
+                  {crumb.kind ? <span aria-hidden="true" className={cn("grid size-5 shrink-0 place-items-center rounded-[4px] text-[10px] font-semibold", crumb.kind === "workspace" ? "bg-foreground text-background" : "bg-secondary text-foreground")}>{initialsOf(crumb.label)}</span> : null}
                   <span className="truncate">{crumb.label}</span>
-                  <ChevronDown className="size-3.5 shrink-0 opacity-60" aria-hidden="true" />
+                  <ChevronsUpDown className="size-3.5 shrink-0 opacity-60" aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="max-h-[60vh] min-w-56 overflow-y-auto bg-card" align="start">
                   <DropdownMenuGroup>

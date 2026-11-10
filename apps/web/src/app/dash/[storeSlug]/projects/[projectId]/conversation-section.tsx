@@ -178,7 +178,8 @@ export function ConversationSection({
         </p>
       ) : null}
 
-      <div role="tabpanel" className="panel grid gap-5 p-4">
+      <div role="tabpanel" className="grid gap-5">
+        <div className="panel grid gap-5 p-4">
         {tab === "request" && staff ? (
           (() => {
             const { groups, rest } = groupByFreelancer(shown, quotes);
@@ -208,6 +209,7 @@ export function ConversationSection({
             empty={tab === "request" ? "No questions or messages on this request yet." : "No messages with the client yet."}
           />
         )}
+        </div>
 
         {canWrite ? (
           <Composer

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientWaitsOnTeam, isNotFoundError, teamWaitsOnClient, type ProjectWaitView } from "./project-refresh";
+import { clientWaitsOnTeam, isNotFoundError, isProjectReadDenied, teamWaitsOnClient, type ProjectWaitView } from "./project-refresh";
 
 function view(status: string, quotes: string[] = [], amendments: string[] = []): ProjectWaitView {
   return {
@@ -66,5 +66,21 @@ describe("isNotFoundError", () => {
     expect(isNotFoundError(undefined)).toBe(false);
     expect(isNotFoundError({ data: null })).toBe(false);
     expect(isNotFoundError({ data: { code: "INTERNAL_SERVER_ERROR" } })).toBe(false);
+  });
+});
+
+describe("isProjectReadDenied", () => {
+  it.each(["NOT_FOUND", "FORBIDDEN", "UNAUTHORIZED"])("does not permit cached project content after %s", (code) => {
+    expect(isProjectReadDenied({ data: { code } })).toBe(true);
+  });
+
+  it.each(["INTERNAL_SERVER_ERROR", "TIMEOUT", "BAD_GATEWAY"])("keeps %s distinct from a revoked read", (code) => {
+    expect(isProjectReadDenied({ data: { code } })).toBe(false);
+  });
+
+  it("does not treat a pending or unclassified read as an access refusal", () => {
+    expect(isProjectReadDenied(null)).toBe(false);
+    expect(isProjectReadDenied(undefined)).toBe(false);
+    expect(isProjectReadDenied({ data: null })).toBe(false);
   });
 });
