@@ -1,0 +1,34 @@
+apps/web/src/app/dash/[storeSlug]/calls/page.tsx
+  h_6877e5e7a06bc5 2,17
+apps/web/src/app/dash/[storeSlug]/calls/seller-calls.tsx
+  h_6877e5e7a06bc5 12,35
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 10,16,64-66,71,80-81,131,143,146-159,165,170-173,176-177,182,254
+apps/web/src/app/dash/me/calls/page.tsx
+  h_6877e5e7a06bc5 15
+apps/web/src/app/dash/w/[organizationId]/calls/page.tsx
+  h_6877e5e7a06bc5 21
+apps/web/src/components/app-frame.tsx
+  h_6877e5e7a06bc5 20,28-29,35,37,91-92
+apps/web/src/components/ask-bar.tsx
+  h_6877e5e7a06bc5 10,40,45-49,52-63,69
+apps/web/src/components/composer-box.tsx
+  h_6877e5e7a06bc5 1-79
+apps/web/src/components/frames/account-shell.tsx
+  h_6877e5e7a06bc5 67
+apps/web/src/components/frames/workspace-shell.tsx
+  h_6877e5e7a06bc5 78
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c15a9a2a37409876cdf35cf54e8e22c6dd8df0a2",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
