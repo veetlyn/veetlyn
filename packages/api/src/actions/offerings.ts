@@ -26,6 +26,7 @@ export const offeringSearch = defineAction({
       currency: z.enum(CURRENCIES),
       sellerName: z.string(),
       sellerSlug: z.string(),
+      sellerRating: z.object({ average: z.number(), count: z.int() }).nullable(),
     }),
   ),
   scope: () => ({}),

@@ -35,6 +35,7 @@ import {
 } from "../actions/projects";
 import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "../actions/quotes";
 import { createRequest, requestTerms } from "../actions/requests";
+import { clientRatingSet, portfolioAdd, portfolioRemove, reviewSubmit } from "../actions/reviews";
 import { clientProcedureFor, optionalSessionProcedureFor, publicProcedureFor, signedInProcedureFor, teamProcedureFor } from "../actions/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -64,6 +65,9 @@ export const projectRouter = router({
   decideLateRefund: teamProcedureFor(projectLateRefundDecide),
   setQualityRefund: teamProcedureFor(projectQualityRefundSet),
   recordWarning: teamProcedureFor(projectWarningRecord),
+  rateClient: teamProcedureFor(clientRatingSet),
+  portfolioAdd: teamProcedureFor(portfolioAdd),
+  portfolioRemove: teamProcedureFor(portfolioRemove),
   deliveryFileUrl: teamProcedureFor(deliveryFile),
   clientAdd: teamProcedureFor(projectClientAdd),
   clientRemove: teamProcedureFor(projectClientRemove),
@@ -97,4 +101,5 @@ export const projectRouter = router({
   clientAcceptDelivery: clientProcedureFor(deliveryAccept),
   clientPost: clientProcedureFor(conversationPost),
   clientAnswer: clientProcedureFor(conversationAnswer),
+  clientReview: clientProcedureFor(reviewSubmit),
 });

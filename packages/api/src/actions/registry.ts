@@ -32,6 +32,7 @@ import { offeringSearch } from "./offerings";
 import { PAYOUT_ACTIONS } from "./payouts";
 import { amendmentAccept, amendmentDecline, amendmentOfferPaidRevision, amendmentPropose, quoteAccept, quoteCreate } from "./quotes";
 import { createRequest, requestTerms } from "./requests";
+import { REVIEW_ACTIONS } from "./reviews";
 import { SELLER_ACTIONS } from "./sellers";
 
 export const ACTIONS: readonly AnyActionDefinition[] = [
@@ -73,4 +74,5 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   ...PAYOUT_ACTIONS,
   ...MONEY_ACTIONS,
   ...SELLER_ACTIONS,
+  ...REVIEW_ACTIONS,
 ];

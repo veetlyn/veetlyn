@@ -17,6 +17,7 @@ import { getClientProjectView, getTeamProjectView, listVisibleProjects } from ".
 import { assignFreelancer, decideLateDeliveryRefund, MAX_TITLE, MIN_TITLE, recordProjectWarning, setQualityRefund, startProject } from "../use-cases/projects";
 import { listClientProjects } from "../use-cases/client-home";
 import { defineAction } from "./define";
+import { isClientActor } from "./actors";
 import { ActionError } from "./errors";
 import { teamActorOf } from "./team-actor";
 
@@ -254,6 +255,13 @@ const clientViewOutput = z.object({
       }),
     ),
   }),
+  review: z.object({
+    canReview: z.boolean(),
+    problem: z.string().nullable(),
+    review: z
+      .object({ rating: z.int(), body: z.string(), createdAt: z.iso.datetime(), editable: z.boolean(), editableUntil: z.iso.datetime() })
+      .nullable(),
+  }),
 });
 
 export const projectClientView = defineAction({
@@ -264,7 +272,7 @@ export const projectClientView = defineAction({
   output: clientViewOutput,
   scope: (input) => ({ projectId: input.projectId }),
   allow: [{ grant: "client" }],
-  run: ({ deps }, input) => getClientProjectView(deps, input.projectId),
+  run: ({ deps, actor }, input) => getClientProjectView(deps, input.projectId, isClientActor(actor) ? actor.token.contactId : undefined),
 });
 
 export const projectClientList = defineAction({
