@@ -2231,6 +2231,20 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       expect(await ledgerOf(teamId, boId)).toMatchObject({ available: 85_000, reserved: 0 });
     });
 
+    it("flags a rejected payout that PayPal paid from its cancelled file after all", async () => {
+      const { adaPayoutId, admin } = await exportTeam();
+      await admin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId] });
+      await admin.payouts.cancelExport({ ...TEAM, requestId: adaPayoutId });
+      await admin.payouts.reject({ ...TEAM, requestId: adaPayoutId });
+      const log = payoutsWebLog([{ reference: await referenceOf(adaPayoutId), amount: "$499,75 USD", fee: "$0,25 USD", status: "Completed" }]);
+
+      await expect(admin.payouts.importPayoutsWeb({ ...TEAM, csv: log })).resolves.toEqual({ ...noResults, mismatched: 1 });
+      expect(await rowOf(adaPayoutId)).toMatchObject({
+        status: "rejected",
+        reviewReason: expect.stringContaining("PayPal paid this rejected payout"),
+      });
+    });
+
     it("holds a cancelled export PayPal shows as pending until PayPal's log settles it", async () => {
       const { adaPayoutId, boPayoutId, admin, services } = await exportTeam();
       await admin.payouts.exportPayoutsWeb({ ...TEAM, requestIds: [adaPayoutId] });

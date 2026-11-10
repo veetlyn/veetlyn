@@ -8,6 +8,7 @@ import {
 import { and, asc, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
+import { startsFrom } from "../state-guard";
 import { ledgerEntry, ledgerTransfer } from "../schema/ledger";
 import { amendment, delivery, payment, project, quote, quoteItem } from "../schema/projects";
 
@@ -108,6 +109,17 @@ export async function addPaymentRefunded(tx: DbExecutor, paymentId: string, amou
     .where(and(eq(payment.id, paymentId), inArray(payment.status, [...refunded.from, refunded.to])))
     .returning({ id: payment.id });
   if (rows.length === 0) throw new Error(`Refund recorded on payment ${paymentId}, which holds no captured money`);
+}
+
+// An ended project owes nothing more: its unpaid payments close, so their pay links stop working. A capture PayPal
+// still completes on one is flagged for review by the capture handler.
+export async function cancelOpenPayments(tx: DbExecutor, projectId: string): Promise<number> {
+  const rows = await tx
+    .update(payment)
+    .set({ status: paymentMachine.transitions.cancel.to, version: sql`${payment.version} + 1` })
+    .where(and(eq(payment.projectId, projectId), startsFrom(payment.status, paymentMachine, "cancel")))
+    .returning({ id: payment.id });
+  return rows.length;
 }
 
 export async function setPaymentReviewReason(

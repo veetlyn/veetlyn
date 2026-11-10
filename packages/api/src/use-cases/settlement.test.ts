@@ -272,6 +272,22 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     expect(events.filter((event) => event.type === "delivery.accepted" || event.type === "project.completed")).toHaveLength(0);
   });
 
+  it("closes an abandoned project's unpaid top-up, so its pay link stops working, and keeps what was paid", async () => {
+    const fixture = await delivered(20_000);
+    const [topUp] = await db
+      .insert(payment)
+      .values({ projectId: fixture.projectId, teamId: fixture.teamId, kind: "top_up", status: "pending", currency: "USD", quotePartMinor: 100, managementFeeMinor: 10, amountMinor: 110, lines: [] })
+      .returning({ id: payment.id });
+    await db.update(scheduleItem).set({ kind: "project.abandon" }).where(eq(scheduleItem.kind, "project.autoComplete"));
+
+    expect(await runDueScheduleItems({ db })).toMatchObject({ failed: 0 });
+
+    const payments = await db.select().from(payment).where(eq(payment.projectId, fixture.projectId));
+    expect(payments.map((row) => [row.kind, row.status]).sort()).toEqual([["deposit", "captured"], ["top_up", "cancelled"]]);
+    expect(payments.find((row) => row.id === topUp?.id)?.status).toBe("cancelled");
+    expect(await balance(`client_held:${fixture.projectId}`)).toBe(20_000);
+  });
+
   it.each(["amendment", "pending", "failed"] as const)("blocks silence acceptance for %s despite a fully paid quote", async (guard) => {
     const fixture = await delivered(20_000);
     if (guard === "amendment") {
