@@ -294,13 +294,22 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     ]),
   );
   const mentions = turn.directive ? null : await mentionedRecords(deps, state, turn);
+  // Context pack: where the person stands and what is already waiting for them, so the model does not have to
+  // re-derive either from the raw thread. Open proposals are this call's own pending cards.
+  const priorEntries = await listAgentCallEntries(db, call.id);
+  const pendingCards = priorEntries.filter((entry) => entry.kind === "proposal" && entry.status === "pending");
+  const contextPack = [
+    scope.project ? `The person is looking at the project "${scope.project.title}". Read it with project_get before answering about it; it already carries deliveries, amendments and ratings.` : null,
+    pendingCards.length > 0 ? `${pendingCards.length} proposal card(s) are still waiting for the person's decision in this thread. Do not propose the same thing again.` : null,
+  ].filter((line) => line !== null).join("\n");
   let answer: string[];
   try {
     const result = await generateText({
       model: deps.agent.model,
       system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.`,
       messages: [
-        ...historyMessages(await listAgentCallEntries(db, call.id)),
+        ...historyMessages(priorEntries),
+        ...(contextPack ? [{ role: "user" as const, content: contextPack }] : []),
         ...(mentions ? [{ role: "user" as const, content: mentions }] : []),
         ...(turn.directive ? [{ role: "user" as const, content: turn.message }] : []),
       ],
