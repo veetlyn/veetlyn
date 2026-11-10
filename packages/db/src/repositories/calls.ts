@@ -1,8 +1,9 @@
-import type { JsonObject } from "@jendal-workspace/core";
+import { agentProposalMachine, type JsonObject } from "@jendal-workspace/core";
 import type { NodeKind, Section } from "@jendal-workspace/core/context/node";
 import { and, asc, count, desc, eq, gte, inArray, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
+import { startsFrom } from "../state-guard";
 import { agentCall, agentCallEntry } from "../schema/calls";
 import { outbox } from "../schema/outbox";
 
@@ -221,15 +222,16 @@ export async function claimPendingProposal(
   db: DbExecutor,
   input: { entryId: string; callId: string; status: "done" | "declined" },
 ): Promise<AgentCallEntryRow | null> {
+  const event = input.status === "done" ? "confirm" : "decline";
   const [row] = await db
     .update(agentCallEntry)
-    .set({ status: input.status, decidedAt: new Date() })
+    .set({ status: agentProposalMachine.transitions[event].to, decidedAt: new Date() })
     .where(
       and(
         eq(agentCallEntry.id, input.entryId),
         eq(agentCallEntry.callId, input.callId),
         eq(agentCallEntry.kind, "proposal"),
-        eq(agentCallEntry.status, "pending"),
+        startsFrom(agentCallEntry.status, agentProposalMachine, event),
       ),
     )
     .returning();
@@ -240,7 +242,12 @@ export async function recordProposalOutcome(
   db: DbExecutor,
   input: { entryId: string; status: "done" | "failed"; outcome: string },
 ): Promise<void> {
-  await db.update(agentCallEntry).set({ status: input.status, outcome: input.outcome }).where(eq(agentCallEntry.id, input.entryId));
+  // Only a confirmed card has an outcome: a declined or pending one is never run, so nothing here may overwrite it.
+  const status = input.status === "failed" ? agentProposalMachine.transitions.fail.to : agentProposalMachine.transitions.confirm.to;
+  await db
+    .update(agentCallEntry)
+    .set({ status, outcome: input.outcome })
+    .where(and(eq(agentCallEntry.id, input.entryId), eq(agentCallEntry.kind, "proposal"), startsFrom(agentCallEntry.status, agentProposalMachine, "fail")));
 }
 
 // The questions asked since a time in one workspace's calls, or in a person's account calls (no workspace): what the

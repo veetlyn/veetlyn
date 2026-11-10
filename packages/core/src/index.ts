@@ -36,6 +36,8 @@ export * from "./projects/penalty";
 export * from "./projects/amendments";
 export * from "./projects/state-machine";
 export * from "./state-machines/machine";
+export * from "./agent/proposals";
+export * from "./payments/disputes";
 export * from "./ledger/accounts";
 export * from "./ledger/transfers";
 export * from "./ledger/postings";

@@ -1,4 +1,4 @@
-import type { JsonObject, PaymentStatus } from "@jendal-workspace/core";
+import { disputeMachine, disputeStatusAfter, type JsonObject, type PaymentStatus } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import {
@@ -77,7 +77,7 @@ async function applyDispute(deps: DisputeNoticeDeps & { db: Transaction }, dispu
   await lockTeamPayoutCredentials(deps.db, teamId);
   const [existing] = await deps.db.select().from(disputeTable).where(eq(disputeTable.paypalDisputeId, dispute.disputeId)).limit(1).for("update");
   if (existing && (existing.teamId !== teamId || existing.projectId !== projectId || existing.orderId !== orderId)) throw new Error("Dispute ownership changed");
-  if (existing?.status === "resolved_seller" || existing?.status === "resolved_buyer") {
+  if (existing && disputeMachine.isTerminal(existing.status)) {
     await deps.db.update(disputeTable).set({
       amountMinor: existing.amountMinor ?? dispute.amountMinor,
       currency: existing.currency ?? dispute.currency,
@@ -99,7 +99,8 @@ async function applyDispute(deps: DisputeNoticeDeps & { db: Transaction }, dispu
       paypalDisputeId: dispute.disputeId,
       paypalCaptureId: captureId,
       reason: dispute.reason ?? "unknown",
-      status: "open",
+      // A "created" event PayPal delivers after an update keeps the case where the update put it.
+      status: disputeStatusAfter(existing?.status ?? null, "created"),
       amountMinor: dispute.amountMinor,
       currency: dispute.currency,
       rawPayload: dispute,
@@ -121,7 +122,10 @@ async function applyDispute(deps: DisputeNoticeDeps & { db: Transaction }, dispu
     && !SELLER_FAVOURABLE_OUTCOMES.has(dispute.outcomeCode ?? "")
     && dispute.outcomeCode !== "RESOLVED_BUYER_FAVOUR";
   if (dispute.eventType === "CUSTOMER.DISPUTE.UPDATED" || unconfirmedResolution) {
-    const status = unconfirmedResolution || dispute.status === "UNDER_REVIEW" ? "under_review" : "waiting_for_seller";
+    const status = disputeStatusAfter(
+      existing?.status ?? null,
+      unconfirmedResolution || dispute.status === "UNDER_REVIEW" ? "review" : "wait_for_seller",
+    );
     await upsertDispute(deps.db, {
       teamId,
       projectId,
@@ -148,7 +152,7 @@ async function applyDispute(deps: DisputeNoticeDeps & { db: Transaction }, dispu
 
   // RESOLVED: seller-favourable cases release the hold; buyer-favourable ones end the ladder.
   const sellerFavour = dispute.outcomeCode !== null && SELLER_FAVOURABLE_OUTCOMES.has(dispute.outcomeCode);
-  const status = sellerFavour ? "resolved_seller" : "resolved_buyer";
+  const status = disputeStatusAfter(existing?.status ?? null, sellerFavour ? "resolve_for_seller" : "resolve_for_buyer");
   await upsertDispute(deps.db, {
     teamId,
     projectId,

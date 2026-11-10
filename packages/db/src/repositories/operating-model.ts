@@ -1,4 +1,4 @@
-import type { JsonValue } from "@jendal-workspace/core";
+import { type JsonValue, OPEN_DISPUTE_STATUSES } from "@jendal-workspace/core";
 import { PRESET_RULEBOOKS, type RulePreset, type RulebookRules } from "@opmodel/engine-rules";
 import {
   claimDueDeliveryRows,
@@ -416,7 +416,7 @@ export async function findOpenDisputeForProject(db: DbExecutor, projectId: strin
   const [row] = await db
     .select()
     .from(dispute)
-    .where(and(eq(dispute.projectId, projectId), inArray(dispute.status, ["open", "waiting_for_seller", "under_review"])))
+    .where(and(eq(dispute.projectId, projectId), inArray(dispute.status, OPEN_DISPUTE_STATUSES)))
     .limit(1);
   return row ?? null;
 }
@@ -436,7 +436,7 @@ export async function projectHasOpenDispute(db: DbExecutor, input: { teamId: str
   const [row] = await db.select({ id: dispute.id }).from(dispute).where(and(
     eq(dispute.teamId, input.teamId),
     eq(dispute.projectId, input.projectId),
-    inArray(dispute.status, ["open", "waiting_for_seller", "under_review"]),
+    inArray(dispute.status, OPEN_DISPUTE_STATUSES),
   )).limit(1);
   return row !== undefined;
 }
@@ -448,8 +448,6 @@ export async function pauseProjectSchedule(db: DbExecutor, input: { teamId: stri
     eq(scheduleItem.status, "pending"),
   ));
 }
-
-const OPEN_DISPUTE_STATUSES = ["open", "waiting_for_seller", "under_review"] as const;
 
 // Whether an open case is about this payout's work: its project, or a project the member delivered or managed, since
 // a member's request draws on pooled earnings. A case with no project cannot be scoped, so it holds everyone.
@@ -490,7 +488,7 @@ export async function teamHasOpenDispute(db: DbExecutor, teamId: string): Promis
   const [row] = await db
     .select({ count: sql<number>`count(*)::int`.mapWith(Number) })
     .from(dispute)
-    .where(and(eq(dispute.teamId, teamId), inArray(dispute.status, ["open", "waiting_for_seller", "under_review"])));
+    .where(and(eq(dispute.teamId, teamId), inArray(dispute.status, OPEN_DISPUTE_STATUSES)));
   return (row?.count ?? 0) > 0;
 }
 

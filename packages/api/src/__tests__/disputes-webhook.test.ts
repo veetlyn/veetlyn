@@ -100,6 +100,16 @@ describe.skipIf(!hasTestDatabase)("dispute webhooks", () => {
     expect(await payoutsHeldForDispute(db, teamId)).toBe(true);
   });
 
+  it("keeps a case under review when PayPal delivers its creation after its update", async () => {
+    const { teamId } = await capturedProject();
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent({ eventType: "CUSTOMER.DISPUTE.UPDATED", status: "UNDER_REVIEW" }));
+
+    await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent());
+
+    expect(await db.select().from(dispute)).toEqual([expect.objectContaining({ status: "under_review" })]);
+    expect(await payoutsHeldForDispute(db, teamId)).toBe(true);
+  });
+
   it("resolves seller-favourably: timers resume and payouts unblock", async () => {
     const { teamId } = await capturedProject();
     await handlePayPalDisputeWebhook({ db, ...DEPS }, disputeEvent());

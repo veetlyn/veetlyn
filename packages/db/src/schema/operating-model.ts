@@ -1,4 +1,4 @@
-import type { JsonObject } from "@jendal-workspace/core";
+import { DISPUTE_STATUSES, type JsonObject } from "@jendal-workspace/core";
 import type { RulebookRules } from "@opmodel/engine-rules";
 import type { ScheduleItemKind } from "@opmodel/engine-scheduler";
 import { sql } from "drizzle-orm";
@@ -171,7 +171,7 @@ export const dispute = pgTable(
     paypalDisputeId: text("paypal_dispute_id").notNull().unique(),
     paypalCaptureId: text("paypal_capture_id"),
     reason: text("reason").notNull(),
-    status: text("status", { enum: ["open", "waiting_for_seller", "under_review", "resolved_buyer", "resolved_seller"] }).notNull(),
+    status: text("status", { enum: DISPUTE_STATUSES }).notNull(),
     outcome: text("outcome"),
     amountMinor: minor("amount_minor"),
     currency: text("currency"),
