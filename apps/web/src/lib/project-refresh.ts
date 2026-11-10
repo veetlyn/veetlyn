@@ -27,6 +27,11 @@ export function isNotFoundError(error: { data?: { code?: string } | null } | nul
   return error?.data?.code === "NOT_FOUND";
 }
 
+// A refetch can retain old data. These responses revoke the read, rather than merely making the data stale.
+export function isProjectReadDenied(error: { data?: { code?: string } | null } | null | undefined): boolean {
+  return ["NOT_FOUND", "FORBIDDEN", "UNAUTHORIZED"].includes(error?.data?.code ?? "");
+}
+
 export function clientWaitsOnTeam(view: ProjectWaitView): boolean {
   // Other freelancers may still quote or ask a question after the first quote arrives.
   if (view.project.status === "quoting") return true;

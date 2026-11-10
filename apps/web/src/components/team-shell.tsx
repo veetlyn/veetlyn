@@ -1,6 +1,6 @@
 "use client";
 
-import type { ContextNode, SectionPage } from "@jendal-workspace/core/context/node";
+import type { SectionPage } from "@jendal-workspace/core/context/node";
 import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -25,14 +25,13 @@ import { usePathname } from "next/navigation";
 
 import { AgentIcon } from "@/components/agent-icon";
 import AppFrame, { navItemClass } from "@/components/app-frame";
-import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
 import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
-import { usePlatformName } from "@/components/platform-name";
 import { sellerOptions, useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
 import { type HideableArea, projectStatusLabel } from "@jendal-workspace/core";
 import { trpc } from "@/utils/trpc";
+import { isProjectReadDenied } from "@/lib/project-refresh";
 
 const PAGES = {
   requests: { label: "Requests", icon: HandCoins },
@@ -95,7 +94,6 @@ export default function TeamShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const platform = usePlatformName();
   const seller = useQuery({ ...trpc.agent.seller.queryOptions({ slug }), retry: false, meta: { silent: true } });
   const scope = seller.data?.scope;
   const services = scope?.seller?.role.product === "services";
@@ -116,7 +114,7 @@ export default function TeamShell({
   const allowed = new Set(sections.flatMap((s) => s.pages));
   const projectsList = useQuery({
     ...trpc.project.list.queryOptions({ teamSlug: slug }),
-    enabled: services && allowed.has("projects"),
+    enabled: services && (allowed.has("projects") || allowed.has("requests")),
     retry: false,
     meta: { silent: true },
   });
@@ -124,30 +122,49 @@ export default function TeamShell({
   const segments = pathname.split("/").filter(Boolean).slice(1);
   const settingsMode = segments[0] === "settings" || segments[0] === "members" || (segments[0] === "payouts" && segments[1] === "rules");
   const projectId = segments[0] === "projects" && segments[1] && segments[1] !== "new" ? segments[1] : null;
+  const projectDetail = useQuery({
+    ...trpc.project.get.queryOptions({ teamSlug: slug, projectId: projectId ?? "" }),
+    enabled: services && projectId !== null,
+    retry: false,
+    meta: { silent: true },
+  });
+  const record = isProjectReadDenied(projectDetail.error) ? undefined : projectDetail.data?.project;
+  const projectParent = allowed.has("projects")
+    ? { href: `/${slug}/projects`, label: "Projects", allLabel: "All projects" }
+    : allowed.has("requests")
+      ? { href: `/${slug}/requests`, label: "Requests", allLabel: "All requests" }
+      : { href: `/${slug}`, label: "Home", allLabel: "Home" };
+  const showWorkspace = organization && organization.servicesTeams.length + organization.stores.length > 1;
   const hiddenArea = projectId ? undefined : AREA_OF_PAGE.get(segments[0] ?? "");
   const pageHidden = services && hiddenArea !== undefined && scope?.seller?.access.hidden.includes(hiddenArea) === true;
-  // Where the assistant starts from on this page: the project open here, or the whole seller.
-  const node: ContextNode | null = !teamId
-    ? null
-    : projectId && services
-      ? { kind: "record", teamId, record: { type: "project", id: projectId } }
-      : { kind: "seller", teamId };
 
   // Workspace › seller › section › record. The workspace and seller crumbs switch; the sidebar lists the sections.
   const crumbs = [
-    ...(organization
-      ? [{ href: `/w/${organization.id}`, label: organization.name, options: workspaceOptions(workspaces), menuLabel: "Workspaces" }]
+    ...(showWorkspace
+      ? [{ href: `/w/${organization.id}`, label: organization.name, options: workspaceOptions(workspaces), menuLabel: "Workspaces", kind: "workspace" as const }]
       : []),
     {
       href: `/${slug}`,
       label: name,
       options: organization ? sellerOptions(organization) : undefined,
       menuLabel: organization ? `Sellers in ${organization.name}` : undefined,
+      kind: "seller" as const,
     },
-    ...segments.map((segment, i) => ({
+    ...(projectId ? [
+      { href: projectParent.href, label: projectParent.label },
+      {
+        href: `/${slug}/projects/${projectId}`,
+        label: record?.title ?? (projectDetail.isError ? "Project unavailable" : "Loading project…"),
+        menuLabel: projectParent.label,
+        options: record ? [
+          { href: projectParent.href, label: projectParent.allLabel },
+          ...(projectsList.data ?? []).map((project) => ({ href: `/${slug}/projects/${project.id}`, label: project.title, detail: [project.clientName, projectStatusLabel(project.status)].filter(Boolean).join(" · ") })),
+        ] : undefined,
+      },
+    ] : segments.map((segment, i) => ({
       href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
       label: (segment === "calls" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : i > 0 && segments[i - 1] === "payouts" ? "Payout" : "Details"),
-    })),
+    }))),
   ];
   const isActive = (href: string) =>
     href === `/${slug}` ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -180,16 +197,16 @@ export default function TeamShell({
       ]}
       sidebar={
         <>
-          <div className="mb-3 grid min-w-0 gap-4 border-b pb-3">
+          {!projectId && !settingsMode ? <div className="mb-3 grid min-w-0 gap-4 border-b pb-3">
             <Link href={organization ? `/w/${organization.id}` : "/"} className={navItemClass(false)}>
               <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
               <span className="truncate">Back to {organization?.name ?? "your account"}</span>
             </Link>
             <p className="truncate px-2.5 text-sm font-semibold">{name}</p>
-          </div>
+          </div> : null}
           {settingsMode ? (
             <nav aria-label="Seller settings" className="grid gap-1">
-              <Link href={`/${slug}`} className={navItemClass(false)}><ArrowLeft className="size-4" aria-hidden="true" />Back to Home</Link>
+              <Link href={`/${slug}`} className={navItemClass(false)}><ArrowLeft className="size-4" aria-hidden="true" /><span className="truncate">Back to {name}</span></Link>
               <h2 className="px-2.5 pt-4 pb-2 text-xs text-muted-foreground">Settings</h2>
               {[
                 { href: `/${slug}/settings`, label: "General" },
@@ -202,7 +219,14 @@ export default function TeamShell({
               ))}
             </nav>
           ) : projectId && services && teamId ? (
-            <ProjectNav slug={slug} projectId={projectId} teamId={teamId} />
+            <ProjectNav
+              slug={slug}
+              projectId={projectId}
+              teamId={teamId}
+              backHref={projectParent.href}
+              backLabel={projectParent.label}
+              agentAvailable={seller.data?.available === true}
+            />
           ) : (
             <>
               <nav aria-label="Seller" className="grid gap-0.5">
@@ -262,15 +286,6 @@ export default function TeamShell({
           <BillingNotice slug={slug} />
 
         </>
-      }
-      ask={
-        node && seller.data?.available && services && !settingsMode && pathname !== `/${slug}` && !pathname.startsWith(`/${slug}/calls`) ? (
-          <AskBar
-            callsPath={`/${slug}/calls`}
-            node={node}
-            placeholder={projectId ? `Ask ${platform} about this project` : `Ask ${platform} about ${name}`}
-          />
-        ) : null
       }
     >
       {pageHidden ? (
