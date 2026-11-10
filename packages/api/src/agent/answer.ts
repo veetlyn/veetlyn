@@ -3,7 +3,7 @@
 // them after the model answers and before the entry is stored, whatever the model did.
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
 // A shortened id the model wrote itself, like 0cf0ce75... — still an internal id.
-const TRUNCATED_ID = /\b[0-9a-f]{6,}(?:\.\.\.|…)\b/gi;
+const TRUNCATED_ID = /\b[0-9a-f]{6,}(?:\.\.\.|…)/gi;
 // A field name carrying a bare value (canRate: true) goes as one piece, so no dangling ": true" is left behind.
 const FIELD_VALUE = /\b[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)*\s*[:=]\s*(?:true|false|null)\b/gi;
 const ISO_TIMESTAMP = /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?\b/g;
