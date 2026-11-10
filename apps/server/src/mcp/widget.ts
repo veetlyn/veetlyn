@@ -1,7 +1,7 @@
 import { BRIDGE_VERSION } from "./bridge.generated";
 
 // Hosts cache a widget by its URI, so a changed widget gets a new one.
-export const WIDGET_URI = "ui://platform/app-v7";
+export const WIDGET_URI = "ui://platform/app-v8";
 
 const CSS = `
   .w {
@@ -132,6 +132,7 @@ function offeringsView(data) {
     el("article", { class: "card", role: "listitem" },
       el("div", { class: "head" }, o.name),
       el("div", { class: "cap" }, o.seller + " · usually " + o.days + (FULFILMENT[o.fulfilment] ? " · " + FULFILMENT[o.fulfilment] : "")),
+      ...(o.sellerRating ? [el("div", { class: "cap" }, o.sellerRating.average.toFixed(1) + " ★ (" + o.sellerRating.count + (o.sellerRating.count === 1 ? " review)" : " reviews)"))] : []),
       el("div", { class: "price num" }, range(o)),
       el("p", { class: "cap clamp grow" }, o.description),
       el("div", { class: "actions" },

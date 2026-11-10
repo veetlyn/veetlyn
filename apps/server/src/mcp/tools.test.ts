@@ -154,6 +154,7 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
       "get_project",
       "get_request_terms",
       "list_my_projects",
+      "rate_seller",
       "reply",
       "request_changes",
       "request_quote",
@@ -193,6 +194,23 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     expect(sent.slice(0, 20).filter((r) => r.result?.isError).map(textOf)).toEqual([]);
     expect(sent[20]?.result?.isError).toBe(true);
     expect(textOf(sent[20]!)).toContain("Too many requests");
+  });
+
+  it("takes the client's own review after completion and includes the seller's rating in search cards", async () => {
+    const { clientId, projectId, offeringId } = await requested();
+    const before = await tool(clientId, "rate_seller", { projectId, rating: 5, review: "Careful work" });
+    expect(before.result?.isError).toBe(true);
+    await db.update(project).set({ status: "completed" }).where(eq(project.id, projectId));
+    const ready = textOf(await tool(clientId, "get_project", { projectId }));
+    expect(ready).toContain("rate_seller");
+    const posted = await tool(clientId, "rate_seller", { projectId, rating: 4, review: "Careful work" });
+    expect(posted.result?.isError).not.toBe(true);
+    expect(textOf(posted)).toContain("your rating is posted");
+    const found = await tool(clientId, "search_offerings", { query: "Logo" });
+    expect(found.result?._meta?.platform?.card?.offerings).toEqual([
+      expect.objectContaining({ id: offeringId, sellerRating: { average: 4, count: 1 } }),
+    ]);
+    expect(textOf(found)).toContain("4.0 ★ (1 review)");
   });
 
   it("sums up each freelancer's quote and question, and keeps the confirmations out of the text", async () => {

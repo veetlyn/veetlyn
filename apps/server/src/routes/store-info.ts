@@ -1,4 +1,5 @@
 import { teamEntitlements } from "@jendal-workspace/api/billing/entitlements";
+import { sellerReputation } from "@jendal-workspace/api/use-cases/reviews";
 import { findSellerPage } from "@jendal-workspace/db/repositories/seller-page";
 import { findStorePolicyInfo } from "@jendal-workspace/db/repositories/stores";
 import { Hono } from "hono";
@@ -36,5 +37,5 @@ export const storeInfoRoute = new Hono<AppEnv>()
     if (!store) return c.json({ error: "not_a_store_host" }, 404);
     const page = await findSellerPage(c.get("db"), store.id);
     if (!page) return c.json({ error: "store_not_found" }, 404);
-    return c.json(page);
+    return c.json({ ...page, ...(await sellerReputation(c.get("db"), store.id)) });
   });
