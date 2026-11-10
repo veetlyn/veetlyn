@@ -1,0 +1,18 @@
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 70-95
+packages/api/src/agent/effects.ts
+  h_6877e5e7a06bc5 6,12-13,23-27,50-60,110-132,172-189
+packages/api/src/routers/agent.test.ts
+  h_6877e5e7a06bc5 223-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92734294e24fdb1061b2f24b9fbac6881a051a3d",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
