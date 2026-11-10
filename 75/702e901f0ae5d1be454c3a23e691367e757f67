@@ -1,0 +1,64 @@
+apps/web/src/app/dash/[storeSlug]/calls/seller-calls.tsx
+  h_6877e5e7a06bc5 36
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 72,83,143-148,150,193
+apps/web/src/app/dash/[storeSlug]/cases/team-cases.tsx
+  h_6877e5e7a06bc5 30-31,41
+apps/web/src/app/dash/[storeSlug]/members/services-team-members.tsx
+  h_6877e5e7a06bc5 200
+apps/web/src/app/dash/[storeSlug]/payouts/payouts-web-section.tsx
+  h_6877e5e7a06bc5 123
+apps/web/src/app/dash/[storeSlug]/products/products-list.tsx
+  h_6877e5e7a06bc5 68
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/member-marks.tsx
+  h_6877e5e7a06bc5 68
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 124,320
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/refund-section.tsx
+  h_6877e5e7a06bc5 63
+apps/web/src/app/dash/[storeSlug]/requests/open-requests.tsx
+  h_6877e5e7a06bc5 62
+apps/web/src/app/dash/[storeSlug]/services/services-catalog.tsx
+  h_6877e5e7a06bc5 150-151
+apps/web/src/app/dash/me/payouts/payout-history.tsx
+  h_6877e5e7a06bc5 31
+apps/web/src/app/dash/me/personal-home.tsx
+  h_6877e5e7a06bc5 84
+apps/web/src/app/dash/me/projects/client-home.tsx
+  h_6877e5e7a06bc5 42-43
+apps/web/src/app/dash/page.tsx
+  h_6877e5e7a06bc5 47
+apps/web/src/app/dash/w/[organizationId]/billing/billing-panel.tsx
+  h_6877e5e7a06bc5 132
+apps/web/src/components/catalog/digital-products.tsx
+  h_6877e5e7a06bc5 105
+apps/web/src/components/client-project-view.tsx
+  h_6877e5e7a06bc5 129
+apps/web/src/components/conversation/thread.tsx
+  h_6877e5e7a06bc5 24,59,71
+apps/web/src/components/project-nav.tsx
+  h_6877e5e7a06bc5 19,85,135
+apps/web/src/components/recent-calls.tsx
+  h_6877e5e7a06bc5 4,7-8,10-11,13-14,16,21
+apps/web/src/components/sandbox-checkout-help.tsx
+  h_6877e5e7a06bc5 25
+apps/web/src/components/seller-page/seller-page.tsx
+  h_6877e5e7a06bc5 52-53
+apps/web/src/components/workspace/workspace-sellers.tsx
+  h_6877e5e7a06bc5 25
+apps/web/src/dash.css
+  h_6877e5e7a06bc5 78-112
+packages/api/src/routers/agent.ts
+  h_6877e5e7a06bc5 2-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "75702e901f0ae5d1be454c3a23e691367e757f67",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
