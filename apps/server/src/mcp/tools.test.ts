@@ -8,7 +8,7 @@ import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { user } from "@jendal-workspace/db/schema/auth";
 import { conversationMessage } from "@jendal-workspace/db/schema/conversations";
 import { member } from "@jendal-workspace/db/schema/organization";
-import { project } from "@jendal-workspace/db/schema/projects";
+import { amendment, project } from "@jendal-workspace/db/schema/projects";
 import { servicesTeamSettings } from "@jendal-workspace/db/schema/services-teams";
 import {
   createTestDb,
@@ -253,6 +253,21 @@ describe.skipIf(!hasTestDatabase)("the plugin's tools", () => {
     expect(after).toContain(`- Answered question from «Ben» (question id ${asked.messageId}): «Your email for the files?»; the answer: «`);
     expect(after).toContain("«Ben» quoted $140.00 in 3 days, not chosen");
     expect(after).toMatch(/- Payment: deposit \$[\d.,]+, pending\./);
+  });
+
+  it("stops offering an unanswered change once the project has ended", async () => {
+    const { projectId, teamId, aicha, clientId } = await requested();
+    const item = [{ description: "Logo", amountMinor: 15_000, extraDays: 0 }];
+    const { quoteId } = await addQuote(db, { teamId, role: "freelancer", actorId: aicha }, { projectId, items: item, deliveryDays: 4 });
+    // As the silence ladder leaves it: a change proposed after delivery, then the project ended without an answer.
+    await db.insert(amendment).values({ projectId, teamId, baseQuoteId: quoteId, addItems: [], removeItemIds: [], deltaMinor: 1_000, newAmountMinor: 16_000 });
+    await db.update(project).set({ status: "delivered" }).where(eq(project.id, projectId));
+    expect(textOf(await tool(clientId, "get_project", { projectId }))).toContain("proposed a change to the scope or price");
+
+    await db.update(project).set({ status: "abandoned" }).where(eq(project.id, projectId));
+    const ended = textOf(await tool(clientId, "get_project", { projectId }));
+    expect(ended).not.toContain("proposed a change");
+    expect(ended).toContain("the project ended per the terms the client accepted");
   });
 
   it("refuses the client once they join the project's team", async () => {

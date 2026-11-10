@@ -1,7 +1,7 @@
 "use client";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
-import { formatMoney, money, projectStatusLabel } from "@jendal-workspace/core";
+import { formatMoney, money, projectAllows, projectStatusLabel } from "@jendal-workspace/core";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -205,7 +205,8 @@ function nextStep(data: ClientProjectData): NextStep | null {
       action: proposed.length === 1 ? "See the quote" : "Compare quotes",
     };
   }
-  const amendment = amendments.find((a) => a.status === "pending");
+  // A pending amendment on a project that has ended (abandoned, cancelled) can no longer be answered.
+  const amendment = projectAllows(project.status, "accept_amendment") ? amendments.find((a) => a.status === "pending") : undefined;
   if (amendment) {
     return {
       title: "Answer a change to the quote",
@@ -364,7 +365,7 @@ export function ClientProjectView({
                 </ul>
               ) : null}
               {amendment.note ? <p className="text-sm">{amendment.note}</p> : null}
-              {amendment.status === "pending" ? (
+              {amendment.status === "pending" && projectAllows(project.status, "accept_amendment") ? (
                 <div className="flex gap-2">
                   <Button
                     variant="mint"

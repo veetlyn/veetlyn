@@ -139,6 +139,13 @@ export function transitionProject(
   return { ok: true, to: to === "unchanged" ? from : to };
 }
 
+// Whether a project in `status` takes `event` at all, before any fact-based guard. Surfaces use it to decide whether a
+// child row (a pending amendment, a submitted delivery) is still something the person can act on.
+export function projectAllows(status: ProjectStatus, event: ProjectEvent): boolean {
+  const rule: TransitionRule = PROJECT_TRANSITIONS[event];
+  return rule.from.includes(status);
+}
+
 export function allowedProjectEvents(from: ProjectStatus, facts: Partial<ProjectFacts> = {}): ProjectEvent[] {
   return PROJECT_EVENTS.filter((event) => transitionProject(from, event, facts).ok);
 }
