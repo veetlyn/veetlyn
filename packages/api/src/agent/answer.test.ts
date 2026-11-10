@@ -21,6 +21,10 @@ describe("sanitizeAgentAnswer", () => {
     expect(clean).toContain("can be rated");
   });
 
+  it("removes a parenthesised short id", () => {
+    expect(sanitizeAgentAnswer("Payout for Logo refresh (00fbf3ae) is waiting.")).toBe("Payout for Logo refresh is waiting.");
+  });
+
   it("leaves a plain answer untouched", () => {
     const plain = "The quote is $300.00 and the client is waiting for the deposit.";
     expect(sanitizeAgentAnswer(plain)).toBe(plain);
