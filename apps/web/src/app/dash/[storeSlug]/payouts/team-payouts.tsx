@@ -1,6 +1,7 @@
 "use client";
 
 import { canServicesTeam } from "@jendal-workspace/core";
+import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
@@ -23,7 +24,17 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <h1 className="font-heading text-3xl">Payouts</h1>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="font-heading text-3xl">Payouts</h1>
+          {!solo ? <p className="text-sm text-muted-foreground">Members&apos; payout requests, paid from {team.name}&apos;s PayPal account.</p> : null}
+        </div>
+        {!solo && canServicesTeam(role, "approve_payouts") ? (
+          <Link href={`/${team.slug}/payouts/rules`} className={buttonVariants({ variant: "outline" })}>
+            Payout rules
+          </Link>
+        ) : null}
+      </header>
       {solo ? (
         <p className="text-sm text-muted-foreground">
           Payouts are for teams. As a solo seller, clients pay you directly in your PayPal account.
@@ -38,14 +49,6 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
         </p>
       ) : (
         <>
-          {canServicesTeam(role, "approve_payouts") ? (
-            <p className="text-sm">
-              <Link href={`/${team.slug}/payouts/rules`} className="underline underline-offset-4">
-                Payout rules
-              </Link>
-              <span className="text-muted-foreground">: who approves payouts, and when they are sent.</span>
-            </p>
-          ) : null}
           <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
           {canServicesTeam(role, "approve_payouts") ? <>
             <PayoutCredentialsCard teamSlug={team.slug} />
