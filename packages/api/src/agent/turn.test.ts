@@ -41,4 +41,9 @@ describe("the assistant's instructions", () => {
     expect(prompt).toContain("Start with one sentence that answers the question");
     expect(prompt).toContain("at most 6 short bullets");
   });
+
+  it("tells the assistant to look people and records up instead of asking the person for an id", () => {
+    const prompt = systemPrompt("Platform", inTeam("admin"), 11);
+    expect(prompt).toContain("Never ask the person for an id");
+  });
 });
