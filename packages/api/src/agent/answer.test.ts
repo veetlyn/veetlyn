@@ -14,6 +14,13 @@ describe("sanitizeAgentAnswer", () => {
     expect(clean).toContain("quoting");
   });
 
+  it("removes truncated ids and field values left as bare booleans", () => {
+    const clean = sanitizeAgentAnswer("Project 0cf0ce75... can be rated: `canRate: true` and it is done.");
+    expect(clean).not.toContain("0cf0ce75");
+    expect(clean).not.toContain("true");
+    expect(clean).toContain("can be rated");
+  });
+
   it("leaves a plain answer untouched", () => {
     const plain = "The quote is $300.00 and the client is waiting for the deposit.";
     expect(sanitizeAgentAnswer(plain)).toBe(plain);
