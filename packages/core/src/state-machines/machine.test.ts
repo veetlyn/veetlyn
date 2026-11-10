@@ -23,6 +23,7 @@ describe("defineMachine", () => {
     expect(door.sources("remove")).toEqual(["open", "closed"]);
     expect(door.terminal).toEqual(["removed"]);
     expect(door.isTerminal("locked")).toBe(false);
+    expect(door.unreachable).toEqual([]);
   });
 
   it("throws a typed error for a refused move", () => {
@@ -40,6 +41,17 @@ describe("defineMachine", () => {
         transitions: { go: { from: ["a"], to: "b" as "a" } },
       }),
     ).toThrow(/unknown state "b"/);
+  });
+
+  it("names declared states nothing moves into", () => {
+    const legacy = defineMachine({
+      name: "legacy",
+      states: ["new", "done", "archived"],
+      initial: "new",
+      transitions: { finish: { from: ["new"], to: "done" } },
+    });
+    expect(legacy.unreachable).toEqual(["archived"]);
+    expect(machineDiagram(legacy)).toContain("note right of archived: never entered");
   });
 
   it("draws every row of the table", () => {

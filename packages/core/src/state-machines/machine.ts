@@ -14,6 +14,8 @@ export type Machine<S extends string, E extends string> = MachineDefinition<S, E
   readonly events: readonly E[];
   // States no transition leaves.
   readonly terminal: readonly S[];
+  // Declared states nothing ever moves into, other than the initial one: kept for stored rows, never entered now.
+  readonly unreachable: readonly S[];
   can(from: S, event: E): boolean;
   // The state after `event`, or null when the event is not allowed from `from`.
   next(from: S, event: E): S | null;
@@ -48,10 +50,14 @@ export function defineMachine<const S extends string, const E extends string>(
   }
   if (!definition.states.includes(definition.initial)) throw new Error(`${definition.name}: unknown initial state`);
   const terminal = definition.states.filter((state) => !events.some((event) => rules[event].from.includes(state)));
+  const unreachable = definition.states.filter(
+    (state) => state !== definition.initial && !events.some((event) => rules[event].to === state),
+  );
   return {
     ...definition,
     events,
     terminal,
+    unreachable,
     can: (from, event) => rules[event].from.includes(from),
     next: (from, event) => (rules[event].from.includes(from) ? rules[event].to : null),
     sources: (event) => rules[event].from,
@@ -74,6 +80,9 @@ export function machineDiagram<S extends string, E extends string>(machine: Mach
     const rule = machine.transitions[event];
     for (const from of rule.from) lines.push(`  ${from} --> ${rule.to}: ${event}`);
   }
-  for (const state of machine.terminal) lines.push(`  ${state} --> [*]`);
+  for (const state of machine.terminal) {
+    if (!machine.unreachable.includes(state)) lines.push(`  ${state} --> [*]`);
+  }
+  for (const state of machine.unreachable) lines.push(`  note right of ${state}: never entered`);
   return lines.join("\n");
 }

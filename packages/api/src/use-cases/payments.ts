@@ -9,14 +9,17 @@ import {
   parseMajorAmount,
   paymentCapturedTransfer,
   paymentFeesTransfer,
+  paymentMachine,
   platformFeeMinor,
   toPayPalValue,
+  transitionOrThrow,
   transitionProject,
   transitionRefusalMessage,
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import type { Transaction } from "@jendal-workspace/db/executor";
 import { postgresError } from "@jendal-workspace/db/postgres-errors";
+import { requireMoved, startsFrom } from "@jendal-workspace/db/state-guard";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
 import {
   findProjectById,
@@ -197,10 +200,21 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
           `Capture ${fact.captureId} (${fact.currency} ${fact.amountMinor}) does not match payment ${row.id} (${row.currency} ${row.amountMinor})`,
         );
       }
-      await tx
-        .update(payment)
-        .set({ status: "captured", paypalCaptureId: fact.captureId, capturedAt, version: row.version + 1 })
-        .where(eq(payment.id, row.id));
+      requireMoved(
+        await tx
+          .update(payment)
+          .set({
+            status: transitionOrThrow(paymentMachine, row.status, "capture_completed"),
+            paypalCaptureId: fact.captureId,
+            capturedAt,
+            version: row.version + 1,
+          })
+          .where(and(eq(payment.id, row.id), startsFrom(payment.status, paymentMachine, "capture_completed")))
+          .returning({ id: payment.id }),
+        paymentMachine,
+        row.status,
+        "capture_completed",
+      );
       const change = await projectChangeOnCapture(tx, projectRow, row.kind, capturedAt);
       await uow.apply({
         project: projectRow,
@@ -233,10 +247,16 @@ function applyInTransaction(db: Database, fact: CaptureFact): Promise<CaptureFac
       return "applied";
     }
 
-    await tx
-      .update(payment)
-      .set({ status: "failed", paypalCaptureId: fact.captureId, version: row.version + 1 })
-      .where(eq(payment.id, row.id));
+    requireMoved(
+      await tx
+        .update(payment)
+        .set({ status: transitionOrThrow(paymentMachine, row.status, "capture_failed"), paypalCaptureId: fact.captureId, version: row.version + 1 })
+        .where(and(eq(payment.id, row.id), startsFrom(payment.status, paymentMachine, "capture_failed")))
+        .returning({ id: payment.id }),
+      paymentMachine,
+      row.status,
+      "capture_failed",
+    );
     await uow.apply({
       project: projectRow,
       set: {},
@@ -468,8 +488,14 @@ export async function startPayment(deps: PaymentDeps, paymentId: string): Promis
   });
   const updated = await deps.db
     .update(payment)
-    .set({ paypalOrderId: order.id, platformFeeMinor: fee, status: "pending", paypalCaptureId: null, version: current.version + 1 })
-    .where(and(eq(payment.id, current.id), eq(payment.version, current.version)))
+    .set({
+      paypalOrderId: order.id,
+      platformFeeMinor: fee,
+      status: transitionOrThrow(paymentMachine, current.status, "start_order"),
+      paypalCaptureId: null,
+      version: current.version + 1,
+    })
+    .where(and(eq(payment.id, current.id), eq(payment.version, current.version), startsFrom(payment.status, paymentMachine, "start_order")))
     .returning({ id: payment.id });
   if (updated.length === 0) {
     throw new TRPCError({ code: "CONFLICT", message: "This payment changed. Reload the page and try again." });

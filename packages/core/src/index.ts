@@ -42,6 +42,7 @@ export * from "./ledger/postings";
 export * from "./ledger/ledger";
 export * from "./payments/review";
 export * from "./projects/quotes";
+export * from "./projects/lifecycles";
 export * from "./projects/permissions";
 export * from "./projects/completion";
 export * from "./projects/refunds";

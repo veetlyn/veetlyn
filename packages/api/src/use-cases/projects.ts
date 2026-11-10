@@ -30,8 +30,13 @@ import {
   type QuoteItemDraft,
   type FileStore,
   type ServicesTeamRole,
+  amendmentMachine,
+  deliveryMachine,
+  quoteMachine,
+  transitionOrThrow,
 } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
+import { requireMoved, startsFrom } from "@jendal-workspace/db/state-guard";
 import type { DbExecutor, Transaction } from "@jendal-workspace/db/executor";
 import { attachContact, matchOrCreateContact } from "@jendal-workspace/db/repositories/contacts";
 import { insertEventMessage, userDisplayName } from "@jendal-workspace/db/repositories/conversations";
@@ -341,10 +346,20 @@ export async function acceptQuote(
         { type: "payment.created", data: { paymentId, kind: "deposit", amountMinor: deposit.totalMinor } },
       ],
     });
-    await tx.update(quote).set({ status: "accepted", acceptedAt: new Date() }).where(eq(quote.id, found.id));
+    requireMoved(
+      await tx
+        .update(quote)
+        .set({ status: transitionOrThrow(quoteMachine, found.status, "accept"), acceptedAt: new Date() })
+        .where(and(eq(quote.id, found.id), startsFrom(quote.status, quoteMachine, "accept")))
+        .returning({ id: quote.id }),
+      quoteMachine,
+      found.status,
+      "accept",
+    );
+    // The other proposed quotes lose.
     await tx
       .update(quote)
-      .set({ status: "superseded" })
+      .set({ status: quoteMachine.transitions.supersede.to })
       .where(and(eq(quote.projectId, row.id), eq(quote.status, "proposed")));
     await tx.insert(payment).values({
       id: paymentId,
@@ -554,7 +569,16 @@ export async function acceptAmendment(
           : [],
       events,
     });
-    await tx.update(quote).set({ status: "superseded" }).where(eq(quote.id, current.id));
+    requireMoved(
+      await tx
+        .update(quote)
+        .set({ status: transitionOrThrow(quoteMachine, current.status, "supersede") })
+        .where(and(eq(quote.id, current.id), startsFrom(quote.status, quoteMachine, "supersede")))
+        .returning({ id: quote.id }),
+      quoteMachine,
+      current.status,
+      "supersede",
+    );
     const [newQuote] = await tx
       .insert(quote)
       .values({
@@ -573,15 +597,20 @@ export async function acceptAmendment(
       .returning({ id: quote.id });
     if (!newQuote) throw new Error("Insert into quote returned no row");
     await tx.insert(quoteItem).values(amended.items.map((item, position) => ({ quoteId: newQuote.id, position, ...item })));
-    await tx
-      .update(amendment)
-      .set({
-        status: "accepted",
-        decidedAt: new Date(),
-        resultingQuoteId: newQuote.id,
-        managementFeeCreditMinor: effect.kind === "decrease" ? effect.managementFeeCreditMinor : 0,
-      })
-      .where(eq(amendment.id, found.id));
+    requireMoved(
+      await tx
+        .update(amendment)
+        .set({ status: transitionOrThrow(amendmentMachine, found.status, "accept"),
+          decidedAt: new Date(),
+          resultingQuoteId: newQuote.id,
+          managementFeeCreditMinor: effect.kind === "decrease" ? effect.managementFeeCreditMinor : 0,
+         })
+        .where(and(eq(amendment.id, found.id), startsFrom(amendment.status, amendmentMachine, "accept")))
+        .returning({ id: amendment.id }),
+      amendmentMachine,
+      found.status,
+      "accept",
+    );
     if (effect.kind === "increase" && topUpPaymentId) {
       await tx.insert(payment).values({
         id: topUpPaymentId,
@@ -623,7 +652,16 @@ export async function declineAmendment(db: Database, input: { projectId: string;
       set: {},
       events: [{ type: "amendment.declined", data: { amendmentId: found.id, projectId: row.id } }],
     });
-    await tx.update(amendment).set({ status: "declined", decidedAt: new Date() }).where(eq(amendment.id, found.id));
+    requireMoved(
+      await tx
+        .update(amendment)
+        .set({ status: transitionOrThrow(amendmentMachine, found.status, "decline"), decidedAt: new Date() })
+        .where(and(eq(amendment.id, found.id), startsFrom(amendment.status, amendmentMachine, "decline")))
+        .returning({ id: amendment.id }),
+      amendmentMachine,
+      found.status,
+      "decline",
+    );
     await insertEventMessage(tx, {
       projectId: row.id,
       space: "project",
@@ -943,10 +981,16 @@ export async function requestChanges(
       set: { status, revisions: row.rulebookId ? row.revisions : row.revisions + 1 },
       events: [{ type: "delivery.changes_requested", data: { deliveryId: found.id } }],
     });
-    await tx
-      .update(delivery)
-      .set({ status: "changes_requested", clientNote: note, decidedAt: new Date() })
-      .where(eq(delivery.id, found.id));
+    requireMoved(
+      await tx
+        .update(delivery)
+        .set({ status: transitionOrThrow(deliveryMachine, found.status, "request_changes"), clientNote: note, decidedAt: new Date() })
+        .where(and(eq(delivery.id, found.id), startsFrom(delivery.status, deliveryMachine, "request_changes")))
+        .returning({ id: delivery.id }),
+      deliveryMachine,
+      found.status,
+      "request_changes",
+    );
     await insertEventMessage(tx, {
       projectId: row.id,
       space: "project",
@@ -1081,7 +1125,16 @@ async function settleDelivery(
     } else {
       throw new Error(`accept_delivery moved project ${row.id} to ${status}`);
     }
-    await tx.update(delivery).set({ status: "accepted", decidedAt: new Date() }).where(eq(delivery.id, found.id));
+    requireMoved(
+      await tx
+        .update(delivery)
+        .set({ status: transitionOrThrow(deliveryMachine, found.status, "accept"), decidedAt: new Date() })
+        .where(and(eq(delivery.id, found.id), startsFrom(delivery.status, deliveryMachine, "accept")))
+        .returning({ id: delivery.id }),
+      deliveryMachine,
+      found.status,
+      "accept",
+    );
     await insertEventMessage(tx, {
       projectId: row.id,
       space: "project",

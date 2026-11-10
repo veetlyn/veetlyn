@@ -1,8 +1,14 @@
-import type { ProjectRefundPartStatus, ProjectRefundStatus } from "@jendal-workspace/core";
+import {
+  type ProjectRefundEvent,
+  projectRefundMachine,
+  projectRefundPartMachine,
+  type ProjectRefundPartStatus,
+} from "@jendal-workspace/core";
 import { and, asc, desc, eq, exists, isNull, ne, notExists, sql } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 
 import type { DbExecutor, Transaction } from "../executor";
+import { requireMoved, startsFrom } from "../state-guard";
 import { projectRefund, projectRefundPart } from "../schema/project-refunds";
 
 export type ProjectRefundRow = typeof projectRefund.$inferSelect;
@@ -38,12 +44,19 @@ export async function lockProjectRefund(tx: Transaction, id: string): Promise<Pr
   return row ?? null;
 }
 
+// Staff issue (or retry) the refund, or PayPal refused a part. A completed refund never moves again.
 export async function setProjectRefundStatus(
   tx: DbExecutor,
   id: string,
-  status: Exclude<ProjectRefundStatus, "completed">,
+  status: (typeof projectRefundMachine.transitions)["issue" | "refuse"]["to"],
 ): Promise<void> {
-  await tx.update(projectRefund).set({ status }).where(eq(projectRefund.id, id));
+  const event: ProjectRefundEvent = status === "issuing" ? "issue" : "refuse";
+  const rows = await tx
+    .update(projectRefund)
+    .set({ status: projectRefundMachine.transitions[event].to })
+    .where(and(eq(projectRefund.id, id), startsFrom(projectRefund.status, projectRefundMachine, event)))
+    .returning({ id: projectRefund.id });
+  requireMoved(rows, projectRefundMachine, "completed", event);
 }
 
 // Returns whether this call completed the refund: it has parts and every one is completed, and it was not
@@ -51,11 +64,11 @@ export async function setProjectRefundStatus(
 export async function completeProjectRefundIfDone(tx: DbExecutor, id: string, completedAt: Date): Promise<boolean> {
   const rows = await tx
     .update(projectRefund)
-    .set({ status: "completed", completedAt })
+    .set({ status: projectRefundMachine.transitions.complete.to, completedAt })
     .where(
       and(
         eq(projectRefund.id, id),
-        ne(projectRefund.status, "completed"),
+        startsFrom(projectRefund.status, projectRefundMachine, "complete"),
         exists(tx.select({ id: projectRefundPart.id }).from(projectRefundPart).where(eq(projectRefundPart.projectRefundId, id))),
         notExists(
           tx
@@ -113,18 +126,19 @@ export async function setRefundPartPayPalRefund(
   partId: string,
   input: { paypalRefundId: string; status: Exclude<ProjectRefundPartStatus, "failed"> },
 ): Promise<void> {
+  const event = input.status === "completed" ? "complete" : "resend";
   await tx
     .update(projectRefundPart)
-    .set({ paypalRefundId: input.paypalRefundId, status: input.status, failureMessage: null })
-    .where(and(eq(projectRefundPart.id, partId), ne(projectRefundPart.status, "completed")));
+    .set({ paypalRefundId: input.paypalRefundId, status: projectRefundPartMachine.transitions[event].to, failureMessage: null })
+    .where(and(eq(projectRefundPart.id, partId), startsFrom(projectRefundPart.status, projectRefundPartMachine, event)));
 }
 
 // Returns whether this call completed the part; the capture answer and the webhook may both report it.
 export async function markRefundPartCompleted(tx: DbExecutor, partId: string): Promise<boolean> {
   const rows = await tx
     .update(projectRefundPart)
-    .set({ status: "completed", failureMessage: null })
-    .where(and(eq(projectRefundPart.id, partId), ne(projectRefundPart.status, "completed")))
+    .set({ status: projectRefundPartMachine.transitions.complete.to, failureMessage: null })
+    .where(and(eq(projectRefundPart.id, partId), startsFrom(projectRefundPart.status, projectRefundPartMachine, "complete")))
     .returning({ id: projectRefundPart.id });
   return rows.length > 0;
 }
@@ -134,7 +148,7 @@ export async function markRefundPartCompleted(tx: DbExecutor, partId: string): P
 export async function resendFailedRefundParts(tx: DbExecutor, projectRefundId: string): Promise<void> {
   await tx
     .update(projectRefundPart)
-    .set({ status: "pending", failureMessage: null })
+    .set({ status: projectRefundPartMachine.transitions.resend.to, failureMessage: null })
     .where(
       and(
         eq(projectRefundPart.projectRefundId, projectRefundId),
@@ -167,7 +181,7 @@ export async function markRefundPartUncertain(
 export async function failUnsentRefundParts(tx: DbExecutor, projectRefundId: string, failureMessage: string): Promise<void> {
   await tx
     .update(projectRefundPart)
-    .set({ status: "failed", failureMessage })
+    .set({ status: projectRefundPartMachine.transitions.fail.to, failureMessage })
     .where(
       and(
         eq(projectRefundPart.projectRefundId, projectRefundId),
@@ -181,6 +195,6 @@ export async function failUnsentRefundParts(tx: DbExecutor, projectRefundId: str
 export async function markRefundPartFailed(tx: DbExecutor, partId: string, failureMessage: string): Promise<void> {
   await tx
     .update(projectRefundPart)
-    .set({ status: "failed", failureMessage })
-    .where(and(eq(projectRefundPart.id, partId), ne(projectRefundPart.status, "completed")));
+    .set({ status: projectRefundPartMachine.transitions.fail.to, failureMessage })
+    .where(and(eq(projectRefundPart.id, partId), startsFrom(projectRefundPart.status, projectRefundPartMachine, "fail")));
 }
