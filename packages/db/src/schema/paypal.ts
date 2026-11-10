@@ -1,8 +1,9 @@
+import type { PayPalOnboardingStatus } from "@jendal-workspace/core";
 import { boolean, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { team } from "./organization";
 
-export type PayPalOnboardingStatus = "pending" | "connected" | "needs_attention";
+export type { PayPalOnboardingStatus };
 
 // The normalized oauth_integrations payload from PayPal's merchant-integration status.
 // Declared here because packages/db must not import packages/paypal (platform spec §3.2).

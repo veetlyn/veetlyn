@@ -1,7 +1,8 @@
-import type { JsonValue } from "@jendal-workspace/core";
+import { type JsonValue, paypalWebhookEventMachine, WEBHOOK_EVENT_FINISHED_BY } from "@jendal-workspace/core";
 import { and, asc, eq, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
+import { startsFrom } from "../state-guard";
 import { type PayPalWebhookEventStatus, paypalWebhookEvent } from "../schema/paypal-webhooks";
 
 export type PayPalWebhookEventInput = {
@@ -49,7 +50,12 @@ export async function finishWebhookEvent(
   const rows = await db
     .update(paypalWebhookEvent)
     .set({ status: outcome.status, note: outcome.note?.slice(0, MAX_NOTE_LENGTH) ?? null, processedAt: new Date() })
-    .where(and(eq(paypalWebhookEvent.id, id), eq(paypalWebhookEvent.status, "received")))
+    .where(
+      and(
+        eq(paypalWebhookEvent.id, id),
+        startsFrom(paypalWebhookEvent.status, paypalWebhookEventMachine, WEBHOOK_EVENT_FINISHED_BY[outcome.status]),
+      ),
+    )
     .returning({ id: paypalWebhookEvent.id });
   return rows.length > 0;
 }
@@ -84,7 +90,7 @@ export async function failStuckWebhookEvents(
 ): Promise<{ id: string; eventType: string }[]> {
   return db
     .update(paypalWebhookEvent)
-    .set({ status: "failed", note: input.note.slice(0, MAX_NOTE_LENGTH), processedAt: new Date() })
-    .where(and(eq(paypalWebhookEvent.status, "received"), lt(paypalWebhookEvent.receivedAt, input.receivedBefore)))
+    .set({ status: paypalWebhookEventMachine.transitions.fail.to, note: input.note.slice(0, MAX_NOTE_LENGTH), processedAt: new Date() })
+    .where(and(startsFrom(paypalWebhookEvent.status, paypalWebhookEventMachine, "fail"), lt(paypalWebhookEvent.receivedAt, input.receivedBefore)))
     .returning({ id: paypalWebhookEvent.id, eventType: paypalWebhookEvent.eventType });
 }

@@ -1,6 +1,8 @@
 import {
   estimatePayoutFeeMinor,
   type MoneyCurrency,
+  type PayoutRequestEvent,
+  payoutRequestMachine,
   type PayoutRequestStatus,
   payoutSentProblem,
 } from "@jendal-workspace/core";
@@ -51,30 +53,40 @@ export function payoutStatusTone(request: PayoutState) {
   return request.status === "sending" && request.uncertain ? "warn" : PAYOUT_STATUS_TONES[request.status];
 }
 
-export type PayoutAction = "approve" | "reject" | "retry" | "refresh" | "cancel_export";
+const PAYOUT_ACTIONS = ["approve", "reject", "retry", "refresh", "cancel_export"] as const;
+export type PayoutAction = (typeof PAYOUT_ACTIONS)[number];
+
+// Each button is a move of the payout request machine; refreshing asks PayPal how a sent batch settled.
+const ACTION_EVENTS = {
+  approve: "approve",
+  reject: "reject",
+  retry: "claim_send",
+  refresh: "settle_succeeded",
+  cancel_export: "cancel_export",
+} as const satisfies Record<PayoutAction, PayoutRequestEvent>;
 
 // A send PayPal never confirmed is retried with the same batch id, so PayPal pays it at most once, and cannot be
 // rejected. A `sending` request that is not uncertain has a PayPal call in flight and must be left alone. Without
-// automatic payouts a queued payout waits for an export, so there is nothing to retry.
-export function payoutActions(request: PayoutState, automaticPayoutsOn: boolean): readonly PayoutAction[] {
-  switch (request.status) {
-    case "requested":
-      return ["approve", "reject"];
-    case "queued": {
-      const retry: PayoutAction[] = automaticPayoutsOn ? ["retry"] : [];
-      return request.uncertain ? retry : ["reject", ...retry];
-    }
-    case "sending":
-      return request.uncertain ? ["retry"] : [];
-    case "sent":
-      return ["refresh"];
-    case "exported":
-      return ["cancel_export"];
-    case "succeeded":
-    case "failed":
-    case "rejected":
-      return [];
+// automatic payouts a queued payout waits for an export, so there is nothing to retry. Only a sent payout is refreshed
+// from PayPal: an exported one settles when its Payouts Web log is imported.
+function offered(action: PayoutAction, request: PayoutState, automaticPayoutsOn: boolean): boolean {
+  switch (action) {
+    case "reject":
+      return !request.uncertain;
+    case "retry":
+      return request.status === "sending" ? request.uncertain : automaticPayoutsOn;
+    case "refresh":
+      return request.status === "sent";
+    case "approve":
+    case "cancel_export":
+      return true;
   }
+}
+
+export function payoutActions(request: PayoutState, automaticPayoutsOn: boolean): readonly PayoutAction[] {
+  return PAYOUT_ACTIONS.filter(
+    (action) => payoutRequestMachine.can(request.status, ACTION_EVENTS[action]) && offered(action, request, automaticPayoutsOn),
+  );
 }
 
 const PAYDAY_DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" });

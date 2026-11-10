@@ -1,6 +1,7 @@
-import { DISPUTE_STATUSES, type JsonObject } from "@jendal-workspace/core";
+import { DISPUTE_STATUSES, type JsonObject, RULEBOOK_STATUSES } from "@jendal-workspace/core";
 import type { RulebookRules } from "@opmodel/engine-rules";
-import type { ScheduleItemKind } from "@opmodel/engine-scheduler";
+import { SCHEDULE_ITEM_STATUSES, type ScheduleItemKind } from "@opmodel/engine-scheduler";
+import { DELIVERY_STATUSES } from "@opmodel/engine-outbox";
 import { sql } from "drizzle-orm";
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -39,7 +40,7 @@ export const rulebook = pgTable(
       .notNull()
       .references(() => team.id, { onDelete: "cascade" }),
     version: integer("version").notNull(),
-    status: text("status", { enum: ["draft", "published"] }).notNull(),
+    status: text("status", { enum: RULEBOOK_STATUSES }).notNull(),
     preset: text("preset", { enum: ["solo", "agency", "collective", "custom"] }).notNull(),
     spec: jsonb("spec").$type<RulebookRules>().notNull(),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
@@ -87,7 +88,7 @@ export const scheduleItem = pgTable(
     subjectId: text("subject_id").notNull(),
     kind: text("kind", { enum: SCHEDULE_ITEM_KINDS }).notNull(),
     runAt: timestamp("run_at").notNull(),
-    status: text("status", { enum: ["pending", "paused", "done", "cancelled", "failed"] }).notNull().default("pending"),
+    status: text("status", { enum: SCHEDULE_ITEM_STATUSES }).notNull().default("pending"),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),
     payload: jsonb("payload"),
@@ -136,7 +137,7 @@ export const outboxDelivery = pgTable(
     channel: text("channel", { enum: OUTBOX_DELIVERY_CHANNELS }).notNull(),
     recipient: text("recipient").notNull(),
     dedupeKey: text("dedupe_key").notNull(),
-    status: text("status", { enum: ["pending", "sent", "failed", "skipped"] }).notNull().default("pending"),
+    status: text("status", { enum: DELIVERY_STATUSES }).notNull().default("pending"),
     attempts: integer("attempts").notNull().default(0),
     // Null once the delivery is dead (attempts exhausted) or sent.
     nextAttemptAt: timestamp("next_attempt_at").defaultNow(),

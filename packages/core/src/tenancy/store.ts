@@ -1,6 +1,20 @@
+import { defineMachine } from "../state-machines/machine";
 import type { TeamProduct } from "./team-product";
 
-export type StoreStatus = "draft" | "active" | "suspended";
+export const STORE_STATUSES = ["draft", "active", "suspended"] as const;
+export type StoreStatus = (typeof STORE_STATUSES)[number];
+
+// A seller page: published when it can take payments and has something to sell (sellers/publish.ts), unpublished by
+// its owner. Nothing in the app sets or lifts a suspension; a suspended page stays as it is.
+export const sellerPageMachine = defineMachine({
+  name: "seller_page",
+  states: STORE_STATUSES,
+  initial: "draft",
+  transitions: {
+    publish: { from: ["draft", "active"], to: "active" },
+    unpublish: { from: ["draft", "active"], to: "draft" },
+  },
+});
 
 // A store or a services team (one slug namespace, one storefront host); `id` is the team ID.
 export type StoreRecord = {

@@ -1,7 +1,8 @@
-import type { ProductKind, TenantContext, VariantOption } from "@jendal-workspace/core";
+import { type ProductKind, productMachine, type TenantContext, type VariantOption } from "@jendal-workspace/core";
 import { and, asc, count, eq } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
+import { startsFrom } from "../state-guard";
 import type { Database } from "../index";
 import { productImages, products, productVariants } from "../schema/catalog";
 import { servicesTeamSettings } from "../schema/services-teams";
@@ -86,7 +87,13 @@ export async function setProductStatus(
   const [row] = await db
     .update(products)
     .set(values)
-    .where(and(eq(products.id, id), eq(products.storeId, tenant.storeId)))
+    .where(
+      and(
+        eq(products.id, id),
+        eq(products.storeId, tenant.storeId),
+        startsFrom(products.status, productMachine, status === "published" ? "publish" : "unpublish"),
+      ),
+    )
     .returning();
   return row ?? null;
 }

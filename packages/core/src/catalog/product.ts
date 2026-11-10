@@ -1,4 +1,18 @@
-export type ProductStatus = "draft" | "published";
+import { defineMachine } from "../state-machines/machine";
+
+export const PRODUCT_STATUSES = ["draft", "published"] as const;
+export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
+
+// Publishing checks the product first (catalog service); either way back is always open to the owner.
+export const productMachine = defineMachine({
+  name: "product",
+  states: PRODUCT_STATUSES,
+  initial: "draft",
+  transitions: {
+    publish: { from: ["draft", "published"], to: "published" },
+    unpublish: { from: ["draft", "published"], to: "draft" },
+  },
+});
 
 export type VariantOption = { name: string; value: string };
 
