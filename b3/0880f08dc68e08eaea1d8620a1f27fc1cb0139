@@ -1,0 +1,28 @@
+packages/api/src/actions/projects.ts
+  h_6877e5e7a06bc5 12,14,136-154
+packages/api/src/actions/registry.ts
+  h_6877e5e7a06bc5 29,50
+packages/api/src/agent/skills.ts
+  h_6877e5e7a06bc5 27
+packages/api/src/agent/tools.test.ts
+  h_6877e5e7a06bc5 4,25-37
+packages/api/src/agent/tools.ts
+  h_6877e5e7a06bc5 19,68
+packages/api/src/agent/turn.test.ts
+  h_6877e5e7a06bc5 44-48
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 35,108
+packages/core/src/services-teams/access.ts
+  h_6877e5e7a06bc5 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b30880f08dc68e08eaea1d8620a1f27fc1cb0139",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
