@@ -25,7 +25,8 @@ import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useState } from "react";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
@@ -37,9 +38,10 @@ import { paymentRefundLabel } from "@/lib/client-refund";
 import { AMENDMENT_STATUS_LABELS, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { minorToPriceInput } from "@/lib/money";
-import { isNotFoundError, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
+import { isNotFoundError, isProjectReadDenied, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
+import type { ProjectTab } from "@/lib/project-tabs";
 
 import { ProjectProgress } from "@/components/project-progress";
 
@@ -84,30 +86,34 @@ function ItemRowsEditor({ rows, onChange }: { rows: ItemRow[]; onChange: (rows: 
   return (
     <div className="space-y-2">
       {rows.map((row, index) => (
-        <div key={index} className="flex items-center gap-2">
+        <div key={index} className="grid min-w-0 grid-cols-2 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_5rem_auto]">
+          <div className="col-span-2 grid min-w-0 gap-1 sm:col-span-1"><span aria-hidden="true" className="text-xs text-muted-foreground">Description</span>
           <Input
             aria-label={`Line ${index + 1} description`}
             placeholder="What this line covers"
             value={row.description}
             onChange={(e) => onChange(rows.map((r, i) => (i === index ? { ...r, description: e.target.value } : r)))}
           />
+          </div>
+          <div className="grid min-w-0 gap-1"><span aria-hidden="true" className="text-xs text-muted-foreground">Amount</span>
           <Input
             aria-label={`Line ${index + 1} amount`}
             placeholder="0.00"
             inputMode="decimal"
-            className="w-28"
             value={row.amount}
             onChange={(e) => onChange(rows.map((r, i) => (i === index ? { ...r, amount: e.target.value } : r)))}
           />
+          </div>
+          <div className="grid min-w-0 gap-1"><span aria-hidden="true" className="text-xs text-muted-foreground">Extra days</span>
           <Input
             aria-label={`Line ${index + 1} extra days`}
             placeholder="Days"
             inputMode="numeric"
-            className="w-20"
             value={row.extraDays}
             onChange={(e) => onChange(rows.map((r, i) => (i === index ? { ...r, extraDays: e.target.value } : r)))}
           />
-          <Button type="button" variant="ghost" disabled={rows.length === 1} onClick={() => onChange(rows.filter((_, i) => i !== index))}>
+          </div>
+          <Button className="col-span-2 justify-self-end sm:col-span-1" type="button" variant="ghost" disabled={rows.length === 1} onClick={() => onChange(rows.filter((_, i) => i !== index))}>
             Remove
           </Button>
         </div>
@@ -151,19 +157,39 @@ export default function ProjectDetail({
   teamSlug,
   projectId,
   paypalEnvironment,
+  view = "overview",
 }: {
   teamSlug: string;
   projectId: string;
   paypalEnvironment: string | undefined;
+  view?: ProjectTab;
 }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const seller = useQuery({ ...trpc.agent.seller.queryOptions({ slug: teamSlug }), retry: false, meta: { silent: true } });
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ teamSlug, projectId }),
     retry: false,
     refetchInterval: (query) =>
-      query.state.data && !isNotFoundError(query.state.error) && teamWaitsOnClient(query.state.data) ? PROJECT_REFRESH_MS : false,
+      query.state.data && !isProjectReadDenied(query.state.error) && teamWaitsOnClient(query.state.data) ? PROJECT_REFRESH_MS : false,
     meta: { quietRefetchErrors: true },
   });
+  const financesHiddenForRedirect = detail.data?.financesHidden === true;
+  useEffect(() => {
+    if (view !== "overview" || !detail.data) return;
+    const sync = () => {
+      const part = window.location.hash.slice(1);
+      const tab = (part === "quotes" || part === "amendments") && !financesHiddenForRedirect ? "quote"
+        : part === "deliveries" ? "delivery"
+          : part === "conversation" ? "conversation"
+            : (part === "payments" || part === "refund") && !financesHiddenForRedirect ? "money"
+              : part === "clients" || part === "assignment" || part === "marks" ? "activity" : null;
+      if (tab) router.replace(`/${teamSlug}/projects/${projectId}/${tab}#${part}`);
+    };
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [view, detail.data, financesHiddenForRedirect, teamSlug, projectId, router]);
   const members = useQuery({ ...trpc.project.members.queryOptions({ teamSlug }), retry: false });
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.project.get.queryOptions({ teamSlug, projectId }).queryKey });
 
@@ -223,13 +249,24 @@ export default function ProjectDetail({
   });
 
   if (detail.isPending) return <Loader />;
-  // A failed refetch keeps the last data, so a missed poll does not replace the page with this message.
-  if (!detail.data) {
+  // Keep the last data for a temporary failure, but never display it after the server revokes the read.
+  if (!detail.data || isProjectReadDenied(detail.error)) {
+    const missing = isNotFoundError(detail.error);
+    const signIn = detail.error?.data?.code === "UNAUTHORIZED";
+    const allowedPages = new Set((seller.data?.scope?.seller?.sections ?? []).flatMap((section) => section.pages));
+    const back = allowedPages.has("projects")
+      ? { href: `/${teamSlug}/projects`, label: "Back to projects" }
+      : allowedPages.has("requests")
+        ? { href: `/${teamSlug}/requests`, label: "Back to requests" }
+        : { href: `/${teamSlug}`, label: "Back to Home" };
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
-        <h1 className="font-heading text-3xl">Project not found</h1>
-        <Link href={`/${teamSlug}/projects`} className="underline">
-          Back to projects
+        <h1 className="font-heading text-3xl">{missing ? "Project not found" : signIn ? "Sign in to view this project" : "Project unavailable"}</h1>
+        <p className="text-sm text-muted-foreground">{missing ? "This project is no longer available to you." : isProjectReadDenied(detail.error) ? "Your access may have changed." : "The project couldn’t be loaded. Try again without leaving this page."}</p>
+        {!isProjectReadDenied(detail.error) ? <Button type="button" variant="outline" onClick={() => void detail.refetch()}>Try again</Button> : null}
+        {signIn ? <Link href="/login" className={"block text-sm underline underline-offset-4"}>Sign in</Link> : null}
+        <Link href={back.href} className="underline">
+          {back.label}
         </Link>
       </main>
     );
@@ -313,24 +350,45 @@ export default function ProjectDetail({
     deliver.mutate({ note: deliveryNote, link: deliveryLink, file: deliveryFile });
   }
 
+  const next = project.status === "quoting"
+    ? { title: "Review the request and prepare a quote", tab: financesHidden ? "conversation" : "quote", action: financesHidden ? "Open conversation" : "Open quote" }
+    : project.status === "in_progress" || project.status === "delivered"
+      ? { title: project.status === "delivered" ? "Waiting for the client to review the delivery" : "Prepare the next delivery", tab: "delivery", action: "Open delivery" }
+      : project.status === "awaiting_deposit" || project.status === "awaiting_balance"
+        ? { title: project.status === "awaiting_deposit" ? "Waiting for the client’s deposit" : "Waiting for the client’s balance payment", tab: financesHidden ? "conversation" : "money", action: financesHidden ? "Open conversation" : "View finances" }
+        : { title: "Review the project’s latest activity", tab: "conversation", action: "Open conversation" };
+
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-x-8 gap-y-6 px-4 py-6 md:px-7 md:py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-      <div className="space-y-2 lg:col-span-2">
-        <h1 className="font-heading text-3xl">{project.title}</h1>
+    <main className="mx-auto grid w-full min-w-0 max-w-5xl grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-8 px-4 py-6 md:px-7 md:py-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
+      <div className="min-w-0 space-y-2 lg:col-span-2">
+        <h1 className="break-words font-heading text-3xl">{project.title}</h1>
+        {detail.isError ? <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[10px] border p-3 text-sm">
+          <p className="min-w-0 flex-1">Couldn’t refresh this project. You’re viewing the last loaded version.</p>
+          <Button type="button" variant="outline" size="sm" onClick={() => void detail.refetch()}>Try again</Button>
+        </div> : null}
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge tone={TEAM_PROJECT_TONES[project.status]}>
             {projectStatusLabel(project.status)}
           </Badge>
           {primary?.name ?? "No client"}
-          {project.finalPriceMinor !== null ? ` — Final price ${formatMoney(money(currency, project.finalPriceMinor))}` : ""}
         </p>
-        <div className="max-w-3xl pt-2">
+        {view === "overview" ? <div className="max-w-3xl pt-2">
           <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
-        </div>
+        </div> : null}
         <PreparedBanner teamId={project.teamId} projectId={project.id} slug={teamSlug} />
         {dispute ? <DisputeCard dispute={dispute} currency={currency} paypalEnvironment={paypalEnvironment} /> : null}
-        <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} />
-        {project.source === "web" ? (
+        {!financesHidden && (view === "overview" || view === "money") ? <LateRefundNotice teamSlug={teamSlug} project={project} role={role} onChanged={refresh} /> : null}
+      </div>
+
+      {view !== "money" ? <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
+      {view === "overview" ? <section className="space-y-4" aria-labelledby="project-next-heading">
+        <h2 id="project-next-heading" className="font-heading text-xl">What happens next</h2>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[10px] border p-4">
+          <p className="min-w-0 flex-1 basis-full text-sm font-medium sm:basis-auto">{next.title}</p>
+          <Link href={`/${teamSlug}/projects/${projectId}/${next.tab}`} className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent">{next.action}</Link>
+        </div>
+      </section> : null}
+        {view === "overview" && project.source === "web" ? (
           <section id="request" className="scroll-mt-4 space-y-3 pt-3">
             <h2 className="text-lg font-semibold">Request</h2>
             {primary ? (
@@ -351,19 +409,16 @@ export default function ProjectDetail({
             ) : null}
           </section>
         ) : null}
-        {project.brief ? <p className="max-w-3xl text-sm">{project.brief}</p> : null}
-      </div>
-
-      <div className="grid min-w-0 gap-8">
-      <ConversationSection teamSlug={teamSlug} detail={detail.data} members={members.data ?? []} onChange={refresh} />
-      {contacts.length > 0 ? (
+        {view === "overview" && project.brief ? <section className="space-y-3"><h2 className="font-heading text-xl">The work</h2><p className="break-words text-sm leading-relaxed">{project.brief}</p></section> : null}
+      {view === "conversation" ? <ConversationSection teamSlug={teamSlug} detail={detail.data} members={members.data ?? []} onChange={refresh} /> : null}
+      {view === "activity" && contacts.length > 0 ? (
       <ClientsSection teamSlug={teamSlug} projectId={projectId} contacts={contacts} role={role} onChange={refresh} />
       ) : null}
 
-      {!solo && canAssignFreelancer(role) && project.status === "quoting" ? (
+      {view === "activity" && !solo && canAssignFreelancer(role) && project.status === "quoting" ? (
         <section id="assignment" className="scroll-mt-4 space-y-3">
           <h2 className="text-lg font-semibold">Assignment</h2>
-          <form onSubmit={handleAssign} className="flex items-end gap-2">
+          <form onSubmit={handleAssign} className="flex flex-wrap items-end gap-2">
             <div className="space-y-2">
               <Label htmlFor="assign-freelancer">Freelancer</Label>
               <select
@@ -388,7 +443,7 @@ export default function ProjectDetail({
         </section>
       ) : null}
 
-      {financesHidden ? null : (
+      {view !== "quote" || financesHidden ? null : (
       <section id="quotes" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Quotes</h2>
         {quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotes yet.</p> : null}
@@ -399,7 +454,7 @@ export default function ProjectDetail({
           <form onSubmit={handleQuote} className="space-y-3 panel p-4">
             <h3 className="font-medium">New quote</h3>
             <ItemRowsEditor rows={quoteRows} onChange={setQuoteRows} />
-            <div className="flex items-end gap-2">
+            <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-2">
                 <Label htmlFor="delivery-days">Delivery days</Label>
                 <Input id="delivery-days" inputMode="numeric" className="w-24" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} />
@@ -455,7 +510,7 @@ export default function ProjectDetail({
       </section>
       )}
 
-      {financesHidden ? null : (
+      {view !== "quote" || financesHidden ? null : (
       <section id="amendments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Amendments</h2>
         {revisionRounds && revisionRounds.used >= revisionRounds.allowed && revisionRounds.paidPriceMinor > 0 && project.status === "delivered" && !pendingAmendment ? (
@@ -528,7 +583,7 @@ export default function ProjectDetail({
       </section>
       )}
 
-      <section id="deliveries" className="scroll-mt-4 space-y-3">
+      {view === "delivery" ? <section id="deliveries" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Deliveries</h2>
         {deliveries.length === 0 ? <p className="text-sm text-muted-foreground">No deliveries yet.</p> : null}
         {newestFirst(deliveries).map((delivery) => (
@@ -623,27 +678,13 @@ export default function ProjectDetail({
             ) : null}
           </form>
         ) : null}
-      </section>
+      </section> : null}
 
-      </div>
+      {view === "quote" && financesHidden ? <p className="text-sm text-muted-foreground">Project prices aren’t available with your current access.</p> : null}
 
-      <aside className="grid min-w-0 gap-8">
-      {schedule.length > 0 ? (
-        <section id="scheduled" className="scroll-mt-4 space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">Scheduled</h2>
-            <p className="text-sm text-muted-foreground">These run on their own.</p>
-          </div>
-          <ul className="panel divide-y text-sm">
-            {schedule.map((item) => (
-              <li key={item.kind} className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
-                <span>{scheduleLabel(item.kind)}</span>
-                <span className="shrink-0 text-right text-muted-foreground">{scheduleWhen(item)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      </div> : null}
+
+      {view === "money" ? <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
       {financesHidden ? null : (
       <section id="payments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
@@ -674,8 +715,7 @@ export default function ProjectDetail({
         ))}
       </section>
       )}
-
-      {refund ? (
+      {!financesHidden && refund ? (
         <RefundSection
           teamSlug={teamSlug}
           projectId={projectId}
@@ -686,10 +726,50 @@ export default function ProjectDetail({
           onRefunded={refresh}
         />
       ) : null}
+      {!financesHidden ? <QualityRefundForm teamSlug={teamSlug} project={project} role={role} capMinor={qualityRefundCapMinor} onChanged={refresh} /> : null}
+      {financesHidden ? <p className="text-sm text-muted-foreground">Project finances aren’t available with your current access.</p> : null}
+      </div> : null}
 
-      {financesHidden ? null : <QualityRefundForm teamSlug={teamSlug} project={project} role={role} capMinor={qualityRefundCapMinor} onChanged={refresh} />}
+      <aside className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
+      <section className="space-y-2 border-b pb-5" aria-labelledby="project-people-heading">
+        <h2 id="project-people-heading" className="text-sm font-semibold">People</h2>
+        <dl className="divide-y text-xs">
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Client</dt><dd className="break-words">{primary?.name ?? "No client"}</dd></div>
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Assigned to</dt><dd className="break-words">{members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? "Not assigned"}</dd></div>
+          {!financesHidden && project.finalPriceMinor !== null ? <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Final price</dt><dd className="font-tabular">{formatMoney(money(currency, project.finalPriceMinor))}</dd></div> : null}
+        </dl>
+        <Link href={`/${teamSlug}/projects/${projectId}/activity`} className="inline-block text-xs underline underline-offset-4">People & activity</Link>
+      </section>
+      {!financesHidden ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-glance-heading">
+        <h2 id="project-glance-heading" className="text-sm font-semibold">At a glance</h2>
+        <dl className="divide-y text-xs">
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Currency</dt><dd>{currency}</dd></div>
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quote</dt><dd className="font-tabular">{currentQuote ? formatMoney(money(currency, currentQuote.amountMinor)) : "Not accepted"}</dd></div>
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quotes</dt><dd className="font-tabular">{quotes.length}</dd></div>
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Deliveries</dt><dd className="font-tabular">{deliveries.length}</dd></div>
+        </dl>
+      </section> : null}
+      {seller.data?.available ? <Link href={`/${teamSlug}/calls?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
+        <span className="grid min-w-0 gap-0.5"><strong className="break-words font-semibold">Ask about {project.title}</strong><span className="text-muted-foreground">Open a focused thread for this project.</span></span>
+      </Link> : null}
+      {view === "overview" && schedule.length > 0 ? (
+        <section id="scheduled" className="scroll-mt-4 space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Scheduled</h2>
+            <p className="text-sm text-muted-foreground">These run on their own.</p>
+          </div>
+          <ul className="panel divide-y text-sm">
+            {schedule.map((item) => (
+              <li key={item.kind} className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
+                <span>{scheduleLabel(item.kind)}</span>
+                <span className="shrink-0 text-right text-muted-foreground">{scheduleWhen(item)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
-      <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} />
+      {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
       </aside>
     </main>
   );
