@@ -8,7 +8,7 @@ import {
   recordMemberMark,
   projectHasOpenDispute,
 } from "@jendal-workspace/db/repositories/operating-model";
-import { findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
+import { cancelOpenPayments, findProjectById, type ProjectRow } from "@jendal-workspace/db/repositories/projects";
 import { runInTransaction, type OutboxEventInput } from "@jendal-workspace/db/repositories/unit-of-work";
 import { rulebook, scheduleItem } from "@jendal-workspace/db/schema/operating-model";
 import type { RulebookRules } from "@opmodel/engine-rules";
@@ -189,9 +189,10 @@ async function fireItem(db: DbExecutor, item: { id: string; team_id: string; sub
       const rules = await rulesFor(db, row.rulebookId);
       const outcome = rules?.clientSilence.silenceOutcome ?? "accept_and_complete";
       if (item.kind === "project.abandon" || outcome === "abandon") {
-        await runInTransaction(db, async (_tx, uow) => {
+        await runInTransaction(db, async (tx, uow) => {
           const status = checkTransition(row.status, "abandon");
           await uow.apply({ project: row, set: { status }, events: [{ type: "project.abandoned", data: { projectId: row.id } }] });
+          await cancelOpenPayments(tx, row.id);
         });
         return "fired";
       }
