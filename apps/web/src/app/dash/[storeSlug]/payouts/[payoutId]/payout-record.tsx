@@ -7,6 +7,7 @@ import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
+import { DocumentPage } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
 import { approvalState, payoutActions, payoutFeeLine, payoutSentMinor, payoutStatusLabel, waitingLine } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
@@ -44,11 +45,11 @@ export default function PayoutRecord({ teamSlug, payoutId, viewerId }: { teamSlu
   );
   if (!request) {
     return (
-      <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+      <DocumentPage>
         <h1 className="font-heading text-3xl">Payout not found</h1>
         <p className="text-sm text-muted-foreground">It may have been removed, or only admins can see it.</p>
         {back}
-      </main>
+      </DocumentPage>
     );
   }
 
@@ -59,7 +60,7 @@ export default function PayoutRecord({ teamSlug, payoutId, viewerId }: { teamSlu
   const waiting = waitingLine(request, new Date());
   const from = team.data?.team.name ?? "The team";
   return (
-    <main className="mx-auto grid w-full max-w-3xl gap-6 px-4 py-6 md:px-7 md:py-8">
+    <DocumentPage className="grid gap-6 space-y-0">
       <header className="flex items-start justify-between gap-4">
         <div className="grid gap-1">
           <p className="text-[13px] font-medium text-muted-foreground">{payoutStatusLabel(request)}</p>
@@ -142,6 +143,6 @@ export default function PayoutRecord({ teamSlug, payoutId, viewerId }: { teamSlu
           ) : null}
         </div>
       </section>
-    </main>
+    </DocumentPage>
   );
 }

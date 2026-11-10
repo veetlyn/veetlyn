@@ -6,8 +6,10 @@ import {
   createAgentCall,
   findLatestOwnCallAt,
   findOwnAgentCall,
+  deleteAgentCallEntry,
   insertAgentCallEntry,
   listAgentCallEntries,
+  updateAgentCallEntry,
 } from "@jendal-workspace/db/repositories/calls";
 import { getServicesTeamSettings, memberHistorySince } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
@@ -20,6 +22,8 @@ import { projectList } from "../actions/projects";
 import { conversationPost } from "../actions/conversations";
 import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
+import { sanitizeAgentAnswer } from "./answer";
+import { skillLines } from "./skills";
 import { proposalEffect } from "./effects";
 import { AGENT_ID, placeOf, resolveNode, type ResolvedNode } from "./node";
 import { allowedByTeam, type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
@@ -293,13 +297,25 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     ]),
   );
   const mentions = turn.directive ? null : await mentionedRecords(deps, state, turn);
+  // Context pack: where the person stands and what is already waiting for them, so the model does not have to
+  // re-derive either from the raw thread. Open proposals are this call's own pending cards.
+  const priorEntries = await listAgentCallEntries(db, call.id);
+  const pendingCards = priorEntries.filter((entry) => entry.kind === "proposal" && entry.status === "pending");
+  const contextPack = [
+    scope.project ? `The person is looking at the project "${scope.project.title}". Read it with project_get before answering about it; it already carries deliveries, amendments and ratings.` : null,
+    pendingCards.length > 0 ? `${pendingCards.length} proposal card(s) are still waiting for the person's decision in this thread. Do not propose the same thing again.` : null,
+  ].filter((line) => line !== null).join("\n");
   let answer: string[];
+  // Progressive answer: the draft entry appears as the model writes and is finished at the end, so a long answer
+  // renders while it is made. The thread polls while a turn runs (team-calls).
+  let draftId: string | null = null;
   try {
     const result = await generateText({
       model: deps.agent.model,
-      system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.`,
+      system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.${skillLines(offered.map((agentTool) => agentTool.name)).length > 0 ? `\n${skillLines(offered.map((agentTool) => agentTool.name)).join("\n")}` : ""}`,
       messages: [
-        ...historyMessages(await listAgentCallEntries(db, call.id)),
+        ...historyMessages(priorEntries),
+        ...(contextPack ? [{ role: "user" as const, content: contextPack }] : []),
         ...(mentions ? [{ role: "user" as const, content: mentions }] : []),
         ...(turn.directive ? [{ role: "user" as const, content: turn.message }] : []),
       ],
@@ -307,20 +323,27 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
       stopWhen: stepCountIs(MAX_MODEL_CALLS),
       maxOutputTokens: 4_000,
       maxRetries: 1,
+      // Progressive answer: each finished step's text is saved onto the draft entry, so the thread (which polls
+      // while a turn runs) shows the answer growing step by step instead of arriving all at once.
+      onStepFinish: async (step) => {
+        const text = step.text.trim();
+        if (!text) return;
+        const body = sanitizeAgentAnswer(text) || "…";
+        if (draftId) await updateAgentCallEntry(db, { entryId: draftId, body });
+        else draftId = (await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "assistant", body })).id;
+      },
     });
     answer = result.steps.map((step) => step.text.trim()).filter((text) => text !== "");
     // A turn nobody typed reports its result; the narration between its tool calls is not worth reading.
     if (turn.directive) answer = answer.slice(-1);
     if (result.finishReason === "tool-calls") answer.push("I stopped here to keep this short. Ask me to go on.");
   } catch (cause) {
+    if (draftId) await deleteAgentCallEntry(db, draftId).catch(() => undefined);
     // The provider's own words stay in the server log; the person's message is kept and can be sent again.
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The assistant did not answer. Try again in a moment.", cause });
   }
-  await insertAgentCallEntry(db, {
-    callId: call.id,
-    kind: "message",
-    author: "assistant",
-    body: answer.join("\n\n") || "Done.",
-    note: state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : undefined,
-  });
+  const finalBody = sanitizeAgentAnswer(answer.join("\n\n")) || "Done.";
+  const finalNote = state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : undefined;
+  if (draftId) await updateAgentCallEntry(db, { entryId: draftId, body: finalBody, note: finalNote });
+  else await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "assistant", body: finalBody, note: finalNote });
 }

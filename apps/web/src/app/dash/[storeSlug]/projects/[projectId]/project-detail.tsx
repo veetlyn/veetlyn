@@ -44,6 +44,7 @@ import { trpc, trpcClient } from "@/utils/trpc";
 import type { ProjectTab } from "@/lib/project-tabs";
 
 import { ProjectProgress } from "@/components/project-progress";
+import { ContextRail, WorkPage } from "@/components/page-composition";
 
 import { ClientsSection } from "./clients-section";
 import { ConversationSection } from "./conversation-section";
@@ -359,9 +360,49 @@ export default function ProjectDetail({
         ? { title: project.status === "awaiting_deposit" ? "Waiting for the client’s deposit" : "Waiting for the client’s balance payment", tab: financesHidden ? "conversation" : "money", action: financesHidden ? "Open conversation" : "View finances" }
         : { title: "Review the project’s latest activity", tab: "conversation", action: "Open conversation" };
 
+  const isFormView = view === "quote" || view === "delivery";
+  const projectRail = (
+    <ContextRail label="Project context">
+      {view === "activity" ? <ProjectRatings key={projectId} teamSlug={teamSlug} projectId={projectId} ratings={detail.data.ratings} onChanged={refresh} /> : null}
+      {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
+      {view !== "activity" && !isFormView ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-people-heading">
+        <h2 id="project-people-heading" className="text-sm font-semibold">People</h2>
+        <dl className="divide-y text-xs">
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Assigned to</dt><dd className="break-words">{members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? "Not assigned"}</dd></div>
+        </dl>
+      </section> : null}
+      {view !== "activity" && !financesHidden ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-glance-heading">
+        <h2 id="project-glance-heading" className="text-sm font-semibold">At a glance</h2>
+        <dl className="divide-y text-xs">
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quotes</dt><dd className="font-tabular">{quotes.length}</dd></div>
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Deliveries</dt><dd className="font-tabular">{deliveries.length}</dd></div>
+        </dl>
+      </section> : null}
+      {view !== "activity" && seller.data?.available ? <Link href={`/${teamSlug}/calls?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
+        <span className="grid min-w-0 gap-0.5"><strong className="break-words font-semibold">Ask about {project.title}</strong><span className="text-muted-foreground">Open a focused thread for this project.</span></span>
+      </Link> : null}
+      {view === "overview" && schedule.length > 0 ? (
+        <section id="scheduled" className="scroll-mt-4 space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Scheduled</h2>
+            <p className="text-sm text-muted-foreground">These run on their own.</p>
+          </div>
+          <ul className="panel divide-y text-sm">
+            {schedule.map((item) => (
+              <li key={item.kind} className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
+                <span>{scheduleLabel(item.kind)}</span>
+                <span className="shrink-0 text-right text-muted-foreground">{scheduleWhen(item)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </ContextRail>
+  );
+
   return (
-    <main className="mx-auto grid w-full min-w-0 max-w-5xl grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-8 px-4 py-6 md:px-7 md:py-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
-      <div className="min-w-0 space-y-2 lg:col-span-2">
+    <WorkPage rail={projectRail}>
+      <div className="min-w-0 space-y-2">
         <h1 className="break-words font-heading text-3xl">{project.title}</h1>
         {detail.isError ? <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[10px] border p-3 text-sm">
           <p className="min-w-0 flex-1">Couldn’t refresh this project. You’re viewing the last loaded version.</p>
@@ -687,6 +728,17 @@ export default function ProjectDetail({
 
       {view === "money" ? <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
       {financesHidden ? null : (
+      <>
+      <section aria-label="Payment totals" className="space-y-3 rounded-[10px] border p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold">Finances</h2>
+          <p className="text-sm text-muted-foreground">{primary?.name ?? "No client"} · {currency}</p>
+        </div>
+        <dl className="grid grid-cols-2 gap-4 text-sm">
+          <div><dt className="text-muted-foreground">Paid so far</dt><dd className="font-tabular text-base font-medium">{formatMoney(money(currency, payments.filter((payment) => payment.status === "captured").reduce((sum, payment) => sum + payment.amountMinor, 0)))}</dd></div>
+          <div><dt className="text-muted-foreground">Waiting to be paid</dt><dd className="font-tabular text-base font-medium">{formatMoney(money(currency, payments.filter((payment) => payment.status === "pending").reduce((sum, payment) => sum + payment.amountMinor, 0)))}</dd></div>
+        </dl>
+      </section>
       <section id="payments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
@@ -715,6 +767,7 @@ export default function ProjectDetail({
           </div>
         ))}
       </section>
+      </>
       )}
       {!financesHidden && refund ? (
         <RefundSection
@@ -731,48 +784,6 @@ export default function ProjectDetail({
       {financesHidden ? <p className="text-sm text-muted-foreground">Project finances aren’t available with your current access.</p> : null}
       </div> : null}
 
-      <aside className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
-      <section className="space-y-2 border-b pb-5" aria-labelledby="project-people-heading">
-        <h2 id="project-people-heading" className="text-sm font-semibold">People</h2>
-        <dl className="divide-y text-xs">
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Client</dt><dd className="break-words">{primary?.name ?? "No client"}</dd></div>
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Assigned to</dt><dd className="break-words">{members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? "Not assigned"}</dd></div>
-          {!financesHidden && project.finalPriceMinor !== null ? <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Final price</dt><dd className="font-tabular">{formatMoney(money(currency, project.finalPriceMinor))}</dd></div> : null}
-        </dl>
-        <Link href={`/${teamSlug}/projects/${projectId}/activity`} className="inline-block text-xs underline underline-offset-4">People & activity</Link>
-      </section>
-      {!financesHidden ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-glance-heading">
-        <h2 id="project-glance-heading" className="text-sm font-semibold">At a glance</h2>
-        <dl className="divide-y text-xs">
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Currency</dt><dd>{currency}</dd></div>
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quote</dt><dd className="font-tabular">{currentQuote ? formatMoney(money(currency, currentQuote.amountMinor)) : "Not accepted"}</dd></div>
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quotes</dt><dd className="font-tabular">{quotes.length}</dd></div>
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Deliveries</dt><dd className="font-tabular">{deliveries.length}</dd></div>
-        </dl>
-      </section> : null}
-      {seller.data?.available ? <Link href={`/${teamSlug}/calls?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
-        <span className="grid min-w-0 gap-0.5"><strong className="break-words font-semibold">Ask about {project.title}</strong><span className="text-muted-foreground">Open a focused thread for this project.</span></span>
-      </Link> : null}
-      {view === "overview" && schedule.length > 0 ? (
-        <section id="scheduled" className="scroll-mt-4 space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">Scheduled</h2>
-            <p className="text-sm text-muted-foreground">These run on their own.</p>
-          </div>
-          <ul className="panel divide-y text-sm">
-            {schedule.map((item) => (
-              <li key={item.kind} className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
-                <span>{scheduleLabel(item.kind)}</span>
-                <span className="shrink-0 text-right text-muted-foreground">{scheduleWhen(item)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {view === "activity" ? <ProjectRatings key={projectId} teamSlug={teamSlug} projectId={projectId} ratings={detail.data.ratings} onChanged={refresh} /> : null}
-      {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
-      </aside>
-    </main>
+    </WorkPage>
   );
 }

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { ListPage, SummaryStrip } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { daysLabel, FULFILMENT_LABELS, priceLabel } from "@/lib/offering-labels";
 import { trpc } from "@/utils/trpc";
@@ -184,7 +185,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+    <ListPage>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0 flex-1 basis-full space-y-1 sm:basis-auto">
           <h1 className="font-heading text-3xl">Services</h1>
@@ -197,6 +198,12 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
         ) : null}
       </div>
 
+      {!catalog.isError && offerings.length > 0 ? (
+        <SummaryStrip label="Catalogue summary">
+          <p className="text-sm"><span className="font-medium">{offerings.length} services</span> <span className="text-muted-foreground">clients can request</span></p>
+          <p className="text-sm text-muted-foreground">{departments.length} departments</p>
+        </SummaryStrip>
+      ) : null}
       {catalog.isError && (
         <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm">
           <p>The services couldn’t be loaded.</p>
@@ -303,6 +310,6 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
           )}
         </div>
       )}
-    </main>
+    </ListPage>
   );
 }

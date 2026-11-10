@@ -185,6 +185,8 @@ export default function TeamCalls({
   });
   const thread = useQuery({
     ...trpc.agent.thread.queryOptions({ callId: activeCallId ?? "" }),
+    // While a turn runs, the assistant's draft entry grows on the server; poll so it renders progressively.
+    refetchInterval: asking ? 1_500 : false,
     enabled: activeCallId !== null,
     retry: false,
     meta: { silent: true },

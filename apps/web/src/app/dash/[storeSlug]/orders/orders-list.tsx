@@ -8,6 +8,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import Loader from "@/components/loader";
+import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
@@ -45,8 +46,14 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
   );
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+    <ListPage>
       <header className="space-y-1"><h1 className="font-heading text-3xl">Orders</h1><p className="text-sm text-muted-foreground">Paid downloads, buyer details and confirmation emails.</p></header>
+      {orders.isSuccess && orders.data.length > 0 ? (
+        <SummaryStrip label="Needs attention">
+          <p className="text-sm"><span className="font-medium">{orders.data.filter((order) => order.reviewReason).length} orders</span> <span className="text-muted-foreground">need review</span></p>
+          <p className="text-sm text-muted-foreground">{orders.data.filter((order) => order.status === "paid").length} paid</p>
+        </SummaryStrip>
+      ) : null}
       {orders.isSuccess && orders.data.length > 0 ? <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="w-full sm:max-w-72"><span className="sr-only">Search orders by product or buyer</span><Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search orders…" /></label>
         <label><span className="sr-only">Order status</span><select value={status} onChange={(event) => setStatus(event.target.value)} className={nativeSelectClass}><option value="all">All orders</option><option value="paid">Paid</option><option value="refunded">Refunded</option><option value="review">Needs review</option></select></label>
@@ -85,6 +92,6 @@ export default function OrdersList({ teamSlug }: { teamSlug: string }) {
           ))}
         </ul>
       )}
-    </main>
+    </ListPage>
   );
 }

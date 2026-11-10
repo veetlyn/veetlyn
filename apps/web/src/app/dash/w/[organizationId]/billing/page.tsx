@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import Loader from "@/components/loader";
+import { DocumentPage } from "@/components/page-composition";
 import { listMyWorkspaces, requireSession } from "@/lib/server-api";
 
 import BillingPanel from "./billing-panel";
@@ -14,7 +15,7 @@ export default async function WorkspaceBillingPage({ params }: { params: Promise
   if (!organization) notFound();
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+    <DocumentPage>
       <div className="space-y-1">
         <h1 className="font-heading text-3xl">Billing</h1>
         <p className="text-sm text-muted-foreground">
@@ -24,6 +25,6 @@ export default async function WorkspaceBillingPage({ params }: { params: Promise
       <Suspense fallback={<Loader />}>
         <BillingPanel organizationId={organizationId} />
       </Suspense>
-    </main>
+    </DocumentPage>
   );
 }

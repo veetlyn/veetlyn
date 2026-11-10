@@ -11,6 +11,7 @@ import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { WorkPage } from "@/components/page-composition";
 import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
@@ -152,7 +153,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+    <WorkPage>
       <h1 className="font-heading text-3xl">Team & access</h1>
       <p className="mt-2 text-sm text-muted-foreground">The people you work with and what they can see and do.</p>
       {setRole.error ? <p role="alert" className="mt-4 text-sm text-destructive">{setRole.error.message}</p> : null}
@@ -281,6 +282,6 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
           ) : null}
         </>
       )}
-    </main>
+    </WorkPage>
   );
 }

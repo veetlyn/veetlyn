@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { WorkPage } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { FULFILMENT_LABELS, type Fulfilment } from "@/lib/offering-labels";
@@ -95,20 +96,20 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   if (team.isError) return <TeamNotFound />;
   if (catalog.isError) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+      <WorkPage>
         <p role="alert">The services couldn't be loaded.</p>
-      </main>
+      </WorkPage>
     );
   }
   if (offeringId && !offering) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+      <WorkPage>
         <h1 className="font-heading text-3xl">Service not found</h1>
         <p className="text-sm text-muted-foreground">This service is not in your team.</p>
         <Link href={`/${teamSlug}/services`} className="text-sm underline underline-offset-4">
           Back to services
         </Link>
-      </main>
+      </WorkPage>
     );
   }
 
@@ -178,7 +179,7 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-6 md:px-7 md:py-8">
+    <WorkPage className="space-y-6">
       <div className="space-y-1">
         <Link href={`/${teamSlug}/services`} className="text-sm text-muted-foreground hover:text-foreground">
           Services
@@ -378,6 +379,6 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
           {save.isPending ? "Saving…" : offeringId ? "Save changes" : "Create service"}
         </Button>
       </form>
-    </main>
+    </WorkPage>
   );
 }
