@@ -47,6 +47,8 @@ const NOT_EXPORTED = "Only a payout exported for PayPal Payouts Web can be cance
 const LOG_MISMATCH = "PayPal's log shows another amount or currency for this payout.";
 const CANCELLED_EXPORT_PENDING = "PayPal shows this cancelled export as pending. Check PayPal before paying it again.";
 const PAID_TWICE = "PayPal paid this payout twice. Recover the extra payment in PayPal.";
+const PAID_AFTER_REJECTION =
+  "PayPal paid this rejected payout from a cancelled export. The member has the money; recover it in PayPal or settle it with them.";
 
 export type PayoutsWebExport = { csv: string; filename: string; count: number };
 export type PayoutsWebImport = {
@@ -156,6 +158,12 @@ async function importResult(tx: Transaction, teamId: string, result: PayoutsWebR
   // A row an earlier import already recorded counts as what its payout became, and changes nothing.
   if (request.status === "succeeded") return "settled";
   if (request.status === "failed") return "failed";
+  // An admin may reject a cancelled export, on their word that the file was never sent. If PayPal's log shows it paid
+  // after all, the money left the account: the payout stays rejected, and the admin is told to settle it.
+  if (request.status === "rejected" && result.status === "succeeded") {
+    await updatePayoutRequest(tx, request.id, { reviewReason: PAID_AFTER_REJECTION });
+    return "mismatched";
+  }
   // A queued payout with a reference is a cancelled export: PayPal may still have paid the cancelled file.
   if (request.status !== "exported" && request.status !== "queued") return "unmatched";
   const sameCurrency = result.currency === null || result.currency === request.currency;
