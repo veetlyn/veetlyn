@@ -117,6 +117,21 @@ export function renderStateMachinesDoc(): string {
       "```",
     ]),
   );
+  const billing = section("billing (derived, not stored)", [
+    "Owner: `packages/core/src/billing/entitlements.ts` (`entitlementsFor`). A workspace's billing state is computed on every read from its trial end and the Polar subscription mirrored on `billing_account` (`polar_status` copies Polar and is never set by the app). Only `lapsed` stops new sales: paid work, deliveries and refunds always complete.",
+    "",
+    "```mermaid",
+    "stateDiagram-v2",
+    "  [*] --> trial: first team created",
+    "  trial --> active: checkout (Polar active)",
+    "  trial --> grace: 14 days, no checkout",
+    "  grace --> active: checkout or payment recovered",
+    "  grace --> lapsed: 2 days later",
+    "  active --> grace: renewal failed (past_due)",
+    "  active --> lapsed: cancelled, period ended, or unpaid/paused",
+    "  lapsed --> active: new checkout",
+    "```",
+  ]);
   const unmanaged = section("Status columns without a machine here", Object.entries(UNMANAGED_STATUS_COLUMNS).map(([table, why]) => `- \`${table}\`: ${why}.`));
-  return [...intro, "", project, "", ...machines.flatMap((m) => [m, ""]), unmanaged, ""].join("\n");
+  return [...intro, "", project, "", ...machines.flatMap((m) => [m, ""]), billing, "", unmanaged, ""].join("\n");
 }
