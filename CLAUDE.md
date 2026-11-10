@@ -40,6 +40,7 @@ One branch and worktree per run, its own test database. Open a pull request; Mou
 
 - Decode untrusted data at the boundary with zod; no `typeof` checks; no `unknown` parameters except `cause`; a `SAFETY:` comment on any type assertion; `fromPartial` (shoehorn) for test fakes.
 - Integer minor units for money, basis points for rates, round half-up once at the line that produces a value.
+- A stored status changes only by a move of its state machine ([`docs/state-machines.md`](docs/state-machines.md), generated): take the target from the machine (`transitionOrThrow`, `machine.transitions[event].to`) and guard the update with `startsFrom`. Decide which actions a person or the assistant is offered from the machine too (`allowedEvents`, `projectAllows`), not from a second list of statuses. A new status column needs a machine in `packages/db/src/state-machines.ts`; its test fails otherwise.
 - Comments only for reasons the code cannot show; never mention runs, tasks or plans in code.
 - Follow `specs/references/AGENTS.md` for anything PayPal: JS SDK v6, orders on the server, `PayPal-Request-Id` on every POST, verified webhooks, and no money movement by an agent without a person's confirmation.
 - Conventional Commits.

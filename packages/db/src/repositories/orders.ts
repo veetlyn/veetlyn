@@ -1,7 +1,8 @@
-import type { CaptureReviewReason } from "@jendal-workspace/core";
+import { type CaptureReviewReason, orderMachine } from "@jendal-workspace/core";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type { DbExecutor, Transaction } from "../executor";
+import { startsFrom } from "../state-guard";
 import { downloadGrant, orders } from "../schema/orders";
 
 export type OrderRow = typeof orders.$inferSelect;
@@ -69,8 +70,8 @@ export async function markOrderPaid(
 ): Promise<boolean> {
   const rows = await db
     .update(orders)
-    .set({ status: "paid", paypalCaptureId: input.captureId, paidAt: input.paidAt })
-    .where(and(eq(orders.id, input.orderId), eq(orders.status, "pending")))
+    .set({ status: orderMachine.transitions.pay.to, paypalCaptureId: input.captureId, paidAt: input.paidAt })
+    .where(and(eq(orders.id, input.orderId), startsFrom(orders.status, orderMachine, "pay")))
     .returning({ id: orders.id });
   return rows.length > 0;
 }
@@ -92,8 +93,8 @@ export async function markOrderRefunded(
 ): Promise<boolean> {
   const rows = await db
     .update(orders)
-    .set({ status: "refunded", refundedAt: input.refundedAt })
-    .where(and(eq(orders.id, input.orderId), eq(orders.status, "paid")))
+    .set({ status: orderMachine.transitions.refund.to, refundedAt: input.refundedAt })
+    .where(and(eq(orders.id, input.orderId), startsFrom(orders.status, orderMachine, "refund")))
     .returning({ id: orders.id });
   return rows.length > 0;
 }

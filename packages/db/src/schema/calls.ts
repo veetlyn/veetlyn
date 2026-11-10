@@ -1,4 +1,4 @@
-import type { JsonObject } from "@jendal-workspace/core";
+import { AGENT_PROPOSAL_STATUSES, type JsonObject } from "@jendal-workspace/core";
 import { NODE_KINDS, SECTIONS } from "@jendal-workspace/core/context/node";
 import { sql } from "drizzle-orm";
 import { check, index, uniqueIndex, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
@@ -9,7 +9,6 @@ import { project } from "./projects";
 
 export const AGENT_CALL_STATUSES = ["open", "done"] as const;
 export const AGENT_ENTRY_KINDS = ["message", "proposal"] as const;
-export const AGENT_PROPOSAL_STATUSES = ["pending", "done", "declined", "failed"] as const;
 
 // A call a person opened with the platform's assistant (calls design §5, "started by a person"), at one node of the
 // context tree: their account, a workspace, a seller, one of its sections, or a project. It stays private to that

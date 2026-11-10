@@ -12,7 +12,7 @@ import { resolveClient } from "@jendal-workspace/api/use-cases/clients";
 import { clientPageUrl, teamForProject } from "@jendal-workspace/api/use-cases/link-hosts";
 import { projectRuleSummary } from "@jendal-workspace/api/use-cases/rulebooks";
 import type { Auth } from "@jendal-workspace/auth";
-import { projectStatusLabel } from "@jendal-workspace/core";
+import { projectAllows, projectStatusLabel } from "@jendal-workspace/core";
 import { findClientAccount, projectContactLink } from "@jendal-workspace/db/repositories/contacts";
 import { findListedOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import type { RequestLogger } from "evlog";
@@ -134,7 +134,7 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
   const payable = view.payments.find((p) => p.payPath !== null && !p.processing);
   const openDelivery = view.deliveries.find((d) => d.status === "submitted");
   const accepted = view.quotes.find((q) => q.status === "accepted");
-  if (view.amendments.some((a) => a.status === "pending")) {
+  if (projectAllows(project.status, "accept_amendment") && view.amendments.some((a) => a.status === "pending")) {
     return { text: `${seller} proposed a change to the scope or price. Open the project page to answer it.`, actions: ["open"] };
   }
   switch (project.status) {

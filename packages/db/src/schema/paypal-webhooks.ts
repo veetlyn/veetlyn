@@ -1,8 +1,8 @@
-import type { JsonValue } from "@jendal-workspace/core";
+import { PAYPAL_WEBHOOK_EVENT_STATUSES, type JsonValue, type PayPalWebhookEventStatus } from "@jendal-workspace/core";
 import { index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-export const PAYPAL_WEBHOOK_EVENT_STATUSES = ["received", "processed", "ignored", "parked", "failed"] as const;
-export type PayPalWebhookEventStatus = (typeof PAYPAL_WEBHOOK_EVENT_STATUSES)[number];
+export { PAYPAL_WEBHOOK_EVENT_STATUSES };
+export type { PayPalWebhookEventStatus };
 
 // Services spec §6.4: verified PayPal events, one row per event id, so a redelivery is dropped. Only ids are
 // kept for payments, whose processor re-fetches PayPal. Disputes retain their verified payload for durable

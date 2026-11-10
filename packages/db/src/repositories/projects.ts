@@ -2,6 +2,7 @@ import {
   type CaptureReviewReason,
   ledgerAccounts,
   paidAfterRefunds,
+  paymentMachine,
   type ProjectPaid,
 } from "@jendal-workspace/core";
 import { and, asc, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
@@ -96,13 +97,17 @@ export async function listRefundablePayments(tx: DbExecutor, projectId: string):
 // Adds a refund PayPal made on the capture; once nothing is left the payment becomes "refunded". Refunding more
 // than was captured breaks payment_refunded_check, so a miscounted refund fails instead of posting.
 export async function addPaymentRefunded(tx: DbExecutor, paymentId: string, amountMinor: number): Promise<void> {
-  await tx
+  const refunded = paymentMachine.transitions.refund_in_full;
+  const rows = await tx
     .update(payment)
     .set({
       refundedMinor: sql`${payment.refundedMinor} + ${amountMinor}`,
-      status: sql`case when ${payment.refundedMinor} + ${amountMinor} >= ${payment.amountMinor} then 'refunded' else ${payment.status} end`,
+      status: sql`case when ${payment.refundedMinor} + ${amountMinor} >= ${payment.amountMinor} then ${refunded.to} else ${payment.status} end`,
     })
-    .where(eq(payment.id, paymentId));
+    // Only captured money can be refunded; the callers lock the payment and check this first.
+    .where(and(eq(payment.id, paymentId), inArray(payment.status, [...refunded.from, refunded.to])))
+    .returning({ id: payment.id });
+  if (rows.length === 0) throw new Error(`Refund recorded on payment ${paymentId}, which holds no captured money`);
 }
 
 export async function setPaymentReviewReason(

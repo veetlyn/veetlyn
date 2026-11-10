@@ -48,6 +48,7 @@ import {
   type PayoutRequestPatch,
   type PayoutRequestRow,
   type TeamPayoutRequestRow,
+  transitionPayoutRequest,
   updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
 import { getPayoutRules, type StoredPayoutRules } from "@jendal-workspace/db/repositories/payout-rules";
@@ -202,8 +203,7 @@ async function markApproved(
   input: { now: Date; sendAfter: Date; decidedByUserId?: string },
 ): Promise<Decided> {
   const automatic = await hasTeamPayoutCredentials(tx, request.teamId);
-  const row = await updatePayoutRequest(tx, request.id, {
-    status: "queued",
+  const row = await transitionPayoutRequest(tx, request, "approve", {
     decidedByUserId: input.decidedByUserId,
     decidedAt: input.now,
     sendAfter: input.sendAfter,
@@ -516,8 +516,7 @@ export async function rejectPayoutRequest(
       throw new TRPCError({ code: "BAD_REQUEST", message: "PayPal may already have this payout. Retry it to find out." });
     }
     if (request.status !== "requested" && request.status !== "queued") throw alreadyDecided();
-    const updated = await updatePayoutRequest(tx, request.id, {
-      status: "rejected",
+    const updated = await transitionPayoutRequest(tx, request, "reject", {
       decidedByUserId: input.deciderId,
       decidedAt: new Date(),
     });
@@ -618,8 +617,7 @@ async function approvalWithdrawn(tx: Transaction, request: PayoutRequestRow): Pr
     request.currency,
   );
   if (decision.kind !== "needs_approval") return null;
-  return updatePayoutRequest(tx, request.id, {
-    status: "requested",
+  return transitionPayoutRequest(tx, request, "withdraw_approval", {
     decidedByUserId: null,
     decidedAt: null,
     sendAfter: null,
@@ -699,8 +697,7 @@ async function claimSend(tx: Transaction, team: PayoutTeam, requestId: string, a
   if (await openDisputeHoldsPayout(tx, { teamId: team.id, userId: request.userId, projectId: request.projectId })) return { kind: "held", request };
   // updated_at identifies this claim when its answer is recorded, so it must differ from every earlier claim's.
   const claimedAt = new Date(Math.max(now, request.updatedAt.getTime() + 1));
-  const claimed = await updatePayoutRequest(tx, request.id, {
-    status: "sending",
+  const claimed = await transitionPayoutRequest(tx, request, "claim_send", {
     uncertainAt,
     failureMessage: null,
     updatedAt: claimedAt,
@@ -823,8 +820,8 @@ async function recordBatch(db: Database, team: PayoutTeam, requestId: string, ba
   return underRequestLock(db, requestId, async (tx, locked) => {
     if (locked.teamId !== team.id) throw notFound();
     if (locked.status !== "sending" && locked.status !== "queued") return locked;
-    const sent = await updatePayoutRequest(tx, locked.id, {
-      status: "sent", paypalBatchId: batchId, sentAt: new Date(), uncertainAt: null,
+    const sent = await transitionPayoutRequest(tx, locked, "record_batch", {
+      paypalBatchId: batchId, sentAt: new Date(), uncertainAt: null,
       failureMessage: null, waitCount: 0, nextAttemptAt: null,
     });
     await appendPayoutOutboxEvent(tx, payoutNoticeInput("payout.sent", sent, team));
@@ -904,8 +901,7 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
     const message = outcome.message;
     // The next attempt gets fresh ids: PayPal made no payout under these, and might replay this refusal for them.
     const queued = await recordForClaim(deps.db, request, async (tx, locked) => {
-      const queued = await updatePayoutRequest(tx, locked.id, {
-        status: "queued",
+      const queued = await transitionPayoutRequest(tx, locked, "hold_send", {
         failureMessage: message,
         sendAttempt: locked.sendAttempt + 1,
         ...backoff(locked, now),
@@ -918,8 +914,7 @@ export async function sendPayout(deps: PayoutDeps, team: PayoutTeam, requestId: 
   if (outcome.kind === "refused") {
     const message = outcome.message;
     const failed = await recordForClaim(deps.db, request, async (tx, locked) => {
-      const failed = await updatePayoutRequest(tx, locked.id, {
-        status: "failed",
+      const failed = await transitionPayoutRequest(tx, locked, "refuse_send", {
         failureMessage: message,
         settledAt: new Date(),
       });
@@ -1032,8 +1027,7 @@ export async function applySettlement(
   outcome: SettledOutcome,
 ): Promise<PayoutRequestRow> {
   if (outcome.kind === "failed") {
-    const failed = await updatePayoutRequest(tx, request.id, {
-      status: "failed",
+    const failed = await transitionPayoutRequest(tx, request, "settle_failed", {
       paypalItemId: outcome.itemId,
       paypalItemStatus: outcome.itemStatus,
       failureMessage: outcome.message.slice(0, MAX_FAILURE_MESSAGE),
@@ -1047,8 +1041,7 @@ export async function applySettlement(
   const { feeMinor, reviewReason } = outcome.fee;
   if (reviewReason) log.warn({ action: "payout.fee", payoutRequest: { id: request.id }, reviewReason });
   const { feeEstimateMinor, sentMinor } = claimedAmounts(request);
-  const succeeded = await updatePayoutRequest(tx, request.id, {
-    status: "succeeded",
+  const succeeded = await transitionPayoutRequest(tx, request, "settle_succeeded", {
     paypalItemId: outcome.itemId,
     paypalItemStatus: outcome.itemStatus,
     feeMinor,

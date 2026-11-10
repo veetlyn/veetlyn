@@ -1,7 +1,8 @@
-import type { StoreDirectory, StoreRecord } from "@jendal-workspace/core";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { sellerPageMachine, type StoreDirectory, type StoreRecord } from "@jendal-workspace/core";
+import { and, eq, sql } from "drizzle-orm";
 
 import type { Database } from "../index";
+import { startsFrom } from "../state-guard";
 import { products } from "../schema/catalog";
 import { member, organization, team, teamMember } from "../schema/organization";
 import { storeDomains } from "../schema/stores";
@@ -128,7 +129,7 @@ export async function setTeamStatus(
   const [row] = await db
     .update(team)
     .set({ status: input.status })
-    .where(and(eq(team.id, input.teamId), ne(team.status, "suspended")))
+    .where(and(eq(team.id, input.teamId), startsFrom(team.status, sellerPageMachine, input.status === "active" ? "publish" : "unpublish")))
     .returning({ slug: team.slug });
   return row ?? null;
 }

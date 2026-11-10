@@ -14,6 +14,7 @@ import { hasTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payo
 import {
   lockPayoutRequestByOfflineReference,
   type PayoutRequestRow,
+  transitionPayoutRequest,
   updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
 import { appendPayoutOutboxEvent } from "./outbox-dispatcher";
@@ -111,8 +112,7 @@ export async function exportPayoutsWeb(
       if (tooSmall) throw badRequest(tooSmall);
       // A cancelled export keeps its reference, so the log of the cancelled file still matches this payout.
       const reference = request.offlineReference ?? payoutReference();
-      await updatePayoutRequest(tx, request.id, {
-        status: "exported",
+      await transitionPayoutRequest(tx, request, "export", {
         offlineReference: reference,
         offlineBatchId,
         ...amounts,
@@ -216,8 +216,7 @@ export async function cancelPayoutsWebExport(
     const request = await lockTeamRequest(tx, input.teamId, input.requestId);
     if (request.status !== "exported") throw badRequest(NOT_EXPORTED);
     const automatic = await hasTeamPayoutCredentials(tx, request.teamId);
-    const queued = await updatePayoutRequest(tx, request.id, {
-      status: "queued",
+    const queued = await transitionPayoutRequest(tx, request, "cancel_export", {
       offlineBatchId: null,
       sentAt: null,
       paypalItemId: null,

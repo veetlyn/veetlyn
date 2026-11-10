@@ -1,4 +1,4 @@
-import type { JsonValue } from "@jendal-workspace/core";
+import { type JsonValue, OPEN_DISPUTE_STATUSES, rulebookMachine } from "@jendal-workspace/core";
 import { PRESET_RULEBOOKS, type RulePreset, type RulebookRules } from "@opmodel/engine-rules";
 import {
   claimDueDeliveryRows,
@@ -11,9 +11,11 @@ import {
   setSchedulePaused,
 } from "@opmodel/engine-drizzle";
 import { type DeliveryChannel, recordDeliveryFailure, recordDeliverySuccess } from "@opmodel/engine-outbox";
+import { ACTIVE_SCHEDULE_ITEM_STATUSES, SCHEDULE_ITEM_LIFECYCLE } from "@opmodel/engine-scheduler";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { DbExecutor } from "../executor";
+import { startsFrom } from "../state-guard";
 import { dispute, memberMark, memberNoticePreference, outboxDelivery, rulebook, rulebookAcceptance, scheduleItem } from "../schema/operating-model";
 import { user } from "../schema/auth";
 import { project } from "../schema/projects";
@@ -44,7 +46,7 @@ export async function listProjectSchedule(db: DbExecutor, input: { teamId: strin
       and(
         eq(scheduleItem.teamId, input.teamId),
         eq(scheduleItem.subjectId, input.projectId),
-        inArray(scheduleItem.status, ["pending", "paused"]),
+        inArray(scheduleItem.status, ACTIVE_SCHEDULE_ITEM_STATUSES),
       ),
     )
     .orderBy(scheduleItem.runAt);
@@ -141,7 +143,7 @@ export async function saveRulebookDraft(
     const [row] = await db
       .update(rulebook)
       .set({ preset: input.preset, spec: input.spec, createdById: input.userId })
-      .where(and(eq(rulebook.id, draft.id), eq(rulebook.status, "draft")))
+      .where(and(eq(rulebook.id, draft.id), startsFrom(rulebook.status, rulebookMachine, "edit")))
       .returning();
     if (row) return row;
   }
@@ -173,8 +175,8 @@ export async function publishRulebook(db: DbExecutor, input: { teamId: string; u
     if (!draft) throw new Error("There is no draft to publish");
     const [row] = await tx
       .update(rulebook)
-      .set({ status: "published", publishedAt: new Date() })
-      .where(and(eq(rulebook.id, draft.id), eq(rulebook.status, "draft")))
+      .set({ status: rulebookMachine.transitions.publish.to, publishedAt: new Date() })
+      .where(and(eq(rulebook.id, draft.id), startsFrom(rulebook.status, rulebookMachine, "publish")))
       .returning();
     if (!row) throw new Error("The draft could not be published");
     await tx
@@ -416,7 +418,7 @@ export async function findOpenDisputeForProject(db: DbExecutor, projectId: strin
   const [row] = await db
     .select()
     .from(dispute)
-    .where(and(eq(dispute.projectId, projectId), inArray(dispute.status, ["open", "waiting_for_seller", "under_review"])))
+    .where(and(eq(dispute.projectId, projectId), inArray(dispute.status, OPEN_DISPUTE_STATUSES)))
     .limit(1);
   return row ?? null;
 }
@@ -436,20 +438,18 @@ export async function projectHasOpenDispute(db: DbExecutor, input: { teamId: str
   const [row] = await db.select({ id: dispute.id }).from(dispute).where(and(
     eq(dispute.teamId, input.teamId),
     eq(dispute.projectId, input.projectId),
-    inArray(dispute.status, ["open", "waiting_for_seller", "under_review"]),
+    inArray(dispute.status, OPEN_DISPUTE_STATUSES),
   )).limit(1);
   return row !== undefined;
 }
 
 export async function pauseProjectSchedule(db: DbExecutor, input: { teamId: string; projectId: string }): Promise<void> {
-  await db.update(scheduleItem).set({ status: "paused" }).where(and(
+  await db.update(scheduleItem).set({ status: SCHEDULE_ITEM_LIFECYCLE.transitions.pause.to }).where(and(
     eq(scheduleItem.teamId, input.teamId),
     eq(scheduleItem.subjectId, input.projectId),
     eq(scheduleItem.status, "pending"),
   ));
 }
-
-const OPEN_DISPUTE_STATUSES = ["open", "waiting_for_seller", "under_review"] as const;
 
 // Whether an open case is about this payout's work: its project, or a project the member delivered or managed, since
 // a member's request draws on pooled earnings. A case with no project cannot be scoped, so it holds everyone.
@@ -490,7 +490,7 @@ export async function teamHasOpenDispute(db: DbExecutor, teamId: string): Promis
   const [row] = await db
     .select({ count: sql<number>`count(*)::int`.mapWith(Number) })
     .from(dispute)
-    .where(and(eq(dispute.teamId, teamId), inArray(dispute.status, ["open", "waiting_for_seller", "under_review"])));
+    .where(and(eq(dispute.teamId, teamId), inArray(dispute.status, OPEN_DISPUTE_STATUSES)));
   return (row?.count ?? 0) > 0;
 }
 

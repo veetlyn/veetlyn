@@ -1,5 +1,20 @@
 export type DeliveryChannel = "email_client" | "email_member" | "email_dispute" | "discord" | "webhook";
-export type DeliveryStatus = "pending" | "sent" | "failed" | "skipped";
+export const DELIVERY_STATUSES = ["pending", "sent", "failed", "skipped"] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+
+// A notice delivery's lifecycle, as data. Only a pending delivery is claimed and moves; a failed attempt stays pending
+// with a later retry until the attempts run out.
+export const DELIVERY_LIFECYCLE = {
+  name: "outbox_delivery",
+  states: DELIVERY_STATUSES,
+  initial: "pending",
+  transitions: {
+    send: { from: ["pending"], to: "sent" },
+    retry: { from: ["pending"], to: "pending" },
+    give_up: { from: ["pending"], to: "failed" },
+    skip: { from: ["pending"], to: "skipped" },
+  },
+} as const;
 
 export type OutboxDeliveryRecord = {
   id: string;

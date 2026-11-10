@@ -21,6 +21,26 @@ export const SCHEDULE_ITEM_KINDS: readonly ScheduleItemKind[] = [
   "project.abandon",
 ];
 
+export const SCHEDULE_ITEM_STATUSES = ["pending", "paused", "done", "cancelled", "failed"] as const;
+export type ScheduleItemStatus = (typeof SCHEDULE_ITEM_STATUSES)[number];
+
+// A timed rule's lifecycle, as data. Only pending and paused items are active: a reconciliation re-arms or cancels
+// them, a dispute pauses and resumes them, and a sweep fires the pending ones that are due.
+export const SCHEDULE_ITEM_LIFECYCLE = {
+  name: "schedule_item",
+  states: SCHEDULE_ITEM_STATUSES,
+  initial: "pending",
+  transitions: {
+    pause: { from: ["pending", "paused"], to: "paused" },
+    resume: { from: ["pending", "paused"], to: "pending" },
+    cancel: { from: ["pending", "paused"], to: "cancelled" },
+    fire: { from: ["pending"], to: "done" },
+    fail: { from: ["pending"], to: "failed" },
+  },
+} as const;
+
+export const ACTIVE_SCHEDULE_ITEM_STATUSES = ["pending", "paused"] as const satisfies readonly ScheduleItemStatus[];
+
 const RESPONSE_KINDS: ScheduleItemKind[] = ["request.remind", "request.expire"];
 const UPDATE_KINDS: ScheduleItemKind[] = ["member.updateRemind", "member.updateLate"];
 

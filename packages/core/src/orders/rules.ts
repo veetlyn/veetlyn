@@ -1,8 +1,20 @@
 import { EMAIL_PATTERN, QUOTE_REQUEST_LIMITS } from "../sellers/quote-request";
+import { defineMachine } from "../state-machines/machine";
 
 // Sellers design §5.3.
 export const ORDER_STATUSES = ["pending", "paid", "refunded"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+// A capture pays the order once; a refund or reversal of a paid order refunds it once. Replayed events change nothing.
+export const orderMachine = defineMachine({
+  name: "order",
+  states: ORDER_STATUSES,
+  initial: "pending",
+  transitions: {
+    pay: { from: ["pending"], to: "paid" },
+    refund: { from: ["paid"], to: "refunded" },
+  },
+});
 
 // Sellers design §5.2: a download link lasts 7 days and allows 5 downloads.
 export const DOWNLOAD_GRANT_DAYS = 7;
