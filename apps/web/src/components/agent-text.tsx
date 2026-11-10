@@ -1,17 +1,23 @@
 import { Fragment, type ReactNode } from "react";
 
-// The assistant's answers come as light markdown. Only bold, bullets and paragraphs are drawn, as React text, so
-// nothing in an answer (which can quote client-written records) is ever treated as markup or a link.
+// The assistant's answers come as light markdown. Only bold, emphasis, inline code (shown as plain words), bullets and
+// paragraphs are drawn, as React text, so nothing in an answer (which can quote client-written records) is ever
+// treated as markup or a link.
+const INLINE = /(\*\*[^*\n]+\*\*|\*[^*\s][^*\n]*?\*|`[^`\n]+`)/g;
+
 function inline(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*\n]+\*\*)/g).map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
-      <strong key={i} className="font-medium">
-        {part.slice(2, -2)}
-      </strong>
-    ) : (
-      <Fragment key={i}>{part}</Fragment>
-    ),
-  );
+  return text.split(INLINE).map((part, i) => {
+    if (part.length > 4 && part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-medium">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.length > 2 && part.startsWith("*") && part.endsWith("*")) return <em key={i}>{part.slice(1, -1)}</em>;
+    if (part.length > 2 && part.startsWith("`") && part.endsWith("`")) return <Fragment key={i}>{part.slice(1, -1)}</Fragment>;
+    return <Fragment key={i}>{part}</Fragment>;
+  });
 }
 
 const BULLET = /^\s*(?:[-*•]|\d+[.)])\s+/;

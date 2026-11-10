@@ -25,6 +25,18 @@ describe("sanitizeAgentAnswer", () => {
     expect(sanitizeAgentAnswer("Payout for Logo refresh (00fbf3ae) is waiting.")).toBe("Payout for Logo refresh is waiting.");
   });
 
+  it("keeps web addresses the person needs", () => {
+    expect(sanitizeAgentAnswer("Your seller page is at walk-crew.example.app and the dashboard at example.com.")).toBe(
+      "Your seller page is at walk-crew.example.app and the dashboard at example.com.",
+    );
+  });
+
+  it("leaves no empty separators where an id was removed", () => {
+    expect(sanitizeAgentAnswer("Logo refresh (Pain Doré) — f5349023-c16c-48bb-a849-c84ed6dc63d9 — in the request space.")).toBe(
+      "Logo refresh (Pain Doré) — in the request space.",
+    );
+  });
+
   it("leaves a plain answer untouched", () => {
     const plain = "The quote is $300.00 and the client is waiting for the deposit.";
     expect(sanitizeAgentAnswer(plain)).toBe(plain);

@@ -34,4 +34,11 @@ describe("the assistant's instructions", () => {
     const prompt = systemPrompt("Platform", inTeam("freelancer"), 5);
     expect(prompt).toContain("never assume or convert a currency, not even in a short progress note");
   });
+
+  // Walk 2026-11-10: a catch-up answer came back as one long wall of text.
+  it("asks for a short lead sentence and a capped list, so answers stay readable", () => {
+    const prompt = systemPrompt("Platform", inTeam("admin"), 11);
+    expect(prompt).toContain("Start with one sentence that answers the question");
+    expect(prompt).toContain("at most 6 short bullets");
+  });
 });
