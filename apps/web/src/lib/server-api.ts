@@ -125,6 +125,17 @@ export async function fetchOAuthClientName(clientId: string): Promise<string | n
   return parsed.success ? parsed.data.client_name : null;
 }
 
+const consentViewSchema = z.object({ clientId: z.string(), redirectUri: z.string(), scopes: z.array(z.string()) });
+export type ConsentView = z.infer<typeof consentViewSchema>;
+
+// The consent page's facts, verified by the api against the signature of the authorization query; null when the link
+// was not issued by this server, was changed, or has expired.
+export async function fetchConsentView(query: string): Promise<ConsentView | null> {
+  const response = await callApiAsUser(`/api/oauth/consent-view?q=${encodeURIComponent(query)}`);
+  const parsed = consentViewSchema.safeParse(response.ok ? await response.json() : null);
+  return parsed.success ? parsed.data : null;
+}
+
 export async function redirectIfSignedIn(): Promise<void> {
   if (await fetchSession()) redirect("/");
 }

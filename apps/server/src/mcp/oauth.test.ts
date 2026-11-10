@@ -7,11 +7,14 @@ import { user } from "@jendal-workspace/db/schema/auth";
 import { createTestDb, hasTestDatabase, truncateAll } from "@jendal-workspace/db/testing/db";
 import { fromPartial } from "@total-typescript/shoehorn";
 import { eq } from "drizzle-orm";
+import { Hono } from "hono";
 import type { RequestLogger } from "evlog";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { createMcpRoute } from "./route";
+import type { AppEnv } from "../app-env";
+import { createOAuthConsentRoute } from "../routes/oauth-consent";
 
 // The scripted OAuth client: what Claude and ChatGPT do when they connect, against the real Better Auth setup.
 // The issuer is the test auth URL; the token check fetches the issuer's keys, which this routes to it.
@@ -161,6 +164,35 @@ describe.skipIf(!hasTestDatabase)("connecting an AI client with OAuth", () => {
     // A token whose signature does not verify is refused.
     const tampered = `${accessToken.slice(0, -4)}AAAA`;
     expect((await mcpList(tampered)).status).toBe(401);
+  });
+
+  // The consent page shows the return host and scopes; they must come from the query this server signed.
+  it("shows the consent page only what the signed authorization query proves", async () => {
+    const consentApp = new Hono<AppEnv>();
+    consentApp.use(async (c, next) => {
+      c.set("auth", auth);
+      await next();
+    });
+    consentApp.route("/", createOAuthConsentRoute());
+    const view = (q: string, cookie?: string) =>
+      consentApp.request(`/api/oauth/consent-view?q=${encodeURIComponent(q)}`, { headers: cookie ? { cookie } : {} });
+
+    const cookie = await signedInCookie();
+    const clientId = await register([REDIRECT]);
+    const { location } = await authorize(cookie, clientId, REDIRECT);
+    const signed = location.search.slice(1);
+
+    const ok = await view(signed, cookie);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ clientId, redirectUri: REDIRECT, scopes: ["openid", "profile", "email", "offline_access"] });
+
+    const forged = new URLSearchParams(signed);
+    forged.set("redirect_uri", "https://claude.ai/callback");
+    expect((await view(forged.toString(), cookie)).status).toBe(400);
+    const fewerScopes = new URLSearchParams(signed);
+    fewerScopes.set("scope", "openid");
+    expect((await view(fewerScopes.toString(), cookie)).status).toBe(400);
+    expect((await view(signed)).status).toBe(401);
   });
 
   it("asks again before sending a code to another of the client's hosts than the one the user approved", async () => {

@@ -332,3 +332,6 @@ export function createAuth(env: AuthConfig, database: Database, services: AuthSe
 
 export type Auth = ReturnType<typeof createAuth>;
 export type Session = Auth["$Infer"]["Session"];
+
+// The consent page shows only what a signed authorization query proves (oauth-provider: verify before displaying).
+export { verifyOAuthQueryParams } from "@better-auth/oauth-provider";
