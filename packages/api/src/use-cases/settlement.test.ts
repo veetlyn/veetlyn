@@ -1,4 +1,5 @@
 import { createFakeFileStore } from "@jendal-workspace/core";
+import { ensureBillingAccount } from "@jendal-workspace/db/repositories/billing";
 import { ensurePublishedRulebook } from "@jendal-workspace/db/repositories/operating-model";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
 import { ledgerBalance, ledgerTransfer } from "@jendal-workspace/db/schema/ledger";
@@ -53,7 +54,7 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     // Only the terminal review timer is due in this test.
     await db.update(scheduleItem).set({ runAt: new Date(Date.now() + 86_400_000) }).where(eq(scheduleItem.subjectId, projectId));
     await db.update(scheduleItem).set({ runAt: new Date(0) }).where(eq(scheduleItem.kind, "project.autoComplete"));
-    return { teamId, projectId, quoteId, deliveryId, freelancerId, managerId, adminId: userId };
+    return { teamId, organizationId, projectId, quoteId, deliveryId, freelancerId, managerId, adminId: userId };
   }
 
   const admin = (fixture: { teamId: string; adminId: string }) => ({ teamId: fixture.teamId, actorId: fixture.adminId, role: "admin" as const });
@@ -259,6 +260,16 @@ describe.skipIf(!hasTestDatabase)("delivery settlement", () => {
     } finally {
       await db.execute(sql`alter table schedule_item drop constraint settlement_test_completion`);
     }
+  });
+
+  // Billing design §6: a lapsed workspace takes no new sale, but work the client already paid for still completes.
+  it("lets the client accept a delivery after the seller's plan lapsed", async () => {
+    const fixture = await delivered(20_000);
+    await ensureBillingAccount(db, { organizationId: fixture.organizationId, product: "services", solo: false, now: new Date(Date.now() - 40 * 86_400_000) });
+    const { deliveryId, projectId } = fixture;
+    await expect(acceptDelivery(db, { projectId, deliveryId })).resolves.toMatchObject({ status: expect.stringMatching(/awaiting_balance|completed/) });
+    const [row] = await db.select({ status: delivery.status }).from(delivery).where(eq(delivery.id, deliveryId));
+    expect(row?.status).toBe("accepted");
   });
 
   it("keeps abandonment separate from acceptance and settlement", async () => {
