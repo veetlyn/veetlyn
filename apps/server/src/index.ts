@@ -39,6 +39,7 @@ import { runDueScheduleItems } from "@jendal-workspace/api/use-cases/scheduler-s
 import { createCatalogImagesRoute } from "./routes/catalog-images";
 import { createPayPalOnboardingRoute } from "./routes/paypal-onboarding";
 import { createPayPalWebhookRoute } from "./routes/paypal-webhooks";
+import { createOAuthConsentRoute } from "./routes/oauth-consent";
 import { createPolarWebhookRoute } from "./routes/polar-webhooks";
 import { storeInfoRoute } from "./routes/store-info";
 import {
@@ -132,6 +133,7 @@ app.use(
 
 app.route("/", createWaitlistRoute(ENV.PLATFORM_DOMAIN, ENV.WAITLIST_NOTIFY_TO ? { recipient: ENV.WAITLIST_NOTIFY_TO, platformName: ENV.PLATFORM_NAME } : undefined));
 
+app.route("/", createOAuthConsentRoute());
 app.on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw));
 
 // OAuth discovery for AI clients connecting the plugin: the protected resource on this host, and the
