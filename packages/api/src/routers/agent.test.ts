@@ -220,6 +220,51 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     await expect(callerFor(adminId).agent.pending({ node })).resolves.toEqual({ pending: [] });
   });
 
+  // Staging walk 2026-11-10: assignment and amendment proposals were offered but every one came back "not in this team".
+  it("gives an assignment its own card, assigns on confirm, and drafts none for someone outside the team", async () => {
+    const { adminId, freelancerId, projectId } = await setup();
+    const model = scriptedModel([
+      use("propose_project_assign", { card: "Moussa has the time this week.", input: { projectId, freelancerId } }, "call_a"),
+      use("propose_project_assign", { card: "Not on this team.", input: { projectId, freelancerId: "someone-else" } }, "call_b"),
+      say("Prepared the assignment."),
+    ]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: onProject(projectId), message: "Assign the work" });
+
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
+    const proposals = entries.filter((e) => e.kind === "proposal");
+    expect(proposals).toHaveLength(1);
+    expect(proposals[0]?.card).toEqual({
+      kind: "assign",
+      title: "Assign Baobab logo",
+      cta: expect.stringMatching(/^Assign to /),
+      project: "Baobab logo",
+      member: expect.any(String),
+    });
+
+    await callerFor(adminId).agent.confirm({ entryId: proposals[0]?.id ?? "" });
+    const [row] = await db.select({ assigned: project.assignedFreelancerId }).from(project).where(eq(project.id, projectId));
+    expect(row?.assigned).toBe(freelancerId);
+  });
+
+  it("gives a proposed quote change its own card", async () => {
+    const { adminId, projectId } = await setup();
+    const model = scriptedModel([
+      use("propose_amendment_propose", { card: "The client asked for a favicon.", input: { projectId, add: [{ description: "Favicon set", amountMinor: 8_000 }], note: "Added at the client's request." } }),
+      say("Prepared the change."),
+    ]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: onProject(projectId), message: "Add a favicon" });
+    const { entries } = await callerFor(adminId).agent.thread({ callId });
+    expect(entries.find((e) => e.kind === "proposal")?.card).toEqual({
+      kind: "amendment",
+      title: "Change the quote on Baobab logo",
+      cta: "Propose change",
+      project: "Baobab logo",
+      adds: [{ label: "Favicon set", amount: "$80.00" }],
+      removes: 0,
+      note: "Added at the client's request.",
+    });
+  });
+
   it("keeps one question and one thread when a failed first turn is sent again", async () => {
     const { adminId, teamId } = await setup();
     const node = { kind: "seller" as const, teamId };
