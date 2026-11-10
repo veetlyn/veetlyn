@@ -2,9 +2,12 @@
 
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
+import { Input } from "@jendal-workspace/ui/components/input";
+import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRef } from "react";
+import { Search } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
@@ -15,7 +18,6 @@ import { formatMinor } from "@/lib/money";
 import {
   approvalState,
   payoutActions,
-  payoutFeeLine,
   payoutSentMinor,
   payoutStatusLabel,
   payoutStatusTone,
@@ -24,6 +26,8 @@ import {
 import { trpc } from "@/utils/trpc";
 
 import { ConfirmDialog } from "./confirm-dialog";
+
+const DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
 
 type TeamPayouts = inferRouterOutputs<AppRouter>["payouts"]["list"];
 export type TeamPayoutRequest = TeamPayouts["payouts"][number];
@@ -63,22 +67,22 @@ function PayoutSource({ teamSlug, request }: { teamSlug: string; request: TeamPa
   );
 }
 
+// One line per payout: who, from what, how much reaches them, where it stands. Decisions happen on the payout's own
+// page, where the amounts, the approvals and the destination are shown before anyone confirms.
 function RequestRow({
   teamSlug,
   request,
-  automaticPayoutsOn,
-  ownPayout,
+  needsViewer,
 }: {
   teamSlug: string;
   request: TeamPayoutRequest;
-  automaticPayoutsOn: boolean;
-  ownPayout: boolean;
+  needsViewer: boolean;
 }) {
-  const amount = formatMinor(request.amountMinor, request.currency);
-  const fee = payoutFeeLine(request);
   const sentMinor = payoutSentMinor(request);
   const waiting = waitingLine(request, new Date());
   const approval = approvalState(request);
+  const detail =
+    request.failureMessage ?? approval.note ?? approval.progress ?? waiting ?? (request.status === "succeeded" && request.settledAt ? `Paid ${DATE.format(new Date(request.settledAt))}` : null);
 
   return (
     <tr className="align-top">
@@ -86,38 +90,34 @@ function RequestRow({
         <Link href={`/${teamSlug}/payouts/${request.id}`} className="font-medium hover:underline">
           {request.memberName}
         </Link>
-        <p className="text-muted-foreground">{request.memberEmail}</p>
+        <p className="text-muted-foreground">Requested {DATE.format(new Date(request.createdAt))}</p>
       </td>
       <td className="px-4 py-3">
         <PayoutSource teamSlug={teamSlug} request={request} />
       </td>
-      <td className="px-4 py-3 font-tabular whitespace-nowrap">{amount}</td>
-      <td className="px-4 py-3 font-tabular whitespace-nowrap">{new Date(request.createdAt).toLocaleDateString()}</td>
-      <td className="space-y-1.5 px-4 py-3">
-        <Badge tone={payoutStatusTone(request)}>{payoutStatusLabel(request)}</Badge>
+      <td className="px-4 py-3 whitespace-nowrap">
+        <p className="font-tabular">{formatMinor(request.amountMinor, request.currency)}</p>
         {sentMinor !== null ? (
-          <p className="text-muted-foreground">
-            {request.status === "succeeded" ? "Sent" : "Sends"} {formatMinor(sentMinor, request.currency)}
+          <p className="font-tabular text-muted-foreground">
+            {request.status === "succeeded" ? "Received" : "Receives"} {formatMinor(sentMinor, request.currency)}
           </p>
-        ) : null}
-        {fee ? (
-          <p className="text-muted-foreground">
-            {fee.label} {formatMinor(fee.feeMinor, request.currency)}
-          </p>
-        ) : null}
-        {request.failureMessage ? <p className="text-destructive">{request.failureMessage}</p> : null}
-        {waiting ? <p className="text-muted-foreground">{waiting}</p> : null}
-        {approval.progress ? <p className="text-muted-foreground">{approval.progress}</p> : null}
-        {approval.note ? <p className="text-muted-foreground">{approval.note}</p> : null}
-        {(request.status === "exported" || request.status === "queued") && request.reviewReason ? (
-          <p className="text-destructive">{request.reviewReason}</p>
-        ) : null}
-        {request.reviewReason ? (
-          <Badge tone="warn">Needs review</Badge>
         ) : null}
       </td>
-      <td className="px-4 py-3">
-        <PayoutActions teamSlug={teamSlug} request={request} automaticPayoutsOn={automaticPayoutsOn} ownPayout={ownPayout} />
+      <td className="space-y-1 px-4 py-3">
+        <div className="flex flex-wrap gap-1.5">
+          <Badge tone={payoutStatusTone(request)}>{payoutStatusLabel(request)}</Badge>
+          {request.reviewReason ? <Badge tone="warn">Needs review</Badge> : null}
+        </div>
+        {detail ? <p className={request.failureMessage ? "text-destructive" : "text-muted-foreground"}>{detail}</p> : null}
+      </td>
+      <td className="px-4 py-3 text-right">
+        <Link
+          href={`/${teamSlug}/payouts/${request.id}`}
+          className={buttonVariants({ variant: needsViewer ? "default" : "outline", size: "sm" })}
+          aria-label={`${needsViewer ? "Review" : "Open"} ${request.memberName}'s payout of ${formatMinor(request.amountMinor, request.currency)}`}
+        >
+          {needsViewer ? "Review" : request.status === "succeeded" ? "Receipt" : "Open"}
+        </Link>
       </td>
     </tr>
   );
@@ -283,6 +283,27 @@ function WaitingForMembers({ waiting }: { waiting: TeamPayouts["waitingForDestin
   );
 }
 
+const FILTERS = [
+  ["all", "All"],
+  ["needs", "Needs approval"],
+  ["moving", "On its way"],
+  ["paid", "Paid"],
+] as const;
+type Filter = (typeof FILTERS)[number][0];
+
+function inFilter(request: TeamPayoutRequest, filter: Filter): boolean {
+  switch (filter) {
+    case "all":
+      return true;
+    case "needs":
+      return request.status === "requested";
+    case "moving":
+      return request.status === "queued" || request.status === "sending" || request.status === "sent" || request.status === "exported";
+    case "paid":
+      return request.status === "succeeded";
+  }
+}
+
 function RequestsList({
   teamSlug,
   data,
@@ -294,57 +315,108 @@ function RequestsList({
   automaticPayoutsOn: boolean;
   viewerId: string;
 }) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  // What this viewer can approve now: someone else's payout still waiting for an approval.
+  const needsViewer = (request: TeamPayoutRequest) =>
+    data.canDecide && request.userId !== viewerId && payoutActions(request, automaticPayoutsOn).includes("approve");
+  const mine = data.payouts.filter(needsViewer);
+  const term = search.trim().toLocaleLowerCase();
+  const matching = data.payouts.filter(
+    (request) => inFilter(request, filter) && `${request.memberName} ${request.memberEmail} ${request.projectTitle ?? "request"}`.toLocaleLowerCase().includes(term),
+  );
+
   if (data.payouts.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No payout requests yet. Members ask for a payout of their earnings from their own Payouts page.
-      </p>
+      <section className="rounded-[10px] border px-5 py-10 text-center">
+        <h2 className="font-heading text-lg">No payout requests yet</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Members ask for a payout of their earnings from their own Payouts page.</p>
+      </section>
     );
   }
+  const first = mine[0];
+  const currency = first?.currency;
+  const sameCurrency = currency !== undefined && mine.every((request) => request.currency === currency);
   return (
-    <div className="panel relative overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="border-b bg-secondary/60 text-left text-xs text-muted-foreground">
-          <tr>
-            <th scope="col" className="px-4 py-2.5 font-medium">
-              Member
-            </th>
-            <th scope="col" className="px-4 py-2.5 font-medium">
-              From
-            </th>
-            <th scope="col" className="px-4 py-2.5 font-medium">
-              Amount
-            </th>
-            <th scope="col" className="px-4 py-2.5 font-medium">
-              Requested
-            </th>
-            <th scope="col" className="px-4 py-2.5 font-medium">
-              Status
-            </th>
-            <th scope="col" className="px-4 py-2.5 font-medium">
-              <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {data.payouts.map((request) => (
-            <RequestRow
-              key={request.id}
-              teamSlug={teamSlug}
-              request={request}
-              automaticPayoutsOn={automaticPayoutsOn}
-              ownPayout={request.userId === viewerId}
-            />
+    <>
+      {data.canDecide ? (
+        first ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border px-5 py-4">
+            <div className="grid gap-0.5">
+              <p className="font-medium">
+                {mine.length === 1 ? "1 payout needs your approval" : `${mine.length} payouts need your approval`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {sameCurrency ? `${formatMinor(mine.reduce((sum, request) => sum + request.amountMinor, 0), currency)} requested. ` : ""}
+                PayPal&apos;s fee comes off each payout.
+              </p>
+            </div>
+            <Link href={`/${teamSlug}/payouts/${first.id}`} className={buttonVariants({ variant: "mint" })}>
+              Review the next one
+            </Link>
+          </div>
+        ) : (
+          <div className="rounded-[10px] border px-5 py-4">
+            <p className="font-medium">Nothing needs your approval</p>
+          </div>
+        )
+      ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="relative w-full sm:max-w-64">
+          <span className="sr-only">Search payouts by member or source</span>
+          <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" aria-hidden="true" />
+          <Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search member or source…" className="pl-9" />
+        </label>
+        <div role="group" aria-label="Show" className="inline-flex w-fit flex-wrap rounded-[8px] border p-0.5">
+          {FILTERS.map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={filter === key}
+              onClick={() => setFilter(key)}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_var(--input)]"
+            >
+              {label} <span className="font-tabular text-xs text-muted-foreground">{data.payouts.filter((request) => inFilter(request, key)).length}</span>
+            </button>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </div>
+      </div>
+      <p role="status" className="sr-only">{matching.length} payouts shown</p>
+      {matching.length === 0 ? (
+        <div className="rounded-[10px] border px-5 py-10 text-center">
+          <h2 className="font-heading text-lg">No matching payouts</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Try another member, project or status.</p>
+          <Button type="button" variant="outline" className="mt-4" onClick={() => { setSearch(""); setFilter("all"); }}>
+            Clear filters
+          </Button>
+        </div>
+      ) : (
+        <div className="panel relative overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-secondary/60 text-left text-xs text-muted-foreground">
+              <tr>
+                <th scope="col" className="px-4 py-2.5 font-medium">Member</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">From</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Amount</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
+                <th scope="col" className="px-4 py-2.5 font-medium"><span className="sr-only">Open</span></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {matching.map((request) => (
+                <RequestRow key={request.id} teamSlug={teamSlug} request={request} needsViewer={needsViewer(request)} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
   );
 }
 
 export function PayoutRequestsTable({ teamSlug, viewerId }: { teamSlug: string; viewerId: string }) {
   const requests = useQuery({ ...trpc.payouts.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
-  // Without automatic payouts an approved payout waits for an export, so the approve dialog says so.
+  // Whether a queued payout can be retried here depends on automatic payouts, as on the payout's own page.
   const credentials = useQuery({
     ...trpc.payouts.credentials.queryOptions({ teamSlug }),
     retry: false,
@@ -353,24 +425,19 @@ export function PayoutRequestsTable({ teamSlug, viewerId }: { teamSlug: string; 
   const automaticPayoutsOn = credentials.data != null;
 
   return (
-    <section aria-labelledby="requests-heading" className="space-y-3">
-      <h2 id="requests-heading" className="font-medium">
-        Payout requests
-      </h2>
+    <section aria-label="Payout requests" className="space-y-4">
       {requests.isPending ? (
         <Loader />
       ) : requests.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {requests.error.message}
-        </p>
+        <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm">
+          <p>{requests.error.message}</p>
+          {requests.error.data?.code !== "FORBIDDEN" ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => void requests.refetch()}>Try again</Button>
+          ) : null}
+        </div>
       ) : (
         <>
-          <RequestsList
-            teamSlug={teamSlug}
-            data={requests.data}
-            automaticPayoutsOn={automaticPayoutsOn}
-            viewerId={viewerId}
-          />
+          <RequestsList teamSlug={teamSlug} data={requests.data} automaticPayoutsOn={automaticPayoutsOn} viewerId={viewerId} />
           <WaitingForMembers waiting={requests.data.waitingForDestination} />
         </>
       )}
