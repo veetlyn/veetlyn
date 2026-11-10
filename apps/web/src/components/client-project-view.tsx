@@ -129,8 +129,8 @@ function QuoteSummary({
             — delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`}
           </span>
         </p>
-        <Badge tone={quote.status === "proposed" ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
-          {quote.status === "proposed" ? "Waiting for you" : QUOTE_STATUS_LABELS[quote.status]}
+        <Badge tone={quote.status === "proposed" && quoting ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
+          {quote.status === "proposed" ? (quoting ? "Waiting for you" : "Not taken") : QUOTE_STATUS_LABELS[quote.status]}
         </Badge>
       </div>
       <ul className="space-y-1 text-sm">

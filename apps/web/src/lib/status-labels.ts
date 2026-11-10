@@ -5,7 +5,6 @@ export const QUOTE_STATUS_LABELS = {
   proposed: "Sent",
   accepted: "Accepted",
   superseded: "Replaced",
-  rejected: "Declined",
 } as const satisfies Record<QuoteStatus, string>;
 
 export const PAYMENT_STATUS_LABELS = {

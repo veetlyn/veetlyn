@@ -57,6 +57,8 @@ export const paymentMachine = defineMachine({
     capture_completed: { from: ["pending", "failed"], to: "captured" },
     capture_failed: { from: ["pending", "failed"], to: "failed" },
     refund_in_full: { from: ["captured"], to: "refunded" },
+    // The project ended without it (abandoned after the client went silent): nothing is owed, so nothing can be paid.
+    cancel: { from: ["pending", "failed"], to: "cancelled" },
   },
 });
 export type PaymentEvent = (typeof paymentMachine.events)[number];

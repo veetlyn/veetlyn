@@ -61,7 +61,7 @@ export const STATUS_MACHINES: readonly StatusMachineEntry[] = [
 // Status columns no app code moves, with the reason. A new status column must be added to one of the two lists.
 export const UNMANAGED_STATUS_COLUMNS = {
   project: "core projects/state-machine.ts (guards need facts beyond the status)",
-  agent_call: "every call stays open; nothing writes done yet",
+  agent_call: "a thread stays open so its person can come back to it; `done` is kept for archiving, which is not built",
   invitation: "Better Auth's organization plugin owns it",
   store_domains: "no code writes it yet",
 } as const satisfies Record<string, string>;
