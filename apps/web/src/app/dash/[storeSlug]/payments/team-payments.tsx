@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import Loader from "@/components/loader";
+import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
 import { PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/status-labels";
 import { trpc } from "@/utils/trpc";
@@ -29,11 +30,17 @@ export default function TeamPayments({ teamSlug }: { teamSlug: string }) {
   );
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+    <ListPage>
       <div className="space-y-1">
         <h1 className="font-heading text-3xl">Payments</h1>
         <p className="text-sm text-muted-foreground">What clients paid on the team's projects, through PayPal.</p>
       </div>
+      {payments.isSuccess && payments.data.length > 0 ? (
+        <SummaryStrip label="Needs attention">
+          <p className="text-sm"><span className="font-medium">{payments.data.filter((payment) => payment.status === "pending").length} payments</span> <span className="text-muted-foreground">waiting to be captured</span></p>
+          <p className="text-sm text-muted-foreground">{payments.data.filter((payment) => payment.status === "captured").length} captured</p>
+        </SummaryStrip>
+      ) : null}
       {payments.isSuccess && payments.data.length > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="w-full sm:max-w-64"><span className="sr-only">Search payments by project or client</span><Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search payments…" /></label>
@@ -101,6 +108,6 @@ export default function TeamPayments({ teamSlug }: { teamSlug: string }) {
           </table>
         </div>
       )}
-    </main>
+    </ListPage>
   );
 }

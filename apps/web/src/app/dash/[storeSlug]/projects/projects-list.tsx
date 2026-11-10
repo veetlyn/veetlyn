@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 
 import Loader from "@/components/loader";
+import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
@@ -27,11 +28,11 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
   if (projects.isPending) return <Loader />;
   if (projects.isError) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+      <ListPage>
         <h1 className="font-heading text-3xl">Projects unavailable</h1>
         <p className="text-sm text-muted-foreground">{projects.error.message}</p>
         <button type="button" onClick={() => void projects.refetch()} className={buttonVariants({ variant: "outline" })}>Try again</button>
-      </main>
+      </ListPage>
     );
   }
 
@@ -41,7 +42,7 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
   });
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+    <ListPage>
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-heading text-3xl">Projects</h1>
@@ -50,6 +51,12 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
           New project
         </Link>
       </div>
+      {projects.data.length > 0 ? (
+        <SummaryStrip label="Needs attention">
+          <p className="text-sm"><span className="font-medium">{projects.data.filter((project) => !isTerminalProjectStatus(project.status)).length} open projects</span> <span className="text-muted-foreground">in progress or waiting</span></p>
+          <p className="text-sm text-muted-foreground">{matching.length} shown</p>
+        </SummaryStrip>
+      ) : null}
       {projects.data.length === 0 ? (
         <div className="panel grid justify-items-center gap-2 p-10 text-center">
           <p className="font-heading text-lg">No projects yet</p>
@@ -114,6 +121,6 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
           )}
         </>
       )}
-    </main>
+    </ListPage>
   );
 }
