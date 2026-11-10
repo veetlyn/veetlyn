@@ -6,10 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import AppFrame, { navItemClass } from "@/components/app-frame";
-import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
 import type { WorkspaceOrganization } from "@/lib/workspaces";
-import { usePlatformName } from "@/components/platform-name";
 import { trpc } from "@/utils/trpc";
 
 const NODE = { kind: "account" as const };
@@ -25,7 +23,6 @@ export default function AccountShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const platform = usePlatformName();
   const scope = useQuery({ ...trpc.agent.node.queryOptions({ node: NODE }), retry: false, meta: { silent: true } });
   const calls = useQuery({
     ...trpc.agent.calls.queryOptions({ node: NODE }),
@@ -89,11 +86,6 @@ export default function AccountShell({
           ) : null}
           <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/calls" label="Your threads" />
         </>
-      }
-      ask={
-        scope.data?.available && !pathname.startsWith("/me/calls") ? (
-          <AskBar callsPath="/me/calls" node={NODE} placeholder={`Ask ${platform} about everything you have`} />
-        ) : null
       }
     >
       {children}

@@ -6,10 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import AppFrame, { navItemClass } from "@/components/app-frame";
-import AskBar from "@/components/ask-bar";
 import RecentCalls from "@/components/recent-calls";
 import type { WorkspaceOrganization } from "@/lib/workspaces";
-import { usePlatformName } from "@/components/platform-name";
 import { useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
 import { trpc } from "@/utils/trpc";
 
@@ -36,7 +34,6 @@ export default function WorkspaceShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const platform = usePlatformName();
   const base = `/w/${organization.id}`;
   const node = { kind: "workspace" as const, organizationId: organization.id };
   const scope = useQuery({ ...trpc.agent.node.queryOptions({ node }), retry: false, meta: { silent: true } });
@@ -100,11 +97,6 @@ export default function WorkspaceShell({
           ) : null}
           <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/calls`} label="Your threads" />
         </>
-      }
-      ask={
-        scope.data?.available && segment !== "calls" ? (
-          <AskBar callsPath={`${base}/calls`} node={node} placeholder={`Ask ${platform} about ${organization.name}`} />
-        ) : null
       }
     >
       {children}
