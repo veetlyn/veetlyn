@@ -20,6 +20,7 @@ import { projectList } from "../actions/projects";
 import { conversationPost } from "../actions/conversations";
 import { messageRefusal } from "../use-cases/conversations";
 import type { AgentServices } from "../context";
+import { sanitizeAgentAnswer } from "./answer";
 import { proposalEffect } from "./effects";
 import { AGENT_ID, placeOf, resolveNode, type ResolvedNode } from "./node";
 import { allowedByTeam, type AgentTool, proposalInput, toolDescription, toolInput, toolSchema, toolsFor, withheldAreas } from "./tools";
@@ -320,7 +321,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
     callId: call.id,
     kind: "message",
     author: "assistant",
-    body: answer.join("\n\n") || "Done.",
+    body: sanitizeAgentAnswer(answer.join("\n\n")) || "Done.",
     note: state.labels.size > 0 ? `Read ${[...state.labels].join(", ")}` : undefined,
   });
 }

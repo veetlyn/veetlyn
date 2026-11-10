@@ -1,0 +1,21 @@
+import { describe, expect, it } from "vitest";
+
+import { sanitizeAgentAnswer } from "./answer";
+
+describe("sanitizeAgentAnswer", () => {
+  it("removes internal ids, field names and raw timestamps from an answer", () => {
+    const dirty =
+      "Project f5349023-c16c-48bb-a849-c84ed6dc63d9 is quoting. ratings.canRateClient is true and clientRating is 5. Updated 2026-11-02T10:30:00.000Z.";
+    const clean = sanitizeAgentAnswer(dirty);
+    expect(clean).not.toContain("f5349023");
+    expect(clean).not.toContain("canRateClient");
+    expect(clean).not.toContain("clientRating");
+    expect(clean).not.toContain("2026-11-02T10:30:00.000Z");
+    expect(clean).toContain("quoting");
+  });
+
+  it("leaves a plain answer untouched", () => {
+    const plain = "The quote is $300.00 and the client is waiting for the deposit.";
+    expect(sanitizeAgentAnswer(plain)).toBe(plain);
+  });
+});
