@@ -115,7 +115,7 @@ function summaryLine(slides: readonly Slide[], currency: string, frame: Framing)
   const parts = slides.map((s) => {
     const said: string[] = [];
     if (s.quote) {
-      const lost = s.quote.status === "superseded" || s.quote.status === "rejected";
+      const lost = s.quote.status === "superseded";
       said.push(`quoted ${money(s.quote.amountMinor, currency)} in ${daysText(s.quote.deliveryDays)}${lost ? ", not chosen" : ""}`);
     }
     const open = s.questions.filter((q) => !q.answered);

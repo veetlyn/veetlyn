@@ -1,4 +1,4 @@
-import { hasNoLimits, isFinanceAction, type ProjectStatus } from "@jendal-workspace/core";
+import { hasNoLimits, isFinanceAction, isTerminalProjectStatus } from "@jendal-workspace/core";
 import type { ContextNode } from "@jendal-workspace/core/context/node";
 import {
   findOwnAgentCall,
@@ -31,7 +31,6 @@ type SignedIn = Context & { session: NonNullable<Context["session"]> };
 const NOT_HERE = "Not found.";
 const PENDING_ON_HOME = 5;
 const MAX_COMPOSER_RECORDS = 200;
-const isFinished = (status: ProjectStatus) => ["completed", "cancelled", "declined", "expired", "abandoned"].includes(status);
 
 async function resolved(ctx: SignedIn, node: ContextNode): Promise<ResolvedNode> {
   const found = await resolveNode({ actions: depsOf(ctx), request: requestOf(ctx) }, ctx.session.user.id, node);
@@ -137,7 +136,7 @@ export const agentRouter = router({
     return {
       // Open work first, then the newest: what someone is likely to be talking about.
       records: projects
-        .toSorted((a, b) => Number(isFinished(a.status)) - Number(isFinished(b.status)) || b.createdAt.getTime() - a.createdAt.getTime())
+        .toSorted((a, b) => Number(isTerminalProjectStatus(a.status)) - Number(isTerminalProjectStatus(b.status)) || b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, MAX_COMPOSER_RECORDS)
         .map(({ id, title, status, clientName }) => ({ id, title, status, clientName })),
       actions: composerActions(scope, limits),

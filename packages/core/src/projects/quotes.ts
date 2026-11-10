@@ -1,7 +1,9 @@
 import { assertBps, formatMoney, MAX_AMOUNT_MINOR, money, type MoneyCurrency } from "../money/money";
 import { DEPOSIT_BPS, type PaymentSplit } from "./pricing";
 
-export const QUOTE_STATUSES = ["proposed", "accepted", "superseded", "rejected"] as const;
+// A quote nobody accepted keeps `proposed`; whether it can still be accepted is the project's business
+// (`projectAllows(status, "accept_quote")`), so an ended request needs no separate quote status.
+export const QUOTE_STATUSES = ["proposed", "accepted", "superseded"] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
 
 export const AMENDMENT_STATUSES = ["pending", "accepted", "declined"] as const;

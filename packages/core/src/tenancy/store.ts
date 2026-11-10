@@ -5,7 +5,8 @@ export const STORE_STATUSES = ["draft", "active", "suspended"] as const;
 export type StoreStatus = (typeof STORE_STATUSES)[number];
 
 // A seller page: published when it can take payments and has something to sell (sellers/publish.ts), unpublished by
-// its owner. Nothing in the app sets or lifts a suspension; a suspended page stays as it is.
+// its owner. `suspended` is support's switch for a seller who breaks the rules: set outside the app, it blocks
+// publishing and nothing in the app lifts it.
 export const sellerPageMachine = defineMachine({
   name: "seller_page",
   states: STORE_STATUSES,

@@ -102,8 +102,9 @@ Table `payment`. Written by api/use-cases/payments.ts, db/repositories/projects.
 | `capture_completed` | `pending`, `failed` | `captured` |
 | `capture_failed` | `pending`, `failed` | `failed` |
 | `refund_in_full` | `captured` | `refunded` |
+| `cancel` | `pending`, `failed` | `cancelled` |
 
-Final: `cancelled`, `refunded`. Never entered: `cancelled`.
+Final: `cancelled`, `refunded`.
 
 ```mermaid
 stateDiagram-v2
@@ -115,8 +116,10 @@ stateDiagram-v2
   pending --> failed: capture_failed
   failed --> failed: capture_failed
   captured --> refunded: refund_in_full
+  pending --> cancelled: cancel
+  failed --> cancelled: cancel
+  cancelled --> [*]
   refunded --> [*]
-  note right of cancelled: never entered
 ```
 
 ## project_refund
@@ -179,7 +182,7 @@ Table `quote`. Written by api/use-cases/projects.ts acceptQuote, acceptAmendment
 | `accept` | `proposed` | `accepted` |
 | `supersede` | `proposed`, `accepted` | `superseded` |
 
-Final: `superseded`, `rejected`. Never entered: `rejected`.
+Final: `superseded`.
 
 ```mermaid
 stateDiagram-v2
@@ -188,7 +191,6 @@ stateDiagram-v2
   proposed --> superseded: supersede
   accepted --> superseded: supersede
   superseded --> [*]
-  note right of rejected: never entered
 ```
 
 ## amendment
@@ -474,6 +476,6 @@ stateDiagram-v2
 ## Status columns without a machine here
 
 - `project`: core projects/state-machine.ts (guards need facts beyond the status).
-- `agent_call`: every call stays open; nothing writes done yet.
+- `agent_call`: a thread stays open so its person can come back to it; `done` is kept for archiving, which is not built.
 - `invitation`: Better Auth's organization plugin owns it.
 - `store_domains`: no code writes it yet.
