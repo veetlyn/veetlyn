@@ -1,0 +1,32 @@
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 8,212-234,237-241
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  h_6877e5e7a06bc5 17,48,52,171
+apps/web/src/components/agent-icon.tsx
+  h_6877e5e7a06bc5 1-2
+apps/web/src/components/app-frame.tsx
+  h_6877e5e7a06bc5 13
+apps/web/src/components/ask-bar.tsx
+  h_6877e5e7a06bc5 10,13,17,35,37-39,42,50,63
+apps/web/src/components/frames/account-shell.tsx
+  h_6877e5e7a06bc5 11,13,19,30,61,78,97
+apps/web/src/components/frames/workspace-shell.tsx
+  h_6877e5e7a06bc5 11,13,29,39,72,89,106
+apps/web/src/components/project-nav.tsx
+  h_6877e5e7a06bc5 52
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 26,30,68,79,116,126,145,167,222
+packages/ui/src/styles/globals.css
+  h_6877e5e7a06bc5 49,109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3a03a4172ba30835f0decbb8221d7646553b067",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
