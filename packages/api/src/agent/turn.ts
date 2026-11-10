@@ -13,7 +13,7 @@ import {
 } from "@jendal-workspace/db/repositories/calls";
 import { getServicesTeamSettings, memberHistorySince } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
-import { type ModelMessage, stepCountIs, streamText, tool, zodSchema } from "ai";
+import { generateText, type ModelMessage, stepCountIs, tool, zodSchema } from "ai";
 
 import type { Actor, RequestMeta } from "../actions/actors";
 import { toActionError } from "../actions/errors";
@@ -310,7 +310,7 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
   // renders while it is made. The thread polls while a turn runs (team-calls).
   let draftId: string | null = null;
   try {
-    const result = streamText({
+    const result = await generateText({
       model: deps.agent.model,
       system: `${systemPrompt(deps.actions.platformName, scope, offered.length)}\n- This team decides what you may prepare. If there is no propose_ tool for something, the team switched it off; say so and point to Operating model in Settings.${skillLines(offered.map((agentTool) => agentTool.name)).length > 0 ? `\n${skillLines(offered.map((agentTool) => agentTool.name)).join("\n")}` : ""}`,
       messages: [
@@ -323,23 +323,20 @@ export async function runCallTurn(deps: TurnDeps, turn: TurnRequest): Promise<vo
       stopWhen: stepCountIs(MAX_MODEL_CALLS),
       maxOutputTokens: 4_000,
       maxRetries: 1,
-    });
-    let streamed = "";
-    let savedLength = 0;
-    for await (const chunk of result.textStream) {
-      streamed += chunk;
-      if (streamed.length - savedLength >= 120) {
-        savedLength = streamed.length;
-        const body = sanitizeAgentAnswer(streamed) || "…";
+      // Progressive answer: each finished step's text is saved onto the draft entry, so the thread (which polls
+      // while a turn runs) shows the answer growing step by step instead of arriving all at once.
+      onStepFinish: async (step) => {
+        const text = step.text.trim();
+        if (!text) return;
+        const body = sanitizeAgentAnswer(text) || "…";
         if (draftId) await updateAgentCallEntry(db, { entryId: draftId, body });
         else draftId = (await insertAgentCallEntry(db, { callId: call.id, kind: "message", author: "assistant", body })).id;
-      }
-    }
-    const steps = await result.steps;
-    answer = steps.map((step) => step.text.trim()).filter((text) => text !== "");
+      },
+    });
+    answer = result.steps.map((step) => step.text.trim()).filter((text) => text !== "");
     // A turn nobody typed reports its result; the narration between its tool calls is not worth reading.
     if (turn.directive) answer = answer.slice(-1);
-    if ((await result.finishReason) === "tool-calls") answer.push("I stopped here to keep this short. Ask me to go on.");
+    if (result.finishReason === "tool-calls") answer.push("I stopped here to keep this short. Ask me to go on.");
   } catch (cause) {
     if (draftId) await deleteAgentCallEntry(db, draftId).catch(() => undefined);
     // The provider's own words stay in the server log; the person's message is kept and can be sent again.
