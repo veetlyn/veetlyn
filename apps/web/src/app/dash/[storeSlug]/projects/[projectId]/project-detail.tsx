@@ -728,6 +728,17 @@ export default function ProjectDetail({
 
       {view === "money" ? <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
       {financesHidden ? null : (
+      <>
+      <section aria-label="Payment totals" className="space-y-3 rounded-[10px] border p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold">Finances</h2>
+          <p className="text-sm text-muted-foreground">{primary?.name ?? "No client"} · {currency}</p>
+        </div>
+        <dl className="grid grid-cols-2 gap-4 text-sm">
+          <div><dt className="text-muted-foreground">Paid so far</dt><dd className="font-tabular text-base font-medium">{formatMoney(money(currency, payments.filter((payment) => payment.status === "captured").reduce((sum, payment) => sum + payment.amountMinor, 0)))}</dd></div>
+          <div><dt className="text-muted-foreground">Waiting to be paid</dt><dd className="font-tabular text-base font-medium">{formatMoney(money(currency, payments.filter((payment) => payment.status === "pending").reduce((sum, payment) => sum + payment.amountMinor, 0)))}</dd></div>
+        </dl>
+      </section>
       <section id="payments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
@@ -756,6 +767,7 @@ export default function ProjectDetail({
           </div>
         ))}
       </section>
+      </>
       )}
       {!financesHidden && refund ? (
         <RefundSection
