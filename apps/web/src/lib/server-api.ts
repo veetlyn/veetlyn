@@ -80,6 +80,9 @@ const sellerPageSchema = z.object({
   status: z.enum(["draft", "active", "suspended"]),
   bio: z.string(),
   currency: z.string(),
+  rating: z.object({ average: z.number(), count: z.int() }).nullable(),
+  reviews: z.array(z.object({ id: z.string(), rating: z.int(), body: z.string(), reviewerName: z.string(), createdAt: z.string() })),
+  portfolio: z.array(z.object({ id: z.string(), title: z.string(), url: z.string(), description: z.string() })),
   departments: z.array(z.object({ id: z.string(), name: z.string(), position: z.number() })),
   offerings: z.array(offeringSchema),
   products: z.array(

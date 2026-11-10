@@ -14,6 +14,7 @@ import {
   projectCard,
   refusalText,
   reply,
+  rateSeller,
   requestChanges,
   requestQuote,
   searchOfferings,
@@ -230,6 +231,29 @@ export function buildServer(deps: McpDeps, origins: WidgetOrigins): McpServer {
         const sent = await reply(deps, input);
         deps.log.set({ mcp: { tool: "reply", projectId: input.projectId, answer: Boolean(input.questionId) } });
         return card(input.projectId, sent);
+      }),
+  );
+
+  registerAppTool(
+    server,
+    "rate_seller",
+    {
+      title: "Rate the seller",
+      description:
+        "Use this when the user wants to rate the seller of a completed project. Ask them for 1 to 5 stars and, only if they want one, a short public review in their own words; show them exactly what will be posted and get their go-ahead. Never choose the stars or write the review for them. The review is public on the seller's page with the user's first name and initial; it can be changed for 30 days.",
+      inputSchema: z.object({
+        projectId: z.string().min(1).max(64),
+        rating: z.int().min(1).max(5).describe("The stars the user chose"),
+        review: z.string().max(1000).optional().describe("The user's own words, as they approved them"),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      _meta: uiTool(["model"]),
+    },
+    async (input) =>
+      guarded("rate_seller", async () => {
+        await rateSeller(deps, input);
+        deps.log.set({ mcp: { tool: "rate_seller", projectId: input.projectId } });
+        return card(input.projectId, "Thanks, your rating is posted.");
       }),
   );
 

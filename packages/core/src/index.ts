@@ -14,6 +14,7 @@ export * from "./billing/products";
 export * from "./onboarding/setup-steps";
 export * from "./policies/store-policies";
 export * from "./sellers/publish";
+export * from "./sellers/reviews";
 export * from "./sellers/quote-request";
 export * from "./services-teams/types";
 export * from "./services-teams/rates";

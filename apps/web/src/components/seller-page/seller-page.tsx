@@ -1,4 +1,5 @@
 import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
+import { ratingLabel } from "@jendal-workspace/core";
 
 import { formatMinor } from "@/lib/money";
 import { daysLabel, FULFILMENT_LABELS, type Fulfilment, priceLabel } from "@/lib/offering-labels";
@@ -29,6 +30,9 @@ export type SellerPageContent = {
   departments: { id: string; name: string }[];
   offerings: SellerPageOffering[];
   products: SellerPageProduct[];
+  rating: { average: number; count: number } | null;
+  reviews: { id: string; rating: number; body: string; reviewerName: string; createdAt: string | Date }[];
+  portfolio: { id: string; title: string; url: string; description: string }[];
 };
 
 function OfferingCard({
@@ -87,6 +91,7 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
             .slice(0, 2)}
         </span>
         <h1 className="font-heading text-4xl md:text-5xl">{page.name}</h1>
+        {page.rating ? <a href="#reviews" className="w-fit text-sm underline underline-offset-4">{ratingLabel(page.rating)}</a> : null}
         {page.bio ? <p className="max-w-2xl text-lg whitespace-pre-line text-muted-foreground">{page.bio}</p> : null}
         {page.product === "services" ? (
           <a href={`${page.pageBase}/request`} className={buttonVariants({ size: "lg", className: "justify-self-start" })}>
@@ -94,6 +99,34 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
           </a>
         ) : null}
       </header>
+      {page.portfolio.length > 0 ? (
+        <section aria-labelledby="portfolio-heading" className="space-y-4">
+          <h2 id="portfolio-heading" className="font-heading text-2xl">Past work</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {page.portfolio.map((item) => (
+              <article key={item.id} className="space-y-2 border-t pt-4">
+                <h3 className="font-semibold"><a href={item.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{item.title}</a></h3>
+                {item.description ? <p className="whitespace-pre-line text-sm text-muted-foreground">{item.description}</p> : null}
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {page.reviews.length > 0 ? (
+        <section id="reviews" aria-labelledby="reviews-heading" className="space-y-4">
+          <h2 id="reviews-heading" className="font-heading text-2xl">Client reviews</h2>
+          <p className="text-sm text-muted-foreground">From clients of completed, paid projects.</p>
+          <div className="divide-y">
+            {page.reviews.map((review) => (
+              <article key={review.id} className="space-y-2 py-4">
+                <p className="text-sm"><strong>{review.reviewerName}</strong> · <span aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span></p>
+                {review.body ? <p className="whitespace-pre-line text-sm">{review.body}</p> : null}
+                <p className="text-xs text-muted-foreground"><time dateTime={new Date(review.createdAt).toISOString()}>{new Date(review.createdAt).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" })}</time></p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {page.product === "services" ? (
         <section aria-labelledby="services-heading" className="space-y-6">
           <h2 id="services-heading" className="font-heading text-2xl">

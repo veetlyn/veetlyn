@@ -335,6 +335,7 @@ export async function searchListedOfferings(
       currency: servicesTeamSettings.currency,
       sellerName: team.name,
       sellerSlug: team.slug,
+      sellerId: team.id,
     })
     .from(servicesOffering)
     .innerJoin(team, eq(team.id, servicesOffering.teamId))

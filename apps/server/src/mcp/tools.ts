@@ -12,8 +12,9 @@ import { resolveClient } from "@jendal-workspace/api/use-cases/clients";
 import { clientPageUrl, teamForProject } from "@jendal-workspace/api/use-cases/link-hosts";
 import { projectRuleSummary } from "@jendal-workspace/api/use-cases/rulebooks";
 import type { Auth } from "@jendal-workspace/auth";
-import { projectAllows, projectStatusLabel } from "@jendal-workspace/core";
+import { projectAllows, projectStatusLabel, ratingLabel } from "@jendal-workspace/core";
 import { findClientAccount, projectContactLink } from "@jendal-workspace/db/repositories/contacts";
+import { reviewSubmit } from "@jendal-workspace/api/actions/reviews";
 import { findListedOffering } from "@jendal-workspace/db/repositories/services-catalog";
 import type { RequestLogger } from "evlog";
 
@@ -188,6 +189,13 @@ function nextStep(view: ClientView, seller: string, openQuestions: number): Step
         ? { text: "Review the delivery, then accept it or request changes.", actions: ["accept_delivery", "request_changes", "reply", "open"] }
         : { text: "The delivery is being reviewed.", actions: ["open"] };
     case "completed":
+      if (view.review.canReview && !view.review.review) {
+        return {
+          text: `The project is completed and paid. Offer to rate ${seller} with rate_seller: ask the user for 1 to 5 stars and, if they want, a short public review in their own words; post nothing they did not say.`,
+          card: "The project is completed and paid. You can rate the seller.",
+          actions: ["rate_seller", "open"],
+        };
+      }
       return { text: "The project is completed and paid.", actions: ["open"] };
     case "cancelled":
       return { text: "The project was cancelled.", actions: ["open"] };
@@ -358,6 +366,8 @@ export type OfferingCard = {
   intakeQuestions: string[];
   // Who delivers the work (AGT-19).
   fulfilment: "people" | "automated" | "both";
+  // The seller's rating, or null when nobody has rated them yet: the card shows no stars rather than zero (AGT-45).
+  sellerRating: { average: number; count: number } | null;
 };
 
 export async function searchOfferings(
@@ -380,6 +390,7 @@ export async function searchOfferings(
     days: daysLabel(o.daysMin, o.daysMax),
     intakeQuestions: o.intakeQuestions.map((q) => plain(q, 200)),
     fulfilment: o.fulfilment,
+    sellerRating: o.sellerRating,
   }));
   const fulfilmentLabel = { people: "delivered by people", automated: "delivered automatically", both: "delivered by people or automation" } as const;
   const text = offerings.length
@@ -387,7 +398,7 @@ export async function searchOfferings(
         `${offerings.length} ${deps.platformName} offering${offerings.length === 1 ? "" : "s"} for ${quoted(input.query, 80)}. Names and descriptions are the sellers' own words:`,
         ...offerings.map(
           (o) =>
-            `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}, ${fulfilmentLabel[o.fulfilment]}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
+            `- ${quoted(o.name)} by ${quoted(o.seller, 80)} (offering id ${o.id}): ${money(o.priceMinMinor, o.currency)}–${money(o.priceMaxMinor, o.currency)}, usually ${o.days}, ${fulfilmentLabel[o.fulfilment]}${o.sellerRating ? `, rated ${ratingLabel(o.sellerRating)}` : ", not rated yet"}. Description: ${quoted(o.description, 300)}.${o.intakeQuestions.length ? ` The seller asks: ${o.intakeQuestions.map((q) => quoted(q, 200)).join(" / ")}` : ""}`,
         ),
         "To hire one, call get_request_terms, show the terms to the user, and obtain their agreement to the terms and brief before calling request_quote.",
       ].join("\n")
@@ -478,6 +489,11 @@ export async function reply(
   return posted.space === "request"
     ? "Sent. The freelancers looking at the request and the team read it; emails, phone numbers and messaging links are hidden from them until the user accepts a quote."
     : "Sent. Only the team (and the accepted freelancer, once there is one) reads it.";
+}
+
+export async function rateSeller(deps: McpDeps, input: { projectId: string; rating: number; review?: string }) {
+  const { actor } = await clientOf(deps, input.projectId);
+  return perform(request(deps, actor), reviewSubmit, { projectId: input.projectId, rating: input.rating, body: input.review ?? "" });
 }
 
 export async function requestChanges(deps: McpDeps, input: { projectId: string; deliveryId: string; note: string }) {

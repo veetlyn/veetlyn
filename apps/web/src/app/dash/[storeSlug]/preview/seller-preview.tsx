@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import Loader from "@/components/loader";
 import SellerPage from "@/components/seller-page/seller-page";
+import { PortfolioEditor } from "@/components/seller-page/portfolio-editor";
 import StoreHome from "@/components/seller-page/store-home";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
@@ -39,6 +40,7 @@ export default function SellerPreview({ teamSlug, urlParts }: { teamSlug: string
           Back to the dashboard
         </Link>
       </div>
+      {page.product === "services" && page.canManage ? <PortfolioEditor teamSlug={teamSlug} items={page.portfolio} /> : null}
       {page.product === "services" || page.products.length > 0 ? (
         <SellerPage page={{ ...page, pageBase: url }} />
       ) : (

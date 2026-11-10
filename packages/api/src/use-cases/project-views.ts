@@ -1,3 +1,4 @@
+import { clientReviewView, teamRatingsView } from "./reviews";
 import {
   canSeeProject,
   type FileStore,
@@ -172,6 +173,7 @@ export async function getTeamProjectView(
     financesHidden,
     // What will run on its own. Someone who only sees the request sees only the request's own timers.
     schedule: requestOnly ? schedule.filter((item) => item.kind.startsWith("request.")) : schedule,
+    ratings: await teamRatingsView(db, viewer, row),
     role: viewer.role,
     quotingMode: settings?.quotingMode ?? "assigned",
     solo: settings?.solo ?? false,
@@ -239,6 +241,7 @@ export async function teamDeliveryFileUrl(
 export async function getClientProjectView(
   deps: { db: Database; auth: LinkSecretSource; platformName: string },
   projectId: string,
+  contactId?: string,
 ) {
   const { db } = deps;
   const row = await findProjectById(db, projectId);
@@ -343,6 +346,7 @@ export async function getClientProjectView(
         freelancer: freelancers.forMessage(m),
       })),
     },
+    review: await clientReviewView(db, row, new Date(), contactId),
   };
 }
 

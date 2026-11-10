@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 
 import { router } from "../index";
 import { sellerProcedure } from "../seller-procedure";
+import { sellerReputation } from "../use-cases/reviews";
 import { dropCachedLookups } from "../team-cache";
 
 async function listedCount(db: Database, seller: StoreRecord): Promise<number> {
@@ -58,7 +59,7 @@ export const sellerRouter = router({
   preview: sellerProcedure.query(async ({ ctx }) => {
     const page = await findSellerPage(ctx.db, ctx.seller.id);
     if (!page) throw new TRPCError({ code: "NOT_FOUND", message: "Seller not found." });
-    return page;
+    return { ...page, canManage: ctx.canManage, ...(await sellerReputation(ctx.db, ctx.seller.id)) };
   }),
 
   publish: sellerProcedure.mutation(async ({ ctx }) => {
