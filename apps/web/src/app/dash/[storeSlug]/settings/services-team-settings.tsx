@@ -21,6 +21,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { WorkPage } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { QUOTING_MODE_LABELS } from "@/lib/services-team-labels";
 import { rateField } from "@/lib/services-team-settings-form";
@@ -152,7 +153,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+    <WorkPage>
       <h1 className="font-heading text-3xl">General</h1>
       <p className="mt-2 text-sm text-muted-foreground">Your seller page, currency and defaults for new work.</p>
       {role !== "admin" ? (
@@ -269,6 +270,6 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           ) : null}
         </section>
       ) : null}
-    </main>
+    </WorkPage>
   );
 }
