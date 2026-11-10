@@ -1,0 +1,2 @@
+ALTER TABLE "seller_review" ADD COLUMN "author_contact_id" text;--> statement-breakpoint
+ALTER TABLE "seller_review" ADD CONSTRAINT "seller_review_author_contact_id_client_contact_id_fkey" FOREIGN KEY ("author_contact_id") REFERENCES "client_contact"("id") ON DELETE SET NULL;
