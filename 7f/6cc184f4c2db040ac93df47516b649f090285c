@@ -1,0 +1,16 @@
+apps/web/src/app/dash/w/[organizationId]/billing/billing-panel.tsx
+  h_6877e5e7a06bc5 30-31,33-37,42-43,51-54,56-57,84-89,93-97,109-110,124-133,135-142,144-156,159-206,208-254,257-260
+apps/web/src/app/dash/w/[organizationId]/billing/page.tsx
+  h_6877e5e7a06bc5 20-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7f6cc184f4c2db040ac93df47516b649f090285c",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
