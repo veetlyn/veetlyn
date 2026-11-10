@@ -1,0 +1,18 @@
+apps/web/src/app/dash/me/layout.tsx
+  h_6877e5e7a06bc5 6,8
+apps/web/src/app/dash/page.tsx
+  h_6877e5e7a06bc5 11,17
+apps/web/src/components/frames/account-shell.tsx
+  h_6877e5e7a06bc5 8,20,24,49,70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0057dfb5c9603f4d21ddad5179ec96cd81128ffc",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
