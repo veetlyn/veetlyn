@@ -60,6 +60,36 @@ describe.skipIf(!hasTestDatabase)("selling and the workspace plan", () => {
     expect(await db.select().from(payment)).toHaveLength(1);
   });
 
+  // Billing design §1: a failed renewal leaves 2 days to fix the card, then new sales pause until Polar is paid.
+  it("keeps selling for 2 days after a failed renewal, pauses sales after that, and resumes once the payment recovers", async () => {
+    const { organizationId, projectId, quoteId } = await quotedProject(40);
+    const renewal = (status: "active" | "past_due", pastDueDaysAgo: number | null) =>
+      applySubscriptionSnapshot(db, {
+        organizationId, servicesTier: "team", storeTier: null, interval: "monthly", customerId: "cus_1", subscriptionId: "sub_1",
+        productId: "prod_1", status, pastDueAt: pastDueDaysAgo === null ? null : new Date(Date.now() - pastDueDaysAgo * DAY),
+        currentPeriodEnd: null, cancelAtPeriodEnd: false, endsAt: null, modifiedAt: new Date(),
+      });
+
+    await renewal("past_due", 3);
+    await expect(acceptQuote(db, { projectId, quoteId })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(await db.select().from(payment)).toEqual([]);
+
+    await renewal("active", null);
+    await acceptQuote(db, { projectId, quoteId });
+    expect(await db.select().from(payment)).toHaveLength(1);
+  });
+
+  it("still sells while a failed renewal is in its 2 days of grace", async () => {
+    const { organizationId, projectId, quoteId } = await quotedProject(40);
+    await applySubscriptionSnapshot(db, {
+      organizationId, servicesTier: "team", storeTier: null, interval: "monthly", customerId: "cus_1", subscriptionId: "sub_1",
+      productId: "prod_1", status: "past_due", pastDueAt: new Date(Date.now() - DAY), currentPeriodEnd: null,
+      cancelAtPeriodEnd: false, endsAt: null, modifiedAt: new Date(),
+    });
+    await acceptQuote(db, { projectId, quoteId });
+    expect((await findProjectById(db, projectId))?.status).toBe("awaiting_deposit");
+  });
+
   it("refuses an upload that would take the workspace past its plan's storage, counting every team", async () => {
     const { organizationId, teamId } = await seedServicesTeamWithAdmin(db);
     await ensureBillingAccount(db, { organizationId, product: "services", solo: true, now: new Date() });
