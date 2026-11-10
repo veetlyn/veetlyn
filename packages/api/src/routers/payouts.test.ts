@@ -1,3 +1,4 @@
+import type { DbExecutor } from "@jendal-workspace/db/executor";
 import { outbox } from "@jendal-workspace/db/schema/outbox";
 import { createTestAuth } from "@jendal-workspace/auth/testing";
 import {
@@ -44,6 +45,11 @@ import { makeSession } from "../testing";
 import { createTestCatalogServices } from "../testing/catalog";
 import { createProjectPayouts, sendDuePayouts } from "../use-cases/payout-sweeps";
 import { appRouter } from "./index";
+
+// Puts a payout request straight into the state a scenario starts from, as an earlier run of the app would have left it.
+async function seedPayoutState(db: DbExecutor, id: string, values: Partial<typeof payoutRequest.$inferInsert>): Promise<void> {
+  await db.update(payoutRequest).set(values).where(eq(payoutRequest.id, id));
+}
 
 const TEST_KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
 const MERCHANT_ID = "MERCHANT1";
@@ -428,7 +434,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
       amountMinor: 2_500,
       receiverPayerId: "G83JXTJ5EHCQ2",
     });
-    await updatePayoutRequest(db, request?.id ?? "", { status: "sent", paypalBatchId: "BATCH1" });
+    await seedPayoutState(db, request?.id ?? "", { status: "sent", paypalBatchId: "BATCH1" });
     return { admin, teamId, answers };
   }
 
@@ -1168,7 +1174,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
   it("refuses to reject an approved request whose send PayPal may already hold", async () => {
     const { teamId, memberId, admin, member } = await payoutTeam();
     const { id } = await member.payouts.request({ ...TEAM, amount: "500.00" });
-    await updatePayoutRequest(db, id, { status: "queued", uncertainAt: new Date() });
+    await seedPayoutState(db, id, { status: "queued", uncertainAt: new Date() });
 
     await expect(admin.payouts.reject({ ...TEAM, requestId: id })).rejects.toMatchObject({
       code: "BAD_REQUEST",
@@ -1459,7 +1465,7 @@ describe.skipIf(!hasTestDatabase)("payouts", () => {
         receiverPayerId: PAYER_ID,
       });
       if (!waiting) throw new Error("seed payout not inserted");
-      await updatePayoutRequest(db, waiting.id, {
+      await seedPayoutState(db, waiting.id, {
         status: "queued",
         decidedByUserId: adminId,
         decidedAt,

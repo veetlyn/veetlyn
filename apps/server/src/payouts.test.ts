@@ -6,11 +6,11 @@ import {
   sealSecret,
 } from "@jendal-workspace/core";
 import { createPostgresLedger } from "@jendal-workspace/db/repositories/ledger";
+import { payoutRequest } from "@jendal-workspace/db/schema/payouts";
 import { saveTeamPayoutCredentials } from "@jendal-workspace/db/repositories/payout-credentials";
 import {
   getPayoutRequest,
   insertPayoutRequest,
-  updatePayoutRequest,
 } from "@jendal-workspace/db/repositories/payout-requests";
 import {
   createTestDb,
@@ -22,6 +22,7 @@ import {
 } from "@jendal-workspace/db/testing/db";
 import { type JsonKv, PayPalError } from "@jendal-workspace/paypal";
 import { FAKE_TOKEN_RESPONSE, fakeFetch, jsonResponse, type RecordedRequest } from "@jendal-workspace/paypal/testing";
+import { eq } from "drizzle-orm";
 import { log } from "evlog";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -109,14 +110,17 @@ describe.skipIf(!hasTestDatabase)("settleSentPayouts", () => {
       receiverPayerId: "G83JXTJ5EHCQ2",
     });
     if (!request) throw new Error("No payout request inserted");
-    return updatePayoutRequest(db, request.id, {
+    // Seeded as an earlier send left it; the app itself only reaches `sent` through transitionPayoutRequest.
+    const [sent] = await db.update(payoutRequest).set({
       status: "sent",
       feeEstimateMinor: 25,
       sentMinor: 2_475,
       paypalBatchId: input.batchId,
       sentAt: input.sentAt,
       updatedAt: input.updatedAt,
-    });
+    }).where(eq(payoutRequest.id, request.id)).returning();
+    if (!sent) throw new Error("No payout request updated");
+    return sent;
   }
 
   async function saveCredentials(teamId: string) {

@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, or, type SQL, sql, type SQLWrapper, ne, notInArray } from "drizzle-orm";
 
+import { InvalidTransitionError, payoutRequestMachine, type PayoutRequestEvent, transitionOrThrow } from "@jendal-workspace/core";
+
 import type { DbExecutor, Transaction } from "../executor";
 import { user } from "../schema/auth";
 import { ledgerBalance, ledgerEntry, ledgerTransfer } from "../schema/ledger";
@@ -22,7 +24,6 @@ export type NewPayoutRequest = Pick<
 export type PayoutRequestPatch = Partial<
   Pick<
     typeof payoutRequest.$inferInsert,
-    | "status"
     | "sendAttempt"
     | "paypalBatchId"
     | "paypalItemId"
@@ -96,6 +97,24 @@ export async function lockPayoutRequestByOfflineReference(
 export async function updatePayoutRequest(tx: DbExecutor, id: string, patch: PayoutRequestPatch): Promise<PayoutRequestRow> {
   const [row] = await tx.update(payoutRequest).set(patch).where(eq(payoutRequest.id, id)).returning();
   if (!row) throw new Error(`Update of payout_request ${id} returned no row`);
+  return row;
+}
+
+// The only way a payout request changes status: the move must be a row of payoutRequestMachine, and the update only
+// applies while the stored status is still one the event may start from.
+export async function transitionPayoutRequest(
+  tx: DbExecutor,
+  request: Pick<PayoutRequestRow, "id" | "status">,
+  event: PayoutRequestEvent,
+  patch: PayoutRequestPatch = {},
+): Promise<PayoutRequestRow> {
+  const status = transitionOrThrow(payoutRequestMachine, request.status, event);
+  const [row] = await tx
+    .update(payoutRequest)
+    .set({ ...patch, status })
+    .where(and(eq(payoutRequest.id, request.id), inArray(payoutRequest.status, [...payoutRequestMachine.sources(event)])))
+    .returning();
+  if (!row) throw new InvalidTransitionError(payoutRequestMachine.name, request.status, event);
   return row;
 }
 

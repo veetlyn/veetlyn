@@ -1,7 +1,6 @@
 import { assertAmount } from "../money/money";
+import { defineMachine } from "../state-machines/machine";
 
-// requested → rejected | queued; queued → rejected | sending | exported; sending → sent | queued | failed;
-// sent → succeeded | failed; exported (in a Payouts Web CSV) → succeeded | failed (results import) | queued (cancel).
 export const PAYOUT_REQUEST_STATUSES = [
   "requested",
   "rejected",
@@ -14,6 +13,33 @@ export const PAYOUT_REQUEST_STATUSES = [
 ] as const;
 
 export type PayoutRequestStatus = (typeof PAYOUT_REQUEST_STATUSES)[number];
+
+// Every status change of a payout request. Guards that need more than the status (an unconfirmed send, a stale claim,
+// a review hold) stay with the use case; a move missing from this table is refused at the repository.
+export const payoutRequestMachine = defineMachine({
+  name: "payout_request",
+  states: PAYOUT_REQUEST_STATUSES,
+  initial: "requested",
+  transitions: {
+    approve: { from: ["requested"], to: "queued" },
+    reject: { from: ["requested", "queued"], to: "rejected" },
+    // An approver lost the authority the rules need, so the request goes back to the admins.
+    withdraw_approval: { from: ["queued"], to: "requested" },
+    // From `sending` only when the earlier claim went stale or unconfirmed: it is retried under the same amount.
+    claim_send: { from: ["queued", "sending"], to: "sending" },
+    hold_send: { from: ["sending"], to: "queued" },
+    // A batch id is PayPal's word that it holds the payout, whichever attempt it answered.
+    record_batch: { from: ["sending", "queued"], to: "sent" },
+    refuse_send: { from: ["sending"], to: "failed" },
+    export: { from: ["queued"], to: "exported" },
+    cancel_export: { from: ["exported"], to: "queued" },
+    // `queued` here is a cancelled export whose file PayPal may still have paid.
+    settle_succeeded: { from: ["sent", "exported", "queued"], to: "succeeded" },
+    settle_failed: { from: ["sent", "exported", "queued"], to: "failed" },
+  },
+});
+
+export type PayoutRequestEvent = (typeof payoutRequestMachine.events)[number];
 
 // A member has at most one open request per team.
 export const OPEN_PAYOUT_REQUEST_STATUSES = ["requested", "queued", "sending", "sent", "exported"] as const satisfies readonly PayoutRequestStatus[];
