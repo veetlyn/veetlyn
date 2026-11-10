@@ -1,0 +1,20 @@
+apps/web/src/app/dash/[storeSlug]/calls/seller-calls.tsx
+  h_6877e5e7a06bc5 54
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  h_6877e5e7a06bc5 17,19,52-61,64,78-82,190-213,215-250,252-281,283-304,306-321,323-325,327-328,330-351,353-392
+apps/web/src/components/ask-bar.tsx
+  h_6877e5e7a06bc5 15-26,45-90,107-113
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cad853a30f78458e7e4135529608cb567cbc9439",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
