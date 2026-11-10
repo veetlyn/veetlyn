@@ -121,6 +121,7 @@ Branch protection for `main` is saved in [`.github/main-protection.json`](.githu
 - [docs/environments.md](docs/environments.md) — local, staging and production: what each stage is for, who can sign up, and the demo/sandbox rules
 - [docs/user-guide.md](docs/user-guide.md) — using Veetlyn as a seller (services, payouts) or a client (requests, quotes, payments)
 - [docs/ai-plugin.md](docs/ai-plugin.md) — connecting Claude and ChatGPT, what to ask, and the rules the connector cannot break
+- [docs/testing.md](docs/testing.md) — testing by hand: the PayPal sandbox accounts and their jobs, the test inbox, where the logins live, and the rules for agents
 - [docs/development.md](docs/development.md) — environment variables, the test database, migrations, code rules and project workflow
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to open issues and pull requests
 
