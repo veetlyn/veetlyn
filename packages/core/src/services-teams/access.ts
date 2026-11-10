@@ -39,6 +39,7 @@ const ACTION_RULES = new Map<string, ActionRule>([
   ...rules("open", [
     "project.list", // filtered row by row
     "member.departments",
+    "team.members", // names and roles only, for assigning work
     // Admins only, or read through canReadMoney.
     "payment.list",
     "dispute.list",

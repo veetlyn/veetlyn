@@ -26,6 +26,7 @@ import {
   projectRefundClient,
   projectStart,
   projectWarningRecord,
+  teamMembers,
 } from "./projects";
 import { MONEY_ACTIONS } from "./money";
 import { offeringSearch } from "./offerings";
@@ -46,6 +47,7 @@ export const ACTIONS: readonly AnyActionDefinition[] = [
   projectWarningRecord,
   projectList,
   projectGet,
+  teamMembers,
   projectClientView,
   projectClientList,
   projectClientAdd,

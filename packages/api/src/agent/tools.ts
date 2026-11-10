@@ -16,7 +16,7 @@ import { type PerformRequest, perform } from "../actions/perform";
 import { conversationPost, requestListOpen } from "../actions/conversations";
 import { disputeList, paymentList } from "../actions/money";
 import { payoutApprove, payoutBalances, payoutList, payoutMine, payoutReject, payoutRulesGet } from "../actions/payouts";
-import { projectAssign, projectClientList, projectGet, projectList } from "../actions/projects";
+import { projectAssign, projectClientList, projectGet, projectList, teamMembers } from "../actions/projects";
 import { orderList, productList, workspaceListMine, workspaceSummary } from "../actions/sellers";
 import { amendmentPropose, quoteCreate } from "../actions/quotes";
 
@@ -65,6 +65,7 @@ function propose<Schema extends z.ZodType, Result>(definition: Typed<Schema, Res
 export const AGENT_TOOLS: readonly AgentTool[] = [
   read(projectList),
   read(projectGet),
+  read(teamMembers),
   read(requestListOpen),
   read(payoutList, "approve_payouts"),
   read(payoutBalances, "approve_payouts"),

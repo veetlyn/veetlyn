@@ -24,7 +24,7 @@ export const AGENT_SKILLS = [
     id: "assign-the-work",
     label: "Assign the work",
     tool: "propose_project_assign",
-    procedure: "Only before quoting, and only for a member of this team; say who takes the work and why them.",
+    procedure: "Only before quoting. Find the person with team_members, say who takes the work and why them, and propose it with their id.",
   },
 ] as const;
 

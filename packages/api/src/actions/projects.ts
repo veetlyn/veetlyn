@@ -9,7 +9,9 @@ import {
   PROJECT_REFUND_STATUSES,
   PROJECT_STATUSES,
   QUOTE_STATUSES,
+  SERVICES_TEAM_ROLES,
 } from "@jendal-workspace/core";
+import { findServicesTeamById, listServicesTeamMembers } from "@jendal-workspace/db/repositories/services-teams";
 import { z } from "zod";
 
 import { refundClient } from "../use-cases/client-refunds";
@@ -128,6 +130,25 @@ export const projectWarningRecord = defineAction({
   run: async (context, input) => {
     await recordProjectWarning(context.deps.db, teamActorOf(context), input);
     return null;
+  },
+});
+
+// Who is on the team, so work can be assigned by name. Emails are left out: assigning needs only the name, the role
+// and the id the assignment takes.
+export const teamMembers = defineAction({
+  name: "team.members",
+  kind: "query",
+  summary: "List the team's members by name and role, with the id an assignment takes. No contact details.",
+  input: z.object({}),
+  output: z.array(z.object({ id: z.string(), name: z.string(), role: z.enum(SERVICES_TEAM_ROLES) })),
+  scope: () => ({}),
+  allow: [{ grant: "member" }],
+  run: async (context) => {
+    const actor = teamActorOf(context);
+    const team = await findServicesTeamById(context.deps.db, actor.teamId);
+    if (!team) throw new ActionError("not_found", "Team not found.");
+    const rows = await listServicesTeamMembers(context.deps.db, team);
+    return rows.map((row) => ({ id: row.userId, name: row.name, role: row.role }));
   },
 });
 
