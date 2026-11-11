@@ -24,12 +24,16 @@ const session = { user: { id: "user-1" }, session: { id: "session-1" } };
 const ownerAccess = { ...teamRow, product: "store", role: "owner", teamMemberId: null };
 
 // Minimal drizzle query-builder stand-ins: select().from().innerJoin().leftJoin().where().limit()
-// for findTeamAccess, insert().values().onConflictDoUpdate().returning() for the integration
-// upsert, update().set().where().returning() for markTeamPayPalMerchant.
+// for findTeamAccess, select().from().where().limit() for findTeamIdByPayPalMerchant (no other team holds the
+// merchant), insert().values().onConflictDoUpdate().returning() for the integration upsert,
+// update().set().where().returning() for markTeamPayPalMerchant.
 function fakeDb(rows: unknown[]) {
   return {
     select: () => ({
-      from: () => ({ innerJoin: () => ({ leftJoin: () => ({ where: () => ({ limit: async () => rows }) }) }) }),
+      from: () => ({
+        innerJoin: () => ({ leftJoin: () => ({ where: () => ({ limit: async () => rows }) }) }),
+        where: () => ({ limit: async () => [] }),
+      }),
     }),
     insert: () => ({ values: () => ({ onConflictDoUpdate: () => ({ returning: async () => [{}] }) }) }),
     update: () => ({ set: () => ({ where: () => ({ returning: async () => [{ slug: "acme" }] }) }) }),

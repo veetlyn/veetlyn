@@ -2,11 +2,12 @@ import type { StoreRecord, TeamProduct } from "@jendal-workspace/core";
 import type { Database } from "@jendal-workspace/db";
 import {
   findPayPalOnboarding,
+  findTeamIdByPayPalMerchant,
   markTeamPayPalMerchant,
-  type PayPalOnboardingRow,
   savePayPalIntegration,
   savePayPalReferral,
   saveTeamPayPalCountry,
+  type PayPalOnboardingRow,
 } from "@jendal-workspace/db/repositories/paypal-onboarding";
 import { actionUrlFromLinks, PARTNER_REFERRAL_FEATURES, type PayPalClient } from "@jendal-workspace/paypal";
 import { TRPCError } from "@trpc/server";
@@ -127,7 +128,11 @@ export async function refreshPayPalOnboarding(
   if (status.trackingId && status.trackingId !== team.id) {
     throw new Error(`PayPal merchant ${lookup.merchantId} belongs to a different tracking id.`);
   }
-  const connected = status.paymentsReceivable === true && status.primaryEmailConfirmed === true;
+  // One PayPal account serves one team. Taken elsewhere, it is not this team's: say so instead of failing on the
+  // unique merchant id.
+  const holder = await findTeamIdByPayPalMerchant(deps.db, lookup.merchantId);
+  const taken = holder !== null && holder !== team.id;
+  const connected = !taken && status.paymentsReceivable === true && status.primaryEmailConfirmed === true;
   const row = await savePayPalIntegration(deps.db, {
     teamId: team.id,
     merchantId: lookup.merchantId,
@@ -136,6 +141,12 @@ export async function refreshPayPalOnboarding(
     primaryEmailConfirmed: status.primaryEmailConfirmed === true,
     oauthIntegrations: status.oauthIntegrations,
   });
+  if (taken) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "This PayPal account is already connected to another team. Connect a different PayPal business account.",
+    });
+  }
   const country = payPalCountry(status.country);
   if (country) await saveTeamPayPalCountry(deps.db, { teamId: team.id, country });
   if (connected && team.paypalMerchantId !== lookup.merchantId) {
