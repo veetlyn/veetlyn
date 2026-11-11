@@ -69,18 +69,8 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
   if (!requests.data || credentials.data !== null) return null;
 
   const now = new Date();
+  // Stays visible with nothing to export: settling the last exported payout must not hide the import result.
   const approved = requests.data.payouts.filter((request) => exportable(request, now));
-  const awaitingLog = requests.data.payouts.filter((request) => request.status === "exported").length;
-  // Open only when there is work here: something to export, a log to import, or a result to read. Settling the last
-  // exported payout must not hide the import result.
-  const active =
-    approved.length > 0 || awaitingLog > 0 || importLog.data !== undefined || importLog.error !== null || exportCsv.error !== null;
-  const summaryNote =
-    approved.length > 0
-      ? `${approved.length} approved to export`
-      : awaitingLog > 0
-        ? `${awaitingLog} exported, waiting for PayPal's log`
-        : "Nothing to export";
 
   const selectedIds = approved.filter((request) => !unchecked.has(request.id)).map((request) => request.id);
 
@@ -105,89 +95,84 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <details open={active || undefined} className="panel p-5">
-      <summary className="cursor-pointer">
-        <h2 id="payouts-web-heading" className="inline font-medium">
-          PayPal Payouts Web
-        </h2>
-        <span className="text-sm text-muted-foreground"> · {summaryNote}</span>
-      </summary>
-      <section aria-labelledby="payouts-web-heading" className="mt-4 space-y-4">
-        {approved.length > 0 ? (
-          <form
-            className="space-y-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              importLog.reset();
-              exportCsv.mutate({ teamSlug, requestIds: selectedIds });
-            }}
-          >
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Approved payouts</legend>
-              <ul className="space-y-2">
-                {approved.map((request) => (
-                  <li key={request.id}>
-                    <label className="flex items-start gap-2 text-sm">
-                      <Checkbox
-                        className="mt-0.5"
-                        checked={!unchecked.has(request.id)}
-                        onCheckedChange={(checked) => toggle(request.id, checked === true)}
-                      />
-                      <span>
-                        <span className="font-medium">{request.memberName}</span> —{" "}
-                        {formatMinor(request.amountMinor, request.currency)}
-                        {request.sentMinor !== null && request.feeEstimateMinor !== null ? (
-                          <span className="block text-muted-foreground">
-                            Sends {formatMinor(request.sentMinor, request.currency)} after PayPal's fee (about)
-                          </span>
-                        ) : null}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </fieldset>
-            <Button type="submit" disabled={selectedIds.length === 0 || exportCsv.isPending}>
-              {exportCsv.isPending ? "Exporting…" : "Export for PayPal Payouts Web"}
-            </Button>
-          </form>
-        ) : (
-          <p className="text-sm text-muted-foreground">No approved payouts to export.</p>
-        )}
-        <ol className="list-decimal space-y-1 pl-5 text-sm">
-          <li>In PayPal, open Pay &amp; Get Paid &gt; Payouts.</li>
-          <li>Upload this file and send the payout.</li>
-          <li>When it shows Processed, open it under Activity and choose Download &gt; Download (CSV).</li>
-        </ol>
-        <div className="space-y-2">
-          <Label htmlFor="payouts-web-log">Import PayPal's CSV log</Label>
-          <Input
-            key={fileInputKey}
-            id="payouts-web-log"
-            type="file"
-            accept=".csv,text/csv"
-            disabled={importLog.isPending}
-            onChange={handleFile}
-          />
-        </div>
-        <p aria-live="polite" className="text-sm">
-          {importLog.data ? importSummary(importLog.data) : null}
+    <section aria-labelledby="payouts-web-heading" className="panel space-y-4 p-5">
+      <h2 id="payouts-web-heading" className="font-medium">
+        PayPal Payouts Web
+      </h2>
+      {approved.length > 0 ? (
+        <form
+          className="space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            importLog.reset();
+            exportCsv.mutate({ teamSlug, requestIds: selectedIds });
+          }}
+        >
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Approved payouts</legend>
+            <ul className="space-y-2">
+              {approved.map((request) => (
+                <li key={request.id}>
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={!unchecked.has(request.id)}
+                      onCheckedChange={(checked) => toggle(request.id, checked === true)}
+                    />
+                    <span>
+                      <span className="font-medium">{request.memberName}</span> —{" "}
+                      {formatMinor(request.amountMinor, request.currency)}
+                      {request.sentMinor !== null && request.feeEstimateMinor !== null ? (
+                        <span className="block text-muted-foreground">
+                          Sends {formatMinor(request.sentMinor, request.currency)} after PayPal's fee (about)
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+          <Button type="submit" disabled={selectedIds.length === 0 || exportCsv.isPending}>
+            {exportCsv.isPending ? "Exporting…" : "Export for PayPal Payouts Web"}
+          </Button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted-foreground">No approved payouts to export.</p>
+      )}
+      <ol className="list-decimal space-y-1 pl-5 text-sm">
+        <li>In PayPal, open Pay &amp; Get Paid &gt; Payouts.</li>
+        <li>Upload this file and send the payout.</li>
+        <li>When it shows Processed, open it under Activity and choose Download &gt; Download (CSV).</li>
+      </ol>
+      <div className="space-y-2">
+        <Label htmlFor="payouts-web-log">Import PayPal's CSV log</Label>
+        <Input
+          key={fileInputKey}
+          id="payouts-web-log"
+          type="file"
+          accept=".csv,text/csv"
+          disabled={importLog.isPending}
+          onChange={handleFile}
+        />
+      </div>
+      <p aria-live="polite" className="text-sm">
+        {importLog.data ? importSummary(importLog.data) : null}
+      </p>
+      {exportCsv.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {exportCsv.error.message}
         </p>
-        {exportCsv.error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {exportCsv.error.message}
-          </p>
-        ) : null}
-        {importLog.error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {importLog.error.message}
-          </p>
-        ) : null}
-        <p className="text-sm text-muted-foreground">
-          Your PayPal account needs Payouts turned on. PayPal charges its fee to your account; <PlatformName /> takes it
-          from the member's payout, as with automatic payouts.
+      ) : null}
+      {importLog.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {importLog.error.message}
         </p>
-      </section>
-    </details>
+      ) : null}
+      <p className="text-sm text-muted-foreground">
+        Your PayPal account needs Payouts turned on. PayPal charges its fee to your account; <PlatformName /> takes it
+        from the member's payout, as with automatic payouts.
+      </p>
+    </section>
   );
 }
