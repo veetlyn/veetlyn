@@ -34,8 +34,6 @@ export function ClientsSection({
   const [name, setName] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  // The invitation form stays closed until someone means to invite; the clients themselves lead.
-  const [adding, setAdding] = useState(false);
   const manages = canStartProject(role);
 
   const add = useMutation(
@@ -44,7 +42,6 @@ export function ClientsSection({
         setEmail("");
         setName("");
         setNotice(null);
-        setAdding(false);
         return onChange();
       },
     }),
@@ -79,14 +76,9 @@ export function ClientsSection({
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Clients</h2>
         {manages ? (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setAdding((open) => !open)} aria-expanded={adding} aria-controls="client-add-form">
-              {adding ? "Cancel" : "Add client"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setPreviewOpen((open) => !open)} aria-expanded={previewOpen}>
-              {previewOpen ? "Close the preview" : "Preview as client"}
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={() => setPreviewOpen((open) => !open)} aria-expanded={previewOpen}>
+            {previewOpen ? "Close the preview" : "Preview as client"}
+          </Button>
         ) : null}
       </div>
       <ul className="space-y-2">
@@ -156,10 +148,10 @@ export function ClientsSection({
           );
         })}
       </ul>
-      {manages && adding ? (
-        <form id="client-add-form" onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 panel p-3">
+      {manages ? (
+        <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2">
           <div className="space-y-2">
-            <Label htmlFor="client-add-email">Client's email</Label>
+            <Label htmlFor="client-add-email">Add a client by email</Label>
             <Input
               id="client-add-email"
               type="email"
@@ -173,7 +165,7 @@ export function ClientsSection({
             <Input id="client-add-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Optional" />
           </div>
           <Button type="submit" disabled={busy || email.trim() === ""}>
-            Add client
+            Add
           </Button>
         </form>
       ) : null}
@@ -189,7 +181,7 @@ export function ClientsSection({
       ) : null}
       {previewOpen ? (
         <div className="well space-y-2 rounded-lg bg-tray p-4">
-          <p className="text-sm text-muted-foreground">What the client sees, read-only. Accepting work and paying stay the client's.</p>
+          <p className="text-sm text-muted-foreground">What the client sees. Nothing here can be clicked.</p>
           {preview.data ? (
             <ClientProjectView
               data={preview.data}

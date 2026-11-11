@@ -34,25 +34,24 @@ type Card = NonNullable<Entry["card"]>;
 // The facts come from the server's reading of what will run; the assistant's own words are only the note under them.
 function CardFacts({ card }: { card: Card }) {
   if (card.kind === "quote")
-    // The draft is the object: total and delivery promise first, then the itemized scope, then payment terms.
     return (
       <div className="frame frame-body text-[14px]">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b px-3.5 py-3">
-          <span className="text-muted-foreground">
-            Delivered in {card.delivery}
-            {card.freelancer ? ` by ${card.freelancer}` : ""}
-          </span>
-          <span className="font-tabular text-[23px] font-semibold tracking-[-0.02em] whitespace-nowrap">{card.total}</span>
-        </div>
-        <ul aria-label="Scope">
+        <ul>
           {card.lines.map((line) => (
             <li key={line.label} className="flex justify-between gap-4 border-b px-3.5 py-2.5">
-              <span className="min-w-0 break-words">{line.label}</span>
+              <span className="min-w-0">{line.label}</span>
               <span className="font-tabular whitespace-nowrap">{line.amount}</span>
             </li>
           ))}
         </ul>
-        <div className="flex items-baseline justify-between gap-4 px-3.5 py-2.5 text-muted-foreground">
+        <div className="flex items-baseline justify-between gap-4 px-3.5 py-2.5 font-medium">
+          <span>
+            Total, delivered in {card.delivery}
+            {card.freelancer ? ` by ${card.freelancer}` : ""}
+          </span>
+          <span className="font-tabular text-[16px] whitespace-nowrap">{card.total}</span>
+        </div>
+        <div className="flex items-baseline justify-between gap-4 border-t px-3.5 py-2.5 text-muted-foreground">
           <span>
             Client pays on accepting: {card.deposit.percent}% deposit {card.deposit.quotePart}
             {card.deposit.managementFee ? ` + management fee ${card.deposit.managementFee}` : ""}
@@ -102,27 +101,7 @@ function CardFacts({ card }: { card: Card }) {
   );
 }
 
-// One sentence saying what is ready, from the card's own status, so the explanation above it can be skipped.
-function quoteLead(project: string, status: Entry["status"]): string {
-  if (status === "done") return `Quote sent for ${project}`;
-  if (status === "declined") return `Quote for ${project}, not sent`;
-  if (status === "failed") return `Quote for ${project}, refused`;
-  return `Quote for ${project}, ready to send`;
-}
-
-function ProposalCard({
-  entry,
-  onDecided,
-  superseded = false,
-  projectHref = null,
-}: {
-  entry: Entry;
-  onDecided: () => void;
-  // A later draft of the same quote follows in this thread.
-  superseded?: boolean;
-  // The project's page, where the live quote is, when the thread names one.
-  projectHref?: string | null;
-}) {
+function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => void }) {
   const confirm = useMutation(trpc.agent.confirm.mutationOptions({ onSettled: onDecided }));
   const decline = useMutation(trpc.agent.decline.mutationOptions({ onSettled: onDecided }));
   const state = CARD_STATE[entry.status ?? "pending"];
@@ -131,49 +110,21 @@ function ProposalCard({
   // Money takes two presses: the first says exactly what the second will do.
   const [armed, setArmed] = useState(false);
   const twoStep = card?.kind === "payout";
-  const quote = card?.kind === "quote" ? card : null;
-  const heading = quote ? quoteLead(quote.project, entry.status) : (card?.title ?? "Proposed action");
-  // What a decided quote card shows is the draft at that moment; the live quote can have moved on since.
-  const snapshot = quote && (superseded || entry.status === "done");
   return (
     <div className="frame frame-panel" aria-label="Decision">
       <div className="frame-head flex items-center gap-3 text-[14px]">
-        <h3 className="line-clamp-2 min-w-0 font-medium" title={heading}>
-          {heading}
-        </h3>
+        <h3 className="min-w-0 truncate font-medium">{card?.title ?? "Proposed action"}</h3>
         <Badge tone={state.tone} className="ml-auto shrink-0">
           {state.label}
         </Badge>
       </div>
-      {snapshot ? (
-        <p className="border-b px-3.5 py-2 text-[13px] text-muted-foreground">
-          {superseded ? "Earlier draft, kept as a snapshot. A newer draft follows below." : "Snapshot of the quote as sent."}
-          {projectHref ? (
-            <>
-              {" "}
-              <Link href={projectHref} className="underline underline-offset-4 hover:text-foreground">
-                See the project’s current quote
-              </Link>
-            </>
-          ) : null}
-        </p>
-      ) : null}
       {card ? (
         <CardFacts card={card} />
       ) : (
         <p className="frame frame-body px-3.5 py-3 text-[14px] whitespace-pre-wrap">{entry.body}</p>
       )}
       <div className="grid gap-3 px-3.5 py-3">
-        {entry.note && quote ? (
-          // The reasoning is available, not in the way: the draft and the decision come first.
-          <details className="text-[14px] text-muted-foreground">
-            <summary className="cursor-pointer font-medium text-foreground">Why this price</summary>
-            <p className="mt-2 flex gap-2">
-              <AgentIcon className="mt-[3px] size-3.5 shrink-0" />
-              <span className="whitespace-pre-wrap">{entry.note}</span>
-            </p>
-          </details>
-        ) : entry.note ? (
+        {entry.note ? (
           <p className="flex gap-2 text-[14px] text-muted-foreground">
             <AgentIcon className="mt-[3px] size-3.5 shrink-0" />
             <span>{entry.note}</span>
@@ -181,7 +132,7 @@ function ProposalCard({
         ) : null}
         {entry.outcome && entry.status !== "done" ? <p className="text-[14px] text-muted-foreground">{entry.outcome}</p> : null}
         {entry.status === "pending" ? (
-          <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          <div className="flex flex-wrap items-center gap-2">
             {twoStep && !armed ? (
               <Button size="sm" variant="mint" disabled={busy} onClick={() => setArmed(true)}>
                 {card.cta}
@@ -195,11 +146,7 @@ function ProposalCard({
               {armed ? "Go back" : "Not now"}
             </Button>
             <span className="text-[13px] text-muted-foreground">
-              {armed
-                ? "Press again to confirm."
-                : quote
-                  ? `The client gets the quote only when you press ${quote.cta}. To change it, reply below.`
-                  : "Nothing happens until you press this."}
+              {armed ? "Press again to confirm." : "Nothing happens until you press this."}
             </span>
           </div>
         ) : null}
@@ -319,14 +266,6 @@ export default function TeamCalls({
   if (calls.isPending) return <Loader />;
   const firstName = session?.user.name.split(/\s+/)[0] ?? "";
   const nextScheduled = project.data?.schedule[0] ?? null;
-  // A quote draft followed by another draft for the same project in this thread is no longer the latest.
-  const laterQuote = new Set<string>();
-  const seenProjects = new Set<string>();
-  for (const entry of [...(thread.data?.entries ?? [])].reverse()) {
-    if (entry.card?.kind !== "quote") continue;
-    if (seenProjects.has(entry.card.project)) laterQuote.add(entry.id);
-    seenProjects.add(entry.card.project);
-  }
   const scopeLabel = onTable ? project.data?.project.title ?? "Project" : scopeName;
 
   const composer = (
@@ -357,14 +296,13 @@ export default function TeamCalls({
     <section aria-label="Thread" className="flex h-full min-h-0 min-w-0 flex-col">
       {activeCallId ? (
         <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
-          <span className="truncate text-sm font-medium" title={current?.title}>{current?.title ?? ""}</span>
+          <span className="truncate text-sm font-medium">{current?.title ?? ""}</span>
           <Link href={callsPath} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "ml-auto")}>
             New thread
           </Link>
         </div>
       ) : null}
-      {/* Bottom room so a card's decision footer can always scroll clear of the composer under it. */}
-      <div className={cn("min-h-0 flex-1 scroll-pb-10 space-y-4 overflow-y-auto px-4", activeCallId ? "pt-5 pb-10" : "py-0")}>
+      <div className={cn("min-h-0 flex-1 space-y-4 overflow-y-auto px-4", activeCallId ? "py-5" : "py-0")}>
         {!available ? (
           <p className="panel p-4 text-sm text-muted-foreground">The assistant is not set up on this server yet.</p>
         ) : null}
@@ -411,12 +349,7 @@ export default function TeamCalls({
             {thread.data?.entries.map((entry) =>
               entry.kind === "proposal" ? (
                 <li key={entry.id}>
-                  <ProposalCard
-                    entry={entry}
-                    onDecided={refresh}
-                    superseded={laterQuote.has(entry.id)}
-                    projectHref={projectHref && current?.projectId ? projectHref(current.projectId) : null}
-                  />
+                  <ProposalCard entry={entry} onDecided={refresh} />
                 </li>
               ) : entry.author === "person" ? (
                 <li
