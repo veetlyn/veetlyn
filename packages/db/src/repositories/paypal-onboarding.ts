@@ -78,6 +78,12 @@ export async function savePayPalIntegration(
 }
 
 // Returns the team's slug so the caller can invalidate the cached store record (Fact 10).
+// The team a PayPal merchant is already connected to, if any: one PayPal account serves one team.
+export async function findTeamIdByPayPalMerchant(db: DbExecutor, merchantId: string): Promise<string | null> {
+  const [row] = await db.select({ id: team.id }).from(team).where(eq(team.paypalMerchantId, merchantId)).limit(1);
+  return row?.id ?? null;
+}
+
 export async function markTeamPayPalMerchant(
   db: Database,
   input: { teamId: string; merchantId: string },

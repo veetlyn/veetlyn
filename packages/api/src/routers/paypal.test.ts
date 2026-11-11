@@ -349,6 +349,28 @@ describe.skipIf(!hasTestDatabase)("paypal router", () => {
     ]);
   });
 
+  // Staging 2026-11-11: a sandbox seller already connected to one team was connected to a second; the update failed on
+  // the unique merchant id, the card said "still reviewing" and the raw query reached the browser.
+  it("refuses a PayPal account already connected to another team, in words, and leaves this team unconnected", async () => {
+    const { userId, organizationId } = await seedOrganization(db);
+    const first = await seedStore(db, { organizationId, slug: "first" });
+    const second = await seedStore(db, { organizationId, slug: "second" });
+    await markTeamPayPalMerchant(db, { teamId: first.id, merchantId: "TAKEN" });
+    const { fetch } = fakePayPalApi({
+      integration: { merchant_id: "TAKEN", tracking_id: second.id, payments_receivable: true, primary_email_confirmed: true },
+    });
+    const caller = callerFor(userId, makePayPal(fetch));
+    await caller.paypal.startOnboarding({ teamId: second.id });
+
+    const refused = caller.paypal.onboardingStatus({ teamId: second.id, refresh: true });
+    await expect(refused).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(refused).rejects.toThrow("This PayPal account is already connected to another team.");
+
+    const [row] = await db.select({ merchant: team.paypalMerchantId }).from(team).where(eq(team.id, second.id));
+    expect(row?.merchant).toBeNull();
+    await expect(findPayPalOnboarding(db, second.id)).resolves.toMatchObject({ status: "needs_attention" });
+  });
+
   it("keeps the connection when dropping the team's cached lookups fails", async () => {
     const { userId, organizationId } = await seedOrganization(db);
     const store = await seedStore(db, { organizationId, slug: "acme" });
