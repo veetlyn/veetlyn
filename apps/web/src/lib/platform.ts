@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { z } from "zod";
 
-export type PlatformSite = { name: string; domain: string; storeDomain: string };
+export type PlatformSite = { name: string; domain: string; storeDomain: string; contactDomain: string };
 
 // The product name people read; set per stage (PLATFORM_NAME).
 export function platformName(): string {
@@ -10,6 +10,11 @@ export function platformName(): string {
 
 export function platformDomain(): string {
   return z.string().min(1).parse(env.PLATFORM_DOMAIN);
+}
+
+// Where people write to (CONTACT_DOMAIN, defaulting to the platform domain).
+export function contactDomain(): string {
+  return z.string().min(1).parse(env.CONTACT_DOMAIN || env.PLATFORM_DOMAIN);
 }
 
 export function storeDomain(): string {
@@ -22,5 +27,5 @@ export function isIndexedStage(): boolean {
 }
 
 export function platformSite(): PlatformSite {
-  return { name: platformName(), domain: platformDomain(), storeDomain: storeDomain() };
+  return { name: platformName(), domain: platformDomain(), storeDomain: storeDomain(), contactDomain: contactDomain() };
 }

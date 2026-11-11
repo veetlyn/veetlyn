@@ -7,8 +7,8 @@ import { AUDIENCES } from "@/content/site/audiences";
 import { platformSite } from "@/lib/platform";
 
 export default function SiteFooter() {
-  const { name, domain } = platformSite();
-  const email = contactEmail(domain);
+  const { name, contactDomain } = platformSite();
+  const email = contactEmail(contactDomain);
   const platformLinks = [
     ["/network", `${name} Network`],
     ["/discover", "Discover"],

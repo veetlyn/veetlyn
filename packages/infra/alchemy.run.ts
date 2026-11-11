@@ -191,6 +191,9 @@ export class Web extends Cloudflare.Website.Vinext<Web>()("web", {
     PUBLIC_ACCESS: publicAccess,
     PAYPAL_ENVIRONMENT: Config.String("PAYPAL_ENVIRONMENT"),
     PLATFORM_DOMAIN: platformDomain,
+    // The domain of the addresses the site publishes (contact@, privacy@ ...). It defaults to the platform domain;
+    // staging and the local tunnel set it so their pages give the real mailboxes, not their own hosts.
+    CONTACT_DOMAIN: Config.String("CONTACT_DOMAIN").pipe(Config.withDefault(platformDomain)),
     PLATFORM_NAME: Config.String("PLATFORM_NAME"),
     STORE_DOMAIN: storeDomain,
     SANDBOX_BUYER_EMAIL: optionalString("SANDBOX_BUYER_EMAIL"),

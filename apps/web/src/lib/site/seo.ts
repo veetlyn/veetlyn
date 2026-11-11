@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-export type SeoSite = { name: string; domain: string };
+// contactDomain is where people write to; it defaults to domain.
+export type SeoSite = { name: string; domain: string; contactDomain?: string };
 
 export const siteOrigin = (domain: string) => `https://${domain}`;
 const orgId = (domain: string) => `${siteOrigin(domain)}/#org`;
@@ -31,7 +32,7 @@ export const organization = (site: SeoSite) =>
     "@id": orgId(site.domain),
     name: site.name,
     url: absoluteUrl("/", site.domain),
-    email: `contact@${site.domain}`,
+    email: `contact@${site.contactDomain ?? site.domain}`,
     logo: absoluteUrl("/favicon/web-app-manifest-512x512.png", site.domain),
   }) as const;
 

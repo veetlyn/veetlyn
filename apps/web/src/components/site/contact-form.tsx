@@ -25,7 +25,7 @@ const formSchema = z.object({
 // pick the topic.
 export default function ContactForm() {
   const [topic, setTopic] = useState<string>(TOPICS[0]);
-  const email = contactEmail(usePlatformInfo().domain);
+  const email = contactEmail(usePlatformInfo().contactDomain);
 
   useEffect(() => {
     const pick = () => {
