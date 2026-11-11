@@ -1,0 +1,14 @@
+.github/workflows/deploy.yml
+  h_6877e5e7a06bc5 136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1dada776fb28af6389f8264dafd4be376dd1ecac",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
