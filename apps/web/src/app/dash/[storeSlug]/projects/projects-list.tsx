@@ -7,14 +7,12 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 
 import Loader from "@/components/loader";
-import { ListPage } from "@/components/page-composition";
+import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { trpc } from "@/utils/trpc";
 import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
-
-import { TEAM_PROJECT_NEXT_STEP } from "./project-next-step";
 
 const FILTERS = [
   ["open", "Open"],
@@ -43,27 +41,22 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
     return statusMatches && `${project.title} ${project.clientName ?? ""}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
   });
 
-  // Whose move it is, over the rows in view (tab counts already give open/closed totals). Brand tone means the team acts.
-  const yourMove = matching.filter((project) => TEAM_PROJECT_TONES[project.status] === "brand").length;
-  const clientMove = matching.filter((project) => TEAM_PROJECT_NEXT_STEP[project.status] !== null && TEAM_PROJECT_TONES[project.status] !== "brand").length;
-
   return (
     <ListPage>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-heading text-3xl">Projects</h1>
-          {yourMove + clientMove > 0 ? (
-            <p className="text-sm text-muted-foreground">
-              <span className="font-tabular font-medium text-foreground">{yourMove}</span> {yourMove === 1 ? "needs" : "need"} your move
-              {" · "}
-              <span className="font-tabular">{clientMove}</span> waiting on clients
-            </p>
-          ) : null}
         </div>
         <Link href={`/${teamSlug}/projects/new`} className={buttonVariants()}>
           New project
         </Link>
       </div>
+      {projects.data.length > 0 ? (
+        <SummaryStrip label="Needs attention">
+          <p className="text-sm"><span className="font-medium">{projects.data.filter((project) => !isTerminalProjectStatus(project.status)).length} open projects</span> <span className="text-muted-foreground">in progress or waiting</span></p>
+          <p className="text-sm text-muted-foreground">{matching.length} shown</p>
+        </SummaryStrip>
+      ) : null}
       {projects.data.length === 0 ? (
         <div className="panel grid justify-items-center gap-2 p-10 text-center">
           <p className="font-heading text-lg">No projects yet</p>
@@ -112,19 +105,13 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
                 <li key={project.id}>
                   <Link
                     href={`/${teamSlug}/projects/${project.id}`}
-                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 transition-colors hover:bg-accent/60 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)_auto]"
+                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-accent/60"
                   >
-                    {/* Fixed identity column so next steps line up row to row from md up. */}
                     <div className="min-w-0">
                       <p className="truncate font-medium">{project.title}</p>
                       <p className="truncate text-sm text-muted-foreground">{project.clientName ?? "No client"}</p>
                     </div>
-                    {TEAM_PROJECT_NEXT_STEP[project.status] ? (
-                      <p className="col-start-1 row-start-2 min-w-0 truncate text-sm md:col-start-2 md:row-start-1">
-                        {TEAM_PROJECT_NEXT_STEP[project.status]}
-                      </p>
-                    ) : null}
-                    <Badge tone={TEAM_PROJECT_TONES[project.status]} className="col-start-2 row-start-1 justify-self-end md:col-start-3">
+                    <Badge tone={TEAM_PROJECT_TONES[project.status]}>
                       {projectStatusLabel(project.status)}
                     </Badge>
                   </Link>

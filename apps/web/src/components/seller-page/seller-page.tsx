@@ -35,9 +35,7 @@ export type SellerPageContent = {
   portfolio: { id: string; title: string; url: string; description: string }[];
 };
 
-// Full-width rows rather than a card grid: works for any number of peer services, keeps descriptions at a readable
-// measure, and gives price, turnaround and the request action their own columns from md up (stacked on phones).
-function OfferingRow({
+function OfferingCard({
   page,
   offering,
   Heading,
@@ -47,35 +45,25 @@ function OfferingRow({
   Heading: "h3" | "h4";
 }) {
   return (
-    <li className="grid gap-4 p-5 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-8">
-      <div className="min-w-0 space-y-1.5">
-        <Heading className="text-base font-semibold">{offering.name}</Heading>
-        {offering.description ? (
-          <p className="max-w-prose text-sm whitespace-pre-line text-muted-foreground">{offering.description}</p>
-        ) : null}
-        {/* "By people" is the default expectation; only an automated part changes what the client is choosing. */}
-        {offering.fulfilment !== "people" ? (
-          <p className="text-xs text-muted-foreground">{FULFILMENT_LABELS[offering.fulfilment]}</p>
-        ) : null}
-      </div>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm md:min-w-56">
-        <div>
-          <dt className="text-xs text-muted-foreground">Usually</dt>
-          <dd className="font-tabular font-semibold">{priceLabel(offering, page.currency)}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">Turnaround</dt>
-          <dd className="font-tabular">{daysLabel(offering)}</dd>
-        </div>
-      </dl>
+    <article className="panel grid content-start gap-3 p-5">
+      <Heading className="text-base font-semibold">{offering.name}</Heading>
+      {offering.description ? (
+        <p className="text-sm whitespace-pre-line text-muted-foreground">{offering.description}</p>
+      ) : null}
+      <p className="text-sm">
+        <span className="text-muted-foreground">Usually </span>
+        <span className="font-tabular font-semibold">{priceLabel(offering, page.currency)}</span>
+        <span className="text-muted-foreground"> — {daysLabel(offering)}</span>
+        <span className="text-muted-foreground"> — {FULFILMENT_LABELS[offering.fulfilment]}</span>
+      </p>
       <a
         href={`${page.pageBase}/request?offering=${offering.id}`}
         aria-label={`Request a quote for ${offering.name}`}
-        className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start md:justify-self-end" })}
+        className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
       >
         Request a quote
       </a>
-    </li>
+    </article>
   );
 }
 
@@ -92,27 +80,10 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
     (offering) => offering.departmentId === null || !departmentIds.has(offering.departmentId),
   );
 
-  const portfolio = page.portfolio.length > 0 ? (
-    <section aria-labelledby="portfolio-heading" className="space-y-4">
-      <h2 id="portfolio-heading" className="font-heading text-2xl">Past work</h2>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {page.portfolio.map((item) => (
-          <article key={item.id} className="space-y-2 border-t pt-4">
-            <h3 className="font-semibold"><a href={item.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{item.title}</a></h3>
-            {item.description ? <p className="whitespace-pre-line text-sm text-muted-foreground">{item.description}</p> : null}
-          </article>
-        ))}
-      </div>
-    </section>
-  ) : null;
-
-  // Order: who the seller is and how to ask, then what can be bought, then supporting work and reviews. The rating
-  // lives with the reviews rather than in the hero, so a sandbox/sample record is never the page's lead claim; the
-  // review text itself (including any sample disclosure) renders unchanged.
   return (
     <main className="mx-auto w-full max-w-5xl space-y-12 px-4 py-10 md:py-14">
       <header className="grid gap-4">
-        <span className="grid size-14 place-items-center rounded-2xl main-surface text-lg font-semibold uppercase" aria-hidden="true">
+        <span className="grid size-14 place-items-center rounded-2xl main-surface text-lg font-semibold uppercase">
           {page.name
             .split(/\s+/)
             .map((word) => word[0] ?? "")
@@ -120,20 +91,42 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
             .slice(0, 2)}
         </span>
         <h1 className="font-heading text-4xl md:text-5xl">{page.name}</h1>
+        {page.rating ? <a href="#reviews" className="w-fit text-sm underline underline-offset-4">{ratingLabel(page.rating)}</a> : null}
         {page.bio ? <p className="max-w-2xl text-lg whitespace-pre-line text-muted-foreground">{page.bio}</p> : null}
         {page.product === "services" ? (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <a href={`${page.pageBase}/request`} className={buttonVariants({ size: "lg" })}>
-              Request a quote
-            </a>
-            {page.offerings.length > 0 ? (
-              <a href="#services-heading" className="text-sm underline underline-offset-4">
-                See services
-              </a>
-            ) : null}
-          </div>
+          <a href={`${page.pageBase}/request`} className={buttonVariants({ size: "lg", className: "justify-self-start" })}>
+            Request a quote
+          </a>
         ) : null}
       </header>
+      {page.portfolio.length > 0 ? (
+        <section aria-labelledby="portfolio-heading" className="space-y-4">
+          <h2 id="portfolio-heading" className="font-heading text-2xl">Past work</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {page.portfolio.map((item) => (
+              <article key={item.id} className="space-y-2 border-t pt-4">
+                <h3 className="font-semibold"><a href={item.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{item.title}</a></h3>
+                {item.description ? <p className="whitespace-pre-line text-sm text-muted-foreground">{item.description}</p> : null}
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {page.reviews.length > 0 ? (
+        <section id="reviews" aria-labelledby="reviews-heading" className="space-y-4">
+          <h2 id="reviews-heading" className="font-heading text-2xl">Client reviews</h2>
+          <p className="text-sm text-muted-foreground">From clients of completed, paid projects.</p>
+          <div className="divide-y">
+            {page.reviews.map((review) => (
+              <article key={review.id} className="space-y-2 py-4">
+                <p className="text-sm"><strong>{review.reviewerName}</strong> · <span aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span></p>
+                {review.body ? <p className="whitespace-pre-line text-sm">{review.body}</p> : null}
+                <p className="text-xs text-muted-foreground"><time dateTime={new Date(review.createdAt).toISOString()}>{new Date(review.createdAt).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" })}</time></p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {page.product === "services" ? (
         <section aria-labelledby="services-heading" className="space-y-6">
           <h2 id="services-heading" className="font-heading text-2xl">
@@ -155,19 +148,19 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
               {groups.map(({ department, offerings }) => (
                 <div key={department.id} className="space-y-3">
                   <h3 className="text-sm font-medium text-muted-foreground">{department.name}</h3>
-                  <ul className="panel divide-y overflow-hidden">
+                  <div className="grid gap-3 md:grid-cols-2">
                     {offerings.map((offering) => (
-                      <OfferingRow key={offering.id} page={page} offering={offering} Heading="h4" />
+                      <OfferingCard key={offering.id} page={page} offering={offering} Heading="h4" />
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ))}
               {ungrouped.length > 0 ? (
-                <ul className="panel divide-y overflow-hidden">
+                <div className="grid gap-3 md:grid-cols-2">
                   {ungrouped.map((offering) => (
-                    <OfferingRow key={offering.id} page={page} offering={offering} Heading="h3" />
+                    <OfferingCard key={offering.id} page={page} offering={offering} Heading="h3" />
                   ))}
-                </ul>
+                </div>
               ) : null}
               <p className="text-sm text-muted-foreground">
                 Looking for something else?{" "}
@@ -197,25 +190,6 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
                 >
                   Buy
                 </a>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-      {portfolio}
-      {page.reviews.length > 0 ? (
-        <section id="reviews" aria-labelledby="reviews-heading" className="space-y-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 id="reviews-heading" className="font-heading text-2xl">Client reviews</h2>
-            {page.rating ? <p className="font-tabular text-sm text-muted-foreground">{ratingLabel(page.rating)}</p> : null}
-          </div>
-          <p className="text-sm text-muted-foreground">From clients of completed, paid projects.</p>
-          <div className="divide-y">
-            {page.reviews.map((review) => (
-              <article key={review.id} className="space-y-2 py-4">
-                <p className="text-sm"><strong>{review.reviewerName}</strong> · <span aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span></p>
-                {review.body ? <p className="whitespace-pre-line text-sm">{review.body}</p> : null}
-                <p className="text-xs text-muted-foreground"><time dateTime={new Date(review.createdAt).toISOString()}>{new Date(review.createdAt).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" })}</time></p>
               </article>
             ))}
           </div>

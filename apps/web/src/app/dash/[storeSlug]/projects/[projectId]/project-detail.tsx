@@ -33,13 +33,11 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
-import { DeliveryNote } from "@/components/delivery-note";
 import Loader from "@/components/loader";
 import { paymentRefundLabel } from "@/lib/client-refund";
 import { AMENDMENT_STATUS_LABELS, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
 import { deliveryDraftProblem, deliveryStaffStatusLabel, newestFirst } from "@/lib/delivery";
 import { minorToPriceInput } from "@/lib/money";
-import { deliveryTimingLabel, formatDay, formatWhen, managementFeeLabel, paidSummary } from "@/lib/project-money";
 import { isNotFoundError, isProjectReadDenied, PROJECT_REFRESH_MS, teamWaitsOnClient } from "@/lib/project-refresh";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
@@ -129,47 +127,31 @@ function ItemRowsEditor({ rows, onChange }: { rows: ItemRow[]; onChange: (rows: 
   );
 }
 
-// The agreement's terms lead (total, delivery clock); version and acceptance are bookkeeping beneath them.
-function QuoteCard({ quote, currency, upfrontBps }: { quote: Detail["quotes"][number]; currency: MoneyCurrency; upfrontBps: number }) {
+function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; currency: MoneyCurrency }) {
   return (
-    <div className="panel space-y-3 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <dl className="flex flex-wrap gap-x-8 gap-y-2">
-          <div>
-            <dt className="text-xs text-muted-foreground">Total</dt>
-            <dd className="font-tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(money(currency, quote.amountMinor))}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Delivery</dt>
-            <dd className="pt-1.5 text-sm font-medium">{deliveryTimingLabel(quote.deliveryDays, upfrontBps)}</dd>
-          </div>
-        </dl>
+    <div className="panel p-4">
+      <div className="flex items-center justify-between">
+        <p className="font-medium">
+          Quote v{quote.version} — {formatMoney(money(currency, quote.amountMinor))}
+        </p>
         <Badge tone={quote.status === "accepted" ? "good" : "neutral"}>{QUOTE_STATUS_LABELS[quote.status]}</Badge>
       </div>
-      <ul className="divide-y border-y text-sm">
+      <ul className="mt-2 space-y-1 text-sm">
         {quote.items.map((item) => (
-          <li key={item.id} className="flex justify-between gap-4 py-1.5">
-            <span className="min-w-0 break-words">
+          <li key={item.id} className="flex justify-between gap-4">
+            <span>
               {item.description}
-              {item.extraDays > 0 ? <span className="text-muted-foreground"> (+{item.extraDays} days)</span> : null}
+              {item.extraDays > 0 ? ` (+${item.extraDays} days)` : ""}
             </span>
-            <span className="shrink-0 font-tabular">{formatMoney(money(currency, item.amountMinor))}</span>
+            <span>{formatMoney(money(currency, item.amountMinor))}</span>
           </li>
         ))}
       </ul>
-      <p className="text-xs text-muted-foreground">
-        Version {quote.version}
-        {quote.acceptedAt ? ` · accepted ${formatDay(quote.acceptedAt)}` : ` · sent ${formatDay(quote.createdAt)}`}
-      </p>
+      <p className="mt-2 text-sm text-muted-foreground">Delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`} after the deposit.</p>
     </div>
   );
 }
 
-// Deliveries are numbered in the order they were sent; the accepted one of a finished project is the final one.
-function deliveryTitle(position: number, count: number, accepted: boolean, completed: boolean): string {
-  if (accepted && completed) return "Final delivery";
-  return count > 1 ? `Delivery ${position}` : "Delivery";
-}
 
 
 
@@ -377,54 +359,27 @@ export default function ProjectDetail({
       : project.status === "awaiting_deposit" || project.status === "awaiting_balance"
         ? { title: project.status === "awaiting_deposit" ? "Waiting for the client’s deposit" : "Waiting for the client’s balance payment", tab: financesHidden ? "conversation" : "money", action: financesHidden ? "Open conversation" : "View finances" }
         : { title: "Review the project’s latest activity", tab: "conversation", action: "Open conversation" };
-  // A project that has ended has no next step to invite; it reports how it ended, from the records alone.
-  const ended = project.status === "completed" || project.status === "cancelled" || project.status === "declined" || project.status === "expired" || project.status === "abandoned";
-  const acceptedDelivery = deliveries.find((d) => d.status === "accepted");
-  const paid = paidSummary(payments);
-  const outcomeFacts: string[] = [];
-  if (project.status === "completed" && acceptedDelivery) {
-    outcomeFacts.push(acceptedDelivery.decidedAt ? `Delivery accepted ${formatDay(acceptedDelivery.decidedAt)}` : "Delivery accepted");
-  }
-  if (project.status === "declined" && project.declinedReason) outcomeFacts.push(project.declinedReason);
-  if (project.status === "expired") outcomeFacts.push("The request expired without an answer.");
-  if (!financesHidden && paid.paidMinor > 0) {
-    outcomeFacts.push(`Client paid ${formatMoney(money(currency, paid.paidMinor))}`);
-    if (paid.refundedMinor > 0) outcomeFacts.push(`${formatMoney(money(currency, paid.refundedMinor))} refunded`);
-  }
-  if (!financesHidden && paid.pendingMinor > 0) outcomeFacts.push(`${formatMoney(money(currency, paid.pendingMinor))} still waiting to be paid`);
-  const deadline = project.deadlineAt && (project.status === "in_progress" || project.status === "delivered") ? formatDay(project.deadlineAt) : null;
 
-  const offerRevision = revisionRounds !== null && revisionRounds.used >= revisionRounds.allowed && revisionRounds.paidPriceMinor > 0 && project.status === "delivered" && !pendingAmendment;
-  const canAmend = (project.status === "in_progress" || project.status === "delivered") &&
-    !pendingAmendment &&
-    canProposeAmendment({ role, actorId: viewerId, assignedFreelancerId: project.assignedFreelancerId }) &&
-    currentQuote !== undefined;
-  const railFacts: { label: string; value: string }[] = [
-    { label: "Client", value: primary?.name ?? "No client" },
-    { label: "Assigned to", value: members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? "Not assigned" },
-  ];
-  if (currentQuote && !ended) railFacts.push({ label: "Delivery", value: deliveryTimingLabel(currentQuote.deliveryDays, project.upfrontBps) });
-  if (deadline) railFacts.push({ label: "Due", value: deadline });
-  if (!financesHidden && payments.length > 0) {
-    const parts = [`${formatMoney(money(currency, paid.paidMinor))} paid`];
-    if (paid.pendingMinor > 0) parts.push(`${formatMoney(money(currency, paid.pendingMinor))} waiting`);
-    railFacts.push({ label: "Payments", value: parts.join(" · ") });
-  }
+  const isFormView = view === "quote" || view === "delivery";
   const projectRail = (
     <ContextRail label="Project context">
       {view === "activity" ? <ProjectRatings key={projectId} teamSlug={teamSlug} projectId={projectId} ratings={detail.data.ratings} onChanged={refresh} /> : null}
       {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
-      {/* Facts the main column doesn't already show; a row with nothing to say is left out. */}
-      {view !== "activity" ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-facts-heading">
-        <h2 id="project-facts-heading" className="text-sm font-semibold">Project</h2>
+      {view !== "activity" && !isFormView ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-people-heading">
+        <h2 id="project-people-heading" className="text-sm font-semibold">People</h2>
         <dl className="divide-y text-xs">
-          {railFacts.map((fact) => (
-            <div key={fact.label} className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">{fact.label}</dt><dd className="break-words">{fact.value}</dd></div>
-          ))}
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Assigned to</dt><dd className="break-words">{members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? "Not assigned"}</dd></div>
+        </dl>
+      </section> : null}
+      {view !== "activity" && !financesHidden ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-glance-heading">
+        <h2 id="project-glance-heading" className="text-sm font-semibold">At a glance</h2>
+        <dl className="divide-y text-xs">
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quotes</dt><dd className="font-tabular">{quotes.length}</dd></div>
+          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Deliveries</dt><dd className="font-tabular">{deliveries.length}</dd></div>
         </dl>
       </section> : null}
       {view !== "activity" && seller.data?.available ? <Link href={`/${teamSlug}/calls?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
-        <span className="grid min-w-0 gap-0.5"><strong className="font-semibold">Ask about this project</strong><span className="text-muted-foreground">Open a focused thread with its context.</span></span>
+        <span className="grid min-w-0 gap-0.5"><strong className="break-words font-semibold">Ask about {project.title}</strong><span className="text-muted-foreground">Open a focused thread for this project.</span></span>
       </Link> : null}
       {view === "overview" && schedule.length > 0 ? (
         <section id="scheduled" className="scroll-mt-4 space-y-3">
@@ -468,23 +423,7 @@ export default function ProjectDetail({
       </div>
 
       {view !== "money" ? <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
-      {view === "overview" && ended ? <section className="space-y-4" aria-labelledby="project-outcome-heading">
-        <h2 id="project-outcome-heading" className="font-heading text-xl">Outcome</h2>
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[10px] border p-4">
-          <div className="grid min-w-0 flex-1 basis-full gap-1 sm:basis-auto">
-            <p className="text-base font-semibold">{projectStatusLabel(project.status)}</p>
-            {outcomeFacts.length > 0 ? (
-              <ul className="space-y-0.5 text-sm text-muted-foreground">
-                {outcomeFacts.map((fact) => <li key={fact} className="break-words">{fact}</li>)}
-              </ul>
-            ) : null}
-          </div>
-          {project.status === "completed" && acceptedDelivery ? (
-            <Link href={`/${teamSlug}/projects/${projectId}/delivery`} className="shrink-0 text-sm font-medium underline underline-offset-4">View the final delivery</Link>
-          ) : null}
-        </div>
-      </section> : null}
-      {view === "overview" && !ended ? <section className="space-y-4" aria-labelledby="project-next-heading">
+      {view === "overview" ? <section className="space-y-4" aria-labelledby="project-next-heading">
         <h2 id="project-next-heading" className="font-heading text-xl">What happens next</h2>
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-[10px] border p-4">
           <p className="min-w-0 flex-1 basis-full text-sm font-medium sm:basis-auto">{next.title}</p>
@@ -551,7 +490,7 @@ export default function ProjectDetail({
         <h2 className="text-lg font-semibold">Quotes</h2>
         {quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotes yet.</p> : null}
         {quotes.map((quote) => (
-          <QuoteCard key={quote.id} quote={quote} currency={currency} upfrontBps={project.upfrontBps} />
+          <QuoteCard key={quote.id} quote={quote} currency={currency} />
         ))}
         {project.status === "quoting" && (role !== "freelancer" || quotingMode !== "team") ? (
           <form onSubmit={handleQuote} className="space-y-3 panel p-4">
@@ -614,13 +553,9 @@ export default function ProjectDetail({
       )}
 
       {view !== "quote" || financesHidden ? null : (
-      // Nothing to show or do: one quiet line, not a section competing with the quote.
-      !offerRevision && !canAmend && amendments.length === 0 ? (
-        <p id="amendments" className="scroll-mt-4 text-sm text-muted-foreground">No amendments.</p>
-      ) : (
       <section id="amendments" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Amendments</h2>
-        {offerRevision ? (
+        {revisionRounds && revisionRounds.used >= revisionRounds.allowed && revisionRounds.paidPriceMinor > 0 && project.status === "delivered" && !pendingAmendment ? (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
               The client used {revisionRounds.used} of {revisionRounds.allowed} free rounds of changes.
@@ -653,7 +588,10 @@ export default function ProjectDetail({
             {amendment.note ? <p className="mt-1">{amendment.note}</p> : null}
           </div>
         ))}
-        {canAmend && currentQuote ? (
+        {(project.status === "in_progress" || project.status === "delivered") &&
+        !pendingAmendment &&
+        canProposeAmendment({ role, actorId: viewerId, assignedFreelancerId: project.assignedFreelancerId }) &&
+        currentQuote ? (
           <form onSubmit={handleAmend} className="space-y-3 panel p-4">
             <h3 className="font-medium">Propose an amendment</h3>
             <p className="text-sm text-muted-foreground">Remove lines from the current quote, or add new ones.</p>
@@ -685,32 +623,25 @@ export default function ProjectDetail({
           </form>
         ) : null}
       </section>
-      ))}
+      )}
 
       {view === "delivery" ? <section id="deliveries" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Deliveries</h2>
         {deliveries.length === 0 ? <p className="text-sm text-muted-foreground">No deliveries yet.</p> : null}
-        {newestFirst(deliveries).map((delivery, index, sorted) => (
-          <div key={delivery.id} className="space-y-3 panel p-4 text-sm">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="grid gap-0.5">
-                <h3 className="text-base font-semibold">{deliveryTitle(sorted.length - index, sorted.length, delivery.status === "accepted", project.status === "completed")}</h3>
-                <p className="text-xs text-muted-foreground">
-                  Sent {formatWhen(delivery.createdAt)}
-                  {delivery.decidedAt && delivery.status !== "submitted" ? ` · ${delivery.status === "accepted" ? "accepted" : "changes asked"} ${formatWhen(delivery.decidedAt)}` : ""}
-                </p>
-              </div>
-              <Badge tone={delivery.status === "accepted" ? "good" : delivery.status === "changes_requested" ? "warn" : "neutral"}>{deliveryStaffStatusLabel(delivery.status)}</Badge>
+        {newestFirst(deliveries).map((delivery) => (
+          <div key={delivery.id} className="space-y-2 panel p-4 text-sm">
+            <div className="flex items-center justify-between">
+              <p className="font-medium">Delivered {new Date(delivery.createdAt).toLocaleString()}</p>
+              <span className="text-muted-foreground">{deliveryStaffStatusLabel(delivery.status)}</span>
             </div>
-            {/* What was handed over comes first; the note explains it. */}
+            {delivery.note ? <p className="whitespace-pre-wrap">{delivery.note}</p> : null}
+            <DeliveryLink link={delivery.link} />
             {delivery.file ? (
               <DeliveryFile
                 file={delivery.file}
                 getUrl={async () => (await trpcClient.project.deliveryFileUrl.query({ teamSlug, projectId, deliveryId: delivery.id })).url}
               />
             ) : null}
-            <DeliveryLink link={delivery.link} />
-            {delivery.note ? <DeliveryNote note={delivery.note} /> : null}
             {delivery.status === "changes_requested" && delivery.clientNote ? (
               <div className="rounded-md bg-muted p-3">
                 <p className="font-medium">The client asked for changes</p>
@@ -806,8 +737,6 @@ export default function ProjectDetail({
         <dl className="grid grid-cols-2 gap-4 text-sm">
           <div><dt className="text-muted-foreground">Paid so far</dt><dd className="font-tabular text-base font-medium">{formatMoney(money(currency, payments.filter((payment) => payment.status === "captured").reduce((sum, payment) => sum + payment.amountMinor, 0)))}</dd></div>
           <div><dt className="text-muted-foreground">Waiting to be paid</dt><dd className="font-tabular text-base font-medium">{formatMoney(money(currency, payments.filter((payment) => payment.status === "pending").reduce((sum, payment) => sum + payment.amountMinor, 0)))}</dd></div>
-          {/* The fee rides inside the payments above; naming its basis keeps it from reading as a share of one payment. */}
-          {paid.feePaidMinor > 0 ? <div className="col-span-2"><dt className="text-muted-foreground">Included in paid: {managementFeeLabel(project.managementFeeBps)}</dt><dd className="font-tabular text-base font-medium">{formatMoney(money(currency, paid.feePaidMinor))}</dd></div> : null}
         </dl>
       </section>
       <section id="payments" className="scroll-mt-4 space-y-3">
@@ -832,11 +761,6 @@ export default function ProjectDetail({
                     <span className="font-tabular">{formatMoney(money(currency, line.amountMinor))}</span>
                   </li>
                 ))}
-                {/* The client is charged the lines together in one PayPal payment; this is that charge. */}
-                <li className="flex justify-between gap-4 border-t pt-2 font-semibold">
-                  <span>{payment.status === "pending" ? "Total to charge" : "Total charged"}</span>
-                  <span className="font-tabular">{formatMoney(money(currency, payment.amountMinor))}</span>
-                </li>
               </ul>
               {payment.status === "pending" ? <p className="mt-2 text-muted-foreground">Waiting for the client to pay.</p> : null}
             </div>
