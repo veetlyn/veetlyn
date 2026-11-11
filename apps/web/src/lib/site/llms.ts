@@ -31,6 +31,7 @@ export const sitemapEntries = (): { path: string; lastModified: string }[] => [
 
 export function llmsTxt(site: SeoSite): string {
   const { name, domain } = site;
+  const contactDomain = site.contactDomain ?? domain;
   const u = (path: string) => absoluteUrl(path, domain);
   const { from, minFee, maxFee, network } = PRICE_FACTS;
   return [
@@ -51,7 +52,7 @@ export function llmsTxt(site: SeoSite): string {
     ...posts(site).map((p) => `- [${p.title}](${u(`/blog/${p.slug}`)}): ${p.description}`),
     "",
     "## Optional",
-    `- [Contact](${u("/contact")}): Enterprise, membership, partnerships and support, contact@${domain}`,
+    `- [Contact](${u("/contact")}): Enterprise, membership, partnerships and support, contact@${contactDomain}`,
     "",
   ].join("\n");
 }

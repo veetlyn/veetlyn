@@ -133,6 +133,7 @@ jobs:
       EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
       EMAIL_REPLY_TO: ${{ vars.EMAIL_REPLY_TO }}
       PLATFORM_NAME: ${{ vars.PLATFORM_NAME }}
+      CONTACT_DOMAIN: ${{ vars.CONTACT_DOMAIN }}
       PLATFORM_ZONE: ${{ vars.PLATFORM_ZONE }}
       STORE_ZONE: ${{ vars.STORE_ZONE }}
       STAGING_STORE_SLUGS: ${{ vars.STAGING_STORE_SLUGS }}

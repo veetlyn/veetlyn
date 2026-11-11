@@ -8,7 +8,7 @@ import { breadcrumbs, graph, organization, pageMetadata } from "@/lib/site/seo";
 
 export function generateMetadata() {
   const site = platformSite();
-  const email = contactEmail(site.domain);
+  const email = contactEmail(site.contactDomain);
   return pageMetadata({
     path: "/contact",
     title: `Contact ${site.name}`,
@@ -19,7 +19,7 @@ export function generateMetadata() {
 
 export default function ContactPage() {
   const site = platformSite();
-  const email = contactEmail(site.domain);
+  const email = contactEmail(site.contactDomain);
   return (
     <>
       <JsonLd data={graph(organization(site), breadcrumbs([["Contact", "/contact"]], site))} />
