@@ -3,12 +3,14 @@ import type { DbExecutor } from "@jendal-workspace/db/executor";
 import { userDisplayName } from "@jendal-workspace/db/repositories/conversations";
 import { getPayoutRequest } from "@jendal-workspace/db/repositories/payout-requests";
 import { findProjectById } from "@jendal-workspace/db/repositories/projects";
+import { servicesTeamRoleFor } from "@jendal-workspace/db/repositories/services-teams";
 
 import { computeUpfrontBps } from "@opmodel/engine-rules";
 
 import { conversationPost } from "../actions/conversations";
 import { payoutApprove, payoutReject } from "../actions/payouts";
-import { quoteCreate } from "../actions/quotes";
+import { projectAssign } from "../actions/projects";
+import { amendmentPropose, quoteCreate } from "../actions/quotes";
 import { pinnedRulebookRules } from "../use-cases/projects";
 
 const days = (n: number) => (n === 1 ? "1 day" : `${n} days`);
@@ -16,6 +18,11 @@ const days = (n: number) => (n === 1 ? "1 day" : `${n} days`);
 async function teamProject(db: DbExecutor, teamId: string, projectId: string) {
   const project = await findProjectById(db, projectId);
   return project && project.teamId === teamId ? project : null;
+}
+
+// Only someone on this team can be assigned its work; anyone else gets no card at all.
+async function teamMemberName(db: DbExecutor, teamId: string, userId: string): Promise<string | null> {
+  return (await servicesTeamRoleFor(db, teamId, userId)) ? userDisplayName(db, userId) : null;
 }
 
 async function teamPayout(db: DbExecutor, teamId: string, requestId: string) {
@@ -40,7 +47,17 @@ export type ProposalCard =
       deposit: { percent: number; quotePart: string; managementFee: string | null; total: string };
     }
   | { kind: "payout"; title: string; cta: string; decision: "approve" | "reject"; member: string; amount: string }
-  | { kind: "message"; title: string; cta: string; project: string; audience: string; body: string };
+  | { kind: "message"; title: string; cta: string; project: string; audience: string; body: string }
+  | { kind: "assign"; title: string; cta: string; project: string; member: string }
+  | {
+      kind: "amendment";
+      title: string;
+      cta: string;
+      project: string;
+      adds: { label: string; amount: string }[];
+      removes: number;
+      note: string;
+    };
 
 export async function proposalCard(db: DbExecutor, teamId: string, action: string, input: JsonObject): Promise<ProposalCard | null> {
   switch (action) {
@@ -90,6 +107,29 @@ export async function proposalCard(db: DbExecutor, teamId: string, action: strin
       const approve = action === payoutApprove.name;
       return { kind: "payout", title: `${approve ? "Approve" : "Reject"} payout to ${payout.member}`, cta: approve ? `Approve ${payout.amount}` : "Reject payout", decision: approve ? "approve" : "reject", ...payout };
     }
+    case projectAssign.name: {
+      const assign = projectAssign.input.safeParse(input);
+      if (!assign.success) return null;
+      const project = await teamProject(db, teamId, assign.data.projectId);
+      const member = project && (await teamMemberName(db, teamId, assign.data.freelancerId));
+      if (!project || !member) return null;
+      return { kind: "assign", title: `Assign ${project.title}`, cta: `Assign to ${member}`, project: project.title, member };
+    }
+    case amendmentPropose.name: {
+      const change = amendmentPropose.input.safeParse(input);
+      if (!change.success) return null;
+      const project = await teamProject(db, teamId, change.data.projectId);
+      if (!project) return null;
+      return {
+        kind: "amendment",
+        title: `Change the quote on ${project.title}`,
+        cta: "Propose change",
+        project: project.title,
+        adds: change.data.add.map((item) => ({ label: item.description, amount: formatMoney(money(project.currency, item.amountMinor)) })),
+        removes: change.data.removeItemIds.length,
+        note: change.data.note,
+      };
+    }
     default:
       return null;
   }
@@ -128,6 +168,24 @@ export async function proposalEffect(db: DbExecutor, teamId: string, action: str
       return action === payoutApprove.name
         ? `Approve the payout of ${payout.amount} to ${payout.member}`
         : `Reject ${payout.member}'s payout request of ${payout.amount}`;
+    }
+    case projectAssign.name: {
+      const assign = projectAssign.input.safeParse(input);
+      if (!assign.success) return null;
+      const project = await teamProject(db, teamId, assign.data.projectId);
+      const member = project && (await teamMemberName(db, teamId, assign.data.freelancerId));
+      if (!project || !member) return null;
+      return `Assign “${project.title}” to ${member}`;
+    }
+    case amendmentPropose.name: {
+      const change = amendmentPropose.input.safeParse(input);
+      if (!change.success) return null;
+      const project = await teamProject(db, teamId, change.data.projectId);
+      if (!project) return null;
+      const adds = change.data.add.map((item) => `${item.description} ${formatMoney(money(project.currency, item.amountMinor))}`);
+      const removes = change.data.removeItemIds.length;
+      const parts = [adds.length > 0 ? `add ${adds.join("; ")}` : null, removes > 0 ? `remove ${removes} ${removes === 1 ? "item" : "items"}` : null].filter(Boolean);
+      return `Propose a change to the quote on “${project.title}”: ${parts.join(", and ") || "no line changes"}`;
     }
     default:
       return null;

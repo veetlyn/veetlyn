@@ -67,6 +67,32 @@ function CardFacts({ card }: { card: Card }) {
         <span className="font-tabular text-[16px] font-medium">{card.amount}</span>
       </div>
     );
+  if (card.kind === "assign")
+    return (
+      <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[14px]">
+        <span className="min-w-0">{card.project}</span>
+        <span className="font-medium">{card.member}</span>
+      </div>
+    );
+  if (card.kind === "amendment")
+    return (
+      <div className="frame frame-body text-[14px]">
+        <ul>
+          {card.adds.map((line) => (
+            <li key={line.label} className="flex justify-between gap-4 border-b px-3.5 py-2.5">
+              <span className="min-w-0">Add {line.label}</span>
+              <span className="font-tabular whitespace-nowrap">{line.amount}</span>
+            </li>
+          ))}
+          {card.removes > 0 ? (
+            <li className="border-b px-3.5 py-2.5">
+              Remove {card.removes} {card.removes === 1 ? "item" : "items"} from the quote
+            </li>
+          ) : null}
+        </ul>
+        {card.note ? <p className="px-3.5 py-2.5 whitespace-pre-wrap text-muted-foreground">{card.note}</p> : null}
+      </div>
+    );
   return (
     <div className="frame frame-body grid gap-1 px-3.5 py-3 text-[14px]">
       <span className="text-muted-foreground">To: {card.audience}</span>
