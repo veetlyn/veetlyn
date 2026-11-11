@@ -1,0 +1,60 @@
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 39,42,47-54,104,116,127,135,149,299,305,352
+apps/web/src/app/dash/[storeSlug]/payouts/payout-credentials-card.tsx
+  h_6877e5e7a06bc5 167-170,174,179-185,188,194-206,208,214-219
+apps/web/src/app/dash/[storeSlug]/payouts/payout-requests-table.tsx
+  h_6877e5e7a06bc5 59,99,101-102,326
+apps/web/src/app/dash/[storeSlug]/payouts/payouts-web-section.tsx
+  h_6877e5e7a06bc5 72,98-164,166-169,171-176
+apps/web/src/app/dash/[storeSlug]/payouts/rules/payout-rules-form.tsx
+  h_6877e5e7a06bc5 17,164,182-184,186-203,253,293,325-369,371-465,467,469-496,504,529-540,545
+apps/web/src/app/dash/[storeSlug]/payouts/team-payouts.tsx
+  h_6877e5e7a06bc5 55
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/clients-section.tsx
+  h_6877e5e7a06bc5 79-81,151-152,154,168,184
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/member-marks.tsx
+  h_6877e5e7a06bc5 58-59,97
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 130,132-136,139,141-142,144,146,150,362-363,368-375,377-378,382,426,493,558,591-594,626,631-635,637-638
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-ratings.tsx
+  h_6877e5e7a06bc5 21,23-32
+apps/web/src/app/dash/[storeSlug]/projects/projects-list.tsx
+  h_6877e5e7a06bc5 10,46,54-59,108,114
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  h_6877e5e7a06bc5 48,208,222,233,235-244,247,252,254,256-262,264,266,268-278,300-329,332-337,339-340,345,349,351,365
+apps/web/src/app/dash/[storeSlug]/services/services-catalog.tsx
+  h_6877e5e7a06bc5 13,145-150,152-154,156,158-180,201-206,214-215,217-236,285
+apps/web/src/app/dash/me/payouts/earnings-section.tsx
+  h_6877e5e7a06bc5 57,59-67,76-81,87,103,143-144
+apps/web/src/app/dash/me/payouts/payout-history.tsx
+  h_6877e5e7a06bc5 18,31,42,45
+apps/web/src/app/dash/me/payouts/payouts-setup.tsx
+  h_6877e5e7a06bc5 69,75-144
+apps/web/src/components/app-frame.tsx
+  h_6877e5e7a06bc5 72-73,81,104
+apps/web/src/components/ask-bar.tsx
+  h_6877e5e7a06bc5 23,57
+apps/web/src/components/client-project-view.tsx
+  h_6877e5e7a06bc5 127-128,130-133,353-361,363-364,380,386-391,393-420,426-474,478-573,579-618,624-643,650,654,656-658
+apps/web/src/components/delivery-file.tsx
+  h_6877e5e7a06bc5 16-20
+apps/web/src/components/prepared-banner.tsx
+  h_6877e5e7a06bc5 11,22,25-26,29
+apps/web/src/components/recent-calls.tsx
+  h_6877e5e7a06bc5 3,13-22
+apps/web/src/components/seller-page/seller-page.tsx
+  h_6877e5e7a06bc5 38,48-58,62,66,86,94,97-99,102-129,151,153,155,159,161,163
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0ef79e738341bd724fc1df836e5a7ea5c9f7200",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
