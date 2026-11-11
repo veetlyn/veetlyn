@@ -27,7 +27,7 @@
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-server-dom-webpack": "^19.3.0",
+    "react-server-dom-webpack": "^19.3.1",
     "sonner": "catalog:",
     "varlock": "catalog:",
     "vinext": "1.0.1",
