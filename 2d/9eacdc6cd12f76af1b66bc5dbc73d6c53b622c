@@ -1,0 +1,32 @@
+apps/web/src/app/(site)/(landing)/contact/page.tsx
+  h_6877e5e7a06bc5 11,22
+apps/web/src/app/layout.tsx
+  h_6877e5e7a06bc5 7,42
+apps/web/src/components/platform-name.tsx
+  h_6877e5e7a06bc5 5,13,19,23,52-53
+apps/web/src/components/site/contact-form.tsx
+  h_6877e5e7a06bc5 28
+apps/web/src/components/site/site-footer.tsx
+  h_6877e5e7a06bc5 10-11
+apps/web/src/lib/platform.ts
+  h_6877e5e7a06bc5 4,15-19,30
+apps/web/src/lib/site/llms.ts
+  h_6877e5e7a06bc5 34,55
+apps/web/src/lib/site/seo.ts
+  h_6877e5e7a06bc5 3-4,35
+packages/infra/.env.schema
+  h_6877e5e7a06bc5 34-38
+packages/infra/alchemy.run.ts
+  h_6877e5e7a06bc5 194-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d9eacdc6cd12f76af1b66bc5dbc73d6c53b622c",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
