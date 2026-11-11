@@ -15,7 +15,7 @@ const CSS = `
     --ring: var(--color-ring-primary, Highlight);
     --brand: #1fbf8f;
     --brand-ink: #0d0d10;
-    --brand-accent: light-dark(color-mix(in oklch, #1fbf8f 62%, #141417), color-mix(in oklch, #1fbf8f 80%, #ffffff));
+    --brand-accent: light-dark(color-mix(in oklab, #1fbf8f 62%, #141417), color-mix(in oklab, #1fbf8f 80%, #ffffff));
     --r: var(--border-radius-xl, 12px);
     --r-sm: var(--border-radius-md, 8px);
     --f-head: 16px; --f-body: 14px; --f-cap: 12px;

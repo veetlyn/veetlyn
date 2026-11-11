@@ -163,60 +163,77 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
     );
   }
 
+  // A status row, not a setup panel: the payout queue owns this page, so turning automatic payouts on sits behind a
+  // disclosure that states what it changes before anyone connects PayPal.
   return (
-    <section aria-labelledby="automatic-payouts-heading" className="panel space-y-3 p-5">
-      <h2 id="automatic-payouts-heading" className="font-medium">
-        Automatic payouts
-      </h2>
+    <section aria-labelledby="automatic-payouts-heading" className="panel space-y-3 px-5 py-4 text-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <h2 id="automatic-payouts-heading" className="font-medium">
+          Automatic payouts
+          {saved ? <span className="font-normal text-muted-foreground"> · On</span> : null}
+          {credentials.data === null ? <span className="font-normal text-muted-foreground"> · Off</span> : null}
+        </h2>
+        {saved ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={remove.isPending}
+            onClick={() => {
+              remove.reset();
+              offDialogRef.current?.showModal();
+            }}
+          >
+            {remove.isPending ? "Turning off…" : "Turn off"}
+          </Button>
+        ) : null}
+      </div>
       {credentials.isPending ? (
         <Loader />
       ) : credentials.isError ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-destructive">
           {credentials.error.message}
         </p>
       ) : saved ? (
         <div className="space-y-3">
-          <div className="space-y-1 text-sm">
-            <p>
-              On. Payouts are sent from{" "}
-              {saved.accountId === null ? "this team's PayPal account" : maskedPayPalAccountId(saved.accountId)}.
-            </p>
-            <p className="text-muted-foreground">Verified {new Date(saved.verifiedAt).toLocaleDateString()}.</p>
-          </div>
+          <p className="text-muted-foreground">
+            Approved payouts are sent from{" "}
+            {saved.accountId === null ? "this team's PayPal account" : maskedPayPalAccountId(saved.accountId)}. Verified{" "}
+            {new Date(saved.verifiedAt).toLocaleDateString()}.
+          </p>
           {saved.canReadBalance ? null : (
             <div className="space-y-3">
-              <p className="text-sm">
+              <p>
                 Reconnect so <PlatformName /> can read your PayPal balance.
               </p>
               {connectFlow("Reconnect")}
             </div>
           )}
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={remove.isPending}
-              onClick={() => {
-                remove.reset();
-                offDialogRef.current?.showModal();
-              }}
-            >
-              {remove.isPending ? "Turning off…" : "Turn off automatic payouts"}
-            </Button>
-          </div>
           {remove.error ? (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-destructive">
               {remove.error.message}
             </p>
           ) : null}
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            <PlatformName /> sends members' payouts from this team's PayPal balance. PayPal's fee comes off each payout.
-          </p>
-          {connectFlow("Turn on automatic payouts")}
-        </div>
+        <>
+          <p className="text-muted-foreground">Approved payouts wait until you export them for PayPal Payouts Web.</p>
+          {/* Kept open while PayPal's window is in use, so the flow and its errors stay visible. */}
+          <details open={connect !== null || start.isPending || complete.isPending || undefined}>
+            <summary className="cursor-pointer font-medium">Set up automatic payouts</summary>
+            <div className="mt-3 space-y-3">
+              <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+                <li>
+                  Once on, approving a payout sends it from this team&apos;s PayPal balance, on payday if the team has one. No
+                  export step.
+                </li>
+                <li>Who has to approve, and any limits, still come from your payout rules.</li>
+                <li>PayPal&apos;s fee comes off each payout. You can turn this off at any time.</li>
+              </ul>
+              {connectFlow("Connect PayPal for automatic payouts")}
+            </div>
+          </details>
+        </>
       )}
       <ConfirmDialog
         dialogRef={offDialogRef}

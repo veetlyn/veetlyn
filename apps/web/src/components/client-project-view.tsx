@@ -14,6 +14,7 @@ import { Composer, ConversationThread } from "@/components/conversation/thread";
 import { DeliveryFile } from "@/components/delivery-file";
 import { ProjectProgress } from "@/components/project-progress";
 import { DeliveryLink } from "@/components/delivery-link";
+import { DeliveryNote } from "@/components/delivery-note";
 import { clientRefundLabel, paymentRefundLabel } from "@/lib/client-refund";
 import { deliveryStatusLabel, MAX_DELIVERY_NOTE, newestFirst } from "@/lib/delivery";
 import {
@@ -23,6 +24,7 @@ import {
   PAYMENT_STATUS_LABELS,
   QUOTE_STATUS_LABELS,
 } from "@/lib/status-labels";
+import { deliveryTimingLabel, formatDay, formatWhen, managementFeeLabel, paidSummary } from "@/lib/project-money";
 
 export type ClientProjectData = inferRouterOutputs<AppRouter>["project"]["clientGet"];
 
@@ -115,22 +117,21 @@ function QuoteSummary({
   quote,
   currency,
   quoting,
+  upfrontBps,
   actions,
 }: {
   quote: Quote;
   currency: ClientProjectData["project"]["currency"];
   quoting: boolean;
+  upfrontBps: number;
   actions: ClientProjectActions | null;
 }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="font-medium">
+      <div className="flex items-start justify-between gap-3">
+        <p className="grid gap-0.5">
           <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
-          <span className="text-muted-foreground">
-            {" "}
-            — delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`}
-          </span>
+          <span className="text-sm text-muted-foreground">Delivery {deliveryTimingLabel(quote.deliveryDays, upfrontBps)}</span>
         </p>
         <Badge tone={quote.status === "proposed" && quoting ? "brand" : quote.status === "accepted" ? "good" : "neutral"}>
           {quote.status === "proposed" ? (quoting ? "Waiting for you" : "Not taken") : QUOTE_STATUS_LABELS[quote.status]}
@@ -315,6 +316,19 @@ function nextStep(data: ClientProjectData): NextStep | null {
 // The api prefixes rule refusals with a code for agents; people read the sentence after it.
 const ERROR_CODE_PREFIX = /^[A-Z_]+: /;
 
+type Delivery = ClientProjectData["deliveries"][number];
+
+// Deliveries are numbered in the order they were sent; the accepted one of a finished project is the final one.
+function deliveryTitle(position: number, count: number, accepted: boolean, completed: boolean): string {
+  if (accepted && completed) return "Final delivery";
+  return count > 1 ? `Delivery ${position}` : "Delivery";
+}
+
+const DELIVERY_TONES = { submitted: "brand", accepted: "good", changes_requested: "neutral" } as const satisfies Record<
+  Delivery["status"],
+  "brand" | "good" | "neutral"
+>;
+
 export function ClientProjectView({
   data,
   actions,
@@ -328,14 +342,19 @@ export function ClientProjectView({
   const [changesNote, setChangesNote] = useState("");
   const { project, quotes, amendments, payments, deliveries, refund, conversation } = data;
   const closedRequest = project.status === "declined" || project.status === "expired";
+  const completed = project.status === "completed";
   const responses = responsesByFreelancer(quotes, conversation.messages);
   const answeredIds = new Set(conversation.messages.filter((m) => m.kind === "answer").map((m) => m.replyToId));
   const currency = project.currency;
+  const price = (minor: number) => formatMoney(money(currency, minor));
   const awaitingDelivery =
     project.status === "delivered" ? deliveries.find((d) => d.status === "submitted") : undefined;
   const deliveryBusy = !actions || actions.deliveryBusy;
   const changesNoteTooLong = changesNote.trim().length > MAX_DELIVERY_NOTE;
   const roundsUsed = project.revisionRounds !== null && project.revisionRounds.used >= project.revisionRounds.allowed;
+  const sortedDeliveries = newestFirst(deliveries);
+  const finalDelivery = completed ? sortedDeliveries.find((d) => d.status === "accepted") : undefined;
+  const paid = paidSummary(payments);
 
   async function handleRequestChanges(event: FormEvent<HTMLFormElement>, deliveryId: string) {
     event.preventDefault();
@@ -350,20 +369,372 @@ export function ClientProjectView({
     setChangesNote("");
   }
 
+  const renderDelivery = (delivery: Delivery) => {
+    const position = sortedDeliveries.length - sortedDeliveries.indexOf(delivery);
+    return (
+      <Frame
+        key={delivery.id}
+        title={deliveryTitle(position, sortedDeliveries.length, delivery.status === "accepted", completed)}
+        aside={<Badge tone={DELIVERY_TONES[delivery.status]}>{deliveryStatusLabel(delivery.status)}</Badge>}
+      >
+        <p className="text-xs text-muted-foreground">
+          Sent {formatWhen(delivery.createdAt)}
+          {delivery.status === "accepted" && delivery.decidedAt ? ` · accepted ${formatWhen(delivery.decidedAt)}` : ""}
+        </p>
+        {/* What was handed over comes first; the note explains it. */}
+        {delivery.file ? <DeliveryFile file={delivery.file} getUrl={() => fileUrl(delivery.id)} /> : null}
+        <DeliveryLink link={delivery.link} className="text-sm" />
+        {delivery.note ? <DeliveryNote note={delivery.note} className="text-sm" /> : null}
+        {delivery.status === "changes_requested" && delivery.clientNote ? (
+          <div className="rounded-md bg-muted p-3 text-sm">
+            <p className="font-medium">Your request</p>
+            <p className="whitespace-pre-wrap">{delivery.clientNote}</p>
+          </div>
+        ) : null}
+        {awaitingDelivery?.id === delivery.id ? (
+          changesOpen ? (
+            <form onSubmit={(event) => handleRequestChanges(event, delivery.id)} className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor={`changes-note-${delivery.id}`}>What should change?</Label>
+                <Textarea
+                  id={`changes-note-${delivery.id}`}
+                  rows={4}
+                  autoFocus
+                  aria-describedby={changesNoteTooLong ? `changes-note-problem-${delivery.id}` : undefined}
+                  value={changesNote}
+                  onChange={(e) => setChangesNote(e.target.value)}
+                />
+              </div>
+              {changesNoteTooLong ? (
+                <p id={`changes-note-problem-${delivery.id}`} role="alert" className="text-sm text-destructive">
+                  The note is too long.
+                </p>
+              ) : null}
+              <div className="flex gap-2">
+                <Button type="submit" disabled={changesNote.trim() === "" || changesNoteTooLong || deliveryBusy}>
+                  Send request
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={deliveryBusy}
+                  onClick={() => {
+                    actions?.resetDelivery();
+                    setChangesOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-2">
+              {roundsUsed ? (
+                <p className="text-sm text-muted-foreground">
+                  You used your{" "}
+                  {project.revisionRounds?.allowed === 1
+                    ? "free round"
+                    : `${project.revisionRounds?.allowed} free rounds`}{" "}
+                  of changes.
+                  {project.revisionRounds && project.revisionRounds.paidPriceMinor > 0
+                    ? ` For more, ask the team for a paid revision (${price(project.revisionRounds.paidPriceMinor)}) in a message; it arrives as a change to the quote.`
+                    : ""}
+                </p>
+              ) : null}
+              <div className="flex gap-2">
+                <Button variant="mint" disabled={deliveryBusy} onClick={() => actions?.acceptDelivery(delivery.id)}>
+                  Accept delivery
+                </Button>
+                {roundsUsed ? null : (
+                  <Button
+                    variant="outline"
+                    disabled={deliveryBusy}
+                    onClick={() => {
+                      actions?.resetDelivery();
+                      setChangesOpen(true);
+                    }}
+                  >
+                    Request changes
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
+        ) : null}
+        {awaitingDelivery?.id === delivery.id && actions?.deliveryError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {actions.deliveryError.message.replace(ERROR_CODE_PREFIX, "")}
+          </p>
+        ) : null}
+      </Frame>
+    );
+  };
+
+  const requestSection =
+    project.brief || project.rules ? (
+      <Frame title="Your request">
+        {project.brief ? <p className="text-sm whitespace-pre-wrap">{project.brief}</p> : null}
+        {project.rules ? <p className="text-sm text-muted-foreground">Team rules: {project.rules}</p> : null}
+      </Frame>
+    ) : null;
+
+  const responsesSection =
+    responses.length > 0 ? (
+      <section id="responses" aria-label="Responses" className="grid scroll-mt-4 gap-3">
+        {responses.map(([key, response]) => (
+          <Frame key={key} title={response.name}>
+            {response.quotes.map((quote) => (
+              <QuoteSummary
+                key={quote.id}
+                quote={quote}
+                currency={currency}
+                quoting={project.status === "quoting"}
+                upfrontBps={project.upfrontBps}
+                actions={actions}
+              />
+            ))}
+            {response.questions.map((question) => (
+              <div key={question.id} className="space-y-2 border-t pt-3">
+                <p className="text-sm font-medium">Question</p>
+                <p className="text-sm whitespace-pre-wrap">{question.body}</p>
+                <AnswerBox
+                  question={question}
+                  answered={answeredIds.has(question.id)}
+                  actions={conversation.canWrite ? actions : null}
+                />
+              </div>
+            ))}
+          </Frame>
+        ))}
+      </section>
+    ) : null;
+
+  const amendmentsSection =
+    amendments.length > 0 ? (
+      <section id="amendments" aria-label="Changes to the quote" className="grid scroll-mt-4 gap-3">
+        {amendments.map((amendment) => (
+          <Frame key={amendment.id} title="Change to the quote">
+            <div className="flex items-center justify-between">
+              <p className="font-medium">
+                {amendment.deltaMinor > 0 ? "+" : ""}
+                {price(amendment.deltaMinor)} → new total {price(amendment.newAmountMinor)}
+              </p>
+              <span className="text-sm text-muted-foreground">
+                {amendment.status === "pending"
+                  ? "Waiting for you"
+                  : (AMENDMENT_STATUS_LABELS[amendment.status] ?? amendment.status)}
+              </span>
+            </div>
+            {amendment.addItems.length > 0 ? (
+              <ul className="space-y-1 text-sm">
+                {amendment.addItems.map((item, index) => (
+                  <li key={index} className="flex justify-between gap-4">
+                    <span>+ {item.description}</span>
+                    <span>{price(item.amountMinor)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {amendment.note ? <p className="text-sm">{amendment.note}</p> : null}
+            {amendment.status === "pending" && projectAllows(project.status, "accept_amendment") ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="mint"
+                  disabled={!actions || actions.amendmentBusy}
+                  onClick={() => actions?.acceptAmendment(amendment.id)}
+                >
+                  Accept amendment
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!actions || actions.amendmentBusy}
+                  onClick={() => actions?.declineAmendment(amendment.id)}
+                >
+                  Decline
+                </Button>
+              </div>
+            ) : null}
+          </Frame>
+        ))}
+      </section>
+    ) : null;
+
+  const paymentFrames = payments.map((payment) => {
+    const label = payment.processing
+      ? "See payment status"
+      : payment.status === "failed"
+        ? "Try paying again"
+        : "Pay with PayPal";
+    return (
+      <Frame
+        key={payment.id}
+        title={PAYMENT_KIND_LABELS[payment.kind]}
+        aside={
+          <span className="text-muted-foreground">
+            {paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}
+          </span>
+        }
+      >
+        <ul className="space-y-1 text-sm">
+          {payment.lines.map((line, index) => (
+            <li key={index} className="flex justify-between gap-4">
+              <span>{line.label}</span>
+              <span>{price(line.amountMinor)}</span>
+            </li>
+          ))}
+          <li className="flex justify-between gap-4 border-t pt-2 font-semibold">
+            <span>Total</span>
+            <span className="font-tabular">{price(payment.amountMinor)}</span>
+          </li>
+        </ul>
+        {payment.payPath ? (
+          <a href={payment.payPath} className={buttonVariants({ variant: "mint", size: "lg" })}>
+            {label}
+          </a>
+        ) : payment.payable ? (
+          <Button variant="mint" size="lg" disabled>
+            {label}
+          </Button>
+        ) : null}
+      </Frame>
+    );
+  });
+
+  const messagesSection = (
+    <Frame id="messages" title="Messages">
+      <ConversationThread
+        messages={conversation.messages}
+        isMine={(m) => m.authorKind === "client"}
+        empty="No messages yet. Questions from the team show here and above, next to their quotes."
+      />
+      {conversation.canWrite && actions ? (
+        <Composer
+          audience={
+            project.status === "quoting"
+              ? "The freelancers looking at your request read this (contact details are hidden until you accept a quote)."
+              : "Your freelancer and the team read this."
+          }
+          teamOnlyChoice={project.status === "quoting" ? "Send to the team only" : undefined}
+          busy={actions.messageBusy}
+          error={actions.messageError?.message ?? null}
+          onSend={({ body, teamOnly }) => actions.post({ body, teamOnly })}
+        />
+      ) : null}
+    </Frame>
+  );
+
+  const header = (
+    <div className="space-y-2">
+      <h1 className="font-heading text-[32px] leading-[1.1] tracking-[-0.03em]">{project.title}</h1>
+      <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <Badge tone={CLIENT_PROJECT_TONES[project.status]}>{projectStatusLabel(project.status)}</Badge>
+        {/* The quoted work is not what the client pays: the management fee rides on top of it. A finished
+            project shows the full money summary below instead. */}
+        {project.finalPriceMinor !== null && !completed
+          ? `Work subtotal ${price(project.finalPriceMinor)}${project.managementFeeBps > 0 ? ` · plus a ${project.managementFeeBps / 100}% management fee` : ""}`
+          : ""}
+      </p>
+      {refund ? (
+        <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p>
+      ) : null}
+    </div>
+  );
+
+  // F08: a finished project answers "where is my work?" first; the records that led to it stay one click away.
+  if (completed) {
+    const earlier = sortedDeliveries.filter((d) => d !== finalDelivery);
+    const step = nextStep(data);
+    const hasRecords = requestSection || responsesSection || amendmentsSection;
+    return (
+      <div className="space-y-6">
+        {header}
+        <OutcomePanel
+          acceptedAt={finalDelivery?.decidedAt ?? null}
+          paidMinor={paid.paidMinor}
+          price={price}
+          hasDelivery={sortedDeliveries.length > 0}
+          reviewStep={step?.target === "review" ? step : null}
+        />
+
+        {sortedDeliveries.length > 0 ? (
+          <section id="delivery" aria-label="Delivery" className="grid scroll-mt-4 gap-3">
+            {finalDelivery ? renderDelivery(finalDelivery) : null}
+            {earlier.length > 0 ? (
+              finalDelivery ? (
+                <Disclosure summary={earlier.length === 1 ? "Earlier delivery" : `Earlier deliveries (${earlier.length})`}>
+                  {earlier.map(renderDelivery)}
+                </Disclosure>
+              ) : (
+                earlier.map(renderDelivery)
+              )
+            ) : null}
+          </section>
+        ) : null}
+
+        {payments.length > 0 ? (
+          <Frame id="payments" title="Payment">
+            <dl className="divide-y text-sm">
+              {project.finalPriceMinor !== null ? (
+                <div className="flex justify-between gap-4 py-1.5">
+                  <dt>Work subtotal</dt>
+                  <dd className="font-tabular">{price(project.finalPriceMinor)}</dd>
+                </div>
+              ) : null}
+              {paid.feePaidMinor > 0 ? (
+                <div className="flex justify-between gap-4 py-1.5">
+                  <dt>{managementFeeLabel(project.managementFeeBps)}</dt>
+                  <dd className="font-tabular">{price(paid.feePaidMinor)}</dd>
+                </div>
+              ) : null}
+              <div className="flex justify-between gap-4 py-1.5 font-semibold">
+                <dt>Total paid</dt>
+                <dd className="font-tabular">{price(paid.paidMinor)}</dd>
+              </div>
+              {paid.refundedMinor > 0 ? (
+                <div className="flex justify-between gap-4 py-1.5">
+                  <dt>Refunded to you</dt>
+                  <dd className="font-tabular">{price(paid.refundedMinor)}</dd>
+                </div>
+              ) : null}
+              {paid.pendingMinor > 0 ? (
+                <div className="flex justify-between gap-4 py-1.5">
+                  <dt>Still to pay</dt>
+                  <dd className="font-tabular">{price(paid.pendingMinor)}</dd>
+                </div>
+              ) : null}
+            </dl>
+            <Disclosure summary={payments.length === 1 ? "Payment receipt" : `Payment receipts (${payments.length})`}>
+              {paymentFrames}
+            </Disclosure>
+          </Frame>
+        ) : null}
+
+        <ReviewSection data={data} actions={actions} />
+
+        {hasRecords ? (
+          <section aria-labelledby="records-heading" className="grid gap-3">
+            <h2 id="records-heading" className="text-sm font-medium text-muted-foreground">
+              Project records
+            </h2>
+            {requestSection ? <Disclosure summary="Your original request">{requestSection}</Disclosure> : null}
+            {responsesSection ? <Disclosure summary={quotes.length === 1 ? "The quote" : `Quotes (${quotes.length})`}>{responsesSection}</Disclosure> : null}
+            {amendmentsSection ? (
+              <Disclosure summary={amendments.length === 1 ? "Change to the quote" : `Changes to the quote (${amendments.length})`}>
+                {amendmentsSection}
+              </Disclosure>
+            ) : null}
+          </section>
+        ) : null}
+
+        {messagesSection}
+        {actions?.actionError ? <p className="text-sm text-destructive">{actions.actionError.message}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="font-heading text-[32px] leading-[1.1] tracking-[-0.03em]">{project.title}</h1>
-        <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Badge tone={CLIENT_PROJECT_TONES[project.status]}>{projectStatusLabel(project.status)}</Badge>
-          {project.finalPriceMinor !== null
-            ? `Final price ${formatMoney(money(currency, project.finalPriceMinor))}`
-            : ""}
-        </p>
-        {refund ? (
-          <p className="text-sm font-medium">{clientRefundLabel(refund, (date) => date.toLocaleDateString())}</p>
-        ) : null}
-      </div>
+      {header}
 
       {closedRequest ? (
         <Frame
@@ -377,285 +748,128 @@ export function ClientProjectView({
           </a>
         </Frame>
       ) : (
-        <NextStepPanel step={nextStep(data)} completed={project.status === "completed"} preview={actions === null} />
+        <NextStepPanel step={nextStep(data)} status={project.status} preview={actions === null} />
       )}
       {!closedRequest && project.status !== "cancelled" ? (
         <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
       ) : null}
 
-      {project.brief || project.rules ? (
-        <Frame title="Your request">
-          {project.brief ? <p className="text-sm whitespace-pre-wrap">{project.brief}</p> : null}
-          {project.rules ? <p className="text-sm text-muted-foreground">Team rules: {project.rules}</p> : null}
-        </Frame>
-      ) : null}
+      {requestSection}
 
-      {responses.length > 0 ? (
-        <section id="responses" aria-label="Responses" className="grid scroll-mt-4 gap-3">
-          {responses.map(([key, response]) => (
-            <Frame key={key} title={response.name}>
-              {response.quotes.map((quote) => (
-                <QuoteSummary
-                  key={quote.id}
-                  quote={quote}
-                  currency={currency}
-                  quoting={project.status === "quoting"}
-                  actions={actions}
-                />
-              ))}
-              {response.questions.map((question) => (
-                <div key={question.id} className="space-y-2 border-t pt-3">
-                  <p className="text-sm font-medium">Question</p>
-                  <p className="text-sm whitespace-pre-wrap">{question.body}</p>
-                  <AnswerBox
-                    question={question}
-                    answered={answeredIds.has(question.id)}
-                    actions={conversation.canWrite ? actions : null}
-                  />
-                </div>
-              ))}
-            </Frame>
-          ))}
-        </section>
-      ) : null}
+      {responsesSection}
 
       {quotes.length === 0 && !closedRequest ? (
         <p className="text-sm text-muted-foreground">The team is preparing your quote.</p>
       ) : null}
 
-      {amendments.length > 0 ? (
-        <section id="amendments" aria-label="Changes to the quote" className="grid scroll-mt-4 gap-3">
-          {amendments.map((amendment) => (
-            <Frame key={amendment.id} title="Change to the quote">
-              <div className="flex items-center justify-between">
-                <p className="font-medium">
-                  {amendment.deltaMinor > 0 ? "+" : ""}
-                  {formatMoney(money(currency, amendment.deltaMinor))} → new total{" "}
-                  {formatMoney(money(currency, amendment.newAmountMinor))}
-                </p>
-                <span className="text-sm text-muted-foreground">
-                  {amendment.status === "pending"
-                    ? "Waiting for you"
-                    : (AMENDMENT_STATUS_LABELS[amendment.status] ?? amendment.status)}
-                </span>
-              </div>
-              {amendment.addItems.length > 0 ? (
-                <ul className="space-y-1 text-sm">
-                  {amendment.addItems.map((item, index) => (
-                    <li key={index} className="flex justify-between gap-4">
-                      <span>+ {item.description}</span>
-                      <span>{formatMoney(money(currency, item.amountMinor))}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {amendment.note ? <p className="text-sm">{amendment.note}</p> : null}
-              {amendment.status === "pending" && projectAllows(project.status, "accept_amendment") ? (
-                <div className="flex gap-2">
-                  <Button
-                    variant="mint"
-                    disabled={!actions || actions.amendmentBusy}
-                    onClick={() => actions?.acceptAmendment(amendment.id)}
-                  >
-                    Accept amendment
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={!actions || actions.amendmentBusy}
-                    onClick={() => actions?.declineAmendment(amendment.id)}
-                  >
-                    Decline
-                  </Button>
-                </div>
-              ) : null}
-            </Frame>
-          ))}
-        </section>
-      ) : null}
+      {amendmentsSection}
 
       {deliveries.length > 0 ? (
         <section id="delivery" aria-label="Delivery" className="grid scroll-mt-4 gap-3">
-          {newestFirst(deliveries).map((delivery) => (
-            <Frame
-              key={delivery.id}
-              title={`Delivered ${new Date(delivery.createdAt).toLocaleString()}`}
-              aside={<span className="text-muted-foreground">{deliveryStatusLabel(delivery.status)}</span>}
-            >
-              {delivery.note ? <p className="text-sm whitespace-pre-wrap">{delivery.note}</p> : null}
-              <DeliveryLink link={delivery.link} className="text-sm" />
-              {delivery.file ? <DeliveryFile file={delivery.file} getUrl={() => fileUrl(delivery.id)} /> : null}
-              {delivery.status === "changes_requested" && delivery.clientNote ? (
-                <div className="rounded-md bg-muted p-3 text-sm">
-                  <p className="font-medium">Your request</p>
-                  <p className="whitespace-pre-wrap">{delivery.clientNote}</p>
-                </div>
-              ) : null}
-              {awaitingDelivery?.id === delivery.id ? (
-                changesOpen ? (
-                  <form onSubmit={(event) => handleRequestChanges(event, delivery.id)} className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor={`changes-note-${delivery.id}`}>What should change?</Label>
-                      <Textarea
-                        id={`changes-note-${delivery.id}`}
-                        rows={4}
-                        autoFocus
-                        aria-describedby={changesNoteTooLong ? `changes-note-problem-${delivery.id}` : undefined}
-                        value={changesNote}
-                        onChange={(e) => setChangesNote(e.target.value)}
-                      />
-                    </div>
-                    {changesNoteTooLong ? (
-                      <p id={`changes-note-problem-${delivery.id}`} role="alert" className="text-sm text-destructive">
-                        The note is too long.
-                      </p>
-                    ) : null}
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={changesNote.trim() === "" || changesNoteTooLong || deliveryBusy}>
-                        Send request
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={deliveryBusy}
-                        onClick={() => {
-                          actions?.resetDelivery();
-                          setChangesOpen(false);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="space-y-2">
-                    {roundsUsed ? (
-                      <p className="text-sm text-muted-foreground">
-                        You used your{" "}
-                        {project.revisionRounds?.allowed === 1
-                          ? "free round"
-                          : `${project.revisionRounds?.allowed} free rounds`}{" "}
-                        of changes.
-                        {project.revisionRounds && project.revisionRounds.paidPriceMinor > 0
-                          ? ` For more, ask the team for a paid revision (${formatMoney(money(currency, project.revisionRounds.paidPriceMinor))}) in a message; it arrives as a change to the quote.`
-                          : ""}
-                      </p>
-                    ) : null}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="mint"
-                        disabled={deliveryBusy}
-                        onClick={() => actions?.acceptDelivery(delivery.id)}
-                      >
-                        Accept delivery
-                      </Button>
-                      {roundsUsed ? null : (
-                        <Button
-                          variant="outline"
-                          disabled={deliveryBusy}
-                          onClick={() => {
-                            actions?.resetDelivery();
-                            setChangesOpen(true);
-                          }}
-                        >
-                          Request changes
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )
-              ) : null}
-              {awaitingDelivery?.id === delivery.id && actions?.deliveryError ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {actions.deliveryError.message.replace(ERROR_CODE_PREFIX, "")}
-                </p>
-              ) : null}
-            </Frame>
-          ))}
+          {sortedDeliveries.map(renderDelivery)}
         </section>
       ) : null}
 
       {payments.length > 0 ? (
         <section id="payments" aria-label="Payments" className="grid scroll-mt-4 gap-3">
-          {payments.map((payment) => {
-            const label = payment.processing
-              ? "See payment status"
-              : payment.status === "failed"
-                ? "Try paying again"
-                : "Pay with PayPal";
-            return (
-              <Frame
-                key={payment.id}
-                title={PAYMENT_KIND_LABELS[payment.kind]}
-                aside={
-                  <span className="text-muted-foreground">
-                    {paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}
-                  </span>
-                }
-              >
-                <ul className="space-y-1 text-sm">
-                  {payment.lines.map((line, index) => (
-                    <li key={index} className="flex justify-between gap-4">
-                      <span>{line.label}</span>
-                      <span>{formatMoney(money(currency, line.amountMinor))}</span>
-                    </li>
-                  ))}
-                  <li className="flex justify-between gap-4 border-t pt-2 font-semibold">
-                    <span>Total</span>
-                    <span className="font-tabular">{formatMoney(money(currency, payment.amountMinor))}</span>
-                  </li>
-                </ul>
-                {payment.payPath ? (
-                  <a href={payment.payPath} className={buttonVariants({ variant: "mint", size: "lg" })}>
-                    {label}
-                  </a>
-                ) : payment.payable ? (
-                  <Button variant="mint" size="lg" disabled>
-                    {label}
-                  </Button>
-                ) : null}
-              </Frame>
-            );
-          })}
+          {paymentFrames}
         </section>
       ) : null}
 
       <ReviewSection data={data} actions={actions} />
 
-      <Frame id="messages" title="Messages">
-        <ConversationThread
-          messages={conversation.messages}
-          isMine={(m) => m.authorKind === "client"}
-          empty="No messages yet. Questions from the team show here and above, next to their quotes."
-        />
-        {conversation.canWrite && actions ? (
-          <Composer
-            audience={
-              project.status === "quoting"
-                ? "The freelancers looking at your request read this (contact details are hidden until you accept a quote)."
-                : "Your freelancer and the team read this."
-            }
-            teamOnlyChoice={project.status === "quoting" ? "Send to the team only" : undefined}
-            busy={actions.messageBusy}
-            error={actions.messageError?.message ?? null}
-            onSend={({ body, teamOnly }) => actions.post({ body, teamOnly })}
-          />
-        ) : null}
-      </Frame>
+      {messagesSection}
       {actions?.actionError ? <p className="text-sm text-destructive">{actions.actionError.message}</p> : null}
     </div>
   );
 }
 
+// A labeled, closed-by-default container for records the client may need but rarely opens.
+function Disclosure({ summary, children }: { summary: string; children: React.ReactNode }) {
+  return (
+    <details>
+      <summary className="cursor-pointer rounded-[8px] text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+        {summary}
+      </summary>
+      <div className="mt-3 grid gap-3">{children}</div>
+    </details>
+  );
+}
+
+// The top of a finished project: how it ended, from the records, and the way to the files. Nothing here is a
+// pending duty; a review, when it can still be written, is named as optional.
+function OutcomePanel({
+  acceptedAt,
+  paidMinor,
+  price,
+  hasDelivery,
+  reviewStep,
+}: {
+  acceptedAt: Date | string | null;
+  paidMinor: number;
+  price: (minor: number) => string;
+  hasDelivery: boolean;
+  reviewStep: NextStep | null;
+}) {
+  const jump = (target: string) => document.getElementById(target)?.scrollIntoView({ block: "start" });
+  return (
+    <section aria-labelledby="outcome-heading" className="frame frame-panel">
+      <h2 id="outcome-heading" className="frame-head text-[13px] font-medium">
+        Project complete
+      </h2>
+      <div className="frame frame-body grid gap-4 p-4">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-semibold">Your project is complete. Thank you.</p>
+            <ul className="text-sm text-muted-foreground">
+              {acceptedAt ? <li>You accepted the delivery on {formatDay(acceptedAt)}.</li> : null}
+              {paidMinor > 0 ? <li>You paid {price(paidMinor)} in total.</li> : null}
+            </ul>
+          </div>
+          {hasDelivery ? (
+            <Button variant="outline" size="lg" onClick={() => jump("delivery")}>
+              Go to your files
+            </Button>
+          ) : null}
+        </div>
+        {reviewStep ? (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t pt-3">
+            <p className="min-w-0 flex-1 text-sm">
+              <span className="font-medium">Optional: rate the seller.</span>{" "}
+              <span className="text-muted-foreground">{reviewStep.detail}</span>
+            </p>
+            <Button variant="outline" onClick={() => jump("review")}>
+              {reviewStep.action}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 // The top of the client's page: what is waiting for them, with its amount and the one button that does it.
-function NextStepPanel({ step, completed, preview }: { step: NextStep | null; completed: boolean; preview: boolean }) {
+// "Your turn" is only said when something is actually waiting for the client.
+function NextStepPanel({
+  step,
+  status,
+  preview,
+}: {
+  step: NextStep | null;
+  status: ClientProjectData["project"]["status"];
+  preview: boolean;
+}) {
   if (!step) {
+    const ended = status === "cancelled" || status === "abandoned";
     return (
       <div className="frame frame-panel">
-        <p className="frame-head text-[13px] font-medium">Your turn</p>
+        <p className="frame-head text-[13px] font-medium">{ended ? "Project closed" : "Nothing needed from you"}</p>
         <p className="frame frame-body p-4 text-sm text-muted-foreground">
-          {completed
-            ? "This project is complete. Thank you."
-            : "Nothing is waiting for you right now. The team will email you when it is your turn."}
+          {status === "cancelled"
+            ? "This project was cancelled."
+            : status === "abandoned"
+              ? "This project closed before it finished."
+              : "Nothing is waiting for you right now. The team will email you when it is your turn."}
         </p>
       </div>
     );

@@ -40,7 +40,7 @@
 .site-root .btn:active { scale: 0.97; }
 .site-root .btn-mint { background: var(--brand); color: var(--brand-foreground); }
 @media (hover: hover) {
-  .site-root .btn-mint:hover { background: color-mix(in oklch, var(--brand) 88%, white); }
+  .site-root .btn-mint:hover { background: color-mix(in oklab, var(--brand) 88%, white); }
 }
 .site-root .link { font-weight: 500; text-decoration: underline; text-decoration-color: currentColor; text-decoration-thickness: 1px; text-underline-offset: 5px; }
 .site-root .band { background: var(--band); color: var(--band-ink);
@@ -98,7 +98,7 @@
 .site-root .act { display: inline-flex; align-items: center; min-height: 38px; padding: 0 16px; margin-top: 14px; background: var(--brand); color: var(--brand-foreground); font-size: 14px; font-weight: 600; border-radius: 4px 999px 999px 4px; transition: scale 160ms var(--site-ease-out), box-shadow 160ms ease, background-color 200ms ease, color 200ms ease; }
 .site-root .act.ink { background: var(--foreground); color: var(--card); }
 .site-root .act.ghost { background: transparent; color: var(--foreground); box-shadow: inset 0 0 0 1px var(--input); }
-.site-root .act.pressed { scale: 0.96; box-shadow: 0 0 0 4px color-mix(in oklch, var(--brand) 35%, transparent); }
+.site-root .act.pressed { scale: 0.96; box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand) 35%, transparent); }
 .site-root .act.done { background: transparent; color: var(--brand-text); box-shadow: none; }
 .site-root .btns { display: flex; gap: 8px; }
 .site-root .wall { list-style: none; margin: 32px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; font: 600 clamp(30px, 4.6vw, 64px)/1.12 var(--site-display); letter-spacing: -0.03em; font-variation-settings: "GEOM" 100; }
@@ -282,7 +282,7 @@
 .site-root .btn-ink { background: var(--foreground); color: var(--background); }
 .site-root .btn-quiet { background: transparent; color: var(--foreground); box-shadow: inset 0 0 0 1px var(--input); }
 @media (hover: hover) {
-  .site-root .btn-ink:hover { background: color-mix(in oklch, var(--foreground) 88%, var(--background)); }
+  .site-root .btn-ink:hover { background: color-mix(in oklab, var(--foreground) 88%, var(--background)); }
   .site-root .btn-quiet:hover { background: var(--tray); }
 }
 .site-root nav.links a[aria-current="page"] { color: var(--band-ink); }
@@ -620,7 +620,7 @@
 .site-root .mega-txt b { display: block; font: 600 16px var(--site-display); letter-spacing: -0.01em; font-variation-settings: "GEOM" 100; }
 .site-root .mega-txt small { display: block; margin-top: 3px; font-size: 14px; line-height: 1.35; color: var(--band-muted); }
 .site-root .mega-feature { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: var(--band); color: var(--band-ink) !important; text-decoration: none; transition: background-color 150ms ease; }
-.site-root .mega-feature:hover { background: color-mix(in oklch, var(--band) 80%, var(--brand)); }
+.site-root .mega-feature:hover { background: color-mix(in oklab, var(--band) 80%, var(--brand)); }
 .site-root .mega-feature .art { display: block; border-radius: 10px; overflow: hidden; }
 .site-root .mega-feature .art svg { display: block; width: 100%; height: auto; }
 .site-root .mega-feature b { margin-top: 4px; font: 600 17px var(--site-display); font-variation-settings: "GEOM" 100; }
@@ -648,7 +648,7 @@
 /* Split legends and bars take their colour from a tone class instead of an inline custom property. */
 .site-root .tone-brand { --c: var(--brand); }
 .site-root .tone-ink { --c: var(--foreground); }
-.site-root .tone-paypal { --c: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
+.site-root .tone-paypal { --c: color-mix(in oklab, var(--muted-foreground) 55%, transparent); }
 .site-root .tone-platform { --c: var(--muted-foreground); }
 .site-root .split .bar span[class^="tone-"] { background: var(--c); }
 

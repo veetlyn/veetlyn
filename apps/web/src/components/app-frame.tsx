@@ -64,13 +64,14 @@ export default function AppFrame({
     drawer.current?.close();
   }, [pathname]);
 
+  // Only the middle scrolls: the brand and the account footer stay reachable however short the window is.
   const navigation = <>
     <Link href="/" className="mb-2 flex h-10 shrink-0 items-center px-2.5">
       <BrandWordmark className="font-heading text-[18px] text-foreground" />
       <span className="sr-only">Your account</span>
     </Link>
-    {sidebar}
-    <div className="mt-auto pt-6"><UserMenu sidebar drawer={mobile} /></div>
+    <div data-scroll className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">{sidebar}</div>
+    <div className="shrink-0 border-t pt-2"><UserMenu sidebar drawer={mobile} /></div>
   </>;
 
   return (
@@ -78,7 +79,7 @@ export default function AppFrame({
       data-app-shell
       className={cn("grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray", "md:grid-cols-[280px_minmax(0,1fr)]")}
     >
-      {!mobile ? <aside data-scroll className="hidden min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-2 md:flex">{navigation}</aside> : null}
+      {!mobile ? <aside className="hidden min-h-0 min-w-0 flex-col gap-0.5 px-2 pt-2 pb-2 md:flex">{navigation}</aside> : null}
 
       {mobile ? <dialog
         ref={drawer}
@@ -101,7 +102,7 @@ export default function AppFrame({
             <h2 id="navigation-drawer-title" className="text-sm font-semibold">Navigation</h2>
             <button type="button" onClick={() => drawer.current?.close()} aria-label="Close navigation" className="flex size-11 items-center justify-center rounded-lg hover:bg-accent"><X className="size-5" aria-hidden="true" /></button>
           </div>
-          <div data-scroll className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-2 py-3">{navigation}</div>
+          <div className="flex min-h-0 flex-1 flex-col gap-0.5 px-2 py-3">{navigation}</div>
         </div>
       </dialog> : null}
 

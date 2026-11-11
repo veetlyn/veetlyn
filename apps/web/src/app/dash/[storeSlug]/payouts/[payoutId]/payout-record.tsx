@@ -9,7 +9,7 @@ import Link from "next/link";
 import Loader from "@/components/loader";
 import { DocumentPage } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
-import { approvalState, payoutActions, payoutFeeLine, payoutSentMinor, payoutStatusLabel, waitingLine } from "@/lib/payouts";
+import { approvalState, payoutActions, payoutBreakdown, payoutSentMinor, payoutStatusLabel, waitingLine } from "@/lib/payouts";
 import { trpc } from "@/utils/trpc";
 
 import { PayoutActions, type TeamPayoutRequest } from "../payout-requests-table";
@@ -54,20 +54,24 @@ export default function PayoutRecord({ teamSlug, payoutId, viewerId }: { teamSlu
   }
 
   const amount = formatMinor(request.amountMinor, request.currency);
-  const fee = payoutFeeLine(request);
   const sentMinor = payoutSentMinor(request);
+  const settled = request.status === "succeeded" && sentMinor !== null;
+  const firstName = request.memberName.split(" ")[0] ?? request.memberName;
+  const breakdown = payoutBreakdown(request, firstName);
   const approval = approvalState(request);
   const waiting = waitingLine(request, new Date());
   const from = team.data?.team.name ?? "The team";
+  // The headline says which amount it is: what arrived once settled, what was asked for until then.
+  const headline = settled ? `${formatMinor(sentMinor, request.currency)} received by ${request.memberName}` : `${amount} for ${request.memberName}`;
+  const source = request.projectTitle ?? "From available earnings";
+  const settledOn = settled && request.settledAt ? `Paid ${new Date(request.settledAt).toLocaleDateString(undefined, { dateStyle: "medium" })}` : null;
   return (
     <DocumentPage className="grid gap-6 space-y-0">
       <header className="flex items-start justify-between gap-4">
         <div className="grid gap-1">
           <p className="text-[13px] font-medium text-muted-foreground">{payoutStatusLabel(request)}</p>
-          <h1 className="font-heading text-3xl">
-            {amount} to {request.memberName}
-          </h1>
-          <p className="text-sm text-muted-foreground">{request.projectTitle ?? "Available earnings"}</p>
+          <h1 className="font-heading text-3xl">{headline}</h1>
+          <p className="text-sm text-muted-foreground">{settledOn ? `${source} · ${settledOn}` : source}</p>
         </div>
         {back}
       </header>
@@ -110,23 +114,24 @@ export default function PayoutRecord({ teamSlug, payoutId, viewerId }: { teamSlu
               <span className="truncate text-muted-foreground">{request.memberEmail}</span>
             </div>
           </div>
-          <dl className="grid max-w-md gap-2">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Requested</dt>
-              <dd className="font-tabular">{amount}</dd>
-            </div>
-            {fee ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">{fee.label}</dt>
-                <dd className="font-tabular">{formatMinor(fee.feeMinor, request.currency)}</dd>
+          <dl aria-label="Breakdown" className="grid max-w-md gap-2">
+            {breakdown.map((line) => (
+              <div
+                key={line.label}
+                className={cn(
+                  "flex justify-between gap-4",
+                  line.kind === "net" && "border-t pt-2 font-medium",
+                  line.kind === "note" && "text-[13px] text-muted-foreground",
+                  line.kind === "note" && breakdown.findIndex((l) => l.kind === "note") === breakdown.indexOf(line) && "mt-2",
+                )}
+              >
+                <dt className={line.kind === "net" ? undefined : "text-muted-foreground"}>{line.label}</dt>
+                <dd className="font-tabular">
+                  {line.kind === "deduction" ? "−" : ""}
+                  {formatMinor(line.minor, request.currency)}
+                </dd>
               </div>
-            ) : null}
-            {sentMinor !== null ? (
-              <div className="flex justify-between gap-4 border-t pt-2 font-medium">
-                <dt>{request.status === "succeeded" ? "Received" : "Receives"}</dt>
-                <dd className="font-tabular">{formatMinor(sentMinor, request.currency)}</dd>
-              </div>
-            ) : null}
+            ))}
           </dl>
           {request.failureMessage ? <p className="text-destructive">{request.failureMessage}</p> : null}
           {waiting ? <p className="text-muted-foreground">{waiting}</p> : null}

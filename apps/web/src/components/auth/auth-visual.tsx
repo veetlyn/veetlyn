@@ -17,7 +17,7 @@ export default function AuthVisual({
   return (
     <aside
       aria-label="Example project"
-      className="hidden min-h-0 flex-col justify-center gap-5 overflow-hidden rounded-[24px] bg-stage px-14 py-12 text-stage-ink [--border:var(--stage-line)] [--card:var(--stage-card)] [--tray:var(--stage)] short:gap-4 short:py-8 lg:flex"
+      className="hidden min-h-0 flex-col justify-center gap-5 overflow-hidden rounded-[24px] bg-stage px-14 py-12 text-stage-ink [--border:var(--stage-line)] [--brand-text:color-mix(in_oklab,var(--brand)_70%,var(--stage-ink))] [--card:var(--stage-card)] [--foreground:var(--stage-ink)] [--tray:var(--stage)] short:gap-4 short:py-8 lg:flex"
     >
       <div className="mx-auto flex w-full max-w-[440px] flex-col gap-5 short:gap-4">
         <div>
@@ -55,7 +55,7 @@ export default function AuthVisual({
         <div className={cn(beat, "frame frame-panel [animation-delay:520ms]")}>
           <div className="frame-head text-[14px]">
             <span className="font-medium">Payout to Amadou</span>
-            <span className="ml-auto font-medium text-brand">Paid</span>
+            <span className="ml-auto font-medium text-brand-text">Paid</span>
           </div>
           <div className="frame frame-body px-4 py-3">
             <dl className="font-tabular text-sm">

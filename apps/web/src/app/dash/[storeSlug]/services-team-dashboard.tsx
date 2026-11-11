@@ -20,6 +20,7 @@ import { type StoreUrlParts, storeUrl } from "@/lib/store-url";
 import AskBar from "@/components/ask-bar";
 import { usePlatformName } from "@/components/platform-name";
 import { authClient } from "@/lib/auth-client";
+import { preparedRow } from "@/lib/prepared-row";
 import { trpc } from "@/utils/trpc";
 
 const HOUR_MS = 3_600_000;
@@ -34,6 +35,8 @@ type Need = {
   href: string;
   action: string;
   primary?: boolean;
+  // Drafted by the assistant: attributed on the row instead of in a competing section.
+  prepared?: boolean;
 };
 
 // Sums per currency, so two currencies are never added together.
@@ -45,7 +48,8 @@ function totals(rows: { currency: MoneyCurrency; amountMinor: number }[]): strin
 }
 
 function answerBy(respondBy: string | null, now: number): string {
-  if (!respondBy) return "No answer deadline";
+  // Deadline wording only for a real deadline.
+  if (!respondBy) return "Waiting for your answer";
   const hours = Math.ceil((Date.parse(respondBy) - now) / HOUR_MS);
   if (hours <= 0) return "Expiring now";
   return hours === 1 ? "Answer within 1 hour" : `Answer within ${hours} hours`;
@@ -90,6 +94,12 @@ export default function ServicesTeamDashboard({
     ...quiet,
   });
   const teamId = result.data?.team.id;
+  // Same query as the sidebar's threads (shared cache): a prepared item's call names its project, hence its client.
+  const ownCalls = useQuery({
+    ...trpc.agent.calls.queryOptions({ node: { kind: "seller", teamId: teamId ?? "" } }),
+    enabled: (prepared.data?.pending.length ?? 0) > 0,
+    ...quiet,
+  });
   const drafting = useMutation(
     trpc.agent.prepareDrafts.mutationOptions({
       onSuccess: ({ drafted }) => {
@@ -158,7 +168,18 @@ export default function ServicesTeamDashboard({
   const onClients = (projects.data ?? []).filter(
     (p) => p.status === "awaiting_deposit" || p.status === "delivered" || p.status === "awaiting_balance",
   );
+  const callProject = new Map((ownCalls.data?.calls ?? []).map((c) => [c.id, c.projectId]));
+  const clientOf = (projectId: string | null | undefined) =>
+    (projectId ? projects.data?.find((p) => p.id === projectId)?.clientName : null) ?? null;
+  // Prepared decisions lead: they are the work already done for the person, waiting on one press.
+  const preparedNeeds: Need[] = (prepared.data?.pending ?? []).map((item) => ({
+    key: `prepared-${item.id}`,
+    ...preparedRow(item.card, clientOf(callProject.get(item.callId))),
+    href: `/${team.slug}/calls?call=${item.callId}`,
+    prepared: true,
+  }));
   const needs: Need[] = [
+    ...preparedNeeds,
     ...(rules.data?.memberAccepted === false
       ? [
           {
@@ -205,7 +226,21 @@ export default function ServicesTeamDashboard({
       action: "Open",
     })),
   ];
-  const loading = projects.isLoading || requests.isLoading || payouts.isLoading;
+  const loading = projects.isLoading || requests.isLoading || payouts.isLoading || prepared.isLoading;
+  // A factual breakdown of the rows below, so the headline's count is explained before any scrolling.
+  const summary = [
+    [preparedNeeds.length, `prepared by ${platform}`, `prepared by ${platform}`],
+    [rules.data?.memberAccepted === false ? 1 : 0, "agreement to accept", "agreements to accept"],
+    [toApprove.length > 0 ? 1 : 0, "payout decision", "payout decisions"],
+    [Math.min(toAnswer.length, 3), "request to answer", "requests to answer"],
+    [Math.min(toDeliver.length, 3), "project to deliver", "projects to deliver"],
+  ] as const;
+  const summaryLine = summary
+    .filter(([n]) => n > 0)
+    .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`)
+    .join(" · ");
+  // The expansive ask-first layout is for a workspace with nothing waiting; otherwise the work leads.
+  const quietHome = !embedded && !loading && needs.length === 0 && !drafting.isPending;
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
   const paidThisMonth = (payments.data ?? []).filter(
     (p) => p.status === "captured" && p.capturedAt && Date.parse(p.capturedAt) >= monthStart,
@@ -219,7 +254,15 @@ export default function ServicesTeamDashboard({
         : `${needs.length} things need you.`;
 
   const firstName = session?.user.name.split(/\s+/)[0] ?? "";
-  const hero = embedded ? null : (
+  const askNode = { kind: "seller" as const, teamId: team.id };
+  const suggestions = [
+    { label: "Catch me up", message: `What needs my attention at ${team.name} today?` },
+    { label: "Draft a quote", message: "Help me draft a quote for a new request." },
+    admin && !solo
+      ? { label: "Review payouts", message: "Review the payouts that need my approval." }
+      : { label: "Plan my week", message: "What should I work on first this week?" },
+  ];
+  const hero = quietHome ? (
     <section
       aria-label={`Ask ${platform}`}
       className="mx-auto grid w-full max-w-[660px] gap-6 pt-8 pb-4 text-center md:pt-12"
@@ -230,52 +273,63 @@ export default function ServicesTeamDashboard({
       </h1>
       <AskBar
         callsPath={`/${team.slug}/calls`}
-        node={{ kind: "seller", teamId: team.id }}
+        node={askNode}
         placeholder={`Ask ${platform} to draft a quote, chase a client or check payouts`}
-        hero={{
-          scope: team.name,
-          suggestions: [
-            { label: "Catch me up", message: `What needs my attention at ${team.name} today?` },
-            { label: "Draft a quote", message: "Help me draft a quote for a new request." },
-            admin && !solo
-              ? { label: "Review payouts", message: "Review the payouts that need my approval." }
-              : { label: "Plan my week", message: "What should I work on first this week?" },
-          ],
-        }}
+        hero={{ scope: team.name, suggestions }}
       />
     </section>
-  );
+  ) : null;
+  // With work waiting the composer stays one glance away, under the decisions it would otherwise push down.
+  const secondaryAsk =
+    embedded || quietHome ? null : (
+      <section aria-labelledby="ask-h" className="grid min-w-0 gap-3">
+        <h2 id="ask-h" className="font-heading text-lg">
+          Ask {platform}
+        </h2>
+        <AskBar
+          callsPath={`/${team.slug}/calls`}
+          node={askNode}
+          placeholder={`Ask ${platform} to draft a quote, chase a client or check payouts`}
+          hero={{ scope: team.name, suggestions, align: "start" }}
+        />
+      </section>
+    );
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-[724px] px-4 pb-12 md:px-8">
       {hero}
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-10 pt-6">
+      <div className={cn("grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-10", quietHome ? "pt-6" : "pt-8 md:pt-10")}>
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
-          {embedded ? (
+          {!quietHome ? (
             <header className="grid gap-2">
-              <p className="flex items-center gap-2 text-[14px] text-muted-foreground">
-                <AgentIcon className="size-4 shrink-0" />
-                <span>
-                  <b className="font-semibold text-foreground">{platform}</b> for {team.name},{" "}
-                  {SERVICES_TEAM_ROLE_LABELS[role ?? "admin"] ?? role}
-                </span>
-              </p>
               {embedded ? (
-                <h1 className="font-heading text-[31px] leading-[1.1] tracking-[-0.03em]">{headline}</h1>
+                <p className="flex items-center gap-2 text-[14px] text-muted-foreground">
+                  <AgentIcon className="size-4 shrink-0" />
+                  <span>
+                    <b className="font-semibold text-foreground">{platform}</b> for {team.name},{" "}
+                    {SERVICES_TEAM_ROLE_LABELS[role ?? "admin"] ?? role}
+                  </span>
+                </p>
               ) : (
-                <h2 className="font-heading text-[23px] leading-[1.15] tracking-[-0.02em]">{headline}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {firstName ? `Hello, ${firstName}` : "Welcome back"} · {team.name}
+                </p>
               )}
-              <p className="text-sm text-muted-foreground">
-                {solo ? "Selling as just me" : "Selling as a team"} on{" "}
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-border underline-offset-4 hover:text-foreground"
-                >
-                  {url.replace(/^https?:\/\//, "")}
-                </a>
-              </p>
+              <h1 className="font-heading text-[31px] leading-[1.1] tracking-[-0.03em]">{headline}</h1>
+              {summaryLine && !loading ? <p className="text-sm text-muted-foreground">{summaryLine}</p> : null}
+              {embedded ? (
+                <p className="text-sm text-muted-foreground">
+                  {solo ? "Selling as just me" : "Selling as a team"} on{" "}
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline decoration-border underline-offset-4 hover:text-foreground"
+                  >
+                    {url.replace(/^https?:\/\//, "")}
+                  </a>
+                </p>
+              ) : null}
             </header>
           ) : null}
 
@@ -297,58 +351,32 @@ export default function ServicesTeamDashboard({
             </div>
           ) : null}
 
-          {(prepared.data?.pending.length ?? 0) > 0 ? (
-            <section aria-labelledby="prepared-h" className="min-w-0">
-              <div className="mb-3 flex items-center gap-2">
-                <AgentIcon className="size-4 shrink-0" />
-                <h2 id="prepared-h" className="font-heading text-lg">
-                  Prepared by {platform}, waiting for you
-                </h2>
-                <span className="ml-auto text-muted-foreground">{prepared.data?.pending.length}</span>
-              </div>
-              <ul className="min-w-0 divide-y rounded-[10px] border">
-                {prepared.data?.pending.map((item) => (
-                  <li key={item.id} className="flex min-w-0 flex-wrap items-center gap-3 p-4 sm:flex-nowrap">
-                    <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-                      <p className="break-words font-medium">{item.card.title}</p>
-                      {item.note ? <p className="mt-1 line-clamp-2 break-words text-sm text-muted-foreground">{item.note}</p> : null}
-                    </div>
-                    {item.card.kind === "quote" ? <span className="font-tabular font-semibold">{item.card.total}</span> : null}
-                    {item.card.kind === "payout" ? <span className="font-tabular font-semibold">{item.card.amount}</span> : null}
-                    <Link
-                      href={`/${team.slug}/calls?call=${item.callId}`}
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
-                    >
-                      Review
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
           {needs.length > 0 ? (
             <section aria-labelledby="needs-h" className="min-w-0">
-              <div className="mb-3 flex items-center gap-2">
-                <h2 id="needs-h" className="font-heading text-lg">
-                  Needs you
-                </h2>
-                <span className="ml-auto text-muted-foreground">{needs.length}</span>
-              </div>
+              <h2 id="needs-h" className="mb-3 font-heading text-lg">
+                Needs you
+              </h2>
               <ul className="min-w-0 divide-y rounded-[10px] border">
-                {needs.map((need) => (
-                  <li key={need.key} className="flex min-w-0 flex-wrap items-center gap-3 p-4 sm:flex-nowrap">
+                {needs.map((need, i) => (
+                  <li key={need.key} className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 p-4 sm:flex-nowrap">
                     <div className="min-w-0 flex-1 basis-full sm:basis-auto">
                       <p className="break-words font-medium">{need.title}</p>
                       <p className="break-words text-sm text-muted-foreground">{need.detail}</p>
+                      {need.prepared ? (
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <AgentIcon className="size-3 shrink-0" />
+                          Prepared by {platform}
+                        </p>
+                      ) : null}
                     </div>
-                    {need.amount ? <span className="font-tabular font-semibold">{need.amount}</span> : null}
+                    {need.amount ? <span className="font-tabular font-semibold whitespace-nowrap">{need.amount}</span> : null}
                     <Link
                       href={need.href}
                       className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
+                        // The first row is the next decision; the rest stay quiet so it reads first.
+                        buttonVariants({ variant: i === 0 ? "mint" : "outline", size: "sm" }),
                         "ml-auto shrink-0 sm:ml-0",
-                        need.primary && "px-4",
+                        (need.primary || need.prepared) && "px-4",
                       )}
                     >
                       {need.action}
@@ -362,7 +390,7 @@ export default function ServicesTeamDashboard({
               <h2 id="needs-h" className="font-heading text-lg">Needs you</h2>
               <p className="rounded-[10px] border p-5 text-sm text-muted-foreground">Nothing needs you right now.</p>
             </section>
-          ) : <p role="status" className="text-sm text-muted-foreground">Looking at what needs you…</p>}
+          ) : null}
 
           {onClients.length > 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -387,6 +415,8 @@ export default function ServicesTeamDashboard({
               </Link>
             </p>
           ) : null}
+
+          {secondaryAsk}
 
           <section aria-label="Figures" className="grid gap-3 sm:grid-cols-3">
             {admin ? (

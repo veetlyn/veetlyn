@@ -55,8 +55,13 @@ export function MemberMarks({
   }
 
   return (
-    <section id="marks" className="scroll-mt-4 space-y-3">
-      <h2 className="text-lg font-semibold">Member marks</h2>
+    // Private to staff, so it opens on request instead of holding the rail; marks already recorded keep it open.
+    <details id="marks" className="scroll-mt-4 space-y-3 rounded-[10px] border p-3" open={marks.length > 0 || record.isError || undefined}>
+      <summary className="cursor-pointer text-sm font-medium">
+        Member marks
+        <span className="ml-2 font-normal text-muted-foreground">Private · {marks.length === 0 ? "none" : marks.length}</span>
+      </summary>
+      <p className="mt-2 text-xs text-muted-foreground">Private: only your team’s staff see these. The member and the client never do.</p>
       {marks.length === 0 ? (
         <p className="text-sm text-muted-foreground">No marks on this project.</p>
       ) : (
@@ -94,6 +99,6 @@ export function MemberMarks({
           ) : null}
         </form>
       ) : null}
-    </section>
+    </details>
   );
 }

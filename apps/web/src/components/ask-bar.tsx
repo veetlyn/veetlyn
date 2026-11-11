@@ -2,6 +2,7 @@
 
 import type { ContextNode } from "@jendal-workspace/core/context/node";
 import { Button } from "@jendal-workspace/ui/components/button";
+import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +21,8 @@ export default function AskBar({
   callsPath: string;
   node: ContextNode;
   placeholder: string;
-  hero: { scope: string; suggestions?: { label: string; message: string }[] };
+  // "start" when the bar sits under other content and should line up with it rather than float centred.
+  hero: { scope: string; suggestions?: { label: string; message: string }[]; align?: "center" | "start" };
 }) {
   const router = useRouter();
   const platform = usePlatformName();
@@ -54,7 +56,10 @@ export default function AskBar({
         className="rounded-[10px]"
       />
       {hero.suggestions ? (
-        <div className="mt-3 flex flex-wrap justify-center gap-2" aria-label="Suggested questions">
+        <div
+          className={cn("mt-3 flex flex-wrap gap-2", hero.align === "start" ? "justify-start" : "justify-center")}
+          aria-label="Suggested questions"
+        >
           {hero.suggestions.map((suggestion) => (
             <Button
               key={suggestion.label}

@@ -179,7 +179,8 @@ export default function TeamShell({
       {label}
     </Link>
   );
-  const recent = (calls.data?.calls ?? []).slice(0, 5);
+  // All of them: the sidebar shows the latest few and folds the rest; search can reach any.
+  const recent = calls.data?.calls ?? [];
 
   const pageLinks = [
     { href: `/${slug}`, label: "Home" },

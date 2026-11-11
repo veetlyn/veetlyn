@@ -55,8 +55,9 @@ function approveDialogCopy(request: TeamPayoutRequest, amount: string, automatic
   };
 }
 
+// A member's own request draws on their available earnings, not one project.
 function PayoutSource({ teamSlug, request }: { teamSlug: string; request: TeamPayoutRequest }) {
-  if (request.source === "member") return <>Request</>;
+  if (request.source === "member") return <span className="text-muted-foreground">Available earnings</span>;
   const title = request.projectTitle ?? "Project";
   return request.projectId ? (
     <Link href={`/${teamSlug}/projects/${request.projectId}`} className="underline underline-offset-4">
@@ -96,10 +97,15 @@ function RequestRow({
         <PayoutSource teamSlug={teamSlug} request={request} />
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
-        <p className="font-tabular">{formatMinor(request.amountMinor, request.currency)}</p>
+        {/* Requested is drawn from earnings; received is what PayPal delivered after its fee was kept back. */}
+        <p>
+          <span className="text-muted-foreground">Requested </span>
+          <span className="font-tabular">{formatMinor(request.amountMinor, request.currency)}</span>
+        </p>
         {sentMinor !== null ? (
-          <p className="font-tabular text-muted-foreground">
-            {request.status === "succeeded" ? "Received" : "Receives"} {formatMinor(sentMinor, request.currency)}
+          <p>
+            <span className="text-muted-foreground">{request.status === "succeeded" ? "Received " : "Receives "}</span>
+            <span className="font-tabular">{formatMinor(sentMinor, request.currency)}</span>
           </p>
         ) : null}
       </td>
@@ -323,7 +329,7 @@ function RequestsList({
   const mine = data.payouts.filter(needsViewer);
   const term = search.trim().toLocaleLowerCase();
   const matching = data.payouts.filter(
-    (request) => inFilter(request, filter) && `${request.memberName} ${request.memberEmail} ${request.projectTitle ?? "request"}`.toLocaleLowerCase().includes(term),
+    (request) => inFilter(request, filter) && `${request.memberName} ${request.memberEmail} ${request.projectTitle ?? "available earnings"}`.toLocaleLowerCase().includes(term),
   );
 
   if (data.payouts.length === 0) {
