@@ -37,20 +37,23 @@ export const MEMBER_STATUS_LABELS = {
   exported: "Approved, being sent",
 } satisfies Record<PayoutRequestStatus, string>;
 
-// Badge tones for payout states: warm only when someone has to act.
+// Badge tones for a member's payouts: grey while it moves, mint words once paid, warm only when someone has to act.
 export const PAYOUT_STATUS_TONES = {
-  requested: "info",
-  queued: "brand",
-  sending: "brand",
-  sent: "brand",
+  requested: "neutral",
+  queued: "neutral",
+  sending: "neutral",
+  sent: "neutral",
   succeeded: "good",
   failed: "fail",
   rejected: "neutral",
-  exported: "brand",
+  exported: "neutral",
 } as const satisfies Record<PayoutRequestStatus, "neutral" | "brand" | "good" | "warn" | "fail" | "info">;
 
+// For admins a request waiting for approval is their move.
 export function payoutStatusTone(request: PayoutState) {
-  return request.status === "sending" && request.uncertain ? "warn" : PAYOUT_STATUS_TONES[request.status];
+  if (request.status === "sending" && request.uncertain) return "warn";
+  if (request.status === "requested") return "brand";
+  return PAYOUT_STATUS_TONES[request.status];
 }
 
 const PAYOUT_ACTIONS = ["approve", "reject", "retry", "refresh", "cancel_export"] as const;
@@ -169,6 +172,37 @@ export function memberPayoutFeeMinor(request: {
 }): number | null {
   if (request.status !== "succeeded" || request.feeEstimateMinor === null) return null;
   return Math.min(request.feeMinor ?? request.feeEstimateMinor, request.feeEstimateMinor);
+}
+
+export type PayoutBreakdownLine = { label: string; minor: number; kind: "gross" | "deduction" | "net" | "note" };
+
+// A receipt that accounts for every cent: the requested amount, the fee estimate kept back when it was sent, what
+// arrived, and once PayPal settles, the fee it really charged and the part of the estimate released back to the
+// member's earnings (the ledger's payout-released transfer). Before a send there is only the requested amount.
+export function payoutBreakdown(
+  request: {
+    status: PayoutRequestStatus;
+    amountMinor: number;
+    feeEstimateMinor: number | null;
+    sentMinor: number | null;
+    feeMinor: number | null;
+  },
+  memberFirstName: string,
+): PayoutBreakdownLine[] {
+  const lines: PayoutBreakdownLine[] = [{ label: "Requested from earnings", minor: request.amountMinor, kind: "gross" }];
+  const sentMinor = payoutSentMinor(request);
+  if (sentMinor === null || request.feeEstimateMinor === null) return lines;
+  const settled = request.status === "succeeded";
+  lines.push({ label: "Kept back for PayPal's fee (estimate)", minor: request.feeEstimateMinor, kind: "deduction" });
+  lines.push({ label: settled ? `Received by ${memberFirstName}` : `${memberFirstName} receives`, minor: sentMinor, kind: "net" });
+  const borne = memberPayoutFeeMinor(request);
+  if (settled && request.feeMinor !== null) {
+    lines.push({ label: "PayPal's actual fee", minor: request.feeMinor, kind: "note" });
+  }
+  if (borne !== null && borne < request.feeEstimateMinor) {
+    lines.push({ label: `Returned to ${memberFirstName}'s earnings`, minor: request.feeEstimateMinor - borne, kind: "note" });
+  }
+  return lines;
 }
 
 // tooSmall is the reason the request would be refused when what is left falls below PayPal's minimum payout.

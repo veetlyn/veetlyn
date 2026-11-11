@@ -50,9 +50,10 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
       ) : (
         <>
           <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
+          {/* The queue owns the page; export work follows it, and the payout mode is a status line at the end. */}
           {canServicesTeam(role, "approve_payouts") ? <>
-            <PayoutCredentialsCard teamSlug={team.slug} />
             <PayoutsWebSection teamSlug={team.slug} />
+            <PayoutCredentialsCard teamSlug={team.slug} />
           </> : <p className="text-sm text-muted-foreground">Read-only access. An admin handles approvals and sends.</p>}
         </>
       )}

@@ -21,6 +21,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { formatMinor } from "@/lib/money";
 import { WorkPage } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { QUOTING_MODE_LABELS } from "@/lib/services-team-labels";
@@ -68,6 +69,36 @@ function RateInput({
         {field.problem}
       </p>
     </SettingsRow>
+  );
+}
+
+// The two rates on one worked quote, so their different bases are visible before saving: the fee is added on top
+// and paid by the client, the cut comes out of the quote. Projects store the rates they started with
+// (projects.team_cut_bps, management_fee_bps), so a change reaches new projects only.
+const EXAMPLE_QUOTE_MINOR = 100_000;
+function SplitExample({ currency, teamCutBps, managementFeeBps }: { currency: Currency; teamCutBps: number; managementFeeBps: number }) {
+  const fee = Math.round((EXAMPLE_QUOTE_MINOR * managementFeeBps) / 10_000);
+  const cut = Math.round((EXAMPLE_QUOTE_MINOR * teamCutBps) / 10_000);
+  const rows = [
+    ["Client pays", `${formatMinor(EXAMPLE_QUOTE_MINOR + fee, currency)} (quote + ${formatMinor(fee, currency)} fee)`],
+    ["Team keeps", formatMinor(cut, currency)],
+    ["Members share", formatMinor(EXAMPLE_QUOTE_MINOR - cut, currency)],
+  ] as const;
+  return (
+    <div className="grid min-w-0 gap-4 border-b py-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] sm:gap-8">
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium">On a {formatMinor(EXAMPLE_QUOTE_MINOR, currency)} quote</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">With the rates above. Projects already started keep their rates.</p>
+      </div>
+      <dl className="min-w-0 divide-y text-sm" aria-live="polite">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-4 py-1.5">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="font-tabular">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -221,6 +252,9 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
               value={values.managementFee}
               onChange={(value) => { setManagementFee(value); save.reset(); }}
             />
+            {teamCutField.bps !== null && managementFeeField.bps !== null ? (
+              <SplitExample currency={values.currency} teamCutBps={teamCutField.bps} managementFeeBps={managementFeeField.bps} />
+            ) : null}
             <SettingsRow id="quoting-mode" label="Who can quote" description="Choose who prepares and sends quotes for new requests.">
               <select
                 id="quoting-mode"

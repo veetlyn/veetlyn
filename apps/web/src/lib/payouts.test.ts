@@ -5,6 +5,8 @@ import {
   memberPayoutFeeMinor,
   payPalConnectProblem,
   payoutActions,
+  payoutBreakdown,
+  payoutStatusTone,
   payoutFeeLine,
   payoutNetMinor,
   payoutSentMinor,
@@ -141,5 +143,43 @@ describe("payPalConnectProblem", () => {
   it("asks to try again for any other error", () => {
     expect(payPalConnectProblem("1", "Platform")).toBe("PayPal did not confirm the connection. Try again.");
     expect(payPalConnectProblem(["1", "access_denied"], "Platform")).toBe("PayPal did not confirm the connection. Try again.");
+  });
+});
+
+describe("payoutBreakdown", () => {
+  const settled = { status: "succeeded" as const, amountMinor: 54_400, feeEstimateMinor: 1_088, sentMinor: 53_312, feeMinor: 1_066 };
+
+  it("accounts for every cent of a settled payout, including the estimate released back", () => {
+    const lines = payoutBreakdown(settled, "Moussa");
+    expect(lines.map((l) => [l.label, l.minor])).toEqual([
+      ["Requested from earnings", 54_400],
+      ["Kept back for PayPal's fee (estimate)", 1_088],
+      ["Received by Moussa", 53_312],
+      ["PayPal's actual fee", 1_066],
+      ["Returned to Moussa's earnings", 22],
+    ]);
+    const [gross, kept, net, fee, returned] = lines.map((l) => l.minor);
+    expect(gross - kept).toBe(net);
+    expect(fee + returned).toBe(kept);
+  });
+
+  it("shows nothing is returned when PayPal charged the estimate or more", () => {
+    const labels = payoutBreakdown({ ...settled, feeMinor: 1_200 }, "Moussa").map((l) => l.label);
+    expect(labels).not.toContain("Returned to Moussa's earnings");
+  });
+
+  it("has only the requested amount before a send", () => {
+    expect(payoutBreakdown({ ...settled, status: "requested", feeEstimateMinor: null, sentMinor: null, feeMinor: null }, "Moussa")).toEqual([
+      { label: "Requested from earnings", minor: 54_400, kind: "gross" },
+    ]);
+  });
+});
+
+describe("payoutStatusTone", () => {
+  it("marks a request waiting for approval as the admin's move and an unconfirmed send as trouble", () => {
+    expect(payoutStatusTone({ status: "requested", uncertain: false })).toBe("brand");
+    expect(payoutStatusTone({ status: "sending", uncertain: true })).toBe("warn");
+    expect(payoutStatusTone({ status: "sent", uncertain: false })).toBe("neutral");
+    expect(payoutStatusTone({ status: "succeeded", uncertain: false })).toBe("good");
   });
 });

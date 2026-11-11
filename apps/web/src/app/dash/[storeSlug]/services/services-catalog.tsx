@@ -4,13 +4,21 @@ import { MAX_DEPARTMENT_NAME } from "@jendal-workspace/core";
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@jendal-workspace/ui/components/dropdown-menu";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { daysLabel, FULFILMENT_LABELS, priceLabel } from "@/lib/offering-labels";
 import { trpc } from "@/utils/trpc";
@@ -100,6 +108,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
 
   const [departmentName, setDepartmentName] = useState("");
   const [search, setSearch] = useState("");
+  const [departmentsOpen, setDepartmentsOpen] = useState(false);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: trpc.servicesCatalog.list.queryKey({ teamSlug }) });
@@ -141,43 +150,68 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
 
   function renderOffering(offering: (typeof offerings)[number]) {
     const questionCount = offering.intakeQuestions.length;
+    const busy = setOfferingActive.isPending || deleteOffering.isPending;
     return (
-      <li key={offering.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
-        <Link href={`/${teamSlug}/services/${offering.id}`} className="min-w-0 flex-1 basis-full sm:basis-auto">
-          <p className="flex flex-wrap items-center gap-2 font-medium">
-            <span className="truncate">{offering.name}</span>
-            {!offering.active ? <Badge>Hidden</Badge> : null}
-            {offering.active && !offering.listed ? <Badge>Not in AI assistants</Badge> : null}
+      <li
+        key={offering.id}
+        className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 md:grid-cols-[minmax(0,1fr)_11rem_7rem_auto]"
+      >
+        {/* The title is the row's destination: open the service to edit its details. */}
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link href={`/${teamSlug}/services/${offering.id}`} className="truncate font-medium underline-offset-4 hover:underline">
+              {offering.name}
+            </Link>
+            {!offering.active ? (
+              <Badge>Hidden</Badge>
+            ) : offering.listed ? (
+              <Badge tone="good">Published</Badge>
+            ) : (
+              <Badge tone="good">Published · not in AI assistants</Badge>
+            )}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {priceLabel(offering, currency)} — {daysLabel(offering)} — {FULFILMENT_LABELS[offering.fulfilment]}
-            {questionCount > 0 ? ` — ${questionCount} ${questionCount === 1 ? "question" : "questions"}` : ""}
+          <p className="text-xs text-muted-foreground">
+            {FULFILMENT_LABELS[offering.fulfilment]}
+            {questionCount > 0 ? ` · ${questionCount} intake ${questionCount === 1 ? "question" : "questions"}` : ""}
           </p>
-        </Link>
+        </div>
+        <p className="col-start-1 row-start-2 text-sm md:col-start-2 md:row-start-1">
+          <span className="sr-only">Price: </span>
+          <span className="font-tabular">{priceLabel(offering, currency)}</span>
+          <span className="text-muted-foreground md:hidden"> · {daysLabel(offering)}</span>
+        </p>
+        <p className="hidden text-sm text-muted-foreground md:block">
+          <span className="sr-only">Turnaround: </span>
+          <span className="font-tabular">{daysLabel(offering)}</span>
+        </p>
         {isAdmin ? (
-          <div className="flex shrink-0 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={setOfferingActive.isPending || deleteOffering.isPending}
-              onClick={() =>
-                setOfferingActive.mutate({ teamSlug, offeringId: offering.id, active: !offering.active })
-              }
-            >
-              {offering.active ? "Hide" : "Show"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={deleteOffering.isPending || setOfferingActive.isPending}
-              onClick={() => {
-                if (window.confirm("Delete this service? Projects that used it keep their records.")) {
-                  deleteOffering.mutate({ teamSlug, offeringId: offering.id });
-                }
-              }}
-            >
-              Delete
-            </Button>
+          <div className="col-start-2 row-span-2 row-start-1 justify-self-end md:col-start-4 md:row-span-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<Button type="button" variant="ghost" size="icon" aria-label={`More actions for ${offering.name}`} disabled={busy} />}
+              >
+                <MoreHorizontal className="size-4" aria-hidden="true" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 bg-card">
+                <DropdownMenuItem render={<Link href={`/${teamSlug}/services/${offering.id}`} />}>Edit details</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setOfferingActive.mutate({ teamSlug, offeringId: offering.id, active: !offering.active })}
+                >
+                  {offering.active ? "Hide from seller page" : "Show on seller page"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => {
+                    if (window.confirm("Delete this service? Projects that used it keep their records.")) {
+                      deleteOffering.mutate({ teamSlug, offeringId: offering.id });
+                    }
+                  }}
+                >
+                  Delete…
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : null}
       </li>
@@ -198,12 +232,6 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
         ) : null}
       </div>
 
-      {!catalog.isError && offerings.length > 0 ? (
-        <SummaryStrip label="Catalogue summary">
-          <p className="text-sm"><span className="font-medium">{offerings.length} services</span> <span className="text-muted-foreground">clients can request</span></p>
-          <p className="text-sm text-muted-foreground">{departments.length} departments</p>
-        </SummaryStrip>
-      ) : null}
       {catalog.isError && (
         <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm">
           <p>The services couldn’t be loaded.</p>
@@ -211,29 +239,31 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
         </div>
       )}
       {setOfferingActive.error ?? deleteOffering.error ? <p role="alert" className="text-sm text-destructive">{(setOfferingActive.error ?? deleteOffering.error)?.message}</p> : null}
-      {!catalog.isError && offerings.length > 0 ? (
-        <label className="block w-full sm:max-w-72"><span className="sr-only">Search services</span><Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services…" /></label>
+      {/* Departments are optional, so their management is a quiet toolbar entry rather than a region above the offers. */}
+      {!catalog.isError && (offerings.length > 0 || isAdmin || departments.length > 0) ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {offerings.length > 0 ? (
+            <label className="block w-full sm:max-w-72"><span className="sr-only">Search services</span><Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services…" /></label>
+          ) : <span />}
+          {isAdmin || departments.length > 0 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-expanded={departmentsOpen}
+              aria-controls="departments-panel"
+              onClick={() => setDepartmentsOpen((open) => !open)}
+              className="text-muted-foreground"
+            >
+              {isAdmin ? "Manage departments" : "Departments"}
+              {departments.length > 0 ? <span className="font-tabular"> ({departments.length})</span> : null}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
-
-      {!catalog.isError && offerings.length === 0 && (
-        <section className="panel grid justify-items-center gap-2 p-10 text-center">
-          <p className="font-heading text-lg">No services yet</p>
-          <p className="text-sm text-muted-foreground">
-            {isAdmin ? (
-              <Link href={`/${teamSlug}/services/new`} className="underline underline-offset-4">
-                Add your first service — what you make, what it usually costs and how long it takes.
-              </Link>
-            ) : (
-              "An admin adds the services: what the team makes, what it usually costs and how long it takes."
-            )}
-          </p>
-        </section>
-      )}
-
-      {!catalog.isError && (isAdmin || departments.length > 0) && (
-        <details className="rounded-[10px] border p-4">
-          <summary className="cursor-pointer text-sm font-medium">{isAdmin ? "Manage departments" : "Departments"} <span className="font-normal text-muted-foreground">({departments.length})</span></summary>
-          <div className="mt-4 space-y-3">
+      {!catalog.isError && departmentsOpen && (isAdmin || departments.length > 0) && (
+        <section id="departments-panel" aria-label="Departments" className="rounded-[10px] border p-4">
+          <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Optional groups for your seller page. A service can also stand alone.
           </p>
@@ -282,8 +312,24 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
               </ul>
             ))}
           </div>
-        </details>
+        </section>
       )}
+
+      {!catalog.isError && offerings.length === 0 && (
+        <section className="panel grid justify-items-center gap-2 p-10 text-center">
+          <p className="font-heading text-lg">No services yet</p>
+          <p className="text-sm text-muted-foreground">
+            {isAdmin ? (
+              <Link href={`/${teamSlug}/services/new`} className="underline underline-offset-4">
+                Add your first service — what you make, what it usually costs and how long it takes.
+              </Link>
+            ) : (
+              "An admin adds the services: what the team makes, what it usually costs and how long it takes."
+            )}
+          </p>
+        </section>
+      )}
+
 
       {offerings.length > 0 && (
         <div className="space-y-6">
