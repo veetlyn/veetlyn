@@ -5,20 +5,24 @@
   "type": "module",
   "exports": {
     "./globals.css": "./src/styles/globals.css",
+    "./lib/i18n": "./src/lib/i18n.tsx",
+    "./lib/presence-gate": "./src/lib/presence-gate.tsx",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
     "./postcss.config": "./postcss.config.mjs"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit && tsc --noEmit -p tsconfig.beui.json"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
     "@shadcn/react": "^0.3.1",
+    "@tanstack/react-virtual": "^3.14.23",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.5",
     "lucide-react": "catalog:",
+    "motion": "^12.38.0",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
