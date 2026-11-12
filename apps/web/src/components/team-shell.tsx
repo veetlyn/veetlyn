@@ -156,7 +156,7 @@ export default function TeamShell({
       },
     ] : segments.length ? segments.map((segment, i) => ({
       href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
-      label: (segment === "calls" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : i > 0 && segments[i - 1] === "payouts" ? "Payout" : "Details"),
+      label: (segment === "threads" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : i > 0 && segments[i - 1] === "payouts" ? "Payout" : "Details"),
     })) : [{ href: `/${slug}`, label: "Overview" }];
   const isActive = (href: string) =>
     href === `/${slug}` ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -180,12 +180,12 @@ export default function TeamShell({
 
   return (
     <AppFrame
-      fill={pathname.startsWith(`/${slug}/calls`)}
+      fill={pathname.startsWith(`/${slug}/threads`)}
       workspace={{ ...currentWorkspace, options: [{ href: "/", label: "Personal" }, ...workspaceDestinations(workspaces)] }}
       crumbs={crumbs}
       searchItems={[
         ...pageLinks.map((l) => ({ ...l, detail: name })),
-        ...recent.map((c) => ({ href: `/${slug}/calls?call=${c.id}`, label: c.title, group: "Threads" })),
+        ...recent.map((c) => ({ href: `/${slug}/threads?thread=${c.id}`, label: c.title, group: "Threads" })),
         ...workspaceDestinations(workspaces).map((w) => ({ ...w, group: "Workspaces" })),
       ]}
       sidebar={
@@ -251,7 +251,7 @@ export default function TeamShell({
                   );
                 })}
               </nav>
-              {services ? <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Your threads" /> : null}
+              {services ? <RecentCalls calls={recent} callsPath={`/${slug}/threads`} label="Your threads" /> : null}
             </>
           )}
         </>

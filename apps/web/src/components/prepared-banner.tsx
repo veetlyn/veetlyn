@@ -25,7 +25,7 @@ export default function PreparedBanner({ teamId, projectId, slug }: { teamId: st
         <p className="truncate text-[13px] font-medium">{item.card.title}, prepared and waiting for you</p>
         {item.note ? <p className="truncate text-[13px] text-muted-foreground">{item.note}</p> : null}
       </div>
-      <Link href={`/${slug}/calls?call=${item.callId}`} className={cn(buttonVariants({ variant: "mint", size: "sm" }), "px-4")}>
+      <Link href={`/${slug}/threads?thread=${item.callId}`} className={cn(buttonVariants({ variant: "mint", size: "sm" }), "px-4")}>
         Review
       </Link>
     </div>

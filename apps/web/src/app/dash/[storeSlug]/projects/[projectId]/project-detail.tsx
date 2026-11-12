@@ -391,7 +391,7 @@ export default function ProjectDetail({
           <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Deliveries</dt><dd className="font-tabular">{deliveries.length}</dd></div>
         </dl>
       </section> : null}
-      {view !== "activity" && seller.data?.available ? <Link href={`/${teamSlug}/calls?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
+      {view !== "activity" && seller.data?.available ? <Link href={`/${teamSlug}/threads?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
         <span className="grid min-w-0 gap-0.5"><strong className="break-words font-semibold">Ask about {project.title}</strong><span className="text-muted-foreground">Open a focused thread for this project.</span></span>
       </Link> : null}
       {view === "overview" && schedule.length > 0 ? (

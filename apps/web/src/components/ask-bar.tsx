@@ -29,7 +29,7 @@ export default function AskBar({
     trpc.agent.ask.mutationOptions({
       onSuccess: ({ callId }) => {
         setMessage("");
-        router.push(`${callsPath}?call=${callId}`);
+        router.push(`${callsPath}?thread=${callId}`);
       },
     }),
   );

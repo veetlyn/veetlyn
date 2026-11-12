@@ -52,14 +52,14 @@ export default function AccountShell({
         ? [{ href: "/me/projects", label: "Your projects" }]
         : pathname.startsWith("/me/payouts")
           ? [{ href: "/me/payouts", label: "Your earnings" }]
-          : pathname.startsWith("/me/calls")
-            ? [{ href: "/me/calls", label: "Threads" }]
+          : pathname.startsWith("/me/threads")
+            ? [{ href: "/me/threads", label: "Threads" }]
             : []),
   ];
 
   return (
     <AppFrame
-      fill={pathname.startsWith("/me/calls")}
+      fill={pathname.startsWith("/me/threads")}
       workspace={{ href: "/", label: "Personal", detail: "Your account", options: [{ href: "/", label: "Personal" }, ...destinations] }}
       crumbs={crumbs}
       searchItems={[
@@ -86,7 +86,7 @@ export default function AccountShell({
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/calls" label="Your threads" />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/threads" label="Your threads" />
         </>
       }
     >

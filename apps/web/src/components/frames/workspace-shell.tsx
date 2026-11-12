@@ -64,13 +64,13 @@ export default function WorkspaceShell({
   // The workspace (organization) level: its stores and services teams, members and billing.
   const crumbs = segment === "billing"
       ? [{ href: `${base}/billing`, label: "Billing" }]
-      : segment === "calls"
-        ? [{ href: `${base}/calls`, label: "Threads" }]
+      : segment === "threads"
+        ? [{ href: `${base}/threads`, label: "Threads" }]
         : [{ href: base, label: "Overview" }];
 
   return (
     <AppFrame
-      fill={segment === "calls"}
+      fill={segment === "threads"}
       workspace={{ href: base, label: organization.name, detail: "Workspace", options: [{ href: "/", label: "Personal" }, ...workspaceDestinations(workspaces)] }}
       crumbs={crumbs}
       searchItems={[
@@ -93,7 +93,7 @@ export default function WorkspaceShell({
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/calls`} label="Your threads" />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/threads`} label="Your threads" />
         </>
       }
     >

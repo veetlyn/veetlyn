@@ -194,11 +194,11 @@ export default function TeamCalls({
   const [message, setMessage] = useState("");
   // The question being answered shows at once; a turn takes seconds and the composer has already cleared.
   const [asking, setAsking] = useState<string | null>(null);
-  // A new call is shown as soon as the server names it: moving to ?call= reloads the server page, which can take a
+  // A new call is shown as soon as the server names it: moving to ?thread= reloads the server page, which can take a
   // few seconds, and the question would otherwise vanish into an empty composer meanwhile.
   const [startedCallId, setStartedCallId] = useState<string | null>(null);
   const activeCallId = callId ?? startedCallId;
-  // Once the URL names the call it holds it, so a later "New call" (no ?call=) starts clean.
+  // Once the URL names the call it holds it, so a later "New call" (no ?thread=) starts clean.
   useEffect(() => {
     if (callId) setStartedCallId(null);
   }, [callId]);
@@ -232,7 +232,7 @@ export default function TeamCalls({
         if (result.callId !== activeCallId) {
           setStartedCallId(result.callId);
           void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ callId: result.callId }) });
-          router.push(`${callsPath}?call=${result.callId}`);
+          router.push(`${callsPath}?thread=${result.callId}`);
         }
       },
       onSettled: async () => {

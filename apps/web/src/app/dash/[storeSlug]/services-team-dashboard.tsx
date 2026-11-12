@@ -229,7 +229,7 @@ export default function ServicesTeamDashboard({
         What’s next for {team.name}?
       </h1>
       <AskBar
-        callsPath={`/${team.slug}/calls`}
+        callsPath={`/${team.slug}/threads`}
         node={{ kind: "seller", teamId: team.id }}
         placeholder={`Ask ${platform} to draft a quote, chase a client or check payouts`}
         hero={{
@@ -316,7 +316,7 @@ export default function ServicesTeamDashboard({
                     {item.card.kind === "quote" ? <span className="font-tabular font-semibold">{item.card.total}</span> : null}
                     {item.card.kind === "payout" ? <span className="font-tabular font-semibold">{item.card.amount}</span> : null}
                     <Link
-                      href={`/${team.slug}/calls?call=${item.callId}`}
+                      href={`/${team.slug}/threads?thread=${item.callId}`}
                       className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
                     >
                       Review
