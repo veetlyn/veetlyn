@@ -1,0 +1,18 @@
+apps/web/src/app/dash/[storeSlug]/finances/team-finances.tsx
+  h_6877e5e7a06bc5 3-5,8,10,12-15,17,20-77,82,89,95-116,120,125,128-147,149-169,171-176,178-179,182-258,260-296,298
+apps/web/src/lib/finance-analytics.test.ts
+  h_6877e5e7a06bc5 1-62
+apps/web/src/lib/finance-analytics.ts
+  h_6877e5e7a06bc5 1-299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cd477930dad76ff1fa1db6214d89fb0822634b80",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
