@@ -179,6 +179,7 @@ export async function insertAgentCallEntry(
     note?: string;
     action?: string;
     input?: JsonObject;
+    ui?: JsonObject;
     status?: AgentCallEntryRow["status"];
   },
 ): Promise<AgentCallEntryRow> {
@@ -189,8 +190,11 @@ export async function insertAgentCallEntry(
 }
 
 // Progressive answers: a draft entry is updated as the model writes, then finished (or removed on failure).
-export async function updateAgentCallEntry(db: DbExecutor, input: { entryId: string; body: string; note?: string }): Promise<void> {
-  await db.update(agentCallEntry).set({ body: input.body, note: input.note }).where(eq(agentCallEntry.id, input.entryId));
+export async function updateAgentCallEntry(
+  db: DbExecutor,
+  input: { entryId: string; body: string; note?: string; ui?: JsonObject },
+): Promise<void> {
+  await db.update(agentCallEntry).set({ body: input.body, note: input.note, ui: input.ui }).where(eq(agentCallEntry.id, input.entryId));
 }
 
 export async function deleteAgentCallEntry(db: DbExecutor, entryId: string): Promise<void> {
