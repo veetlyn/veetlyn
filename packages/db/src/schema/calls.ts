@@ -72,6 +72,8 @@ export const agentCallEntry = pgTable(
     note: text("note"),
     action: text("action"),
     input: jsonb("input").$type<JsonObject>(),
+    // An assistant message's answer UI: a json-render spec built from its `present` blocks (packages/api/src/agent/answer-ui.ts).
+    ui: jsonb("ui").$type<JsonObject>(),
     status: text("status", { enum: AGENT_PROPOSAL_STATUSES }),
     outcome: text("outcome"),
     decidedAt: timestamp("decided_at"),

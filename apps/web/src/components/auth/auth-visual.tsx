@@ -17,31 +17,31 @@ export default function AuthVisual({
   return (
     <aside
       aria-label="Example project"
-      className="hidden min-h-0 flex-col justify-center gap-5 overflow-hidden rounded-[24px] bg-stage px-14 py-12 text-stage-ink [--border:var(--stage-line)] [--brand-text:color-mix(in_oklab,var(--brand)_70%,var(--stage-ink))] [--card:var(--stage-card)] [--foreground:var(--stage-ink)] [--tray:var(--stage)] short:gap-4 short:py-8 lg:flex"
+      className="hidden min-h-0 flex-col gap-5 overflow-y-auto rounded-[24px] bg-stage px-10 py-10 text-stage-ink [--border:var(--stage-line)] [--brand-text:color-mix(in_oklab,var(--brand)_70%,var(--stage-ink))] [--card:var(--stage-card)] [--foreground:var(--stage-ink)] [--tray:var(--stage)] short:gap-4 short:py-6 lg:flex"
     >
-      <div className="mx-auto flex w-full max-w-[440px] flex-col gap-5 short:gap-4">
+      <div className="mx-auto my-auto flex w-full max-w-[440px] shrink-0 flex-col gap-5 short:gap-4">
         <div>
-          <h2 className="max-w-[18ch] font-heading text-[31px] leading-[1.1] tracking-[-0.03em] short:text-[27px]">
+          <h2 className="max-w-[22ch] font-heading text-[26px] leading-tight tracking-[-0.02em] short:text-[24px]">
             {headline}
           </h2>
           {subline ? <p className="mt-3 max-w-sm text-sm text-stage-muted">{subline}</p> : null}
         </div>
 
         <figure className={cn(beat, "flex flex-col items-end gap-1.5 [animation-delay:120ms]")}>
-          <p className="max-w-[340px] rounded-[16px_16px_4px_16px] bg-band-raise px-4 py-3 text-[16px]">
+          <p className="max-w-[340px] rounded-[16px_16px_4px_16px] bg-band-raise px-4 py-3 text-[15px]">
             Find someone to design a logo for my bakery, under $900.
           </p>
           <figcaption className="text-xs text-stage-muted">The client, asking Claude</figcaption>
         </figure>
 
         <div className={cn(beat, "frame frame-panel [animation-delay:320ms]")}>
-          <div className="frame-head text-[14px]">
+          <div className="frame-head text-[13px]">
             <span className="font-medium">Walk Crew</span>
             <span className="ml-auto text-stage-muted">Quote</span>
           </div>
           <div className="frame frame-body px-4 py-3.5">
             <p className="font-semibold">Logo and brand kit</p>
-            <p className="text-[14px] text-stage-muted">10 days, 2 free revisions</p>
+            <p className="text-[13px] text-stage-muted">10 days, 2 free revisions</p>
             <dl className="mt-2 font-tabular text-sm">
               <Row label="Total" value="$640.00" />
               <Row label="Deposit now, 60%" value="$384.00" strong />
@@ -53,7 +53,7 @@ export default function AuthVisual({
         </div>
 
         <div className={cn(beat, "frame frame-panel [animation-delay:520ms]")}>
-          <div className="frame-head text-[14px]">
+          <div className="frame-head text-[13px]">
             <span className="font-medium">Payout to Amadou</span>
             <span className="ml-auto font-medium text-brand-text">Paid</span>
           </div>
@@ -63,7 +63,7 @@ export default function AuthVisual({
               <Row label="Team keeps 15%" value="−$96.00" />
               <Row label="Sent to Amadou" value="$544.00" strong />
             </dl>
-            <p className="mt-1.5 text-[14px] text-stage-muted">Approved by Ada, sent by PayPal.</p>
+            <p className="mt-1.5 text-[13px] text-stage-muted">Approved by Ada, sent by PayPal.</p>
           </div>
         </div>
 

@@ -173,6 +173,9 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-warning: var(--warning);
+  /* beUI extensions; the dash sets the values (apps/web/src/dash.css), other pages fall back to the foreground. */
+  --color-border-strong: var(--border-strong, color-mix(in oklab, var(--foreground) 12%, transparent));
+  --color-success: var(--success, var(--brand));
   --color-brand: var(--brand);
   --color-brand-text: var(--brand-text);
   --color-brand-wash: var(--brand-wash);

@@ -4,12 +4,14 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Label } from "@jendal-workspace/ui/components/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import { type FormEvent, useState } from "react";
 
 import { Composer, ConversationThread } from "@/components/conversation/thread";
+import { RecordCard } from "@/components/record-card";
 import { trpc } from "@/utils/trpc";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
@@ -42,7 +44,7 @@ function DeclineForm({ teamSlug, projectId, onDone }: { teamSlug: string; projec
         }}
       />
       <p className="text-sm text-muted-foreground">The client sees this reason on their page and in their AI assistant.</p>
-      <Button type="submit" variant="outline" className="justify-self-start" disabled={decline.isPending}>
+      <Button type="submit" variant="destructive" className="justify-self-start" disabled={decline.isPending}>
         {decline.isPending ? "Declining…" : "Decline request"}
       </Button>
       {decline.error ? (
@@ -54,7 +56,7 @@ function DeclineForm({ teamSlug, projectId, onDone }: { teamSlug: string; projec
   );
 }
 
-// Staff replace the department rule with a shortlist; clearing every box restores it.
+// Staff replace the category rule with a shortlist; clearing every box restores it.
 function ShortlistForm({
   teamSlug,
   projectId,
@@ -72,7 +74,7 @@ function ShortlistForm({
     <fieldset className="grid gap-2">
       <legend className="text-sm font-medium">Who sees this request</legend>
       <p className="text-sm text-muted-foreground">
-        Pick freelancers to replace the department rule; save with none picked to go back to it.
+        Pick freelancers to replace the category rule; save with none picked to go back to it.
       </p>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {freelancers.map((member) => (
@@ -94,7 +96,7 @@ function ShortlistForm({
         disabled={shortlist.isPending}
         onClick={() => shortlist.mutate({ teamSlug, projectId, userIds: chosen })}
       >
-        {shortlist.isPending ? "Saving…" : chosen.length > 0 ? "Save shortlist" : "Use the department rule"}
+        {shortlist.isPending ? "Saving…" : chosen.length > 0 ? "Save shortlist" : "Use the category rule"}
       </Button>
       {shortlist.isSuccess ? <p className="text-sm text-muted-foreground">Saved.</p> : null}
       {shortlist.error ? (
@@ -125,6 +127,28 @@ function groupByFreelancer(messages: readonly Message[], quotes: Detail["quotes"
   return { groups, rest };
 }
 
+// The request's handling, apart from its conversation: who sees it, or decline it with a reason the client reads.
+export function RequestHandling({
+  teamSlug,
+  projectId,
+  members,
+  onChange,
+}: {
+  teamSlug: string;
+  projectId: string;
+  members: { id: string; name: string; role: string }[];
+  onChange: () => Promise<void>;
+}) {
+  return (
+    <RecordCard title="Request handling" description="Who quotes this request, or why the team won't.">
+      <div className="grid gap-6">
+        <ShortlistForm teamSlug={teamSlug} projectId={projectId} members={members} />
+        <DeclineForm teamSlug={teamSlug} projectId={projectId} onDone={onChange} />
+      </div>
+    </RecordCard>
+  );
+}
+
 export function ConversationSection({
   teamSlug,
   detail,
@@ -150,68 +174,47 @@ export function ConversationSection({
   const names = new Map(members.map((m) => [m.id, m.name]));
   const canWrite = conversation.access.write.includes(tab);
 
-  return (
-    <section id="conversation" className="scroll-mt-4 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Conversation</h2>
-        {readable.length > 1 ? (
-          <div role="tablist" aria-label="Conversation" className="inline-flex w-fit rounded-[10px] bg-tray p-0.5 well">
-            {readable.map((space) => (
-              <button
-                key={space}
-                type="button"
-                role="tab"
-                aria-selected={tab === space}
-                onClick={() => setTab(space)}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-[0_0_0_1px_var(--input)]"
-              >
-                {TAB_LABELS[space]}
-              </button>
-            ))}
+  const thread = tab === "request" && staff ? (
+    (() => {
+      const { groups, rest } = groupByFreelancer(shown, quotes);
+      return (
+        <div className="divide-y">
+          {[...groups.entries()].map(([userId, messages]) => (
+            <div key={userId} className="grid gap-3 px-5 py-4">
+              <h3 className="text-xs font-medium text-muted-foreground">{names.get(userId) ?? "Team member"}</h3>
+              <ConversationThread messages={messages} isMine={isMine} empty="" />
+            </div>
+          ))}
+          <div className="grid gap-3 px-5 py-4">
+            {groups.size > 0 ? <h3 className="text-xs font-medium text-muted-foreground">Client and staff</h3> : null}
+            <ConversationThread messages={rest} isMine={isMine} empty={groups.size > 0 ? "Nothing else yet." : "No freelancer has answered yet."} />
           </div>
-        ) : null}
-      </div>
-
-      {project.status === "declined" && project.declinedReason ? (
-        <p className="text-sm">
-          <span className="font-medium text-muted-foreground">Declined:</span> {project.declinedReason}
-        </p>
-      ) : null}
-
-      <div role="tabpanel" className="grid gap-5">
-        <div className="panel grid gap-5 p-4">
-        {tab === "request" && staff ? (
-          (() => {
-            const { groups, rest } = groupByFreelancer(shown, quotes);
-            return (
-              <>
-                {[...groups.entries()].map(([userId, messages]) => (
-                  <div key={userId} className="grid gap-2">
-                    <h3 className="text-sm font-medium">{names.get(userId) ?? "Team member"}</h3>
-                    <ConversationThread messages={messages} isMine={isMine} empty="" />
-                  </div>
-                ))}
-                <div className="grid gap-2">
-                  {groups.size > 0 ? <h3 className="text-sm font-medium">Client and staff</h3> : null}
-                  <ConversationThread
-                    messages={rest}
-                    isMine={isMine}
-                    empty={groups.size > 0 ? "Nothing else yet." : "No freelancer has answered yet."}
-                  />
-                </div>
-              </>
-            );
-          })()
-        ) : (
-          <ConversationThread
-            messages={shown}
-            isMine={isMine}
-            empty={tab === "request" ? "No questions or messages on this request yet." : "No messages with the client yet."}
-          />
-        )}
         </div>
+      );
+    })()
+  ) : (
+    <div className="px-5 py-4">
+      <ConversationThread
+        messages={shown}
+        isMine={isMine}
+        empty={tab === "request" ? "No questions or messages on this request yet." : "No messages with the client yet."}
+      />
+    </div>
+  );
 
-        {canWrite ? (
+  return (
+    <Tabs value={tab} onValueChange={(value) => setTab(value === "request" ? "request" : "project")} variant="segment">
+      <RecordCard
+        id="conversation"
+        title="Conversation"
+        description={project.status === "declined" && project.declinedReason ? `Declined: ${project.declinedReason}` : undefined}
+        actions={readable.length > 1 ? (
+          <TabsList aria-label="Conversation" className="border">
+            {readable.map((space) => <TabsTrigger key={space} value={space}>{TAB_LABELS[space]}</TabsTrigger>)}
+          </TabsList>
+        ) : null}
+        flush
+        footer={canWrite ? (
           <Composer
             audience={
               tab === "request"
@@ -230,14 +233,9 @@ export function ConversationSection({
             {tab === "request" && !quoting ? "The request closed; the conversation continues in the project." : "This conversation is closed."}
           </p>
         )}
-      </div>
-
-      {staff && quoting ? (
-        <div className="grid gap-6">
-          <ShortlistForm teamSlug={teamSlug} projectId={project.id} members={members} />
-          <DeclineForm teamSlug={teamSlug} projectId={project.id} onDone={onChange} />
-        </div>
-      ) : null}
-    </section>
+      >
+        <TabsContent value={tab} className="mt-0 rounded-none">{thread}</TabsContent>
+      </RecordCard>
+    </Tabs>
   );
 }

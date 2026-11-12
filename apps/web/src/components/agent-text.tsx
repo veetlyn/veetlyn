@@ -24,14 +24,14 @@ const BULLET = /^\s*(?:[-*•]|\d+[.)])\s+/;
 
 export default function AgentText({ text }: { text: string }) {
   return (
-    <div className="grid gap-2 text-[14px] leading-[22px]">
+    <div className="grid max-w-[68ch] gap-3 text-sm leading-6 font-medium text-pretty">
       {text
         .trim()
         .split(/\n{2,}/)
         .map((block, i) => {
           const lines = block.split("\n");
           return lines.every((line) => BULLET.test(line)) ? (
-            <ul key={i} className="grid list-disc gap-1 pl-5">
+            <ul key={i} className="grid list-disc gap-1.5 pl-5 marker:text-muted-foreground">
               {lines.map((line, j) => (
                 <li key={j}>{inline(line.replace(BULLET, ""))}</li>
               ))}

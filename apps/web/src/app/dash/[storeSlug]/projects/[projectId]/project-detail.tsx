@@ -18,7 +18,7 @@ import {
   type QuoteItemDraft,
 } from "@jendal-workspace/core";
 import { Badge } from "@jendal-workspace/ui/components/badge";
-import { Button } from "@jendal-workspace/ui/components/button";
+import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -33,6 +33,9 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
+import { RecordCard } from "@/components/record-card";
+import { ValueInput } from "@/components/value-input";
+import { competingProposalCount, quoteAttribution } from "@/lib/quote-attribution";
 import Loader from "@/components/loader";
 import { paymentRefundLabel } from "@/lib/client-refund";
 import { AMENDMENT_STATUS_LABELS, PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS, QUOTE_STATUS_LABELS, TEAM_PROJECT_TONES } from "@/lib/status-labels";
@@ -47,7 +50,7 @@ import { ProjectProgress } from "@/components/project-progress";
 import { ContextRail, WorkPage } from "@/components/page-composition";
 
 import { ClientsSection } from "./clients-section";
-import { ConversationSection } from "./conversation-section";
+import { ConversationSection, RequestHandling } from "./conversation-section";
 import PreparedBanner from "@/components/prepared-banner";
 import { scheduleLabel, scheduleWhen } from "@/lib/project-schedule";
 
@@ -84,12 +87,12 @@ function parseRows(rows: ItemRow[]): QuoteItemDraft[] | null {
   return items;
 }
 
-function ItemRowsEditor({ rows, onChange }: { rows: ItemRow[]; onChange: (rows: ItemRow[]) => void }) {
+function ItemRowsEditor({ rows, onChange, currency }: { rows: ItemRow[]; onChange: (rows: ItemRow[]) => void; currency: MoneyCurrency }) {
   return (
     <div className="space-y-2">
       {rows.map((row, index) => (
-        <div key={index} className="grid min-w-0 grid-cols-2 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_5rem_auto]">
-          <div className="col-span-2 grid min-w-0 gap-1 sm:col-span-1"><span aria-hidden="true" className="text-xs text-muted-foreground">Description</span>
+        <div key={index} className="grid min-w-0 grid-cols-2 items-end gap-2 md:grid-cols-[minmax(0,1fr)_11rem_8rem_auto]">
+          <div className="col-span-2 grid min-w-0 gap-1 md:col-span-1"><span aria-hidden="true" className="text-xs text-muted-foreground">Description</span>
           <Input
             aria-label={`Line ${index + 1} description`}
             placeholder="What this line covers"
@@ -98,8 +101,9 @@ function ItemRowsEditor({ rows, onChange }: { rows: ItemRow[]; onChange: (rows: 
           />
           </div>
           <div className="grid min-w-0 gap-1"><span aria-hidden="true" className="text-xs text-muted-foreground">Amount</span>
-          <Input
+          <ValueInput
             aria-label={`Line ${index + 1} amount`}
+            unit={currency}
             placeholder="0.00"
             inputMode="decimal"
             value={row.amount}
@@ -107,15 +111,19 @@ function ItemRowsEditor({ rows, onChange }: { rows: ItemRow[]; onChange: (rows: 
           />
           </div>
           <div className="grid min-w-0 gap-1"><span aria-hidden="true" className="text-xs text-muted-foreground">Extra days</span>
-          <Input
+          <ValueInput
             aria-label={`Line ${index + 1} extra days`}
+            unit="days"
+            type="number"
+            min={0}
+            step={1}
             placeholder="Days"
             inputMode="numeric"
             value={row.extraDays}
             onChange={(e) => onChange(rows.map((r, i) => (i === index ? { ...r, extraDays: e.target.value } : r)))}
           />
           </div>
-          <Button className="col-span-2 justify-self-end sm:col-span-1" type="button" variant="ghost" disabled={rows.length === 1} onClick={() => onChange(rows.filter((_, i) => i !== index))}>
+          <Button className="col-span-2 justify-self-end md:col-span-1" type="button" variant="ghost" disabled={rows.length === 1} onClick={() => onChange(rows.filter((_, i) => i !== index))}>
             Remove
           </Button>
         </div>
@@ -127,28 +135,34 @@ function ItemRowsEditor({ rows, onChange }: { rows: ItemRow[]; onChange: (rows: 
   );
 }
 
-function QuoteCard({ quote, currency }: { quote: Detail["quotes"][number]; currency: MoneyCurrency }) {
+function QuoteCard({ quote, currency, members }: { quote: Detail["quotes"][number]; currency: MoneyCurrency; members: readonly { id: string; name: string }[] }) {
+  const { quotedFor, preparedBy } = quoteAttribution(quote, members);
   return (
-    <div className="panel p-4">
-      <div className="flex items-center justify-between">
-        <p className="font-medium">
-          Quote v{quote.version} — {formatMoney(money(currency, quote.amountMinor))}
-        </p>
+    <article data-financial-document className="rounded-lg border px-5 py-6 sm:px-7 sm:py-8">
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="font-heading text-lg">Quote v{quote.version}</h3>
         <Badge tone={quote.status === "accepted" ? "good" : "neutral"}>{QUOTE_STATUS_LABELS[quote.status]}</Badge>
       </div>
-      <ul className="mt-2 space-y-1 text-sm">
+      <dl className="mt-4 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
+        <dt className="text-muted-foreground">Quoted by</dt>
+        <dd className="font-medium">{quotedFor}</dd>
+        {preparedBy ? <><dt className="text-muted-foreground">Prepared by</dt><dd>{preparedBy}, for {quotedFor}</dd></> : null}
+        <dt className="text-muted-foreground">Delivery</dt>
+        <dd>{quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`} after the deposit</dd>
+      </dl>
+      <ul className="mt-6 divide-y border-y text-sm">
         {quote.items.map((item) => (
-          <li key={item.id} className="flex justify-between gap-4">
+          <li key={item.id} className="flex justify-between gap-4 py-4">
             <span>
               {item.description}
               {item.extraDays > 0 ? ` (+${item.extraDays} days)` : ""}
             </span>
-            <span>{formatMoney(money(currency, item.amountMinor))}</span>
+            <span className="shrink-0 whitespace-nowrap font-tabular">{formatMoney(money(currency, item.amountMinor))}</span>
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-sm text-muted-foreground">Delivery in {quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`} after the deposit.</p>
-    </div>
+      <dl className="mt-5 flex items-baseline justify-between gap-4"><dt className="font-medium">Work subtotal</dt><dd className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</dd></dl>
+    </article>
   );
 }
 
@@ -258,8 +272,8 @@ export default function ProjectDetail({
     const allowedPages = new Set((seller.data?.scope?.seller?.sections ?? []).flatMap((section) => section.pages));
     const back = allowedPages.has("projects")
       ? { href: `/${teamSlug}/projects`, label: "Back to projects" }
-      : allowedPages.has("requests")
-        ? { href: `/${teamSlug}/requests`, label: "Back to requests" }
+      : allowedPages.has("requests") || allowedPages.has("orders")
+        ? { href: `/${teamSlug}/orders`, label: "Back to orders" }
         : { href: `/${teamSlug}`, label: "Back to Home" };
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
@@ -378,7 +392,7 @@ export default function ProjectDetail({
           <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Deliveries</dt><dd className="font-tabular">{deliveries.length}</dd></div>
         </dl>
       </section> : null}
-      {view !== "activity" && seller.data?.available ? <Link href={`/${teamSlug}/calls?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
+      {view !== "activity" && seller.data?.available ? <Link href={`/${teamSlug}/threads?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
         <span className="grid min-w-0 gap-0.5"><strong className="break-words font-semibold">Ask about {project.title}</strong><span className="text-muted-foreground">Open a focused thread for this project.</span></span>
       </Link> : null}
       {view === "overview" && schedule.length > 0 ? (
@@ -423,83 +437,84 @@ export default function ProjectDetail({
       </div>
 
       {view !== "money" ? <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
-      {view === "overview" ? <section className="space-y-4" aria-labelledby="project-next-heading">
-        <h2 id="project-next-heading" className="font-heading text-xl">What happens next</h2>
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[10px] border p-4">
-          <p className="min-w-0 flex-1 basis-full text-sm font-medium sm:basis-auto">{next.title}</p>
-          <Link href={`/${teamSlug}/projects/${projectId}/${next.tab}`} className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent">{next.action}</Link>
-        </div>
-      </section> : null}
+      {view === "overview" ? (
+        <RecordCard
+          title="What happens next"
+          actions={<Link href={`/${teamSlug}/projects/${projectId}/${next.tab}`} className={buttonVariants({ size: "sm" })}>{next.action}</Link>}
+        >
+          <p className="text-sm">{next.title}</p>
+        </RecordCard>
+      ) : null}
+      {view === "overview" && role !== "freelancer" && project.status === "quoting" ? (
+        <RequestHandling teamSlug={teamSlug} projectId={projectId} members={members.data ?? []} onChange={refresh} />
+      ) : null}
         {view === "overview" && project.source === "web" ? (
-          <section id="request" className="scroll-mt-4 space-y-3 pt-3">
-            <h2 className="text-lg font-semibold">Request</h2>
-            {primary ? (
-            <p className="text-sm">
-              Requested by{" "}
-              {primaryEmail ? `${primary.name} <${primaryEmail}>` : primary.name}
-            </p>
-            ) : null}
+          <RecordCard
+            id="request"
+            title="Request"
+            description={primary ? `Requested by ${primaryEmail ? `${primary.name} <${primaryEmail}>` : primary.name}` : undefined}
+          >
             {project.requestAnswers.length > 0 ? (
-              <dl className="space-y-2">
+              <dl className="grid gap-4 text-sm">
                 {project.requestAnswers.map((qa, index) => (
-                  <div key={index}>
-                    <dt className="text-sm font-medium">{qa.question}</dt>
-                    <dd className="text-sm whitespace-pre-wrap">{qa.answer}</dd>
+                  <div key={index} className="grid gap-1">
+                    <dt className="text-muted-foreground">{qa.question}</dt>
+                    <dd className="whitespace-pre-wrap">{qa.answer}</dd>
                   </div>
                 ))}
               </dl>
-            ) : null}
-          </section>
+            ) : <p className="text-sm text-muted-foreground">The client sent no answers with the request.</p>}
+          </RecordCard>
         ) : null}
-        {view === "overview" && project.brief ? <section className="space-y-3"><h2 className="font-heading text-xl">The work</h2><p className="break-words text-sm leading-relaxed">{project.brief}</p></section> : null}
+        {view === "overview" && project.brief ? <RecordCard title="The work"><p className="break-words text-sm leading-relaxed">{project.brief}</p></RecordCard> : null}
       {view === "conversation" ? <ConversationSection teamSlug={teamSlug} detail={detail.data} members={members.data ?? []} onChange={refresh} /> : null}
       {view === "activity" && contacts.length > 0 ? (
       <ClientsSection teamSlug={teamSlug} projectId={projectId} contacts={contacts} role={role} onChange={refresh} />
       ) : null}
 
       {view === "activity" && !solo && canAssignFreelancer(role) && project.status === "quoting" ? (
-        <section id="assignment" className="scroll-mt-4 space-y-3">
-          <h2 className="text-lg font-semibold">Assignment</h2>
-          <form onSubmit={handleAssign} className="flex flex-wrap items-end gap-2">
-            <div className="space-y-2">
+        <RecordCard id="assignment" title="Assignment" description="The freelancer who does the work and is paid for it.">
+          <form onSubmit={handleAssign} className="flex flex-wrap items-end gap-3">
+            <div className="grid gap-1.5">
               <Label htmlFor="assign-freelancer">Freelancer</Label>
               <select
                 id="assign-freelancer"
-                className={nativeSelectClass}
+                className={`${nativeSelectClass} h-10 w-64 max-w-full`}
                 value={freelancerId}
                 onChange={(e) => setFreelancerId(e.target.value)}
               >
                 <option value="">Choose a member…</option>
                 {(members.data ?? []).map((member) => (
                   <option key={member.id} value={member.id}>
-                    {member.name} ({member.role})
+                    {member.name} · {member.role}
                   </option>
                 ))}
               </select>
             </div>
-            <Button type="submit" disabled={!freelancerId || assign.isPending}>
+            <Button type="submit" variant="outline" disabled={!freelancerId || assign.isPending}>
               Assign
             </Button>
           </form>
-          {assign.error ? <p className="text-sm text-destructive">{assign.error.message}</p> : null}
-        </section>
+          {assign.error ? <p role="alert" className="mt-2 text-sm text-destructive">{assign.error.message}</p> : null}
+        </RecordCard>
       ) : null}
 
       {view !== "quote" || financesHidden ? null : (
       <section id="quotes" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Quotes</h2>
+        {competingProposalCount(quotes) > 1 ? <p className="text-sm text-muted-foreground">{competingProposalCount(quotes)} freelancers sent competing proposals. The client accepts one; the others are closed.</p> : null}
         {quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotes yet.</p> : null}
         {quotes.map((quote) => (
-          <QuoteCard key={quote.id} quote={quote} currency={currency} />
+          <QuoteCard key={quote.id} quote={quote} currency={currency} members={members.data ?? []} />
         ))}
         {project.status === "quoting" && (role !== "freelancer" || quotingMode !== "team") ? (
           <form onSubmit={handleQuote} className="space-y-3 panel p-4">
             <h3 className="font-medium">New quote</h3>
-            <ItemRowsEditor rows={quoteRows} onChange={setQuoteRows} />
+            <ItemRowsEditor rows={quoteRows} onChange={setQuoteRows} currency={currency} />
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-2">
                 <Label htmlFor="delivery-days">Delivery days</Label>
-                <Input id="delivery-days" inputMode="numeric" className="w-24" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} />
+                <ValueInput id="delivery-days" unit="days" type="number" min={1} step={1} inputMode="numeric" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} />
               </div>
               {needsFreelancerName ? (
                 <div className="space-y-2">
@@ -606,7 +621,7 @@ export default function ProjectDetail({
                 Remove “{item.description}” ({formatMoney(money(currency, item.amountMinor))})
               </label>
             ))}
-            {addRows.length > 0 ? <ItemRowsEditor rows={addRows} onChange={setAddRows} /> : null}
+            {addRows.length > 0 ? <ItemRowsEditor rows={addRows} onChange={setAddRows} currency={currency} /> : null}
             {addRows.length === 0 ? (
               <Button type="button" variant="outline" onClick={() => setAddRows([{ ...EMPTY_ROW }])}>
                 Add a line
@@ -743,9 +758,9 @@ export default function ProjectDetail({
         <h2 className="text-lg font-semibold">Payments</h2>
         {payments.length === 0 ? <p className="text-sm text-muted-foreground">No payments yet. The deposit is created when the client accepts a quote.</p> : null}
         {payments.map((payment) => (
-          <div key={payment.id} className="frame frame-panel text-sm">
-            <div className="frame-head justify-between gap-4 text-[14px]">
-              <p className="font-medium">{PAYMENT_KIND_LABELS[payment.kind]}</p>
+          <article key={payment.id} data-financial-document className="rounded-lg border px-5 py-6 text-sm sm:px-7 sm:py-8">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h3 className="font-heading text-lg">{PAYMENT_KIND_LABELS[payment.kind]} payment</h3>
               <div className="flex items-center gap-2">
                 {payment.reviewReason ? (
                   <Badge tone="warn">Needs review</Badge>
@@ -753,18 +768,21 @@ export default function ProjectDetail({
                 <Badge tone={payment.status === "captured" ? "good" : payment.status === "failed" ? "fail" : "neutral"}>{paymentRefundLabel(payment, currency) ?? PAYMENT_STATUS_LABELS[payment.status]}</Badge>
               </div>
             </div>
-            <div className="frame frame-body px-3.5 py-3">
-              <ul className="space-y-1">
+            <p className="mt-3 break-all text-xs text-muted-foreground">Reference: {payment.id}</p>
+            {payment.lines.some((line) => line.label.startsWith("Management fee")) ? <p className="mt-2 text-xs text-muted-foreground">The management fee is calculated on the quoted work subtotal.</p> : null}
+            <div className="mt-6">
+              <ul className="divide-y border-y">
                 {payment.lines.map((line, index) => (
-                  <li key={index} className="flex justify-between gap-4">
+                  <li key={index} className="flex justify-between gap-4 py-4">
                     <span>{line.label}</span>
-                    <span className="font-tabular">{formatMoney(money(currency, line.amountMinor))}</span>
+                    <span className="shrink-0 whitespace-nowrap font-tabular">{formatMoney(money(currency, line.amountMinor))}</span>
                   </li>
                 ))}
               </ul>
+              <dl className="mt-5 flex items-baseline justify-between gap-4"><dt className="font-medium">{payment.status === "captured" ? "Total paid" : payment.status === "pending" ? "Amount due" : "Payment total"}</dt><dd className="shrink-0 whitespace-nowrap font-tabular text-xl font-semibold">{formatMoney(money(currency, payment.amountMinor))}</dd></dl>
               {payment.status === "pending" ? <p className="mt-2 text-muted-foreground">Waiting for the client to pay.</p> : null}
             </div>
-          </div>
+          </article>
         ))}
       </section>
       </>

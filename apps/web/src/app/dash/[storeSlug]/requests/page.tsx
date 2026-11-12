@@ -1,9 +1,7 @@
-import { requireSession } from "@/lib/server-api";
+import { redirect } from "next/navigation";
 
-import OpenRequests from "./open-requests";
-
+// Service requests are listed with premade-item orders under Orders.
 export default async function RequestsPage({ params }: { params: Promise<{ storeSlug: string }> }) {
-  await requireSession();
   const { storeSlug } = await params;
-  return <OpenRequests teamSlug={storeSlug} />;
+  redirect(`/${encodeURIComponent(storeSlug)}/orders`);
 }

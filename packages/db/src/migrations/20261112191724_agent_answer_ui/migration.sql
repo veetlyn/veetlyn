@@ -1,0 +1,1 @@
+ALTER TABLE "agent_call_entry" ADD COLUMN "ui" jsonb;

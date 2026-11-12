@@ -14,6 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { team } from "./organization";
+import { servicesDepartment } from "./services-catalog";
 
 export const products = pgTable(
   "products",
@@ -24,6 +25,8 @@ export const products = pgTable(
       .notNull()
       .references(() => team.id, { onDelete: "cascade" }),
     status: text("status").notNull().default("draft"),
+    // Shared catalog category (services_department), for services-team premade items and store products.
+    departmentId: text("department_id").references(() => servicesDepartment.id, { onDelete: "set null" }),
     // physical (Commerce stores) or digital (sellers, run 4a); derived from the team at creation.
     kind: text("kind").notNull().default("physical"),
     title: text("title").notNull(),
@@ -40,6 +43,7 @@ export const products = pgTable(
   },
   (table) => [
     index("idx_products_store_status").on(table.storeId, table.status),
+    index("idx_products_department").on(table.departmentId),
     check("products_status_check", sql`${table.status} IN ('draft', 'published')`),
     check("products_kind_check", sql`${table.kind} IN ('physical', 'digital')`),
   ],

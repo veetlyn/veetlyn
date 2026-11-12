@@ -14,7 +14,6 @@ import {
   SOLO_TEAM_CUT_BPS,
 } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
-import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,12 +21,13 @@ import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
 import { WorkPage } from "@/components/page-composition";
+import { ValueInput } from "@/components/value-input";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { QUOTING_MODE_LABELS } from "@/lib/services-team-labels";
 import { rateField } from "@/lib/services-team-settings-form";
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = `w-full ${nativeSelectClass}`;
+const SELECT_CLASS = `w-full max-w-64 ${nativeSelectClass}`;
 
 function SettingsRow({ id, label, description, children }: { id: string; label: string; description: string; children: React.ReactNode }) {
   return (
@@ -55,18 +55,20 @@ function RateInput({
   const field = rateField(value);
   return (
     <SettingsRow id={id} label={label} description={id === "team-cut" ? "The percentage of the quoted price kept by the team." : "The percentage added to the quoted price and paid by the client."}>
-      <Input
+      <ValueInput
         id={id}
+        unit="%"
+        unitLabel="percent"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         inputMode="decimal"
         aria-invalid={field.problem !== null}
-        aria-describedby={`${id}-problem`}
+        aria-describedby={field.problem ? `${id}-problem` : undefined}
         required
       />
-      <p id={`${id}-problem`} className="text-sm text-destructive">
+      {field.problem ? <p id={`${id}-problem`} className="text-sm text-destructive">
         {field.problem}
-      </p>
+      </p> : null}
     </SettingsRow>
   );
 }
@@ -194,7 +196,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
         <SettingsRow id="currency" label="Currency" description="The default currency for new quotes. Existing projects keep their currency.">
           <select
             id="currency"
-            className={SELECT_CLASS}
+            className={`w-32 ${nativeSelectClass}`}
             value={values.currency}
             onChange={(e) => {
               if (isCurrency(e.target.value)) { setCurrency(e.target.value); save.reset(); }
@@ -214,10 +216,10 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           </p>
         ) : (
           <>
-            <RateInput id="team-cut" label="Team cut (%)" value={values.teamCut} onChange={(value) => { setTeamCut(value); save.reset(); }} />
+            <RateInput id="team-cut" label="Team cut" value={values.teamCut} onChange={(value) => { setTeamCut(value); save.reset(); }} />
             <RateInput
               id="management-fee"
-              label="Management fee (%)"
+              label="Management fee"
               value={values.managementFee}
               onChange={(value) => { setManagementFee(value); save.reset(); }}
             />

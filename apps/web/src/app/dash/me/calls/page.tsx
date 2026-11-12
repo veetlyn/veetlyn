@@ -1,22 +1,11 @@
-import TeamCalls from "@/app/dash/[storeSlug]/calls/team-calls";
-import { platformName } from "@/lib/platform";
-import { requireSession } from "@/lib/server-api";
+import { redirect } from "next/navigation";
 
-const NODE = { kind: "account" as const };
-
-// Calls at the account: across the person's workspaces, purchases and earnings, and every call below.
-export default async function AccountCallsPage({ searchParams }: { searchParams: Promise<{ call?: string }> }) {
-  await requireSession();
-  const { call } = await searchParams;
-  return (
-    <TeamCalls
-      listNode={NODE}
-      askNode={NODE}
-      scopeName={"Your account"}
-      callsPath="/me/calls"
-      projectHref={null}
-      assistantName={platformName()}
-      callId={call ?? null}
-    />
-  );
+// Threads used to live at /calls. Old links and bookmarks land on /threads; ?call= becomes ?thread=.
+export default async function OldAccountCalls({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key === "call" ? "thread" : key, item);
+  }
+  const search = query.toString();
+  redirect(`/me/threads${search ? `?${search}` : ""}`);
 }

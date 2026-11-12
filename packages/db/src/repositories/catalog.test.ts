@@ -204,7 +204,7 @@ describe.skipIf(!hasTestDatabase)("catalog repositories", () => {
 
       const listed = await listPublishedDigitalProducts(db, tenant.storeId);
       expect(listed).toEqual([
-        { id: product.id, title: "Icon pack", description: "120 icons.", priceMinor: 1900 },
+        { id: product.id, departmentId: null, title: "Icon pack", description: "120 icons.", priceMinor: 1900 },
       ]);
       expect(await countDigitalProducts(db, tenant.storeId)).toBe(1);
     });

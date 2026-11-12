@@ -11,7 +11,6 @@ import {
 } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
-import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, type ReactNode, useState } from "react";
@@ -21,6 +20,7 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
+import { ValueInput } from "@/components/value-input";
 import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { formatMinor } from "@/lib/money";
@@ -82,8 +82,8 @@ function presetDescription(preset: FixedPreset, currency: Currency): string {
 
 function Group({ legend, children }: { legend: string; children: ReactNode }) {
   return (
-    <fieldset className="space-y-4 panel p-4">
-      <legend className="px-1 font-medium">{legend}</legend>
+    <fieldset className="space-y-5 border-b pb-7">
+      <legend className="mb-4 text-base font-medium">{legend}</legend>
       {children}
     </fieldset>
   );
@@ -133,6 +133,7 @@ function TextField({
   onChange,
   hint,
   inputMode = "decimal",
+  unit,
 }: {
   id: string;
   label: string;
@@ -140,16 +141,21 @@ function TextField({
   onChange: (value: string) => void;
   hint?: ReactNode;
   inputMode?: "decimal" | "numeric";
+  unit: string;
 }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input
+      <ValueInput
         id={id}
+        unit={unit}
+        type={inputMode === "numeric" ? "number" : "text"}
+        min={inputMode === "numeric" ? 0 : undefined}
+        max={id === "hold-days" ? 90 : undefined}
+        step={inputMode === "numeric" ? 1 : undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         inputMode={inputMode}
-        className="w-40"
         aria-describedby={hint ? `${id}-hint` : undefined}
       />
       {hint ? (
@@ -335,7 +341,8 @@ function RulesForm({
         {values.autoApprove === "up_to" ? (
           <TextField
             id="auto-approve-up-to"
-            label={`Auto-approve payouts up to (${currency})`}
+            label="Auto-approve payouts up to"
+            unit={currency}
             value={values.autoApproveUpTo}
             onChange={(autoApproveUpTo) => patch({ autoApproveUpTo })}
           />
@@ -359,7 +366,8 @@ function RulesForm({
         />
         <TextField
           id="second-approver-above"
-          label={`Require a second admin above (${currency})`}
+          label="Require a second admin above"
+          unit={currency}
           value={values.secondApproverAbove}
           onChange={(secondApproverAbove) => patch({ secondApproverAbove })}
           hint={
@@ -399,6 +407,7 @@ function RulesForm({
         <TextField
           id="hold-days"
           label="Days to wait after a project completes"
+          unit="days"
           value={values.holdDays}
           onChange={(holdDays) => patch({ holdDays })}
           inputMode="numeric"
@@ -420,7 +429,7 @@ function RulesForm({
             <Label htmlFor="payday-weekday">Day of the week</Label>
             <select
               id="payday-weekday"
-              className={SELECT_CLASS}
+              className={`${SELECT_CLASS} w-48 max-w-full`}
               value={values.paydayWeekday}
               onChange={(e) => patch({ paydayWeekday: e.target.value })}
             >
@@ -437,7 +446,7 @@ function RulesForm({
             <Label htmlFor="payday-month-day">Day of the month</Label>
             <select
               id="payday-month-day"
-              className={SELECT_CLASS}
+              className={`${SELECT_CLASS} w-32 max-w-full`}
               value={values.paydayMonthDay}
               onChange={(e) => patch({ paydayMonthDay: e.target.value })}
             >
@@ -454,7 +463,8 @@ function RulesForm({
         ) : null}
         <TextField
           id="balance-floor"
-          label={`Keep at least this in the team's PayPal balance (${currency})`}
+          label="Keep at least this in the team’s PayPal balance"
+          unit={currency}
           value={values.balanceFloor}
           onChange={(balanceFloor) => patch({ balanceFloor })}
           hint={
@@ -479,7 +489,8 @@ function RulesForm({
       <Group legend="Limits">
         <TextField
           id="minimum-payout"
-          label={`Minimum payout (${currency})`}
+          label="Minimum payout"
+          unit={currency}
           value={values.minimumPayout}
           onChange={(minimumPayout) => patch({ minimumPayout })}
         />

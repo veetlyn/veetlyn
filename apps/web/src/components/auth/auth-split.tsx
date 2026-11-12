@@ -16,8 +16,8 @@ export default function AuthSplit({ children, visual }: { children: React.ReactN
           </Link>
           <ModeToggle />
         </div>
-        <div className="flex flex-1 items-center justify-center px-4 py-4 short:py-2">
-          <div className="w-full max-w-[380px]">{children}</div>
+        <div className="flex flex-1 justify-center px-4 py-4 short:py-2">
+          <div className="my-auto w-full max-w-[380px] py-6 short:py-3">{children}</div>
         </div>
       </div>
       {visual ?? <AuthVisual />}

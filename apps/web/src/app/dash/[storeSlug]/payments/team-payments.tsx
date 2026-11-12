@@ -2,12 +2,14 @@
 
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
-import { Input } from "@jendal-workspace/ui/components/input";
-import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
+import type { AppRouter } from "@jendal-workspace/api/routers/index";
+import type { inferRouterOutputs } from "@trpc/server";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
 
+import type { TableColumn } from "@jendal-workspace/ui/components/motion/table";
+
+import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
 import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
@@ -18,16 +20,27 @@ const DATE: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
 
 const TONES = { pending: "neutral", captured: "good", failed: "fail", cancelled: "neutral", refunded: "neutral" } as const;
 
-const HEADINGS = ["Date", "Project", "Client", "Kind", "Amount", "PayPal fee", "Refunded", "Status"];
+type Payment = inferRouterOutputs<AppRouter>["money"]["payments"][number];
+
+
+const paidOn = (payment: Payment) => new Date(payment.capturedAt ?? payment.createdAt);
+
+function columns(teamSlug: string): TableColumn<Payment>[] {
+  return [
+    { key: "date", header: "Date", width: "128px", sortable: true, sortValue: (p) => paidOn(p).getTime(), cell: (p) => <span className="whitespace-nowrap">{paidOn(p).toLocaleDateString(undefined, DATE)}</span> },
+    { key: "project", header: "Project", sortable: true, sortValue: (p) => p.projectTitle, cell: (p) => <Link href={`/${teamSlug}/projects/${p.projectId}`} className="truncate underline underline-offset-4">{p.projectTitle}</Link> },
+    { key: "client", header: "Client", cell: (p) => <span className="truncate">{p.clientName ?? "Client"}</span> },
+    { key: "kind", header: "Kind", width: "112px", cell: (p) => PAYMENT_KIND_LABELS[p.kind] },
+    { key: "amount", header: "Amount", width: "120px", align: "right", sortable: true, sortValue: (p) => p.amountMinor, cell: (p) => <span className="whitespace-nowrap tabular-nums">{formatMinor(p.amountMinor, p.currency)}</span> },
+    { key: "fee", header: "PayPal fee", width: "128px", align: "right", cell: (p) => <span className="whitespace-nowrap tabular-nums">{p.paypalFeeMinor === null ? "Not reported yet" : formatMinor(p.paypalFeeMinor, p.currency)}</span> },
+    { key: "refunded", header: "Refunded", width: "112px", align: "right", cell: (p) => <span className="whitespace-nowrap tabular-nums">{p.refundedMinor > 0 ? formatMinor(p.refundedMinor, p.currency) : "None"}</span> },
+    { key: "status", header: "Status", width: "128px", sortable: true, sortValue: (p) => p.status, cell: (p) => <Badge tone={TONES[p.status]}>{PAYMENT_STATUS_LABELS[p.status]}</Badge> },
+  ];
+}
 
 // Money in from clients: every payment on the team's projects, the PayPal fee it cost and what went back.
 export default function TeamPayments({ teamSlug }: { teamSlug: string }) {
   const payments = useQuery({ ...trpc.money.payments.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const matching = (payments.data ?? []).filter((payment) =>
-    (status === "all" || payment.status === status) && `${payment.projectTitle} ${payment.clientName ?? ""}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
-  );
 
   return (
     <ListPage>
@@ -41,15 +54,6 @@ export default function TeamPayments({ teamSlug }: { teamSlug: string }) {
           <p className="text-sm text-muted-foreground">{payments.data.filter((payment) => payment.status === "captured").length} captured</p>
         </SummaryStrip>
       ) : null}
-      {payments.isSuccess && payments.data.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="w-full sm:max-w-64"><span className="sr-only">Search payments by project or client</span><Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search payments…" /></label>
-          <label><span className="sr-only">Payment status</span><select className={nativeSelectClass} value={status} onChange={(event) => setStatus(event.target.value)}>
-            <option value="all">All statuses</option>
-            {Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select></label>
-        </div>
-      ) : null}
       {payments.isPending ? (
         <Loader />
       ) : payments.isError ? (
@@ -57,56 +61,22 @@ export default function TeamPayments({ teamSlug }: { teamSlug: string }) {
           <p>{payments.error.data?.code === "FORBIDDEN" ? "You don’t have access to Payments. A team admin can change your access." : payments.error.message}</p>
           {payments.error.data?.code !== "FORBIDDEN" ? <Button type="button" variant="outline" size="sm" onClick={() => void payments.refetch()}>Try again</Button> : null}
         </div>
-      ) : payments.data.length === 0 ? (
-        <section className="rounded-[10px] border px-5 py-10 text-center">
-          <h2 className="font-heading text-lg">No client payments yet</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Deposits, balances and refunds will appear here as clients pay through PayPal.</p>
-        </section>
-      ) : matching.length === 0 ? (
-        <section className="rounded-[10px] border px-5 py-10 text-center">
-          <h2 className="font-heading text-lg">No matching payments</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Try another project, client or status.</p>
-          <Button type="button" variant="outline" className="mt-4" onClick={() => { setSearch(""); setStatus("all"); }}>Clear filters</Button>
-        </section>
       ) : (
-        <div role="region" aria-label="Payment history" tabIndex={0} className="panel relative overflow-x-auto">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Client payments, provider fees and refunds</caption>
-            <thead className="border-b bg-secondary/60 text-left text-xs text-muted-foreground">
-              <tr>
-                {HEADINGS.map((heading) => (
-                  <th key={heading} scope="col" className="px-4 py-2.5 font-medium">
-                    {heading}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {matching.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {new Date(p.capturedAt ?? p.createdAt).toLocaleDateString(undefined, DATE)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/${teamSlug}/projects/${p.projectId}`} className="underline underline-offset-4">
-                      {p.projectTitle}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">{p.clientName ?? "Client"}</td>
-                  <td className="px-4 py-3">{PAYMENT_KIND_LABELS[p.kind]}</td>
-                   <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">{formatMinor(p.amountMinor, p.currency)}</td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {p.paypalFeeMinor === null ? "Not reported yet" : formatMinor(p.paypalFeeMinor, p.currency)}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{p.refundedMinor > 0 ? formatMinor(p.refundedMinor, p.currency) : "None"}</td>
-                  <td className="px-4 py-3">
-                    <Badge tone={TONES[p.status]}>{PAYMENT_STATUS_LABELS[p.status]}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataList
+          label="Payment history: client payments, provider fees and refunds"
+          rows={payments.data}
+          columns={columns(teamSlug)}
+          getRowId={(payment) => payment.id}
+          searchText={(payment) => `${payment.projectTitle} ${payment.clientName ?? ""}`}
+          searchLabel="Search payments"
+          filters={[
+            { key: "kind", label: "Kinds", options: Object.entries(PAYMENT_KIND_LABELS).map(([value, label]) => ({ value, label })), match: (payment, value) => payment.kind === value },
+            { key: "status", label: "Statuses", options: Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => ({ value, label })), match: (payment, value) => payment.status === value },
+          ]}
+          defaultSort={{ key: "date", direction: "desc" }}
+          empty={{ title: "No client payments yet", text: "Deposits, balances and refunds will appear here as clients pay through PayPal." }}
+          noun={{ one: "payment", many: "payments" }}
+        />
       )}
     </ListPage>
   );

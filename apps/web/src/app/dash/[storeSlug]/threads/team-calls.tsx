@@ -13,6 +13,7 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { AgentIcon } from "@/components/agent-icon";
+import AgentAnswer from "@/components/agent-answer";
 import AgentText from "@/components/agent-text";
 import ComposerBox from "@/components/composer-box";
 import Loader from "@/components/loader";
@@ -35,7 +36,7 @@ type Card = NonNullable<Entry["card"]>;
 function CardFacts({ card }: { card: Card }) {
   if (card.kind === "quote")
     return (
-      <div className="frame frame-body text-[14px]">
+      <div className="frame frame-body text-[13px]">
         <ul>
           {card.lines.map((line) => (
             <li key={line.label} className="flex justify-between gap-4 border-b px-3.5 py-2.5">
@@ -49,7 +50,7 @@ function CardFacts({ card }: { card: Card }) {
             Total, delivered in {card.delivery}
             {card.freelancer ? ` by ${card.freelancer}` : ""}
           </span>
-          <span className="font-tabular text-[16px] whitespace-nowrap">{card.total}</span>
+          <span className="font-tabular text-[15px] whitespace-nowrap">{card.total}</span>
         </div>
         <div className="flex items-baseline justify-between gap-4 border-t px-3.5 py-2.5 text-muted-foreground">
           <span>
@@ -62,21 +63,21 @@ function CardFacts({ card }: { card: Card }) {
     );
   if (card.kind === "payout")
     return (
-      <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[14px]">
+      <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[13px]">
         <span>{card.member}</span>
-        <span className="font-tabular text-[16px] font-medium">{card.amount}</span>
+        <span className="font-tabular text-[15px] font-medium">{card.amount}</span>
       </div>
     );
   if (card.kind === "assign")
     return (
-      <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[14px]">
+      <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[13px]">
         <span className="min-w-0">{card.project}</span>
         <span className="font-medium">{card.member}</span>
       </div>
     );
   if (card.kind === "amendment")
     return (
-      <div className="frame frame-body text-[14px]">
+      <div className="frame frame-body text-[13px]">
         <ul>
           {card.adds.map((line) => (
             <li key={line.label} className="flex justify-between gap-4 border-b px-3.5 py-2.5">
@@ -94,7 +95,7 @@ function CardFacts({ card }: { card: Card }) {
       </div>
     );
   return (
-    <div className="frame frame-body grid gap-1 px-3.5 py-3 text-[14px]">
+    <div className="frame frame-body grid gap-1 px-3.5 py-3 text-[13px]">
       <span className="text-muted-foreground">To: {card.audience}</span>
       <p className="whitespace-pre-wrap">{card.body}</p>
     </div>
@@ -112,7 +113,7 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
   const twoStep = card?.kind === "payout";
   return (
     <div className="frame frame-panel" aria-label="Decision">
-      <div className="frame-head flex items-center gap-3 text-[14px]">
+      <div className="frame-head flex items-center gap-3 text-[13px]">
         <h3 className="min-w-0 truncate font-medium">{card?.title ?? "Proposed action"}</h3>
         <Badge tone={state.tone} className="ml-auto shrink-0">
           {state.label}
@@ -121,16 +122,16 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
       {card ? (
         <CardFacts card={card} />
       ) : (
-        <p className="frame frame-body px-3.5 py-3 text-[14px] whitespace-pre-wrap">{entry.body}</p>
+        <p className="frame frame-body px-3.5 py-3 text-[13px] whitespace-pre-wrap">{entry.body}</p>
       )}
       <div className="grid gap-3 px-3.5 py-3">
         {entry.note ? (
-          <p className="flex gap-2 text-[14px] text-muted-foreground">
+          <p className="flex gap-2 text-[13px] text-muted-foreground">
             <AgentIcon className="mt-[3px] size-3.5 shrink-0" />
             <span>{entry.note}</span>
           </p>
         ) : null}
-        {entry.outcome && entry.status !== "done" ? <p className="text-[14px] text-muted-foreground">{entry.outcome}</p> : null}
+        {entry.outcome && entry.status !== "done" ? <p className="text-[13px] text-muted-foreground">{entry.outcome}</p> : null}
         {entry.status === "pending" ? (
           <div className="flex flex-wrap items-center gap-2">
             {twoStep && !armed ? (
@@ -145,13 +146,13 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
             <Button size="sm" variant="outline" disabled={busy} onClick={() => (armed ? setArmed(false) : decline.mutate({ entryId: entry.id }))}>
               {armed ? "Go back" : "Not now"}
             </Button>
-            <span className="text-[13px] text-muted-foreground">
+            <span className="text-[12px] text-muted-foreground">
               {armed ? "Press again to confirm." : "Nothing happens until you press this."}
             </span>
           </div>
         ) : null}
         {confirm.error || decline.error ? (
-          <p role="alert" className="text-[14px] text-destructive">
+          <p role="alert" className="text-[13px] text-destructive">
             {(confirm.error ?? decline.error)?.message}
           </p>
         ) : null}
@@ -194,11 +195,11 @@ export default function TeamCalls({
   const [message, setMessage] = useState("");
   // The question being answered shows at once; a turn takes seconds and the composer has already cleared.
   const [asking, setAsking] = useState<string | null>(null);
-  // A new call is shown as soon as the server names it: moving to ?call= reloads the server page, which can take a
+  // A new call is shown as soon as the server names it: moving to ?thread= reloads the server page, which can take a
   // few seconds, and the question would otherwise vanish into an empty composer meanwhile.
   const [startedCallId, setStartedCallId] = useState<string | null>(null);
   const activeCallId = callId ?? startedCallId;
-  // Once the URL names the call it holds it, so a later "New call" (no ?call=) starts clean.
+  // Once the URL names the call it holds it, so a later "New call" (no ?thread=) starts clean.
   useEffect(() => {
     if (callId) setStartedCallId(null);
   }, [callId]);
@@ -232,7 +233,7 @@ export default function TeamCalls({
         if (result.callId !== activeCallId) {
           setStartedCallId(result.callId);
           void queryClient.invalidateQueries({ queryKey: trpc.agent.thread.queryKey({ callId: result.callId }) });
-          router.push(`${callsPath}?call=${result.callId}`);
+          router.push(`${callsPath}?thread=${result.callId}`);
         }
       },
       onSettled: async () => {
@@ -269,7 +270,7 @@ export default function TeamCalls({
   const scopeLabel = onTable ? project.data?.project.title ?? "Project" : scopeName;
 
   const composer = (
-    <div className={activeCallId ? "shrink-0 px-3 pt-1 pb-3" : "w-full"}>
+    <div className={activeCallId ? "mx-auto w-full max-w-3xl shrink-0 px-3 pt-1 pb-3" : "w-full"}>
       <ComposerBox
         id="call-message"
         label="Message"
@@ -295,14 +296,18 @@ export default function TeamCalls({
   const conversation = (
     <section aria-label="Thread" className="flex h-full min-h-0 min-w-0 flex-col">
       {activeCallId ? (
-        <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
-          <span className="truncate text-sm font-medium">{current?.title ?? ""}</span>
-          <Link href={callsPath} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "ml-auto")}>
-            New thread
-          </Link>
+        <div className="shrink-0 border-b">
+          <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-4 py-2.5">
+            <span className="truncate text-sm font-medium">{current?.title ?? ""}</span>
+            <Link href={callsPath} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "ml-auto")}>
+              New thread
+            </Link>
+          </div>
         </div>
       ) : null}
-      <div className={cn("min-h-0 flex-1 space-y-4 overflow-y-auto px-4", activeCallId ? "py-5" : "py-0")}>
+      {/* The scroller spans the canvas so its scrollbar sits at the window edge; the column inside stays 768px. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className={cn("mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-4", activeCallId ? "py-5" : "py-0")}>
         {!available ? (
           <p className="panel p-4 text-sm text-muted-foreground">The assistant is not set up on this server yet.</p>
         ) : null}
@@ -318,8 +323,8 @@ export default function TeamCalls({
         {activeCallId && thread.isPending ? <Loader /> : null}
         {thread.isError ? <p className="text-sm text-muted-foreground">This thread isn’t available.</p> : null}
         {!activeCallId ? (
-          <div className="mx-auto flex min-h-full max-w-2xl flex-col justify-center gap-6 py-8">
-            <h1 className="flex items-center justify-center gap-3 text-center font-heading text-[29px] leading-tight tracking-[-0.02em]">
+          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6 py-8">
+            <h1 className="flex items-center justify-center gap-3 text-center font-heading text-[28px] leading-tight tracking-[-0.02em]">
               <AgentIcon className="size-7 shrink-0" />
               {firstName ? `Hello, ${firstName}` : "Hello"}
             </h1>
@@ -334,18 +339,14 @@ export default function TeamCalls({
               </div>
             ) : null}
             {asking ? (
-              <p role="status" className="text-center text-[14px] text-muted-foreground">
+              <p role="status" className="text-center text-[13px] text-muted-foreground">
                 {assistantName} is working on “{asking.slice(0, 80)}”…
               </p>
             ) : null}
-            <p className="text-center text-[14px] text-muted-foreground">
-              {assistantName} sees only what you can see and prepares quotes, messages and payout decisions. Nothing goes
-              out until you approve it.
-            </p>
           </div>
         ) : null}
         {activeCallId ? (
-          <ol className="space-y-4">
+          <ol className="space-y-7">
             {thread.data?.entries.map((entry) =>
               entry.kind === "proposal" ? (
                 <li key={entry.id}>
@@ -359,13 +360,14 @@ export default function TeamCalls({
                   {entry.body}
                 </li>
               ) : (
-                <li key={entry.id} className="space-y-1">
+                <li key={entry.id} className="grid gap-3">
                   <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <AgentIcon className="size-3.5" />
                     {assistantName}
                     {entry.note ? <span className="font-normal"> · {entry.note}</span> : null}
                   </p>
                   <AgentText text={entry.body} />
+                  {entry.ui ? <AgentAnswer ui={entry.ui} teamSlug={teamSlug} /> : null}
                 </li>
               ),
             )}
@@ -374,7 +376,7 @@ export default function TeamCalls({
                 <li className="ml-auto w-fit max-w-[85%] rounded-[14px_14px_4px_14px] bg-secondary px-3.5 py-2.5 text-sm whitespace-pre-wrap">
                   {asking}
                 </li>
-                <li role="status" className="flex items-center gap-2 text-[14px] text-muted-foreground">
+                <li role="status" className="flex items-center gap-2 text-[13px] text-muted-foreground">
                   <AgentIcon className="size-3.5 motion-safe:animate-pulse" />
                   {assistantName} is reading your records and working on it…
                 </li>
@@ -383,9 +385,10 @@ export default function TeamCalls({
           </ol>
         ) : null}
       </div>
+      </div>
       {activeCallId ? composer : null}
     </section>
   );
 
-  return <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">{conversation}</div>;
+  return <div className="flex min-h-0 w-full flex-1 flex-col">{conversation}</div>;
 }

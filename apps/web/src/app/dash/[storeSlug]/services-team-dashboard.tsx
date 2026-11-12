@@ -222,14 +222,14 @@ export default function ServicesTeamDashboard({
   const hero = embedded ? null : (
     <section
       aria-label={`Ask ${platform}`}
-      className="mx-auto grid w-full max-w-[660px] gap-6 pt-8 pb-4 text-center md:pt-12"
+      className="mx-auto grid w-full max-w-[660px] gap-4 pt-6 pb-4 text-center md:pt-8"
     >
       <p className="text-sm text-muted-foreground">{firstName ? `Hello, ${firstName}` : "Welcome back"}</p>
-      <h1 className="font-heading text-[30px] leading-[1.15] tracking-[-0.03em] md:text-[36px]">
+      <h1 className="font-heading text-3xl leading-[1.15] tracking-[-0.03em]">
         What’s next for {team.name}?
       </h1>
       <AskBar
-        callsPath={`/${team.slug}/calls`}
+        callsPath={`/${team.slug}/threads`}
         node={{ kind: "seller", teamId: team.id }}
         placeholder={`Ask ${platform} to draft a quote, chase a client or check payouts`}
         hero={{
@@ -247,13 +247,13 @@ export default function ServicesTeamDashboard({
   );
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-[724px] px-4 pb-12 md:px-8">
+    <main className="mx-auto w-full min-w-0 max-w-[724px] px-4 pb-12 text-sm md:px-8">
       {hero}
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-10 pt-6">
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
           {embedded ? (
             <header className="grid gap-2">
-              <p className="flex items-center gap-2 text-[14px] text-muted-foreground">
+              <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
                 <AgentIcon className="size-4 shrink-0" />
                 <span>
                   <b className="font-semibold text-foreground">{platform}</b> for {team.name},{" "}
@@ -261,9 +261,9 @@ export default function ServicesTeamDashboard({
                 </span>
               </p>
               {embedded ? (
-                <h1 className="font-heading text-[31px] leading-[1.1] tracking-[-0.03em]">{headline}</h1>
+                <h1 className="font-heading text-3xl leading-[1.1] tracking-[-0.03em]">{headline}</h1>
               ) : (
-                <h2 className="font-heading text-[23px] leading-[1.15] tracking-[-0.02em]">{headline}</h2>
+                <h2 className="font-heading text-[22px] leading-[1.15] tracking-[-0.02em]">{headline}</h2>
               )}
               <p className="text-sm text-muted-foreground">
                 {solo ? "Selling as just me" : "Selling as a team"} on{" "}
@@ -280,7 +280,7 @@ export default function ServicesTeamDashboard({
           ) : null}
 
           {drafting.isPending ? (
-            <p role="status" className="flex items-center gap-2 text-[14px] text-muted-foreground">
+            <p role="status" className="flex items-center gap-2 text-[13px] text-muted-foreground">
               <AgentIcon className="size-4 shrink-0 motion-safe:animate-pulse" />
               {platform} is preparing a quote for your newest request…
             </p>
@@ -316,7 +316,7 @@ export default function ServicesTeamDashboard({
                     {item.card.kind === "quote" ? <span className="font-tabular font-semibold">{item.card.total}</span> : null}
                     {item.card.kind === "payout" ? <span className="font-tabular font-semibold">{item.card.amount}</span> : null}
                     <Link
-                      href={`/${team.slug}/calls?call=${item.callId}`}
+                      href={`/${team.slug}/threads?thread=${item.callId}`}
                       className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
                     >
                       Review
@@ -411,9 +411,9 @@ export default function ServicesTeamDashboard({
           </section>
         </div>
 
-        {admin ? <details className="min-w-0 border-t pt-5">
-          <summary className="cursor-pointer text-sm font-medium">Manage {team.name}{!setupDone ? " · Finish setup" : ""}</summary>
-          <div className="mt-4 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
+        {admin && !setupDone ? (
+          <section aria-labelledby="setup-h" className="grid min-w-0 gap-3 border-t pt-6">
+            <h2 id="setup-h" className="font-heading text-lg">Finish setup</h2>
           <SetupChecklist
             steps={steps}
             title={
@@ -426,15 +426,20 @@ export default function ServicesTeamDashboard({
                   : "Set up your team"
             }
           />
+          </section>
+        ) : null}
+        {admin ? (
+          <section aria-labelledby="manage-h" className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 border-t pt-6">
+            <h2 id="manage-h" className="font-heading text-lg">Seller page and payments</h2>
           <PublishCard teamSlug={team.slug} publicUrl={url} />
           <PayPalConnectCard teamId={team.id} />
           <section className="frame frame-panel">
-            <div className="frame-head text-[14px]">
+            <div className="frame-head text-[13px]">
               <h2 className="font-medium">Store</h2>
               {settings?.storeEnabled ? (
                 <div className="ml-auto flex gap-3">
                   <Link href={`/${team.slug}/products`} className="underline decoration-border underline-offset-4">
-                    Products
+                    Premade items
                   </Link>
                   {admin ? (
                     <Link href={`/${team.slug}/orders`} className="underline decoration-border underline-offset-4">
@@ -473,8 +478,8 @@ export default function ServicesTeamDashboard({
               ) : null}
             </div>
           </section>
-          </div>
-        </details> : null}
+          </section>
+        ) : null}
       </div>
     </main>
   );
@@ -482,12 +487,10 @@ export default function ServicesTeamDashboard({
 
 function Figure({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="frame frame-panel">
-      <p className="frame-head text-[14px] font-medium">{label}</p>
-      <div className="frame frame-body px-3.5 py-3">
-        <p className="font-tabular text-[23px] font-semibold tracking-[-0.02em]">{value}</p>
-        <p className="text-[14px] text-muted-foreground">{note}</p>
-      </div>
+    <div className="rounded-[10px] border bg-card px-4 py-3.5">
+      <p className="text-[13px] text-muted-foreground">{label}</p>
+      <p className="mt-1 font-tabular text-[22px] font-semibold tracking-[-0.02em]">{value}</p>
+      <p className="text-[13px] text-muted-foreground">{note}</p>
     </div>
   );
 }

@@ -112,6 +112,29 @@ describe.skipIf(!hasTestDatabase)("servicesCatalog router", () => {
     });
   });
 
+  it("nests categories with a nullable parent and rejects cycles or foreign parents", async () => {
+    const { userId: ownerId, organizationId } = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const admin = callerFor(ownerId);
+    const design = await admin.servicesCatalog.createDepartment({ teamSlug: "acme-studio", name: "Design" });
+    const logo = await admin.servicesCatalog.createDepartment({ teamSlug: "acme-studio", name: "Logo", parentId: design.id });
+
+    expect(logo).toMatchObject({ parentId: design.id });
+    await expect(
+      admin.servicesCatalog.setDepartmentParent({ teamSlug: "acme-studio", departmentId: design.id, parentId: logo.id }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "A category cannot sit inside itself or one of its subcategories." });
+
+    const second = await seedOrganization(db);
+    await seedServicesTeam(db, { organizationId: second.organizationId, slug: "other-studio" });
+    const foreign = await callerFor(second.userId).servicesCatalog.createDepartment({ teamSlug: "other-studio", name: "Foreign" });
+    await expect(
+      admin.servicesCatalog.setDepartmentParent({ teamSlug: "acme-studio", departmentId: logo.id, parentId: foreign.id }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "That parent category is not in your team." });
+    await expect(
+      admin.servicesCatalog.setDepartmentParent({ teamSlug: "acme-studio", departmentId: logo.id, parentId: null }),
+    ).resolves.toEqual({ departmentId: logo.id, parentId: null });
+  });
+
   it("renames a department, refuses a taken name, and hides another team's department", async () => {
     const { userId: ownerId, organizationId } = await seedOrganization(db);
     await seedServicesTeam(db, { organizationId, slug: "acme-studio" });

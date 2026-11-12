@@ -32,14 +32,26 @@ describe("the assistant's instructions", () => {
   // Walkthrough W3.5: a progress note called a USD quote "€150".
   it("keeps every amount in its record's currency, progress notes included", () => {
     const prompt = systemPrompt("Platform", inTeam("freelancer"), 5);
-    expect(prompt).toContain("never assume or convert a currency, not even in a short progress note");
+    expect(prompt).toContain("never assume or convert a currency, not even in a passing remark");
   });
 
   // Walk 2026-11-10: a catch-up answer came back as one long wall of text.
   it("asks for a short lead sentence and a capped list, so answers stay readable", () => {
     const prompt = systemPrompt("Platform", inTeam("admin"), 11);
-    expect(prompt).toContain("Start with one sentence that answers the question");
-    expect(prompt).toContain("at most 6 short bullets");
+    expect(prompt).toContain("Open with one plain sentence that answers the question");
+    expect(prompt).toContain("at most five short bullets");
+  });
+
+  // Walk 2026-11-12: lists and figures were written as long prose; they now go in structured blocks.
+  it("sends lists and figures to the present tool and keeps them out of the text", () => {
+    const prompt = systemPrompt("Platform", inTeam("admin"), 11);
+    expect(prompt).toContain("goes in the present tool, not in your text");
+    expect(prompt).toContain("Do not repeat in text what the blocks show");
+  });
+
+  // Walk 2026-11-12: a request with three freelancer quotes was described as having no quote yet.
+  it("reads a request before calling it unquoted", () => {
+    expect(systemPrompt("Platform", inTeam("admin"), 11)).toContain("Before saying a request has no quote, read it with project_get");
   });
 
   it("tells the assistant to look people and records up instead of asking the person for an id", () => {

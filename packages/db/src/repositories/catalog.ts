@@ -17,6 +17,7 @@ export type ProductFields = {
   description: string;
   brand: string;
   category: string;
+  departmentId: string | null;
   chargeTax: boolean;
   requiresShipping: boolean;
   channel3ProductId: string | null;
@@ -185,12 +186,13 @@ export async function deleteImages(db: Database, tenant: TenantContext, productI
 // Run 4a: digital products are sold from the seller page; a digital product has exactly one variant.
 // These run outside a TenantContext (the seller page and its router only have a store id), so they take
 // the store id directly.
-export type SellerProductRow = { id: string; title: string; description: string; priceMinor: number };
+export type SellerProductRow = { id: string; departmentId: string | null; title: string; description: string; priceMinor: number };
 
 export async function listPublishedDigitalProducts(db: DbExecutor, storeId: string): Promise<SellerProductRow[]> {
   const rows = await db
     .select({
       id: products.id,
+      departmentId: products.departmentId,
       title: products.title,
       description: products.description,
       priceMinor: productVariants.priceMinor,

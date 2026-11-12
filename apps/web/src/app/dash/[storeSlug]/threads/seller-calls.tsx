@@ -31,7 +31,7 @@ export default function SellerCalls({
     <TeamCalls
       listNode={listNode}
       askNode={projectId ? { kind: "record", teamId, record: { type: "project", id: projectId } } : listNode}
-      callsPath={`/${slug}/calls`}
+      callsPath={`/${slug}/threads`}
       scopeName={scope.name}
       teamSlug={slug}
       projectHref={(id) => `/${slug}/projects/${id}`}

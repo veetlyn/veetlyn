@@ -16,7 +16,7 @@ const TONE_CLASS = {
 // Generic PayPal connection card, keyed by team id: the store and services team dashboards mount it.
 export default function PayPalConnectCard({ teamId }: { teamId: string }) {
   const queryClient = useQueryClient();
-  const status = useQuery({ ...trpc.paypal.onboardingStatus.queryOptions({ teamId, refresh: false }), retry: false });
+  const status = useQuery({ ...trpc.paypal.onboardingStatus.queryOptions({ teamId, refresh: false }), retry: false, meta: { silent: true } });
   // A disabled query fired manually: re-reads the integration from PayPal on demand.
   const recheck = useQuery({
     ...trpc.paypal.onboardingStatus.queryOptions({ teamId, refresh: true }),

@@ -1,13 +1,13 @@
 "use client";
 
 import type { SectionPage } from "@jendal-workspace/core/context/node";
-import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
   ArrowLeft,
-  ChevronRight,
+  CreditCard,
+  LayoutDashboard,
   FolderKanban,
   HandCoins,
   Inbox,
@@ -28,7 +28,8 @@ import AppFrame, { navItemClass } from "@/components/app-frame";
 import RecentCalls from "@/components/recent-calls";
 import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
-import { sellerOptions, useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
+import { useMyWorkspaces } from "@/hooks/use-my-workspaces";
+import { workspaceDestination, workspaceDestinations } from "@/lib/workspaces";
 import { type HideableArea, projectStatusLabel } from "@jendal-workspace/core";
 import { trpc } from "@/utils/trpc";
 import { isProjectReadDenied } from "@/lib/project-refresh";
@@ -40,24 +41,20 @@ const PAGES = {
   payouts: { label: "Payouts", icon: ArrowUpFromLine },
   cases: { label: "Disputes", icon: ShieldAlert },
   services: { label: "Services", icon: Tag },
-  products: { label: "Products", icon: Package },
+  products: { label: "Premade items", icon: Package },
   orders: { label: "Orders", icon: Inbox },
   preview: { label: "Seller page", icon: Store },
-  members: { label: "Team", icon: Users },
+  members: { label: "People", icon: Users },
   settings: { label: "Settings", icon: Settings },
 } satisfies Record<SectionPage, { label: string; icon: LucideIcon }>;
 
-// The seller's sidebar: Home, then four places that open into a tree, one at a time. A place holding a single page for
-// this person is a plain row.
+// Workspace modules are visible directly; server-authorized sections still decide which ones exist.
 const PLACES: { label: string; icon: LucideIcon; pages: SectionPage[] }[] = [
-  { label: "Projects", icon: FolderKanban, pages: ["projects", "requests"] },
-  { label: "Shop", icon: Store, pages: ["services", "products", "orders", "preview"] },
+  // Requests and orders are one intake list ("Orders"): a client asks for a service or buys a premade item.
+  { label: "Work", icon: FolderKanban, pages: ["projects", "orders"] },
+  { label: "Catalog", icon: Store, pages: ["services", "products", "preview"] },
   { label: "Finances", icon: Wallet, pages: ["payments", "payouts", "cases"] },
-  { label: "Settings", icon: Settings, pages: ["settings", "members"] },
 ];
-const childLabel = (page: SectionPage) =>
-  page === "projects" ? "All projects" : page === "requests" ? "Requests" : page === "settings" ? "General" : PAGES[page].label;
-const RECENT_PROJECTS = 3;
 
 // The pages a limit can hide. A single project is decided by the server, by its stage.
 const AREA_OF_PAGE = new Map<string, HideableArea>([
@@ -74,6 +71,9 @@ const AREA_OF_PAGE = new Map<string, HideableArea>([
 const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
 
 const SEGMENT_LABELS = new Map<string, string>([
+  ["finances", "Finances"],
+  ["categories", "Categories"],
+  ["departments", "Categories"],
   ...Object.entries(PAGES).map(([page, { label }]): [string, string] => [page, label]),
   ["rules", "Rules"],
   ["operating-model", "Operating model"],
@@ -131,26 +131,27 @@ export default function TeamShell({
   const record = isProjectReadDenied(projectDetail.error) ? undefined : projectDetail.data?.project;
   const projectParent = allowed.has("projects")
     ? { href: `/${slug}/projects`, label: "Projects", allLabel: "All projects" }
-    : allowed.has("requests")
-      ? { href: `/${slug}/requests`, label: "Requests", allLabel: "All requests" }
+    : allowed.has("requests") || allowed.has("orders")
+      ? { href: `/${slug}/orders`, label: "Orders", allLabel: "All orders" }
       : { href: `/${slug}`, label: "Home", allLabel: "Home" };
-  const showWorkspace = organization && organization.servicesTeams.length + organization.stores.length > 1;
   const hiddenArea = projectId ? undefined : AREA_OF_PAGE.get(segments[0] ?? "");
-  const pageHidden = services && hiddenArea !== undefined && scope?.seller?.access.hidden.includes(hiddenArea) === true;
+  const hidden = scope?.seller?.access.hidden ?? [];
+  // Orders also lists service requests, so it is hidden only when both of its sources are.
+  const pageHidden = services && (segments[0] === "orders"
+    ? hidden.includes("storefront") && hidden.includes("requests")
+    : hiddenArea !== undefined && hidden.includes(hiddenArea));
 
-  // Workspace › seller › section › record. The workspace and seller crumbs switch; the sidebar lists the sections.
-  const crumbs = [
-    ...(showWorkspace
-      ? [{ href: `/w/${organization.id}`, label: organization.name, options: workspaceOptions(workspaces), menuLabel: "Workspaces", kind: "workspace" as const }]
-      : []),
-    {
-      href: `/${slug}`,
-      label: name,
-      options: organization ? sellerOptions(organization) : undefined,
-      menuLabel: organization ? `Sellers in ${organization.name}` : undefined,
-      kind: "seller" as const,
-    },
-    ...(projectId ? [
+  const teamKind = services ? "Services team" : "Store";
+  // A workspace is the organization (members, billing); this store or services team is one of its teams.
+  const teamsHere = organization ? [
+    ...organization.servicesTeams.map((t) => ({ slug: t.slug, name: t.name, kind: "Services team" })),
+    ...organization.stores.map((s) => ({ slug: s.slug, name: s.name, kind: "Store" })),
+  ] : [];
+  const currentWorkspace = organization
+    ? { ...workspaceDestination(organization), detail: name }
+    : { href: `/${slug}`, label: name, detail: teamKind };
+  // The sidebar switches workspace; the canvas names its module and record, not another seller level.
+  const crumbs = projectId ? [
       { href: projectParent.href, label: projectParent.label },
       {
         href: `/${slug}/projects/${projectId}`,
@@ -161,11 +162,10 @@ export default function TeamShell({
           ...(projectsList.data ?? []).map((project) => ({ href: `/${slug}/projects/${project.id}`, label: project.title, detail: [project.clientName, projectStatusLabel(project.status)].filter(Boolean).join(" · ") })),
         ] : undefined,
       },
-    ] : segments.map((segment, i) => ({
+    ] : segments.length ? segments.map((segment, i) => ({
       href: `/${slug}/${segments.slice(0, i + 1).join("/")}`,
-      label: (segment === "calls" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : i > 0 && segments[i - 1] === "payouts" ? "Payout" : "Details"),
-    }))),
-  ];
+      label: (segment === "threads" ? "Threads" : SEGMENT_LABELS.get(segment)) ?? (i > 0 && segments[i - 1] === "projects" ? "Project" : i > 0 && segments[i - 1] === "payouts" ? "Payout" : "Details"),
+    })) : [{ href: `/${slug}`, label: "Overview" }];
   const isActive = (href: string) =>
     href === `/${slug}` ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
   const link = (href: string, label: string, Icon: React.ComponentType<{ className?: string }>) => (
@@ -188,24 +188,18 @@ export default function TeamShell({
 
   return (
     <AppFrame
-      fill={pathname.startsWith(`/${slug}/calls`)}
+      fill={pathname.startsWith(`/${slug}/threads`)}
+      workspace={{ ...currentWorkspace, options: [{ href: "/", label: "Personal" }, ...workspaceDestinations(workspaces)] }}
       crumbs={crumbs}
       searchItems={[
         ...pageLinks.map((l) => ({ ...l, detail: name })),
-        ...recent.map((c) => ({ href: `/${slug}/calls?call=${c.id}`, label: c.title, detail: "Thread" })),
-        ...workspaces.flatMap((w) => sellerOptions(w).map((o) => ({ ...o, detail: `${o.detail} in ${w.name}` }))),
+        ...recent.map((c) => ({ href: `/${slug}/threads?thread=${c.id}`, label: c.title, group: "Threads" })),
+        ...workspaceDestinations(workspaces).map((w) => ({ ...w, group: "Workspaces" })),
       ]}
       sidebar={
         <>
-          {!projectId && !settingsMode ? <div className="mb-3 grid min-w-0 gap-4 border-b pb-3">
-            <Link href={organization ? `/w/${organization.id}` : "/"} className={navItemClass(false)}>
-              <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">Back to {organization?.name ?? "your account"}</span>
-            </Link>
-            <p className="truncate px-2.5 text-sm font-semibold">{name}</p>
-          </div> : null}
           {settingsMode ? (
-            <nav aria-label="Seller settings" className="grid gap-1">
+            <nav aria-label="Workspace settings" className="grid gap-1">
               <Link href={`/${slug}`} className={navItemClass(false)}><ArrowLeft className="size-4" aria-hidden="true" /><span className="truncate">Back to {name}</span></Link>
               <h2 className="px-2.5 pt-4 pb-2 text-xs text-muted-foreground">Settings</h2>
               {[
@@ -229,54 +223,52 @@ export default function TeamShell({
             />
           ) : (
             <>
-              <nav aria-label="Seller" className="grid gap-0.5">
+              {teamsHere.length > 1 && organization ? (
+                <nav aria-label={`Teams in ${organization.name}`} className="mb-4 grid gap-0.5 border-b pb-4">
+                  <h2 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Teams in this workspace</h2>
+                  {teamsHere.map((team) => (
+                    <Link key={team.slug} href={`/${team.slug}`} aria-current={team.slug === slug ? "true" : undefined} className={navItemClass(team.slug === slug)}>
+                      <span className="truncate">{team.name}</span>
+                      <span className="ml-auto text-xs text-muted-foreground">{team.kind}</span>
+                    </Link>
+                  ))}
+                </nav>
+              ) : null}
+              <nav aria-label="Modules" className="grid gap-0.5">
                 <Link href={`/${slug}`} aria-current={isActive(`/${slug}`) ? "page" : undefined} className={navItemClass(isActive(`/${slug}`))}>
                   <AgentIcon className="size-4" />
-                  Home
+                  Overview
                 </Link>
                 {PLACES.map((place) => {
-                  const pages = place.pages.filter((page) => allowed.has(page));
-                  const only = pages[0];
-                  if (only === undefined) return null;
-                  if (pages.length === 1) return link(`/${slug}/${only}`, only === "settings" ? "Settings" : PAGES[only].label, place.icon);
-                  const recentProjects = place.label === "Projects" ? (projectsList.data ?? []).slice(0, RECENT_PROJECTS) : [];
-                  const open = pages.some((page) => isActive(`/${slug}/${page}`)) || (place.label === "Shop" && isActive(`/${slug}/from-ai`));
-                  const Icon = place.icon;
+                  const pages = place.pages.filter((page) => allowed.has(page) || (page === "orders" && allowed.has("requests")));
+                  if (pages.length === 0) return null;
                   return (
-                    <details key={place.label} name="seller-places" open={open} className="group/place">
-                      <summary className={cn(navItemClass(false), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
-                        <Icon className="size-4" aria-hidden="true" />
-                        {place.label}
-                        <ChevronRight className="ml-auto size-3.5 text-muted-foreground group-open/place:rotate-90" aria-hidden="true" />
-                      </summary>
-                      <div className="mt-0.5 mb-1 ml-[17px] grid gap-0.5 border-l pl-2.5">
-                        {pages.map((page) => {
-                          const href = `/${slug}/${page}`;
-                          // "All projects" stays quiet on a project's own page, which has its own sidebar.
-                          const current = isActive(href);
-                          return (
-                            <Link key={page} href={href} aria-current={current ? "page" : undefined} className={navItemClass(current)}>
-                              {childLabel(page)}
-                            </Link>
-                          );
-                        })}
-                        {place.label === "Shop" && services && allowed.has("services") ? (
+                    <section key={place.label} className="pt-4">
+                      <h2 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{place.label}</h2>
+                      <div className="grid gap-0.5">
+                        {place.label === "Finances" ? link(`/${slug}/finances`, "Overview", LayoutDashboard) : null}
+                        {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
+                        {place.label === "Sell" && services && allowed.has("services") ? (
                           <Link href={`/${slug}/from-ai`} aria-current={isActive(`/${slug}/from-ai`) ? "page" : undefined} className={navItemClass(isActive(`/${slug}/from-ai`))}>
+                            <AgentIcon className="size-4" />
                             From AI
                           </Link>
                         ) : null}
-                        {recentProjects.map((project) => (
-                          <Link key={project.id} href={`/${slug}/projects/${project.id}`} className={cn(navItemClass(false), "grid gap-0 leading-5")}>
-                            <span className="truncate">{project.title}</span>
-                            <span className="truncate text-xs font-normal text-muted-foreground">{projectStatusLabel(project.status)}</span>
-                          </Link>
-                        ))}
                       </div>
-                    </details>
+                    </section>
                   );
                 })}
+                {/* Team and access live inside Settings. */}
+                {allowed.has("settings") || allowed.has("members") ? (
+                  <section className="pt-4">
+                    <div className="grid gap-0.5">
+                      {link(`/${slug}/${allowed.has("settings") ? "settings" : "members"}`, "Settings", Settings)}
+                      {organization?.canCreateStores ? link(`/w/${organization.id}/billing`, "Workspace billing", CreditCard) : null}
+                    </div>
+                  </section>
+                ) : null}
               </nav>
-              {services ? <RecentCalls calls={recent} callsPath={`/${slug}/calls`} label="Your threads" /> : null}
+              {services ? <RecentCalls calls={recent} callsPath={`/${slug}/threads`} label="Your threads" /> : null}
             </>
           )}
         </>

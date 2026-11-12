@@ -2,17 +2,17 @@
 
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { Button } from "@jendal-workspace/ui/components/button";
-import { Input } from "@jendal-workspace/ui/components/input";
+import type { TableColumn } from "@jendal-workspace/ui/components/motion/table";
 import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Search } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 
 import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
 import {
@@ -67,60 +67,12 @@ function PayoutSource({ teamSlug, request }: { teamSlug: string; request: TeamPa
   );
 }
 
-// One line per payout: who, from what, how much reaches them, where it stands. Decisions happen on the payout's own
-// page, where the amounts, the approvals and the destination are shown before anyone confirms.
-function RequestRow({
-  teamSlug,
-  request,
-  needsViewer,
-}: {
-  teamSlug: string;
-  request: TeamPayoutRequest;
-  needsViewer: boolean;
-}) {
-  const sentMinor = payoutSentMinor(request);
+// The line under a payout's status: why it is waiting, what failed, or when it was paid.
+function statusDetail(request: TeamPayoutRequest) {
   const waiting = waitingLine(request, new Date());
   const approval = approvalState(request);
-  const detail =
-    request.failureMessage ?? approval.note ?? approval.progress ?? waiting ?? (request.status === "succeeded" && request.settledAt ? `Paid ${DATE.format(new Date(request.settledAt))}` : null);
-
-  return (
-    <tr className="align-top">
-      <td className="px-4 py-3">
-        <Link href={`/${teamSlug}/payouts/${request.id}`} className="font-medium hover:underline">
-          {request.memberName}
-        </Link>
-        <p className="text-muted-foreground">Requested {DATE.format(new Date(request.createdAt))}</p>
-      </td>
-      <td className="px-4 py-3">
-        <PayoutSource teamSlug={teamSlug} request={request} />
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap">
-        <p className="font-tabular">{formatMinor(request.amountMinor, request.currency)}</p>
-        {sentMinor !== null ? (
-          <p className="font-tabular text-muted-foreground">
-            {request.status === "succeeded" ? "Received" : "Receives"} {formatMinor(sentMinor, request.currency)}
-          </p>
-        ) : null}
-      </td>
-      <td className="space-y-1 px-4 py-3">
-        <div className="flex flex-wrap gap-1.5">
-          <Badge tone={payoutStatusTone(request)}>{payoutStatusLabel(request)}</Badge>
-          {request.reviewReason ? <Badge tone="warn">Needs review</Badge> : null}
-        </div>
-        {detail ? <p className={request.failureMessage ? "text-destructive" : "text-muted-foreground"}>{detail}</p> : null}
-      </td>
-      <td className="px-4 py-3 text-right">
-        <Link
-          href={`/${teamSlug}/payouts/${request.id}`}
-          className={buttonVariants({ variant: needsViewer ? "default" : "outline", size: "sm" })}
-          aria-label={`${needsViewer ? "Review" : "Open"} ${request.memberName}'s payout of ${formatMinor(request.amountMinor, request.currency)}`}
-        >
-          {needsViewer ? "Review" : request.status === "succeeded" ? "Receipt" : "Open"}
-        </Link>
-      </td>
-    </tr>
-  );
+  const text = request.failureMessage ?? approval.note ?? approval.progress ?? waiting ?? (request.status === "succeeded" && request.settledAt ? `Paid ${DATE.format(new Date(request.settledAt))}` : null);
+  return { text, destructive: Boolean(request.failureMessage) };
 }
 
 // The decisions a payout allows, in the table and on its own page.
@@ -283,27 +235,6 @@ function WaitingForMembers({ waiting }: { waiting: TeamPayouts["waitingForDestin
   );
 }
 
-const FILTERS = [
-  ["all", "All"],
-  ["needs", "Needs approval"],
-  ["moving", "On its way"],
-  ["paid", "Paid"],
-] as const;
-type Filter = (typeof FILTERS)[number][0];
-
-function inFilter(request: TeamPayoutRequest, filter: Filter): boolean {
-  switch (filter) {
-    case "all":
-      return true;
-    case "needs":
-      return request.status === "requested";
-    case "moving":
-      return request.status === "queued" || request.status === "sending" || request.status === "sent" || request.status === "exported";
-    case "paid":
-      return request.status === "succeeded";
-  }
-}
-
 function RequestsList({
   teamSlug,
   data,
@@ -315,28 +246,89 @@ function RequestsList({
   automaticPayoutsOn: boolean;
   viewerId: string;
 }) {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
   // What this viewer can approve now: someone else's payout still waiting for an approval.
   const needsViewer = (request: TeamPayoutRequest) =>
     data.canDecide && request.userId !== viewerId && payoutActions(request, automaticPayoutsOn).includes("approve");
   const mine = data.payouts.filter(needsViewer);
-  const term = search.trim().toLocaleLowerCase();
-  const matching = data.payouts.filter(
-    (request) => inFilter(request, filter) && `${request.memberName} ${request.memberEmail} ${request.projectTitle ?? "request"}`.toLocaleLowerCase().includes(term),
-  );
-
-  if (data.payouts.length === 0) {
-    return (
-      <section className="rounded-[10px] border px-5 py-10 text-center">
-        <h2 className="font-heading text-lg">No payout requests yet</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Members ask for a payout of their earnings from their own Payouts page.</p>
-      </section>
-    );
-  }
   const first = mine[0];
   const currency = first?.currency;
   const sameCurrency = currency !== undefined && mine.every((request) => request.currency === currency);
+  const stateOf = (request: TeamPayoutRequest) => request.status === "requested"
+    ? "needs"
+    : request.status === "succeeded"
+      ? "paid"
+      : ["queued", "sending", "sent", "exported"].includes(request.status)
+        ? "moving"
+        : "other";
+  const currencies = [...new Set(data.payouts.map((request) => request.currency))];
+  const columns: TableColumn<TeamPayoutRequest>[] = [
+    {
+      key: "member",
+      header: "Member",
+      sortable: true,
+      sortValue: (request) => request.memberName.toLocaleLowerCase(),
+      cell: (request) => (
+        <span className="grid min-w-0">
+          <Link href={`/${teamSlug}/payouts/${request.id}`} className="truncate font-medium underline-offset-4 hover:underline">{request.memberName}</Link>
+          <span className="truncate text-xs text-muted-foreground">{request.memberEmail}</span>
+        </span>
+      ),
+    },
+    { key: "requested", header: "Requested", width: "128px", sortable: true, sortValue: (request) => new Date(request.createdAt).getTime(), cell: (request) => <span className="whitespace-nowrap">{DATE.format(new Date(request.createdAt))}</span> },
+    { key: "from", header: "From", width: "190px", cell: (request) => <PayoutSource teamSlug={teamSlug} request={request} /> },
+    {
+      key: "amount",
+      header: "Amount",
+      width: "150px",
+      align: "right",
+      sortable: true,
+      sortValue: (request) => request.amountMinor,
+      cell: (request) => {
+        const sentMinor = payoutSentMinor(request);
+        return (
+          <span className="grid justify-items-end">
+            <span className="whitespace-nowrap tabular-nums">{formatMinor(request.amountMinor, request.currency)}</span>
+            {sentMinor !== null ? <span className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">{request.status === "succeeded" ? "Received" : "Receives"} {formatMinor(sentMinor, request.currency)}</span> : null}
+          </span>
+        );
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      width: "210px",
+      sortable: true,
+      sortValue: (request) => payoutStatusLabel(request),
+      cell: (request) => {
+        const detail = statusDetail(request);
+        return (
+          <span className="grid gap-1">
+            <span className="flex flex-wrap gap-1.5">
+              <Badge tone={payoutStatusTone(request)}>{payoutStatusLabel(request)}</Badge>
+              {request.reviewReason ? <Badge tone="warn">Needs review</Badge> : null}
+            </span>
+            {detail.text ? <span className={`truncate text-xs ${detail.destructive ? "text-destructive" : "text-muted-foreground"}`}>{detail.text}</span> : null}
+          </span>
+        );
+      },
+    },
+    {
+      key: "action",
+      header: <span className="sr-only">Open</span>,
+      width: "116px",
+      align: "right",
+      cell: (request) => (
+        <Link
+          href={`/${teamSlug}/payouts/${request.id}`}
+          className={buttonVariants({ variant: needsViewer(request) ? "default" : "outline", size: "sm" })}
+          aria-label={`${needsViewer(request) ? "Review" : "Open"} ${request.memberName}'s payout of ${formatMinor(request.amountMinor, request.currency)}`}
+        >
+          {needsViewer(request) ? "Review" : request.status === "succeeded" ? "Receipt" : "Open"}
+        </Link>
+      ),
+    },
+  ];
+
   return (
     <>
       {data.canDecide ? (
@@ -361,55 +353,31 @@ function RequestsList({
           </div>
         )
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="relative w-full sm:max-w-64">
-          <span className="sr-only">Search payouts by member or source</span>
-          <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" aria-hidden="true" />
-          <Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search member or source…" className="pl-9" />
-        </label>
-        <div role="group" aria-label="Show" className="inline-flex w-fit flex-wrap rounded-[8px] border p-0.5">
-          {FILTERS.map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={filter === key}
-              onClick={() => setFilter(key)}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_var(--input)]"
-            >
-              {label} <span className="font-tabular text-xs text-muted-foreground">{data.payouts.filter((request) => inFilter(request, key)).length}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <p role="status" className="sr-only">{matching.length} payouts shown</p>
-      {matching.length === 0 ? (
-        <div className="rounded-[10px] border px-5 py-10 text-center">
-          <h2 className="font-heading text-lg">No matching payouts</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Try another member, project or status.</p>
-          <Button type="button" variant="outline" className="mt-4" onClick={() => { setSearch(""); setFilter("all"); }}>
-            Clear filters
-          </Button>
-        </div>
-      ) : (
-        <div className="panel relative overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-secondary/60 text-left text-xs text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-2.5 font-medium">Member</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">From</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Amount</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
-                <th scope="col" className="px-4 py-2.5 font-medium"><span className="sr-only">Open</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {matching.map((request) => (
-                <RequestRow key={request.id} teamSlug={teamSlug} request={request} needsViewer={needsViewer(request)} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataList
+        label="Payout requests"
+        rows={data.payouts}
+        columns={columns}
+        getRowId={(request) => request.id}
+        searchText={(request) => `${request.memberName} ${request.memberEmail} ${request.projectTitle ?? "request"}`}
+        searchLabel="Search payouts"
+        filters={[
+          {
+            key: "state",
+            label: "Payouts",
+            options: [
+              { value: "needs", label: "Needs approval" },
+              { value: "moving", label: "On its way" },
+              { value: "paid", label: "Paid" },
+              { value: "other", label: "Rejected or failed" },
+            ],
+            match: (request, value) => stateOf(request) === value,
+          },
+          ...(currencies.length > 1 ? [{ key: "currency", label: "Currencies", options: currencies.map((value) => ({ value, label: value })), match: (request: TeamPayoutRequest, value: string) => request.currency === value }] : []),
+        ]}
+        defaultSort={{ key: "requested", direction: "desc" }}
+        empty={{ title: "No payout requests yet", text: "Members ask for a payout of their earnings from their own Payouts page." }}
+        noun={{ one: "payout", many: "payouts" }}
+      />
     </>
   );
 }

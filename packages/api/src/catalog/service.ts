@@ -62,7 +62,7 @@ export type CatalogServices = {
   currency: string;
 };
 
-export type ProductInput = ProductDraft & { channel3ProductId?: string | null };
+export type ProductInput = ProductDraft & { channel3ProductId?: string | null; departmentId?: string | null };
 
 export type ProductDetail = { product: ProductRow; variants: VariantRow[]; images: ProductImageRow[] };
 
@@ -75,6 +75,7 @@ export type ProductSummary = {
   priceHigh: number | null;
   totalStock: number;
   imageKey: string | null;
+  departmentId: string | null;
   updatedAt: Date;
 };
 
@@ -138,6 +139,7 @@ export async function createProduct(
       description: input.description,
       brand: input.brand,
       category: input.category,
+      departmentId: input.departmentId ?? null,
       chargeTax: input.chargeTax,
       requiresShipping: input.requiresShipping,
       channel3ProductId: input.channel3ProductId ?? null,
@@ -182,6 +184,7 @@ async function updateProductRow(db: Database, tenant: TenantContext, productId: 
     description: input.description,
     brand: input.brand,
     category: input.category,
+    departmentId: input.departmentId ?? null,
     chargeTax: input.chargeTax,
     requiresShipping: input.requiresShipping,
     channel3ProductId: input.channel3ProductId ?? null,
@@ -222,6 +225,7 @@ export async function listProductSummaries(db: Database, tenant: Pick<TenantCont
       priceHigh: prices.length > 0 ? Math.max(...prices) : null,
       totalStock: variants.reduce((total, variant) => total + variant.stock, 0),
       imageKey: images[0]?.imageKey ?? null,
+      departmentId: product.departmentId,
       updatedAt: product.updatedAt,
     });
   }

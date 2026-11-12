@@ -2,10 +2,9 @@
 
 import { projectStatusLabel } from "@jendal-workspace/core";
 import type { ContextNode } from "@jendal-workspace/core/context/node";
-import { Button } from "@jendal-workspace/ui/components/button";
+import { PromptInput } from "@jendal-workspace/ui/components/agents/prompt-input";
 import { cn } from "@jendal-workspace/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUp } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { AgentIcon } from "@/components/agent-icon";
@@ -16,9 +15,10 @@ const MAX_SUGGESTIONS = 8;
 const LIST_HEIGHT = 256;
 const TOP_BAR_HEIGHT = 72;
 
-// The assistant's composer: the text on top, then one toolbar row with the scope it works on and the send key, both
-// 28px tall on the same line and the same inset from the box's edges. Enter sends; Shift+Enter breaks the line.
-// Given a node, @ suggests the projects this person can open and / the actions they can start there.
+// The assistant's composer, composed on beUI's PromptInput (packages/ui/src/components/agents): the text on top, then
+// one toolbar row with the scope it works on and the send key. Enter sends; Shift+Enter breaks the line. Given a node,
+// @ suggests the projects this person can open and / the actions they can start there. PromptInput keeps its textarea
+// ref, so the caret is read and restored through the textarea's id.
 export default function ComposerBox({
   id,
   label,
@@ -48,7 +48,10 @@ export default function ComposerBox({
   rows?: number;
   className?: string;
 }) {
-  const area = useRef<HTMLTextAreaElement>(null);
+  const area = () => {
+    const element = document.getElementById(id);
+    return element instanceof HTMLTextAreaElement ? element : null;
+  };
   const nextCaret = useRef<number | null>(null);
   const [caret, setCaret] = useState(0);
   const [active, setActive] = useState(0);
@@ -85,7 +88,7 @@ export default function ComposerBox({
 
   useLayoutEffect(() => {
     if (nextCaret.current === null) return;
-    area.current?.setSelectionRange(nextCaret.current, nextCaret.current);
+    area()?.setSelectionRange(nextCaret.current, nextCaret.current);
     setCaret(nextCaret.current);
     nextCaret.current = null;
   }, [value]);
@@ -100,14 +103,14 @@ export default function ComposerBox({
   }
 
   return (
-    <div ref={box} className={cn("relative rounded-[16px] bg-card raised focus-within:ring-3 focus-within:ring-ring/25", className)}>
+    <div ref={box} data-composer className={cn("relative", className)}>
       {open ? (
         <ul
           id={listId}
           role="listbox"
           aria-label={trigger?.kind === "@" ? "Projects" : "Actions"}
           className={cn(
-            "absolute inset-x-0 z-20 max-h-64 overflow-y-auto rounded-[8px] border bg-popover p-1 text-sm text-popover-foreground",
+            "absolute inset-x-0 z-20 max-h-64 overflow-y-auto rounded-xl border bg-popover p-1 text-sm text-popover-foreground",
             opensBelow ? "top-full mt-1.5" : "bottom-full mb-1.5",
           )}
         >
@@ -124,7 +127,7 @@ export default function ComposerBox({
                 choose(option.insert);
               }}
               className={cn(
-                "flex cursor-pointer items-baseline justify-between gap-4 rounded-[6px] px-2.5 py-1.5",
+                "flex cursor-pointer items-baseline justify-between gap-4 rounded-lg px-2.5 py-1.5",
                 index === highlighted && "bg-accent",
               )}
             >
@@ -134,75 +137,58 @@ export default function ComposerBox({
           ))}
         </ul>
       ) : null}
-      <label htmlFor={id} className="sr-only">
-        {label}
-      </label>
-      <textarea
-        ref={area}
+      <PromptInput
         id={id}
+        aria-label={label}
         value={value}
+        onValueChange={(next) => {
+          setCaret(area()?.selectionStart ?? next.length);
+          setDismissedAt(null);
+          setActive(0);
+          onChange(next);
+        }}
+        // Sending while a reply is on its way is refused here rather than shown as a stop key with nothing to stop.
+        onSubmit={() => {
+          if (!busy) onSubmit();
+        }}
         role={node ? "combobox" : undefined}
         aria-autocomplete={node ? "list" : undefined}
         aria-expanded={node ? open : undefined}
         aria-controls={open ? listId : undefined}
         aria-activedescendant={open ? `${listId}-${highlighted}` : undefined}
-        onChange={(event) => {
-          setCaret(event.target.selectionStart);
-          setDismissedAt(null);
-          setActive(0);
-          onChange(event.target.value);
-        }}
         onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
         onKeyDown={(event) => {
-          if (open && !event.nativeEvent.isComposing) {
-            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-              event.preventDefault();
-              const step = event.key === "ArrowDown" ? 1 : options.length - 1;
-              setActive((highlighted + step) % options.length);
-              return;
-            }
-            if (event.key === "Enter" || event.key === "Tab") {
-              event.preventDefault();
-              const option = options[highlighted];
-              if (option) choose(option.insert);
-              return;
-            }
-            if (event.key === "Escape") {
-              event.preventDefault();
-              setDismissedAt(trigger?.start ?? null);
-              return;
-            }
-          }
-          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+          // A preventDefault here stops PromptInput's own Enter-to-send while a suggestion list is open.
+          if (!open || event.nativeEvent.isComposing) return;
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
             event.preventDefault();
-            onSubmit();
+            const step = event.key === "ArrowDown" ? 1 : options.length - 1;
+            setActive((highlighted + step) % options.length);
+          } else if (event.key === "Enter" || event.key === "Tab") {
+            event.preventDefault();
+            const option = options[highlighted];
+            if (option) choose(option.insert);
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            setDismissedAt(trigger?.start ?? null);
           }
         }}
         placeholder={placeholder}
         maxLength={4000}
-        rows={rows}
+        minRows={rows}
         disabled={disabled}
         autoFocus={autoFocus}
-        className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-base outline-none! placeholder:text-muted-foreground disabled:opacity-60 md:text-[16px]"
+        className="bg-card"
+        leadingAction={
+          <span className="flex min-w-0 items-center gap-2 pl-1">
+            <span className="flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-secondary px-2.5 text-xs text-muted-foreground">
+              <AgentIcon className="size-3 shrink-0 text-brand" />
+              <span className="truncate">{scope}</span>
+            </span>
+            {node ? <span className="hidden truncate text-xs text-muted-foreground sm:inline">@ for a project, / for an action</span> : null}
+          </span>
+        }
       />
-      <div className="flex items-center gap-2 px-3 pb-3">
-        <span className="flex h-7 min-w-0 items-center gap-1.5 rounded-[8px] bg-secondary px-2.5 text-xs text-muted-foreground">
-          <AgentIcon className="size-3 shrink-0 text-brand" />
-          <span className="truncate">{scope}</span>
-        </span>
-        {node ? <span className="hidden truncate text-xs text-muted-foreground sm:inline">@ for a project, / for an action</span> : null}
-        <Button
-          type="button"
-          variant="mint"
-          size="icon-xs"
-          className="ml-auto size-7"
-          onClick={onSubmit}
-          disabled={busy || disabled || value.trim() === ""}
-          aria-label="Send"
-        >
-          <ArrowUp aria-hidden="true" />
-        </Button>
-      </div>
     </div>
   );
 }

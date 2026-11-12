@@ -1,28 +1,40 @@
 "use client";
 
+import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import { isTerminalProjectStatus, projectStatusLabel } from "@jendal-workspace/core";
-import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
-import { useState } from "react";
-import { Search } from "lucide-react";
-
-import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
-import { Input } from "@jendal-workspace/ui/components/input";
-import { trpc } from "@/utils/trpc";
-import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
+import type { TableColumn } from "@jendal-workspace/ui/components/motion/table";
+import { useQuery } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import Link from "next/link";
 
-const FILTERS = [
-  ["open", "Open"],
-  ["closed", "Closed"],
-  ["all", "All"],
-] as const;
+import { DataList } from "@/components/data-list";
+import Loader from "@/components/loader";
+import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
+import { trpc } from "@/utils/trpc";
+
+type Project = inferRouterOutputs<AppRouter>["project"]["list"][number];
+
+const DATE: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
+
+function columns(teamSlug: string): TableColumn<Project>[] {
+  return [
+    {
+      key: "title",
+      header: "Project",
+      sortable: true,
+      sortValue: (p) => p.title.toLocaleLowerCase(),
+      cell: (p) => <Link href={`/${teamSlug}/projects/${p.id}`} className="truncate font-medium underline-offset-4 hover:underline">{p.title}</Link>,
+    },
+    { key: "client", header: "Client", width: "220px", sortable: true, sortValue: (p) => p.clientName ?? "", cell: (p) => <span className="truncate text-muted-foreground">{p.clientName ?? "No client"}</span> },
+    { key: "status", header: "Status", width: "180px", sortable: true, sortValue: (p) => projectStatusLabel(p.status), cell: (p) => <Badge tone={TEAM_PROJECT_TONES[p.status]}>{projectStatusLabel(p.status)}</Badge> },
+    { key: "created", header: "Created", width: "140px", sortable: true, sortValue: (p) => new Date(p.createdAt).getTime(), cell: (p) => <span className="whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString(undefined, DATE)}</span> },
+  ];
+}
 
 export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
-  const [filter, setFilter] = useState<(typeof FILTERS)[number][0]>("open");
-  const [search, setSearch] = useState("");
   const projects = useQuery({ ...trpc.project.list.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   if (projects.isPending) return <Loader />;
@@ -36,91 +48,47 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
     );
   }
 
-  const matching = projects.data.filter((project) => {
-    const statusMatches = filter === "all" || (filter === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status));
-    return statusMatches && `${project.title} ${project.clientName ?? ""}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
-  });
+  const open = projects.data.filter((project) => !isTerminalProjectStatus(project.status)).length;
+  const statuses = [...new Set(projects.data.map((project) => project.status))];
 
   return (
     <ListPage>
       <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="font-heading text-3xl">Projects</h1>
-        </div>
-        <Link href={`/${teamSlug}/projects/new`} className={buttonVariants()}>
-          New project
-        </Link>
+        <h1 className="font-heading text-3xl">Projects</h1>
+        <Link href={`/${teamSlug}/projects/new`} className={buttonVariants()}>New project</Link>
       </div>
       {projects.data.length > 0 ? (
         <SummaryStrip label="Needs attention">
-          <p className="text-sm"><span className="font-medium">{projects.data.filter((project) => !isTerminalProjectStatus(project.status)).length} open projects</span> <span className="text-muted-foreground">in progress or waiting</span></p>
-          <p className="text-sm text-muted-foreground">{matching.length} shown</p>
+          <p className="text-sm"><span className="font-medium">{open} open {open === 1 ? "project" : "projects"}</span> <span className="text-muted-foreground">in progress or waiting</span></p>
+          <p className="text-sm text-muted-foreground">{projects.data.length - open} closed</p>
         </SummaryStrip>
       ) : null}
-      {projects.data.length === 0 ? (
-        <div className="panel grid justify-items-center gap-2 p-10 text-center">
-          <p className="font-heading text-lg">No projects yet</p>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Requests from your seller page become projects here, or start one for a client yourself.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="relative w-full sm:max-w-64">
-            <span className="sr-only">Search projects by title or client</span>
-            <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" aria-hidden="true" />
-            <Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search projects…" className="pl-9" />
-          </label>
-          <div role="group" aria-label="Show" className="inline-flex w-fit rounded-[8px] border p-0.5">
-            {FILTERS.map(([key, label]) => {
-              const count = projects.data.filter((project) =>
-                key === "all" ? true : key === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status),
-              ).length;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={filter === key}
-                  onClick={() => setFilter(key)}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_var(--input)]"
-                >
-                  {label} <span className="font-tabular text-xs text-muted-foreground">{count}</span>
-                </button>
-              );
-            })}
-          </div>
-          </div>
-          <p role="status" className="sr-only">{matching.length} projects shown</p>
-          {matching.length === 0 ? (
-            <div className="rounded-[10px] border px-5 py-10 text-center">
-              <h2 className="font-heading text-lg">No matching projects</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Try another title, client or status.</p>
-              <button type="button" onClick={() => { setSearch(""); setFilter("all"); }} className={buttonVariants({ variant: "outline", className: "mt-4" })}>Clear filters</button>
-            </div>
-          ) : (
-          <ul className="panel divide-y overflow-hidden">
-            {matching
-              .map((project) => (
-                <li key={project.id}>
-                  <Link
-                    href={`/${teamSlug}/projects/${project.id}`}
-                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-accent/60"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{project.title}</p>
-                      <p className="truncate text-sm text-muted-foreground">{project.clientName ?? "No client"}</p>
-                    </div>
-                    <Badge tone={TEAM_PROJECT_TONES[project.status]}>
-                      {projectStatusLabel(project.status)}
-                    </Badge>
-                  </Link>
-                </li>
-              ))}
-          </ul>
-          )}
-        </>
-      )}
+      <DataList
+        label="Projects"
+        rows={projects.data}
+        columns={columns(teamSlug)}
+        getRowId={(project) => project.id}
+        searchText={(project) => `${project.title} ${project.clientName ?? ""}`}
+        searchLabel="Search projects"
+        filters={[
+          {
+            key: "state",
+            label: "Projects",
+            options: [{ value: "open", label: "Open" }, { value: "closed", label: "Closed" }],
+            match: (project, value) => (value === "closed") === isTerminalProjectStatus(project.status),
+          },
+          {
+            key: "status",
+            label: "Statuses",
+            options: statuses.map((status) => ({ value: status, label: projectStatusLabel(status) })),
+            match: (project, value) => project.status === value,
+          },
+        ]}
+        defaultFilters={{ state: "open" }}
+        defaultSort={{ key: "created", direction: "desc" }}
+        empty={{ title: "No projects yet", text: "Requests from your seller page become projects here, or start one for a client yourself." }}
+        noun={{ one: "project", many: "projects" }}
+      />
     </ListPage>
   );
 }

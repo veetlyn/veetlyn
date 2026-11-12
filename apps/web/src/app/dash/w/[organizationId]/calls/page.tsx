@@ -1,28 +1,12 @@
-import TeamCalls from "@/app/dash/[storeSlug]/calls/team-calls";
-import { platformName } from "@/lib/platform";
-import { requireSession } from "@/lib/server-api";
+import { redirect } from "next/navigation";
 
-// Calls at the workspace: questions about its sellers and its plan, and every call below it.
-export default async function WorkspaceCallsPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ organizationId: string }>;
-  searchParams: Promise<{ call?: string }>;
-}) {
-  await requireSession();
+// Threads used to live at /calls. Old links and bookmarks land on /threads; ?call= becomes ?thread=.
+export default async function OldWorkspaceCalls({ params, searchParams }: { params: Promise<{ organizationId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { organizationId } = await params;
-  const { call } = await searchParams;
-  const node = { kind: "workspace" as const, organizationId };
-  return (
-    <TeamCalls
-      listNode={node}
-      askNode={node}
-      scopeName={"Workspace"}
-      callsPath={`/w/${organizationId}/calls`}
-      projectHref={null}
-      assistantName={platformName()}
-      callId={call ?? null}
-    />
-  );
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key === "call" ? "thread" : key, item);
+  }
+  const search = query.toString();
+  redirect(`/w/${encodeURIComponent(organizationId)}/threads${search ? `?${search}` : ""}`);
 }

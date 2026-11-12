@@ -1,6 +1,7 @@
 import { buttonVariants } from "@jendal-workspace/ui/lib/button-variants";
 import { ratingLabel } from "@jendal-workspace/core";
 
+import { flattenCategories } from "@/lib/catalog-categories";
 import { formatMinor } from "@/lib/money";
 import { daysLabel, FULFILMENT_LABELS, type Fulfilment, priceLabel } from "@/lib/offering-labels";
 
@@ -16,7 +17,7 @@ type SellerPageOffering = {
   fulfilment: Fulfilment;
 };
 
-export type SellerPageProduct = { id: string; title: string; description: string; priceMinor: number };
+export type SellerPageProduct = { id: string; departmentId: string | null; title: string; description: string; priceMinor: number };
 
 // Structural on purpose: the store host passes the api's /api/store/page payload and the admin preview
 // passes the tRPC seller.preview output, so this lists only what the page reads and stays free of server imports.
@@ -27,7 +28,7 @@ export type SellerPageContent = {
   currency: string;
   // Base for on-page links: "" on the store host (relative), the absolute public origin in the admin preview.
   pageBase: string;
-  departments: { id: string; name: string }[];
+  departments: { id: string; name: string; parentId: string | null }[];
   offerings: SellerPageOffering[];
   products: SellerPageProduct[];
   rating: { average: number; count: number } | null;
@@ -69,7 +70,7 @@ function OfferingCard({
 
 export default function SellerPage({ page }: { page: SellerPageContent }) {
   const departmentIds = new Set(page.departments.map((department) => department.id));
-  const groups = page.departments
+  const groups = flattenCategories(page.departments)
     .map((department) => ({
       department,
       offerings: page.offerings.filter((offering) => offering.departmentId === department.id),
@@ -78,6 +79,12 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
   // An offering pointing at a department missing from the list still shows, ungrouped.
   const ungrouped = page.offerings.filter(
     (offering) => offering.departmentId === null || !departmentIds.has(offering.departmentId),
+  );
+  const productGroups = flattenCategories(page.departments)
+    .map((department) => ({ department, products: page.products.filter((product) => product.departmentId === department.id) }))
+    .filter((group) => group.products.length > 0);
+  const ungroupedProducts = page.products.filter(
+    (product) => product.departmentId === null || !departmentIds.has(product.departmentId),
   );
 
   return (
@@ -147,7 +154,7 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
             <>
               {groups.map(({ department, offerings }) => (
                 <div key={department.id} className="space-y-3">
-                  <h3 className="text-sm font-medium text-muted-foreground">{department.name}</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">{department.path}</h3>
                   <div className="grid gap-3 md:grid-cols-2">
                     {offerings.map((offering) => (
                       <OfferingCard key={offering.id} page={page} offering={offering} Heading="h4" />
@@ -175,24 +182,47 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
       {page.products.length > 0 ? (
         <section aria-labelledby="store-heading" className="space-y-6">
           <h2 id="store-heading" className="font-heading text-2xl">
-            Store
+            Premade items
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {page.products.map((product) => (
-              <article key={product.id} className="panel grid content-start gap-3 p-5">
-                <h3 className="text-base font-semibold">{product.title}</h3>
-                {product.description ? <p className="text-sm whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
-                <p className="font-tabular text-lg font-semibold">{formatMinor(product.priceMinor, page.currency)}</p>
-                <a
-                  href={`${page.pageBase}/buy/${product.id}`}
-                  aria-label={`Buy ${product.title}`}
-                  className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
-                >
-                  Buy
-                </a>
-              </article>
-            ))}
-          </div>
+          {productGroups.map(({ department, products }) => (
+            <div key={department.id} className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">{department.path}</h3>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {products.map((product) => (
+                  <article key={product.id} className="panel grid content-start gap-3 p-5">
+                    <h4 className="text-base font-semibold">{product.title}</h4>
+                    {product.description ? <p className="text-sm whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
+                    <p className="font-tabular text-lg font-semibold">{formatMinor(product.priceMinor, page.currency)}</p>
+                    <a
+                      href={`${page.pageBase}/buy/${product.id}`}
+                      aria-label={`Buy ${product.title}`}
+                      className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
+                    >
+                      Buy
+                    </a>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))}
+          {ungroupedProducts.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {ungroupedProducts.map((product) => (
+                <article key={product.id} className="panel grid content-start gap-3 p-5">
+                  <h3 className="text-base font-semibold">{product.title}</h3>
+                  {product.description ? <p className="text-sm whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
+                  <p className="font-tabular text-lg font-semibold">{formatMinor(product.priceMinor, page.currency)}</p>
+                  <a
+                    href={`${page.pageBase}/buy/${product.id}`}
+                    aria-label={`Buy ${product.title}`}
+                    className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
+                  >
+                    Buy
+                  </a>
+                </article>
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
     </main>

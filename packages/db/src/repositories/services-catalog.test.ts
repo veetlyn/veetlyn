@@ -14,6 +14,7 @@ import {
   listServicesDepartments,
   listServicesOfferings,
   renameServicesDepartment,
+  setServicesDepartmentParent,
   setServicesOfferingActive,
   updateServicesOffering,
 } from "./services-catalog";
@@ -50,10 +51,10 @@ describe.skipIf(!hasTestDatabase)("services catalog repository", () => {
     const duplicate = await createServicesDepartment(db, { teamId: studio.id, name: "BRANDING" });
     const otherTeam = await createServicesDepartment(db, { teamId: labs.id, name: "branding" });
 
-    expect(first).toEqual({ id: expect.any(String), name: "Branding", position: 0, listed: true });
-    expect(second).toEqual({ id: expect.any(String), name: "Web design", position: 1, listed: true });
+    expect(first).toEqual({ id: expect.any(String), parentId: null, name: "Branding", position: 0, listed: true });
+    expect(second).toEqual({ id: expect.any(String), parentId: null, name: "Web design", position: 1, listed: true });
     expect(duplicate).toBeNull();
-    expect(otherTeam).toEqual({ id: expect.any(String), name: "branding", position: 0, listed: true });
+    expect(otherTeam).toEqual({ id: expect.any(String), parentId: null, name: "branding", position: 0, listed: true });
   });
 
   it("lists departments ordered by position, then name", async () => {
@@ -88,8 +89,8 @@ describe.skipIf(!hasTestDatabase)("services catalog repository", () => {
       renameServicesDepartment(db, { id: other.id, teamId: studio.id, name: "Steal" }),
     ).resolves.toBe(false);
     await expect(listServicesDepartments(db, studio.id)).resolves.toEqual([
-      { id: branding.id, name: "Identity", position: 0, listed: true },
-      { id: web.id, name: "Web design", position: 1, listed: true },
+      { id: branding.id, parentId: null, name: "Identity", position: 0, listed: true },
+      { id: web.id, parentId: null, name: "Web design", position: 1, listed: true },
     ]);
   });
 
@@ -110,6 +111,25 @@ describe.skipIf(!hasTestDatabase)("services catalog repository", () => {
       id: offering.id,
       departmentId: null,
     });
+  });
+
+  it("nests categories under a nullable parent and rejects cycles or another team's parent", async () => {
+    const { organizationId } = await seedOrganization(db);
+    const studio = await seedServicesTeam(db, { organizationId, slug: "acme-studio" });
+    const labs = await seedServicesTeam(db, { organizationId, slug: "acme-labs" });
+    const design = await must(await createServicesDepartment(db, { teamId: studio.id, name: "Design" }));
+    const logo = await must(await createServicesDepartment(db, { teamId: studio.id, name: "Logo", parentId: design.id }));
+    const foreign = await must(await createServicesDepartment(db, { teamId: labs.id, name: "Foreign" }));
+
+    expect(logo.parentId).toBe(design.id);
+    await expect(setServicesDepartmentParent(db, { id: design.id, teamId: studio.id, parentId: logo.id })).resolves.toBe("cycle");
+    await expect(setServicesDepartmentParent(db, { id: logo.id, teamId: studio.id, parentId: foreign.id })).resolves.toBe("invalid_parent");
+    await expect(setServicesDepartmentParent(db, { id: logo.id, teamId: studio.id, parentId: null })).resolves.toBe("updated");
+    await expect(listServicesDepartments(db, studio.id)).resolves.toContainEqual({ ...logo, parentId: null });
+
+    await expect(setServicesDepartmentParent(db, { id: logo.id, teamId: studio.id, parentId: design.id })).resolves.toBe("updated");
+    await expect(deleteServicesDepartment(db, { id: design.id, teamId: studio.id })).resolves.toBe(true);
+    await expect(listServicesDepartments(db, studio.id)).resolves.toContainEqual({ ...logo, parentId: null });
   });
 
   it("creates offerings active with the next position, and rejects duplicate names per team", async () => {
