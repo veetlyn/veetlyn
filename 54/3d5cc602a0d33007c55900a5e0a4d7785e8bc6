@@ -1,0 +1,14 @@
+docs/testing.md
+  h_6877e5e7a06bc5 78-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "543d5cc602a0d33007c55900a5e0a4d7785e8bc6",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
