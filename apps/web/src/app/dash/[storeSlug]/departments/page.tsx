@@ -1,9 +1,7 @@
-import { requireSession } from "@/lib/server-api";
+import { redirect } from "next/navigation";
 
-import TeamDepartments from "./team-departments";
-
+// Categories used to be managed under Departments.
 export default async function DepartmentsPage({ params }: { params: Promise<{ storeSlug: string }> }) {
-  await requireSession();
   const { storeSlug } = await params;
-  return <TeamDepartments teamSlug={storeSlug} />;
+  redirect(`/${encodeURIComponent(storeSlug)}/categories`);
 }

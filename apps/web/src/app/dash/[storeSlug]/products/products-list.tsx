@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { DataList } from "@/components/data-list";
+import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import DigitalProducts from "@/components/catalog/digital-products";
 import Loader from "@/components/loader";
 import { ListPage, SummaryStrip } from "@/components/page-composition";
@@ -28,6 +29,8 @@ export default function ProductsList({ storeSlug }: { storeSlug: string }) {
 
 function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
   const products = useQuery({ ...trpc.catalog.list.queryOptions({ storeSlug }), retry: false, meta: { silent: true } });
+  const categories = useQuery({ ...trpc.catalog.listCategories.queryOptions({ storeSlug }), retry: false, meta: { silent: true } });
+  const categoryPath = new Map(flattenCategories(categories.data ?? []).map((category) => [category.id, category.path]));
   type Product = NonNullable<typeof products.data>[number];
   const price = (product: Product) => product.priceLow === null
     ? "No price"
@@ -50,6 +53,7 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
         </span>
       ),
     },
+    { key: "category", header: "Category", width: "190px", sortable: true, sortValue: (product) => categoryPath.get(product.departmentId ?? "") ?? "", cell: (product) => <span className="truncate text-muted-foreground">{product.departmentId ? categoryPath.get(product.departmentId) ?? "Category" : "No category"}</span> },
     { key: "price", header: "Price", width: "170px", align: "right", sortable: true, sortValue: (product) => product.priceLow ?? -1, cell: (product) => <span className="whitespace-nowrap tabular-nums">{price(product)}</span> },
     { key: "stock", header: "Stock", width: "110px", align: "right", sortable: true, sortValue: (product) => product.totalStock, cell: (product) => <span className="tabular-nums">{product.totalStock}</span> },
     { key: "status", header: "Status", width: "140px", sortable: true, sortValue: (product) => product.status, cell: (product) => <Badge tone={product.status === "published" ? "good" : "neutral"}>{product.status === "published" ? "Published" : "Draft"}</Badge> },
@@ -64,9 +68,10 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
           <h1 className="font-heading text-3xl">Premade items</h1>
           <p className="text-sm text-muted-foreground">Ready-made items clients buy from the shop.</p>
         </div>
-        <Link href={`/${storeSlug}/products/new`} className={buttonVariants()}>
-          Add premade item
-        </Link>
+        <span className="flex gap-2">
+          <Link href={`/${storeSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
+          <Link href={`/${storeSlug}/products/new`} className={buttonVariants()}>Add premade item</Link>
+        </span>
       </div>
 
       {products.isSuccess && products.data.length > 0 ? (
@@ -84,7 +89,10 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
           getRowId={(product) => product.id}
           searchText={(product) => product.title}
           searchLabel="Search premade items"
-          filters={[{ key: "status", label: "Statuses", options: [{ value: "published", label: "Published" }, { value: "draft", label: "Draft" }], match: (product, value) => product.status === value }]}
+          filters={[
+            ...((categories.data?.length ?? 0) > 0 ? [{ key: "category", label: "Categories", options: [...flattenCategories(categories.data ?? []).map((category) => ({ value: category.id, label: category.path })), { value: "none", label: "No category" }], match: (product: Product, value: string) => value === "none" ? !product.departmentId : product.departmentId !== null && categoryDescendantIds(categories.data ?? [], value).has(product.departmentId) }] : []),
+            { key: "status", label: "Statuses", options: [{ value: "published", label: "Published" }, { value: "draft", label: "Draft" }], match: (product, value) => product.status === value },
+          ]}
           defaultSort={{ key: "title", direction: "asc" }}
           empty={{ title: "No premade items yet", text: "Add your first item — start from a link, a photo, or a blank form." }}
           noun={{ one: "item", many: "items" }}

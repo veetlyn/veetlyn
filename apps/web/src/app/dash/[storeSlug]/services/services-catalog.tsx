@@ -12,6 +12,7 @@ import Loader from "@/components/loader";
 import { ListPage, SummaryStrip } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { daysLabel, FULFILMENT_LABELS, priceLabel } from "@/lib/offering-labels";
+import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import { trpc } from "@/utils/trpc";
 
 export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
@@ -34,7 +35,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
   const departments = catalog.data?.departments ?? [];
   const offerings = catalog.data?.offerings ?? [];
   type Offering = (typeof offerings)[number];
-  const departmentName = new Map(departments.map((d) => [d.id, d.name]));
+  const departmentName = new Map(flattenCategories(departments).map((d) => [d.id, d.path]));
   const busy = setOfferingActive.isPending || deleteOffering.isPending;
   const visibility = (o: Offering) => (!o.active ? "hidden" : o.listed ? "listed" : "unlisted");
 
@@ -54,7 +55,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
         </span>
       ),
     },
-    { key: "department", header: "Department", width: "176px", sortable: true, sortValue: (o) => departmentName.get(o.departmentId ?? "") ?? "", cell: (o) => <span className="truncate text-muted-foreground">{departmentName.get(o.departmentId ?? "") ?? "None"}</span> },
+    { key: "department", header: "Category", width: "176px", sortable: true, sortValue: (o) => departmentName.get(o.departmentId ?? "") ?? "", cell: (o) => <span className="truncate text-muted-foreground">{departmentName.get(o.departmentId ?? "") ?? "None"}</span> },
     { key: "price", header: "Usually costs", width: "168px", align: "right", cell: (o) => <span className="whitespace-nowrap tabular-nums">{priceLabel(o, currency)}</span> },
     { key: "days", header: "Delivery", width: "128px", cell: (o) => <span className="whitespace-nowrap">{daysLabel(o)}</span> },
     { key: "visibility", header: "Visibility", width: "176px", sortable: true, sortValue: visibility, cell: (o) => <Badge tone={visibility(o) === "listed" ? "good" : "neutral"}>{visibility(o) === "hidden" ? "Hidden" : visibility(o) === "listed" ? "Listed" : "Not in AI assistants"}</Badge> },
@@ -92,7 +93,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
           <p className="text-sm text-muted-foreground">What clients can request from your seller page.</p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/${teamSlug}/departments`} className={buttonVariants({ variant: "outline" })}>Departments</Link>
+          <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
           {isAdmin ? <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>Add service</Link> : null}
         </div>
       </div>
@@ -100,7 +101,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
       {!catalog.isError && offerings.length > 0 ? (
         <SummaryStrip label="Catalogue summary">
           <p className="text-sm"><span className="font-medium">{offerings.filter((o) => o.active).length} services</span> <span className="text-muted-foreground">clients can request</span></p>
-          <p className="text-sm text-muted-foreground">{departments.length} {departments.length === 1 ? "department" : "departments"}</p>
+          <p className="text-sm text-muted-foreground">{departments.length} {departments.length === 1 ? "category" : "categories"}</p>
         </SummaryStrip>
       ) : null}
       {catalog.isError ? (
@@ -119,7 +120,7 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
           searchText={(o) => `${o.name} ${o.description}`}
           searchLabel="Search services"
           filters={[
-            ...(departments.length > 0 ? [{ key: "department", label: "Departments", options: [...departments.map((d) => ({ value: d.id, label: d.name })), { value: "none", label: "No department" }], match: (o: Offering, v: string) => (v === "none" ? !o.departmentId : o.departmentId === v) }] : []),
+            ...(departments.length > 0 ? [{ key: "department", label: "Categories", options: [...flattenCategories(departments).map((d) => ({ value: d.id, label: d.path })), { value: "none", label: "No category" }], match: (o: Offering, v: string) => (v === "none" ? !o.departmentId : o.departmentId !== null && categoryDescendantIds(departments, v).has(o.departmentId)) }] : []),
             { key: "visibility", label: "Visibility", options: [{ value: "listed", label: "Listed" }, { value: "unlisted", label: "Not in AI assistants" }, { value: "hidden", label: "Hidden" }], match: (o: Offering, v: string) => visibility(o) === v },
           ]}
           defaultSort={{ key: "name", direction: "asc" }}

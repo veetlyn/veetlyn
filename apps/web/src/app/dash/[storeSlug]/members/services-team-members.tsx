@@ -218,9 +218,9 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
             </label>
             {departments.length > 0 ? (
               <label>
-                <span className="sr-only">Department</span>
+                <span className="sr-only">Category</span>
                 <select className={`${SELECT_CLASS} h-10 min-w-40`} value={departmentFilter} onChange={(event) => { setDepartmentFilter(event.target.value); setPage(1); }}>
-                  <option value="all">All departments</option>
+                  <option value="all">All categories</option>
                   {departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
                 </select>
               </label>
@@ -246,7 +246,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
           {view.total === 0 ? (
             <div className="rounded-[10px] border px-5 py-10 text-center">
               <h2 className="font-heading text-lg">No matching people</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Try another name, email, role or department.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Try another name, email, role or category.</p>
               <Button type="button" variant="outline" className="mt-4" onClick={() => { setQuery(""); setRoleFilter("all"); setDepartmentFilter("all"); setPage(1); }}>Clear filters</Button>
             </div>
           ) : (

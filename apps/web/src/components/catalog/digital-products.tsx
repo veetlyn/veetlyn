@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import { DataList } from "@/components/data-list";
+import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import Loader from "@/components/loader";
 import { ListPage } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
@@ -21,6 +22,7 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
     retry: false,
     meta: { silent: true },
   });
+  const categories = useQuery({ ...trpc.catalog.listCategories.queryOptions({ storeSlug: teamSlug }), retry: false, meta: { silent: true } });
   const enable = useMutation(
     trpc.servicesTeam.setStoreEnabled.mutationOptions({
       onSuccess: () =>
@@ -41,6 +43,7 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
 
   const { settings, role } = team.data;
   const currency = settings?.currency ?? "USD";
+  const categoryPath = new Map(flattenCategories(categories.data ?? []).map((category) => [category.id, category.path]));
 
   if (!settings?.storeEnabled) {
     return (
@@ -82,11 +85,10 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
           <h1 className="font-heading text-3xl">Premade items</h1>
           <p className="text-sm text-muted-foreground">Ready-made downloads clients buy from your seller page.</p>
         </div>
-        {role === "admin" ? (
-          <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>
-            Add premade item
-          </Link>
-        ) : null}
+        <span className="flex gap-2">
+          <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
+          {role === "admin" ? <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>Add premade item</Link> : null}
+        </span>
       </div>
 
       {products.isPending ? <Loader /> : null}
@@ -108,13 +110,17 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
                 </span>
               ),
             },
+            { key: "category", header: "Category", width: "190px", sortable: true, sortValue: (product) => categoryPath.get(product.departmentId ?? "") ?? "", cell: (product) => <span className="truncate text-muted-foreground">{product.departmentId ? categoryPath.get(product.departmentId) ?? "Category" : "No category"}</span> },
             { key: "price", header: "Price", width: "120px", align: "right", sortable: true, sortValue: (product) => product.priceMinor, cell: (product) => <span className="whitespace-nowrap tabular-nums">{formatMinor(product.priceMinor, currency)}</span> },
             { key: "status", header: "Status", width: "140px", sortable: true, sortValue: (product) => product.status, cell: (product) => <Badge tone={product.status === "published" ? "good" : "neutral"}>{product.status === "published" ? "Published" : "Draft"}</Badge> },
           ]}
           getRowId={(product) => product.id}
           searchText={(product) => `${product.title} ${product.fileName ?? ""}`}
           searchLabel="Search premade items"
-          filters={[{ key: "status", label: "Statuses", options: [{ value: "published", label: "Published" }, { value: "draft", label: "Draft" }], match: (product, value) => product.status === value }]}
+          filters={[
+            ...((categories.data?.length ?? 0) > 0 ? [{ key: "category", label: "Categories", options: [...flattenCategories(categories.data ?? []).map((category) => ({ value: category.id, label: category.path })), { value: "none", label: "No category" }], match: (product: { departmentId: string | null }, value: string) => value === "none" ? !product.departmentId : product.departmentId !== null && categoryDescendantIds(categories.data ?? [], value).has(product.departmentId) }] : []),
+            { key: "status", label: "Statuses", options: [{ value: "published", label: "Published" }, { value: "draft", label: "Draft" }], match: (product, value) => product.status === value },
+          ]}
           defaultSort={{ key: "title", direction: "asc" }}
           empty={{ title: "No premade items yet", text: "Add your first download: a title, a price and the file buyers get." }}
           noun={{ one: "item", many: "items" }}

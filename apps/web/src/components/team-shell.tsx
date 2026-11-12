@@ -72,6 +72,8 @@ const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
 
 const SEGMENT_LABELS = new Map<string, string>([
   ["finances", "Finances"],
+  ["categories", "Categories"],
+  ["departments", "Categories"],
   ...Object.entries(PAGES).map(([page, { label }]): [string, string] => [page, label]),
   ["rules", "Rules"],
   ["operating-model", "Operating model"],

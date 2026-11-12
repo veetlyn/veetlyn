@@ -25,6 +25,7 @@ import { ValueInput } from "@/components/value-input";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { FULFILMENT_LABELS, type Fulfilment } from "@/lib/offering-labels";
+import { flattenCategories } from "@/lib/catalog-categories";
 import { trpc } from "@/utils/trpc";
 
 const SELECT_CLASS = `w-full max-w-72 ${nativeSelectClass}`;
@@ -213,17 +214,17 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="offering-department">Department</Label>
+          <Label htmlFor="offering-department">Category</Label>
           <select
             id="offering-department"
             className={SELECT_CLASS}
             value={values.departmentId}
             onChange={(e) => patch({ departmentId: e.target.value })}
           >
-            <option value="">No department</option>
-            {departments.map((department) => (
+            <option value="">No category</option>
+            {flattenCategories(departments).map((department) => (
               <option key={department.id} value={department.id}>
-                {department.name}
+                {department.path}
               </option>
             ))}
           </select>

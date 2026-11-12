@@ -56,7 +56,7 @@ function DeclineForm({ teamSlug, projectId, onDone }: { teamSlug: string; projec
   );
 }
 
-// Staff replace the department rule with a shortlist; clearing every box restores it.
+// Staff replace the category rule with a shortlist; clearing every box restores it.
 function ShortlistForm({
   teamSlug,
   projectId,
@@ -74,7 +74,7 @@ function ShortlistForm({
     <fieldset className="grid gap-2">
       <legend className="text-sm font-medium">Who sees this request</legend>
       <p className="text-sm text-muted-foreground">
-        Pick freelancers to replace the department rule; save with none picked to go back to it.
+        Pick freelancers to replace the category rule; save with none picked to go back to it.
       </p>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {freelancers.map((member) => (
@@ -96,7 +96,7 @@ function ShortlistForm({
         disabled={shortlist.isPending}
         onClick={() => shortlist.mutate({ teamSlug, projectId, userIds: chosen })}
       >
-        {shortlist.isPending ? "Saving…" : chosen.length > 0 ? "Save shortlist" : "Use the department rule"}
+        {shortlist.isPending ? "Saving…" : chosen.length > 0 ? "Save shortlist" : "Use the category rule"}
       </Button>
       {shortlist.isSuccess ? <p className="text-sm text-muted-foreground">Saved.</p> : null}
       {shortlist.error ? (

@@ -50,7 +50,7 @@ function fromRequest(teamSlug: string, request: Request, now: number): Row {
     kind: "service",
     title: request.title,
     detail: request.brief,
-    forWhom: request.departmentName ?? "Any department",
+    forWhom: request.departmentName ?? "Any category",
     amount: null,
     status: "answer",
     statusLabel: answerLabel(request.respondBy, now),
