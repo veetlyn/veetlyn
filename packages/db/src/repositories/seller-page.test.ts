@@ -103,7 +103,7 @@ describe.skipIf(!hasTestDatabase)("seller page repository", () => {
 
     const page = await findSellerPage(db, seller.id);
     expect(page?.products).toEqual([
-      { id: published.id, title: "Icon pack", description: "", priceMinor: 1900 },
+      { id: published.id, departmentId: null, title: "Icon pack", description: "", priceMinor: 1900 },
     ]);
   });
 

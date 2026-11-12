@@ -8,6 +8,7 @@ import {
   type SourceProduct,
   type TenantContext,
 } from "@jendal-workspace/core";
+import { createServicesDepartment } from "@jendal-workspace/db/repositories/services-catalog";
 import { createTestDb, hasTestDatabase, seedOrganization, seedStore, truncateAll } from "@jendal-workspace/db/testing/db";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -120,6 +121,22 @@ describe.skipIf(!hasTestDatabase)("catalog service", () => {
       );
 
       expect(detail.images).toEqual([]);
+    });
+  });
+
+  describe("catalog categories", () => {
+    it("assigns a premade item to a shared category and clears it on update", async () => {
+      const tenant = await makeTenant();
+      const services = createTestCatalogServices();
+      const category = await createServicesDepartment(db, { teamId: tenant.storeId, name: "Lighting" });
+      expect(category).not.toBeNull();
+
+      const created = await createProduct(db, tenant, services, { ...draft(), departmentId: category!.id });
+      expect(created.product.departmentId).toBe(category!.id);
+      await expect(listProductSummaries(db, tenant)).resolves.toMatchObject([{ departmentId: category!.id }]);
+
+      const updated = await updateProduct(db, tenant, created.product.id, services, { ...draft(), departmentId: null });
+      expect(updated?.product.departmentId).toBeNull();
     });
   });
 

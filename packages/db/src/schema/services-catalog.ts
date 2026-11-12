@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  type AnyPgColumn,
   index,
   integer,
   jsonb,
@@ -17,7 +18,8 @@ import { team } from "./organization";
 // Money columns are bigint minor units read as JS numbers; MAX_AMOUNT_MINOR keeps them exact.
 const minor = (name: string) => bigint(name, { mode: "number" });
 
-// Sellers design §4.1: one level of grouping, optional, so a solo seller usually has none.
+// Catalog categories (called departments in the services schema): a shared tree for services and premade
+// items. parent_id is nullable; null is a top-level category.
 export const servicesDepartment = pgTable(
   "services_department",
   {
@@ -27,6 +29,8 @@ export const servicesDepartment = pgTable(
     teamId: text("team_id")
       .notNull()
       .references(() => team.id, { onDelete: "cascade" }),
+    // Null for a top-level category. Deleting a parent leaves its subcategories at the top level.
+    parentId: text("parent_id").references((): AnyPgColumn => servicesDepartment.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     position: integer("position").notNull().default(0),
     // "List in AI assistants": off hides every offering of the department from the plugin's search.
@@ -35,6 +39,7 @@ export const servicesDepartment = pgTable(
   },
   (table) => [
     index("services_department_teamId_idx").on(table.teamId),
+    index("services_department_parentId_idx").on(table.parentId),
     uniqueIndex("services_department_team_name_idx").on(table.teamId, sql`lower(name)`),
   ],
 );
@@ -51,7 +56,7 @@ export const servicesOffering = pgTable(
       .notNull()
       .references(() => team.id, { onDelete: "cascade" }),
     // Deleting a department leaves its offerings ungrouped rather than deleting them.
-    departmentId: text("department_id").references(() => servicesDepartment.id, { onDelete: "set null" }),
+    departmentId: text("department_id").references((): AnyPgColumn => servicesDepartment.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
     priceMinMinor: minor("price_min_minor").notNull(),

@@ -83,10 +83,10 @@ const sellerPageSchema = z.object({
   rating: z.object({ average: z.number(), count: z.int() }).nullable(),
   reviews: z.array(z.object({ id: z.string(), rating: z.int(), body: z.string(), reviewerName: z.string(), createdAt: z.string() })),
   portfolio: z.array(z.object({ id: z.string(), title: z.string(), url: z.string(), description: z.string() })),
-  departments: z.array(z.object({ id: z.string(), name: z.string(), position: z.number() })),
+  departments: z.array(z.object({ id: z.string(), parentId: z.string().nullable(), name: z.string(), position: z.number() })),
   offerings: z.array(offeringSchema),
   products: z.array(
-    z.object({ id: z.string(), title: z.string(), description: z.string(), priceMinor: z.number() }),
+    z.object({ id: z.string(), departmentId: z.string().nullable(), title: z.string(), description: z.string(), priceMinor: z.number() }),
   ),
 });
 export type SellerPageView = z.infer<typeof sellerPageSchema>;

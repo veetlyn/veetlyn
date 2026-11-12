@@ -30,8 +30,11 @@ import { hitRequestLimit } from "@jendal-workspace/db/repositories/request-limit
 import { requireStorageFor } from "../billing/entitlements";
 import { CatalogValidationError } from "./errors";
 
+export type DigitalProductInput = DigitalProductDraft & { departmentId?: string | null };
+
 export type DigitalProductDetail = {
   id: string;
+  departmentId: string | null;
   title: string;
   description: string;
   status: "draft" | "published";
@@ -62,7 +65,7 @@ async function requireDigitalProduct(db: Database, tenant: TenantContext, produc
 export async function createDigitalProduct(
   db: Database,
   tenant: TenantContext,
-  input: DigitalProductDraft,
+  input: DigitalProductInput,
 ): Promise<DigitalProductDetail> {
   const problems = validateDigitalProductDraft(input);
   if (problems.length > 0) throw new CatalogValidationError(problems);
@@ -72,6 +75,7 @@ export async function createDigitalProduct(
     description: input.description,
     brand: "",
     category: "",
+    departmentId: input.departmentId ?? null,
     chargeTax: true,
     requiresShipping: false,
     channel3ProductId: null,
@@ -86,7 +90,7 @@ export async function updateDigitalProduct(
   db: Database,
   tenant: TenantContext,
   productId: string,
-  input: DigitalProductDraft,
+  input: DigitalProductInput,
 ): Promise<DigitalProductDetail> {
   const problems = validateDigitalProductDraft(input);
   if (problems.length > 0) throw new CatalogValidationError(problems);
@@ -105,6 +109,7 @@ export async function updateDigitalProduct(
     description: input.description,
     brand: product.brand,
     category: product.category,
+    departmentId: input.departmentId === undefined ? product.departmentId : input.departmentId,
     chargeTax: product.chargeTax,
     requiresShipping: product.requiresShipping,
     channel3ProductId: product.channel3ProductId,
@@ -130,6 +135,7 @@ export async function getDigitalProduct(
   ]);
   return {
     id: product.id,
+    departmentId: product.departmentId,
     title: product.title,
     description: product.description,
     // SAFETY: products_status_check limits products.status to draft and published.

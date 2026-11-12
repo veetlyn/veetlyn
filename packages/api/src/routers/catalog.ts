@@ -1,4 +1,4 @@
-import { canServicesTeam, type ServicesTeamRole, SkuTakenError } from "@jendal-workspace/core";
+import { canServicesTeam, departmentNameProblem, type ServicesTeamRole, SkuTakenError } from "@jendal-workspace/core";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -25,6 +25,15 @@ import {
   unpublishProduct,
   updateProduct,
 } from "../catalog/service";
+import {
+  createServicesDepartment,
+  deleteServicesDepartment,
+  listServicesDepartments,
+  renameServicesDepartment,
+  setServicesDepartmentListed,
+  setServicesDepartmentParent,
+} from "@jendal-workspace/db/repositories/services-catalog";
+
 import { router } from "../index";
 import { storeProcedure } from "../store-procedure";
 
@@ -51,6 +60,7 @@ const productInputSchema = z.object({
   chargeTax: z.boolean(),
   requiresShipping: z.boolean(),
   channel3ProductId: z.string().max(120).nullish(),
+  departmentId: z.string().nullish(),
   variants: z.array(variantSchema).max(100),
   images: z.array(imageSchema).max(20),
 });
@@ -62,7 +72,10 @@ const digitalInputSchema = z.object({
   title: z.string().max(200),
   description: z.string().max(5_000),
   priceMinor: z.number().int().min(0),
+  departmentId: z.string().nullish(),
 });
+
+const categoryNameInput = z.object({ name: z.string() });
 
 // Sellers design §5.1: digital products are managed from a seller (services) team, not a store.
 type CatalogCtx = { store: { product: string }; servicesTeamRole: ServicesTeamRole | null };
@@ -79,6 +92,12 @@ function requireManageServicesProducts(ctx: CatalogCtx) {
   if (ctx.store.product === "services" && !canServicesTeam(ctx.servicesTeamRole, "manage_settings")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Only an admin can manage products." });
   }
+}
+
+async function requireCatalogDepartment(ctx: { db: Parameters<typeof listServicesDepartments>[0]; tenant: { storeId: string } }, departmentId: string | null | undefined): Promise<void> {
+  if (departmentId == null) return;
+  const departments = await listServicesDepartments(ctx.db, ctx.tenant.storeId);
+  if (!departments.some((department) => department.id === departmentId)) notFound();
 }
 
 function requireCommerceStore(ctx: { store: { product: string } }) {
@@ -107,6 +126,51 @@ export const catalogRouter = router({
     return listProductSummaries(ctx.db, ctx.tenant);
   }),
 
+  listCategories: storeProcedure.query(({ ctx }) => listServicesDepartments(ctx.db, ctx.tenant.storeId)),
+
+  createCategory: storeProcedure.input(categoryNameInput.extend({ parentId: z.string().nullish() })).mutation(async ({ ctx, input }) => {
+    requireManageServicesProducts(ctx);
+    const problem = departmentNameProblem(input.name);
+    if (problem) throw new TRPCError({ code: "BAD_REQUEST", message: problem });
+    await requireCatalogDepartment(ctx, input.parentId);
+    const created = await createServicesDepartment(ctx.db, { teamId: ctx.tenant.storeId, name: input.name, parentId: input.parentId ?? null });
+    if (!created) throw new TRPCError({ code: "CONFLICT", message: "Your team already has a category with this name." });
+    return created;
+  }),
+
+  renameCategory: storeProcedure.input(categoryNameInput.extend({ categoryId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+    requireManageServicesProducts(ctx);
+    const problem = departmentNameProblem(input.name);
+    if (problem) throw new TRPCError({ code: "BAD_REQUEST", message: problem });
+    const renamed = await renameServicesDepartment(ctx.db, { id: input.categoryId, teamId: ctx.tenant.storeId, name: input.name });
+    if (renamed === false) notFound();
+    if (renamed === null) throw new TRPCError({ code: "CONFLICT", message: "Your team already has a category with this name." });
+    return { categoryId: input.categoryId, name: input.name.trim() };
+  }),
+
+  deleteCategory: storeProcedure.input(z.object({ categoryId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+    requireManageServicesProducts(ctx);
+    const deleted = await deleteServicesDepartment(ctx.db, { id: input.categoryId, teamId: ctx.tenant.storeId });
+    if (!deleted) notFound();
+    return { categoryId: input.categoryId };
+  }),
+
+  setCategoryParent: storeProcedure.input(z.object({ categoryId: z.string().min(1), parentId: z.string().nullish() })).mutation(async ({ ctx, input }) => {
+    requireManageServicesProducts(ctx);
+    const result = await setServicesDepartmentParent(ctx.db, { id: input.categoryId, teamId: ctx.tenant.storeId, parentId: input.parentId ?? null });
+    if (result === "not_found") notFound();
+    if (result === "invalid_parent") throw new TRPCError({ code: "BAD_REQUEST", message: "That parent category is not in your team." });
+    if (result === "cycle") throw new TRPCError({ code: "BAD_REQUEST", message: "A category cannot sit inside itself or one of its subcategories." });
+    return { categoryId: input.categoryId, parentId: input.parentId ?? null };
+  }),
+
+  setCategoryListed: storeProcedure.input(z.object({ categoryId: z.string().min(1), listed: z.boolean() })).mutation(async ({ ctx, input }) => {
+    requireManageServicesProducts(ctx);
+    const changed = await setServicesDepartmentListed(ctx.db, { id: input.categoryId, teamId: ctx.tenant.storeId, listed: input.listed });
+    if (!changed) notFound();
+    return { categoryId: input.categoryId, listed: input.listed };
+  }),
+
   get: storeProcedure.input(idInput).query(async ({ ctx, input }) => {
     requireCommerceStore(ctx);
     const detail = await getProductDetail(ctx.db, ctx.tenant, input.id);
@@ -117,6 +181,7 @@ export const catalogRouter = router({
   create: storeProcedure.input(productInputSchema).mutation(async ({ ctx, input }) => {
     requireCommerceStore(ctx);
     const { storeSlug: _storeSlug, ...product } = input;
+    await requireCatalogDepartment(ctx, product.departmentId);
     try {
       return await createProduct(ctx.db, ctx.tenant, ctx.catalog, product);
     } catch (error) {
@@ -127,6 +192,7 @@ export const catalogRouter = router({
   update: storeProcedure.input(productInputSchema.merge(idInput)).mutation(async ({ ctx, input }) => {
     requireCommerceStore(ctx);
     const { storeSlug: _storeSlug, id, ...product } = input;
+    await requireCatalogDepartment(ctx, product.departmentId);
     try {
       const detail = await updateProduct(ctx.db, ctx.tenant, id, ctx.catalog, product);
       if (!detail) notFound();
@@ -172,6 +238,7 @@ export const catalogRouter = router({
   digitalCreate: storeProcedure.input(digitalInputSchema).mutation(async ({ ctx, input }) => {
     requireServicesTeam(ctx);
     const { storeSlug: _storeSlug, ...draft } = input;
+    await requireCatalogDepartment(ctx, draft.departmentId);
     try {
       return await createDigitalProduct(ctx.db, ctx.tenant, draft);
     } catch (error) {
@@ -182,6 +249,7 @@ export const catalogRouter = router({
   digitalUpdate: storeProcedure.input(digitalInputSchema.merge(idInput)).mutation(async ({ ctx, input }) => {
     requireServicesTeam(ctx);
     const { storeSlug: _storeSlug, id, ...draft } = input;
+    await requireCatalogDepartment(ctx, draft.departmentId);
     try {
       return await updateDigitalProduct(ctx.db, ctx.tenant, id, draft);
     } catch (error) {

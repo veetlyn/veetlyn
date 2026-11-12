@@ -7,7 +7,7 @@ import { servicesDepartment, servicesOffering } from "../schema/services-catalog
 import { servicesTeamSettings } from "../schema/services-teams";
 import type { OfferingDraft } from "@jendal-workspace/core";
 
-export type ServicesDepartmentRow = { id: string; name: string; position: number; listed: boolean };
+export type ServicesDepartmentRow = { id: string; parentId: string | null; name: string; position: number; listed: boolean };
 
 export type ServicesOfferingRow = OfferingDraft & {
   id: string;
@@ -21,6 +21,7 @@ export type ServicesOfferingRow = OfferingDraft & {
 // Explicit column lists, so later schema columns never change what these return.
 const departmentColumns = {
   id: servicesDepartment.id,
+  parentId: servicesDepartment.parentId,
   name: servicesDepartment.name,
   position: servicesDepartment.position,
   listed: servicesDepartment.listed,
@@ -67,7 +68,7 @@ export async function listServicesDepartments(db: Database, teamId: string): Pro
 // Null when the team already has that name (case-insensitive); the unique index is the concurrency guard.
 export async function createServicesDepartment(
   db: Database,
-  input: { teamId: string; name: string },
+  input: { teamId: string; name: string; parentId?: string | null },
 ): Promise<ServicesDepartmentRow | null> {
   const name = input.name.trim();
   const [existing] = await db
@@ -89,10 +90,41 @@ export async function createServicesDepartment(
   const rows = await nullOnDuplicateName(
     db
       .insert(servicesDepartment)
-      .values({ id: crypto.randomUUID(), teamId: input.teamId, name, position: positionRow?.next ?? 0 })
+      .values({ id: crypto.randomUUID(), teamId: input.teamId, parentId: input.parentId ?? null, name, position: positionRow?.next ?? 0 })
       .returning(departmentColumns),
   );
   return rows?.[0] ?? null;
+}
+
+
+export type SetServicesDepartmentParentResult = "updated" | "not_found" | "invalid_parent" | "cycle";
+
+// A category may sit under another category of the same team, never under itself or one of its descendants.
+export async function setServicesDepartmentParent(
+  db: Database,
+  input: { id: string; teamId: string; parentId: string | null },
+): Promise<SetServicesDepartmentParentResult> {
+  const departments = await listServicesDepartments(db, input.teamId);
+  const byId = new Map(departments.map((department) => [department.id, department]));
+  if (!byId.has(input.id)) return "not_found";
+  if (input.parentId !== null) {
+    if (input.parentId === input.id) return "cycle";
+    let parent = byId.get(input.parentId);
+    if (!parent) return "invalid_parent";
+    const seen = new Set<string>();
+    while (parent) {
+      if (parent.id === input.id) return "cycle";
+      if (seen.has(parent.id)) break;
+      seen.add(parent.id);
+      parent = parent.parentId ? byId.get(parent.parentId) : undefined;
+    }
+  }
+  const rows = await db
+    .update(servicesDepartment)
+    .set({ parentId: input.parentId })
+    .where(and(eq(servicesDepartment.id, input.id), eq(servicesDepartment.teamId, input.teamId)))
+    .returning({ id: servicesDepartment.id });
+  return rows.length > 0 ? "updated" : "not_found";
 }
 
 // False when the department is not the team's; null when the new name is already taken in that team.
