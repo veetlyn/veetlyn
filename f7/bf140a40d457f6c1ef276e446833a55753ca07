@@ -1,0 +1,22 @@
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/clients-section.tsx
+  h_6877e5e7a06bc5 5,15,77-101,105-119,121,123,130,144,162,167,172,189
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/conversation-section.tsx
+  h_6877e5e7a06bc5 7,14,47,130-151,177-190,193-203,205-217,236-239
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 21,36,53,275-276,440-450,452-456,458,460-462,466-467,469,476-478,482,489,494,498-499
+apps/web/src/components/conversation/thread.tsx
+  h_6877e5e7a06bc5 58-62,132,134-145,158,162-163
+apps/web/src/components/record-card.tsx
+  h_6877e5e7a06bc5 1-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f7bf140a40d457f6c1ef276e446833a55753ca07",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
