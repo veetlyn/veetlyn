@@ -4,7 +4,7 @@ import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { trpc } from "@/utils/trpc";
 
@@ -13,15 +13,22 @@ export function PortfolioEditor({ teamSlug, items }: { teamSlug: string; items: 
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
+  const [open, setOpen] = useState(false);
+  const regionId = useId();
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.seller.preview.queryKey({ teamSlug }) });
   const add = useMutation(trpc.project.portfolioAdd.mutationOptions({ onSuccess: () => { setTitle(""); setUrl(""); setDescription(""); void refresh(); } }));
   const remove = useMutation(trpc.project.portfolioRemove.mutationOptions({ onSuccess: refresh }));
   const busy = add.isPending || remove.isPending;
   const error = add.error ?? remove.error;
   return (
-    <details className="mx-auto w-full max-w-5xl border-b px-4 py-4">
-      <summary className="w-fit cursor-pointer text-sm font-medium">Manage portfolio</summary>
-      <div className="mt-4 grid max-w-xl gap-4">
+    <section aria-labelledby="portfolio-editor-heading" className="mx-auto w-full max-w-5xl border-b px-4 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="portfolio-editor-heading" className="text-sm font-medium">Portfolio</h2>
+        <Button type="button" variant="outline" size="sm" aria-expanded={open} aria-controls={regionId} onClick={() => setOpen((value) => !value)}>
+          {open ? "Close portfolio editor" : "Manage portfolio"}
+        </Button>
+      </div>
+      {open ? <div id={regionId} className="mt-4 grid max-w-xl gap-4">
         <p className="text-sm text-muted-foreground">Link to work you have permission to share publicly. Do not publish a client’s private files.</p>
         {items.length ? <ul className="divide-y">{items.map((item) => <li key={item.id} className="flex items-center justify-between gap-3 py-2"><a href={item.url} target="_blank" rel="noopener noreferrer" className="min-w-0 break-words text-sm underline">{item.title}</a><Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => remove.mutate({ teamSlug, id: item.id })} aria-label={`Remove ${item.title} from portfolio`}>Remove</Button></li>)}</ul> : null}
         <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); add.mutate({ teamSlug, title, url, description }); }}>
@@ -33,7 +40,7 @@ export function PortfolioEditor({ teamSlug, items }: { teamSlug: string; items: 
           </fieldset>
         </form>
         {error ? <p role="alert" className="text-sm text-destructive">{error.message}</p> : null}
-      </div>
-    </details>
+      </div> : null}
+    </section>
   );
 }

@@ -175,7 +175,7 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
       {page.products.length > 0 ? (
         <section aria-labelledby="store-heading" className="space-y-6">
           <h2 id="store-heading" className="font-heading text-2xl">
-            Store
+            Premade items
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {page.products.map((product) => (
