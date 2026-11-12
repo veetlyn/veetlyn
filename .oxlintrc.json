@@ -55,14 +55,17 @@
         "packages/ui/src/lib/focusable.ts",
         "packages/ui/src/lib/command-search.ts",
         "packages/ui/src/lib/presence-gate.tsx",
-        "packages/ui/src/lib/touch.ts"
+        "packages/ui/src/lib/touch.ts",
+        "packages/ui/src/components/charts/**",
+        "packages/ui/src/lib/text-shimmer.ts"
       ],
       "rules": {
         "anti-slop/no-known-value-widening": "off",
         "anti-slop/no-runtime-typeof": "off",
         "anti-slop/no-unknown-parameters": "off",
         "anti-slop/no-unsafe-dictionary-type": "off",
-        "anti-slop/require-safety-comment-for-type-assertion": "off"
+        "anti-slop/require-safety-comment-for-type-assertion": "off",
+        "anti-slop/no-shape-in-symbol-names": "off"
       }
     }
   ]

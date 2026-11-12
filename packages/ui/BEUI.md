@@ -11,7 +11,7 @@ yes n | pnpm dlx shadcn@latest add @beui/<slug>
 `twMerge(clsx(...))`). After an install, remove any `clsx` / `tailwind-merge` the CLI adds to `package.json`.
 
 Vendored paths: `src/components/motion/**`, `src/components/agents/**`, `src/lib/hooks/**`, `src/lib/ease.ts`,
-`src/lib/i18n.tsx`, `src/lib/focusable.ts`. Also `src/lib/command-search.ts`, `src/lib/presence-gate.tsx`, `src/lib/touch.ts`.
+`src/lib/i18n.tsx`, `src/lib/focusable.ts`. Also `src/components/charts/**`, `src/lib/command-search.ts`, `src/lib/presence-gate.tsx`, `src/lib/text-shimmer.ts`, `src/lib/touch.ts`.
 They follow beUI's conventions, so `.oxlintrc.json` turns off the house-style anti-slop rules for them only, and
 `tsconfig.beui.json` type-checks them without `noUncheckedIndexedAccess` (beUI's own setting; `check-types` runs both
 configs). A few early guards remain in tabs, select, i18n, use-listbox and use-row-cursor; they are harmless if a
@@ -28,6 +28,7 @@ In use:
 - `motion/table` + `motion/pagination`: every entity list, through `apps/web/src/components/data-list.tsx` (search, filters, sort over all rows, pages).
 - `motion/alert`: billing notice, kept `role="status"` (tested in `billing-notice.test.ts`).
 - `motion/breadcrumb`: top-bar breadcrumb; switcher crumbs keep our dropdown menu.
+- `charts/line-chart`: finances collection and member-payout trends; the chart includes an accessible data table.
 
 Not used, on purpose: `timeline` (a decorative card carousel, not a status sequence) and `select` for the workspace
 picker (a listbox for form values; the picker is a menu of navigation links).
