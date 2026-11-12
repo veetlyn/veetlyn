@@ -1,0 +1,42 @@
+apps/web/src/app/dash/[storeSlug]/calls/team-calls.tsx
+  h_6877e5e7a06bc5 38,52,65,67,72,79,97,115,124,128,133,148,154,272,298-304,307-309,325-326,341,377,386,391
+apps/web/src/app/dash/[storeSlug]/payments/team-payments.tsx
+  h_6877e5e7a06bc5 7-9,24-43,94-104
+apps/web/src/app/dash/[storeSlug]/projects/projects-list.tsx
+  h_6877e5e7a06bc5 14,69,76-77,83-85,88,90,119-120
+apps/web/src/app/dash/page.tsx
+  h_6877e5e7a06bc5 7,21,39,41,43,46-47
+apps/web/src/app/dash/w/[organizationId]/page.tsx
+  h_6877e5e7a06bc5 34,37
+apps/web/src/components/app-frame.tsx
+  h_6877e5e7a06bc5 12-14,28,35,43,74,77,85,114,126,129,151-189,191-238,242-243,246,248,252-260,263-270,272-286,293
+apps/web/src/components/billing-notice.test.ts
+  h_6877e5e7a06bc5 1-43
+apps/web/src/components/billing-notice.tsx
+  h_6877e5e7a06bc5 4,7-9,18-23,32,34-35,37-38,40-53
+apps/web/src/components/composer-box.tsx
+  h_6877e5e7a06bc5 5,18-21,51-54,91,106,113,130,140,142,144-153,161-167,169-173,178,181-190
+apps/web/src/components/frames/account-shell.tsx
+  h_6877e5e7a06bc5 10,26,48,63,71,85
+apps/web/src/components/frames/workspace-shell.tsx
+  h_6877e5e7a06bc5 10-11,64-65,69,74,79-80,90-91
+apps/web/src/components/paypal-connect-card.tsx
+  h_6877e5e7a06bc5 19
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 9,30-31,46,50,52-55,136-146,157,160,184,188-189,194,218-229,232,236,238-242,244,248,250
+apps/web/src/lib/workspaces.test.ts
+  h_6877e5e7a06bc5 3,36-55
+apps/web/src/lib/workspaces.ts
+  h_6877e5e7a06bc5 44-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d7a83798407c1b9b6a12a9a88a02b2f275680cac",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
