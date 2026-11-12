@@ -1,0 +1,62 @@
+.oxlintrc.json
+  h_6877e5e7a06bc5 58-60,67-68
+packages/ui/BEUI.md
+  h_6877e5e7a06bc5 14,31
+packages/ui/src/components/charts/line-chart.tsx
+  h_6877e5e7a06bc5 1-97
+packages/ui/src/components/charts/line-chart/context.tsx
+  h_6877e5e7a06bc5 1-138
+packages/ui/src/components/charts/line-chart/legend.tsx
+  h_6877e5e7a06bc5 1-24
+packages/ui/src/components/charts/line-chart/plot.tsx
+  h_6877e5e7a06bc5 1-605
+packages/ui/src/components/charts/line-chart/tooltip.tsx
+  h_6877e5e7a06bc5 1-145
+packages/ui/src/components/charts/xy/axis.tsx
+  h_6877e5e7a06bc5 1-96
+packages/ui/src/components/charts/xy/data-table.tsx
+  h_6877e5e7a06bc5 1-46
+packages/ui/src/components/charts/xy/inspector.tsx
+  h_6877e5e7a06bc5 1-154
+packages/ui/src/components/charts/xy/legend.tsx
+  h_6877e5e7a06bc5 1-68
+packages/ui/src/components/charts/xy/messages.ts
+  h_6877e5e7a06bc5 1-22
+packages/ui/src/components/charts/xy/model.ts
+  h_6877e5e7a06bc5 1-42
+packages/ui/src/components/charts/xy/path.ts
+  h_6877e5e7a06bc5 1-88
+packages/ui/src/components/charts/xy/scale.ts
+  h_6877e5e7a06bc5 1-52
+packages/ui/src/components/charts/xy/tooltip-content.tsx
+  h_6877e5e7a06bc5 1-78
+packages/ui/src/components/charts/xy/use-inspection.ts
+  h_6877e5e7a06bc5 1-60
+packages/ui/src/components/charts/xy/use-points.ts
+  h_6877e5e7a06bc5 1-51
+packages/ui/src/components/charts/xy/use-width.ts
+  h_6877e5e7a06bc5 1-19
+packages/ui/src/components/motion/number-ticker.tsx
+  h_6877e5e7a06bc5 1-212
+packages/ui/src/components/motion/text-shimmer.tsx
+  h_6877e5e7a06bc5 1-34
+packages/ui/src/components/motion/tooltip-surface.tsx
+  h_6877e5e7a06bc5 1-44
+packages/ui/src/lib/text-shimmer.ts
+  h_6877e5e7a06bc5 1-21
+packages/ui/tsconfig.beui.json
+  h_6877e5e7a06bc5 15-17
+packages/ui/tsconfig.json
+  h_6877e5e7a06bc5 31-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ba4e714701650ce043801af48f9060d22043deef",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
