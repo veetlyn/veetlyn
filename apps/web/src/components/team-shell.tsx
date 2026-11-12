@@ -7,6 +7,7 @@ import {
   ArrowUpFromLine,
   ArrowLeft,
   CreditCard,
+  LayoutDashboard,
   FolderKanban,
   HandCoins,
   Inbox,
@@ -40,7 +41,7 @@ const PAGES = {
   payouts: { label: "Payouts", icon: ArrowUpFromLine },
   cases: { label: "Disputes", icon: ShieldAlert },
   services: { label: "Services", icon: Tag },
-  products: { label: "Products", icon: Package },
+  products: { label: "Premade items", icon: Package },
   orders: { label: "Orders", icon: Inbox },
   preview: { label: "Seller page", icon: Store },
   members: { label: "People", icon: Users },
@@ -49,10 +50,10 @@ const PAGES = {
 
 // Workspace modules are visible directly; server-authorized sections still decide which ones exist.
 const PLACES: { label: string; icon: LucideIcon; pages: SectionPage[] }[] = [
-  { label: "Work", icon: FolderKanban, pages: ["projects", "requests"] },
-  { label: "Sell", icon: Store, pages: ["services", "products", "orders", "preview"] },
-  { label: "Money", icon: Wallet, pages: ["payments", "payouts", "cases"] },
-  { label: "Team", icon: Settings, pages: ["members", "settings"] },
+  // Requests and orders are one intake list ("Orders"): a client asks for a service or buys a premade item.
+  { label: "Work", icon: FolderKanban, pages: ["projects", "orders"] },
+  { label: "Catalog", icon: Store, pages: ["services", "products", "preview"] },
+  { label: "Finances", icon: Wallet, pages: ["payments", "payouts", "cases"] },
 ];
 
 // The pages a limit can hide. A single project is decided by the server, by its stage.
@@ -70,6 +71,7 @@ const AREA_OF_PAGE = new Map<string, HideableArea>([
 const STORE_PAGES: ReadonlySet<SectionPage> = new Set(["products"]);
 
 const SEGMENT_LABELS = new Map<string, string>([
+  ["finances", "Finances"],
   ...Object.entries(PAGES).map(([page, { label }]): [string, string] => [page, label]),
   ["rules", "Rules"],
   ["operating-model", "Operating model"],
@@ -127,11 +129,15 @@ export default function TeamShell({
   const record = isProjectReadDenied(projectDetail.error) ? undefined : projectDetail.data?.project;
   const projectParent = allowed.has("projects")
     ? { href: `/${slug}/projects`, label: "Projects", allLabel: "All projects" }
-    : allowed.has("requests")
-      ? { href: `/${slug}/requests`, label: "Requests", allLabel: "All requests" }
+    : allowed.has("requests") || allowed.has("orders")
+      ? { href: `/${slug}/orders`, label: "Orders", allLabel: "All orders" }
       : { href: `/${slug}`, label: "Home", allLabel: "Home" };
   const hiddenArea = projectId ? undefined : AREA_OF_PAGE.get(segments[0] ?? "");
-  const pageHidden = services && hiddenArea !== undefined && scope?.seller?.access.hidden.includes(hiddenArea) === true;
+  const hidden = scope?.seller?.access.hidden ?? [];
+  // Orders also lists service requests, so it is hidden only when both of its sources are.
+  const pageHidden = services && (segments[0] === "orders"
+    ? hidden.includes("storefront") && hidden.includes("requests")
+    : hiddenArea !== undefined && hidden.includes(hiddenArea));
 
   const teamKind = services ? "Services team" : "Store";
   // A workspace is the organization (members, billing); this store or services team is one of its teams.
@@ -232,12 +238,13 @@ export default function TeamShell({
                   Overview
                 </Link>
                 {PLACES.map((place) => {
-                  const pages = place.pages.filter((page) => allowed.has(page));
+                  const pages = place.pages.filter((page) => allowed.has(page) || (page === "orders" && allowed.has("requests")));
                   if (pages.length === 0) return null;
                   return (
                     <section key={place.label} className="pt-4">
                       <h2 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{place.label}</h2>
                       <div className="grid gap-0.5">
+                        {place.label === "Finances" ? link(`/${slug}/finances`, "Overview", LayoutDashboard) : null}
                         {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
                         {place.label === "Sell" && services && allowed.has("services") ? (
                           <Link href={`/${slug}/from-ai`} aria-current={isActive(`/${slug}/from-ai`) ? "page" : undefined} className={navItemClass(isActive(`/${slug}/from-ai`))}>
@@ -245,11 +252,19 @@ export default function TeamShell({
                             From AI
                           </Link>
                         ) : null}
-                        {place.label === "Team" && organization?.canCreateStores ? link(`/w/${organization.id}/billing`, "Workspace billing", CreditCard) : null}
                       </div>
                     </section>
                   );
                 })}
+                {/* Team and access live inside Settings. */}
+                {allowed.has("settings") || allowed.has("members") ? (
+                  <section className="pt-4">
+                    <div className="grid gap-0.5">
+                      {link(`/${slug}/${allowed.has("settings") ? "settings" : "members"}`, "Settings", Settings)}
+                      {organization?.canCreateStores ? link(`/w/${organization.id}/billing`, "Workspace billing", CreditCard) : null}
+                    </div>
+                  </section>
+                ) : null}
               </nav>
               {services ? <RecentCalls calls={recent} callsPath={`/${slug}/threads`} label="Your threads" /> : null}
             </>

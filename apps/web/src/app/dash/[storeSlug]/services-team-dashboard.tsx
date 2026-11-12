@@ -411,9 +411,9 @@ export default function ServicesTeamDashboard({
           </section>
         </div>
 
-        {admin ? <details className="min-w-0 border-t pt-5">
-          <summary className="cursor-pointer text-sm font-medium">Manage {team.name}{!setupDone ? " · Finish setup" : ""}</summary>
-          <div className="mt-4 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
+        {admin && !setupDone ? (
+          <section aria-labelledby="setup-h" className="grid min-w-0 gap-3 border-t pt-6">
+            <h2 id="setup-h" className="font-heading text-lg">Finish setup</h2>
           <SetupChecklist
             steps={steps}
             title={
@@ -426,6 +426,11 @@ export default function ServicesTeamDashboard({
                   : "Set up your team"
             }
           />
+          </section>
+        ) : null}
+        {admin ? (
+          <section aria-labelledby="manage-h" className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 border-t pt-6">
+            <h2 id="manage-h" className="font-heading text-lg">Seller page and payments</h2>
           <PublishCard teamSlug={team.slug} publicUrl={url} />
           <PayPalConnectCard teamId={team.id} />
           <section className="frame frame-panel">
@@ -434,7 +439,7 @@ export default function ServicesTeamDashboard({
               {settings?.storeEnabled ? (
                 <div className="ml-auto flex gap-3">
                   <Link href={`/${team.slug}/products`} className="underline decoration-border underline-offset-4">
-                    Products
+                    Premade items
                   </Link>
                   {admin ? (
                     <Link href={`/${team.slug}/orders`} className="underline decoration-border underline-offset-4">
@@ -473,8 +478,8 @@ export default function ServicesTeamDashboard({
               ) : null}
             </div>
           </section>
-          </div>
-        </details> : null}
+          </section>
+        ) : null}
       </div>
     </main>
   );
@@ -482,12 +487,10 @@ export default function ServicesTeamDashboard({
 
 function Figure({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <div className="frame frame-panel">
-      <p className="frame-head text-[13px] font-medium">{label}</p>
-      <div className="frame frame-body px-3.5 py-3">
-        <p className="font-tabular text-[22px] font-semibold tracking-[-0.02em]">{value}</p>
-        <p className="text-[13px] text-muted-foreground">{note}</p>
-      </div>
+    <div className="rounded-[10px] border bg-card px-4 py-3.5">
+      <p className="text-[13px] text-muted-foreground">{label}</p>
+      <p className="mt-1 font-tabular text-[22px] font-semibold tracking-[-0.02em]">{value}</p>
+      <p className="text-[13px] text-muted-foreground">{note}</p>
     </div>
   );
 }
