@@ -1,0 +1,106 @@
+.oxlintrc.json
+  h_6877e5e7a06bc5 24-29,46-68
+apps/web/src/dash.css
+  h_6877e5e7a06bc5 1-5,8-10,13,15,22,24-31,69-71,74-80,88,90,97-99,156-157,185-193
+packages/ui/BEUI.md
+  h_6877e5e7a06bc5 1-33
+packages/ui/components.json
+  h_6877e5e7a06bc5 23-25
+packages/ui/package.json
+  h_6877e5e7a06bc5 8-9,16,21,25
+packages/ui/src/components/agents/prompt-input.tsx
+  h_6877e5e7a06bc5 1-345
+packages/ui/src/components/motion/alert.tsx
+  h_6877e5e7a06bc5 1-252
+packages/ui/src/components/motion/breadcrumb.tsx
+  h_6877e5e7a06bc5 1-336
+packages/ui/src/components/motion/button/base.tsx
+  h_6877e5e7a06bc5 1-189
+packages/ui/src/components/motion/button/index.tsx
+  h_6877e5e7a06bc5 1-17
+packages/ui/src/components/motion/button/magnetic.tsx
+  h_6877e5e7a06bc5 1-25
+packages/ui/src/components/motion/button/metallic.tsx
+  h_6877e5e7a06bc5 1-100
+packages/ui/src/components/motion/button/stateful.tsx
+  h_6877e5e7a06bc5 1-256
+packages/ui/src/components/motion/checkbox.tsx
+  h_6877e5e7a06bc5 1-159
+packages/ui/src/components/motion/command-palette.tsx
+  h_6877e5e7a06bc5 1-385
+packages/ui/src/components/motion/magnetic.tsx
+  h_6877e5e7a06bc5 1-50
+packages/ui/src/components/motion/popover-morph.tsx
+  h_6877e5e7a06bc5 1-554
+packages/ui/src/components/motion/popover-position.ts
+  h_6877e5e7a06bc5 1-86
+packages/ui/src/components/motion/select.tsx
+  h_6877e5e7a06bc5 1-526
+packages/ui/src/components/motion/table/editable-cell.tsx
+  h_6877e5e7a06bc5 1-24
+packages/ui/src/components/motion/table/index.tsx
+  h_6877e5e7a06bc5 1-451
+packages/ui/src/components/motion/table/messages.ts
+  h_6877e5e7a06bc5 1-24
+packages/ui/src/components/motion/table/row-handle.tsx
+  h_6877e5e7a06bc5 1-84
+packages/ui/src/components/motion/table/skeleton-rows.tsx
+  h_6877e5e7a06bc5 1-39
+packages/ui/src/components/motion/table/table-header.tsx
+  h_6877e5e7a06bc5 1-353
+packages/ui/src/components/motion/table/table-menu.tsx
+  h_6877e5e7a06bc5 1-129
+packages/ui/src/components/motion/table/types.ts
+  h_6877e5e7a06bc5 1-89
+packages/ui/src/components/motion/table/use-column-reorder.ts
+  h_6877e5e7a06bc5 1-105
+packages/ui/src/components/motion/table/use-column-resize.ts
+  h_6877e5e7a06bc5 1-81
+packages/ui/src/components/motion/table/use-column-sort.ts
+  h_6877e5e7a06bc5 1-64
+packages/ui/src/components/motion/table/use-row-selection.ts
+  h_6877e5e7a06bc5 1-59
+packages/ui/src/components/motion/table/utils.ts
+  h_6877e5e7a06bc5 1-33
+packages/ui/src/components/motion/tabs.tsx
+  h_6877e5e7a06bc5 1-689
+packages/ui/src/lib/command-search.ts
+  h_6877e5e7a06bc5 1-59
+packages/ui/src/lib/ease.ts
+  h_6877e5e7a06bc5 1-55
+packages/ui/src/lib/focusable.ts
+  h_6877e5e7a06bc5 1-8
+packages/ui/src/lib/hooks/use-hover-capable.ts
+  h_6877e5e7a06bc5 1-23
+packages/ui/src/lib/hooks/use-listbox.ts
+  h_6877e5e7a06bc5 1-105
+packages/ui/src/lib/hooks/use-on-open.ts
+  h_6877e5e7a06bc5 1-24
+packages/ui/src/lib/hooks/use-row-cursor.ts
+  h_6877e5e7a06bc5 1-87
+packages/ui/src/lib/hooks/use-touch-capable.ts
+  h_6877e5e7a06bc5 1-31
+packages/ui/src/lib/i18n.tsx
+  h_6877e5e7a06bc5 1-89
+packages/ui/src/lib/presence-gate.tsx
+  h_6877e5e7a06bc5 1-52
+packages/ui/src/lib/touch.ts
+  h_6877e5e7a06bc5 1-89
+packages/ui/tsconfig.beui.json
+  h_6877e5e7a06bc5 1-20
+packages/ui/tsconfig.json
+  h_6877e5e7a06bc5 5-9,12-14,17-32
+pnpm-lock.yaml
+  h_6877e5e7a06bc5 645-647,657-659,3075-3083,4535-4548,5342-5361,8433-8440,9555-9563,10401-10414
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6308f08161c89ae7e5766877a45a71880e05e256",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
