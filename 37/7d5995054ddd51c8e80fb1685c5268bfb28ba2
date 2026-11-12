@@ -1,0 +1,46 @@
+apps/web/src/components/project-nav.tsx
+  h_6877e5e7a06bc5 61
+apps/web/src/components/ask-bar.tsx
+  h_6877e5e7a06bc5 32
+apps/web/src/app/dash/me/calls/page.tsx
+  h_6877e5e7a06bc5 1,3-10
+apps/web/src/components/frames/account-shell.tsx
+  h_6877e5e7a06bc5 55-56,62,89
+apps/web/src/components/frames/workspace-shell.tsx
+  h_6877e5e7a06bc5 67-68,73,96
+apps/web/src/app/dash/w/[organizationId]/calls/page.tsx
+  h_6877e5e7a06bc5 1,3-4,6-11
+apps/web/src/components/recent-calls.tsx
+  h_6877e5e7a06bc5 16
+apps/web/src/app/dash/me/threads/page.tsx
+  h_6877e5e7a06bc5 1-22
+apps/web/src/app/dash/w/[organizationId]/threads/page.tsx
+  h_6877e5e7a06bc5 1-28
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 394
+apps/web/src/app/dash/[storeSlug]/calls/page.tsx
+  h_6877e5e7a06bc5 1,3-4,6-11
+apps/web/src/components/prepared-banner.tsx
+  h_6877e5e7a06bc5 28
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  h_6877e5e7a06bc5 232,319
+apps/web/src/components/team-shell.tsx
+  h_6877e5e7a06bc5 159,183,188,254
+apps/web/src/app/dash/[storeSlug]/threads/page.tsx
+  h_6877e5e7a06bc5 1-19
+apps/web/src/app/dash/[storeSlug]/threads/seller-calls.tsx
+  h_6877e5e7a06bc5 34
+apps/web/src/app/dash/[storeSlug]/threads/team-calls.tsx
+  h_6877e5e7a06bc5 197,201,235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "377d5995054ddd51c8e80fb1685c5268bfb28ba2",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
