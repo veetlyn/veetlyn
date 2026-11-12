@@ -21,13 +21,13 @@ export function WorkPage({
     <main
       data-composition="work"
       className={cn(
-        "mx-auto grid w-full min-w-0 max-w-[1104px] grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-8 px-4 py-6 md:px-7 md:py-8",
+        "mx-auto grid w-full min-w-0 max-w-[1104px] grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-8 px-4 py-6 text-sm md:px-7 md:py-8",
         rail && "xl:grid-cols-[minmax(0,768px)_256px] xl:items-start",
         className,
       )}
     >
       <div data-work-column className={cn("mx-auto flex w-full min-w-0 max-w-[768px] flex-col", !rail && "xl:mx-auto", rail && "xl:mx-0")}>
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="min-w-0 flex-1 space-y-6">{children}</div>
         {composer ? (
           <div data-composer-slot className="shrink-0 pt-4">
             {composer}
@@ -51,7 +51,7 @@ export function ContextRail({ label, children, className }: { label: string; chi
 // Money and other documents: a wider column with room for a document header and ordered lines.
 export function DocumentPage({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <main data-composition="document" className={cn("mx-auto w-full min-w-0 max-w-[896px] space-y-6 px-4 py-6 md:px-7 md:py-8", className)}>
+    <main data-composition="document" className={cn("mx-auto w-full min-w-0 max-w-[896px] space-y-6 px-4 py-6 text-sm md:px-7 md:py-8", className)}>
       {children}
     </main>
   );
@@ -60,7 +60,7 @@ export function DocumentPage({ children, className }: { children: React.ReactNod
 // Lists and tables: the page leads with a SummaryStrip, then the rows.
 export function ListPage({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <main data-composition="list" className={cn("mx-auto w-full min-w-0 max-w-[1200px] space-y-6 px-4 py-6 md:px-7 md:py-8", className)}>
+    <main data-composition="list" className={cn("mx-auto w-full min-w-0 max-w-[1200px] space-y-6 px-4 py-6 text-sm md:px-7 md:py-8", className)}>
       {children}
     </main>
   );

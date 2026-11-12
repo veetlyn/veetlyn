@@ -36,7 +36,7 @@ export default function PublishCard({ teamSlug, publicUrl }: { teamSlug: string;
 
   return (
     <section id="publish" className="frame frame-panel scroll-mt-6">
-      <h2 className="frame-head text-[13px] font-medium">{product === "services" ? "Seller page" : "Storefront"}</h2>
+      <h2 className="frame-head text-[12px] font-medium">{product === "services" ? "Seller page" : "Storefront"}</h2>
       <div className="frame frame-body grid gap-3 p-4">
         <p className="text-sm">
           {sellerStatus === "draft" ? (

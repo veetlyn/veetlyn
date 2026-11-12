@@ -24,7 +24,7 @@ const BULLET = /^\s*(?:[-*•]|\d+[.)])\s+/;
 
 export default function AgentText({ text }: { text: string }) {
   return (
-    <div className="grid gap-2 text-[14px] leading-[22px]">
+    <div className="grid gap-2 text-[13px] leading-[22px]">
       {text
         .trim()
         .split(/\n{2,}/)

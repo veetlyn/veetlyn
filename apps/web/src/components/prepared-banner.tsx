@@ -22,8 +22,8 @@ export default function PreparedBanner({ teamId, projectId, slug }: { teamId: st
     <div className="panel flex items-center gap-3 px-4 py-3">
       <AgentIcon className="size-4 shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-medium">{item.card.title}, prepared and waiting for you</p>
-        {item.note ? <p className="truncate text-[14px] text-muted-foreground">{item.note}</p> : null}
+        <p className="truncate text-[13px] font-medium">{item.card.title}, prepared and waiting for you</p>
+        {item.note ? <p className="truncate text-[13px] text-muted-foreground">{item.note}</p> : null}
       </div>
       <Link href={`/${slug}/calls?call=${item.callId}`} className={cn(buttonVariants({ variant: "mint", size: "sm" }), "px-4")}>
         Review

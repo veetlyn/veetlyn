@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { ValueInput } from "@/components/value-input";
 import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
@@ -188,9 +189,11 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
         />
       </div>
       <div className="grid gap-1 sm:max-w-48">
-        <Label htmlFor="digital-price">Price{team.data ? ` (${team.data.settings?.currency ?? "USD"})` : " (seller currency)"}</Label>
-        <Input
+        <Label htmlFor="digital-price">Price</Label>
+        <ValueInput
           id="digital-price"
+          unit={team.data ? team.data.settings?.currency ?? "USD" : "…"}
+          unitLabel={team.data ? team.data.settings?.currency ?? "USD" : "Workspace currency loading"}
           inputMode="decimal"
           value={fields.price}
           onChange={(event) => patch({ price: event.target.value })}
