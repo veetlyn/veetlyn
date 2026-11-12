@@ -1,0 +1,30 @@
+packages/api/src/agent/answer-ui.test.ts
+  h_6877e5e7a06bc5 1-62
+packages/api/src/agent/answer-ui.ts
+  h_6877e5e7a06bc5 1-207
+packages/api/src/agent/turn.test.ts
+  h_6877e5e7a06bc5 35,41-54
+packages/api/src/agent/turn.ts
+  h_6877e5e7a06bc5 26,90-92,99-103,105,107-108,110,113-132,138-142,154,173-174,226-242,330,347-358,373-380,383-385,399-406,410-425,431-435,437-438
+packages/api/src/routers/agent.test.ts
+  h_6877e5e7a06bc5 116-151,537-539
+packages/db/src/migrations/20261112191724_agent_answer_ui/migration.sql
+  h_6877e5e7a06bc5 1
+packages/db/src/migrations/20261112191724_agent_answer_ui/snapshot.json
+  h_6877e5e7a06bc5 1-16493
+packages/db/src/repositories/calls.ts
+  h_6877e5e7a06bc5 182,193-197
+packages/db/src/schema/calls.ts
+  h_6877e5e7a06bc5 75-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a334ef2751c44aea72ad18c8ea38f6a64d236d0",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
