@@ -18,7 +18,7 @@ import {
   type QuoteItemDraft,
 } from "@jendal-workspace/core";
 import { Badge } from "@jendal-workspace/ui/components/badge";
-import { Button } from "@jendal-workspace/ui/components/button";
+import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
@@ -33,6 +33,7 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { DeliveryFile } from "@/components/delivery-file";
 import { DeliveryLink } from "@/components/delivery-link";
+import { RecordCard } from "@/components/record-card";
 import { ValueInput } from "@/components/value-input";
 import { competingProposalCount, quoteAttribution } from "@/lib/quote-attribution";
 import Loader from "@/components/loader";
@@ -49,7 +50,7 @@ import { ProjectProgress } from "@/components/project-progress";
 import { ContextRail, WorkPage } from "@/components/page-composition";
 
 import { ClientsSection } from "./clients-section";
-import { ConversationSection } from "./conversation-section";
+import { ConversationSection, RequestHandling } from "./conversation-section";
 import PreparedBanner from "@/components/prepared-banner";
 import { scheduleLabel, scheduleWhen } from "@/lib/project-schedule";
 
@@ -271,8 +272,8 @@ export default function ProjectDetail({
     const allowedPages = new Set((seller.data?.scope?.seller?.sections ?? []).flatMap((section) => section.pages));
     const back = allowedPages.has("projects")
       ? { href: `/${teamSlug}/projects`, label: "Back to projects" }
-      : allowedPages.has("requests")
-        ? { href: `/${teamSlug}/requests`, label: "Back to requests" }
+      : allowedPages.has("requests") || allowedPages.has("orders")
+        ? { href: `/${teamSlug}/orders`, label: "Back to orders" }
         : { href: `/${teamSlug}`, label: "Back to Home" };
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
@@ -436,66 +437,66 @@ export default function ProjectDetail({
       </div>
 
       {view !== "money" ? <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
-      {view === "overview" ? <section className="space-y-4" aria-labelledby="project-next-heading">
-        <h2 id="project-next-heading" className="font-heading text-lg">What happens next</h2>
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[10px] border p-4">
-          <p className="min-w-0 flex-1 basis-full text-sm font-medium sm:basis-auto">{next.title}</p>
-          <Link href={`/${teamSlug}/projects/${projectId}/${next.tab}`} className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent">{next.action}</Link>
-        </div>
-      </section> : null}
+      {view === "overview" ? (
+        <RecordCard
+          title="What happens next"
+          actions={<Link href={`/${teamSlug}/projects/${projectId}/${next.tab}`} className={buttonVariants({ size: "sm" })}>{next.action}</Link>}
+        >
+          <p className="text-sm">{next.title}</p>
+        </RecordCard>
+      ) : null}
+      {view === "overview" && role !== "freelancer" && project.status === "quoting" ? (
+        <RequestHandling teamSlug={teamSlug} projectId={projectId} members={members.data ?? []} onChange={refresh} />
+      ) : null}
         {view === "overview" && project.source === "web" ? (
-          <section id="request" className="scroll-mt-4 space-y-3 pt-3">
-            <h2 className="text-lg font-semibold">Request</h2>
-            {primary ? (
-            <p className="text-sm">
-              Requested by{" "}
-              {primaryEmail ? `${primary.name} <${primaryEmail}>` : primary.name}
-            </p>
-            ) : null}
+          <RecordCard
+            id="request"
+            title="Request"
+            description={primary ? `Requested by ${primaryEmail ? `${primary.name} <${primaryEmail}>` : primary.name}` : undefined}
+          >
             {project.requestAnswers.length > 0 ? (
-              <dl className="space-y-2">
+              <dl className="grid gap-4 text-sm">
                 {project.requestAnswers.map((qa, index) => (
-                  <div key={index}>
-                    <dt className="text-sm font-medium">{qa.question}</dt>
-                    <dd className="text-sm whitespace-pre-wrap">{qa.answer}</dd>
+                  <div key={index} className="grid gap-1">
+                    <dt className="text-muted-foreground">{qa.question}</dt>
+                    <dd className="whitespace-pre-wrap">{qa.answer}</dd>
                   </div>
                 ))}
               </dl>
-            ) : null}
-          </section>
+            ) : <p className="text-sm text-muted-foreground">The client sent no answers with the request.</p>}
+          </RecordCard>
         ) : null}
-        {view === "overview" && project.brief ? <section className="space-y-3"><h2 className="font-heading text-lg">The work</h2><p className="break-words text-sm leading-relaxed">{project.brief}</p></section> : null}
+        {view === "overview" && project.brief ? <RecordCard title="The work"><p className="break-words text-sm leading-relaxed">{project.brief}</p></RecordCard> : null}
       {view === "conversation" ? <ConversationSection teamSlug={teamSlug} detail={detail.data} members={members.data ?? []} onChange={refresh} /> : null}
       {view === "activity" && contacts.length > 0 ? (
       <ClientsSection teamSlug={teamSlug} projectId={projectId} contacts={contacts} role={role} onChange={refresh} />
       ) : null}
 
       {view === "activity" && !solo && canAssignFreelancer(role) && project.status === "quoting" ? (
-        <section id="assignment" className="scroll-mt-4 space-y-3">
-          <h2 className="text-lg font-semibold">Assignment</h2>
-          <form onSubmit={handleAssign} className="flex flex-wrap items-end gap-2">
-            <div className="space-y-2">
+        <RecordCard id="assignment" title="Assignment" description="The freelancer who does the work and is paid for it.">
+          <form onSubmit={handleAssign} className="flex flex-wrap items-end gap-3">
+            <div className="grid gap-1.5">
               <Label htmlFor="assign-freelancer">Freelancer</Label>
               <select
                 id="assign-freelancer"
-                className={nativeSelectClass}
+                className={`${nativeSelectClass} h-10 w-64 max-w-full`}
                 value={freelancerId}
                 onChange={(e) => setFreelancerId(e.target.value)}
               >
                 <option value="">Choose a member…</option>
                 {(members.data ?? []).map((member) => (
                   <option key={member.id} value={member.id}>
-                    {member.name} ({member.role})
+                    {member.name} · {member.role}
                   </option>
                 ))}
               </select>
             </div>
-            <Button type="submit" disabled={!freelancerId || assign.isPending}>
+            <Button type="submit" variant="outline" disabled={!freelancerId || assign.isPending}>
               Assign
             </Button>
           </form>
-          {assign.error ? <p className="text-sm text-destructive">{assign.error.message}</p> : null}
-        </section>
+          {assign.error ? <p role="alert" className="mt-2 text-sm text-destructive">{assign.error.message}</p> : null}
+        </RecordCard>
       ) : null}
 
       {view !== "quote" || financesHidden ? null : (
