@@ -196,7 +196,8 @@ export function payoutBreakdown(
   lines.push({ label: "Kept back for PayPal's fee (estimate)", minor: request.feeEstimateMinor, kind: "deduction" });
   lines.push({ label: settled ? `Received by ${memberFirstName}` : `${memberFirstName} receives`, minor: sentMinor, kind: "net" });
   const borne = memberPayoutFeeMinor(request);
-  if (settled && request.feeMinor !== null) {
+  // The real fee only adds information when it differs from what was kept back.
+  if (settled && request.feeMinor !== null && request.feeMinor !== request.feeEstimateMinor) {
     lines.push({ label: "PayPal's actual fee", minor: request.feeMinor, kind: "note" });
   }
   if (borne !== null && borne < request.feeEstimateMinor) {
