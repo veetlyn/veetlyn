@@ -13,6 +13,7 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { AgentIcon } from "@/components/agent-icon";
+import AgentAnswer from "@/components/agent-answer";
 import AgentText from "@/components/agent-text";
 import ComposerBox from "@/components/composer-box";
 import Loader from "@/components/loader";
@@ -345,7 +346,7 @@ export default function TeamCalls({
           </div>
         ) : null}
         {activeCallId ? (
-          <ol className="space-y-4">
+          <ol className="space-y-7">
             {thread.data?.entries.map((entry) =>
               entry.kind === "proposal" ? (
                 <li key={entry.id}>
@@ -359,13 +360,14 @@ export default function TeamCalls({
                   {entry.body}
                 </li>
               ) : (
-                <li key={entry.id} className="space-y-1">
+                <li key={entry.id} className="grid gap-3">
                   <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <AgentIcon className="size-3.5" />
                     {assistantName}
                     {entry.note ? <span className="font-normal"> · {entry.note}</span> : null}
                   </p>
                   <AgentText text={entry.body} />
+                  {entry.ui ? <AgentAnswer ui={entry.ui} teamSlug={teamSlug} /> : null}
                 </li>
               ),
             )}

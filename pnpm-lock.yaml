@@ -216,6 +216,9 @@ importers:
       '@jendal-workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@json-render/core':
+        specifier: 'catalog:'
+        version: 0.21.0(zod@4.6.5)
       '@json-render/react':
         specifier: 'catalog:'
         version: 0.21.0(react@19.3.1)(zod@4.6.5)
