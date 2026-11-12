@@ -3,7 +3,7 @@
 import { FULL_ACCESS, HIDEABLE_AREAS, type MemberAccess } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { trpc } from "@/utils/trpc";
 
@@ -13,6 +13,8 @@ export default function MemberAccessEditor({ teamSlug, userId, name }: { teamSlu
   const cache = useQueryClient();
   const current = useQuery(trpc.servicesTeam.memberAccess.queryOptions({ teamSlug }));
   const [draft, setDraft] = useState<MemberAccess | null>(null);
+  const [open, setOpen] = useState(false);
+  const regionId = useId();
   const save = useMutation(trpc.servicesTeam.setMemberAccess.mutationOptions({
     onSuccess: async () => {
       await cache.invalidateQueries({ queryKey: trpc.servicesTeam.memberAccess.queryKey({ teamSlug }) });
@@ -23,9 +25,11 @@ export default function MemberAccessEditor({ teamSlug, userId, name }: { teamSlu
   const change = (patch: Partial<MemberAccess>) => { save.reset(); setDraft({ ...access, ...patch }); };
 
   return (
-    <details className="mt-2 text-sm">
-      <summary className="cursor-pointer py-1 underline underline-offset-4">Access for {name}</summary>
-      {current.isError ? <p role="alert">Could not load access settings.</p> : (
+    <div className="mt-2 text-sm">
+      <Button type="button" variant="ghost" size="sm" aria-expanded={open} aria-controls={regionId} onClick={() => setOpen((value) => !value)}>
+        {open ? "Hide access" : `Access for ${name}`}
+      </Button>
+      {open ? <div id={regionId}>{current.isError ? <p role="alert">Could not load access settings.</p> : (
         <fieldset disabled={current.isPending || save.isPending} className="grid gap-2 py-3">
           <legend className="sr-only">Access for {name}</legend>
           <p className="max-w-sm text-muted-foreground">Their role still decides what they can do. Hiding a page also hides it from their assistant.</p>
@@ -53,7 +57,7 @@ export default function MemberAccessEditor({ teamSlug, userId, name }: { teamSlu
           {save.error ? <p role="alert" className="text-destructive">{save.error.message}</p> : null}
           <p role="status">{save.isSuccess ? "Access saved." : ""}</p>
         </fieldset>
-      )}
-    </details>
+      )}</div> : null}
+    </div>
   );
 }
