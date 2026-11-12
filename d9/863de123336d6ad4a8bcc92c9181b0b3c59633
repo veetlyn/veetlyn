@@ -1,0 +1,22 @@
+apps/web/package.json
+  h_6877e5e7a06bc5 18
+apps/web/src/app/dash/[storeSlug]/threads/team-calls.tsx
+  h_6877e5e7a06bc5 16,349,363,370
+apps/web/src/components/agent-answer.tsx
+  h_6877e5e7a06bc5 1-232
+apps/web/src/components/agent-text.tsx
+  h_6877e5e7a06bc5 27,34
+pnpm-lock.yaml
+  h_6877e5e7a06bc5 219-221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9863de123336d6ad4a8bcc92c9181b0b3c59633",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
