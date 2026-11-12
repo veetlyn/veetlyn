@@ -191,3 +191,10 @@
 /* beUI's PromptInput shows focus on the whole composer, not on its inner textarea. */
 [data-dash] [data-composer] textarea:focus-visible { outline: none; }
 [data-dash] [data-composer] form:focus-within { border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 22%, transparent); }
+
+/* Native select popups are drawn by the browser. Give every option the popover colours and declare the theme's
+   colour scheme, so the open list is never light text on the system's white popup. */
+:root:has([data-dash]) { color-scheme: light; }
+:root.dark:has([data-dash]) { color-scheme: dark; }
+[data-dash] select option,
+[data-dash] select optgroup { background-color: var(--popover); color: var(--popover-foreground); }

@@ -22,10 +22,10 @@ Tokens: beUI reads the shadcn semantic tokens. The dash sets beUI's neutral valu
 `apps/web/src/dash.css` (ink primary, mint `--brand` in place of beUI's cyan, Cal Sans / Inter / Geist Mono).
 
 In use:
-- `motion/tabs`: projects list filter.
+- `motion/tabs`: the project conversation's Request / Project switch.
 - `agents/prompt-input`: the assistant composer (`apps/web/src/components/composer-box.tsx`).
 - `motion/command-palette`: top-bar search (`app-frame.tsx`); focus returns to the trigger on close.
-- `motion/table`: client payments ledger, sortable, money right-aligned.
+- `motion/table` + `motion/pagination`: every entity list, through `apps/web/src/components/data-list.tsx` (search, filters, sort over all rows, pages).
 - `motion/alert`: billing notice, kept `role="status"` (tested in `billing-notice.test.ts`).
 - `motion/breadcrumb`: top-bar breadcrumb; switcher crumbs keep our dropdown menu.
 
