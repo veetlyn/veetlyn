@@ -1,0 +1,24 @@
+apps/web/src/app/dash/[storeSlug]/payouts/[payoutId]/payout-record.tsx
+  h_6877e5e7a06bc5 3,7,13,26,59,63-67,69-70,72-76,78-80,83-121,123,125-135,138-151,155-158
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 36-37,89,93-94,103,105,113,115-118,125,137-138,140-142,145-152,154,159,163-164,440,467,504,507,512,516,623,760-762,770-773,775,777,781,784
+apps/web/src/lib/payouts.test.ts
+  h_6877e5e7a06bc5 171-175
+apps/web/src/lib/payouts.ts
+  h_6877e5e7a06bc5 199-200
+apps/web/src/lib/quote-attribution.test.ts
+  h_6877e5e7a06bc5 1-38
+apps/web/src/lib/quote-attribution.ts
+  h_6877e5e7a06bc5 1-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e40e008482c3405acbdab5766c4f0a65ed039c2e",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
