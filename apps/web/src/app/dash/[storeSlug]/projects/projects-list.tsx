@@ -11,6 +11,7 @@ import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
 import { trpc } from "@/utils/trpc";
 import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
 
@@ -65,32 +66,28 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
           </p>
         </div>
       ) : (
-        <>
+        <Tabs value={filter} onValueChange={(value) => setFilter(FILTERS.find(([key]) => key === value)?.[0] ?? "open")} variant="segment" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="relative w-full sm:max-w-64">
             <span className="sr-only">Search projects by title or client</span>
             <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" aria-hidden="true" />
             <Input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search projects…" className="pl-9" />
           </label>
-          <div role="group" aria-label="Show" className="inline-flex w-fit rounded-[8px] border p-0.5">
+          {/* beUI segmented tabs: one shared panel below, so search and the empty state keep working. */}
+          <TabsList aria-label="Show projects" wrapperClassName="w-fit" className="border">
             {FILTERS.map(([key, label]) => {
               const count = projects.data.filter((project) =>
                 key === "all" ? true : key === "closed" ? isTerminalProjectStatus(project.status) : !isTerminalProjectStatus(project.status),
               ).length;
               return (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={filter === key}
-                  onClick={() => setFilter(key)}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-[0_0_0_1px_var(--input)]"
-                >
-                  {label} <span className="font-tabular text-xs text-muted-foreground">{count}</span>
-                </button>
+                <TabsTrigger key={key} value={key} className="gap-1.5">
+                  {label} <span className="font-tabular text-xs opacity-70">{count}</span>
+                </TabsTrigger>
               );
             })}
+          </TabsList>
           </div>
-          </div>
+          <TabsContent value={filter} className="mt-0 rounded-[10px]">
           <p role="status" className="sr-only">{matching.length} projects shown</p>
           {matching.length === 0 ? (
             <div className="rounded-[10px] border px-5 py-10 text-center">
@@ -119,7 +116,8 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
               ))}
           </ul>
           )}
-        </>
+          </TabsContent>
+        </Tabs>
       )}
     </ListPage>
   );
