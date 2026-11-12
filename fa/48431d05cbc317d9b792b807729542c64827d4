@@ -1,0 +1,60 @@
+apps/web/src/app/dash/[storeSlug]/from-ai/from-ai.tsx
+  h_6877e5e7a06bc5 30
+apps/web/src/app/dash/[storeSlug]/payouts/rules/payout-rules-form.tsx
+  h_6877e5e7a06bc5 23,85-86,136,144,149,151-155,344-345,369-370,410,432,449,466-467,492-493
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/price-adjustments.tsx
+  h_6877e5e7a06bc5 13,127-128,130
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/quote-calculator.tsx
+  h_6877e5e7a06bc5 16,92-93,95
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  h_6877e5e7a06bc5 225,228,250,256,264,266,283,432,486,488-489
+apps/web/src/app/dash/[storeSlug]/services/offering-form.tsx
+  h_6877e5e7a06bc5 24,30,249-250,252,254,256,263,265,267,269,283-284,288,290-291,293,300,304,306-307,309
+apps/web/src/app/dash/[storeSlug]/settings/operating-model/team-rules.tsx
+  h_6877e5e7a06bc5 108,113
+apps/web/src/app/dash/[storeSlug]/settings/services-team-settings.tsx
+  h_6877e5e7a06bc5 24,30,58,60-61,66,69,71,199,219,222
+apps/web/src/app/dash/w/[organizationId]/billing/billing-panel.tsx
+  h_6877e5e7a06bc5 126,160
+apps/web/src/components/agent-text.tsx
+  h_6877e5e7a06bc5 27
+apps/web/src/components/auth/auth-card.tsx
+  h_6877e5e7a06bc5 15-16
+apps/web/src/components/auth/auth-split.tsx
+  h_6877e5e7a06bc5 19-20
+apps/web/src/components/auth/auth-visual.tsx
+  h_6877e5e7a06bc5 20,22,24,31,38,44,56,66
+apps/web/src/components/auth/text-field.tsx
+  h_6877e5e7a06bc5 3,9-10,17
+apps/web/src/components/catalog/digital-product-form.tsx
+  h_6877e5e7a06bc5 14,192-193,195-196
+apps/web/src/components/catalog/product-form.tsx
+  h_6877e5e7a06bc5 21,194,275,277,297,306-307,309,318-319,321-324
+apps/web/src/components/client-project-view.tsx
+  h_6877e5e7a06bc5 170,354,356,654,667
+apps/web/src/components/page-composition.tsx
+  h_6877e5e7a06bc5 24,30,54,63
+apps/web/src/components/page-sections-nav.tsx
+  h_6877e5e7a06bc5 57
+apps/web/src/components/prepared-banner.tsx
+  h_6877e5e7a06bc5 25-26
+apps/web/src/components/recent-calls.tsx
+  h_6877e5e7a06bc5 17
+apps/web/src/components/seller-page/publish-card.tsx
+  h_6877e5e7a06bc5 39
+apps/web/src/components/value-input.test.ts
+  h_6877e5e7a06bc5 1-31
+apps/web/src/components/value-input.tsx
+  h_6877e5e7a06bc5 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fa48431d05cbc317d9b792b807729542c64827d4",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
