@@ -70,10 +70,6 @@ export default function AppFrame({
   }, [pathname]);
 
   const navigation = <>
-    <Link href="/" className="mb-2 flex h-10 shrink-0 items-center px-2.5">
-      <BrandWordmark className="font-heading text-[17px] text-foreground" />
-      <span className="sr-only">Your account</span>
-    </Link>
     {workspace ? <WorkspaceSwitcher workspace={workspace} mobile={mobile} /> : null}
     {sidebar}
     <div className="mt-auto pt-6"><UserMenu sidebar drawer={mobile} /></div>
