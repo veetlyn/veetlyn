@@ -1,0 +1,22 @@
+apps/web/src/app/dash/[storeSlug]/payments/team-payments.tsx
+  h_6877e5e7a06bc5 10-12,65-79
+apps/web/src/app/dash/[storeSlug]/projects/projects-list.tsx
+  h_6877e5e7a06bc5 3,5-7,9,12,16-18,20-35,51-52,57-58,62-63,66-91
+apps/web/src/components/data-list.tsx
+  h_6877e5e7a06bc5 1-126
+apps/web/src/lib/list-view.test.ts
+  h_6877e5e7a06bc5 1-47
+apps/web/src/lib/list-view.ts
+  h_6877e5e7a06bc5 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "27b654d31906036fd3da2ce474597b3dabc49a0f",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
