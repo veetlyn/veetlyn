@@ -1,0 +1,20 @@
+apps/web/src/dash.css
+  h_6877e5e7a06bc5 194-200
+packages/ui/BEUI.md
+  h_6877e5e7a06bc5 25,28
+packages/ui/src/components/motion/pagination.tsx
+  h_6877e5e7a06bc5 1-285
+packages/ui/src/styles/globals.css
+  h_6877e5e7a06bc5 176-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a1c99734cdb2c985502058b68d1155c258fce4ca",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
