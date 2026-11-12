@@ -1,0 +1,48 @@
+apps/web/src/lib/catalog-categories.test.ts
+  h_6877e5e7a06bc5 1-38
+apps/web/src/lib/catalog-categories.ts
+  h_6877e5e7a06bc5 1-52
+apps/web/src/lib/server-api.ts
+  h_6877e5e7a06bc5 86,89
+packages/api/src/catalog/digital.ts
+  h_6877e5e7a06bc5 33-34,37,68,78,93,112,138
+packages/api/src/catalog/service.test.ts
+  h_6877e5e7a06bc5 11,127-142
+packages/api/src/catalog/service.ts
+  h_6877e5e7a06bc5 65,78,142,187,228
+packages/api/src/routers/catalog.ts
+  h_6877e5e7a06bc5 1,28-36,63,75,78-79,97-102,129-173,184,195,241,252
+packages/api/src/routers/services-catalog.test.ts
+  h_6877e5e7a06bc5 115-137
+packages/api/src/routers/services-catalog.ts
+  h_6877e5e7a06bc5 24,88,93-94,119-133
+packages/db/src/migrations/20261112160634_catalog_categories/migration.sql
+  h_6877e5e7a06bc5 1-6
+packages/db/src/migrations/20261112160634_catalog_categories/snapshot.json
+  h_6877e5e7a06bc5 1-16480
+packages/db/src/repositories/catalog.test.ts
+  h_6877e5e7a06bc5 207
+packages/db/src/repositories/catalog.ts
+  h_6877e5e7a06bc5 20,189,195
+packages/db/src/repositories/seller-page.test.ts
+  h_6877e5e7a06bc5 106
+packages/db/src/repositories/services-catalog.test.ts
+  h_6877e5e7a06bc5 17,54-55,57,92-93,116-134
+packages/db/src/repositories/services-catalog.ts
+  h_6877e5e7a06bc5 10,24,71,93,99-129
+packages/db/src/schema/catalog.ts
+  h_6877e5e7a06bc5 17,28-29,46
+packages/db/src/schema/services-catalog.ts
+  h_6877e5e7a06bc5 6,21-22,32-33,42,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9dd00775c98caf77191c39624588618966419ca6",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
