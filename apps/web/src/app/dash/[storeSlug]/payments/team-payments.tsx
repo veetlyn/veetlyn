@@ -11,7 +11,7 @@ import type { TableColumn } from "@jendal-workspace/ui/components/motion/table";
 
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
 import { PAYMENT_KIND_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/status-labels";
 import { trpc } from "@/utils/trpc";
@@ -44,16 +44,7 @@ export default function TeamPayments({ teamSlug }: { teamSlug: string }) {
 
   return (
     <ListPage>
-      <div className="space-y-1">
-        <h1 className="font-heading text-3xl">Payments</h1>
-        <p className="text-sm text-muted-foreground">What clients paid on the team's projects, through PayPal.</p>
-      </div>
-      {payments.isSuccess && payments.data.length > 0 ? (
-        <SummaryStrip label="Needs attention">
-          <p className="text-sm"><span className="font-medium">{payments.data.filter((payment) => payment.status === "pending").length} payments</span> <span className="text-muted-foreground">waiting to be captured</span></p>
-          <p className="text-sm text-muted-foreground">{payments.data.filter((payment) => payment.status === "captured").length} captured</p>
-        </SummaryStrip>
-      ) : null}
+      <PageHeader title="Payments" description="What clients paid on the team's projects, through PayPal." />
       {payments.isPending ? (
         <Loader />
       ) : payments.isError ? (
@@ -69,10 +60,11 @@ export default function TeamPayments({ teamSlug }: { teamSlug: string }) {
           getRowId={(payment) => payment.id}
           searchText={(payment) => `${payment.projectTitle} ${payment.clientName ?? ""}`}
           searchLabel="Search payments"
-          filters={[
-            { key: "kind", label: "Kinds", options: Object.entries(PAYMENT_KIND_LABELS).map(([value, label]) => ({ value, label })), match: (payment, value) => payment.kind === value },
-            { key: "status", label: "Statuses", options: Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => ({ value, label })), match: (payment, value) => payment.status === value },
+          views={[
+            { key: "all", label: "All" },
+            ...Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => ({ key: value, label, match: (payment: Payment) => payment.status === value })),
           ]}
+          filters={[{ key: "kind", label: "Kind", options: Object.entries(PAYMENT_KIND_LABELS).map(([value, label]) => ({ value, label })), match: (payment, value) => payment.kind === value }]}
           defaultSort={{ key: "date", direction: "desc" }}
           empty={{ title: "No client payments yet", text: "Deposits, balances and refunds will appear here as clients pay through PayPal." }}
           noun={{ one: "payment", many: "payments" }}

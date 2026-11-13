@@ -3,7 +3,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ContextRail, DocumentPage, ListPage, SummaryStrip, WorkPage } from "./page-composition";
+import { ContextRail, DocumentPage, ListPage, WorkPage } from "./page-composition";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -46,11 +46,5 @@ describe("page composition", () => {
     expect(container.querySelector("main")?.dataset.composition).toBe("document");
     await act(async () => root.render(createElement(ListPage, { children: createElement("p", null, "List") })));
     expect(container.querySelector("main")?.dataset.composition).toBe("list");
-  });
-
-  it("renders a summary strip as the page's first named region", async () => {
-    await act(async () => root.render(createElement(SummaryStrip, { label: "Needs attention", children: "2 payouts need approval" })));
-    const strip = container.querySelector("[role='region'][aria-label='Needs attention']");
-    expect(strip?.textContent).toContain("2 payouts need approval");
   });
 });

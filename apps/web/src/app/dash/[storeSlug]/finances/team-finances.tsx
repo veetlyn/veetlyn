@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { Figure } from "@/components/figure";
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
-import { ListPage } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import { RecordCard } from "@/components/record-card";
 import { type AnalyticsRange, collectionAnalytics } from "@/lib/finance-analytics";
 import { financeSummary } from "@/lib/finance-summary";
@@ -101,10 +101,7 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
   if (payments.isError) {
     return (
       <ListPage>
-        <h1 className="font-heading text-3xl">Finances</h1>
-        <p className="text-sm text-muted-foreground">
-          {payments.error.data?.code === "FORBIDDEN" ? "You don’t have access to the team’s finances. A team admin can change your access." : payments.error.message}
-        </p>
+        <PageHeader title="Finances" description={payments.error.data?.code === "FORBIDDEN" ? "You don’t have access to the team’s finances. A team admin can change your access." : payments.error.message} />
       </ListPage>
     );
   }
@@ -130,12 +127,10 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
 
   return (
     <ListPage>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="font-heading text-3xl">Finances</h1>
-          <p className="text-sm text-muted-foreground">Project-payment collections, PayPal costs and member payouts.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+      <PageHeader
+        title="Finances"
+        description="Project-payment collections, PayPal costs and member payouts."
+        actions={<>
           {currencies.length > 1 ? (
             <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Currency</span>
@@ -151,8 +146,8 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
               </TabsList>
             </Tabs>
           </div>
-        </div>
-      </div>
+        </>}
+      />
 
       <p role="status" className="text-sm text-muted-foreground">
         {periodLabel(range, analytics.currentStart, analytics.currentEnd)} · Collections are dated by PayPal capture; payouts by settlement.
@@ -243,13 +238,9 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
             </RecordCard>
           </div>
 
-          <section aria-labelledby="top-projects-heading" className="space-y-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <h2 id="top-projects-heading" className="text-sm font-medium">Projects by collections</h2>
-              <Link href={`/${teamSlug}/projects`} className="text-sm text-muted-foreground underline underline-offset-4">All projects</Link>
-            </div>
-            <DataList
+          <DataList
               label="Projects by collections"
+              title="Projects by collections"
               rows={analytics.projects}
               columns={[
                 { key: "project", header: "Project", sortable: true, sortValue: (project) => project.projectTitle.toLocaleLowerCase(), cell: (project) => <Link href={`/${teamSlug}/projects/${project.projectId}`} className="truncate font-medium underline-offset-4 hover:underline">{project.projectTitle}</Link> },
@@ -266,7 +257,6 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
               empty={{ title: "No collections in this period", text: "Projects appear here when a dated project payment is captured." }}
               noun={{ one: "project", many: "projects" }}
             />
-          </section>
 
           {snapshot ? (
             <section aria-labelledby="needs-attention-heading" className="space-y-3">

@@ -9,7 +9,7 @@ import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import { DataList } from "@/components/data-list";
 import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
@@ -80,28 +80,19 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
 
   return (
     <ListPage>
-      <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="font-heading text-3xl">Premade items</h1>
-          <p className="text-sm text-muted-foreground">Ready-made downloads clients buy from your seller page.</p>
-        </div>
-        <span className="flex gap-2">
-          <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
-          {role === "admin" ? <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>Add premade item</Link> : null}
-        </span>
-      </div>
+      <PageHeader
+        title="Premade items"
+        description="Ready-made downloads clients buy from your seller page."
+        actions={
+          <>
+            <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
+            {role === "admin" ? <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>Add premade item</Link> : null}
+          </>
+        }
+      />
 
       {products.isPending ? <Loader /> : null}
       {products.isError ? <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm"><p>{products.error.message}</p><Button type="button" variant="outline" size="sm" onClick={() => void products.refetch()}>Try again</Button></div> : null}
-      {products.isSuccess && products.data.length > 0 ? (
-        <SummaryStrip label="Premade items summary">
-          <p className="text-sm">
-            <strong className="font-semibold">{products.data.filter((product) => product.status === "published").length} published</strong>
-            <span className="text-muted-foreground"> · {products.data.filter((product) => product.status !== "published").length} draft{products.data.some((product) => !product.fileName) ? ` · ${products.data.filter((product) => !product.fileName).length} without a file` : ""}</span>
-          </p>
-        </SummaryStrip>
-      ) : null}
-
       {products.isSuccess ? (
         <DataList
           label="Premade items"
@@ -126,10 +117,13 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
           getRowId={(product) => product.id}
           searchText={(product) => `${product.title} ${product.fileName ?? ""}`}
           searchLabel="Search premade items"
-          filters={[
-            ...((categories.data?.length ?? 0) > 0 ? [{ key: "category", label: "Categories", options: [...flattenCategories(categories.data ?? []).map((category) => ({ value: category.id, label: category.path })), { value: "none", label: "No category" }], match: (product: { departmentId: string | null }, value: string) => value === "none" ? !product.departmentId : product.departmentId !== null && categoryDescendantIds(categories.data ?? [], value).has(product.departmentId) }] : []),
-            { key: "status", label: "Statuses", options: [{ value: "published", label: "Published" }, { value: "draft", label: "Draft" }], match: (product, value) => product.status === value },
+          views={[
+            { key: "all", label: "All" },
+            { key: "published", label: "Published", match: (product) => product.status === "published" },
+            { key: "draft", label: "Drafts", match: (product) => product.status !== "published" },
+            { key: "nofile", label: "Without a file", match: (product) => !product.fileName },
           ]}
+          filters={(categories.data?.length ?? 0) > 0 ? [{ key: "category", label: "Category", options: [...flattenCategories(categories.data ?? []).map((category) => ({ value: category.id, label: category.path })), { value: "none", label: "No category" }], match: (product: { departmentId: string | null }, value: string) => value === "none" ? !product.departmentId : product.departmentId !== null && categoryDescendantIds(categories.data ?? [], value).has(product.departmentId) }] : []}
           defaultSort={{ key: "title", direction: "asc" }}
           empty={{ title: "No premade items yet", text: "Add your first download: a title, a price and the file buyers get." }}
           noun={{ one: "item", many: "items" }}

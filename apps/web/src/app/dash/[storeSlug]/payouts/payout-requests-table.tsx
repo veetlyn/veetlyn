@@ -321,7 +321,7 @@ function RequestsList({
       cell: (request) => (
         <Link
           href={`/${teamSlug}/payouts/${request.id}`}
-          className={buttonVariants({ variant: needsViewer(request) ? "default" : "outline", size: "sm" })}
+          className={buttonVariants({ variant: needsViewer(request) ? "dark" : "outline", size: "sm" })}
           aria-label={`${needsViewer(request) ? "Review" : "Open"} ${request.memberName}'s payout of ${formatMinor(request.amountMinor, request.currency)}`}
         >
           {needsViewer(request) ? "Review" : request.status === "succeeded" ? "Receipt" : "Open"}
@@ -361,20 +361,14 @@ function RequestsList({
         getRowId={(request) => request.id}
         searchText={(request) => `${request.memberName} ${request.memberEmail} ${request.projectTitle ?? "request"}`}
         searchLabel="Search payouts"
-        filters={[
-          {
-            key: "state",
-            label: "Payouts",
-            options: [
-              { value: "needs", label: "Needs approval" },
-              { value: "moving", label: "On its way" },
-              { value: "paid", label: "Paid" },
-              { value: "other", label: "Rejected or failed" },
-            ],
-            match: (request, value) => stateOf(request) === value,
-          },
-          ...(currencies.length > 1 ? [{ key: "currency", label: "Currencies", options: currencies.map((value) => ({ value, label: value })), match: (request: TeamPayoutRequest, value: string) => request.currency === value }] : []),
+        views={[
+          { key: "all", label: "All" },
+          { key: "needs", label: "Needs approval", match: (request) => stateOf(request) === "needs" },
+          { key: "moving", label: "On its way", match: (request) => stateOf(request) === "moving" },
+          { key: "paid", label: "Paid", match: (request) => stateOf(request) === "paid" },
+          { key: "other", label: "Rejected or failed", match: (request) => stateOf(request) === "other" },
         ]}
+        filters={currencies.length > 1 ? [{ key: "currency", label: "Currency", options: currencies.map((value) => ({ value, label: value })), match: (request: TeamPayoutRequest, value: string) => request.currency === value }] : []}
         defaultSort={{ key: "requested", direction: "desc" }}
         empty={{ title: "No payout requests yet", text: "Members ask for a payout of their earnings from their own Payouts page." }}
         noun={{ one: "payout", many: "payouts" }}

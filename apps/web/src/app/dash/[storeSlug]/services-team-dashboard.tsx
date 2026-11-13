@@ -160,6 +160,7 @@ export default function ServicesTeamDashboard({
   const onClients = (projects.data ?? []).filter(
     (p) => p.status === "awaiting_deposit" || p.status === "delivered" || p.status === "awaiting_balance",
   );
+  const hasPrepared = (prepared.data?.pending.length ?? 0) > 0;
   const needs: Need[] = [
     ...(rules.data?.memberAccepted === false
       ? [
@@ -299,14 +300,14 @@ export default function ServicesTeamDashboard({
             </div>
           ) : null}
 
-          {(prepared.data?.pending.length ?? 0) > 0 ? (
+          {hasPrepared ? (
             <Frame
               icon={<AgentIcon className="size-4 shrink-0" />}
               title={`Prepared by ${platform}, waiting for you`}
               count={prepared.data?.pending.length}
             >
               <ul className="min-w-0 divide-y">
-                {prepared.data?.pending.map((item) => (
+                {prepared.data?.pending.map((item, index) => (
                   <li key={item.id} className="flex min-w-0 flex-wrap items-center gap-3 px-4 py-3.5 sm:flex-nowrap">
                     <div className="min-w-0 flex-1 basis-full sm:basis-auto">
                       <p className="break-words font-medium">{item.card.title}</p>
@@ -316,7 +317,7 @@ export default function ServicesTeamDashboard({
                     {item.card.kind === "payout" ? <span className="font-tabular font-semibold">{item.card.amount}</span> : null}
                     <Link
                       href={`/${team.slug}/threads?thread=${item.callId}`}
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
+                      className={cn(buttonVariants({ variant: index === 0 ? "default" : "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
                     >
                       Review
                     </Link>
@@ -329,9 +330,9 @@ export default function ServicesTeamDashboard({
           {needs.length > 0 ? (
             <Frame title="Needs you" count={needs.length}>
               <ul className="min-w-0 divide-y">
-                {needs.map((need) => (
+                {needs.map((need, index) => (
                   <li key={need.key} className="flex min-w-0 flex-wrap items-center gap-3 px-4 py-3.5 sm:flex-nowrap">
-                    <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                    <div className={cn("min-w-0 flex-1", need.amount && "basis-full sm:basis-auto")}>
                       <p className="break-words font-medium">{need.title}</p>
                       <p className="break-words text-sm text-muted-foreground">{need.detail}</p>
                     </div>
@@ -339,7 +340,9 @@ export default function ServicesTeamDashboard({
                     <Link
                       href={need.href}
                       className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
+                        // One mint key on the screen: the first prepared item, else the first thing that needs you. Money
+                        // waiting on a decision is the onyx key; routine opens stay grey.
+                        buttonVariants({ variant: index === 0 && !hasPrepared ? "default" : need.amount ? "dark" : "outline", size: "sm" }),
                         "ml-auto shrink-0 sm:ml-0",
                         need.primary && "px-4",
                       )}

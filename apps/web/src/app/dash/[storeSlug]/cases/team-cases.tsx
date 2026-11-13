@@ -12,7 +12,7 @@ import type { TableColumn } from "@jendal-workspace/ui/components/motion/table";
 
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import { DISPUTE_REASON_LABELS, DISPUTE_STATUS_LABELS, disputeCaseUrl } from "@/lib/dispute";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
@@ -59,13 +59,9 @@ export default function TeamCases({ teamSlug, paypalEnvironment }: { teamSlug: s
   const cases = useQuery({ ...trpc.money.cases.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
 
   if (cases.isPending) return <Loader />;
-  const open = cases.data?.filter((c) => c.open).length ?? 0;
   return (
     <ListPage>
-      <div className="space-y-1">
-        <h1 className="font-heading text-3xl">Disputes</h1>
-        <p className="text-sm text-muted-foreground">Disputes clients opened with the payment provider. Answer them there, with the team's account.</p>
-      </div>
+      <PageHeader title="Disputes" description="Disputes clients opened with the payment provider. Answer them there, with the team's account." />
       {cases.isError ? (
         <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm">
           <p>{cases.error.data?.code === "FORBIDDEN" ? "You don’t have access to Disputes. A team admin can change your access." : cases.error.message}</p>
@@ -73,12 +69,6 @@ export default function TeamCases({ teamSlug, paypalEnvironment }: { teamSlug: s
         </div>
       ) : (
         <>
-          {cases.data.length > 0 ? (
-            <SummaryStrip label="Needs attention">
-              <p className="text-sm"><span className="font-medium">{open} open {open === 1 ? "dispute" : "disputes"}</span> <span className="text-muted-foreground">holding payouts</span></p>
-              <p className="text-sm text-muted-foreground">{cases.data.length - open} closed</p>
-            </SummaryStrip>
-          ) : null}
           <DataList
             label="Disputes"
             rows={cases.data}
@@ -86,7 +76,11 @@ export default function TeamCases({ teamSlug, paypalEnvironment }: { teamSlug: s
             getRowId={(c) => c.id}
             searchText={(c) => `${DISPUTE_REASON_LABELS.get(c.reason) ?? c.reason} ${c.projectTitle ?? ""} ${c.paypalDisputeId}`}
             searchLabel="Search disputes"
-            filters={[{ key: "state", label: "Disputes", options: [{ value: "open", label: "Open" }, { value: "closed", label: "Closed" }], match: (c, v) => (v === "open") === c.open }]}
+            views={[
+              { key: "all", label: "All" },
+              { key: "open", label: "Open", match: (c) => c.open },
+              { key: "closed", label: "Closed", match: (c) => !c.open },
+            ]}
             defaultSort={{ key: "opened", direction: "desc" }}
             empty={{ title: "No disputes", text: "If a client opens a dispute, its status and any payout hold will appear here." }}
             noun={{ one: "dispute", many: "disputes" }}

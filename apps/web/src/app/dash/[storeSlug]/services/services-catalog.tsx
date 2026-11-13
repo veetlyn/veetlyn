@@ -9,7 +9,7 @@ import type { TableColumn } from "@jendal-workspace/ui/components/motion/table";
 
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { daysLabel, FULFILMENT_LABELS, priceLabel } from "@/lib/offering-labels";
 import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
@@ -87,23 +87,16 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
 
   return (
     <ListPage>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="min-w-0 flex-1 basis-full space-y-1 sm:basis-auto">
-          <h1 className="font-heading text-3xl">Services</h1>
-          <p className="text-sm text-muted-foreground">What clients can request from your seller page.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
-          {isAdmin ? <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>Add service</Link> : null}
-        </div>
-      </div>
-
-      {!catalog.isError && offerings.length > 0 ? (
-        <SummaryStrip label="Catalogue summary">
-          <p className="text-sm"><span className="font-medium">{offerings.filter((o) => o.active).length} services</span> <span className="text-muted-foreground">clients can request</span></p>
-          <p className="text-sm text-muted-foreground">{departments.length} {departments.length === 1 ? "category" : "categories"}</p>
-        </SummaryStrip>
-      ) : null}
+      <PageHeader
+        title="Services"
+        description="What clients can request from your seller page."
+        actions={
+          <>
+            <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
+            {isAdmin ? <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>Add service</Link> : null}
+          </>
+        }
+      />
       {catalog.isError ? (
         <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm">
           <p>The services couldn’t be loaded.</p>
@@ -119,10 +112,13 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
           getRowId={(o) => o.id}
           searchText={(o) => `${o.name} ${o.description}`}
           searchLabel="Search services"
-          filters={[
-            ...(departments.length > 0 ? [{ key: "department", label: "Categories", options: [...flattenCategories(departments).map((d) => ({ value: d.id, label: d.path })), { value: "none", label: "No category" }], match: (o: Offering, v: string) => (v === "none" ? !o.departmentId : o.departmentId !== null && categoryDescendantIds(departments, v).has(o.departmentId)) }] : []),
-            { key: "visibility", label: "Visibility", options: [{ value: "listed", label: "Listed" }, { value: "unlisted", label: "Not in AI assistants" }, { value: "hidden", label: "Hidden" }], match: (o: Offering, v: string) => visibility(o) === v },
+          views={[
+            { key: "all", label: "All" },
+            { key: "listed", label: "Listed", match: (o) => visibility(o) === "listed" },
+            { key: "unlisted", label: "Not in AI assistants", match: (o) => visibility(o) === "unlisted" },
+            { key: "hidden", label: "Hidden", match: (o) => visibility(o) === "hidden" },
           ]}
+          filters={departments.length > 0 ? [{ key: "department", label: "Category", options: [...flattenCategories(departments).map((d) => ({ value: d.id, label: d.path })), { value: "none", label: "No category" }], match: (o: Offering, v: string) => (v === "none" ? !o.departmentId : o.departmentId !== null && categoryDescendantIds(departments, v).has(o.departmentId)) }] : []}
           defaultSort={{ key: "name", direction: "asc" }}
           empty={{ title: "No services yet", text: isAdmin ? "Add your first service: what you make, what it usually costs and how long it takes." : "An admin adds the services: what the team makes, what it usually costs and how long it takes." }}
           noun={{ one: "service", many: "services" }}

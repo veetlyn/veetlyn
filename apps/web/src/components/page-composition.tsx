@@ -57,20 +57,25 @@ export function DocumentPage({ children, className }: { children: React.ReactNod
   );
 }
 
-// Lists and tables: the page leads with a SummaryStrip, then the rows.
+// Lists and tables: a PageHeader, then the list's views, search and rows.
 export function ListPage({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <main data-composition="list" className={cn("mx-auto w-full min-w-0 max-w-[1200px] space-y-6 px-4 py-6 text-sm md:px-7 md:py-8", className)}>
+    <main data-composition="list" className={cn("mx-auto w-full min-w-0 max-w-[1200px] space-y-5 px-4 py-6 text-sm md:px-7 md:py-7", className)}>
       {children}
     </main>
   );
 }
 
-// What needs the person on a list page, before the rows: counts, totals and the next item.
-export function SummaryStrip({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+// The page's name and one plain line about it, with the page's own actions at the right of the title. The one
+// action the page exists for is the mint key; the others are raised grey keys.
+export function PageHeader({ title, description, actions }: { title: React.ReactNode; description?: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <section role="region" aria-label={label} className="frame frame-panel min-w-0">
-      <div className={cn("frame frame-body flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3.5", className)}>{children}</div>
-    </section>
+    <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+      <div className="min-w-0 max-w-2xl space-y-1">
+        <h1 className="font-heading text-[26px] leading-[1.15] tracking-[-0.01em]">{title}</h1>
+        {description ? <p className="text-[13.5px] leading-5 text-muted-foreground">{description}</p> : null}
+      </div>
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+    </header>
   );
 }

@@ -11,7 +11,7 @@ import Link from "next/link";
 
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import { TEAM_PROJECT_TONES } from "@/lib/status-labels";
 import { trpc } from "@/utils/trpc";
 
@@ -48,21 +48,15 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
     );
   }
 
-  const open = projects.data.filter((project) => !isTerminalProjectStatus(project.status)).length;
   const statuses = [...new Set(projects.data.map((project) => project.status))];
 
   return (
     <ListPage>
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="font-heading text-3xl">Projects</h1>
-        <Link href={`/${teamSlug}/projects/new`} className={buttonVariants()}>New project</Link>
-      </div>
-      {projects.data.length > 0 ? (
-        <SummaryStrip label="Needs attention">
-          <p className="text-sm"><span className="font-medium">{open} open {open === 1 ? "project" : "projects"}</span> <span className="text-muted-foreground">in progress or waiting</span></p>
-          <p className="text-sm text-muted-foreground">{projects.data.length - open} closed</p>
-        </SummaryStrip>
-      ) : null}
+      <PageHeader
+        title="Projects"
+        description="Client work from request to delivery: quotes, payments and what is due next."
+        actions={<Link href={`/${teamSlug}/projects/new`} className={buttonVariants()}>New project</Link>}
+      />
       <DataList
         label="Projects"
         rows={projects.data}
@@ -70,21 +64,20 @@ export default function ProjectsList({ teamSlug }: { teamSlug: string }) {
         getRowId={(project) => project.id}
         searchText={(project) => `${project.title} ${project.clientName ?? ""}`}
         searchLabel="Search projects"
+        views={[
+          { key: "all", label: "All" },
+          { key: "open", label: "Open", match: (project) => !isTerminalProjectStatus(project.status) },
+          { key: "closed", label: "Closed", match: (project) => isTerminalProjectStatus(project.status) },
+        ]}
+        defaultView="open"
         filters={[
           {
-            key: "state",
-            label: "Projects",
-            options: [{ value: "open", label: "Open" }, { value: "closed", label: "Closed" }],
-            match: (project, value) => (value === "closed") === isTerminalProjectStatus(project.status),
-          },
-          {
             key: "status",
-            label: "Statuses",
+            label: "Status",
             options: statuses.map((status) => ({ value: status, label: projectStatusLabel(status) })),
             match: (project, value) => project.status === value,
           },
         ]}
-        defaultFilters={{ state: "open" }}
         defaultSort={{ key: "created", direction: "desc" }}
         empty={{ title: "No projects yet", text: "Requests from your seller page become projects here, or start one for a client yourself." }}
         noun={{ one: "project", many: "projects" }}

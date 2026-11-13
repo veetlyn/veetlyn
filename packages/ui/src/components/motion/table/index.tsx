@@ -95,6 +95,8 @@ export function Table<T>({
   onInsertColumn,
   onDeleteColumn,
   rowHeight = 48,
+  headerHeight,
+  fill = true,
   height = 440,
   overscan = 10,
   onEndReached,
@@ -293,12 +295,13 @@ export function Table<T>({
               );
             })}
             {/* Empty filler owns the leftover space — no gap, content unpinned. */}
-            <col />
+            {fill ? <col /> : null}
           </colgroup>
 
           <TableHeader
             columns={orderedColumns}
-            rowHeight={rowHeight}
+            rowHeight={headerHeight ?? rowHeight}
+            fill={fill}
             reduce={!!reduce}
             thRefs={thRefs}
             selectable={selectable}
@@ -412,7 +415,7 @@ export function Table<T>({
                           )}
                         </td>
                       ))}
-                      <td aria-hidden />
+                      {fill ? <td aria-hidden /> : null}
                     </tr>
                   );
                 })}

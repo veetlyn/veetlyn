@@ -103,4 +103,4 @@
 [data-dash] .key-mint { border-radius: 8px; }
 
 /* Inside a frame the table's header row sits on the card, divided by one hairline, not a grey band. */
-[data-dash] .frame-body thead th { background: var(--card); }
+[data-dash] .frame-body thead th { background: var(--card); font-size: 12.5px; }
