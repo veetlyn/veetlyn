@@ -91,7 +91,6 @@ const DATE: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
 
 function columns(teamSlug: string): TableColumn<Row>[] {
   return [
-    { key: "kind", header: "Type", width: "140px", sortable: true, sortValue: (r) => r.kind, cell: (r) => <span className="text-muted-foreground">{r.kind === "service" ? "Service request" : "Premade item"}</span> },
     {
       key: "title",
       header: "Order",
@@ -104,6 +103,7 @@ function columns(teamSlug: string): TableColumn<Row>[] {
         </span>
       ),
     },
+    { key: "kind", header: "Type", width: "140px", sortable: true, sortValue: (r) => r.kind, cell: (r) => <span className="text-muted-foreground">{r.kind === "service" ? "Service request" : "Premade item"}</span> },
     { key: "for", header: "Category / buyer", width: "200px", cell: (r) => <span className="truncate text-muted-foreground">{r.forWhom}</span> },
     { key: "amount", header: "Amount", width: "112px", align: "right", sortable: true, sortValue: (r) => r.amount?.minor ?? -1, cell: (r) => <span className="whitespace-nowrap tabular-nums">{r.amount ? formatMinor(r.amount.minor, r.amount.currency) : "To quote"}</span> },
     { key: "status", header: "Status", width: "190px", sortable: true, sortValue: (r) => r.status, cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{r.statusLabel}</Badge> },

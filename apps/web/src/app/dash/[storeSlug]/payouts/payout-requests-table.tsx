@@ -13,6 +13,7 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { DataList } from "@/components/data-list";
+import { Frame } from "@/components/frame";
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
 import {
@@ -221,9 +222,9 @@ function WaitingForMembers({ waiting }: { waiting: TeamPayouts["waitingForDestin
   if (waiting.length === 0) return null;
   return (
     <section aria-labelledby="waiting-members-heading" className="space-y-2">
-      <h3 id="waiting-members-heading" className="text-sm font-medium">
+      <h2 id="waiting-members-heading" className="text-sm font-medium">
         Waiting for members
-      </h3>
+      </h2>
       <ul className="space-y-1 text-sm text-muted-foreground">
         {waiting.map((item) => (
           <li key={item.projectId}>
@@ -333,7 +334,7 @@ function RequestsList({
     <>
       {data.canDecide ? (
         first ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border px-5 py-4">
+          <Frame as="div" bodyClassName="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
             <div className="grid gap-0.5">
               <p className="font-medium">
                 {mine.length === 1 ? "1 payout needs your approval" : `${mine.length} payouts need your approval`}
@@ -346,11 +347,11 @@ function RequestsList({
             <Link href={`/${teamSlug}/payouts/${first.id}`} className={buttonVariants()}>
               Review the next one
             </Link>
-          </div>
+          </Frame>
         ) : (
-          <div className="rounded-[10px] border px-5 py-4">
+          <Frame as="div" bodyClassName="px-4 py-3.5">
             <p className="font-medium">Nothing needs your approval</p>
-          </div>
+          </Frame>
         )
       ) : null}
       <DataList

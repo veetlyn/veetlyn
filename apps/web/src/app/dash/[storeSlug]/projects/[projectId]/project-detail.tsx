@@ -279,7 +279,7 @@ export default function ProjectDetail({
         ? { href: `/${teamSlug}/orders`, label: "Back to orders" }
         : { href: `/${teamSlug}`, label: "Back to Home" };
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-7 md:py-8">
+      <main className="mx-auto w-full min-w-0 max-w-[1200px] space-y-4 px-4 py-6 md:px-7 md:py-8">
         <h1 className="font-heading text-3xl">{missing ? "Project not found" : signIn ? "Sign in to view this project" : "Project unavailable"}</h1>
         <p className="text-sm text-muted-foreground">{missing ? "This project is no longer available to you." : isProjectReadDenied(detail.error) ? "Your access may have changed." : "The project couldn’t be loaded. Try again without leaving this page."}</p>
         {!isProjectReadDenied(detail.error) ? <Button type="button" variant="outline" onClick={() => void detail.refetch()}>Try again</Button> : null}

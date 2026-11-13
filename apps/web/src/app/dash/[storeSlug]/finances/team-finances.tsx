@@ -56,17 +56,20 @@ function periodLabel(range: AnalyticsRange, start: string | null, end: string): 
   return `${startDate.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })} – ${endLabel}`;
 }
 
+// A key figure in a coated frame: the label in the head strip, the figure and its note in the card.
 function Kpi({ label, value, note, href }: { label: string; value: string; note: string; href?: string }) {
   const content = (
     <>
-      <p className="text-[13px] text-muted-foreground">{label}</p>
-      <p className="mt-1 font-tabular text-[26px] leading-none font-semibold tracking-[-0.02em]">{value}</p>
-      <p className="mt-2 text-[13px] text-muted-foreground">{note}</p>
+      <p className="frame-head text-muted-foreground">{label}</p>
+      <div className="frame frame-body flex-1 px-3.5 py-3">
+        <p className="font-tabular text-[24px] leading-none font-semibold tracking-[-0.02em]">{value}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{note}</p>
+      </div>
     </>
   );
-  const className = "rounded-[10px] border bg-card px-4 py-4";
+  const className = "frame frame-panel flex min-w-0 flex-col";
   return href ? (
-    <Link href={href} className={`${className} transition-colors hover:bg-accent/50`}>
+    <Link href={href} className={`${className} transition-transform duration-150 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}>
       {content}
     </Link>
   ) : (
@@ -176,10 +179,10 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
       </p>
 
       {payments.data.length === 0 && (payouts.data?.payouts.length ?? 0) === 0 ? (
-        <section className="rounded-[10px] border px-5 py-10 text-center">
+        <section className="frame frame-panel"><div className="frame frame-body px-5 py-10 text-center">
           <h2 className="font-heading text-lg">No financial activity yet</h2>
           <p className="mt-2 text-sm text-muted-foreground">Collections and member payouts will appear here as money moves.</p>
-        </section>
+        </div></section>
       ) : (
         <>
           <section aria-label="Key figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

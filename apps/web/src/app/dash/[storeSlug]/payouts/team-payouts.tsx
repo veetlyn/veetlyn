@@ -24,7 +24,7 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
   const solo = settings?.solo ?? false;
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
+    <main className="mx-auto w-full min-w-0 max-w-[1200px] space-y-6 px-4 py-6 md:px-7 md:py-8">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="font-heading text-3xl">Payouts</h1>

@@ -5,7 +5,7 @@ export default function RecentCalls({ calls, callsPath, newThreadHref = callsPat
   return (
     <section className="min-w-0 pt-6" aria-label={label}>
       <div className="flex items-center justify-between gap-2 px-2.5 pb-2 text-xs text-muted-foreground">
-        <h2>{label}</h2>
+        <p aria-hidden="true">{label}</p>
         <Link href={newThreadHref} className="rounded px-1 py-1 hover:text-foreground">+ New</Link>
       </div>
       {calls.length === 0 ? <p className="px-2.5 py-2 text-xs text-muted-foreground">No threads yet</p> : null}
@@ -14,7 +14,7 @@ export default function RecentCalls({ calls, callsPath, newThreadHref = callsPat
           <li key={call.id} className="min-w-0">
             <Link
               href={`${callsPath}?thread=${call.id}`}
-              className="block truncate rounded-[6px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-foreground/[0.04]"
+              className="block truncate rounded-[8px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-foreground/[0.04]"
             >
               {call.title}
             </Link>

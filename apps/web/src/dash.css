@@ -1,105 +1,18 @@
-/* The dashboard's token layer (the marketing site keeps the Relief tokens). It applies to the whole document while a
-   dash page is mounted, so menus, dialogs and toasts rendered at the end of the body get it too. Neutral values follow
-   beUI's "Current" palette (~/dev/refs/beui/src/styles/globals.css): near-white page, a 97% grey elevated surface,
-   6% hairlines. The platform keeps its own brand: ink primary, the mint key (--brand stands in for beUI's cyan accent), and
-   Cal Sans / Inter / Geist Mono. --accent stays a quiet hover tint because every menu and row hover reads it. */
+/* The dashboard uses the site's colours in both themes (globals.css): the grey page, white cards, the onyx and mint
+   keys and the coated edges. It adds only what work screens need: a stronger field edge, the status colours and a
+   compact type scale. It applies to the whole document while a dash page is mounted, so menus, dialogs and toasts
+   rendered at the end of the body get it too. */
 :root:has([data-dash]) {
-  /* Greys carry no hue ("none", not 0) so nothing mixed toward them can drift warm. */
-  --q-ink: 15% 0 none;
-  --q-paper: 99% 0 none;
-  --q-grey: 97% 0 none;
-  --background: oklch(var(--q-paper));
-  --foreground: oklch(var(--q-ink));
-  --card: oklch(var(--q-grey));
-  --card-foreground: oklch(var(--q-ink));
-  --popover: oklch(var(--q-grey));
-  --popover-foreground: oklch(var(--q-ink));
-  --primary: oklch(var(--q-ink));
-  --primary-foreground: oklch(var(--q-paper));
-  --secondary: oklch(var(--q-grey));
-  --secondary-foreground: oklch(var(--q-ink));
-  --muted: oklch(var(--q-grey));
-  --accent: oklch(var(--q-ink) / 0.05);
-  --accent-foreground: oklch(var(--q-ink));
-  --muted-foreground: oklch(50% 0 none);
-  --border: oklch(var(--q-ink) / 0.06);
-  /* beUI extension: the stronger hairline, used for field edges so inputs stay findable. */
-  --border-strong: oklch(var(--q-ink) / 0.12);
+  --border-strong: rgb(20 20 28 / 0.16);
   --input: var(--border-strong);
-  --ring: color-mix(in oklab, var(--brand) 62%, oklch(var(--q-ink)));
   --success: oklch(70% 0.18 155);
   --danger: var(--destructive);
-  --warning: oklch(49% 0.1 68);
-  --destructive: oklch(51% 0.18 26);
-  --tray: oklch(var(--q-paper));
-  --surface-top: oklch(var(--q-paper));
-  --surface-bottom: oklch(var(--q-paper));
-  --raise: none;
-  --well: none;
-  --drop: none;
-  --float: 0 0 0 1px oklch(var(--q-ink) / 0.14), 0 12px 24px -12px oklch(var(--q-ink) / 0.2);
-  /* The rest of the Relief set, on the same greys, so no cool Relief value leaks into a dash page. The main key is the
-     primary colour itself: a primary button must never read as disabled. */
-  --main-top: oklch(var(--q-ink));
-  --main-bottom: oklch(var(--q-ink));
-  --main-edge: oklch(var(--q-ink));
-  --edge-hi: transparent;
-  --sidebar: oklch(var(--q-grey));
-  --sidebar-foreground: oklch(var(--q-ink));
-  --sidebar-primary: oklch(var(--q-ink));
-  --sidebar-primary-foreground: oklch(var(--q-paper));
-  --sidebar-accent: oklch(var(--q-ink) / 0.06);
-  --sidebar-accent-foreground: oklch(var(--q-ink));
-  --sidebar-border: oklch(var(--q-ink) / 0.09);
-  --sidebar-ring: oklch(var(--q-ink));
-  /* The sample stage on the sign-in pages stays dark in both themes, on pure greys. */
-  --stage: oklch(19% 0 none);
-  --stage-card: oklch(23.5% 0 none);
-  --stage-ink: oklch(96.5% 0 none);
-  --stage-muted: oklch(70% 0 none);
-  --stage-line: oklch(100% 0 none / 0.09);
-  --band: oklch(22% 0 none);
-  --band-ink: oklch(96.5% 0 none);
-  --band-muted: oklch(72% 0 none);
-  --band-raise: oklch(28% 0 none);
-  --band-line: oklch(100% 0 none / 0.1);
-  --chart-4: oklch(48% 0 none);
-  --chart-5: oklch(74% 0 none);
-  --radius: 0.375rem;
-  /* Compact work-screen headings; body and control sizes use the shared scale (14px text-sm). */
+  --radius: 0.5rem;
   --text-2xl: 1.375rem;
   --text-3xl: 1.625rem;
 }
 :root.dark:has([data-dash]) {
-  /* beUI dark: #151515 page, #1c1c1c surface, 5% hairlines. */
-  --q-ink: 96% 0 none;
-  --q-paper: 19.4% 0 none;
-  --q-grey: 22.7% 0 none;
-  --sidebar: oklch(var(--q-paper));
-  --muted-foreground: oklch(62% 0 none);
-  --ring: color-mix(in oklab, var(--brand) 70%, oklch(var(--q-ink)));
-  --sidebar-border: oklch(var(--q-ink) / 0.08);
-  --stage: oklch(24% 0 none);
-  --stage-card: oklch(28.5% 0 none);
-  --band: oklch(24% 0 none);
-  --band-raise: oklch(31% 0 none);
-  --chart-4: oklch(74% 0 none);
-  --chart-5: oklch(48% 0 none);
-  --card: oklch(var(--q-grey));
-  --background: oklch(var(--q-paper));
-  --popover: oklch(var(--q-grey));
-  --tray: oklch(var(--q-paper));
-  --surface-top: oklch(var(--q-paper));
-  --surface-bottom: oklch(var(--q-paper));
-  --raise: none;
-  --well: none;
-  --drop: none;
-  --border: oklch(var(--q-ink) / 0.05);
-  --border-strong: oklch(var(--q-ink) / 0.1);
-  --input: var(--border-strong);
-  --warning: oklch(80% 0.13 68);
-  --destructive: oklch(76% 0.14 26);
-  --float: 0 0 0 1px oklch(var(--q-ink) / 0.2), 0 12px 24px -12px oklch(0% 0 0 / 0.6);
+  --border-strong: rgb(241 241 243 / 0.15);
 }
 
 /* Scrollbars stay hidden until the area is hovered or scrolled, in a reserved gutter, so nothing shifts. The gutter
@@ -112,44 +25,35 @@
 }
 [data-dash] [data-scroll]:hover,
 [data-dash] [data-scroll]:focus-within {
-  scrollbar-color: oklch(var(--q-ink) / 0.22) transparent;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
 }
 
-/* Labels: tinted words with 4px corners, never pills or dots. */
+/* States are coloured words with a dot, never pills. The tone sets the colour (badge.tsx). */
 [data-dash] [data-slot="badge"] {
-  border-radius: 4px;
-  padding: 1px 6px;
-  background: oklch(var(--q-ink) / 0.06);
+  gap: 7px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
 }
-/* Only the states that ask for someone get a tint: "your move" in mint, trouble in its warm colour. Settled states
-   ("good") keep mint words on the neutral tint, so done never reads as pending. */
-[data-dash] [data-slot="badge"][data-tone="brand"] { background: color-mix(in oklab, var(--brand) 16%, transparent); }
-[data-dash] [data-slot="badge"][data-tone="warn"] { background: color-mix(in oklab, var(--warning) 12%, transparent); }
-[data-dash] [data-slot="badge"][data-tone="fail"] { background: color-mix(in oklab, var(--destructive) 12%, transparent); }
+[data-dash] [data-slot="badge"]::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in oklab, currentColor 16%, transparent);
+}
 
-/* Keep the existing screens' data and actions, but carry them on Quartz's flat, quiet chassis. */
+/* Cards carry the coated edge: a hairline, a light top and a resting drop. */
 [data-dash] .panel,
 [data-dash] [data-slot="card"] {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--card);
-  box-shadow: none;
-}
-[data-dash] .raised {
-  background: color-mix(in oklab, var(--card) 70%, var(--secondary));
-  box-shadow: inset 0 0 0 1px var(--border);
+  box-shadow: var(--raise);
 }
 [data-dash] [data-slot="button"] { border-radius: 8px; }
-/* One mint key in the dash: flat, the same on real buttons and on the sample ones drawn in the sign-in stage. */
-[data-dash] .key-mint {
-  border-radius: 8px;
-  background: var(--brand);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-[data-dash] .key-mint::after { display: none; }
-@media (hover: hover) {
-  [data-dash] .key-mint:hover { background: color-mix(in oklab, var(--brand) 90%, var(--foreground)); }
-}
 [data-dash] [data-slot="input"],
 [data-dash] [data-slot="textarea"],
 [data-dash] select {
@@ -198,3 +102,17 @@
 :root.dark:has([data-dash]) { color-scheme: dark; }
 [data-dash] select option,
 [data-dash] select optgroup { background-color: var(--popover); color: var(--popover-foreground); }
+
+/* The filled tab is a raised white segment in a recessed track, its label in ink, as the site's switchers. */
+[data-dash] [role="tablist"]:has([data-tabs-fill]) {
+  background: color-mix(in oklab, var(--foreground) 4%, var(--background));
+  box-shadow: var(--well);
+}
+[data-dash] [data-tabs-fill] {
+  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
+  box-shadow: inset 0 1px 0 var(--edge-hi), 0 0 0 1px var(--border), 0 1px 2px rgb(16 16 24 / 0.08);
+}
+[data-dash] [data-tabs-fill] ~ button [data-tabs-label] { color: var(--foreground); }
+
+/* Inside a frame the table's header row sits on the card, divided by one hairline, not a grey band. */
+[data-dash] .frame-body thead th { background: var(--card); }

@@ -74,7 +74,7 @@ export function XYTickLabels({
           <motion.span
             key={tick}
             aria-hidden="true"
-            className="pointer-events-none absolute top-0 left-0 font-mono text-[11px] whitespace-nowrap text-muted-foreground tabular-nums"
+            className="pointer-events-none absolute top-0 left-0 font-sans text-[11px] whitespace-nowrap text-muted-foreground tabular-nums"
             style={axis === "y" ? { width: offset - 8 } : { top: offset }}
             initial={{ opacity: 0, ...at }}
             animate={{ opacity: 1, ...at }}

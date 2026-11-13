@@ -228,7 +228,7 @@ export default function TeamShell({
             <>
               {teamsHere.length > 1 && organization ? (
                 <nav aria-label={`Teams in ${organization.name}`} className="mb-4 grid gap-0.5 border-b pb-4">
-                  <h2 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Teams in this workspace</h2>
+                  <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Teams in this workspace</p>
                   {teamsHere.map((team) => (
                     <Link key={team.slug} href={`/${team.slug}`} aria-current={team.slug === slug ? "true" : undefined} className={navItemClass(team.slug === slug)}>
                       <span className="truncate">{team.name}</span>
@@ -246,8 +246,8 @@ export default function TeamShell({
                   const pages = place.pages.filter((page) => allowed.has(page) || (page === "orders" && allowed.has("requests")));
                   if (pages.length === 0) return null;
                   return (
-                    <section key={place.label} className="pt-4">
-                      <h2 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{place.label}</h2>
+                    <section key={place.label} aria-label={place.label} className="pt-4">
+                      <p aria-hidden="true" className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{place.label}</p>
                       <div className="grid gap-0.5">
                         {place.label === "Finances" && allowed.has("payments") ? link(`/${slug}/finances`, "Overview", LayoutDashboard) : null}
                         {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}

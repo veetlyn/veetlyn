@@ -563,7 +563,7 @@ export function TabsTrigger({
           if (!event.defaultPrevented) setValue(value);
         }}
         className={cn(
-          "relative isolate px-3 pb-2.5 pt-1 -mb-px text-sm font-medium transition-colors min-h-[44px] inline-flex items-center whitespace-nowrap shrink-0",
+          "relative isolate px-3 pb-2.5 pt-1 -mb-px text-sm font-medium transition-colors min-h-[44px] inline-flex items-center whitespace-nowrap shrink-0 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
           active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
           className,
         )}
@@ -605,6 +605,7 @@ export function TabsTrigger({
         <motion.span
           key="layout"
           data-tabs-indicator=""
+          data-tabs-fill=""
           layoutId={layoutId}
           layout
           style={{ borderRadius: variant === "pill" ? 9999 : 8 }}
@@ -628,7 +629,7 @@ export function TabsTrigger({
           if (!event.defaultPrevented) setValue(value);
         }}
         className={cn(
-          "relative z-10 inline-flex items-center justify-center whitespace-nowrap bg-transparent px-3.5 py-1.5 text-sm font-medium outline-none",
+          "relative z-10 inline-flex items-center justify-center whitespace-nowrap bg-transparent px-3.5 py-1.5 text-sm font-medium outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
           "text-muted-foreground hover:text-foreground",
           radius,
           className,
