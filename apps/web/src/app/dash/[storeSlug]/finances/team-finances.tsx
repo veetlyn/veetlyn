@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { Figure } from "@/components/figure";
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
 import { ListPage } from "@/components/page-composition";
@@ -54,27 +55,6 @@ function periodLabel(range: AnalyticsRange, start: string | null, end: string): 
     return `${startDate.toLocaleDateString("en", { month: "short", year: "numeric", timeZone: "UTC" })} – ${endLabel}`;
   }
   return `${startDate.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })} – ${endLabel}`;
-}
-
-// A key figure in a coated frame: the label in the head strip, the figure and its note in the card.
-function Kpi({ label, value, note, href }: { label: string; value: string; note: string; href?: string }) {
-  const content = (
-    <>
-      <p className="frame-head text-muted-foreground">{label}</p>
-      <div className="frame frame-body flex-1 px-3.5 py-3">
-        <p className="font-tabular text-[24px] leading-none font-semibold tracking-[-0.02em]">{value}</p>
-        <p className="mt-2 text-xs text-muted-foreground">{note}</p>
-      </div>
-    </>
-  );
-  const className = "frame frame-panel flex min-w-0 flex-col";
-  return href ? (
-    <Link href={href} className={`${className} transition-transform duration-150 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}>
-      {content}
-    </Link>
-  ) : (
-    <div className={className}>{content}</div>
-  );
 }
 
 function ReconciliationLine({ label, value, note, strong }: { label: string; value: string; note?: string; strong?: boolean }) {
@@ -180,16 +160,16 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
 
       {payments.data.length === 0 && (payouts.data?.payouts.length ?? 0) === 0 ? (
         <section className="frame frame-panel"><div className="frame frame-body px-5 py-10 text-center">
-          <h2 className="font-heading text-lg">No financial activity yet</h2>
+          <p className="font-medium">No financial activity yet</p>
           <p className="mt-2 text-sm text-muted-foreground">Collections and member payouts will appear here as money moves.</p>
         </div></section>
       ) : (
         <>
           <section aria-label="Key figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi label="Collected from project payments" value={money(current.grossMinor)} note={growthNote} href={`/${teamSlug}/payments`} />
-            <Kpi label="After PayPal fees and refunds" value={money(current.netMinor)} note={`${percent(current.feeRate)} PayPal fees · ${percent(current.refundRate)} refunded`} href={`/${teamSlug}/payments`} />
-            <Kpi label="Paid to members" value={payouts.isSuccess ? money(current.paidOutMinor) : "Unavailable"} note={payouts.isSuccess ? `${current.paidOutCount} settled ${current.paidOutCount === 1 ? "payout" : "payouts"} in this period${analytics.undatedPayouts > 0 ? ` · ${analytics.undatedPayouts} more settled without a date${analytics.undatedPaidOutMinor > 0 ? ` (${money(analytics.undatedPaidOutMinor)})` : ""}, not in the dated total` : ""}` : "Payout records are unavailable"} href={payouts.isSuccess ? `/${teamSlug}/payouts` : undefined} />
-            <Kpi label="Payments collected" value={String(current.count)} note={current.averageMinor === null ? "No dated collections in this period" : `${money(Math.round(current.averageMinor))} average payment`} href={`/${teamSlug}/payments`} />
+            <Figure label="Collected from project payments" value={money(current.grossMinor)} note={growthNote} href={`/${teamSlug}/payments`} />
+            <Figure label="After PayPal fees and refunds" value={money(current.netMinor)} note={`${percent(current.feeRate)} PayPal fees · ${percent(current.refundRate)} refunded`} href={`/${teamSlug}/payments`} />
+            <Figure label="Paid to members" value={payouts.isSuccess ? money(current.paidOutMinor) : "Unavailable"} note={payouts.isSuccess ? `${current.paidOutCount} settled ${current.paidOutCount === 1 ? "payout" : "payouts"} in this period${analytics.undatedPayouts > 0 ? ` · ${analytics.undatedPayouts} more settled without a date${analytics.undatedPaidOutMinor > 0 ? ` (${money(analytics.undatedPaidOutMinor)})` : ""}, not in the dated total` : ""}` : "Payout records are unavailable"} href={payouts.isSuccess ? `/${teamSlug}/payouts` : undefined} />
+            <Figure label="Payments collected" value={String(current.count)} note={current.averageMinor === null ? "No dated collections in this period" : `${money(Math.round(current.averageMinor))} average payment`} href={`/${teamSlug}/payments`} />
           </section>
 
           <RecordCard
@@ -265,7 +245,7 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
 
           <section aria-labelledby="top-projects-heading" className="space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <h2 id="top-projects-heading" className="font-heading text-lg">Projects by collections</h2>
+              <h2 id="top-projects-heading" className="text-sm font-medium">Projects by collections</h2>
               <Link href={`/${teamSlug}/projects`} className="text-sm text-muted-foreground underline underline-offset-4">All projects</Link>
             </div>
             <DataList
@@ -290,11 +270,11 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
 
           {snapshot ? (
             <section aria-labelledby="needs-attention-heading" className="space-y-3">
-              <h2 id="needs-attention-heading" className="font-heading text-lg">Needs attention now</h2>
+              <h2 id="needs-attention-heading" className="text-sm font-medium">Needs attention now</h2>
               <div className="grid gap-3 md:grid-cols-3">
-                <Kpi label="Waiting to be paid" value={money(snapshot.pendingInMinor)} note="All pending project payments" href={`/${teamSlug}/payments`} />
-                {payouts.isSuccess ? <Kpi label="Payouts waiting for approval" value={money(snapshot.awaitingApprovalMinor)} note={`${snapshot.awaitingApprovalCount} ${snapshot.awaitingApprovalCount === 1 ? "request" : "requests"} · ${money(snapshot.inFlightMinor)} being sent`} href={`/${teamSlug}/payouts`} /> : null}
-                {cases.isSuccess ? <Kpi label="Open disputes" value={String(snapshot.openDisputes)} note={`${money(snapshot.disputedMinor)} disputed`} href={`/${teamSlug}/cases`} /> : null}
+                <Figure label="Waiting to be paid" value={money(snapshot.pendingInMinor)} note="All pending project payments" href={`/${teamSlug}/payments`} />
+                {payouts.isSuccess ? <Figure label="Payouts waiting for approval" value={money(snapshot.awaitingApprovalMinor)} note={`${snapshot.awaitingApprovalCount} ${snapshot.awaitingApprovalCount === 1 ? "request" : "requests"} · ${money(snapshot.inFlightMinor)} being sent`} href={`/${teamSlug}/payouts`} /> : null}
+                {cases.isSuccess ? <Figure label="Open disputes" value={String(snapshot.openDisputes)} note={`${money(snapshot.disputedMinor)} disputed`} href={`/${teamSlug}/cases`} /> : null}
               </div>
             </section>
           ) : null}

@@ -245,7 +245,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
           </div>
           {view.total === 0 ? (
             <div className="rounded-[10px] border px-5 py-10 text-center">
-              <h2 className="font-heading text-lg">No matching people</h2>
+              <p className="font-medium">No matching people</p>
               <p className="mt-2 text-sm text-muted-foreground">Try another name, email, role or category.</p>
               <Button type="button" variant="outline" className="mt-4" onClick={() => { setQuery(""); setRoleFilter("all"); setDepartmentFilter("all"); setPage(1); }}>Clear filters</Button>
             </div>

@@ -69,8 +69,8 @@ export function ListPage({ children, className }: { children: React.ReactNode; c
 // What needs the person on a list page, before the rows: counts, totals and the next item.
 export function SummaryStrip({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <section role="region" aria-label={label} className={cn("flex flex-wrap items-center justify-between gap-3 rounded-[10px] border px-5 py-4", className)}>
-      {children}
+    <section role="region" aria-label={label} className="frame frame-panel min-w-0">
+      <div className={cn("frame frame-body flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3.5", className)}>{children}</div>
     </section>
   );
 }

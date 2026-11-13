@@ -54,7 +54,7 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
           {canServicesTeam(role, "approve_payouts") ? (
             <section aria-labelledby="payout-methods-heading" className="space-y-4">
               <div className="space-y-1">
-                <h2 id="payout-methods-heading" className="font-heading text-lg">Ways to pay out</h2>
+                <h2 id="payout-methods-heading" className="text-sm font-medium">Ways to pay out</h2>
                 <p className="text-sm text-muted-foreground">Send approved payouts automatically from <PlatformName />, or through PayPal&apos;s own Payouts page.</p>
               </div>
               <div className="grid items-start gap-4 xl:grid-cols-2">

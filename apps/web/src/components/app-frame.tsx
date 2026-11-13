@@ -282,7 +282,7 @@ function SearchBar({ items }: { items: SearchItem[] }) {
 export function navItemClass(active: boolean) {
   return cn(
     "flex items-center gap-2.5 rounded-[8px] px-2.5 py-[7px] text-[13px] font-medium text-foreground [&_svg:first-child]:size-[18px]",
-    active ? "raised" : "hover:bg-foreground/[0.04]",
+    active ? "key-mint text-brand-foreground" : "hover:bg-foreground/[0.04]",
   );
 }
 

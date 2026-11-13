@@ -1,7 +1,10 @@
 import Link from "next/link";
 
+import { threadWhen } from "@/lib/thread-labels";
+
 // The person's latest calls at this node, under the sidebar's pages.
-export default function RecentCalls({ calls, callsPath, newThreadHref = callsPath, label = "Your threads" }: { calls: { id: string; title: string }[]; callsPath: string; newThreadHref?: string; label?: string }) {
+export default function RecentCalls({ calls, callsPath, newThreadHref = callsPath, label = "Your threads" }: { calls: { id: string; title: string; openedAt: string | Date }[]; callsPath: string; newThreadHref?: string; label?: string }) {
+  const when = threadWhen(calls);
   return (
     <section className="min-w-0 pt-6" aria-label={label}>
       <div className="flex items-center justify-between gap-2 px-2.5 pb-2 text-xs text-muted-foreground">
@@ -14,9 +17,10 @@ export default function RecentCalls({ calls, callsPath, newThreadHref = callsPat
           <li key={call.id} className="min-w-0">
             <Link
               href={`${callsPath}?thread=${call.id}`}
-              className="block truncate rounded-[8px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-foreground/[0.04]"
+              className="flex min-w-0 items-baseline gap-2 rounded-[8px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-foreground/[0.04]"
             >
-              {call.title}
+              <span className="truncate">{call.title}</span>
+              {when.has(call.id) ? <span className="ml-auto shrink-0 text-xs font-normal text-muted-foreground tabular-nums">{when.get(call.id)}</span> : null}
             </Link>
           </li>
         ))}

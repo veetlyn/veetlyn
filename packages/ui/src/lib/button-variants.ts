@@ -6,7 +6,9 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "main-surface hover:brightness-110",
+        // The primary action is the mint key; onyx and grey keys are secondary.
+        default: "key-mint font-semibold active:not-aria-[haspopup]:translate-y-0",
+        dark: "main-surface hover:brightness-110",
         // The site's mint pill, for the one action a screen exists for (log in, accept, pay).
         mint: "key-mint rounded-[4px_999px_999px_4px] font-semibold active:not-aria-[haspopup]:translate-y-0",
         outline: "raised text-foreground hover:brightness-[0.98] aria-expanded:brightness-[0.97]",

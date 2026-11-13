@@ -5,6 +5,10 @@
 :root:has([data-dash]) {
   --border-strong: rgb(20 20 28 / 0.16);
   --input: var(--border-strong);
+  /* Work screens are read in long runs of small grey text: one step darker than the site's grey keeps 7:1 on the page. */
+  --muted-foreground: #52525b;
+  /* A mint focus ring, deep enough to read 3:1 on white and on the grey page. */
+  --ring: color-mix(in oklab, var(--brand) 72%, black);
   --success: oklch(70% 0.18 155);
   --danger: var(--destructive);
   --radius: 0.5rem;
@@ -12,6 +16,8 @@
   --text-3xl: 1.625rem;
 }
 :root.dark:has([data-dash]) {
+  --muted-foreground: #a8a8b0;
+  --ring: var(--brand);
   --border-strong: rgb(241 241 243 / 0.15);
 }
 
@@ -103,16 +109,19 @@
 [data-dash] select option,
 [data-dash] select optgroup { background-color: var(--popover); color: var(--popover-foreground); }
 
-/* The filled tab is a raised white segment in a recessed track, its label in ink, as the site's switchers. */
+/* Mint marks what is primary, active or selected: the primary key, the page you are on, the chosen tab and the focus
+   ring. The filled tab is a lit mint segment in a recessed track, as the site's switchers. */
 [data-dash] [role="tablist"]:has([data-tabs-fill]) {
   background: color-mix(in oklab, var(--foreground) 4%, var(--background));
   box-shadow: var(--well);
 }
 [data-dash] [data-tabs-fill] {
-  background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom));
-  box-shadow: inset 0 1px 0 var(--edge-hi), 0 0 0 1px var(--border), 0 1px 2px rgb(16 16 24 / 0.08);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--brand) 86%, white), color-mix(in oklab, var(--brand) 92%, black));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 0 0 1px color-mix(in oklab, var(--brand) 78%, black),
+    0 1px 2px rgb(16 16 24 / 0.12);
 }
-[data-dash] [data-tabs-fill] ~ button [data-tabs-label] { color: var(--foreground); }
+/* In the dash every mint key keeps the controls' 8px corners. */
+[data-dash] .key-mint { border-radius: 8px; }
 
 /* Inside a frame the table's header row sits on the card, divided by one hairline, not a grey band. */
 [data-dash] .frame-body thead th { background: var(--card); }

@@ -78,7 +78,7 @@ export function DataList<T>({
   if (rows.length === 0) {
     return (
       <Frame label={label} bodyClassName="px-5 py-10 text-center">
-        <h2 className="font-heading text-lg">{empty.title}</h2>
+        <p className="font-medium">{empty.title}</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{empty.text}</p>
       </Frame>
     );
@@ -132,7 +132,7 @@ export function DataList<T>({
     >
       {view.total === 0 ? (
         <div className="px-5 py-10 text-center">
-          <h2 className="font-heading text-lg">No matching {noun.many}</h2>
+          <p className="font-medium">No matching {noun.many}</p>
           <p className="mt-2 text-sm text-muted-foreground">Try another search or filter.</p>
           {filtered ? <Button type="button" variant="outline" className="mt-4" onClick={() => { setQuery(""); setFilterValues({}); setPage(1); }}>Clear filters</Button> : null}
         </div>

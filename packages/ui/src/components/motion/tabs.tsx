@@ -574,7 +574,7 @@ export function TabsTrigger({
           layoutId={layoutId}
           layout
           className={cn(
-            "absolute bottom-0 left-0 right-0 h-px bg-primary",
+            "absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand",
             indicatorClassName,
           )}
         />
@@ -599,7 +599,7 @@ export function TabsTrigger({
           key="tracked"
           data-tabs-indicator=""
           style={{ ...track, borderRadius: variant === "pill" ? 9999 : 8 }}
-          className={cn("absolute top-0 left-0 bg-primary", radius, indicatorClassName)}
+          className={cn("absolute top-0 left-0 bg-brand", radius, indicatorClassName)}
         />
       ) : active ? (
         <motion.span
@@ -610,7 +610,7 @@ export function TabsTrigger({
           layout
           style={{ borderRadius: variant === "pill" ? 9999 : 8 }}
           className={cn(
-            "absolute inset-0 bg-primary",
+            "absolute inset-0 bg-brand",
             radius,
             indicatorClassName,
           )}
@@ -640,7 +640,7 @@ export function TabsTrigger({
           data-tabs-label=""
           aria-hidden="true"
           inert
-          className="pointer-events-none absolute inset-0 inline-flex items-center justify-center text-primary-foreground [gap:inherit] [padding:inherit]"
+          className="pointer-events-none absolute inset-0 inline-flex items-center justify-center font-semibold text-brand-foreground [gap:inherit] [padding:inherit]"
           style={{ clipPath: initialClip }}
         >
           {content}
