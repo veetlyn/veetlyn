@@ -2,7 +2,6 @@
 
 import { canServicesTeam } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
-import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { useMutation } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
@@ -11,6 +10,7 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { formatMinor, minorToPriceInput, parsePriceInput } from "@/lib/money";
+import { ValueInput } from "@/components/value-input";
 import { trpc } from "@/utils/trpc";
 
 type Detail = inferRouterOutputs<AppRouter>["project"]["get"];
@@ -124,9 +124,10 @@ export function QualityRefundForm({
       </p>
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
         <div className="space-y-2">
-          <Label htmlFor="quality-refund">Amount ({project.currency})</Label>
-          <Input
+          <Label htmlFor="quality-refund">Amount</Label>
+          <ValueInput
             id="quality-refund"
+            unit={project.currency}
             inputMode="decimal"
             value={value}
             placeholder="0.00"

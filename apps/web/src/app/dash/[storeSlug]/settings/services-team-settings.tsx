@@ -14,7 +14,6 @@ import {
   SOLO_TEAM_CUT_BPS,
 } from "@jendal-workspace/core";
 import { Button } from "@jendal-workspace/ui/components/button";
-import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,12 +21,13 @@ import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
 import { WorkPage } from "@/components/page-composition";
+import { ValueInput } from "@/components/value-input";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { QUOTING_MODE_LABELS } from "@/lib/services-team-labels";
 import { rateField } from "@/lib/services-team-settings-form";
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = `w-full ${nativeSelectClass}`;
+const SELECT_CLASS = `w-full max-w-64 ${nativeSelectClass}`;
 
 function SettingsRow({ id, label, description, children }: { id: string; label: string; description: string; children: React.ReactNode }) {
   return (
@@ -55,18 +55,20 @@ function RateInput({
   const field = rateField(value);
   return (
     <SettingsRow id={id} label={label} description={id === "team-cut" ? "The percentage of the quoted price kept by the team." : "The percentage added to the quoted price and paid by the client."}>
-      <Input
+      <ValueInput
         id={id}
+        unit="%"
+        unitLabel="percent"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         inputMode="decimal"
         aria-invalid={field.problem !== null}
-        aria-describedby={`${id}-problem`}
+        aria-describedby={field.problem ? `${id}-problem` : undefined}
         required
       />
-      <p id={`${id}-problem`} className="text-sm text-destructive">
+      {field.problem ? <p id={`${id}-problem`} className="text-sm text-destructive">
         {field.problem}
-      </p>
+      </p> : null}
     </SettingsRow>
   );
 }
@@ -122,16 +124,17 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   const settingsChanged = current?.settingsSavedAt == null || values.currency !== current.currency || (!solo && (
     teamCutField.bps !== current.teamCutBps || managementFeeField.bps !== current.managementFeeBps || values.quotingMode !== current.quotingMode
   ));
-  const canSave = settingsChanged && (solo
-    ? role === "admin" && !save.isPending
-    : role === "admin" && teamCutField.bps !== null && managementFeeField.bps !== null && !save.isPending);
   const bioUnchanged = values.bio.trim() === (current?.bio ?? "");
   const bioTooLong = values.bio.trim().length > MAX_BIO_CHARS;
-  const canSaveBio = role === "admin" && !saveBio.isPending && !bioUnchanged && !bioTooLong;
+  const canSave = (settingsChanged || (!bioUnchanged && !bioTooLong)) && (solo
+    ? role === "admin" && !save.isPending && !saveBio.isPending
+    : role === "admin" && teamCutField.bps !== null && managementFeeField.bps !== null && !save.isPending && !saveBio.isPending);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSave) return;
+    if (!bioUnchanged && !bioTooLong) saveBio.mutate({ teamSlug, bio: values.bio });
+    if (!settingsChanged) return;
     if (solo) {
       save.mutate({
         teamSlug,
@@ -152,15 +155,35 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
     });
   }
 
+  if (role !== "admin") {
+    return (
+      <WorkPage>
+        <h1 className="font-heading text-3xl">General</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Your seller page, currency and defaults for new work.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
+        <dl className="mt-6">
+          <SettingsRow id="bio-readonly" label="About you" description="What clients see on the seller page.">
+            <p className="text-sm whitespace-pre-line">{values.bio.trim() ? values.bio : "No bio yet."}</p>
+          </SettingsRow>
+          <SettingsRow id="currency-readonly" label="Currency" description="The default currency for new quotes.">
+            <p className="text-sm">{values.currency}</p>
+          </SettingsRow>
+          {!solo ? (
+            <SettingsRow id="quoting-mode-readonly" label="Who can quote" description="Who prepares and sends quotes for new requests.">
+              <p className="text-sm">{QUOTING_MODE_LABELS[values.quotingMode]}</p>
+            </SettingsRow>
+          ) : null}
+        </dl>
+      </WorkPage>
+    );
+  }
+
   return (
     <WorkPage>
       <h1 className="font-heading text-3xl">General</h1>
       <p className="mt-2 text-sm text-muted-foreground">Your seller page, currency and defaults for new work.</p>
-      {role !== "admin" ? (
-        <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
-      ) : null}
       <form onSubmit={handleSubmit} className="mt-6">
-        <fieldset disabled={role !== "admin"} className="min-w-0">
+        <fieldset className="min-w-0">
         <SettingsRow id="bio" label="About you" description="Tell clients what you make, for whom, and how you work. This appears on your seller page.">
           <Textarea
             id="bio"
@@ -182,19 +205,12 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
             </p>
           ) : null}
           {saveBio.isSuccess ? <p role="status" className="text-sm font-medium text-brand-text">Saved.</p> : null}
-          <Button
-            type="button"
-            onClick={() => saveBio.mutate({ teamSlug, bio: values.bio })}
-            disabled={!canSaveBio}
-            className="justify-self-start"
-          >
-            {saveBio.isPending ? "Saving…" : "Save bio"}
-          </Button>
+          <p className="text-sm text-muted-foreground">Saved with the settings below.</p>
         </SettingsRow>
         <SettingsRow id="currency" label="Currency" description="The default currency for new quotes. Existing projects keep their currency.">
           <select
             id="currency"
-            className={SELECT_CLASS}
+            className={`w-32 ${nativeSelectClass}`}
             value={values.currency}
             onChange={(e) => {
               if (isCurrency(e.target.value)) { setCurrency(e.target.value); save.reset(); }
@@ -214,10 +230,10 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           </p>
         ) : (
           <>
-            <RateInput id="team-cut" label="Team cut (%)" value={values.teamCut} onChange={(value) => { setTeamCut(value); save.reset(); }} />
+            <RateInput id="team-cut" label="Team cut" value={values.teamCut} onChange={(value) => { setTeamCut(value); save.reset(); }} />
             <RateInput
               id="management-fee"
-              label="Management fee (%)"
+              label="Management fee"
               value={values.managementFee}
               onChange={(value) => { setManagementFee(value); save.reset(); }}
             />

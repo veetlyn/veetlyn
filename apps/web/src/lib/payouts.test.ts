@@ -168,6 +168,11 @@ describe("payoutBreakdown", () => {
     expect(labels).not.toContain("Returned to Moussa's earnings");
   });
 
+  it("leaves out the actual fee when it equals the estimate", () => {
+    const labels = payoutBreakdown({ ...settled, feeMinor: 1_088 }, "Moussa").map((l) => l.label);
+    expect(labels).toEqual(["Requested from earnings", "Kept back for PayPal's fee (estimate)", "Received by Moussa"]);
+  });
+
   it("has only the requested amount before a send", () => {
     expect(payoutBreakdown({ ...settled, status: "requested", feeEstimateMinor: null, sentMinor: null, feeMinor: null }, "Moussa")).toEqual([
       { label: "Requested from earnings", minor: 54_400, kind: "gross" },

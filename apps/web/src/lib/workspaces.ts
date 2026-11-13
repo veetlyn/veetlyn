@@ -41,3 +41,24 @@ export function mergeWorkspaces(storeSide: StoreSide[], servicesSide: ServicesSi
   }
   return [...merged.values()];
 }
+
+// One navigation entry per workspace. A workspace is a Better Auth organization: it owns members and billing, and
+// holds the stores and services teams (Better Auth teams). With exactly one team the entry opens that team's modules
+// directly, so the common case has no extra step; otherwise it opens the workspace overview.
+export function workspaceDestination(organization: WorkspaceOrganization) {
+  const teams = [
+    ...organization.servicesTeams.map((team) => ({ slug: team.slug, label: `${team.name} · Services team` })),
+    ...organization.stores.map((store) => ({ slug: store.slug, label: `${store.name} · Store` })),
+  ];
+  const only = teams.length === 1 ? teams[0] : undefined;
+  return {
+    href: only ? `/${only.slug}` : `/w/${organization.id}`,
+    label: organization.name,
+    detail: only ? only.label : teams.length === 0 ? "Set up workspace" : `${teams.length} teams`,
+    organizationId: organization.id,
+  };
+}
+
+export function workspaceDestinations(workspaces: readonly WorkspaceOrganization[]) {
+  return workspaces.map(workspaceDestination);
+}

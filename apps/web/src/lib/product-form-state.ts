@@ -11,6 +11,7 @@ export type ProductFormState = {
   description: string;
   brand: string;
   category: string;
+  departmentId: string | null;
   chargeTax: boolean;
   requiresShipping: boolean;
   channel3ProductId: string | null;
@@ -25,6 +26,7 @@ export function emptyProductForm(): ProductFormState {
     description: "",
     brand: "",
     category: "",
+    departmentId: null,
     chargeTax: true,
     requiresShipping: true,
     channel3ProductId: null,
@@ -34,7 +36,7 @@ export function emptyProductForm(): ProductFormState {
   };
 }
 
-export type ProductDraftInput = ProductDraft & { channel3ProductId: string | null };
+export type ProductDraftInput = ProductDraft & { channel3ProductId: string | null; departmentId: string | null };
 
 export function productFormToDraft(form: ProductFormState): ProductDraftInput {
   return {
@@ -42,6 +44,7 @@ export function productFormToDraft(form: ProductFormState): ProductDraftInput {
     description: form.description,
     brand: form.brand,
     category: form.category,
+    departmentId: form.departmentId,
     chargeTax: form.chargeTax,
     requiresShipping: form.requiresShipping,
     channel3ProductId: form.channel3ProductId,

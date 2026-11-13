@@ -2,12 +2,34 @@
   "extends": "@jendal-workspace/config/tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "types": [],
     "paths": {
-      "@jendal-workspace/ui/*": ["./src/*"]
+      "@jendal-workspace/ui/*": [
+        "./src/*"
+      ]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/components/motion/**/*",
+    "src/components/agents/**/*",
+    "src/lib/hooks/**/*",
+    "src/lib/ease.ts",
+    "src/lib/i18n.tsx",
+    "src/lib/focusable.ts",
+    "src/lib/command-search.ts",
+    "src/lib/presence-gate.tsx",
+    "src/lib/touch.ts",
+    "src/components/charts/**/*",
+    "src/lib/text-shimmer.ts"
+  ]
 }

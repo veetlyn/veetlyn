@@ -53,6 +53,7 @@ function EditCommerceProduct({ storeSlug, productId }: { storeSlug: string; prod
     description: product.description,
     brand: product.brand,
     category: product.category,
+    departmentId: product.departmentId,
     chargeTax: product.chargeTax,
     requiresShipping: product.requiresShipping,
     channel3ProductId: product.channel3ProductId,

@@ -21,6 +21,7 @@ import {
   listServicesOfferings,
   renameServicesDepartment,
   setServicesDepartmentListed,
+  setServicesDepartmentParent,
   setServicesOfferingActive,
   updateServicesOffering,
 } from "@jendal-workspace/db/repositories/services-catalog";
@@ -84,12 +85,13 @@ export const servicesCatalogRouter = router({
   }),
 
   createDepartment: servicesTeamProcedure
-    .input(z.object({ name: z.string() }))
+    .input(z.object({ name: z.string(), parentId: z.string().nullish() }))
     .mutation(async ({ ctx, input }) => {
       requireAction(ctx.servicesTeamRole, "manage_settings", ADMIN_ONLY);
       const problem = departmentNameProblem(input.name);
       if (problem) throw new TRPCError({ code: "BAD_REQUEST", message: problem });
-      const created = await createServicesDepartment(ctx.db, { teamId: ctx.servicesTeam.id, name: input.name });
+      if (input.parentId != null) await requireDepartment(ctx.db, ctx.servicesTeam.id, input.parentId);
+      const created = await createServicesDepartment(ctx.db, { teamId: ctx.servicesTeam.id, name: input.name, parentId: input.parentId ?? null });
       if (!created) {
         throw new TRPCError({ code: "CONFLICT", message: "Your team already has a department with this name." });
       }
@@ -112,6 +114,21 @@ export const servicesCatalogRouter = router({
         throw new TRPCError({ code: "CONFLICT", message: "Your team already has a department with this name." });
       }
       return { departmentId: input.departmentId, name: input.name.trim() };
+    }),
+
+  setDepartmentParent: servicesTeamProcedure
+    .input(z.object({ departmentId: z.string().min(1), parentId: z.string().nullish() }))
+    .mutation(async ({ ctx, input }) => {
+      requireAction(ctx.servicesTeamRole, "manage_settings", ADMIN_ONLY);
+      const result = await setServicesDepartmentParent(ctx.db, {
+        id: input.departmentId,
+        teamId: ctx.servicesTeam.id,
+        parentId: input.parentId ?? null,
+      });
+      if (result === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "This category is not in your team." });
+      if (result === "invalid_parent") throw new TRPCError({ code: "BAD_REQUEST", message: "That parent category is not in your team." });
+      if (result === "cycle") throw new TRPCError({ code: "BAD_REQUEST", message: "A category cannot sit inside itself or one of its subcategories." });
+      return { departmentId: input.departmentId, parentId: input.parentId ?? null };
     }),
 
   deleteDepartment: servicesTeamProcedure

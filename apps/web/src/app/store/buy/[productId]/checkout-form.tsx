@@ -121,6 +121,7 @@ function PayPalButton({
   const [problem, setProblem] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mounted, setMounted] = useState(false);
   // The effect must not re-run when the parent re-renders with a new function identity.
   const emailIsReadyRef = useRef(emailIsReady);
   emailIsReadyRef.current = emailIsReady;
@@ -150,6 +151,7 @@ function PayPalButton({
       const methods = await instance.findEligibleMethods({ currencyCode: currency });
       if (stopped) return;
       if (!methods.isEligible("paypal")) {
+        setMounted(true);
         setProblem("PayPal is not available for this payment.");
         return;
       }
@@ -227,10 +229,14 @@ function PayPalButton({
           });
       });
       container.current?.replaceChildren(button);
+      if (!stopped) setMounted(true);
     }
 
     mount().catch(() => {
-      if (!stopped) setProblem("PayPal could not load. Reload the page to try again.");
+      if (!stopped) {
+        setMounted(true);
+        setProblem("PayPal could not load. Reload the page to try again.");
+      }
     });
     const mounted = container.current;
     return () => {
@@ -242,6 +248,12 @@ function PayPalButton({
 
   return (
     <div className="space-y-2">
+      {/* Reserve the button's space while PayPal loads, so the page never looks like it has no way to pay. */}
+      {!mounted && !problem ? (
+        <div aria-hidden="true" className="flex h-[45px] w-[225px] max-w-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground">
+          Loading PayPal…
+        </div>
+      ) : null}
       <div ref={container} aria-busy={busy} className={busy ? "pointer-events-none opacity-50" : undefined} />
       <p role="status" className="text-sm text-muted-foreground">
         {busy ? "Confirming your payment…" : notice}

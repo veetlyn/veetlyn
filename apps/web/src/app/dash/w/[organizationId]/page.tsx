@@ -31,9 +31,10 @@ export default async function WorkspaceHome({ params }: { params: Promise<{ orga
             ) : null}
           </span>
         </div>
+        <p className="text-sm text-muted-foreground">The stores and services teams in this workspace. Members and billing belong to the workspace.</p>
       </div>
       {organization.stores.length + organization.servicesTeams.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No sellers in this workspace yet.</p>
+        <p className="text-sm text-muted-foreground">No stores or services teams in this workspace yet.</p>
       ) : (
         <WorkspaceSellers organization={organization} urlParts={urlParts} />
       )}

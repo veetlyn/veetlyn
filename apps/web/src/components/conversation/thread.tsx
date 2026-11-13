@@ -55,8 +55,11 @@ export function ConversationThread<M extends ThreadMessage>({
       {messages.map((message) => {
         if (message.kind === "event") {
           return (
-            <p key={message.id} className="text-center text-sm text-muted-foreground">
-              {message.body} <span className="whitespace-nowrap">— {when(message.createdAt)}</span>
+            // A platform event is a timeline line on the message column, not floating centred text.
+            <p key={message.id} className="flex items-baseline gap-2.5 px-1 text-[13px] text-muted-foreground">
+              <span aria-hidden="true" className="relative top-[-1px] size-1.5 shrink-0 rounded-full bg-border-strong" />
+              <span className="min-w-0">{message.body}</span>
+              <span className="ml-auto shrink-0 whitespace-nowrap text-xs">{when(message.createdAt)}</span>
             </p>
           );
         }
@@ -126,11 +129,21 @@ export function Composer({
   }
 
   return (
+    // One composer box: who reads it sits above it, then the text and a toolbar with the options and the send key.
     <form onSubmit={submit} className="grid gap-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Textarea id={id} value={body} maxLength={MAX_MESSAGE} rows={3} onChange={(e) => setBody(e.target.value)} />
-      <p className="text-sm text-muted-foreground">{teamOnly ? "Only the team reads this." : audience}</p>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <Label htmlFor={id} className="sr-only">{label}</Label>
+      <p className="px-1 text-xs text-muted-foreground">{teamOnly ? "Only the team reads this." : audience}</p>
+      <div data-composer className="rounded-xl border bg-background focus-within:border-[var(--ring)]">
+      <Textarea
+        id={id}
+        value={body}
+        maxLength={MAX_MESSAGE}
+        rows={2}
+        placeholder="Write a message…"
+        onChange={(e) => setBody(e.target.value)}
+        className="min-h-16 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
+      />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 pb-2.5">
         {allowQuestion ? (
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={question} onCheckedChange={(checked) => setQuestion(checked === true)} />
@@ -143,9 +156,10 @@ export function Composer({
             {teamOnlyChoice}
           </label>
         ) : null}
-        <Button type="submit" disabled={!body.trim() || busy} className="ml-auto">
+        <Button type="submit" size="sm" disabled={!body.trim() || busy} className="ml-auto">
           {busy ? "Sending…" : "Send"}
         </Button>
+      </div>
       </div>
       {error ? (
         <p role="alert" className="text-sm text-destructive">

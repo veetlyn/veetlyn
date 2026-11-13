@@ -27,7 +27,7 @@ export default function FromAi({ teamSlug }: { teamSlug: string }) {
       <dl className="panel grid grid-cols-2 divide-x">
         {stats.map((stat) => (
           <div key={stat.label} className="grid gap-1 px-5 py-4">
-            <dt className="text-[13px] text-muted-foreground">{stat.label}</dt>
+            <dt className="text-[12px] text-muted-foreground">{stat.label}</dt>
             <dd className="font-heading text-2xl tabular-nums">{stat.value}</dd>
           </div>
         ))}

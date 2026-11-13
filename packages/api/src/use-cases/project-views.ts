@@ -23,7 +23,7 @@ import {
   listTeamProjects,
 } from "@jendal-workspace/db/repositories/projects";
 import { listServicesDepartments } from "@jendal-workspace/db/repositories/services-catalog";
-import { getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
+import { findServicesTeamById, getServicesTeamSettings } from "@jendal-workspace/db/repositories/services-teams";
 import { TRPCError } from "@trpc/server";
 
 import { platformFeeBps, teamEntitlements } from "../billing/entitlements";
@@ -246,6 +246,7 @@ export async function getClientProjectView(
   const { db } = deps;
   const row = await findProjectById(db, projectId);
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "This link is not valid." });
+  const team = await findServicesTeamById(db, row.teamId);
   const [quotes, amendments, payments, deliveries, refund, conversation, rules, pinned] = await Promise.all([
     listProjectQuotes(db, projectId),
     listProjectAmendments(db, projectId),
@@ -278,6 +279,7 @@ export async function getClientProjectView(
     project: {
       id: row.id,
       title: row.title,
+      teamName: team?.name ?? "The team",
       brief: row.brief,
       status: row.status,
       currency: row.currency,

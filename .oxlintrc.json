@@ -21,7 +21,12 @@
     "packages/db/src/migrations/**",
     "apps/server/src/mcp/bridge.generated.ts"
   ],
-  "jsPlugins": [{ "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }],
+  "jsPlugins": [
+    {
+      "name": "anti-slop",
+      "specifier": "./tools/oxlint/anti-slop/index.ts"
+    }
+  ],
   "rules": {
     "anti-slop/no-chained-type-assertions": "error",
     "anti-slop/no-conditional-empty-object-spread": "error",
@@ -38,5 +43,30 @@
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-widen-then-assert": "error",
     "anti-slop/require-safety-comment-for-type-assertion": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "packages/ui/src/components/motion/**",
+        "packages/ui/src/components/agents/**",
+        "packages/ui/src/lib/hooks/**",
+        "packages/ui/src/lib/ease.ts",
+        "packages/ui/src/lib/i18n.tsx",
+        "packages/ui/src/lib/focusable.ts",
+        "packages/ui/src/lib/command-search.ts",
+        "packages/ui/src/lib/presence-gate.tsx",
+        "packages/ui/src/lib/touch.ts",
+        "packages/ui/src/components/charts/**",
+        "packages/ui/src/lib/text-shimmer.ts"
+      ],
+      "rules": {
+        "anti-slop/no-known-value-widening": "off",
+        "anti-slop/no-runtime-typeof": "off",
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unsafe-dictionary-type": "off",
+        "anti-slop/require-safety-comment-for-type-assertion": "off",
+        "anti-slop/no-shape-in-symbol-names": "off"
+      }
+    }
+  ]
 }

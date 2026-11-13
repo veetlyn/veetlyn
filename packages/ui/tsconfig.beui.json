@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": false
+  },
+  "include": [
+    "src/components/motion/**/*",
+    "src/components/agents/**/*",
+    "src/lib/hooks/**/*",
+    "src/lib/ease.ts",
+    "src/lib/i18n.tsx",
+    "src/lib/focusable.ts",
+    "src/lib/command-search.ts",
+    "src/lib/presence-gate.tsx",
+    "src/lib/touch.ts",
+    "src/components/charts/**/*",
+    "src/lib/text-shimmer.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

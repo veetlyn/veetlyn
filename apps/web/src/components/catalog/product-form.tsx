@@ -13,11 +13,14 @@ import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
 
+import { flattenCategories } from "@/lib/catalog-categories";
 import { productImageUrl } from "@/lib/image-url";
+import { ValueInput } from "@/components/value-input";
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import {
   type ImageFormState,
   type ProductFormState,
@@ -56,6 +59,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const photoInput = useRef<HTMLInputElement>(null);
 
+  const categories = useQuery({ ...trpc.catalog.listCategories.queryOptions({ storeSlug }), retry: false, meta: { silent: true } });
   const create = useMutation(trpc.catalog.create.mutationOptions());
   const update = useMutation(trpc.catalog.update.mutationOptions());
   const lookup = useMutation(trpc.catalog.lookupFromUrl.mutationOptions());
@@ -190,7 +194,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
             Start from a link or a photo
           </h2>
           <div className="flex flex-wrap items-end gap-2">
-            <div className="grid min-w-64 flex-1 gap-1">
+            <div className="grid min-w-0 flex-1 gap-1 sm:min-w-64">
               <Label htmlFor="product-link">Product link</Label>
               <Input
                 id="product-link"
@@ -248,8 +252,15 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
             <Input id="brand" value={form.brand} onChange={(e) => patch({ brand: e.target.value })} maxLength={120} />
           </div>
           <div className="grid gap-1">
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">Source category</Label>
             <Input id="category" value={form.category} onChange={(e) => patch({ category: e.target.value })} maxLength={120} />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="catalog-category">Catalog category</Label>
+            <select id="catalog-category" className={`${nativeSelectClass} h-10`} value={form.departmentId ?? ""} onChange={(e) => patch({ departmentId: e.target.value || null })}>
+              <option value="">No category</option>
+              {flattenCategories(categories.data ?? []).map((category) => <option key={category.id} value={category.id}>{category.path}</option>)}
+            </select>
           </div>
         </div>
         <label className="flex items-center gap-2 text-sm">
@@ -271,9 +282,9 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
         </h2>
         <div className="panel divide-y">
         {form.variants.map((variant, index) => (
-          <div key={index} className="grid gap-2 p-3 sm:grid-cols-[1fr_1fr_7rem_7rem_auto] sm:items-end">
+          <div key={index} className="grid min-w-0 gap-3 p-4 sm:grid-cols-2 sm:items-end xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_11rem_8rem_auto]">
             <div className="grid gap-1">
-              <Label htmlFor={`variant-options-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>Options</Label>
+              <Label htmlFor={`variant-options-${index}`} className={index > 0 ? "xl:sr-only" : undefined}>Options</Label>
               <Input
                 id={`variant-options-${index}`}
                 value={variant.options.map((option) => `${option.name}: ${option.value}`).join(" / ")}
@@ -293,7 +304,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
               />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor={`variant-sku-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>SKU</Label>
+              <Label htmlFor={`variant-sku-${index}`} className={index > 0 ? "xl:sr-only" : undefined}>SKU</Label>
               <Input
                 id={`variant-sku-${index}`}
                 value={variant.sku}
@@ -302,9 +313,10 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
               />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor={`variant-price-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>Price (USD)</Label>
-              <Input
+              <Label htmlFor={`variant-price-${index}`} className={index > 0 ? "xl:sr-only" : undefined}>Price</Label>
+              <ValueInput
                 id={`variant-price-${index}`}
+                unit="USD"
                 value={variant.price}
                 onChange={(e) => patchVariant(index, { price: e.target.value })}
                 inputMode="decimal"
@@ -313,9 +325,13 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
               />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor={`variant-stock-${index}`} className={index > 0 ? "sm:sr-only" : undefined}>Stock</Label>
-              <Input
+              <Label htmlFor={`variant-stock-${index}`} className={index > 0 ? "xl:sr-only" : undefined}>Stock</Label>
+              <ValueInput
                 id={`variant-stock-${index}`}
+                unit="units"
+                type="number"
+                min={0}
+                step={1}
                 value={variant.stock}
                 onChange={(e) => patchVariant(index, { stock: e.target.value })}
                 inputMode="numeric"

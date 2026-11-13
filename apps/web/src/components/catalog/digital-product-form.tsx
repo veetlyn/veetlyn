@@ -5,12 +5,15 @@ import { Button } from "@jendal-workspace/ui/components/button";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { Textarea } from "@jendal-workspace/ui/components/textarea";
+import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
+import { ValueInput } from "@/components/value-input";
+import { flattenCategories } from "@/lib/catalog-categories";
 import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { uploadToPresignedUrl } from "@/lib/upload";
 import { trpc, trpcClient } from "@/utils/trpc";
@@ -19,9 +22,9 @@ const PRICE_PROBLEM = "Enter the price as an amount, for example 150 or 19.99.";
 
 const FILE_ACCEPT = ALLOWED_FILE_EXTENSIONS.map((extension) => `.${extension}`).join(",");
 
-type Fields = { title: string; description: string; price: string };
+type Fields = { title: string; description: string; price: string; departmentId: string };
 
-const EMPTY_FIELDS: Fields = { title: "", description: "", price: "" };
+const EMPTY_FIELDS: Fields = { title: "", description: "", price: "", departmentId: "" };
 
 export default function DigitalProductForm({ teamSlug, productId }: { teamSlug: string; productId?: string }) {
   if (!productId) return <DetailsForm teamSlug={teamSlug} initial={EMPTY_FIELDS} />;
@@ -54,10 +57,10 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
         {detail.error.data?.code === "FORBIDDEN" ? (
           <p role="alert">{detail.error.message}</p>
         ) : (
-          <h1 className="font-heading text-3xl">Product not found</h1>
+          <h1 className="font-heading text-3xl">Item not found</h1>
         )}
         <Link href={`/${teamSlug}/products`} className="underline">
-          Back to products
+          Back to premade items
         </Link>
       </div>
     );
@@ -72,7 +75,7 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <div className="min-w-0 space-y-1">
           <Link href={`/${teamSlug}/products`} className="text-sm text-muted-foreground">
-            Products
+            Premade items
           </Link>
           <h1 className="break-words font-heading text-3xl">{product.title}</h1>
         </div>
@@ -97,7 +100,7 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
         key={`details-${productId}`}
         teamSlug={teamSlug}
         productId={productId}
-        initial={{ title: product.title, description: product.description, price: minorToPriceInput(product.priceMinor) }}
+        initial={{ title: product.title, description: product.description, price: minorToPriceInput(product.priceMinor), departmentId: product.departmentId ?? "" }}
       />
       <FileSection key={`file-${productId}`} teamSlug={teamSlug} productId={productId} fileName={product.fileName} />
     </div>
@@ -107,6 +110,7 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
 function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; productId?: string; initial: Fields }) {
   const router = useRouter();
   const team = useQuery({ ...trpc.servicesTeam.get.queryOptions({ teamSlug }), retry: false, meta: { silent: true } });
+  const categories = useQuery({ ...trpc.catalog.listCategories.queryOptions({ storeSlug: teamSlug }), retry: false, meta: { silent: true } });
   const invalidate = useInvalidateDigital(teamSlug, productId);
   // Seeded once from the loaded product; a refetch after publishing must not overwrite unsaved edits.
   const [fields, setFields] = useState<Fields>(initial);
@@ -132,7 +136,7 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
       setMessage(PRICE_PROBLEM);
       return;
     }
-    const draft = { title: fields.title.trim(), description: fields.description, priceMinor };
+    const draft = { title: fields.title.trim(), description: fields.description, priceMinor, departmentId: fields.departmentId || null };
     const problems = validateDigitalProductDraft(draft);
     const [first] = problems;
     if (first) {
@@ -187,10 +191,19 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
           rows={4}
         />
       </div>
+      <div className="grid gap-1 sm:max-w-72">
+        <Label htmlFor="digital-category">Category</Label>
+        <select id="digital-category" className={`${nativeSelectClass} h-10`} value={fields.departmentId} onChange={(event) => patch({ departmentId: event.target.value })}>
+          <option value="">No category</option>
+          {flattenCategories(categories.data ?? []).map((category) => <option key={category.id} value={category.id}>{category.path}</option>)}
+        </select>
+      </div>
       <div className="grid gap-1 sm:max-w-48">
-        <Label htmlFor="digital-price">Price{team.data ? ` (${team.data.settings?.currency ?? "USD"})` : " (seller currency)"}</Label>
-        <Input
+        <Label htmlFor="digital-price">Price</Label>
+        <ValueInput
           id="digital-price"
+          unit={team.data ? team.data.settings?.currency ?? "USD" : "…"}
+          unitLabel={team.data ? team.data.settings?.currency ?? "USD" : "Workspace currency loading"}
           inputMode="decimal"
           value={fields.price}
           onChange={(event) => patch({ price: event.target.value })}
@@ -214,9 +227,15 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
           Saved.
         </p>
       )}
+      {!productId ? (
+        <section className="grid gap-1 panel p-4">
+          <h2 className="text-sm font-medium">File buyers download</h2>
+          <p className="text-sm text-muted-foreground">Save the item first, then add the file buyers receive. You can publish once the file is added.</p>
+        </section>
+      ) : null}
       <div>
         <Button type="submit" disabled={saving || create.isSuccess || priceMinor === null}>
-          {saving ? "Saving…" : productId ? "Save changes" : "Save product"}
+          {saving ? "Saving…" : productId ? "Save changes" : "Save item"}
         </Button>
       </div>
       </fieldset>

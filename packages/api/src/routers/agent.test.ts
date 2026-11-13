@@ -113,6 +113,42 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
   });
   const onProject = (id: string) => ({ kind: "record" as const, teamId: current.teamId, record: { type: "project" as const, id } });
 
+  // Agent-to-UI: blocks the model presents are stored on its answer as a json-render spec, cleaned like its text.
+  it("stores the answer's present blocks as a spec under the answer text, without ids no tool returned", async () => {
+    const { adminId } = await setup();
+    const id = "f5349023-c16c-48bb-a849-c84ed6dc63d9";
+    const model = scriptedModel([
+      use("present", { blocks: [{ type: "records", title: "Needs you", items: [{ kind: "project", id, title: `Baobab logo ${id}`, status: "To quote", tone: "attention" }] }] }),
+      say("One request needs a quote."),
+    ]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: current, message: "What needs me?" });
+    const answer = (await callerFor(adminId).agent.thread({ callId })).entries.at(-1);
+    expect(answer?.body).toBe("One request needs a quote.");
+    expect(answer?.ui).toEqual({
+      root: "answer",
+      elements: {
+        answer: { type: "Answer", props: {}, children: ["records-0"] },
+        // No read returned this id this turn, so the row opens the projects list rather than a page that may not exist.
+        "records-0": { type: "Records", props: { title: "Needs you", items: [{ kind: "project", title: "Baobab logo", status: "To quote", tone: "attention" }] }, children: [] },
+      },
+    });
+  });
+
+  // Walk 2026-11-12: Muse read the records, then wrote them as a long bulleted list instead of presenting them.
+  it("asks once more for blocks when a turn read records but answered in prose, and keeps only the lead and close", async () => {
+    const { adminId } = await setup();
+    const model = scriptedModel([
+      use("project_list", {}),
+      say("One request needs you.\n\n- Baobab logo, to quote\n- Nothing else\n\nSend the quote first."),
+      use("present", { blocks: [{ type: "records", items: [{ kind: "project", title: "Baobab logo", status: "To quote", tone: "attention" }] }] }),
+    ]);
+    const { callId } = await callerFor(adminId, model).agent.ask({ node: current, message: "What needs me?" });
+    const answer = (await callerFor(adminId).agent.thread({ callId })).entries.at(-1);
+    expect(model.requests).toHaveLength(3);
+    expect(answer?.body).toBe("One request needs you.\n\nSend the quote first.");
+    expect(answer?.ui).toMatchObject({ elements: { "records-0": { type: "Records" } } });
+  });
+
   it("reads with the person's own access, offers only their tools, logs the reads, and stops at the daily cap", async () => {
     const { adminId, freelancerId } = await setup();
     const model = scriptedModel([use("project_list", {}), say("You have one request: Baobab logo.")]);
@@ -498,7 +534,9 @@ describe.skipIf(!hasTestDatabase)("agent calls", () => {
     const store = await seedStore(db, { organizationId, slug: "clay-room", name: "Clay Room" });
     const system = (model: ReturnType<typeof scriptedModel>) => JSON.stringify(model.requests[0]?.messages[0]?.content);
 
-    const offered = (model: ReturnType<typeof scriptedModel>) => (model.requests[0]?.tools ?? []).map((t) => t.function.name).sort();
+    // present (the answer UI) is offered everywhere; the record tools are what each place decides.
+    const offered = (model: ReturnType<typeof scriptedModel>) =>
+      (model.requests[0]?.tools ?? []).map((t) => t.function.name).filter((name) => name !== "present").sort();
     const atStore = scriptedModel([say("No orders yet.")]);
     await callerFor(adminId, atStore).agent.ask({ node: { kind: "seller", teamId: store.id }, message: "How are sales?" });
     expect(offered(atStore)).toEqual(["order_list", "product_list"]);

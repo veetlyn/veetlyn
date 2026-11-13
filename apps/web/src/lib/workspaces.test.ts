@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mergeWorkspaces, type WorkspaceOrganization, type WorkspaceServicesTeam, type WorkspaceStore } from "./workspaces";
+import { mergeWorkspaces, workspaceDestinations, type WorkspaceOrganization, type WorkspaceServicesTeam, type WorkspaceStore } from "./workspaces";
 
 const store: WorkspaceStore = { id: "team-1", slug: "acme", name: "Acme", status: "draft" };
 const servicesTeam: WorkspaceServicesTeam = { id: "team-2", slug: "acme-studio", name: "Acme Studio", role: "admin" };
@@ -31,5 +31,25 @@ describe("mergeWorkspaces", () => {
 
     expect(merged.map((o) => o.id)).toEqual(["org-1", "org-2"]);
     expect(merged[0]).toMatchObject({ stores: [store], servicesTeams: [servicesTeam], canCreateStores: true });
+  });
+});
+
+describe("workspace destinations", () => {
+  const org = (id: string, stores: WorkspaceStore[], servicesTeams: WorkspaceServicesTeam[]): WorkspaceOrganization => ({ id, name: `Org ${id}`, role: "owner", canCreateStores: true, stores, servicesTeams });
+
+  it("lists one entry per workspace (organization), opening a single team directly", () => {
+    expect(workspaceDestinations([org("1", [], [servicesTeam])])).toEqual([
+      { href: "/acme-studio", label: "Org 1", detail: "Acme Studio · Services team", organizationId: "1" },
+    ]);
+    expect(workspaceDestinations([org("2", [store], [])])).toEqual([
+      { href: "/acme", label: "Org 2", detail: "Acme · Store", organizationId: "2" },
+    ]);
+  });
+
+  it("opens the workspace overview when it holds several teams or none", () => {
+    expect(workspaceDestinations([org("3", [store], [servicesTeam]), org("4", [], [])])).toEqual([
+      { href: "/w/3", label: "Org 3", detail: "2 teams", organizationId: "3" },
+      { href: "/w/4", label: "Org 4", detail: "Set up workspace", organizationId: "4" },
+    ]);
   });
 });

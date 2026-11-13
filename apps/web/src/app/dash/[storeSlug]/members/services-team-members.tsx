@@ -7,7 +7,9 @@ import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
 import { Input } from "@jendal-workspace/ui/components/input";
 import { Label } from "@jendal-workspace/ui/components/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pagination } from "@jendal-workspace/ui/components/motion/pagination";
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
@@ -15,6 +17,7 @@ import { WorkPage } from "@/components/page-composition";
 import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { SERVICES_TEAM_ROLE_LABELS } from "@/lib/services-team-labels";
+import { type ListSort, listView } from "@/lib/list-view";
 import { trpc } from "@/utils/trpc";
 import MemberAccessEditor from "./member-access";
 
@@ -122,6 +125,11 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
     meta: { silent: true },
   });
 
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [sort, setSort] = useState<ListSort>({ key: "name", direction: "asc" });
+  const [page, setPage] = useState(1);
   const [email, setEmail] = useState("");
   const [newRole, setNewRole] = useState<ServicesTeamRole>("freelancer");
 
@@ -146,6 +154,24 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
   const solo = team.data.settings?.solo ?? false;
   // Managers see the list; only admins change it. Freelancers get a FORBIDDEN from listMembers.
   const listForbidden = members.error?.data?.code === "FORBIDDEN";
+  const allMembers = members.data ?? [];
+  const departmentsFor = (userId: string) => (memberDepartments.data ?? []).filter((row) => row.userId === userId).map((row) => row.departmentId);
+  const view = listView(allMembers, {
+    query,
+    searchText: (member) => `${member.name} ${member.email} ${member.title ?? ""}`,
+    filterValues: { role: roleFilter, department: departmentFilter },
+    filters: {
+      role: (member, value) => member.role === value,
+      department: (member, value) => departmentsFor(member.userId).includes(value),
+    },
+    sort,
+    sortValues: {
+      name: (member) => member.name.toLocaleLowerCase(),
+      role: (member) => SERVICES_TEAM_ROLE_LABELS[member.role] ?? member.role,
+    },
+    page,
+    pageSize: 20,
+  });
 
   function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -177,8 +203,55 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
         </p>
       ) : (
         <>
-          <ul className="mt-6 panel divide-y overflow-hidden">
-            {(members.data ?? []).map((member) => (
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <label className="relative w-full sm:w-72">
+              <span className="sr-only">Search people by name, email or title</span>
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search people…" className="pl-9" />
+            </label>
+            <label>
+              <span className="sr-only">Role</span>
+              <select className={`${SELECT_CLASS} h-10 min-w-36`} value={roleFilter} onChange={(event) => { setRoleFilter(event.target.value); setPage(1); }}>
+                <option value="all">All roles</option>
+                {SERVICES_TEAM_ROLES.map((role) => <option key={role} value={role}>{SERVICES_TEAM_ROLE_LABELS[role]}</option>)}
+              </select>
+            </label>
+            {departments.length > 0 ? (
+              <label>
+                <span className="sr-only">Category</span>
+                <select className={`${SELECT_CLASS} h-10 min-w-40`} value={departmentFilter} onChange={(event) => { setDepartmentFilter(event.target.value); setPage(1); }}>
+                  <option value="all">All categories</option>
+                  {departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
+                </select>
+              </label>
+            ) : null}
+            <label>
+              <span className="sr-only">Sort people</span>
+              <select
+                className={`${SELECT_CLASS} h-10 min-w-36`}
+                value={`${sort?.key}-${sort?.direction}`}
+                onChange={(event) => {
+                  const [key, direction] = event.target.value.split("-");
+                  if ((key === "name" || key === "role") && (direction === "asc" || direction === "desc")) setSort({ key, direction });
+                  setPage(1);
+                }}
+              >
+                <option value="name-asc">Name A–Z</option>
+                <option value="name-desc">Name Z–A</option>
+                <option value="role-asc">Role A–Z</option>
+              </select>
+            </label>
+            <p role="status" className="ml-auto text-sm text-muted-foreground tabular-nums">{view.total} {view.total === 1 ? "person" : "people"}</p>
+          </div>
+          {view.total === 0 ? (
+            <div className="rounded-[10px] border px-5 py-10 text-center">
+              <h2 className="font-heading text-lg">No matching people</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Try another name, email, role or category.</p>
+              <Button type="button" variant="outline" className="mt-4" onClick={() => { setQuery(""); setRoleFilter("all"); setDepartmentFilter("all"); setPage(1); }}>Clear filters</Button>
+            </div>
+          ) : (
+          <ul className="panel divide-y overflow-hidden">
+            {view.rows.map((member) => (
               <li key={member.userId} className="flex flex-wrap items-start justify-between gap-4 px-4 py-5 sm:flex-nowrap">
                 <div className="min-w-0 flex-1 basis-52">
                   <p className="truncate font-medium">{member.name}</p>
@@ -195,9 +268,7 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
                       teamSlug={teamSlug}
                       member={member}
                       departments={departments}
-                      chosen={(memberDepartments.data ?? [])
-                        .filter((row) => row.userId === member.userId)
-                        .map((row) => row.departmentId)}
+                      chosen={departmentsFor(member.userId)}
                     />
                   ) : null}
                 </div>
@@ -230,6 +301,8 @@ export default function ServicesTeamMembers({ teamSlug }: { teamSlug: string }) 
               </li>
             ))}
           </ul>
+          )}
+          {view.totalPages > 1 ? <div className="flex justify-center"><Pagination totalPages={view.totalPages} page={view.page} onPageChange={setPage} aria-label="People pages" /></div> : null}
 
           {isAdmin ? (
             <form onSubmit={handleAdd} className="mt-8 grid gap-4">

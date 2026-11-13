@@ -66,7 +66,7 @@ export default function PayoutsSetup({
 
   return (
     <main className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <h1 className="font-heading text-3xl">Payouts</h1>
+      <h1 className="font-heading text-3xl">Your earnings</h1>
       {paypalProblem ? (
         <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {paypalProblem}

@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 import AppFrame, { navItemClass } from "@/components/app-frame";
 import RecentCalls from "@/components/recent-calls";
-import type { WorkspaceOrganization } from "@/lib/workspaces";
+import { workspaceDestinations, type WorkspaceOrganization } from "@/lib/workspaces";
 import { trpc } from "@/utils/trpc";
 
 const NODE = { kind: "account" as const };
@@ -23,6 +23,7 @@ export default function AccountShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const destinations = workspaceDestinations(workspaces);
   const scope = useQuery({ ...trpc.agent.node.queryOptions({ node: NODE }), retry: false, meta: { silent: true } });
   const calls = useQuery({
     ...trpc.agent.calls.queryOptions({ node: NODE }),
@@ -44,21 +45,22 @@ export default function AccountShell({
     </Link>
   );
   const crumbs = [
-    { href: "/", label: "Your account" },
+    { href: "/", label: "Overview" },
     ...(pathname === "/me"
       ? [{ href: "/me", label: "Personal" }]
       : pathname.startsWith("/me/projects")
         ? [{ href: "/me/projects", label: "Your projects" }]
         : pathname.startsWith("/me/payouts")
           ? [{ href: "/me/payouts", label: "Your earnings" }]
-          : pathname.startsWith("/me/calls")
-            ? [{ href: "/me/calls", label: "Threads" }]
+          : pathname.startsWith("/me/threads")
+            ? [{ href: "/me/threads", label: "Threads" }]
             : []),
   ];
 
   return (
     <AppFrame
-      fill={pathname.startsWith("/me/calls")}
+      fill={pathname.startsWith("/me/threads")}
+      workspace={{ href: "/", label: "Personal", detail: "Your account", options: [{ href: "/", label: "Personal" }, ...destinations] }}
       crumbs={crumbs}
       searchItems={[
         { href: "/", label: "Overview", detail: "Your account" },
@@ -66,7 +68,7 @@ export default function AccountShell({
         { href: "/me/projects", label: "Your projects", detail: "Your account" },
         { href: "/me/payouts", label: "Your earnings", detail: "Your account" },
         { href: "/account", label: "Account settings", detail: "Your account" },
-        ...workspaces.map((w) => ({ href: `/w/${w.id}`, label: w.name, detail: "Workspace" })),
+        ...destinations.map((w) => ({ ...w, group: "Workspaces" })),
       ]}
       sidebar={
         <>
@@ -80,11 +82,11 @@ export default function AccountShell({
             <div className="pt-3">
               <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Workspaces</p>
               <nav aria-label="Workspaces" className="grid gap-0.5">
-                {workspaces.map((w) => link(`/w/${w.id}`, w.name, Building2))}
+                {destinations.map((destination) => link(destination.href, destination.label, Building2))}
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/calls" label="Your threads" />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath="/me/threads" label="Your threads" />
         </>
       }
     >

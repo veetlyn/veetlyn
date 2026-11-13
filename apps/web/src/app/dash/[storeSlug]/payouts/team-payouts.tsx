@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
+import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { trpc } from "@/utils/trpc";
 
@@ -50,10 +51,18 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
       ) : (
         <>
           <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
-          {canServicesTeam(role, "approve_payouts") ? <>
-            <PayoutCredentialsCard teamSlug={team.slug} />
-            <PayoutsWebSection teamSlug={team.slug} />
-          </> : <p className="text-sm text-muted-foreground">Read-only access. An admin handles approvals and sends.</p>}
+          {canServicesTeam(role, "approve_payouts") ? (
+            <section aria-labelledby="payout-methods-heading" className="space-y-4">
+              <div className="space-y-1">
+                <h2 id="payout-methods-heading" className="font-heading text-lg">Ways to pay out</h2>
+                <p className="text-sm text-muted-foreground">Send approved payouts automatically from <PlatformName />, or through PayPal&apos;s own Payouts page.</p>
+              </div>
+              <div className="grid items-start gap-4 xl:grid-cols-2">
+                <PayoutCredentialsCard teamSlug={team.slug} />
+                <PayoutsWebSection teamSlug={team.slug} />
+              </div>
+            </section>
+          ) : <p className="text-sm text-muted-foreground">Read-only access. An admin handles approvals and sends.</p>}
         </>
       )}
     </main>

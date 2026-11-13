@@ -54,7 +54,7 @@ export function PageSectionsRail({ sections }: { sections: PageSection[] }) {
       className={cn(
         "block rounded-md py-1 text-sm text-muted-foreground transition-colors hover:text-foreground",
         nested
-          ? "-ml-px border-l border-transparent pl-4 text-[14px] aria-[current=location]:border-foreground aria-[current=location]:font-medium"
+          ? "-ml-px border-l border-transparent pl-4 text-[13px] aria-[current=location]:border-foreground aria-[current=location]:font-medium"
           : "px-2 font-medium",
         "aria-[current=location]:text-foreground",
         !nested && "aria-[current=location]:bg-accent",

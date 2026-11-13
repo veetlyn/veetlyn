@@ -42,7 +42,7 @@ export default function PersonalHome() {
         <h1 className="font-heading text-3xl">Personal</h1>
         <p className="text-sm text-muted-foreground">Your purchases and your earnings, whichever teams they are with.</p>
       </div>
-      <Block title="My purchases" href="/me/projects" linkLabel="All purchases">
+      <Block title="Your projects" href="/me/projects" linkLabel="All projects">
         {projects.isError ? (
           <p role="alert" className="text-sm text-destructive">{projects.error.message}</p>
         ) : purchases.length === 0 ? (
@@ -70,7 +70,7 @@ export default function PersonalHome() {
           </>
         )}
       </Block>
-      <Block title="My earnings" href="/me/payouts" linkLabel="Payouts">
+      <Block title="Your earnings" href="/me/payouts" linkLabel="Payouts">
         {payouts.isError ? (
           <p role="alert" className="text-sm text-destructive">{payouts.error.message}</p>
         ) : earnings.length === 0 ? (
@@ -88,6 +88,11 @@ export default function PersonalHome() {
             ))}
           </ul>
         )}
+      </Block>
+      <Block title="Sell your services" href="/new/services-team" linkLabel="Create a seller page">
+        <p className="text-sm text-muted-foreground">
+          Open a seller page of your own, alone or with a team, when you want clients to request and pay for your work.
+        </p>
       </Block>
     </main>
   );

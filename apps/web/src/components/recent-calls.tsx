@@ -13,8 +13,8 @@ export default function RecentCalls({ calls, callsPath, newThreadHref = callsPat
         {calls.map((call) => (
           <li key={call.id} className="min-w-0">
             <Link
-              href={`${callsPath}?call=${call.id}`}
-              className="block truncate rounded-[6px] px-2.5 py-1.5 text-[14px] font-medium text-foreground hover:bg-foreground/[0.04]"
+              href={`${callsPath}?thread=${call.id}`}
+              className="block truncate rounded-[6px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-foreground/[0.04]"
             >
               {call.title}
             </Link>

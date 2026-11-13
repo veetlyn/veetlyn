@@ -7,8 +7,8 @@ import { usePathname } from "next/navigation";
 
 import AppFrame, { navItemClass } from "@/components/app-frame";
 import RecentCalls from "@/components/recent-calls";
-import type { WorkspaceOrganization } from "@/lib/workspaces";
-import { useMyWorkspaces, workspaceOptions } from "@/hooks/use-my-workspaces";
+import { workspaceDestinations, type WorkspaceOrganization } from "@/lib/workspaces";
+import { useMyWorkspaces } from "@/hooks/use-my-workspaces";
 import { trpc } from "@/utils/trpc";
 
 const ROLE_LABELS = new Map([
@@ -61,25 +61,23 @@ export default function WorkspaceShell({
   ];
   const segment = pathname.slice(base.length).split("/").filter(Boolean)[0];
   const workspaces = useMyWorkspaces();
-  // Workspace › section. The workspace crumb switches; the sidebar already lists this workspace's sellers.
-  const crumbs = [
-    { href: base, label: organization.name, options: workspaceOptions(workspaces), menuLabel: "Workspaces" },
-    ...(segment === "billing"
+  // The workspace (organization) level: its stores and services teams, members and billing.
+  const crumbs = segment === "billing"
       ? [{ href: `${base}/billing`, label: "Billing" }]
-      : segment === "calls"
-        ? [{ href: `${base}/calls`, label: "Threads" }]
-        : []),
-  ];
+      : segment === "threads"
+        ? [{ href: `${base}/threads`, label: "Threads" }]
+        : [{ href: base, label: "Overview" }];
 
   return (
     <AppFrame
-      fill={segment === "calls"}
+      fill={segment === "threads"}
+      workspace={{ href: base, label: organization.name, detail: "Workspace", options: [{ href: "/", label: "Personal" }, ...workspaceDestinations(workspaces)] }}
       crumbs={crumbs}
       searchItems={[
         { href: base, label: "Overview", detail: organization.name },
         ...(organization.canCreateStores ? [{ href: `${base}/billing`, label: "Billing", detail: organization.name }] : []),
-        ...sellers.map((s) => ({ href: `/${s.slug}`, label: s.name, detail: `Seller in ${organization.name}` })),
-        ...workspaceOptions(workspaces),
+        ...sellers.map((s) => ({ href: `/${s.slug}`, label: s.name, detail: `Team in ${organization.name}`, group: "Teams" })),
+        ...workspaceDestinations(workspaces).map((w) => ({ ...w, group: "Workspaces" })),
       ]}
       sidebar={
         <>
@@ -89,13 +87,13 @@ export default function WorkspaceShell({
           </nav>
           {sellers.length > 0 ? (
             <div className="pt-3">
-              <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Sellers</p>
-              <nav aria-label="Sellers" className="grid gap-0.5">
+              <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">Teams</p>
+              <nav aria-label="Teams" className="grid gap-0.5">
                 {sellers.map((s) => link(`/${s.slug}`, s.name, s.icon))}
               </nav>
             </div>
           ) : null}
-          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/calls`} label="Your threads" />
+          <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 5)} callsPath={`${base}/threads`} label="Your threads" />
         </>
       }
     >

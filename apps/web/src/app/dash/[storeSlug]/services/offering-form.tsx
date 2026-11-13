@@ -21,12 +21,14 @@ import { type FormEvent, useState } from "react";
 
 import Loader from "@/components/loader";
 import { WorkPage } from "@/components/page-composition";
+import { ValueInput } from "@/components/value-input";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { minorToPriceInput, parsePriceInput } from "@/lib/money";
 import { FULFILMENT_LABELS, type Fulfilment } from "@/lib/offering-labels";
+import { flattenCategories } from "@/lib/catalog-categories";
 import { trpc } from "@/utils/trpc";
 
-const SELECT_CLASS = `w-full ${nativeSelectClass}`;
+const SELECT_CLASS = `w-full max-w-72 ${nativeSelectClass}`;
 
 const FULFILMENT_OPTIONS: Fulfilment[] = ["people", "automated", "both"];
 
@@ -212,17 +214,17 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="offering-department">Department</Label>
+          <Label htmlFor="offering-department">Category</Label>
           <select
             id="offering-department"
             className={SELECT_CLASS}
             value={values.departmentId}
             onChange={(e) => patch({ departmentId: e.target.value })}
           >
-            <option value="">No department</option>
-            {departments.map((department) => (
+            <option value="">No category</option>
+            {flattenCategories(departments).map((department) => (
               <option key={department.id} value={department.id}>
-                {department.name}
+                {department.path}
               </option>
             ))}
           </select>
@@ -245,25 +247,27 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         </div>
         <section className="grid gap-3">
           <h2 className="font-medium">Usually costs</h2>
-          <div className="flex gap-3">
-            <div className="w-full space-y-2">
+          <div className="flex flex-wrap gap-4">
+            <div className="space-y-2">
               <Label htmlFor="offering-price-min" className="text-muted-foreground">
-                From
+                Minimum price
               </Label>
-              <Input
+              <ValueInput
                 id="offering-price-min"
+                unit={currency}
                 inputMode="decimal"
                 value={values.priceMin}
                 onChange={(e) => patch({ priceMin: e.target.value })}
                 placeholder="0.00"
               />
             </div>
-            <div className="w-full space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="offering-price-max" className="text-muted-foreground">
-                To
+                Maximum price
               </Label>
-              <Input
+              <ValueInput
                 id="offering-price-max"
+                unit={currency}
                 inputMode="decimal"
                 value={values.priceMax}
                 onChange={(e) => patch({ priceMax: e.target.value })}
@@ -277,27 +281,33 @@ export default function OfferingForm({ teamSlug, offeringId }: { teamSlug: strin
         </section>
         <section className="grid gap-3">
           <h2 className="font-medium">Usually takes</h2>
-          <div className="flex gap-3">
-            <div className="w-full space-y-2">
+          <div className="flex flex-wrap gap-4">
+            <div className="space-y-2">
               <Label htmlFor="offering-days-min" className="text-muted-foreground">
                 From
               </Label>
-              <Input
+              <ValueInput
                 id="offering-days-min"
+                unit="days"
+                inputMode="numeric"
                 type="number"
+                step={1}
                 min={1}
                 max={MAX_OFFERING_DAYS}
                 value={values.daysMin}
                 onChange={(e) => patch({ daysMin: e.target.value })}
               />
             </div>
-            <div className="w-full space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="offering-days-max" className="text-muted-foreground">
                 To
               </Label>
-              <Input
+              <ValueInput
                 id="offering-days-max"
+                unit="days"
+                inputMode="numeric"
                 type="number"
+                step={1}
                 min={1}
                 max={MAX_OFFERING_DAYS}
                 value={values.daysMax}

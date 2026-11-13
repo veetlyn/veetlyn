@@ -76,6 +76,26 @@ Client links (`/c/…`) and pay links (`/pay/…`) in these emails work like pas
 - **Don't store app passwords.** To sign in as a test person, open **Forgot password** on the dashboard, read the reset email in the inbox and set a new password. That always works, even after someone else has changed it.
 - New teams for one test (for example "Walk Consent" for the PayPal consent screen) are fine on staging. Give them a name that says what they are for.
 
+### People on the local Walk Crew
+
+The local dev database has these people besides the owner. Each has a fixed job, so reuse them instead of adding more.
+
+| Person | Login | Role on Walk Crew | Use it for |
+|---|---|---|---|
+| Walk Through | `<inbox>@agentmail.to` | Admin (workspace owner) | The team owner; also the member whose payouts the demo shows |
+| Walk Admin Two, Walk Admin Three | `<inbox>+admin2@…`, `+admin3@…` | Admin | Payouts that need a second admin |
+| Aïcha Walk, Ben Walk | `<inbox>+aicha@…`, `+ben@…` | Freelancer | Competing quotes on one request (Rita's "Logo refresh") |
+| Spike MCP | `<inbox>+spike-mcp@…` | Client | Projects started from an AI assistant |
+| Dev Merchant | `dev-merchant@example.com` | Freelancer | Earnings waiting for a payout destination |
+| Design Check | `design-97d920@example.com` | Admin (owns its own workspace) | Design reviews of the dashboard |
+| Demo Reviewer | `demo-review@example.com` | Admin | Recording the product video and end-to-end reviews |
+
+The `@example.com` accounts have no inbox, so **Forgot password** cannot reach them. Sign in as them only in a browser profile that already holds their session. To start fresh, sign up a new `<inbox>+name@agentmail.to` person instead. Demo Reviewer's local password was reset once through the reset-token flow (the token sits in the `verification` table when the email cannot be sent); the current one is in `~/.local/state/veetlyn-walk/local.env` (`DEMO_REVIEW_PASSWORD`, mode 600, never committed).
+
+### The dashboard assistant
+
+The assistant needs `AGENT_API_KEY`, `AGENT_BASE_URL` and `AGENT_MODEL` in `apps/server/.env`. Without them, Threads says "The assistant is not set up on this server yet". Copy all three together from a checkout that has them, then restart `pnpm dev`. Every question a test asks leaves a thread in the person's sidebar, and counts toward the daily limit (`AGENT_DAILY_TURNS`, 200 when empty).
+
 ## Where the logins live
 
 Nothing secret is stored in this repository. The values sit in ignored env files and in GitHub environments:

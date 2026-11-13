@@ -58,6 +58,6 @@ export default function ProjectNav({
         </Link>;
       })}
     </nav>
-    {agentAvailable ? <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 15)} callsPath={`/${slug}/calls`} newThreadHref={`/${slug}/calls?project=${projectId}`} /> : null}
+    {agentAvailable ? <RecentCalls calls={(calls.data?.calls ?? []).slice(0, 15)} callsPath={`/${slug}/threads`} newThreadHref={`/${slug}/threads?project=${projectId}`} /> : null}
   </>;
 }
