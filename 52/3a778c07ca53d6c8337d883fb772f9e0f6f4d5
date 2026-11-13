@@ -1,0 +1,74 @@
+apps/web/src/components/page-composition.test.ts
+  s_24bba213a48bd6::t_7835eb495523e6 6
+apps/web/src/app/dash/[storeSlug]/payouts/team-payouts.tsx
+  s_24bba213a48bd6::t_54f9bb1566d5c1 9
+  s_24bba213a48bd6::t_2a394bfb58f37a 28-32,36-37
+apps/web/src/app/dash/[storeSlug]/payments/team-payments.tsx
+  s_24bba213a48bd6::t_feb846976c4c91 14,47,63-64,67
+  s_24bba213a48bd6::t_334c1194f7bbad 65
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  s_24bba213a48bd6::t_5394f640492f89 335
+  s_24bba213a48bd6::t_4a88f35dab14f1 303,310,320,333,343-345
+  s_24bba213a48bd6::t_b97406a436fd13 163
+apps/web/src/components/filter-menu.tsx
+  s_24bba213a48bd6::t_e3e7d97df73aa3 1-54
+apps/web/src/app/dash/[storeSlug]/cases/team-cases.tsx
+  s_24bba213a48bd6::t_ceda111ef47a75 15,64,79-83
+packages/ui/src/components/motion/table/table-header.tsx
+  s_24bba213a48bd6::t_fc5ff362b6a6cb 31,151,288,291,347-352
+apps/web/src/components/data-list.tsx
+  s_24bba213a48bd6::t_f4ed237e706f6b 156-157
+  s_24bba213a48bd6::t_35ed662d84d93b 131
+  s_24bba213a48bd6::t_fde6cbe52527be 20-21,46,64,75
+  s_24bba213a48bd6::t_ec729cc9542b5b 39,56-57,106-108,111,129
+  s_24bba213a48bd6::t_b9d55b2312a4c0 132,175,209
+  s_24bba213a48bd6::t_feb846976c4c91 136
+  s_24bba213a48bd6::t_660294dd8d3b89 8,10,22-25,33-36,45,63,79-92,99-101,109-110,112,120-124,127-128,130,133-135,137-155,158-174,176-187,189-208,210-225,227-242
+apps/web/src/components/catalog/digital-products.tsx
+  s_24bba213a48bd6::t_e889c066dcb764 12,83-92,120-124
+  s_24bba213a48bd6::t_427a29fe333242 126
+packages/ui/src/components/motion/table/index.tsx
+  s_24bba213a48bd6::t_57ab29856a9c3a 98,303
+  s_24bba213a48bd6::t_fc5ff362b6a6cb 99,298,304,418
+apps/web/src/app/dash/[storeSlug]/finances/team-finances.tsx
+  s_24bba213a48bd6::t_ec729cc9542b5b 104,130-133,149-150,241,243
+  s_24bba213a48bd6::t_bcedeb338cc139 13
+apps/web/src/app/dash/[storeSlug]/orders/team-orders.tsx
+  s_24bba213a48bd6::t_a619f9cd3554c5 13,123,139,147-152,154
+  s_24bba213a48bd6::t_414123fdab5169 106-111
+packages/ui/src/components/motion/table/types.ts
+  s_24bba213a48bd6::t_57ab29856a9c3a 67-68
+  s_24bba213a48bd6::t_fc5ff362b6a6cb 69-70
+apps/web/src/app/dash/[storeSlug]/products/products-list.tsx
+  s_24bba213a48bd6::t_427a29fe333242 90
+  s_24bba213a48bd6::t_ceda111ef47a75 15,66-75,85-88
+apps/web/src/app/dash/[storeSlug]/payouts/payout-requests-table.tsx
+  s_24bba213a48bd6::t_2a394bfb58f37a 364-369,371
+  s_24bba213a48bd6::t_35ed662d84d93b 324
+apps/web/src/app/dash/[storeSlug]/services/services-catalog.tsx
+  s_24bba213a48bd6::t_fde6cbe52527be 12,90-99,115-119
+  s_24bba213a48bd6::t_427a29fe333242 121
+apps/web/src/app/dash/[storeSlug]/projects/projects-list.tsx
+  s_24bba213a48bd6::t_fde6cbe52527be 14,55-59,67-72,76
+apps/web/src/dash.css
+  s_24bba213a48bd6::t_b9d55b2312a4c0 106
+apps/web/src/components/page-composition.tsx
+  s_24bba213a48bd6::t_b7c037d6455e1f 60,63,69-71,74-79
+  s_24bba213a48bd6::t_6ab80ffc7274cf 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "523a778c07ca53d6c8337d883fb772f9e0f6f4d5",
+  "prompts": {},
+  "sessions": {
+    "s_24bba213a48bd6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ff0ea6a-9e77-4ea3-b2a9-b91edfc423f2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
