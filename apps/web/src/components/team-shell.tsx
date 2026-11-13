@@ -44,7 +44,7 @@ const PAGES = {
   products: { label: "Premade items", icon: Package },
   orders: { label: "Orders", icon: Inbox },
   preview: { label: "Seller page", icon: Store },
-  members: { label: "People", icon: Users },
+  members: { label: "Team & access", icon: Users },
   settings: { label: "Settings", icon: Settings },
 } satisfies Record<SectionPage, { label: string; icon: LucideIcon }>;
 
@@ -151,7 +151,10 @@ export default function TeamShell({
     ? { ...workspaceDestination(organization), detail: name }
     : { href: `/${slug}`, label: name, detail: teamKind };
   // The sidebar switches workspace; the canvas names its module and record, not another seller level.
-  const crumbs = projectId ? [
+  const crumbs = segments[0] === "payouts" && segments[1] === "rules" ? [
+      { href: `/${slug}/settings`, label: "Settings" },
+      { href: `/${slug}/payouts/rules`, label: "Payout rules" },
+    ] : projectId ? [
       { href: projectParent.href, label: projectParent.label },
       {
         href: `/${slug}/projects/${projectId}`,
@@ -246,7 +249,7 @@ export default function TeamShell({
                     <section key={place.label} className="pt-4">
                       <h2 className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{place.label}</h2>
                       <div className="grid gap-0.5">
-                        {place.label === "Finances" ? link(`/${slug}/finances`, "Overview", LayoutDashboard) : null}
+                        {place.label === "Finances" && allowed.has("payments") ? link(`/${slug}/finances`, "Overview", LayoutDashboard) : null}
                         {pages.map((page) => link(`/${slug}/${page}`, PAGES[page].label, PAGES[page].icon))}
                         {place.label === "Sell" && services && allowed.has("services") ? (
                           <Link href={`/${slug}/from-ai`} aria-current={isActive(`/${slug}/from-ai`) ? "page" : undefined} className={navItemClass(isActive(`/${slug}/from-ai`))}>

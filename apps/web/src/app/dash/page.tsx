@@ -12,7 +12,9 @@ export default async function AccountHome() {
   const session = await requireSession();
   const workspaces = await listMyWorkspaces();
   const organizations = workspaces.filter((o) => o.stores.length + o.servicesTeams.length > 0);
-  if (organizations.length === 0) redirect("/new/services-team");
+  // Someone who only buys (a client) or has not started selling yet lands on their own projects and earnings,
+  // not on a seller creation form. Selling stays one click away from there.
+  if (organizations.length === 0) redirect("/me");
 
   return (
     <AccountShell personName={session.user.name} workspaces={organizations}>

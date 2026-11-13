@@ -15,7 +15,7 @@ export default function Header() {
   const pathname = usePathname();
   const path = pathname.replace(/^\/dash/, "") || "/";
   // Pages inside the context tree have their own frame: the account, its personal pages, a workspace, a seller.
-  const framed = path === "/" || path === "/me" || path.startsWith("/me/") || path.startsWith("/w/");
+  const framed = path === "/" || path === "/account" || path === "/me" || path.startsWith("/me/") || path.startsWith("/w/");
   if (params.storeSlug || framed || AUTH_PATHS.has(pathname) || AUTH_PATHS.has(path)) return null;
   return (
     <header className="flex h-14 items-center justify-between border-b px-4 md:px-7">

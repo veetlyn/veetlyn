@@ -124,16 +124,17 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
   const settingsChanged = current?.settingsSavedAt == null || values.currency !== current.currency || (!solo && (
     teamCutField.bps !== current.teamCutBps || managementFeeField.bps !== current.managementFeeBps || values.quotingMode !== current.quotingMode
   ));
-  const canSave = settingsChanged && (solo
-    ? role === "admin" && !save.isPending
-    : role === "admin" && teamCutField.bps !== null && managementFeeField.bps !== null && !save.isPending);
   const bioUnchanged = values.bio.trim() === (current?.bio ?? "");
   const bioTooLong = values.bio.trim().length > MAX_BIO_CHARS;
-  const canSaveBio = role === "admin" && !saveBio.isPending && !bioUnchanged && !bioTooLong;
+  const canSave = (settingsChanged || (!bioUnchanged && !bioTooLong)) && (solo
+    ? role === "admin" && !save.isPending && !saveBio.isPending
+    : role === "admin" && teamCutField.bps !== null && managementFeeField.bps !== null && !save.isPending && !saveBio.isPending);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSave) return;
+    if (!bioUnchanged && !bioTooLong) saveBio.mutate({ teamSlug, bio: values.bio });
+    if (!settingsChanged) return;
     if (solo) {
       save.mutate({
         teamSlug,
@@ -154,15 +155,35 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
     });
   }
 
+  if (role !== "admin") {
+    return (
+      <WorkPage>
+        <h1 className="font-heading text-3xl">General</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Your seller page, currency and defaults for new work.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
+        <dl className="mt-6">
+          <SettingsRow id="bio-readonly" label="About you" description="What clients see on the seller page.">
+            <p className="text-sm whitespace-pre-line">{values.bio.trim() ? values.bio : "No bio yet."}</p>
+          </SettingsRow>
+          <SettingsRow id="currency-readonly" label="Currency" description="The default currency for new quotes.">
+            <p className="text-sm">{values.currency}</p>
+          </SettingsRow>
+          {!solo ? (
+            <SettingsRow id="quoting-mode-readonly" label="Who can quote" description="Who prepares and sends quotes for new requests.">
+              <p className="text-sm">{QUOTING_MODE_LABELS[values.quotingMode]}</p>
+            </SettingsRow>
+          ) : null}
+        </dl>
+      </WorkPage>
+    );
+  }
+
   return (
     <WorkPage>
       <h1 className="font-heading text-3xl">General</h1>
       <p className="mt-2 text-sm text-muted-foreground">Your seller page, currency and defaults for new work.</p>
-      {role !== "admin" ? (
-        <p className="mt-2 text-sm text-muted-foreground">Only an admin can change the team settings.</p>
-      ) : null}
       <form onSubmit={handleSubmit} className="mt-6">
-        <fieldset disabled={role !== "admin"} className="min-w-0">
+        <fieldset className="min-w-0">
         <SettingsRow id="bio" label="About you" description="Tell clients what you make, for whom, and how you work. This appears on your seller page.">
           <Textarea
             id="bio"
@@ -184,14 +205,7 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
             </p>
           ) : null}
           {saveBio.isSuccess ? <p role="status" className="text-sm font-medium text-brand-text">Saved.</p> : null}
-          <Button
-            type="button"
-            onClick={() => saveBio.mutate({ teamSlug, bio: values.bio })}
-            disabled={!canSaveBio}
-            className="justify-self-start"
-          >
-            {saveBio.isPending ? "Saving…" : "Save bio"}
-          </Button>
+          <p className="text-sm text-muted-foreground">Saved with the settings below.</p>
         </SettingsRow>
         <SettingsRow id="currency" label="Currency" description="The default currency for new quotes. Existing projects keep their currency.">
           <select
