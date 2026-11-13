@@ -68,7 +68,7 @@ export function PageSectionsRail({ sections }: { sections: PageSection[] }) {
     <>
       <nav
         aria-label="On this page"
-        className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto [scrollbar-width:none] border-b bg-background/95 px-4 py-2 backdrop-blur md:-mx-7 md:px-7 lg:hidden"
+        className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto [scrollbar-width:none] border-b bg-card/95 px-4 py-2 backdrop-blur md:-mx-7 md:px-7 lg:hidden"
       >
         {sections.map((section) => (
           <a

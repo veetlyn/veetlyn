@@ -77,7 +77,7 @@ export default function AppFrame({
   return (
     <div
       data-app-shell
-      className={cn("grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray", "md:grid-cols-[240px_minmax(0,1fr)]")}
+      className={cn("grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-background", "md:grid-cols-[240px_minmax(0,1fr)]")}
     >
       {!mobile ? <aside data-scroll className="hidden min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-2 md:flex">{navigation}</aside> : null}
 
@@ -86,7 +86,7 @@ export default function AppFrame({
         id="navigation-drawer"
         data-navigation-drawer
         aria-labelledby="navigation-drawer-title"
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(85vw,320px)] max-w-none bg-card p-0 text-foreground backdrop:bg-black/35"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(85vw,320px)] max-w-none bg-background p-0 text-foreground backdrop:bg-black/35"
         onClose={() => {
           setDrawerOpen(false);
           if (window.matchMedia(MOBILE_NAV_QUERY).matches) menuButton.current?.focus();
@@ -106,7 +106,7 @@ export default function AppFrame({
         </div>
       </dialog> : null}
 
-      <div className="flex min-h-0 min-w-0 flex-col bg-background md:my-2 md:mr-2 md:frame md:rounded-[10px]">
+      <div className="flex min-h-0 min-w-0 flex-col bg-card md:my-2 md:mr-2 md:frame md:rounded-[10px]">
         <div className="flex h-[52px] shrink-0 items-center gap-3 border-b px-4 md:px-5">
           <button
             ref={menuButton}

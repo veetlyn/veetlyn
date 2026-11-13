@@ -258,7 +258,7 @@
    head and foot strips carry the title, count, one control and the totals, with little padding. */
 @utility frame-panel {
   --frame-radius: 13px;
-  background: color-mix(in oklab, var(--card) 50%, var(--background));
+  background: var(--frame-strip, color-mix(in oklab, var(--card) 50%, var(--background)));
   box-shadow: var(--raise);
 }
 @utility frame-head {

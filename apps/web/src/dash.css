@@ -1,4 +1,5 @@
-/* The dashboard uses the site's colours in both themes (globals.css): the grey page, white cards, the onyx and mint
+/* The dashboard uses the site's colours in both themes (globals.css): the darker page tone under the sidebar and in
+   the frames' strips, the lighter card tone for the main surface and the cards inside frames, the onyx and mint
    keys and the coated edges. It adds only what work screens need: a stronger field edge, the status colours and a
    compact type scale. It applies to the whole document while a dash page is mounted, so menus, dialogs and toasts
    rendered at the end of the body get it too. */
@@ -12,6 +13,8 @@
   --success: oklch(70% 0.18 155);
   --danger: var(--destructive);
   --radius: 0.5rem;
+  /* A frame's shell and double edge take the sidebar's tone, so frames read as part of the same chassis. */
+  --frame-strip: var(--background);
   --text-2xl: 1.375rem;
   --text-3xl: 1.625rem;
 }
@@ -107,3 +110,7 @@
 
 /* The page header names the page, so a top bar crumb that only repeats it steps aside. */
 [data-dash]:has([data-page-header]) [data-lone-crumb] { display: none; }
+
+/* Frame strips get a quarter em more room at the sides than the shared utility. */
+[data-dash] .frame-head { padding-left: calc(12px + 0.25em); padding-right: calc(8px + 0.25em); }
+[data-dash] .frame-foot { padding-left: calc(12px + 0.25em); padding-right: calc(12px + 0.25em); }
