@@ -610,7 +610,7 @@ export function TabsTrigger({
           layout
           style={{ borderRadius: variant === "pill" ? 9999 : 8 }}
           className={cn(
-            "absolute inset-0 bg-brand",
+            "absolute inset-0 bg-brand-wash text-foreground shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_45%,transparent)]",
             radius,
             indicatorClassName,
           )}
@@ -640,7 +640,7 @@ export function TabsTrigger({
           data-tabs-label=""
           aria-hidden="true"
           inert
-          className="pointer-events-none absolute inset-0 inline-flex items-center justify-center font-semibold text-brand-foreground [gap:inherit] [padding:inherit]"
+          className="pointer-events-none absolute inset-0 inline-flex items-center justify-center text-foreground [gap:inherit] [padding:inherit]"
           style={{ clipPath: initialClip }}
         >
           {content}

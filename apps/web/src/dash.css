@@ -34,23 +34,6 @@
   scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
 }
 
-/* States are coloured words with a dot, never pills. The tone sets the colour (badge.tsx). */
-[data-dash] [data-slot="badge"] {
-  gap: 7px;
-  padding: 0;
-  border-radius: 0;
-  background: none;
-}
-[data-dash] [data-slot="badge"]::before {
-  content: "";
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 3px color-mix(in oklab, currentColor 16%, transparent);
-}
-
 /* Cards carry the coated edge: a hairline, a light top and a resting drop. */
 [data-dash] .panel,
 [data-dash] [data-slot="card"] {
@@ -109,16 +92,12 @@
 [data-dash] select option,
 [data-dash] select optgroup { background-color: var(--popover); color: var(--popover-foreground); }
 
-/* Mint marks what is primary, active or selected: the primary key, the page you are on, the chosen tab and the focus
-   ring. The filled tab is a lit mint segment in a recessed track, as the site's switchers. */
+/* Solid mint is the primary key only. What is active or selected (the page you are on, the chosen tab, the current
+   page of a list) is a mint tint with ink text and a mint edge; the focus ring is mint. The filled tab sits in a
+   recessed track, as the site's switchers. */
 [data-dash] [role="tablist"]:has([data-tabs-fill]) {
   background: color-mix(in oklab, var(--foreground) 4%, var(--background));
   box-shadow: var(--well);
-}
-[data-dash] [data-tabs-fill] {
-  background: linear-gradient(180deg, color-mix(in oklab, var(--brand) 86%, white), color-mix(in oklab, var(--brand) 92%, black));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 0 0 1px color-mix(in oklab, var(--brand) 78%, black),
-    0 1px 2px rgb(16 16 24 / 0.12);
 }
 /* In the dash every mint key keeps the controls' 8px corners. */
 [data-dash] .key-mint { border-radius: 8px; }

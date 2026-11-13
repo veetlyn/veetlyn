@@ -248,7 +248,7 @@ export function Pagination({
                     label: t("page", { page: item }),
                     current: isCurrent,
                     className: isCurrent
-                      ? "font-semibold text-brand-foreground"
+                      ? "font-semibold text-foreground"
                       : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
                     children: (
                       <>
@@ -257,7 +257,7 @@ export function Pagination({
                             aria-hidden="true"
                             layoutId={reduce ? undefined : "pagination-current"}
                             transition={SPRING_LAYOUT}
-                            className="absolute inset-0 rounded-full bg-brand"
+                            className="absolute inset-0 rounded-full bg-brand-wash text-foreground shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_45%,transparent)]"
                           />
                         ) : null}
                         <span className="relative">{item}</span>
