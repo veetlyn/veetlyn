@@ -39,7 +39,7 @@ export function FilterMenu({
           <ChevronDown aria-hidden="true" className="size-3.5 opacity-60 transition-transform duration-150 ease-out group-data-popup-open:rotate-180" />
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={6} className="w-auto min-w-44 p-1">
+      <DropdownMenuContent align="end" sideOffset={6} className="w-auto min-w-44">
         <DropdownMenuRadioGroup value={value} onValueChange={(next) => onChange(String(next))}>
           <DropdownMenuRadioItem value="all" className="py-1.5 text-[13px]">{allLabel}</DropdownMenuRadioItem>
           {options.map((option) => (

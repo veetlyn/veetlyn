@@ -101,7 +101,7 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
 function ProductThumb({ imageKey }: { imageKey: string | null }) {
   const [broken, setBroken] = useState(false);
   if (imageKey && !broken) {
-    return <img src={productImageUrl(imageKey)} alt="" onError={() => setBroken(true)} className="size-12 rounded-md border object-cover" />;
+    return <img src={productImageUrl(imageKey)} alt="" onError={() => setBroken(true)} className="size-12 rounded-md object-cover outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10" />;
   }
   return (
     <div aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground well">

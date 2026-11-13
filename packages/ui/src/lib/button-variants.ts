@@ -2,15 +2,15 @@ import { cva } from "class-variance-authority";
 
 // Kept apart from button.tsx so server components can style links without loading Base UI.
 export const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-[8px] border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background,box-shadow,color,transform] outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-[8px] border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background,box-shadow,color,scale,filter] duration-150 ease-out outline-none select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid active:not-aria-[haspopup]:scale-[0.96] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         // The primary action is the mint key; onyx and grey keys are secondary.
-        default: "key-mint font-semibold active:not-aria-[haspopup]:translate-y-0",
+        default: "key-mint font-semibold",
         dark: "main-surface hover:brightness-110",
         // The site's mint pill, for the one action a screen exists for (log in, accept, pay).
-        mint: "key-mint rounded-[4px_999px_999px_4px] font-semibold active:not-aria-[haspopup]:translate-y-0",
+        mint: "key-mint rounded-[4px_999px_999px_4px] font-semibold",
         outline: "raised text-foreground hover:brightness-[0.98] aria-expanded:brightness-[0.97]",
         secondary: "raised text-foreground hover:brightness-[0.98]",
         ghost: "text-muted-foreground hover:bg-accent hover:text-foreground aria-expanded:bg-accent",

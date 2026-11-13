@@ -104,3 +104,6 @@
 
 /* Inside a frame the table's header row sits on the card, divided by one hairline, not a grey band. */
 [data-dash] .frame-body thead th { background: var(--card); font-size: 12.5px; }
+
+/* The page header names the page, so a top bar crumb that only repeats it steps aside. */
+[data-dash]:has([data-page-header]) [data-lone-crumb] { display: none; }

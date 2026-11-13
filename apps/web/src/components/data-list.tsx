@@ -141,7 +141,7 @@ export function DataList<T>({
                     aria-pressed={active}
                     onClick={() => { setViewKey(v.key); setPage(1); }}
                     className={cn(
-                      "flex h-7 items-center gap-1.5 rounded-[7px] px-2.5 text-[13px] whitespace-nowrap outline-none transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                      "flex h-7 items-center gap-1.5 rounded-[7px] px-2.5 text-[13px] whitespace-nowrap outline-none transition-[color,scale] duration-150 ease-out active:scale-[0.96] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                       active ? "key-mint font-semibold text-brand-foreground" : "font-medium text-muted-foreground hover:text-foreground",
                     )}
                   >
@@ -172,7 +172,7 @@ export function DataList<T>({
               className="raised h-8 w-full rounded-[8px] pr-8 pl-8 text-base outline-none placeholder:text-muted-foreground focus-visible:shadow-[inset_0_1px_0_var(--edge-hi),0_0_0_1px_var(--ring),0_0_0_3px_color-mix(in_oklab,var(--brand)_22%,transparent)] sm:text-[13px] [&::-webkit-search-cancel-button]:hidden"
             />
             {query === "" ? (
-              <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 flex h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-[5px] bg-foreground/[0.06] px-1 font-sans text-[11px] text-muted-foreground group-focus-within:hidden">/</kbd>
+              <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 flex h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-[4px] bg-foreground/[0.06] px-1 font-sans text-[11px] text-muted-foreground group-focus-within:hidden">/</kbd>
             ) : null}
           </label>
           {filters.map((filter) => (

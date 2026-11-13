@@ -17,10 +17,11 @@ export default function RecentCalls({ calls, callsPath, newThreadHref = callsPat
           <li key={call.id} className="min-w-0">
             <Link
               href={`${callsPath}?thread=${call.id}`}
-              className="flex min-w-0 items-baseline gap-2 rounded-[8px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-foreground/[0.04]"
+              className="grid min-w-0 rounded-[8px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-foreground/[0.04]"
             >
               <span className="truncate">{call.title}</span>
-              {when.has(call.id) ? <span className="ml-auto shrink-0 text-xs font-normal text-muted-foreground tabular-nums">{when.get(call.id)}</span> : null}
+              {/* A repeated name carries when it was opened on its own line, so the name keeps the full width. */}
+              {when.has(call.id) ? <span className="text-[11px] leading-4 font-normal text-muted-foreground tabular-nums">{when.get(call.id)}</span> : null}
             </Link>
           </li>
         ))}

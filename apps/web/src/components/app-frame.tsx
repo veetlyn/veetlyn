@@ -181,7 +181,8 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
 function Crumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
     // beUI's breadcrumb primitives; a crumb with choices keeps our dropdown as its switcher.
-    <Breadcrumb labels={{ label: "Breadcrumb" }} className="min-w-0">
+    // A lone crumb only repeats the page title; pages with a PageHeader hide it (dash.css).
+    <Breadcrumb labels={{ label: "Breadcrumb" }} className="min-w-0" data-lone-crumb={crumbs.length === 1 && !(crumbs[0]?.options && crumbs[0].options.length > 1) ? "" : undefined}>
       <BreadcrumbList maxItems={Infinity} className="flex-nowrap text-[14px]">
         {crumbs.map((crumb, i) => {
           const last = i === crumbs.length - 1;
