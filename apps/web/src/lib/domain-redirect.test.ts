@@ -12,3 +12,6 @@ it.each(["https://walk-crew.store.test/", "https://platform.test/", "https://sto
 it("never redirects mutation requests", () => {
   expect(domainRedirect(new Request("https://store.test/", { method: "POST", body: "{}" }), domains)).toBeNull();
 });
+it("serves the root when the platform and seller zones are one domain, as on a local stage", () => {
+  expect(domainRedirect(new Request("http://localhost:3001/"), { platformDomain: "localhost", storeDomain: "localhost" })).toBeNull();
+});
