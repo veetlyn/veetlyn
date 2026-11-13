@@ -17,7 +17,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { BrandWordmark } from "@/components/brand-mark";
 import { ModeToggle } from "@/components/mode-toggle";
 import UserMenu from "@/components/user-menu";
 
@@ -118,10 +117,6 @@ export default function AppFrame({
             className="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-accent md:hidden"
             onClick={() => { drawer.current?.showModal(); setDrawerOpen(true); }}
           ><Menu className="size-5" aria-hidden="true" /></button>
-          <Link href="/" className="md:hidden">
-            <BrandWordmark className="font-heading text-[15px]" />
-            <span className="sr-only">Your account</span>
-          </Link>
           <Crumbs crumbs={crumbs} />
           <div className="ml-auto flex items-center gap-2">
             <SearchBar items={searchItems} />
@@ -156,7 +151,7 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
       <span className="text-xs text-muted-foreground">Workspace</span>
       <select aria-label="Switch workspace" className={cn(nativeSelectClass, "h-11 w-full max-w-full")} value={workspace.href} onChange={(event) => router.push(event.target.value)}>
         {choices.map((option) => <option key={option.href} value={option.href}>{option.label}{option.detail ? ` · ${option.detail}` : ""}</option>)}
-        <optgroup label="New workspace"><option value="/new/services-team">Sell services</option><option value="/new">Sell products</option></optgroup>
+        <optgroup label="New workspace"><option value="/new/services-team">New services team</option><option value="/new">New store</option></optgroup>
       </select>
     </label>
   );
@@ -174,8 +169,8 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
         </DropdownMenuGroup>
         <DropdownMenuGroup>
           <DropdownMenuLabel>New workspace</DropdownMenuLabel>
-          <DropdownMenuItem render={<Link href="/new/services-team" />}>Sell services</DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/new" />}>Sell products</DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/new/services-team" />}>New services team</DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/new" />}>New store</DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

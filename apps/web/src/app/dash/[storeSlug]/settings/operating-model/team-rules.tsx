@@ -152,11 +152,27 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
           {isAdmin ? (
             <section id="manage-rules" className="scroll-mt-16 panel" aria-labelledby="manage-rules-heading">
               <div className="space-y-5 p-5">
-                <div className="space-y-1">
-                  <h2 id="manage-rules-heading" className="text-xl font-semibold">Draft rules</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Published version {published.version}. Changes stay in a draft until an admin publishes them.
-                  </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <h2 id="manage-rules-heading" className="text-xl font-semibold">Draft rules</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Published version {published.version}. Changes stay in a draft until an admin publishes them.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={!draft || save.isPending || publish.isPending}
+                      onClick={() => draft && save.mutate({ teamSlug, preset: draft.preset, rules: draft.rules })}
+                    >
+                      {save.isPending ? "Saving…" : "Save draft"}
+                    </Button>
+                    <Button type="button" size="sm" disabled={!canPublish} onClick={() => void publishDraft()}>
+                      {publish.isPending ? "Publishing…" : "Publish new version"}
+                    </Button>
+                  </div>
                 </div>
                 <fieldset disabled={save.isPending || publish.isPending} className="min-w-0">
                   <legend className="sr-only">Draft rules</legend>

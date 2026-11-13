@@ -9,7 +9,7 @@ import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import { DataList } from "@/components/data-list";
 import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import Loader from "@/components/loader";
-import { ListPage } from "@/components/page-composition";
+import { ListPage, SummaryStrip } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
@@ -93,6 +93,15 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
 
       {products.isPending ? <Loader /> : null}
       {products.isError ? <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm"><p>{products.error.message}</p><Button type="button" variant="outline" size="sm" onClick={() => void products.refetch()}>Try again</Button></div> : null}
+      {products.isSuccess && products.data.length > 0 ? (
+        <SummaryStrip label="Premade items summary">
+          <p className="text-sm">
+            <strong className="font-semibold">{products.data.filter((product) => product.status === "published").length} published</strong>
+            <span className="text-muted-foreground"> · {products.data.filter((product) => product.status !== "published").length} draft{products.data.some((product) => !product.fileName) ? ` · ${products.data.filter((product) => !product.fileName).length} without a file` : ""}</span>
+          </p>
+        </SummaryStrip>
+      ) : null}
+
       {products.isSuccess ? (
         <DataList
           label="Premade items"
@@ -130,8 +139,8 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
       {role === "admin" ? (
         <section aria-labelledby="store-h" className="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
           <div>
-            <h2 id="store-h" className="text-sm font-medium">Store</h2>
-            <p className="text-sm text-muted-foreground">Turning it off hides premade items from your seller page.</p>
+            <h2 id="store-h" className="text-sm font-medium">On your seller page</h2>
+            <p className="text-sm text-muted-foreground">Turning this off hides premade items from your seller page.</p>
           </div>
           <TurnOffStoreButton teamSlug={teamSlug} />
         </section>

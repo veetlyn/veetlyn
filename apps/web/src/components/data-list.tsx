@@ -105,16 +105,21 @@ export function DataList<T>({
           {filtered ? <Button type="button" variant="outline" className="mt-4" onClick={() => { setQuery(""); setFilterValues({}); setPage(1); }}>Clear filters</Button> : null}
         </div>
       ) : (
-        <Table
-          data={view.rows}
-          columns={columns}
-          getRowId={getRowId}
-          sort={sort}
-          onSortChange={(next) => { setSort(next); setPage(1); }}
-          rowHeight={ROW_HEIGHT}
-          height={view.rows.length * ROW_HEIGHT + HEADER_HEIGHT}
-          className="rounded-[10px]"
-        />
+        <>
+          <Table
+            data={view.rows}
+            columns={columns}
+            getRowId={getRowId}
+            sort={sort}
+            onSortChange={(next) => { setSort(next); setPage(1); }}
+            rowHeight={ROW_HEIGHT}
+            height={view.rows.length * ROW_HEIGHT + HEADER_HEIGHT}
+            className="rounded-[10px]"
+          />
+          {columns.length > 3 ? (
+            <p className="text-xs text-muted-foreground sm:hidden">Scroll the table sideways to see every column.</p>
+          ) : null}
+        </>
       )}
       {view.totalPages > 1 ? (
         <div className="flex justify-center">

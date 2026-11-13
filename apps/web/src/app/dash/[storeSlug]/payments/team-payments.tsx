@@ -29,7 +29,7 @@ function columns(teamSlug: string): TableColumn<Payment>[] {
   return [
     { key: "date", header: "Date", width: "128px", sortable: true, sortValue: (p) => paidOn(p).getTime(), cell: (p) => <span className="whitespace-nowrap">{paidOn(p).toLocaleDateString(undefined, DATE)}</span> },
     { key: "project", header: "Project", sortable: true, sortValue: (p) => p.projectTitle, cell: (p) => <Link href={`/${teamSlug}/projects/${p.projectId}`} className="truncate underline underline-offset-4">{p.projectTitle}</Link> },
-    { key: "client", header: "Client", cell: (p) => <span className="truncate">{p.clientName ?? "Client"}</span> },
+    { key: "client", header: "Client", cell: (p) => <span className="truncate">{p.clientName ?? "No client"}</span> },
     { key: "kind", header: "Kind", width: "112px", cell: (p) => PAYMENT_KIND_LABELS[p.kind] },
     { key: "amount", header: "Amount", width: "120px", align: "right", sortable: true, sortValue: (p) => p.amountMinor, cell: (p) => <span className="whitespace-nowrap tabular-nums">{formatMinor(p.amountMinor, p.currency)}</span> },
     { key: "fee", header: "PayPal fee", width: "128px", align: "right", cell: (p) => <span className="whitespace-nowrap tabular-nums">{p.paypalFeeMinor === null ? "Not reported yet" : formatMinor(p.paypalFeeMinor, p.currency)}</span> },

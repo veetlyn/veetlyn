@@ -26,7 +26,7 @@ export default async function SignUpPage() {
     >
       <SignUpForm siteOrigin={origins.site} />
       <OrDivider />
-      <PayPalSignInButton label="Sign up with PayPal" />
+      <PayPalSignInButton label="Continue with PayPal" />
       <DiscordSignInButton label="Continue with Discord" />
     </AuthCard>
   );

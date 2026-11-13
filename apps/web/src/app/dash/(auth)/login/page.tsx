@@ -41,7 +41,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       ) : null}
       <SignInForm siteOrigin={origins.site} />
       <OrDivider />
-      <PayPalSignInButton label="Log in with PayPal" />
+      <PayPalSignInButton label="Continue with PayPal" />
       <DiscordSignInButton label="Continue with Discord" />
     </AuthCard>
   );

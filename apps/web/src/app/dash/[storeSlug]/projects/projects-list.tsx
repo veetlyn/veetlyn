@@ -28,7 +28,7 @@ function columns(teamSlug: string): TableColumn<Project>[] {
       sortValue: (p) => p.title.toLocaleLowerCase(),
       cell: (p) => <Link href={`/${teamSlug}/projects/${p.id}`} className="truncate font-medium underline-offset-4 hover:underline">{p.title}</Link>,
     },
-    { key: "client", header: "Client", width: "220px", sortable: true, sortValue: (p) => p.clientName ?? "", cell: (p) => <span className="truncate text-muted-foreground">{p.clientName ?? "No client"}</span> },
+    { key: "client", header: "Client", width: "220px", sortable: true, sortValue: (p) => p.clientName ?? "", cell: (p) => <span className="truncate text-muted-foreground">{p.clientName === "Client" ? "Name hidden until a quote is accepted" : (p.clientName ?? "No client")}</span> },
     { key: "status", header: "Status", width: "180px", sortable: true, sortValue: (p) => projectStatusLabel(p.status), cell: (p) => <Badge tone={TEAM_PROJECT_TONES[p.status]}>{projectStatusLabel(p.status)}</Badge> },
     { key: "created", header: "Created", width: "140px", sortable: true, sortValue: (p) => new Date(p.createdAt).getTime(), cell: (p) => <span className="whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString(undefined, DATE)}</span> },
   ];

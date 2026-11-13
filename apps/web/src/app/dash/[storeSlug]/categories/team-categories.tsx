@@ -118,6 +118,13 @@ function CategoryRow({
           </label>
         ) : null}
       </div>
+      <p role="status" className="min-h-5 text-xs text-muted-foreground">
+        {rename.isPending || setListed.isPending || setParent.isPending
+          ? "Saving…"
+          : rename.isSuccess || setListed.isSuccess || setParent.isSuccess
+            ? "Saved. Changes apply as you edit."
+            : "Changes save as you edit."}
+      </p>
       {error ? <p role="alert" className="text-sm text-destructive">{error.message}</p> : null}
     </li>
   );

@@ -343,7 +343,7 @@ function RequestsList({
                 PayPal&apos;s fee comes off each payout.
               </p>
             </div>
-            <Link href={`/${teamSlug}/payouts/${first.id}`} className={buttonVariants({ variant: "mint" })}>
+            <Link href={`/${teamSlug}/payouts/${first.id}`} className={buttonVariants()}>
               Review the next one
             </Link>
           </div>

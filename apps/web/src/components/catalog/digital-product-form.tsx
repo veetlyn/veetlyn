@@ -57,10 +57,10 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
         {detail.error.data?.code === "FORBIDDEN" ? (
           <p role="alert">{detail.error.message}</p>
         ) : (
-          <h1 className="font-heading text-3xl">Product not found</h1>
+          <h1 className="font-heading text-3xl">Item not found</h1>
         )}
         <Link href={`/${teamSlug}/products`} className="underline">
-          Back to products
+          Back to premade items
         </Link>
       </div>
     );
@@ -75,7 +75,7 @@ function EditDigitalProduct({ teamSlug, productId }: { teamSlug: string; product
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <div className="min-w-0 space-y-1">
           <Link href={`/${teamSlug}/products`} className="text-sm text-muted-foreground">
-            Products
+            Premade items
           </Link>
           <h1 className="break-words font-heading text-3xl">{product.title}</h1>
         </div>
@@ -227,9 +227,15 @@ function DetailsForm({ teamSlug, productId, initial }: { teamSlug: string; produ
           Saved.
         </p>
       )}
+      {!productId ? (
+        <section className="grid gap-1 panel p-4">
+          <h2 className="text-sm font-medium">File buyers download</h2>
+          <p className="text-sm text-muted-foreground">Save the item first, then add the file buyers receive. You can publish once the file is added.</p>
+        </section>
+      ) : null}
       <div>
         <Button type="submit" disabled={saving || create.isSuccess || priceMinor === null}>
-          {saving ? "Saving…" : productId ? "Save changes" : "Save product"}
+          {saving ? "Saving…" : productId ? "Save changes" : "Save item"}
         </Button>
       </div>
       </fieldset>

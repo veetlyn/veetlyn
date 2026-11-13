@@ -90,7 +90,7 @@ The local dev database has these people besides the owner. Each has a fixed job,
 | Design Check | `design-97d920@example.com` | Admin (owns its own workspace) | Design reviews of the dashboard |
 | Demo Reviewer | `demo-review@example.com` | Admin | Recording the product video and end-to-end reviews |
 
-The `@example.com` accounts have no inbox, so **Forgot password** cannot reach them. Sign in as them only in a browser profile that already holds their session. To start fresh, sign up a new `<inbox>+name@agentmail.to` person instead.
+The `@example.com` accounts have no inbox, so **Forgot password** cannot reach them. Sign in as them only in a browser profile that already holds their session. To start fresh, sign up a new `<inbox>+name@agentmail.to` person instead. Demo Reviewer's local password was reset once through the reset-token flow (the token sits in the `verification` table when the email cannot be sent); the current one is in `~/.local/state/veetlyn-walk/local.env` (`DEMO_REVIEW_PASSWORD`, mode 600, never committed).
 
 ### The dashboard assistant
 

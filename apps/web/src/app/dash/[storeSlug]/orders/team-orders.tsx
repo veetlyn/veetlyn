@@ -104,7 +104,7 @@ function columns(teamSlug: string): TableColumn<Row>[] {
         </span>
       ),
     },
-    { key: "for", header: "For", width: "200px", cell: (r) => <span className="truncate text-muted-foreground">{r.forWhom}</span> },
+    { key: "for", header: "Category / buyer", width: "200px", cell: (r) => <span className="truncate text-muted-foreground">{r.forWhom}</span> },
     { key: "amount", header: "Amount", width: "112px", align: "right", sortable: true, sortValue: (r) => r.amount?.minor ?? -1, cell: (r) => <span className="whitespace-nowrap tabular-nums">{r.amount ? formatMinor(r.amount.minor, r.amount.currency) : "To quote"}</span> },
     { key: "status", header: "Status", width: "190px", sortable: true, sortValue: (r) => r.status, cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{r.statusLabel}</Badge> },
     { key: "date", header: "Received", width: "128px", sortable: true, sortValue: (r) => r.date, cell: (r) => <span className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(undefined, DATE)}</span> },
