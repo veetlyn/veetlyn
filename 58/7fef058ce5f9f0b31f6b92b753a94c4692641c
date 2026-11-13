@@ -1,0 +1,32 @@
+apps/web/src/app/dash/[storeSlug]/finances/team-finances.tsx
+  h_6877e5e7a06bc5 164-170,188
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/project-detail.tsx
+  h_6877e5e7a06bc5 143,149-150,218,352-355,387,392-393,510,545-547,567-571
+apps/web/src/app/dash/[storeSlug]/projects/[projectId]/quote-calculator.tsx
+  h_6877e5e7a06bc5 27,70,92
+apps/web/src/components/client-project-view.tsx
+  h_6877e5e7a06bc5 119,122,127,130-134,151,156,365,406,413
+apps/web/src/components/conversation/thread.tsx
+  h_6877e5e7a06bc5 132,135
+apps/web/src/lib/finance-analytics.test.ts
+  h_6877e5e7a06bc5 44
+apps/web/src/lib/finance-analytics.ts
+  h_6877e5e7a06bc5 164,168-171,301
+packages/api/src/actions/projects.ts
+  h_6877e5e7a06bc5 196
+packages/api/src/use-cases/project-views.ts
+  h_6877e5e7a06bc5 26,249,282
+packages/ui/src/components/charts/line-chart/plot.tsx
+  h_6877e5e7a06bc5 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "587fef058ce5f9f0b31f6b92b753a94c4692641c",
+  "prompts": {},
+  "humans": {
+    "h_6877e5e7a06bc5": {
+      "author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
