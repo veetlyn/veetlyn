@@ -92,8 +92,8 @@
 [data-dash] select option,
 [data-dash] select optgroup { background-color: var(--popover); color: var(--popover-foreground); }
 
-/* Solid mint is the primary key only. What is active or selected (the page you are on, the chosen tab, the current
-   page of a list) is a mint tint with ink text and a mint edge; the focus ring is mint. The filled tab sits in a
+/* Mint is the primary key and everything active or selected (the page you are on, the chosen tab, the current page
+   of a list), drawn as the same lit mint key with an onyx label; the focus ring is mint. The filled tab sits in a
    recessed track, as the site's switchers. */
 [data-dash] [role="tablist"]:has([data-tabs-fill]) {
   background: color-mix(in oklab, var(--foreground) 4%, var(--background));

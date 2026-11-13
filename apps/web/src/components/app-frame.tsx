@@ -157,9 +157,10 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
   );
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="mb-5 flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-3 text-left hover:bg-accent" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
-        <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-md bg-secondary text-xs font-semibold">{initialsOf(workspace.label)}</span>
-        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{workspace.label}</span>{workspace.detail ? <span className="block truncate text-xs text-muted-foreground">{workspace.detail}</span> : null}</span>
+      {/* As tall as the page's top bar, so the two line up across the frame. */}
+      <DropdownMenuTrigger className="mb-4 flex h-[52px] w-full shrink-0 items-center gap-2.5 rounded-[10px] border bg-card px-2.5 text-left hover:bg-accent" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
+        <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-md bg-secondary text-[11px] font-semibold">{initialsOf(workspace.label)}</span>
+        <span className="min-w-0 flex-1 truncate text-sm"><span className="font-medium">{workspace.label}</span>{workspace.detail ? <span className="text-muted-foreground"> · {workspace.detail}</span> : null}</span>
         <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-h-[70dvh] w-64 overflow-y-auto bg-card" align="start">
@@ -278,11 +279,11 @@ function SearchBar({ items }: { items: SearchItem[] }) {
   );
 }
 
-// A sidebar item, raised when it is the page you are on.
+// A sidebar item; the page you are on is a mint key.
 export function navItemClass(active: boolean) {
   return cn(
     "flex items-center gap-2.5 rounded-[8px] px-2.5 py-[7px] text-[13px] font-medium text-foreground [&_svg:first-child]:size-[18px]",
-    active ? "bg-brand-wash text-foreground shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--brand)_45%,transparent)] [&_svg]:text-brand-text" : "hover:bg-foreground/[0.04]",
+    active ? "key-mint font-semibold text-brand-foreground [&_svg_[fill]]:fill-current" : "hover:bg-foreground/[0.04]",
   );
 }
 

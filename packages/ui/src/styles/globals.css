@@ -294,6 +294,13 @@
   &:active { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand) 78%, black), inset 0 1px 2px rgb(0 0 0 / 0.28); }
   @media (forced-colors: active) { &::after { display: none; } }
 }
+/* The mint key's surface alone, for selected indicators drawn behind a label (a chosen tab, the current page). */
+@utility mint-fill {
+  color: var(--brand-foreground);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--brand) 86%, white), color-mix(in oklab, var(--brand) 92%, black));
+  box-shadow: inset 0 2px 0 -1px rgb(255 255 255 / 0.35), inset 0 -2px 0 -1px rgb(0 0 0 / 0.16),
+    inset 0 0 0 1px color-mix(in oklab, var(--brand) 78%, black), 0 1px 1px rgb(16 16 24 / 0.12);
+}
 /* Headings: Cal Sans UI at semibold with its geometric shapes, slightly tight. Never bold or black. */
 @utility font-heading {
   font-family: var(--font-display);
