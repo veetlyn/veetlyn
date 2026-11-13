@@ -95,7 +95,7 @@ export function LineChartPlot({
     xy,
   } = useLineChart();
   const { ref, width } = useElementWidth<HTMLDivElement>();
-  const inView = useInView(ref, { once: true, amount: 0.3 });
+  const inView = useInView(ref, { once: true, amount: 0.15 });
   const id = useId();
   const ids = {
     clip: `${id}-clip`,

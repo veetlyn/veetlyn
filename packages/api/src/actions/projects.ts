@@ -193,6 +193,7 @@ const clientViewOutput = z.object({
   project: z.object({
     id: z.uuid(),
     title: z.string(),
+    teamName: z.string(),
     brief: z.string(),
     status: z.enum(PROJECT_STATUSES),
     currency: z.enum(CURRENCIES),

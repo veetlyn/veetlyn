@@ -161,11 +161,13 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
               </select>
             </label>
           ) : <p className="text-sm text-muted-foreground">{currency}</p>}
-          <Tabs value={range} onValueChange={(value) => { if (isRange(value)) setRange(value); }} variant="segment" aria-label="Date range">
-            <TabsList aria-label="Date range" className="border">
-              {RANGES.map((item) => <TabsTrigger key={item.value} value={item.value}>{item.label}</TabsTrigger>)}
-            </TabsList>
-          </Tabs>
+          <div className="max-w-full overflow-x-auto pb-0.5">
+            <Tabs value={range} onValueChange={(value) => { if (isRange(value)) setRange(value); }} variant="segment" aria-label="Date range">
+              <TabsList aria-label="Date range" className="border">
+                {RANGES.map((item) => <TabsTrigger key={item.value} value={item.value} className="whitespace-nowrap">{item.label}</TabsTrigger>)}
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
       </div>
 
@@ -183,7 +185,7 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
           <section aria-label="Key figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi label="Collected from project payments" value={money(current.grossMinor)} note={growthNote} href={`/${teamSlug}/payments`} />
             <Kpi label="After PayPal fees and refunds" value={money(current.netMinor)} note={`${percent(current.feeRate)} PayPal fees · ${percent(current.refundRate)} refunded`} href={`/${teamSlug}/payments`} />
-            <Kpi label="Paid to members" value={payouts.isSuccess ? money(current.paidOutMinor) : "Unavailable"} note={payouts.isSuccess ? `${current.paidOutCount} settled ${current.paidOutCount === 1 ? "payout" : "payouts"}` : "Payout records are unavailable"} href={payouts.isSuccess ? `/${teamSlug}/payouts` : undefined} />
+            <Kpi label="Paid to members" value={payouts.isSuccess ? money(current.paidOutMinor) : "Unavailable"} note={payouts.isSuccess ? `${current.paidOutCount} settled ${current.paidOutCount === 1 ? "payout" : "payouts"} in this period${analytics.undatedPayouts > 0 ? ` · ${analytics.undatedPayouts} more settled without a date${analytics.undatedPaidOutMinor > 0 ? ` (${money(analytics.undatedPaidOutMinor)})` : ""}, not in the dated total` : ""}` : "Payout records are unavailable"} href={payouts.isSuccess ? `/${teamSlug}/payouts` : undefined} />
             <Kpi label="Payments collected" value={String(current.count)} note={current.averageMinor === null ? "No dated collections in this period" : `${money(Math.round(current.averageMinor))} average payment`} href={`/${teamSlug}/payments`} />
           </section>
 

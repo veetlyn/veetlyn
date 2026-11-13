@@ -129,9 +129,10 @@ export function Composer({
   }
 
   return (
-    // One composer box: the text, then a toolbar with the options and the send key; who reads it sits beneath.
+    // One composer box: who reads it sits above it, then the text and a toolbar with the options and the send key.
     <form onSubmit={submit} className="grid gap-2">
       <Label htmlFor={id} className="sr-only">{label}</Label>
+      <p className="px-1 text-xs text-muted-foreground">{teamOnly ? "Only the team reads this." : audience}</p>
       <div data-composer className="rounded-xl border bg-background focus-within:border-[var(--ring)]">
       <Textarea
         id={id}
@@ -160,7 +161,6 @@ export function Composer({
         </Button>
       </div>
       </div>
-      <p className="px-1 text-xs text-muted-foreground">{teamOnly ? "Only the team reads this." : audience}</p>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}

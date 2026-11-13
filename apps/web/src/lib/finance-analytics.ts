@@ -161,10 +161,14 @@ export function collectionAnalytics({
   const eligiblePayouts = payouts.filter((payout) => payout.currency === currency && payout.status === "succeeded");
   const datedPayouts: DatedPayout[] = [];
   let undatedPayouts = 0;
+  let undatedPaidOutMinor = 0;
   for (const payout of eligiblePayouts) {
     const settledDate = dateOf(payout.settledAt);
     if (settledDate) datedPayouts.push({ ...payout, settledDate });
-    else undatedPayouts += 1;
+    else {
+      undatedPayouts += 1;
+      undatedPaidOutMinor += payoutSentMinor(payout) ?? 0;
+    }
   }
 
   const today = utcStartOfDay(now);
@@ -294,6 +298,7 @@ export function collectionAnalytics({
     byKind,
     undatedPayments,
     undatedPayouts,
+    undatedPaidOutMinor,
     unknownPayoutAmounts: current.unknownPayoutAmounts,
   };
 }

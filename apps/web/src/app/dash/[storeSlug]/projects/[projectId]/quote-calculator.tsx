@@ -24,7 +24,7 @@ export type QuoteCalculatorRates = {
   receiverCountry: string | null;
 };
 
-const TARGET_PROBLEM = "Enter what the member should receive.";
+const TARGET_PROBLEM = "Enter what the freelancer should receive.";
 
 type Calculation = { kind: "empty" } | { kind: "problem"; message: string } | { kind: "quote"; breakdown: QuoteBreakdown };
 
@@ -67,7 +67,7 @@ function QuoteResult({
         </li>
         <li>Team keeps {format(breakdown.teamKeepsMinor)}</li>
         <li>PayPal's payout fee (about) {format(breakdown.payoutFeeMinor)}</li>
-        <li>Member receives {format(breakdown.memberReceivesMinor)}</li>
+        <li>Freelancer receives {format(breakdown.memberReceivesMinor)}</li>
       </ul>
     </>
   );
@@ -89,7 +89,7 @@ export function QuoteCalculator({
     <fieldset className="space-y-3 border-t pt-3">
       <legend className="text-sm font-medium">Quote calculator</legend>
       <div className="space-y-2">
-        <Label htmlFor="member-target">The member should receive</Label>
+        <Label htmlFor="member-target">The freelancer should receive</Label>
         <ValueInput
           id="member-target"
           unit={rates.currency}

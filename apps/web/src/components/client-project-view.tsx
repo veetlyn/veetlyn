@@ -116,14 +116,22 @@ function QuoteSummary({
   currency,
   quoting,
   actions,
+  position,
 }: {
   quote: Quote;
+  position?: { index: number; count: number };
   currency: ClientProjectData["project"]["currency"];
   quoting: boolean;
   actions: ClientProjectActions | null;
 }) {
+  const singleLine = quote.items.length === 1 && quote.items[0]?.amountMinor === quote.amountMinor;
   return (
     <div className="space-y-3">
+      {position && position.count > 1 ? (
+        <p className="text-xs font-medium text-muted-foreground">
+          Quote {position.index + 1} of {position.count} · sent {new Date(quote.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
+        </p>
+      ) : null}
       <div className="flex items-center justify-between">
         <p className="font-medium">
           <span className="font-tabular text-xl font-semibold">{formatMoney(money(currency, quote.amountMinor))}</span>
@@ -140,12 +148,12 @@ function QuoteSummary({
         {quote.items.map((item) => (
           <li key={item.id} className="flex justify-between gap-4">
             <span>{item.description}</span>
-            <span>{formatMoney(money(currency, item.amountMinor))}</span>
+            {singleLine ? null : <span>{formatMoney(money(currency, item.amountMinor))}</span>}
           </li>
         ))}
       </ul>
       {quote.status === "proposed" && quoting ? (
-        <Button variant="mint" disabled={!actions || actions.quoteBusy} onClick={() => actions?.acceptQuote(quote.id)}>
+        <Button disabled={!actions || actions.quoteBusy} onClick={() => actions?.acceptQuote(quote.id)}>
           Accept quote
         </Button>
       ) : null}
@@ -354,6 +362,7 @@ export function ClientProjectView({
     <div className="space-y-6 text-sm">
       <div className="space-y-2">
         <h1 className="font-heading text-[26px] leading-[1.1] tracking-[-0.03em]">{project.title}</h1>
+        <p className="text-sm text-muted-foreground">From {project.teamName}</p>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge tone={CLIENT_PROJECT_TONES[project.status]}>{projectStatusLabel(project.status)}</Badge>
           {project.finalPriceMinor !== null
@@ -394,13 +403,14 @@ export function ClientProjectView({
         <section id="responses" aria-label="Responses" className="grid scroll-mt-4 gap-3">
           {responses.map(([key, response]) => (
             <Frame key={key} title={response.name}>
-              {response.quotes.map((quote) => (
+              {response.quotes.map((quote, index) => (
                 <QuoteSummary
                   key={quote.id}
                   quote={quote}
                   currency={currency}
                   quoting={project.status === "quoting"}
                   actions={actions}
+                  position={{ index, count: response.quotes.length }}
                 />
               ))}
               {response.questions.map((question) => (
@@ -453,7 +463,6 @@ export function ClientProjectView({
               {amendment.status === "pending" && projectAllows(project.status, "accept_amendment") ? (
                 <div className="flex gap-2">
                   <Button
-                    variant="mint"
                     disabled={!actions || actions.amendmentBusy}
                     onClick={() => actions?.acceptAmendment(amendment.id)}
                   >
@@ -542,7 +551,6 @@ export function ClientProjectView({
                     ) : null}
                     <div className="flex gap-2">
                       <Button
-                        variant="mint"
                         disabled={deliveryBusy}
                         onClick={() => actions?.acceptDelivery(delivery.id)}
                       >

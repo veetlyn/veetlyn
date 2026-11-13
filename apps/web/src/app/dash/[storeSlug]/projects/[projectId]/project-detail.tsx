@@ -140,12 +140,14 @@ function QuoteCard({ quote, currency, members }: { quote: Detail["quotes"][numbe
   return (
     <article data-financial-document className="rounded-lg border px-5 py-6 sm:px-7 sm:py-8">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="font-heading text-lg">Quote v{quote.version}</h3>
+        <h3 className="font-heading text-lg">Quote from {quotedFor}{quote.version > 1 ? ` · v${quote.version}` : ""}</h3>
         <Badge tone={quote.status === "accepted" ? "good" : "neutral"}>{QUOTE_STATUS_LABELS[quote.status]}</Badge>
       </div>
       <dl className="mt-4 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
         <dt className="text-muted-foreground">Quoted by</dt>
         <dd className="font-medium">{quotedFor}</dd>
+        <dt className="text-muted-foreground">Sent</dt>
+        <dd>{new Date(quote.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}</dd>
         {preparedBy ? <><dt className="text-muted-foreground">Prepared by</dt><dd>{preparedBy}, for {quotedFor}</dd></> : null}
         <dt className="text-muted-foreground">Delivery</dt>
         <dd>{quote.deliveryDays === 1 ? "1 day" : `${quote.deliveryDays} days`} after the deposit</dd>
@@ -213,6 +215,7 @@ export default function ProjectDetail({
   const [quoteRows, setQuoteRows] = useState<ItemRow[]>([{ ...EMPTY_ROW }]);
   const [deliveryDays, setDeliveryDays] = useState("14");
   const [quoteFreelancerId, setQuoteFreelancerId] = useState("");
+  const [quoteAttempted, setQuoteAttempted] = useState(false);
   const [note, setNote] = useState("");
   const [addRows, setAddRows] = useState<ItemRow[]>([]);
   const [removeItemIds, setRemoveItemIds] = useState<string[]>([]);
@@ -346,7 +349,10 @@ export default function ProjectDetail({
 
   function handleQuote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!quoteItems || !Number.isInteger(days) || days < 1 || !canQuote) return;
+    if (!quoteItems || !Number.isInteger(days) || days < 1 || !canQuote) {
+      setQuoteAttempted(true);
+      return;
+    }
     const quote: QuoteInput = { teamSlug, projectId, items: quoteItems, deliveryDays: days };
     if (quoteFreelancerId) quote.freelancerId = quoteFreelancerId;
     addQuote.mutate(quote);
@@ -374,18 +380,17 @@ export default function ProjectDetail({
         ? { title: project.status === "awaiting_deposit" ? "Waiting for the client’s deposit" : "Waiting for the client’s balance payment", tab: financesHidden ? "conversation" : "money", action: financesHidden ? "Open conversation" : "View finances" }
         : { title: "Review the project’s latest activity", tab: "conversation", action: "Open conversation" };
 
-  const isFormView = view === "quote" || view === "delivery";
   const projectRail = (
     <ContextRail label="Project context">
       {view === "activity" ? <ProjectRatings key={projectId} teamSlug={teamSlug} projectId={projectId} ratings={detail.data.ratings} onChanged={refresh} /> : null}
       {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
-      {view !== "activity" && !isFormView ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-people-heading">
+      <section className="space-y-2 border-b pb-5" aria-labelledby="project-people-heading">
         <h2 id="project-people-heading" className="text-sm font-semibold">People</h2>
         <dl className="divide-y text-xs">
           <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Assigned to</dt><dd className="break-words">{members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? "Not assigned"}</dd></div>
         </dl>
-      </section> : null}
-      {view !== "activity" && !financesHidden ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-glance-heading">
+      </section>
+      {!financesHidden ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-glance-heading">
         <h2 id="project-glance-heading" className="text-sm font-semibold">At a glance</h2>
         <dl className="divide-y text-xs">
           <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quotes</dt><dd className="font-tabular">{quotes.length}</dd></div>
@@ -502,7 +507,7 @@ export default function ProjectDetail({
       {view !== "quote" || financesHidden ? null : (
       <section id="quotes" className="scroll-mt-4 space-y-3">
         <h2 className="text-lg font-semibold">Quotes</h2>
-        {competingProposalCount(quotes) > 1 ? <p className="text-sm text-muted-foreground">{competingProposalCount(quotes)} freelancers sent competing proposals. The client accepts one; the others are closed.</p> : null}
+        {competingProposalCount(quotes) > 1 ? <p className="text-sm text-muted-foreground">{quotes.filter((quote) => quote.status === "proposed").length} quotes from {competingProposalCount(quotes)} freelancers are competing. The client accepts one; the others are closed.</p> : null}
         {quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotes yet.</p> : null}
         {quotes.map((quote) => (
           <QuoteCard key={quote.id} quote={quote} currency={currency} members={members.data ?? []} />
@@ -534,15 +539,12 @@ export default function ProjectDetail({
                   </select>
                 </div>
               ) : null}
-              <Button type="submit" disabled={!quoteItems || !Number.isInteger(days) || days < 1 || !canQuote || addQuote.isPending}>
-                Send quote
-              </Button>
             </div>
             {quoteItems ? (
               <p className="text-sm text-muted-foreground">Total {formatMoney(money(currency, quoteTotalMinor(quoteItems)))}</p>
-            ) : (
-              <p className="text-sm text-destructive">Each line needs a description and an amount above zero.</p>
-            )}
+            ) : quoteAttempted ? (
+              <p role="alert" className="text-sm text-destructive">Each line needs a description and an amount above zero.</p>
+            ) : null}
             {/* A solo seller keeps the whole price, so there is no member share to work out. */}
             {!solo ? (
               <QuoteCalculator
@@ -562,6 +564,11 @@ export default function ProjectDetail({
             {/* Without this, Send quote stays disabled with no reason given (for example, nobody assigned yet). */}
             {!author.ok ? <p className="text-sm text-muted-foreground">{quoteAuthorRefusalMessage(author.reason)}</p> : null}
             {addQuote.error ? <p className="text-sm text-destructive">{addQuote.error.message}</p> : null}
+            <div className="flex justify-end border-t pt-3">
+              <Button type="submit" disabled={!Number.isInteger(days) || days < 1 || !canQuote || addQuote.isPending}>
+                Send quote
+              </Button>
+            </div>
           </form>
         ) : null}
       </section>

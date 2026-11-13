@@ -41,6 +41,7 @@ describe("collection analytics", () => {
     expect(a.current.paidOutMinor).toBe(4900);
     expect(a.buckets.reduce((sum, b) => sum + b.paidOutMinor, 0)).toBe(4900);
     expect(a.undatedPayouts).toBe(1);
+    expect(a.undatedPaidOutMinor).toBe(4900);
     expect(a.unknownPayoutAmounts).toBe(1);
   });
 
