@@ -158,7 +158,7 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
   return (
     <DropdownMenu>
       {/* As tall as the page's top bar, so the two line up across the frame. */}
-      <DropdownMenuTrigger className="mb-4 flex h-[52px] w-full shrink-0 items-center gap-2.5 rounded-[10px] border bg-card px-2.5 text-left hover:bg-accent" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
+      <DropdownMenuTrigger className="mb-4 flex h-[52px] w-full shrink-0 items-center gap-2.5 rounded-[10px] raised px-2.5 text-left hover:brightness-[0.98] data-popup-open:brightness-[0.97]" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
         <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-md bg-secondary text-[11px] font-semibold">{initialsOf(workspace.label)}</span>
         <span className="min-w-0 flex-1 truncate text-sm"><span className="font-medium">{workspace.label}</span>{workspace.detail ? <span className="text-muted-foreground"> · {workspace.detail}</span> : null}</span>
         <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -284,7 +284,7 @@ function SearchBar({ items }: { items: SearchItem[] }) {
 export function navItemClass(active: boolean) {
   return cn(
     "flex items-center gap-2.5 rounded-[8px] px-2.5 py-[7px] text-[13px] font-medium text-foreground [&_svg:first-child]:size-[18px]",
-    active ? "key-mint font-semibold text-brand-foreground [&_svg_[fill]]:fill-current" : "hover:bg-foreground/[0.04]",
+    active ? "key-mint font-semibold text-brand-foreground [&_svg_[fill]]:fill-current" : "hover:bg-foreground/[0.04] [&_svg.lucide]:stroke-[1.75]",
   );
 }
 

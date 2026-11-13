@@ -222,7 +222,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
             <ul className="grid gap-2 sm:grid-cols-2">
               {matches.map((match) => (
                 <li key={match.productId} className="flex items-center gap-3 panel p-2">
-                  {match.imageUrl && <img src={match.imageUrl} alt="" className="size-12 object-cover" />}
+                  {match.imageUrl && <img src={match.imageUrl} alt="" className="size-12 object-cover outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10" />}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{match.title}</p>
                     {match.brand && <p className="text-sm text-muted-foreground">{match.brand}</p>}
@@ -369,7 +369,7 @@ export default function ProductForm({ storeSlug, productId, initial }: Props) {
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {form.images.map((image: ImageFormState, index: number) => (
               <li key={`${image.previewUrl}-${index}`} className="grid gap-1">
-                <img src={image.previewUrl} alt={image.alt} className="aspect-square w-full border object-cover" />
+                <img src={image.previewUrl} alt={image.alt} className="aspect-square w-full object-cover outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10" />
                 <Button
                   type="button"
                   variant="ghost"
