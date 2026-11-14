@@ -296,11 +296,11 @@ function SearchBar({ items }: { items: SearchItem[] }) {
   );
 }
 
-// A sidebar item: 14px icon, 13px label in the default grey; the page you are on takes the neutral selected fill and
+// A sidebar item: 16px icon, 15px label in the default grey; the page you are on takes the neutral selected fill and
 // strong ink.
 export function navItemClass(active: boolean) {
   return cn(
-    "flex items-center gap-2.5 rounded-[8px] px-2.5 py-[7px] text-[13px] transition-colors duration-150 ease-out [&_svg:first-child]:size-3.5",
+    "flex items-center gap-3 rounded-[8px] px-3 py-2 text-[15px] transition-colors duration-150 ease-out [&_svg:first-child]:size-4",
     active ? "selected-fill font-medium [&_svg_[fill]]:fill-current" : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
   );
 }

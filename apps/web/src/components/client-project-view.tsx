@@ -179,7 +179,7 @@ function Frame({
         <h2 className="font-medium">{title}</h2>
         {aside}
       </div>
-      <div className="frame frame-body grid gap-4 p-5">{children}</div>
+      <div className="frame frame-body grid gap-4 p-6">{children}</div>
     </section>
   );
 }
@@ -660,7 +660,7 @@ function NextStepPanel({ step, completed, preview }: { step: NextStep | null; co
     return (
       <div className="frame frame-panel">
         <p className="frame-head text-[12px] font-medium">Your turn</p>
-        <p className="frame frame-body p-5 text-sm text-muted-foreground">
+        <p className="frame frame-body p-6 text-sm text-muted-foreground">
           {completed
             ? "This project is complete. Thank you."
             : "Nothing is waiting for you right now. The team will email you when it is your turn."}
@@ -673,7 +673,7 @@ function NextStepPanel({ step, completed, preview }: { step: NextStep | null; co
   return (
     <div className="frame frame-panel">
       <p className="frame-head text-[12px] font-medium">Your turn</p>
-      <div className="frame frame-body flex flex-wrap items-center gap-x-6 gap-y-3 p-5">
+      <div className="frame frame-body flex flex-wrap items-center gap-x-6 gap-y-3 p-6">
         <div className="min-w-0 flex-1">
           <p className="text-lg font-semibold">{step.title}</p>
           <p className="text-sm text-muted-foreground">{step.detail}</p>

@@ -1,0 +1,128 @@
+"use client";
+// beui.dev/components/motion/drawer
+
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { type ReactNode, useEffect, useRef } from "react";
+import { EASE_OUT, SPRING_PANEL } from "@jendal-workspace/ui/lib/ease";
+import { useFocusTrap } from "@jendal-workspace/ui/lib/hooks/use-focus-trap";
+import { useMessages } from "@jendal-workspace/ui/lib/i18n";
+import { PresenceGate } from "@jendal-workspace/ui/lib/presence-gate";
+import { cn } from "@jendal-workspace/ui/lib/utils";
+
+/** English defaults. Override per instance with `labels`, or app-wide with `LocaleProvider`. */
+export const drawerMessages = {
+  close: "Close",
+};
+
+export type DrawerMessages = typeof drawerMessages;
+
+export interface DrawerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  side?: "left" | "right";
+  children: ReactNode;
+  /** Class for the panel surface. */
+  className?: string;
+  /** Class for the backdrop. */
+  backdropClassName?: string;
+  ariaLabel?: string;
+  /** Close when the backdrop is clicked or Escape is pressed. Default true. */
+  dismissable?: boolean;
+  /** Override any built-in string. */
+  labels?: Partial<DrawerMessages>;
+}
+
+export function Drawer({
+  open,
+  onOpenChange,
+  side = "right",
+  children,
+  className,
+  backdropClassName,
+  ariaLabel,
+  dismissable = true,
+  labels,
+}: DrawerProps) {
+  const t = useMessages("drawer", drawerMessages, labels);
+  const reduce = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Focus moves into the panel on open, Tab stays inside it, and focus returns
+  // to the opener on close.
+  useFocusTrap(open, panelRef, {
+    onEscape: dismissable ? () => onOpenChange(false) : undefined,
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
+  const offscreen = side === "right" ? "100%" : "-100%";
+
+  // Two fixed siblings, no wrapper: the backdrop spans the viewport edges but
+  // paints the scrim, and the panel is inset off one side and paints its own
+  // surface, so neither is a transparent edge-spanning layer. Both hang off
+  // `PresenceGate`, so interaction releases in the same commit that starts the
+  // exit rather than when it ends.
+  return (
+    <AnimatePresence>
+      {open ? (
+        <PresenceGate key="backdrop">
+          {({ gate }) => (
+            <motion.button
+              type="button"
+              aria-label={t("close")}
+              // Outside the panel, so the focus trap never lands on it; it is
+              // a pointer target only.
+              tabIndex={-1}
+              onClick={() => dismissable && onOpenChange(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: EASE_OUT }}
+              {...gate}
+              className={cn(
+                "fixed inset-0 z-50 h-full w-full cursor-default bg-black/40 backdrop-blur-sm",
+                backdropClassName,
+              )}
+            />
+          )}
+        </PresenceGate>
+      ) : null}
+      {open ? (
+        <PresenceGate key="panel">
+          {({ gate }) => (
+            <motion.div
+              ref={panelRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label={ariaLabel}
+              initial={reduce ? { opacity: 0 } : { x: offscreen }}
+              animate={reduce ? { opacity: 1 } : { x: 0 }}
+              exit={reduce ? { opacity: 0 } : { x: offscreen }}
+              transition={
+                reduce ? { duration: 0.2, ease: EASE_OUT } : SPRING_PANEL
+              }
+              {...gate}
+              className={cn(
+                "fixed inset-y-0 z-50 flex w-80 max-w-[85vw] flex-col bg-background shadow-2xl outline-none",
+                side === "right"
+                  ? "right-0 border-l border-border"
+                  : "left-0 border-r border-border",
+                className,
+              )}
+            >
+              {children}
+            </motion.div>
+          )}
+        </PresenceGate>
+      ) : null}
+    </AnimatePresence>
+  );
+}

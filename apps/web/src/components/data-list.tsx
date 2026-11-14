@@ -22,8 +22,8 @@ export type DataListFilter<T> = {
  * another is named; a view with no rows is left out. */
 export type DataListView<T> = { key: string; label: string; match?: (row: T) => boolean };
 
-const ROW_HEIGHT = 56;
-const HEADER_HEIGHT = 44;
+const ROW_HEIGHT = 60;
+const HEADER_HEIGHT = 46;
 
 function readCell<T>(row: T, column: TableColumn<T>): ReactNode {
   if (column.cell) return column.cell(row);
@@ -208,7 +208,7 @@ export function DataList<T>({
               />
               <ul className="divide-y @2xl:hidden">
                 {list.rows.map((row) => (
-                  <li key={getRowId(row)} className="flex items-center gap-3 px-4 py-3.5 text-sm">
+                  <li key={getRowId(row)} className="flex items-center gap-3 px-5 py-4 text-sm">
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 font-medium [&_.truncate]:whitespace-normal">{readCell(row, titleColumn)}</div>

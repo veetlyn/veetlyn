@@ -66,21 +66,19 @@
 /* Icons on a light stroke; navigation sets 14px, cards 20px. */
 [data-dash] svg.lucide { stroke-width: 1.75; }
 
-/* Corners: 8px navigation, 16px cards, pill calls to action. */
-[data-dash] .frame-panel { --frame-radius: 16px; }
-[data-dash] :is(.key-mint, .main-surface.group\/button) { border-radius: 9999px; }
+/* Corners: 8px navigation and keys, 16px cards. */
+[data-dash] .frame-panel { --frame-radius: 18px; }
+[data-dash] .key-mint { border-radius: 8px; }
 
-/* Film grain on the chassis, strongest at the top and fading down. Fractal noise, not a dot grid. */
+/* Film grain over the whole chassis, even everywhere. Fractal noise, not a dot grid. */
 [data-dash] [data-app-shell] { position: relative; isolation: isolate; }
 [data-dash] [data-app-shell]::before {
-  content: ""; position: absolute; inset: 0 0 auto; height: 360px; z-index: -1; pointer-events: none;
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 -0.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 180px 180px;
-  opacity: 0.22;
-  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
-  mask-image: linear-gradient(to bottom, black, transparent);
+  opacity: 0.16;
 }
-:root.dark [data-dash] [data-app-shell]::before { filter: invert(1); opacity: 0.16; }
+:root.dark [data-dash] [data-app-shell]::before { filter: invert(1); opacity: 0.1; }
 
 /* Scrollbars stay hidden until the area is hovered or scrolled, in a reserved gutter, so nothing shifts. The gutter
    doubles as the side gap. */
@@ -97,7 +95,7 @@
 
 /* Cards carry the coated edge: a hairline, a light top and a resting drop. */
 [data-dash] .panel,
-[data-dash] [data-slot="card"] {
+[data-dash] [data-slot="card"]:not(.frame) {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--card);
@@ -165,15 +163,44 @@
 [data-dash]:has([data-page-header]) [data-lone-crumb] { display: none; }
 
 /* Frame strips get a quarter em more room at the sides than the shared utility. */
-/* Frames breathe: the shell holds its card 4px in (radius 16 outside, 12 inside), the strips are tall enough to read as
-   rows of their own, and the table's outer columns sit 20px in from the card's edge. */
-[data-dash] .frame-body { --frame-radius: 12px; margin: 0 4px 4px; }
-[data-dash] .frame-body:first-child { margin-top: 4px; }
+/* Frames breathe: the shell holds its card 6px in (radius 18 outside, 12 inside), the strips are tall enough to read as
+   rows of their own, and the table's outer columns sit 24px in from the card's edge. */
+[data-dash] .frame-body { --frame-radius: 12px; margin: 0 6px 6px; }
+[data-dash] .frame-body:first-child { margin-top: 6px; }
 [data-dash] .frame-body:not(:last-child) { margin-bottom: 0; }
-[data-dash] .frame-head { min-height: 46px; padding: 8px calc(12px + 0.25em) 8px calc(16px + 0.25em); gap: 8px 12px; }
-[data-dash] .frame-foot { min-height: 44px; padding: 8px calc(16px + 0.25em); }
-[data-dash] .frame-body tbody td:first-child, [data-dash] .frame-body thead th:first-child .px-4 { padding-left: 20px; }
-[data-dash] .frame-body tbody td:last-child, [data-dash] .frame-body thead th:last-child .px-4 { padding-right: 20px; }
+[data-dash] .frame-head { min-height: 52px; padding: 12px calc(16px + 0.25em) 12px calc(20px + 0.25em); gap: 8px 12px; font-size: 14px; }
+[data-dash] .frame-foot { min-height: 52px; padding: 12px calc(20px + 0.25em); font-size: 13px; }
+[data-dash] .frame-body tbody td:first-child, [data-dash] .frame-body thead th:first-child .px-4 { padding-left: 24px; }
+[data-dash] .frame-body tbody td:last-child, [data-dash] .frame-body thead th:last-child .px-4 { padding-right: 24px; }
 
 /* Anchored sections land below the sticky top bar. */
 html:has([data-app-shell]) { scroll-padding-top: 64px; }
+
+/* The rules editor (an open-source package) is styled through its opm-* hooks so it reads like the rest of the dash:
+   presets as a segmented control like the list views, rule groups as hairline boxes on the card, not grey slabs. */
+[data-dash] .opm-presets {
+  display: inline-flex; width: max-content; max-width: 100%; gap: 2px; padding: 3px; border-radius: 10px;
+  background: var(--card); box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-dash] .opm-presets button {
+  height: 30px; padding: 0 14px; border: 0; border-radius: 7px; font-size: 13px; font-weight: 400;
+  color: var(--muted-foreground); background: transparent; transition: color 150ms ease-out, background-color 150ms ease-out;
+}
+[data-dash] .opm-presets button:hover { color: var(--foreground); }
+[data-dash] .opm-presets button[aria-pressed="true"] { background: var(--selected); color: var(--foreground); font-weight: 500; }
+[data-dash] .opm-rulebook { gap: 12px; }
+[data-dash] .opm-rule-card,
+[data-dash] .opm-rulebook-editor [role="group"][aria-label^="Tier"] {
+  background: transparent; border-radius: 12px; padding: 20px; box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-dash] .opm-rule-card h3 { font-size: 14px; font-weight: 500; }
+[data-dash] .opm-rulebook-editor label { font-size: 13px; font-weight: 400; color: var(--muted-foreground); }
+[data-dash] .opm-rulebook-editor :is(input, select) { height: 36px; color: var(--foreground); font-size: 14px; }
+[data-dash] .opm-rulebook-summary { background: transparent; padding: 0; }
+[data-dash] .opm-rulebook-summary [role="tablist"] {
+  display: inline-flex; width: max-content; gap: 2px; padding: 3px; border-radius: 10px;
+  background: var(--card); box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-dash] .opm-rulebook-summary [role="tab"] { height: 30px; padding: 0 14px; border-radius: 7px; font-size: 13px; }
+[data-dash] .opm-rulebook-summary [role="tab"][aria-selected="true"] { background: var(--selected); font-weight: 500; }
+[data-dash] .opm-rulebook-summary :is(p, li) { font-size: 14px; line-height: 1.6; }

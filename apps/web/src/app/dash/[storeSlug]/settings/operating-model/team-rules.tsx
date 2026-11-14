@@ -4,12 +4,16 @@ import { RULE_SECTIONS, RulebookEditor, ruleAnchor } from "@opmodel/admin-rules/
 import { RulebookSummaryView } from "@opmodel/admin-rules/RulebookSummaryView";
 import type { RulebookSpec } from "@opmodel/engine-rules";
 import { Button } from "@jendal-workspace/ui/components/button";
-import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
+import { Badge } from "@jendal-workspace/ui/components/badge";
+import { Checkbox } from "@jendal-workspace/ui/components/motion/checkbox";
+import { Switch } from "@jendal-workspace/ui/components/motion/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import Loader from "@/components/loader";
+import { PageHeader } from "@/components/page-composition";
 import { type PageSection, PageSectionsRail } from "@/components/page-sections-nav";
+import { FloatingBar, SettingsField, SettingsSection } from "@/components/settings-section";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { trpc } from "@/utils/trpc";
 
@@ -90,201 +94,147 @@ export default function TeamRules({ teamSlug }: { teamSlug: string }) {
     }
   }
 
+  const toggleLimit = (key: "agentQuotes" | "agentMessages" | "agentPayouts", checked: boolean) => {
+    const settings = team.data.settings;
+    if (!settings) return;
+    setLimits.mutate({
+      teamId: team.data.team.id,
+      agentQuotes: settings.agentQuotes,
+      agentMessages: settings.agentMessages,
+      agentPayouts: settings.agentPayouts,
+      [key]: checked,
+    });
+  };
+  const draftPending = Boolean(draft) || Boolean(data.draft);
+
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-6 md:px-7 md:py-8 lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-10">
+    <main className="mx-auto flex w-full max-w-[1104px] flex-col gap-8 px-4 py-6 md:px-7 md:py-8 lg:grid lg:grid-cols-[minmax(0,768px)_13rem] lg:justify-center lg:gap-10">
       <PageSectionsRail sections={sections} />
-      <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-1">
-      <header className="space-y-2">
-        <h1 className="font-heading text-3xl">Operating model</h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          {isAdmin
-            ? "Edit a draft of the team's rules and publish it; new projects take the published version."
+      <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
+        <PageHeader
+          title="Operating model"
+          description={isAdmin
+            ? "The team's rules, as a draft you publish. New projects take the published version."
             : "The agreement you work under in this team, and the terms clients accept with every new project."}
-        </p>
-      </header>
+        />
 
-        <div className="contents">
-          <section id="agent-limits" className="scroll-mt-16 frame frame-panel" aria-labelledby="agent-limits-heading">
-            <div className="frame-head text-[13px]">
-              <h2 id="agent-limits-heading" className="font-medium">
-                What your agent can do
-              </h2>
-            </div>
-            <dl className="frame frame-body text-[13px]">
-              {AGENT_LIMITS.map(({ what, how, limit, key }) => (
-                <div key={what} className="flex items-center justify-between gap-6 border-b px-3.5 py-3 last:border-b-0">
-                  <dt className="min-w-0">
-                    <span className="font-medium">{what}</span>
-                    <span className="block text-muted-foreground">{how}</span>
-                  </dt>
-                  <dd className="shrink-0">
+        <div id="agent-limits" className="scroll-mt-4">
+          <SettingsSection title="What your agent can do" description="The server holds the agent to these limits. Switch off what your team would rather do itself.">
+            {AGENT_LIMITS.map(({ what, how, limit, key }) => {
+              const on = key && team.data.settings ? team.data.settings[key] : true;
+              return (
+                <SettingsField key={what} label={what} description={how}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[13px] text-muted-foreground">{on ? limit : "Off"}</span>
                     {key && isAdmin && team.data.settings ? (
-                      <label className="flex items-center gap-2">
-                        <Checkbox
-                          checked={team.data.settings[key]}
-                          disabled={setLimits.isPending}
-                          aria-label={`Let the agent prepare: ${what}`}
-                          onCheckedChange={(checked) => {
-                            const settings = team.data.settings;
-                            if (!settings) return;
-                            setLimits.mutate({
-                              teamId: team.data.team.id,
-                              agentQuotes: settings.agentQuotes,
-                              agentMessages: settings.agentMessages,
-                              agentPayouts: settings.agentPayouts,
-                              [key]: checked === true,
-                            });
-                          }}
-                        />
-                        {team.data.settings[key] ? limit : "Off"}
-                      </label>
-                    ) : key && team.data.settings && !team.data.settings[key] ? (
-                      "Off"
-                    ) : (
-                      limit
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </section>
+                      <Switch checked={on} disabled={setLimits.isPending} ariaLabel={`Let the agent prepare: ${what}`} onCheckedChange={(checked) => toggleLimit(key, checked)} />
+                    ) : null}
+                  </div>
+                </SettingsField>
+              );
+            })}
+          </SettingsSection>
+        </div>
 
-          {isAdmin ? (
-            <section id="manage-rules" className="scroll-mt-16 panel" aria-labelledby="manage-rules-heading">
-              <div className="space-y-5 p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <h2 id="manage-rules-heading" className="text-xl font-semibold">Draft rules</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Published version {published.version}. Changes stay in a draft until an admin publishes them.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={!draft || save.isPending || publish.isPending}
-                      onClick={() => draft && save.mutate({ teamSlug, preset: draft.preset, rules: draft.rules })}
-                    >
-                      {save.isPending ? "Saving…" : "Save draft"}
-                    </Button>
-                    <Button type="button" size="sm" disabled={!canPublish} onClick={() => void publishDraft()}>
-                      {publish.isPending ? "Publishing…" : "Publish new version"}
-                    </Button>
-                  </div>
-                </div>
-                <fieldset disabled={save.isPending || publish.isPending} className="min-w-0">
-                  <legend className="sr-only">Draft rules</legend>
-                  <RulebookEditor spec={editable} currency={currency} onChange={setDraft} />
-                </fieldset>
-                <div id="draft-preview" className="scroll-mt-20">
-                  <RulebookSummaryView rules={editable.rules} currency={currency} version={data.draft?.version ?? published.version} />
-                </div>
+        {isAdmin ? (
+          <div id="manage-rules" className="scroll-mt-4">
+            <SettingsSection title="Draft rules" description={`Published version ${published.version}. Edits stay in a draft until you publish them.`}>
+              <fieldset disabled={save.isPending || publish.isPending} className="min-w-0 p-6">
+                <legend className="sr-only">Draft rules</legend>
+                <RulebookEditor spec={editable} currency={currency} onChange={setDraft} />
+              </fieldset>
+              <div id="draft-preview" className="scroll-mt-4 p-6">
+                <RulebookSummaryView rules={editable.rules} currency={currency} version={data.draft?.version ?? published.version} />
               </div>
-              <div className="sticky bottom-0 flex flex-wrap items-center gap-3 rounded-b-[inherit] border-t bg-card/95 px-5 py-3 backdrop-blur">
-                <span className="mr-auto text-sm text-muted-foreground">
-                  {draft ? "Unsaved edits." : data.draft ? `Draft version ${data.draft.version} is ready to publish.` : "Choose a preset or edit a rule to start a draft."}
-                </span>
-                {draftError ? <p role="alert" className="w-full text-sm text-destructive">{draftError.message}</p> : null}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={!draft || save.isPending || publish.isPending}
-                  onClick={() => draft && save.mutate({ teamSlug, preset: draft.preset, rules: draft.rules })}
-                >
+            </SettingsSection>
+            {draftPending || draftError ? (
+              <FloatingBar
+                label="Draft rules"
+                tone={draftError ? "error" : "muted"}
+                message={draftError ? draftError.message : draft ? "You have unsaved edits to the rules." : `Draft version ${data.draft?.version ?? ""} is ready to publish.`}
+              >
+                <Button type="button" variant="ghost" size="sm" disabled={!draft || save.isPending || publish.isPending} onClick={() => draft && save.mutate({ teamSlug, preset: draft.preset, rules: draft.rules })}>
                   {save.isPending ? "Saving…" : "Save draft"}
                 </Button>
-                <Button type="button" disabled={!canPublish} onClick={() => void publishDraft()}>
+                <Button type="button" size="sm" disabled={!canPublish} onClick={() => void publishDraft()}>
                   {publish.isPending ? "Publishing…" : "Publish new version"}
                 </Button>
-              </div>
-            </section>
-          ) : null}
+              </FloatingBar>
+            ) : null}
+          </div>
+        ) : null}
 
-          <section id="published-rules" className="scroll-mt-16 space-y-4 panel p-5" aria-labelledby="published-rules-heading">
-            <div className="space-y-1">
-              <h2 id="published-rules-heading" className="text-xl font-semibold">Published agreement</h2>
-              <p className="text-sm text-muted-foreground">Version {published.version}</p>
-            </div>
-            <RulebookSummaryView rules={published.rules} currency={currency} initialTab="member" tabs={["member", "client"]} />
-            {acceptedCurrentVersion ? (
-              <p className="text-sm font-medium">You accepted this member agreement.</p>
+        <div id="published-rules" className="scroll-mt-4">
+          <SettingsSection
+            title="Published agreement"
+            description={`Version ${published.version}: what members and clients agree to.`}
+            footer={acceptedCurrentVersion ? (
+              <span className="flex items-center gap-2"><Badge tone="good">Accepted</Badge>You accepted this member agreement.</span>
             ) : (
-              <div className="space-y-3 border-t pt-4">
-                <label className="flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedAcceptedVersion}
-                    onChange={(event) => setAcceptedId(event.target.checked ? published.id : "")}
-                    className="mt-1 size-4 accent-current"
-                  />
-                  <span>I have read and accept the member agreement in version {published.version}.</span>
-                </label>
-                <Button
-                  type="button"
-                  disabled={!selectedAcceptedVersion || accept.isPending}
-                  onClick={() => accept.mutate({ teamSlug, termsAccepted: true, acceptedRulebookId: published.id })}
-                >
+              <>
+                <Checkbox
+                  checked={selectedAcceptedVersion}
+                  onCheckedChange={(checked) => setAcceptedId(checked ? published.id : "")}
+                  label={`I have read and accept version ${published.version}.`}
+                  className="text-foreground"
+                />
+                <Button type="button" size="sm" disabled={!selectedAcceptedVersion || accept.isPending} onClick={() => accept.mutate({ teamSlug, termsAccepted: true, acceptedRulebookId: published.id })}>
                   {accept.isPending ? "Recording…" : "Accept member agreement"}
                 </Button>
-              </div>
+              </>
             )}
-          </section>
-
-          <section id="notice-preferences" className="scroll-mt-16 space-y-4 panel p-5" aria-labelledby="notice-preferences-heading">
-            <div className="space-y-1">
-              <h2 id="notice-preferences-heading" className="text-xl font-semibold">Project notices</h2>
-              <p className="text-sm text-muted-foreground">Choose whether to receive project update emails for this team.</p>
+          >
+            <div className="p-6">
+              <RulebookSummaryView rules={published.rules} currency={currency} initialTab="member" tabs={["member", "client"]} />
             </div>
-            <label className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
+          </SettingsSection>
+        </div>
+
+        <div id="notice-preferences" className="scroll-mt-4">
+          <SettingsSection title="Project notices" description="Emails about the projects you work on in this team.">
+            <SettingsField label="Email me project notices" description="Updates when a project you are on moves forward.">
+              <Switch
                 checked={notice.isPending ? notice.variables.projectNoticesEnabled : state.data.projectNoticesEnabled}
                 disabled={notice.isPending}
-                onChange={(event) => notice.mutate({ teamSlug, projectNoticesEnabled: event.target.checked })}
-                className="size-4 accent-current"
+                ariaLabel="Email me project notices"
+                onCheckedChange={(checked) => notice.mutate({ teamSlug, projectNoticesEnabled: checked })}
               />
-              Email me project notices
-            </label>
-          </section>
+            </SettingsField>
+          </SettingsSection>
+        </div>
 
-          {hasLeavingNotice ? (
-            <section id="leaving-notice" className="scroll-mt-16 space-y-3 panel p-5" aria-labelledby="leaving-notice-heading">
-              <div className="space-y-1">
-                <h2 id="leaving-notice-heading" className="text-xl font-semibold">Leaving notice</h2>
-                <p className="text-sm text-muted-foreground">
-                  The published agreement asks members to give {published.rules.leavingNotice.days} days’ notice before leaving.
-                </p>
-              </div>
-              {noticeEnd ? (
-                <p className="text-sm">
-                  You gave notice. You take no new requests, and your notice ends on {new Date(noticeEnd).toLocaleDateString()}.
-                </p>
-              ) : confirmingNotice ? (
-                <div className="space-y-3">
-                  <p className="text-sm">
-                    From now on you take no new requests; your current projects continue. This cannot be undone here.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="destructive" disabled={leaving.isPending} onClick={() => leaving.mutate({ teamSlug })}>
+        {hasLeavingNotice ? (
+          <div id="leaving-notice" className="scroll-mt-4">
+            <SettingsSection
+              title="Leaving notice"
+              description={`The agreement asks members to give ${published.rules.leavingNotice.days} days’ notice before leaving.`}
+              footer={noticeEnd ? undefined : confirmingNotice ? (
+                <>
+                  <span className="text-foreground">You take no new requests from now on. Current projects continue.</span>
+                  <span className="flex gap-2">
+                    <Button type="button" variant="ghost" size="sm" disabled={leaving.isPending} onClick={() => setConfirmingNotice(false)}>Cancel</Button>
+                    <Button type="button" variant="destructive" size="sm" disabled={leaving.isPending} onClick={() => leaving.mutate({ teamSlug })}>
                       {leaving.isPending ? "Recording…" : "Confirm leaving notice"}
                     </Button>
-                    <Button type="button" variant="outline" disabled={leaving.isPending} onClick={() => setConfirmingNotice(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
+                  </span>
+                </>
               ) : (
-                <Button type="button" variant="secondary" onClick={() => setConfirmingNotice(true)}>
-                  Give leaving notice
-                </Button>
+                <>
+                  <span>This cannot be undone here.</span>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setConfirmingNotice(true)}>Give leaving notice</Button>
+                </>
               )}
-            </section>
-          ) : null}
+            >
+              <p className="px-6 py-5 text-[14px]">
+                {noticeEnd
+                  ? `You gave notice. You take no new requests, and your notice ends on ${new Date(noticeEnd).toLocaleDateString()}.`
+                  : "When you give notice, you stop taking new requests and finish the projects you have."}
+              </p>
+            </SettingsSection>
+          </div>
+        ) : null}
 
-          {memberError ? <p role="alert" className="text-sm text-destructive">{memberError.message}</p> : null}
-        </div>
+        {memberError ? <p role="alert" className="text-[13px] text-destructive">{memberError.message}</p> : null}
       </div>
     </main>
   );

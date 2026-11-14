@@ -444,7 +444,7 @@ export default function ServicesTeamDashboard({
                 </div>
               ) : null}
             </div>
-            <div className="frame frame-body grid gap-2 p-5">
+            <div className="frame frame-body grid gap-2 p-6">
               <p className="text-sm text-muted-foreground">
                 Sell digital downloads, such as presets, templates and icons, from your seller page. Files can be up to
                 100 MB.
