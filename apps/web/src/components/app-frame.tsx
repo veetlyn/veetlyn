@@ -116,7 +116,7 @@ export default function AppFrame({
         </div>
       </dialog> : null}
 
-      <div className={cn("flex min-w-0 flex-col bg-card md:my-2 md:mr-2 md:frame md:rounded-[10px]", fill ? "min-h-0 md:h-[calc(100svh-1rem)]" : "min-h-svh md:min-h-[calc(100svh-1rem)]")}>
+      <div className={cn("flex min-w-0 flex-col bg-card md:border-l", fill ? "min-h-0 md:h-svh" : "min-h-svh")}>
         <div className="sticky top-0 z-20 flex h-[52px] shrink-0 items-center gap-3 border-b bg-card/90 px-4 backdrop-blur-md md:px-5">
           <button
             ref={menuButton}
