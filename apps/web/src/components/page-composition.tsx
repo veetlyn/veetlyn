@@ -42,7 +42,7 @@ export function WorkPage({
 // Context beside the work, never a repeat of the page header: status facts and the next action for this tab.
 export function ContextRail({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <aside aria-label={label} className={cn("grid min-w-0 content-start gap-8 xl:sticky xl:top-6", className)}>
+    <aside aria-label={label} className={cn("grid min-w-0 content-start gap-8 xl:sticky xl:top-[76px]", className)}>
       {children}
     </aside>
   );

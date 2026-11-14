@@ -114,3 +114,6 @@
 /* Frame strips get a quarter em more room at the sides than the shared utility. */
 [data-dash] .frame-head { padding-left: calc(12px + 0.25em); padding-right: calc(8px + 0.25em); }
 [data-dash] .frame-foot { padding-left: calc(12px + 0.25em); padding-right: calc(12px + 0.25em); }
+
+/* Anchored sections land below the sticky top bar. */
+html:has([data-app-shell]) { scroll-padding-top: 64px; }

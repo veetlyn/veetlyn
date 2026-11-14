@@ -37,7 +37,7 @@ export default function RootLayout({
         <link rel="preload" href="/fonts/Inter-3.19-roman.var.woff2" as="font" type="font/woff2" crossOrigin="" />
         <link rel="preload" href="/fonts/CalSansUI-Variable.woff2" as="font" type="font/woff2" crossOrigin="" />
       </head>
-      <body className="flex min-h-svh flex-col antialiased has-[[data-app-shell]]:h-svh has-[[data-app-shell]]:overflow-hidden">
+      <body className="flex min-h-svh flex-col antialiased has-[[data-app-shell][data-fill]]:h-svh has-[[data-app-shell][data-fill]]:overflow-hidden">
         <PwaRegistration />
         <PlatformNameProvider name={platformName()} domain={platformDomain()} storeDomain={storeDomain()} contactDomain={contactDomain()}>
           <Providers>{children}</Providers>

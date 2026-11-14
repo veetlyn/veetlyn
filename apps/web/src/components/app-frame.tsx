@@ -77,9 +77,12 @@ export default function AppFrame({
   return (
     <div
       data-app-shell
-      className={cn("grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-background", "md:grid-cols-[240px_minmax(0,1fr)]")}
+      data-fill={fill ? "" : undefined}
+      // The page scrolls the document, so the main surface is as tall as its content; the sidebar stays pinned at the
+      // viewport's height. A fill page (a thread with its composer) is held to the viewport instead.
+      className={cn("grid flex-1 grid-cols-[minmax(0,1fr)] items-start bg-background", "md:grid-cols-[240px_minmax(0,1fr)]", fill && "h-svh min-h-0 items-stretch")}
     >
-      {!mobile ? <aside data-scroll className="hidden min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-2 md:flex">{navigation}</aside> : null}
+      {!mobile ? <aside data-scroll className="sticky top-0 hidden h-svh min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-2 md:flex">{navigation}</aside> : null}
 
       {mobile ? <dialog
         ref={drawer}
@@ -106,8 +109,8 @@ export default function AppFrame({
         </div>
       </dialog> : null}
 
-      <div className="flex min-h-0 min-w-0 flex-col bg-card md:my-2 md:mr-2 md:frame md:rounded-[10px]">
-        <div className="flex h-[52px] shrink-0 items-center gap-3 border-b px-4 md:px-5">
+      <div className={cn("flex min-w-0 flex-col bg-card md:my-2 md:mr-2 md:frame md:rounded-[10px]", fill ? "min-h-0 md:h-[calc(100svh-1rem)]" : "min-h-svh md:min-h-[calc(100svh-1rem)]")}>
+        <div className="sticky top-0 z-20 flex h-[52px] shrink-0 items-center gap-3 border-b bg-card/90 px-4 backdrop-blur-md md:px-5">
           <button
             ref={menuButton}
             type="button"
@@ -125,10 +128,10 @@ export default function AppFrame({
         </div>
         <div
           id="page-scroll"
-          data-scroll
+          data-scroll={fill ? "" : undefined}
           className={cn(
-            "min-h-0 flex-1 motion-safe:scroll-smooth",
-            fill ? "flex flex-col overflow-hidden" : "overflow-y-auto",
+            "flex-1",
+            fill && "flex min-h-0 flex-col overflow-hidden",
           )}
         >
           {banner}
