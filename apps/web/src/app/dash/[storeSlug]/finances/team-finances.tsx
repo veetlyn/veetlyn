@@ -4,10 +4,11 @@ import { LineChart, LineChartLegend, LineChartPlot, type LineChartSeries, LineCh
 import { Tabs, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
 import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { Figure } from "@/components/figure";
+import { Figure, StatRow } from "@/components/figure";
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
 import { ListPage, PageHeader } from "@/components/page-composition";
@@ -149,9 +150,7 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
         </>}
       />
 
-      <p role="status" className="text-sm text-muted-foreground">
-        {periodLabel(range, analytics.currentStart, analytics.currentEnd)} · Collections are dated by PayPal capture; payouts by settlement.
-      </p>
+      <p role="status" className="sr-only">{periodLabel(range, analytics.currentStart, analytics.currentEnd)}</p>
 
       {payments.data.length === 0 && (payouts.data?.payouts.length ?? 0) === 0 ? (
         <section className="frame frame-panel"><div className="frame frame-body px-5 py-10 text-center">
@@ -160,11 +159,40 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
         </div></section>
       ) : (
         <>
-          <section aria-label="Key figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {snapshot ? (
+            <section aria-labelledby="needs-attention-heading" className="space-y-4">
+              <h2 id="needs-attention-heading" className="text-sm font-medium">Needs attention now</h2>
+              <ul className="frame frame-panel divide-y">
+                {[
+                  { label: "Waiting to be paid", note: "All pending project payments", value: money(snapshot.pendingInMinor), href: `/${teamSlug}/payments` },
+                  ...(payouts.isSuccess ? [{ label: "Payouts waiting for approval", note: `${snapshot.awaitingApprovalCount} ${snapshot.awaitingApprovalCount === 1 ? "request" : "requests"} · ${money(snapshot.inFlightMinor)} being sent`, value: money(snapshot.awaitingApprovalMinor), href: `/${teamSlug}/payouts` }] : []),
+                  ...(cases.isSuccess ? [{ label: "Open disputes", note: `${money(snapshot.disputedMinor)} disputed`, value: String(snapshot.openDisputes), href: `/${teamSlug}/cases` }] : []),
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="group grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 px-5 py-4 transition-colors duration-150 hover:bg-foreground/[0.02]">
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-medium">{item.label}</span>
+                        <span className="block truncate text-[13px] text-muted-foreground">{item.note}</span>
+                      </span>
+                      <span className="font-tabular text-[15px] font-medium">{item.value}</span>
+                      <ChevronRight aria-hidden="true" className="size-4 text-muted-foreground transition-transform duration-150 group-hover:translate-x-0.5" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          <section aria-labelledby="period-heading" className="space-y-4">
+            <div className="space-y-0.5">
+              <h2 id="period-heading" className="text-sm font-medium">{periodLabel(range, analytics.currentStart, analytics.currentEnd)}</h2>
+              <p className="text-[13px] text-muted-foreground">Collections are dated by PayPal capture; payouts by settlement.</p>
+            </div>
+          <StatRow label="Key figures">
             <Figure label="Collected from project payments" value={money(current.grossMinor)} note={growthNote} href={`/${teamSlug}/payments`} />
             <Figure label="After PayPal fees and refunds" value={money(current.netMinor)} note={`${percent(current.feeRate)} PayPal fees · ${percent(current.refundRate)} refunded`} href={`/${teamSlug}/payments`} />
             <Figure label="Paid to members" value={payouts.isSuccess ? money(current.paidOutMinor) : "Unavailable"} note={payouts.isSuccess ? `${current.paidOutCount} settled ${current.paidOutCount === 1 ? "payout" : "payouts"} in this period${analytics.undatedPayouts > 0 ? ` · ${analytics.undatedPayouts} more settled without a date${analytics.undatedPaidOutMinor > 0 ? ` (${money(analytics.undatedPaidOutMinor)})` : ""}, not in the dated total` : ""}` : "Payout records are unavailable"} href={payouts.isSuccess ? `/${teamSlug}/payouts` : undefined} />
             <Figure label="Payments collected" value={String(current.count)} note={current.averageMinor === null ? "No dated collections in this period" : `${money(Math.round(current.averageMinor))} average payment`} href={`/${teamSlug}/payments`} />
+          </StatRow>
           </section>
 
           <RecordCard
@@ -258,16 +286,6 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
               noun={{ one: "project", many: "projects" }}
             />
 
-          {snapshot ? (
-            <section aria-labelledby="needs-attention-heading" className="space-y-3">
-              <h2 id="needs-attention-heading" className="text-sm font-medium">Needs attention now</h2>
-              <div className="grid gap-3 md:grid-cols-3">
-                <Figure label="Waiting to be paid" value={money(snapshot.pendingInMinor)} note="All pending project payments" href={`/${teamSlug}/payments`} />
-                {payouts.isSuccess ? <Figure label="Payouts waiting for approval" value={money(snapshot.awaitingApprovalMinor)} note={`${snapshot.awaitingApprovalCount} ${snapshot.awaitingApprovalCount === 1 ? "request" : "requests"} · ${money(snapshot.inFlightMinor)} being sent`} href={`/${teamSlug}/payouts`} /> : null}
-                {cases.isSuccess ? <Figure label="Open disputes" value={String(snapshot.openDisputes)} note={`${money(snapshot.disputedMinor)} disputed`} href={`/${teamSlug}/cases`} /> : null}
-              </div>
-            </section>
-          ) : null}
         </>
       )}
     </ListPage>

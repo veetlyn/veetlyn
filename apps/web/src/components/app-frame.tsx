@@ -87,9 +87,9 @@ export default function AppFrame({
       data-fill={fill ? "" : undefined}
       // The page scrolls the document, so the main surface is as tall as its content; the sidebar stays pinned at the
       // viewport's height. A fill page (a thread with its composer) is held to the viewport instead.
-      className={cn("grid flex-1 grid-cols-[minmax(0,1fr)] items-start bg-background", "md:grid-cols-[240px_minmax(0,1fr)]", fill && "h-svh min-h-0 items-stretch")}
+      className={cn("grid flex-1 grid-cols-[minmax(0,1fr)] items-start bg-background", "md:grid-cols-[256px_minmax(0,1fr)]", fill && "h-svh min-h-0 items-stretch")}
     >
-      {!mobile ? <aside data-scroll className="sticky top-0 hidden h-svh min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-2 md:flex">{navigation}</aside> : null}
+      {!mobile ? <aside data-scroll className="sticky top-0 hidden h-svh min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-3 pt-2 pb-3 md:flex">{navigation}</aside> : null}
 
       {mobile ? <dialog
         ref={drawer}
@@ -174,9 +174,12 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
   return (
     <DropdownMenu>
       {/* As tall as the page's top bar, so the two line up across the frame. */}
-      <DropdownMenuTrigger className="mb-4 flex h-[52px] w-full shrink-0 items-center gap-2.5 rounded-[10px] raised px-2.5 text-left hover:brightness-[0.98] data-popup-open:brightness-[0.97]" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
-        <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-md bg-secondary text-[12px] font-semibold">{initialsOf(workspace.label)}</span>
-        <span className="min-w-0 flex-1 truncate text-sm"><span className="font-medium">{workspace.label}</span>{workspace.detail ? <span className="text-muted-foreground"> · {workspace.detail}</span> : null}</span>
+      <DropdownMenuTrigger className="mb-3 flex h-[52px] w-full shrink-0 items-center gap-3 rounded-[10px] px-2 text-left transition-colors duration-150 outline-none hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:outline-ring data-popup-open:bg-foreground/[0.05]" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
+        <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-[8px] bg-foreground text-[12px] font-medium text-background">{initialsOf(workspace.label)}</span>
+        <span className="grid min-w-0 flex-1">
+          <span className="truncate text-[14px] font-medium">{workspace.label}</span>
+          {workspace.detail ? <span className="truncate text-[12px] text-muted-foreground">{workspace.detail}</span> : null}
+        </span>
         <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-h-[70dvh] w-64 overflow-y-auto bg-card" align="start">

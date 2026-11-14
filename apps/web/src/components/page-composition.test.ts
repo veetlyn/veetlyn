@@ -3,7 +3,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ContextRail, DocumentPage, ListPage, WorkPage } from "./page-composition";
+import { DocumentPage, ListPage, WorkPage } from "./page-composition";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -22,11 +22,10 @@ afterEach(async () => {
 });
 
 describe("page composition", () => {
-  it("puts the work column, context rail and composer in one aligned work layout", async () => {
+  it("puts the work column and composer in one aligned work layout", async () => {
     await act(async () =>
       root.render(
         createElement(WorkPage, {
-          rail: createElement(ContextRail, { label: "Project facts", children: "Facts" }),
           composer: createElement("p", null, "Composer"),
           children: createElement("p", null, "Work"),
         }),
@@ -36,7 +35,6 @@ describe("page composition", () => {
     expect(main?.dataset.composition).toBe("work");
     expect(main?.querySelector("[data-work-column]")?.textContent).toContain("Work");
     expect(main?.querySelector("[data-composer-slot]")?.textContent).toContain("Composer");
-    expect(container.querySelector("aside[aria-label='Project facts']")?.textContent).toContain("Facts");
     // The composer lives inside the work column, so it aligns with the content above it.
     expect(main?.querySelector("[data-work-column] [data-composer-slot]")).not.toBeNull();
   });

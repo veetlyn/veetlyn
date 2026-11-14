@@ -10,7 +10,7 @@ import { useEffect, useRef } from "react";
 import { AgentIcon } from "@/components/agent-icon";
 
 import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
-import { Figure } from "@/components/figure";
+import { Figure, StatRow } from "@/components/figure";
 import { Frame } from "@/components/frame";
 import Loader from "@/components/loader";
 import PayPalConnectCard from "@/components/paypal-connect-card";
@@ -383,7 +383,7 @@ export default function ServicesTeamDashboard({
             </p>
           ) : null}
 
-          <section aria-label="Figures" className="grid gap-3 sm:grid-cols-3">
+          <StatRow label="Figures">
             {admin ? (
               <Figure
                 label="Paid this month"
@@ -403,7 +403,7 @@ export default function ServicesTeamDashboard({
               value={projects.isPending ? "…" : projects.isError ? "Unavailable" : String(toDeliver.length)}
               note={toDeliver.length === 1 ? "project" : "projects"}
             />
-          </section>
+          </StatRow>
         </div>
 
         {admin && !setupDone ? (

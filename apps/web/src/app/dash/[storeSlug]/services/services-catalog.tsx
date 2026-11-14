@@ -3,7 +3,10 @@
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Briefcase } from "lucide-react";
 import Link from "next/link";
+
+import { CatalogTile } from "@/components/catalog/catalog-tile";
 
 import type { TableColumn } from "@jendal-workspace/ui/components/motion/table";
 
@@ -92,7 +95,6 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
         description="What clients can request from your seller page."
         actions={
           <>
-            <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
             {isAdmin ? <Link href={`/${teamSlug}/services/new`} className={buttonVariants()}>Add service</Link> : null}
           </>
         }
@@ -122,6 +124,16 @@ export default function ServicesCatalog({ teamSlug }: { teamSlug: string }) {
           defaultSort={{ key: "name", direction: "asc" }}
           empty={{ title: "No services yet", text: isAdmin ? "Add your first service: what you make, what it usually costs and how long it takes." : "An admin adds the services: what the team makes, what it usually costs and how long it takes." }}
           noun={{ one: "service", many: "services" }}
+          gridItem={(o) => (
+            <CatalogTile
+              href={`/${teamSlug}/services/${o.id}`}
+              title={o.name}
+              detail={`${departmentName.get(o.departmentId ?? "") ?? "No category"} · ${daysLabel(o)}`}
+              price={priceLabel(o, currency)}
+              status={<Badge tone={visibility(o) === "listed" ? "good" : "neutral"}>{visibility(o) === "hidden" ? "Hidden" : visibility(o) === "listed" ? "Listed" : "Not in AI"}</Badge>}
+              icon={<Briefcase aria-hidden="true" />}
+            />
+          )}
         />
       ) : null}
     </ListPage>

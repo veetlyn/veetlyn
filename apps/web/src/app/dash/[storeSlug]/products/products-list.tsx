@@ -8,6 +8,7 @@ import { Package } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { CatalogTile } from "@/components/catalog/catalog-tile";
 import { DataList } from "@/components/data-list";
 import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import DigitalProducts from "@/components/catalog/digital-products";
@@ -68,7 +69,6 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
         description="Ready-made items clients buy from the shop."
         actions={
           <>
-            <Link href={`/${storeSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
             <Link href={`/${storeSlug}/products/new`} className={buttonVariants()}>Add premade item</Link>
           </>
         }
@@ -91,6 +91,17 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
           defaultSort={{ key: "title", direction: "asc" }}
           empty={{ title: "No premade items yet", text: "Add your first item — start from a link, a photo, or a blank form." }}
           noun={{ one: "item", many: "items" }}
+          gridItem={(product) => (
+            <CatalogTile
+              href={`/${storeSlug}/products/${product.id}`}
+              title={product.title}
+              detail={`${product.departmentId ? categoryPath.get(product.departmentId) ?? "Category" : "No category"} · ${product.totalStock} in stock`}
+              price={price(product)}
+              status={<Badge tone={product.status === "published" ? "good" : "neutral"}>{product.status === "published" ? "Published" : "Draft"}</Badge>}
+              imageUrl={product.imageKey ? productImageUrl(product.imageKey) : null}
+              icon={<Package aria-hidden="true" />}
+            />
+          )}
         />
       ) : null}
     </ListPage>

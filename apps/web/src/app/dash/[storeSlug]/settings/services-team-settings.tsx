@@ -21,6 +21,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { type FormEvent, useState } from "react";
 
+import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
 import Loader from "@/components/loader";
 import { PageHeader, WorkPage } from "@/components/page-composition";
 import { SaveBar, SettingsField, SettingsSection } from "@/components/settings-section";
@@ -85,6 +86,16 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
         toast.success("Bio saved");
         void queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) });
       },
+    }),
+  );
+  const enableStore = useMutation(
+    trpc.servicesTeam.setStoreEnabled.mutationOptions({
+      onSuccess: () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: trpc.servicesTeam.get.queryKey({ teamSlug }) }),
+          queryClient.invalidateQueries({ queryKey: trpc.seller.preview.queryKey() }),
+          queryClient.invalidateQueries({ queryKey: trpc.seller.status.queryKey() }),
+        ]),
     }),
   );
   const switchToTeam = useMutation(
@@ -247,6 +258,20 @@ export default function ServicesTeamSettings({ teamSlug }: { teamSlug: string })
           error={save.error?.message ?? saveBio.error?.message}
         />
       </form>
+
+      <SettingsSection title="Store" description="Sell downloads such as presets, templates and icons from your seller page.">
+        <SettingsField
+          label="Premade items on your seller page"
+          description={current?.storeEnabled ? "On. Buyers can check out your published items." : "Off. Your items stay saved but are not for sale."}
+        >
+          {current?.storeEnabled ? <TurnOffStoreButton teamSlug={teamSlug} /> : (
+            <Button type="button" variant="outline" size="sm" onClick={() => enableStore.mutate({ teamSlug, enabled: true })} disabled={enableStore.isPending}>
+              {enableStore.isPending ? "Turning on…" : "Turn on the store"}
+            </Button>
+          )}
+          {enableStore.error ? <p role="alert" className="mt-2 text-[13px] text-destructive">{enableStore.error.message}</p> : null}
+        </SettingsField>
+      </SettingsSection>
 
       {solo ? (
         <SettingsSection

@@ -1,23 +1,38 @@
+import { cn } from "@jendal-workspace/ui/lib/utils";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
-// A key figure in a coated frame: the label in the head strip, the figure and its note in the card. A linked figure
-// lifts a pixel on hover and opens the records behind it.
+// Figures sit on the surface, never in a box: a quiet label, the number, one line of context. A linked figure opens
+// the records behind it.
 export function Figure({ label, value, note, href }: { label: string; value: string; note: string; href?: string }) {
   const content = (
     <>
-      <p className="frame-head text-muted-foreground">{label}</p>
-      <div className="frame frame-body flex-1 px-6 py-5">
-        <p className="font-tabular text-[24px] leading-none font-semibold tracking-[-0.02em]">{value}</p>
-        <p className="mt-2 text-xs text-muted-foreground">{note}</p>
-      </div>
+      <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
+        {label}
+        {href ? <ChevronRight aria-hidden="true" className="size-3.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100" /> : null}
+      </p>
+      <p className="mt-1.5 font-tabular text-[24px] leading-tight font-medium tracking-[-0.02em]">{value}</p>
+      <p className="mt-1 text-[12px] text-muted-foreground">{note}</p>
     </>
   );
-  const className = "frame frame-panel flex min-w-0 flex-col";
   return href ? (
-    <Link href={href} className={`${className} transition-transform duration-150 hover:-translate-y-px`}>
-      {content}
-    </Link>
+    <Link href={href} className="group block min-w-0 rounded-[8px] outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">{content}</Link>
   ) : (
-    <div className={className}>{content}</div>
+    <div className="min-w-0">{content}</div>
+  );
+}
+
+// Several figures side by side, split by hairlines, between two rules; on a phone they stack.
+export function StatRow({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <section
+      aria-label={label}
+      className={cn(
+        "grid grid-cols-1 gap-5 border-y py-5 sm:auto-cols-fr sm:grid-flow-col sm:gap-0 sm:divide-x [&>*]:sm:px-6 [&>*:first-child]:sm:pl-0 [&>*:last-child]:sm:pr-0",
+        className,
+      )}
+    >
+      {children}
+    </section>
   );
 }

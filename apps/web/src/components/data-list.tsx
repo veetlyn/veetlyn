@@ -6,7 +6,7 @@ import { Input } from "@jendal-workspace/ui/components/motion/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jendal-workspace/ui/components/motion/select";
 import { Table, type TableColumn } from "@jendal-workspace/ui/components/motion/table";
 import { Tabs, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
-import { Search } from "lucide-react";
+import { LayoutGrid, List, Search } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { type ListSort, listView } from "@/lib/list-view";
@@ -52,6 +52,7 @@ export function DataList<T>({
   empty,
   noun,
   titleKey,
+  gridItem,
 }: {
   label: string;
   /** A heading for a list that sits inside a larger page; it leads the toolbar row. */
@@ -71,6 +72,8 @@ export function DataList<T>({
   noun: { one: string; many: string };
   /** The column that names a row; it leads each item on a phone. Defaults to the first column. */
   titleKey?: string;
+  /** A tile for the row. With it, the list can also be shown as a grid of tiles. */
+  gridItem?: (row: T) => ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [viewKey, setViewKey] = useState(defaultView ?? views[0]?.key ?? "");
@@ -78,6 +81,26 @@ export function DataList<T>({
   const [sort, setSort] = useState<ListSort | null>(defaultSort);
   const [page, setPage] = useState(1);
   const searchRef = useRef<HTMLInputElement>(null);
+  // List or grid, remembered per list in this browser; storage can be unavailable, so it falls back to the list.
+  const displayKey = `display.${label}`;
+  const [display, setDisplay] = useState<"list" | "grid">("list");
+  useEffect(() => {
+    if (!gridItem) return;
+    try {
+      if (window.localStorage.getItem(displayKey) === "grid") setDisplay("grid");
+    } catch {
+      // Private windows and blocked storage keep the default.
+    }
+  }, [displayKey, gridItem]);
+  const chooseDisplay = (next: string) => {
+    if (next !== "list" && next !== "grid") return;
+    setDisplay(next);
+    try {
+      window.localStorage.setItem(displayKey, next);
+    } catch {
+      // The choice still applies for this visit.
+    }
+  };
 
   // "/" focuses the search from anywhere on the page, as in most list tools. Keyboard focus never animates.
   useEffect(() => {
@@ -181,9 +204,31 @@ export function DataList<T>({
               </SelectContent>
             </Select>
           ))}
+          {gridItem ? (
+            <Tabs value={display} onValueChange={chooseDisplay} variant="segment">
+              <TabsList aria-label={`Show ${noun.many} as`} wrapperClassName="w-auto" className="border">
+                <TabsTrigger value="list" className="px-2 py-1" aria-label="List"><List className="size-4" aria-hidden="true" /></TabsTrigger>
+                <TabsTrigger value="grid" className="px-2 py-1" aria-label="Grid"><LayoutGrid className="size-4" aria-hidden="true" /></TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : null}
         </div>
       </div>
 
+      {gridItem && display === "grid" && list.total > 0 ? (
+        <>
+          <ul className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(232px,1fr))]">
+            {list.rows.map((row) => <li key={getRowId(row)} className="min-w-0">{gridItem(row)}</li>)}
+          </ul>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-muted-foreground">
+            <p role="status" className="tabular-nums">
+              {list.total} {list.total === 1 ? noun.one : noun.many}
+              {view?.match || filtered ? <span className="opacity-70"> of {rows.length}</span> : null}
+            </p>
+            {list.totalPages > 1 ? <Pagination totalPages={list.totalPages} page={list.page} onPageChange={setPage} aria-label={`${label} pages`} /> : null}
+          </div>
+        </>
+      ) : (
       <div className="frame frame-panel min-w-0">
         <div className="frame frame-body overflow-hidden">
           {list.total === 0 ? (
@@ -235,6 +280,7 @@ export function DataList<T>({
           {list.totalPages > 1 ? <Pagination totalPages={list.totalPages} page={list.page} onPageChange={setPage} aria-label={`${label} pages`} /> : null}
         </div>
       </div>
+      )}
     </section>
   );
 }

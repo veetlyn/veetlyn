@@ -135,7 +135,7 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
           </p>
         ) : null}
         {connect === null ? (
-          <Button type="button" disabled={start.isPending} onClick={handleTurnOn}>
+          <Button type="button" variant="outline" disabled={start.isPending} onClick={handleTurnOn}>
             {start.isPending ? "Connecting…" : label}
           </Button>
         ) : (
@@ -164,10 +164,11 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <section aria-labelledby="automatic-payouts-heading" className="panel space-y-3 p-5">
-      <h2 id="automatic-payouts-heading" className="font-medium">
-        Automatic payouts
-      </h2>
+    <section aria-labelledby="automatic-payouts-heading" className="frame frame-panel min-w-0">
+      <div className="frame-head">
+        <h2 id="automatic-payouts-heading" className="font-medium">Automatic payouts</h2>
+      </div>
+      <div className="frame frame-body space-y-3 px-5 py-4">
       {credentials.isPending ? (
         <Loader />
       ) : credentials.isError ? (
@@ -226,6 +227,7 @@ export function PayoutCredentialsCard({ teamSlug }: { teamSlug: string }) {
         confirmLabel="Turn off"
         onConfirm={() => remove.mutate({ teamSlug })}
       />
+      </div>
     </section>
   );
 }

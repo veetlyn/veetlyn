@@ -47,7 +47,7 @@ import { trpc, trpcClient } from "@/utils/trpc";
 import type { ProjectTab } from "@/lib/project-tabs";
 
 import { ProjectProgress } from "@/components/project-progress";
-import { ContextRail, WorkPage } from "@/components/page-composition";
+import { WorkPage } from "@/components/page-composition";
 
 import { ClientsSection } from "./clients-section";
 import { ConversationSection, RequestHandling } from "./conversation-section";
@@ -380,49 +380,17 @@ export default function ProjectDetail({
         ? { title: project.status === "awaiting_deposit" ? "Waiting for the client’s deposit" : "Waiting for the client’s balance payment", tab: financesHidden ? "conversation" : "money", action: financesHidden ? "Open conversation" : "View finances" }
         : { title: "Review the project’s latest activity", tab: "conversation", action: "Open conversation" };
 
-  const projectRail = (
-    <ContextRail label="Project context">
-      {view === "activity" ? <ProjectRatings key={projectId} teamSlug={teamSlug} projectId={projectId} ratings={detail.data.ratings} onChanged={refresh} /> : null}
-      {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
-      <section className="space-y-2 border-b pb-5" aria-labelledby="project-people-heading">
-        <h2 id="project-people-heading" className="text-sm font-semibold">People</h2>
-        <dl className="divide-y text-xs">
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Assigned to</dt><dd className="break-words">{members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? "Not assigned"}</dd></div>
-        </dl>
-      </section>
-      {!financesHidden ? <section className="space-y-2 border-b pb-5" aria-labelledby="project-glance-heading">
-        <h2 id="project-glance-heading" className="text-sm font-semibold">At a glance</h2>
-        <dl className="divide-y text-xs">
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Quotes</dt><dd className="font-tabular">{quotes.length}</dd></div>
-          <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 py-2"><dt className="text-muted-foreground">Deliveries</dt><dd className="font-tabular">{deliveries.length}</dd></div>
-        </dl>
-      </section> : null}
-      {view !== "activity" && seller.data?.available ? <Link href={`/${teamSlug}/threads?project=${projectId}`} className="flex items-start gap-2.5 rounded-[10px] bg-secondary/70 p-3 text-xs hover:bg-accent">
-        <span className="grid min-w-0 gap-0.5"><strong className="break-words font-semibold">Ask about {project.title}</strong><span className="text-muted-foreground">Open a focused thread for this project.</span></span>
-      </Link> : null}
-      {view === "overview" && schedule.length > 0 ? (
-        <section id="scheduled" className="scroll-mt-4 space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">Scheduled</h2>
-            <p className="text-sm text-muted-foreground">These run on their own.</p>
-          </div>
-          <ul className="panel divide-y text-sm">
-            {schedule.map((item) => (
-              <li key={item.kind} className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
-                <span>{scheduleLabel(item.kind)}</span>
-                <span className="shrink-0 text-right text-muted-foreground">{scheduleWhen(item)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </ContextRail>
-  );
+  const assigneeName = members.data?.find((member) => member.id === project.assignedFreelancerId)?.name ?? null;
 
   return (
-    <WorkPage rail={projectRail}>
+    <WorkPage>
       <div className="min-w-0 space-y-2">
-        <h1 className="break-words font-heading text-3xl">{project.title}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <h1 className="min-w-0 break-words font-heading text-[24px] leading-[1.2]">{project.title}</h1>
+          {view !== "activity" && seller.data?.available ? (
+            <Link href={`/${teamSlug}/threads?project=${projectId}`} className={buttonVariants({ variant: "outline", size: "sm" })}>Ask about this project</Link>
+          ) : null}
+        </div>
         {detail.isError ? <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[10px] border p-3 text-sm">
           <p className="min-w-0 flex-1">Couldn’t refresh this project. You’re viewing the last loaded version.</p>
           <Button type="button" variant="outline" size="sm" onClick={() => void detail.refetch()}>Try again</Button>
@@ -431,7 +399,8 @@ export default function ProjectDetail({
           <Badge tone={TEAM_PROJECT_TONES[project.status]}>
             {projectStatusLabel(project.status)}
           </Badge>
-          {primary?.name ?? "No client"}
+          <span>Client <span className="text-foreground">{primary?.name ?? "none yet"}</span></span>
+          {!solo ? <span>· Assigned to <span className="text-foreground">{assigneeName ?? "nobody yet"}</span></span> : null}
         </p>
         {view === "overview" ? <div className="max-w-3xl pt-2">
           <ProjectProgress status={project.status} layout="row" paidUpfront={project.upfrontBps === 10_000} />
@@ -450,6 +419,24 @@ export default function ProjectDetail({
           <p className="text-sm">{next.title}</p>
         </RecordCard>
       ) : null}
+      {view === "overview" && schedule.length > 0 ? (
+        <section id="scheduled" className="scroll-mt-4 space-y-3">
+          <div className="space-y-0.5">
+            <h2 className="text-sm font-medium">Coming up</h2>
+            <p className="text-[13px] text-muted-foreground">These happen on their own.</p>
+          </div>
+          <ul className="frame frame-panel divide-y text-[14px]">
+            {schedule.map((item) => (
+              <li key={item.kind} className="flex items-baseline justify-between gap-4 px-5 py-3.5">
+                <span>{scheduleLabel(item.kind)}</span>
+                <span className="shrink-0 text-right text-muted-foreground">{scheduleWhen(item)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {view === "activity" ? <ProjectRatings key={projectId} teamSlug={teamSlug} projectId={projectId} ratings={detail.data.ratings} onChanged={refresh} /> : null}
+      {view === "activity" ? <MemberMarks teamSlug={teamSlug} project={project} marks={marks} role={role} onChanged={refresh} /> : null}
       {view === "overview" && role !== "freelancer" && project.status === "quoting" ? (
         <RequestHandling teamSlug={teamSlug} projectId={projectId} members={members.data ?? []} onChange={refresh} />
       ) : null}

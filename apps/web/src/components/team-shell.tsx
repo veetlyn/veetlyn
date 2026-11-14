@@ -23,6 +23,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import AppFrame, { navItemClass } from "@/components/app-frame";
+import RecentCalls from "@/components/recent-calls";
 import BillingNotice from "@/components/billing-notice";
 import ProjectNav from "@/components/project-nav";
 import { useMyWorkspaces } from "@/hooks/use-my-workspaces";
@@ -167,10 +168,13 @@ export default function TeamShell({
       { href: `/${slug}`, label: "Overview" },
       ...(has("projects") ? [{ href: `/${slug}/projects`, label: PAGES.projects.label }] : []),
       ...(has("orders") || has("requests") ? [{ href: `/${slug}/orders`, label: PAGES.orders.label }] : []),
-      ...(services ? [{ href: `/${slug}/threads`, label: "Threads" }] : []),
     ] },
     { label: "Support", icon: LifeBuoy, disabled: true, tabs: [] },
-    { label: "Catalog", icon: Store, tabs: (["services", "products", "preview"] as const).filter(has).map((page) => ({ href: `/${slug}/${page}`, label: PAGES[page].label })) },
+    { label: "Catalog", icon: Store, tabs: [
+      ...(["services", "products"] as const).filter(has).map((page) => ({ href: `/${slug}/${page}`, label: PAGES[page].label })),
+      ...(services && has("services") ? [{ href: `/${slug}/categories`, label: "Categories" }] : []),
+      ...(has("preview") ? [{ href: `/${slug}/preview`, label: PAGES.preview.label }] : []),
+    ] },
     { label: "Finances", icon: Wallet, tabs: [
       ...(has("payments") ? [{ href: `/${slug}/finances`, label: "Overview" }] : []),
       ...(["payments", "payouts", "cases"] as const).filter(has).map((page) => ({ href: `/${slug}/${page}`, label: PAGES[page].label })),
@@ -225,7 +229,8 @@ export default function TeamShell({
             agentAvailable={seller.data?.available === true}
           />
         ) : (
-          <nav aria-label="Places" className="grid gap-0.5 pt-3">
+          <>
+          <nav aria-label="Places" className="grid gap-0.5 pt-2">
             {places.map((place) => {
               const Icon = place.icon;
               if (place.disabled) {
@@ -248,6 +253,8 @@ export default function TeamShell({
               );
             })}
           </nav>
+          {services && seller.data?.available ? <RecentCalls calls={calls.data?.calls ?? []} callsPath={`/${slug}/threads`} /> : null}
+          </>
         )
       }
       banner={

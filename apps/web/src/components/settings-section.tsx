@@ -20,8 +20,8 @@ export function SettingsSection({
 }) {
   const headingId = useId();
   return (
-    <Card role="group" aria-labelledby={headingId} className="frame frame-panel min-w-0 gap-0 rounded-[18px] border-0 bg-(--frame-strip) py-0">
-      <CardHeader className="gap-1 px-[calc(20px+0.25em)] pt-4 pb-3.5">
+    <Card role="group" aria-labelledby={headingId} className="frame frame-panel min-w-0 gap-0 rounded-[12px] border-0 bg-card py-0">
+      <CardHeader className="gap-1 px-6 pt-5 pb-4">
         <CardTitle as="h2" id={headingId} className="text-[14px] font-medium">{title}</CardTitle>
         {description ? <CardDescription className="text-[13px] leading-5">{description}</CardDescription> : null}
       </CardHeader>

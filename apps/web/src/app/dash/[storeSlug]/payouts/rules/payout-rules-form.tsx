@@ -8,8 +8,6 @@ import {
   type PayoutRuleScope,
   presetRules,
 } from "@jendal-workspace/core";
-import { Badge } from "@jendal-workspace/ui/components/badge";
-import { CARD_TARGET_CLASS, Card, CardDescription, CardHeader, CardTitle } from "@jendal-workspace/ui/components/motion/card";
 import { Checkbox } from "@jendal-workspace/ui/components/motion/checkbox";
 import { RadioGroup, RadioGroupItem } from "@jendal-workspace/ui/components/motion/radio";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jendal-workspace/ui/components/motion/select";
@@ -132,7 +130,7 @@ function AmountField({ id, label, description, value, onChange, unit, numeric = 
   );
 }
 
-// The three starting points, as cards to pick from. Picking one saves it at once.
+// The three starting points, as one choice. Choosing one saves it at once.
 function PresetPicker({ teamSlug, rules, onSaved }: { teamSlug: string; rules: RulesView; onSaved: () => void }) {
   const queryClient = useQueryClient();
   const apply = useMutation(
@@ -148,31 +146,30 @@ function PresetPicker({ teamSlug, rules, onSaved }: { teamSlug: string; rules: R
   return (
     <SettingsSection
       title="Start from a preset"
-      description={<>A preset replaces the rules below; trusted members stay.{rules.preset === "custom" ? <> Your rules are <Badge tone="neutral" className="ml-0.5">Custom</Badge></> : null}</>}
+      description={rules.preset === "custom" ? "Your rules are custom. Choosing a preset replaces the rules below; trusted members stay." : "Choosing a preset replaces the rules below; trusted members stay."}
     >
-      <div className="grid gap-3 p-5 sm:grid-cols-3">
-        {FIXED_PRESETS.map((preset) => {
-          const selected = rules.preset === preset;
-          return (
-            <Card key={preset} size="compact" interactive selected={selected} className="rounded-[12px] bg-card shadow-none data-selected:border-foreground data-selected:shadow-[0_0_0_1px_var(--foreground)]">
-              <CardHeader className="gap-1">
-                <CardTitle className="text-[14px] font-medium">
-                  <button
-                    type="button"
-                    aria-pressed={selected}
-                    disabled={apply.isPending}
-                    onClick={() => { apply.reset(); apply.mutate({ teamSlug, preset }); }}
-                    className={`${CARD_TARGET_CLASS} text-left outline-none`}
-                  >
-                    {PRESET_LABELS[preset]}
-                  </button>
-                </CardTitle>
-                <CardDescription className="text-[13px] leading-5">{presetDescription(preset, rules.currency)}</CardDescription>
-              </CardHeader>
-            </Card>
-          );
-        })}
-      </div>
+      <RadioGroup
+        aria-label="Preset"
+        value={rules.preset === "custom" ? "" : rules.preset}
+        onValueChange={(next) => {
+          const preset = FIXED_PRESETS.find((p) => p === next);
+          if (!preset || apply.isPending) return;
+          apply.reset();
+          apply.mutate({ teamSlug, preset });
+        }}
+        className="gap-0 divide-y"
+      >
+        {FIXED_PRESETS.map((preset) => (
+          <RadioGroupItem
+            key={preset}
+            value={preset}
+            label={PRESET_LABELS[preset]}
+            description={presetDescription(preset, rules.currency)}
+            disabled={apply.isPending}
+            className="w-full px-6 py-4 transition-colors duration-150 hover:bg-foreground/[0.02] [&_[id$=-label]]:text-[14px] [&_[id$=-label]]:leading-5 [&_[id$=-label]]:font-medium [&_[id$=-description]]:text-[13px] [&_[id$=-description]]:leading-5"
+          />
+        ))}
+      </RadioGroup>
       {apply.error ? <p role="alert" className="px-6 py-4 text-[13px] text-destructive">{apply.error.message}</p> : null}
     </SettingsSection>
   );

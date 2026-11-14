@@ -13,7 +13,6 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { DataList } from "@/components/data-list";
-import { Frame } from "@/components/frame";
 import Loader from "@/components/loader";
 import { formatMinor } from "@/lib/money";
 import {
@@ -221,14 +220,19 @@ export function PayoutActions({
 function WaitingForMembers({ waiting }: { waiting: TeamPayouts["waitingForDestination"] }) {
   if (waiting.length === 0) return null;
   return (
-    <section aria-labelledby="waiting-members-heading" className="space-y-2">
-      <h2 id="waiting-members-heading" className="text-sm font-medium">
-        Waiting for members
-      </h2>
-      <ul className="space-y-1 text-sm text-muted-foreground">
+    <section aria-labelledby="waiting-members-heading" className="space-y-3">
+      <div className="space-y-0.5">
+        <h2 id="waiting-members-heading" className="text-sm font-medium">Waiting for members</h2>
+        <p className="text-[13px] text-muted-foreground">These project payouts start once the member connects PayPal.</p>
+      </div>
+      <ul className="frame frame-panel divide-y">
         {waiting.map((item) => (
-          <li key={item.projectId}>
-            Waiting for {item.memberName} to connect PayPal: {item.title} ({formatMinor(item.earningsMinor, item.currency)})
+          <li key={item.projectId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3.5">
+            <span className="min-w-0">
+              <span className="block truncate text-[14px] font-medium">{item.memberName}</span>
+              <span className="block truncate text-[13px] text-muted-foreground">{item.title}</span>
+            </span>
+            <span className="font-tabular text-[14px]">{formatMinor(item.earningsMinor, item.currency)}</span>
           </li>
         ))}
       </ul>
@@ -262,6 +266,8 @@ function RequestsList({
         ? "moving"
         : "other";
   const currencies = [...new Set(data.payouts.map((request) => request.currency))];
+  const counts = { moving: 0, paid: 0, other: 0, needs: 0 };
+  for (const request of data.payouts) counts[stateOf(request)] += 1;
   const columns: TableColumn<TeamPayoutRequest>[] = [
     {
       key: "member",
@@ -275,8 +281,8 @@ function RequestsList({
         </span>
       ),
     },
-    { key: "requested", header: "Requested", width: "128px", sortable: true, sortValue: (request) => new Date(request.createdAt).getTime(), cell: (request) => <span className="whitespace-nowrap">{DATE.format(new Date(request.createdAt))}</span> },
-    { key: "from", header: "From", width: "190px", cell: (request) => <PayoutSource teamSlug={teamSlug} request={request} /> },
+    { key: "requested", header: "Asked", width: "110px", sortable: true, sortValue: (request) => new Date(request.createdAt).getTime(), cell: (request) => <span className="whitespace-nowrap">{DATE.format(new Date(request.createdAt))}</span> },
+    { key: "from", header: "From", width: "170px", cell: (request) => <PayoutSource teamSlug={teamSlug} request={request} /> },
     {
       key: "amount",
       header: "Amount",
@@ -296,21 +302,25 @@ function RequestsList({
     },
     {
       key: "status",
-      header: "Status",
-      width: "210px",
+      header: "State",
+      width: "170px",
       sortable: true,
       sortValue: (request) => payoutStatusLabel(request),
+      cell: (request) => (
+        <span className="flex flex-wrap gap-1.5">
+          <Badge tone={payoutStatusTone(request)}>{payoutStatusLabel(request)}</Badge>
+          {request.reviewReason ? <Badge tone="warn">Needs review</Badge> : null}
+        </span>
+      ),
+    },
+    {
+      key: "next",
+      header: "Next step",
+      width: "220px",
       cell: (request) => {
         const detail = statusDetail(request);
-        return (
-          <span className="grid gap-1">
-            <span className="flex flex-wrap gap-1.5">
-              <Badge tone={payoutStatusTone(request)}>{payoutStatusLabel(request)}</Badge>
-              {request.reviewReason ? <Badge tone="warn">Needs review</Badge> : null}
-            </span>
-            {detail.text ? <span className={`truncate text-xs ${detail.destructive ? "text-destructive" : "text-muted-foreground"}`}>{detail.text}</span> : null}
-          </span>
-        );
+        const text = needsViewer(request) ? "Your approval" : detail.text;
+        return text ? <span className={`truncate ${detail.destructive ? "text-destructive" : "text-muted-foreground"}`}>{text}</span> : <span className="text-muted-foreground">—</span>;
       },
     },
     {
@@ -330,34 +340,45 @@ function RequestsList({
     },
   ];
 
+  // The table reads like the decision: who, for what, how much, where it stands, what it waits on, when it was asked.
+  const ordered = ["member", "from", "amount", "status", "next", "requested", "action"].flatMap((key) => columns.filter((column) => column.key === key));
+
   return (
     <>
       {data.canDecide ? (
-        first ? (
-          <Frame as="div" bodyClassName="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
-            <div className="grid gap-0.5">
-              <p className="font-medium">
-                {mine.length === 1 ? "1 payout needs your approval" : `${mine.length} payouts need your approval`}
+        <section aria-label="Approvals" className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+          <div className="min-w-0 space-y-1">
+            {first ? (
+              <p className="flex flex-wrap items-baseline gap-x-2.5">
+                <span className="font-tabular text-[32px] leading-none font-medium tracking-[-0.02em]">
+                  {sameCurrency ? formatMinor(mine.reduce((sum, request) => sum + request.amountMinor, 0), currency) : `${mine.length} payouts`}
+                </span>
+                <span className="text-[15px] text-muted-foreground">awaiting your approval</span>
               </p>
-              <p className="text-sm text-muted-foreground">
-                {sameCurrency ? `${formatMinor(mine.reduce((sum, request) => sum + request.amountMinor, 0), currency)} requested. ` : ""}
-                PayPal&apos;s fee comes off each payout.
-              </p>
-            </div>
+            ) : (
+              <p className="text-[18px] font-medium">Nothing needs your approval</p>
+            )}
+            <p className="text-[13px] text-muted-foreground">
+              {[
+                first ? `${mine.length} ${mine.length === 1 ? "request" : "requests"}, PayPal's fee comes off each` : null,
+                counts.moving ? `${counts.moving} on ${counts.moving === 1 ? "its" : "their"} way` : null,
+                counts.paid ? `${counts.paid} paid` : null,
+                counts.other ? `${counts.other} rejected or failed` : null,
+                automaticPayoutsOn ? "sent automatically from PayPal" : "sent by export to PayPal Payouts Web",
+              ].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          {first ? (
             <Link href={`/${teamSlug}/payouts/${first.id}`} className={buttonVariants()}>
               Review the next one
             </Link>
-          </Frame>
-        ) : (
-          <Frame as="div" bodyClassName="px-4 py-3.5">
-            <p className="font-medium">Nothing needs your approval</p>
-          </Frame>
-        )
+          ) : null}
+        </section>
       ) : null}
       <DataList
         label="Payout requests"
         rows={data.payouts}
-        columns={columns}
+        columns={ordered}
         getRowId={(request) => request.id}
         searchText={(request) => `${request.memberName} ${request.memberEmail} ${request.projectTitle ?? "request"}`}
         searchLabel="Search payouts"

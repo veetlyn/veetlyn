@@ -3,9 +3,11 @@
 import { Button, buttonVariants } from "@jendal-workspace/ui/components/button";
 import { Badge } from "@jendal-workspace/ui/components/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileDown } from "lucide-react";
 import Link from "next/link";
 
-import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
+import { CatalogTile } from "@/components/catalog/catalog-tile";
+
 import { DataList } from "@/components/data-list";
 import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import Loader from "@/components/loader";
@@ -85,7 +87,6 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
         description="Ready-made downloads clients buy from your seller page."
         actions={
           <>
-            <Link href={`/${teamSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
             {role === "admin" ? <Link href={`/${teamSlug}/products/new`} className={buttonVariants()}>Add premade item</Link> : null}
           </>
         }
@@ -127,18 +128,19 @@ export default function DigitalProducts({ teamSlug }: { teamSlug: string }) {
           defaultSort={{ key: "title", direction: "asc" }}
           empty={{ title: "No premade items yet", text: "Add your first download: a title, a price and the file buyers get." }}
           noun={{ one: "item", many: "items" }}
+          gridItem={(product) => (
+            <CatalogTile
+              href={`/${teamSlug}/products/${product.id}`}
+              title={product.title}
+              detail={product.departmentId ? categoryPath.get(product.departmentId) ?? "Category" : product.fileName ?? "Add a file before publishing"}
+              price={formatMinor(product.priceMinor, currency)}
+              status={<Badge tone={product.status === "published" ? "good" : "neutral"}>{product.status === "published" ? "Published" : "Draft"}</Badge>}
+              icon={<FileDown aria-hidden="true" />}
+            />
+          )}
         />
       ) : null}
 
-      {role === "admin" ? (
-        <section aria-labelledby="store-h" className="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
-          <div>
-            <h2 id="store-h" className="text-sm font-medium">On your seller page</h2>
-            <p className="text-sm text-muted-foreground">Turning this off hides premade items from your seller page.</p>
-          </div>
-          <TurnOffStoreButton teamSlug={teamSlug} />
-        </section>
-      ) : null}
     </ListPage>
   );
 }

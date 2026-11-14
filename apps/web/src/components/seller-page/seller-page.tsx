@@ -5,6 +5,8 @@ import { flattenCategories } from "@/lib/catalog-categories";
 import { formatMinor } from "@/lib/money";
 import { daysLabel, FULFILMENT_LABELS, type Fulfilment, priceLabel } from "@/lib/offering-labels";
 
+import { type CatalogEntry, SellerCatalog } from "./seller-catalog";
+
 type SellerPageOffering = {
   id: string;
   departmentId: string | null;
@@ -36,57 +38,29 @@ export type SellerPageContent = {
   portfolio: { id: string; title: string; url: string; description: string }[];
 };
 
-function OfferingCard({
-  page,
-  offering,
-  Heading,
-}: {
-  page: SellerPageContent;
-  offering: SellerPageOffering;
-  Heading: "h3" | "h4";
-}) {
-  return (
-    <article className="panel grid content-start gap-3 p-5">
-      <Heading className="text-base font-semibold">{offering.name}</Heading>
-      {offering.description ? (
-        <p className="text-sm whitespace-pre-line text-muted-foreground">{offering.description}</p>
-      ) : null}
-      <p className="text-sm">
-        <span className="text-muted-foreground">Usually </span>
-        <span className="font-tabular font-semibold">{priceLabel(offering, page.currency)}</span>
-        <span className="text-muted-foreground"> — {daysLabel(offering)}</span>
-        <span className="text-muted-foreground"> — {FULFILMENT_LABELS[offering.fulfilment]}</span>
-      </p>
-      <a
-        href={`${page.pageBase}/request?offering=${offering.id}`}
-        aria-label={`Request a quote for ${offering.name}`}
-        className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
-      >
-        Request a quote
-      </a>
-    </article>
-  );
-}
-
 export default function SellerPage({ page }: { page: SellerPageContent }) {
-  const departmentIds = new Set(page.departments.map((department) => department.id));
-  const groups = flattenCategories(page.departments)
-    .map((department) => ({
-      department,
-      offerings: page.offerings.filter((offering) => offering.departmentId === department.id),
-    }))
-    .filter((group) => group.offerings.length > 0);
-  // An offering pointing at a department missing from the list still shows, ungrouped.
-  const ungrouped = page.offerings.filter(
-    (offering) => offering.departmentId === null || !departmentIds.has(offering.departmentId),
-  );
-  const productGroups = flattenCategories(page.departments)
-    .map((department) => ({ department, products: page.products.filter((product) => product.departmentId === department.id) }))
-    .filter((group) => group.products.length > 0);
-  const ungroupedProducts = page.products.filter(
-    (product) => product.departmentId === null || !departmentIds.has(product.departmentId),
-  );
-
+  const categories = flattenCategories(page.departments).map((department) => ({ id: department.id, path: department.path }));
+  const services: CatalogEntry[] = page.offerings.map((offering) => ({
+    id: offering.id,
+    categoryId: offering.departmentId,
+    title: offering.name,
+    description: offering.description,
+    price: `Usually ${priceLabel(offering, page.currency)}`,
+    meta: `${daysLabel(offering)} · ${FULFILMENT_LABELS[offering.fulfilment]}`,
+    href: `${page.pageBase}/request?offering=${offering.id}`,
+    action: "Request a quote",
+    actionLabel: `Request a quote for ${offering.name}`,
+  }));
+  const items: CatalogEntry[] = page.products.map((product) => ({
+    id: product.id,
+    categoryId: product.departmentId,
+    title: product.title,
+    description: product.description,
+    price: formatMinor(product.priceMinor, page.currency),
+    href: `${page.pageBase}/buy/${product.id}`,
+    action: "Buy",
+    actionLabel: `Buy ${product.title}`,
+  }));
   return (
     <main className="mx-auto w-full max-w-5xl space-y-12 px-4 py-10 md:py-14">
       <header className="grid gap-4">
@@ -106,6 +80,29 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
           </a>
         ) : null}
       </header>
+      {page.product === "services" ? (
+        page.offerings.length === 0 ? (
+          <section aria-labelledby="services-heading" className="space-y-3">
+            <h2 id="services-heading" className="font-heading text-2xl">Services</h2>
+            {page.products.length === 0 ? (
+              <p className="text-muted-foreground">No services listed right now.</p>
+            ) : (
+              <p className="text-muted-foreground">
+                <a href={`${page.pageBase}/request`} className="underline underline-offset-4">Request a quote</a> for custom work.
+              </p>
+            )}
+          </section>
+        ) : (
+          <SellerCatalog
+            id="services"
+            title="Services"
+            entries={services}
+            categories={categories}
+            footer={<p className="text-sm text-muted-foreground">Looking for something else? <a href={`${page.pageBase}/request`} className="underline underline-offset-4">Request a quote</a></p>}
+          />
+        )
+      ) : null}
+      {items.length > 0 ? <SellerCatalog id="store" title="Premade items" entries={items} categories={categories} /> : null}
       {page.portfolio.length > 0 ? (
         <section aria-labelledby="portfolio-heading" className="space-y-4">
           <h2 id="portfolio-heading" className="font-heading text-2xl">Past work</h2>
@@ -132,97 +129,6 @@ export default function SellerPage({ page }: { page: SellerPageContent }) {
               </article>
             ))}
           </div>
-        </section>
-      ) : null}
-      {page.product === "services" ? (
-        <section aria-labelledby="services-heading" className="space-y-6">
-          <h2 id="services-heading" className="font-heading text-2xl">
-            Services
-          </h2>
-          {page.offerings.length === 0 ? (
-            page.products.length === 0 ? (
-              <p className="text-muted-foreground">No services listed right now.</p>
-            ) : (
-              <p className="text-muted-foreground">
-                <a href={`${page.pageBase}/request`} className="underline underline-offset-4">
-                  Request a quote
-                </a>{" "}
-                for custom work.
-              </p>
-            )
-          ) : (
-            <>
-              {groups.map(({ department, offerings }) => (
-                <div key={department.id} className="space-y-3">
-                  <h3 className="text-sm font-medium text-muted-foreground">{department.path}</h3>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {offerings.map((offering) => (
-                      <OfferingCard key={offering.id} page={page} offering={offering} Heading="h4" />
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {ungrouped.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {ungrouped.map((offering) => (
-                    <OfferingCard key={offering.id} page={page} offering={offering} Heading="h3" />
-                  ))}
-                </div>
-              ) : null}
-              <p className="text-sm text-muted-foreground">
-                Looking for something else?{" "}
-                <a href={`${page.pageBase}/request`} className="underline underline-offset-4">
-                  Request a quote
-                </a>
-              </p>
-            </>
-          )}
-        </section>
-      ) : null}
-      {page.products.length > 0 ? (
-        <section aria-labelledby="store-heading" className="space-y-6">
-          <h2 id="store-heading" className="font-heading text-2xl">
-            Premade items
-          </h2>
-          {productGroups.map(({ department, products }) => (
-            <div key={department.id} className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">{department.path}</h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {products.map((product) => (
-                  <article key={product.id} className="panel grid content-start gap-3 p-5">
-                    <h4 className="text-base font-semibold">{product.title}</h4>
-                    {product.description ? <p className="text-sm whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
-                    <p className="font-tabular text-lg font-semibold">{formatMinor(product.priceMinor, page.currency)}</p>
-                    <a
-                      href={`${page.pageBase}/buy/${product.id}`}
-                      aria-label={`Buy ${product.title}`}
-                      className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
-                    >
-                      Buy
-                    </a>
-                  </article>
-                ))}
-              </div>
-            </div>
-          ))}
-          {ungroupedProducts.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {ungroupedProducts.map((product) => (
-                <article key={product.id} className="panel grid content-start gap-3 p-5">
-                  <h3 className="text-base font-semibold">{product.title}</h3>
-                  {product.description ? <p className="text-sm whitespace-pre-line text-muted-foreground">{product.description}</p> : null}
-                  <p className="font-tabular text-lg font-semibold">{formatMinor(product.priceMinor, page.currency)}</p>
-                  <a
-                    href={`${page.pageBase}/buy/${product.id}`}
-                    aria-label={`Buy ${product.title}`}
-                    className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start" })}
-                  >
-                    Buy
-                  </a>
-                </article>
-              ))}
-            </div>
-          ) : null}
         </section>
       ) : null}
     </main>
