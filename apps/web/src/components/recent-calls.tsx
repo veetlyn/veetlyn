@@ -15,14 +15,14 @@ function ThreadLink({ thread, href, when, current }: { thread: Thread; href: str
     <Link
       href={href}
       aria-current={current ? "page" : undefined}
+      // A repeated name is told apart by when it was opened, shown on hover.
+      title={when ? `${thread.title} · ${when}` : thread.title}
       className={cn(
-        "flex min-w-0 items-baseline gap-2 rounded-[8px] px-3 py-1.5 transition-colors duration-150",
+        "flex min-w-0 rounded-[8px] px-3 py-1.5 transition-colors duration-150",
         current ? "selected-fill" : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
       )}
     >
       <span className="min-w-0 flex-1 truncate text-[14px]">{thread.title}</span>
-      {/* A repeated name carries when it was opened: the time on the same line, the full date on hover. */}
-      {when ? <span title={when} className="shrink-0 text-[12px] text-[var(--subtle-foreground,var(--muted-foreground))] tabular-nums">{when.split(", ").at(-1)}</span> : null}
     </Link>
   );
 }
