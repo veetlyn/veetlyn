@@ -12,6 +12,7 @@ import { cn } from "@jendal-workspace/ui/lib/utils";
 import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@jendal-workspace/ui/components/motion/breadcrumb";
 import { CommandPalette, type CommandItem } from "@jendal-workspace/ui/components/motion/command-palette";
+import { Tabs, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
 import { ChevronsUpDown, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,6 +35,8 @@ export default function AppFrame({
   workspace,
   crumbs,
   searchItems = [],
+  tabs,
+  activeTab,
   banner,
   fill = false,
   children,
@@ -42,12 +45,16 @@ export default function AppFrame({
   workspace?: Crumb & { detail?: string };
   crumbs: Crumb[];
   searchItems?: SearchItem[];
+  /** The current place's pages, shown on the top bar in place of the breadcrumb. */
+  tabs?: { href: string; label: string }[];
+  activeTab?: string;
   banner?: React.ReactNode;
   // A conversation holds its own scrolling: it takes the height left under the banners.
   fill?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const drawer = useRef<HTMLDialogElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const [mobile, setMobile] = useState(false);
@@ -120,7 +127,13 @@ export default function AppFrame({
             className="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-accent md:hidden"
             onClick={() => { drawer.current?.showModal(); setDrawerOpen(true); }}
           ><Menu className="size-5" aria-hidden="true" /></button>
-          <Crumbs crumbs={crumbs} />
+          {tabs ? (
+            <Tabs value={activeTab} onValueChange={(href) => router.push(href)} variant="underline" className="flex min-w-0 self-stretch">
+              <TabsList aria-label="Pages in this place" wrapperClassName="self-stretch [&>div]:h-full" className="h-full border-b-0">
+                {tabs.map((tab) => <TabsTrigger key={tab.href} value={tab.href} onMouseEnter={() => router.prefetch(tab.href)} className="min-h-0 h-full px-2.5 pt-0 pb-0 text-[13px]" indicatorClassName="bg-foreground">{tab.label}</TabsTrigger>)}
+              </TabsList>
+            </Tabs>
+          ) : <Crumbs crumbs={crumbs} />}
           <div className="ml-auto flex items-center gap-2">
             <SearchBar items={searchItems} />
             <ModeToggle />
