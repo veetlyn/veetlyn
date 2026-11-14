@@ -16,13 +16,13 @@ function ThreadLink({ thread, href, when, current }: { thread: Thread; href: str
       href={href}
       aria-current={current ? "page" : undefined}
       className={cn(
-        "grid min-w-0 rounded-[8px] px-3 py-1.5 transition-colors duration-150",
+        "flex min-w-0 items-baseline gap-2 rounded-[8px] px-3 py-1.5 transition-colors duration-150",
         current ? "selected-fill" : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
       )}
     >
-      <span className="truncate text-[14px]">{thread.title}</span>
-      {/* A repeated name carries when it was opened on its own line, so the name keeps the full width. */}
-      {when ? <span className="text-[12px] leading-4 text-muted-foreground tabular-nums">{when}</span> : null}
+      <span className="min-w-0 flex-1 truncate text-[14px]">{thread.title}</span>
+      {/* A repeated name carries when it was opened: the time on the same line, the full date on hover. */}
+      {when ? <span title={when} className="shrink-0 text-[12px] text-[var(--subtle-foreground,var(--muted-foreground))] tabular-nums">{when.split(", ").at(-1)}</span> : null}
     </Link>
   );
 }
