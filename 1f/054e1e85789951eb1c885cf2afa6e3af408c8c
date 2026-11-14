@@ -1,0 +1,36 @@
+apps/web/src/dash.css
+  s_24bba213a48bd6::t_1845428c1f27ac 70,168-174
+  s_24bba213a48bd6::t_dbd43b59c3ac22 175-176
+apps/web/src/app/dash/[storeSlug]/services-team-dashboard.tsx
+  s_24bba213a48bd6::t_7854c6ef0851bc 447
+apps/web/src/app/dash/w/[organizationId]/billing/billing-panel.tsx
+  s_24bba213a48bd6::t_7854c6ef0851bc 127,161
+apps/web/src/components/auth/auth-visual.tsx
+  s_24bba213a48bd6::t_7854c6ef0851bc 42,60
+apps/web/src/components/client-project-view.tsx
+  s_24bba213a48bd6::t_7854c6ef0851bc 182,663,676
+apps/web/src/components/data-list.tsx
+  s_24bba213a48bd6::t_1845428c1f27ac 25-26,211
+apps/web/src/app/dash/[storeSlug]/threads/team-calls.tsx
+  s_24bba213a48bd6::t_7854c6ef0851bc 66,73,98,125
+apps/web/src/components/figure.tsx
+  s_24bba213a48bd6::t_7854c6ef0851bc 9
+apps/web/src/components/record-card.tsx
+  s_24bba213a48bd6::t_c14b999e9b534a 30,37-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f054e1e85789951eb1c885cf2afa6e3af408c8c",
+  "prompts": {},
+  "sessions": {
+    "s_24bba213a48bd6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ff0ea6a-9e77-4ea3-b2a9-b91edfc423f2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
