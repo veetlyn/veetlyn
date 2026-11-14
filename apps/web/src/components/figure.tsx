@@ -6,7 +6,7 @@ export function Figure({ label, value, note, href }: { label: string; value: str
   const content = (
     <>
       <p className="frame-head text-muted-foreground">{label}</p>
-      <div className="frame frame-body flex-1 px-3.5 py-3">
+      <div className="frame frame-body flex-1 px-5 py-4">
         <p className="font-tabular text-[24px] leading-none font-semibold tracking-[-0.02em]">{value}</p>
         <p className="mt-2 text-xs text-muted-foreground">{note}</p>
       </div>

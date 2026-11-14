@@ -39,7 +39,7 @@ export default function AuthVisual({
             <span className="font-medium">Walk Crew</span>
             <span className="ml-auto text-stage-muted">Quote</span>
           </div>
-          <div className="frame frame-body px-4 py-3.5">
+          <div className="frame frame-body px-5 py-4">
             <p className="font-semibold">Logo and brand kit</p>
             <p className="text-[13px] text-stage-muted">10 days, 2 free revisions</p>
             <dl className="mt-2 font-tabular text-sm">
@@ -57,7 +57,7 @@ export default function AuthVisual({
             <span className="font-medium">Payout to Amadou</span>
             <span className="ml-auto font-medium text-brand-text">Paid</span>
           </div>
-          <div className="frame frame-body px-4 py-3">
+          <div className="frame frame-body px-5 py-4">
             <dl className="font-tabular text-sm">
               <Row label="Project total" value="$640.00" />
               <Row label="Team keeps 15%" value="−$96.00" />

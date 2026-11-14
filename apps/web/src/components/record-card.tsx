@@ -27,15 +27,15 @@ export function RecordCard({
   const headingId = useId();
   return (
     <section id={id} aria-labelledby={headingId} className={cn("frame frame-panel scroll-mt-4 min-w-0", className)}>
-      <header className="flex flex-wrap items-start justify-between gap-3 px-[calc(12px+0.25em)] pt-2.5 pb-2">
+      <header className="flex flex-wrap items-start justify-between gap-3 px-[calc(16px+0.25em)] pt-3.5 pb-3">
         <div className="min-w-0 space-y-0.5">
           <h2 id={headingId} className="text-sm font-medium">{title}</h2>
           {description ? <p className="text-[13px] text-muted-foreground">{description}</p> : null}
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
       </header>
-      {children ? <div className={cn("frame frame-body min-w-0", flush ? undefined : "p-4")}>{children}</div> : null}
-      {footer ? <div className={cn("px-[calc(12px+0.25em)] pt-2.5 pb-3", children ? undefined : "frame frame-body p-4")}>{footer}</div> : null}
+      {children ? <div className={cn("frame frame-body min-w-0", flush ? undefined : "p-5")}>{children}</div> : null}
+      {footer ? <div className={cn("px-[calc(16px+0.25em)] pt-3 pb-3.5", children ? undefined : "frame frame-body p-5")}>{footer}</div> : null}
     </section>
   );
 }

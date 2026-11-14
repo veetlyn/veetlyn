@@ -63,14 +63,14 @@ function CardFacts({ card }: { card: Card }) {
     );
   if (card.kind === "payout")
     return (
-      <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[13px]">
+      <div className="frame frame-body flex items-baseline justify-between gap-4 px-5 py-4 text-[13px]">
         <span>{card.member}</span>
         <span className="font-tabular text-[14px] font-medium">{card.amount}</span>
       </div>
     );
   if (card.kind === "assign")
     return (
-      <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[13px]">
+      <div className="frame frame-body flex items-baseline justify-between gap-4 px-5 py-4 text-[13px]">
         <span className="min-w-0">{card.project}</span>
         <span className="font-medium">{card.member}</span>
       </div>
@@ -95,7 +95,7 @@ function CardFacts({ card }: { card: Card }) {
       </div>
     );
   return (
-    <div className="frame frame-body grid gap-1 px-3.5 py-3 text-[13px]">
+    <div className="frame frame-body grid gap-1 px-5 py-4 text-[13px]">
       <span className="text-muted-foreground">To: {card.audience}</span>
       <p className="whitespace-pre-wrap">{card.body}</p>
     </div>
@@ -122,7 +122,7 @@ function ProposalCard({ entry, onDecided }: { entry: Entry; onDecided: () => voi
       {card ? (
         <CardFacts card={card} />
       ) : (
-        <p className="frame frame-body px-3.5 py-3 text-[13px] whitespace-pre-wrap">{entry.body}</p>
+        <p className="frame frame-body px-5 py-4 text-[13px] whitespace-pre-wrap">{entry.body}</p>
       )}
       <div className="grid gap-3 px-3.5 py-3">
         {entry.note ? (

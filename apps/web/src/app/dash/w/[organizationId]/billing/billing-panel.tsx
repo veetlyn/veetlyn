@@ -124,7 +124,7 @@ export default function BillingPanel({ organizationId }: { organizationId: strin
     <div className="space-y-4">
       <section aria-label="Current plan" className="frame frame-panel">
         <h2 className="frame-head text-[13px] font-medium">Current plan</h2>
-        <div className="frame frame-body grid gap-2 p-4">
+        <div className="frame frame-body grid gap-2 p-5">
           <p className="text-lg font-semibold">
             {[entitlements.services?.name, entitlements.store?.name].filter(Boolean).join(" + ") || "No plan"}
             <span className="text-muted-foreground">
@@ -158,7 +158,7 @@ export default function BillingPanel({ organizationId }: { organizationId: strin
 
       <section aria-label={view.subscribed ? "Change plan" : "Choose a plan"} className="frame frame-panel">
         <h2 className="frame-head text-[13px] font-medium">{view.subscribed ? "Change plan" : "Choose a plan"}</h2>
-        <div className="frame frame-body grid gap-4 p-4">
+        <div className="frame frame-body grid gap-4 p-5">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="billing-services">Services</Label>
