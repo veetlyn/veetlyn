@@ -4,10 +4,23 @@
    compact type scale. It applies to the whole document while a dash page is mounted, so menus, dialogs and toasts
    rendered at the end of the body get it too. */
 :root:has([data-dash]) {
-  --border-strong: rgb(20 20 28 / 0.16);
+  /* Neutral greys: strong ink, default text, subtle hints; hairlines and the selected fill are near-white. */
+  --background: #fafafa;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --foreground: #292929;
+  --card-foreground: #292929;
+  --popover-foreground: #292929;
+  --muted-foreground: #5d5d5d;
+  --subtle-foreground: #9e9e9e;
+  --border: #ebebeb;
+  --selected: #f2f2f2;
+  --accent: #f5f5f5;
+  --accent-foreground: #292929;
+  --border-strong: #dcdcdc;
   --input: var(--border-strong);
-  /* Work screens are read in long runs of small grey text: one step darker than the site's grey keeps 7:1 on the page. */
-  --muted-foreground: #52525b;
+  --dash-font: "SF Pro Text", "SF Pro", -apple-system, BlinkMacSystemFont, "Inter", ui-sans-serif, system-ui, sans-serif;
+  --dash-display: "SF Pro Display", "SF Pro", -apple-system, BlinkMacSystemFont, "Inter", ui-sans-serif, system-ui, sans-serif;
   /* A mint focus ring, deep enough to read 3:1 on white and on the grey page. */
   --ring: color-mix(in oklab, var(--brand) 72%, black);
   --success: oklch(70% 0.18 155);
@@ -19,9 +32,48 @@
   --text-3xl: 1.625rem;
 }
 :root.dark:has([data-dash]) {
-  --muted-foreground: #a8a8b0;
+  --background: #151515;
+  --card: #1c1c1c;
+  --popover: #222222;
+  --foreground: #ededed;
+  --card-foreground: #ededed;
+  --popover-foreground: #ededed;
+  --muted-foreground: #a3a3a3;
+  --subtle-foreground: #737373;
+  --border: rgb(255 255 255 / 0.07);
+  --selected: #2a2a2a;
+  --accent: #262626;
+  --accent-foreground: #ededed;
   --ring: var(--brand);
-  --border-strong: rgb(241 241 243 / 0.15);
+  --border-strong: rgb(255 255 255 / 0.14);
+}
+
+/* Type: SF Pro on Apple devices, Inter elsewhere, regular and medium only, tracked -0.15px. Headings use the same
+   family at medium; the site's display face stays on the landing. */
+:root:has([data-dash]) body,
+[data-dash] :is(.font-sans, .font-heading, .font-tabular, button, input, textarea, select) {
+  font-family: var(--dash-font);
+  letter-spacing: -0.15px;
+}
+[data-dash] :is(.font-heading, h1, h2) { font-family: var(--dash-display); font-weight: 500; font-variation-settings: normal; }
+[data-dash] :is(.font-semibold, .font-bold, th) { font-weight: 500; }
+
+/* Icons on a light stroke; navigation sets 14px, cards 20px. */
+[data-dash] svg.lucide { stroke-width: 1.75; }
+
+/* Corners: 8px navigation, 16px cards, pill calls to action. */
+[data-dash] .frame-panel { border-radius: 16px; }
+[data-dash] .frame-body { border-radius: 12px; }
+[data-dash] :is(.key-mint, .main-surface.group\/button) { border-radius: 9999px; }
+
+/* A faint halftone at the top of the chassis, fading out downward. */
+[data-dash] [data-app-shell] { position: relative; isolation: isolate; }
+[data-dash] [data-app-shell]::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 260px; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(color-mix(in oklab, var(--foreground) 30%, transparent) 0.7px, transparent 1px);
+  background-size: 4px 4px;
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  mask-image: linear-gradient(to bottom, black, transparent);
 }
 
 /* Scrollbars stay hidden until the area is hovered or scrolled, in a reserved gutter, so nothing shifts. The gutter
@@ -95,18 +147,13 @@
 [data-dash] select option,
 [data-dash] select optgroup { background-color: var(--popover); color: var(--popover-foreground); }
 
-/* Mint is the primary key and everything active or selected (the page you are on, the chosen tab, the current page
-   of a list), drawn as the same lit mint key with an onyx label; the focus ring is mint. The filled tab sits in a
-   recessed track, as the site's switchers. */
-[data-dash] [role="tablist"]:has([data-tabs-fill]) {
-  background: color-mix(in oklab, var(--foreground) 4%, var(--background));
-  box-shadow: var(--well);
-}
-/* In the dash every mint key keeps the controls' 8px corners. */
-[data-dash] .key-mint { border-radius: 8px; }
+/* Mint is only the one primary call to action. Everything selected (the page you are on, the chosen tab, the current
+   page of a list) is the quiet neutral fill (`selected-fill`) with strong ink. */
+[data-dash] [role="tablist"]:has([data-tabs-fill]) { background: var(--card); }
 
 /* Inside a frame the table's header row sits on the card, divided by one hairline, not a grey band. */
-[data-dash] .frame-body thead th { background: var(--card); font-size: 12.5px; }
+[data-dash] .frame-body thead th { background: var(--card); font-size: 12px; }
+[data-dash] .frame-body tbody td { font-size: 13px; }
 
 /* The page header names the page, so a top bar crumb that only repeats it steps aside. */
 [data-dash]:has([data-page-header]) [data-lone-crumb] { display: none; }

@@ -2,12 +2,13 @@
 
 import { Button } from "@jendal-workspace/ui/components/button";
 import { Pagination } from "@jendal-workspace/ui/components/motion/pagination";
+import { Input } from "@jendal-workspace/ui/components/motion/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jendal-workspace/ui/components/motion/select";
 import { Table, type TableColumn } from "@jendal-workspace/ui/components/motion/table";
-import { cn } from "@jendal-workspace/ui/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
 import { Search } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
-import { FilterMenu } from "@/components/filter-menu";
 import { type ListSort, listView } from "@/lib/list-view";
 
 export type DataListFilter<T> = {
@@ -97,6 +98,9 @@ export function DataList<T>({
   }, [columns]);
   const matchers = useMemo(() => Object.fromEntries(filters.map((f) => [f.key, f.match])), [filters]);
   const view = views.find((v) => v.key === viewKey);
+  const shownViews = views
+    .map((v) => ({ view: v, count: v.match ? rows.filter(v.match).length : rows.length }))
+    .filter(({ view: v, count }) => count > 0 || v.key === viewKey);
   const inView = view?.match ? rows.filter(view.match) : rows;
   const list = listView(inView, { query, searchText, filterValues, filters: matchers, sort, sortValues, page, pageSize });
   const filtered = query.trim() !== "" || Object.values(filterValues).some((v) => v && v !== "all");
@@ -127,63 +131,55 @@ export function DataList<T>({
     <section aria-label={label} className="@container min-w-0 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         {title ? <h2 className="mr-2 text-sm font-medium">{title}</h2> : null}
-        {views.length > 1 ? (
-          <div role="group" aria-label={`${label} views`} className="-mx-1 flex max-w-full overflow-x-auto px-1 [scrollbar-width:none] max-@2xl:[mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)]">
-            <div className="flex shrink-0 gap-0.5 rounded-[10px] bg-foreground/[0.05] p-[3px] shadow-(--well)">
-              {views.map((v) => {
-                const active = v.key === viewKey;
-                const count = v.match ? rows.filter(v.match).length : rows.length;
-                if (count === 0 && !active) return null;
-                return (
-                  <button
-                    key={v.key}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => { setViewKey(v.key); setPage(1); }}
-                    className={cn(
-                      "flex h-7 items-center gap-1.5 rounded-[7px] px-2.5 text-[13px] whitespace-nowrap outline-none transition-[color,scale] duration-150 ease-out active:scale-[0.96] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-                      active ? "key-mint font-semibold text-brand-foreground" : "font-medium text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {v.label}
-                    <span className={cn("tabular-nums", active ? "opacity-70" : "opacity-60")}>{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {shownViews.length > 1 ? (
+          <Tabs value={viewKey} onValueChange={(next) => { setViewKey(next); setPage(1); }} variant="segment">
+            <TabsList aria-label={`${label} views`} wrapperClassName="w-auto max-w-full" className="border">
+              {shownViews.map(({ view: v, count }) => (
+                <TabsTrigger key={v.key} value={v.key} className="gap-1.5 px-2.5 py-1 text-[13px]">
+                  {v.label}
+                  <span className="tabular-nums opacity-60">{count}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         ) : null}
         <div className="flex min-w-0 basis-full items-center justify-end gap-2 @2xl:flex-1 @2xl:basis-auto">
-          <label className="group relative min-w-0 flex-1 @2xl:w-60 @2xl:flex-none">
-            <span className="sr-only">{searchLabel}</span>
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <input
-              ref={searchRef}
-              type="search"
-              value={query}
-              onChange={(event) => { setQuery(event.target.value); setPage(1); }}
-              onKeyDown={(event) => {
-                if (event.key !== "Escape") return;
-                setQuery("");
-                event.currentTarget.blur();
-              }}
-              placeholder={`${searchLabel}…`}
-              aria-keyshortcuts="/"
-              className="raised h-8 w-full rounded-[8px] pr-8 pl-8 text-base outline-none placeholder:text-muted-foreground focus-visible:shadow-[inset_0_1px_0_var(--edge-hi),0_0_0_1px_var(--ring),0_0_0_3px_color-mix(in_oklab,var(--brand)_22%,transparent)] sm:text-[13px] [&::-webkit-search-cancel-button]:hidden"
-            />
-            {query === "" ? (
-              <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 flex h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-[4px] bg-foreground/[0.06] px-1 font-sans text-[11px] text-muted-foreground group-focus-within:hidden">/</kbd>
-            ) : null}
-          </label>
+          <Input
+            ref={searchRef}
+            type="search"
+            aria-label={searchLabel}
+            aria-keyshortcuts="/"
+            value={query}
+            onChange={(next) => { setQuery(next); setPage(1); }}
+            onKeyDown={(event) => {
+              if (event.key !== "Escape") return;
+              setQuery("");
+              event.currentTarget.blur();
+            }}
+            placeholder={`${searchLabel}…`}
+            leftIcon={<Search aria-hidden="true" />}
+            rightIcon={query === "" ? <kbd aria-hidden="true" className="mr-2 flex h-5 min-w-5 items-center justify-center rounded-[4px] bg-foreground/[0.06] px-1 font-sans text-[12px]">/</kbd> : undefined}
+            className="min-w-0 flex-1 @2xl:w-60 @2xl:flex-none"
+            classNames={{ field: "h-8 rounded-lg bg-card", input: "text-base sm:text-[13px] [&::-webkit-search-cancel-button]:hidden" }}
+          />
           {filters.map((filter) => (
-            <FilterMenu
+            <Select
               key={filter.key}
-              label={filter.label}
-              allLabel="All"
               value={filterValues[filter.key] ?? "all"}
-              options={filter.options}
-              onChange={(value) => { setFilterValues((current) => ({ ...current, [filter.key]: value })); setPage(1); }}
-            />
+              onValueChange={(value) => { setFilterValues((current) => ({ ...current, [filter.key]: value })); setPage(1); }}
+              className="z-30 w-40 shrink-0"
+            >
+              <SelectTrigger className="h-8 py-0 text-[13px]">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="text-muted-foreground">{filter.label}</span>
+                  <SelectValue className="truncate" />
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {filter.options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           ))}
         </div>
       </div>

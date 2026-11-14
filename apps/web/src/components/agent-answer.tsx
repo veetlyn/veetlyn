@@ -173,7 +173,7 @@ const { registry } = defineRegistry(answerCatalog, {
               const href = hrefFor(teamSlug, item.kind, item.id);
               const label = (
                 <>
-                  <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-full bg-secondary font-tabular text-[11px] font-medium">
+                  <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-full bg-secondary font-tabular text-[12px] font-medium">
                     {i + 1}
                   </span>
                   <span className="min-w-0">{item.label}</span>

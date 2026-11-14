@@ -162,7 +162,7 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
     <DropdownMenu>
       {/* As tall as the page's top bar, so the two line up across the frame. */}
       <DropdownMenuTrigger className="mb-4 flex h-[52px] w-full shrink-0 items-center gap-2.5 rounded-[10px] raised px-2.5 text-left hover:brightness-[0.98] data-popup-open:brightness-[0.97]" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
-        <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-md bg-secondary text-[11px] font-semibold">{initialsOf(workspace.label)}</span>
+        <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-md bg-secondary text-[12px] font-semibold">{initialsOf(workspace.label)}</span>
         <span className="min-w-0 flex-1 truncate text-sm"><span className="font-medium">{workspace.label}</span>{workspace.detail ? <span className="text-muted-foreground"> · {workspace.detail}</span> : null}</span>
         <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </DropdownMenuTrigger>
@@ -266,7 +266,7 @@ function SearchBar({ items }: { items: SearchItem[] }) {
       >
         <Search className="size-3.5 shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1 truncate">Search pages and places</span>
-        <kbd className="rounded-[4px] px-1 text-[11px] shadow-[inset_0_0_0_1px_var(--border)]">⌘K</kbd>
+        <kbd className="rounded-[4px] px-1 text-[12px] shadow-[inset_0_0_0_1px_var(--border)]">⌘K</kbd>
       </button>
       <CommandPalette
         items={commands}
@@ -283,11 +283,12 @@ function SearchBar({ items }: { items: SearchItem[] }) {
   );
 }
 
-// A sidebar item; the page you are on is a mint key.
+// A sidebar item: 14px icon, 13px label in the default grey; the page you are on takes the neutral selected fill and
+// strong ink.
 export function navItemClass(active: boolean) {
   return cn(
-    "flex items-center gap-2.5 rounded-[8px] px-2.5 py-[7px] text-[13px] font-medium text-foreground [&_svg:first-child]:size-[18px]",
-    active ? "key-mint font-semibold text-brand-foreground [&_svg_[fill]]:fill-current" : "hover:bg-foreground/[0.04] [&_svg.lucide]:stroke-[1.75]",
+    "flex items-center gap-2.5 rounded-[8px] px-2.5 py-[7px] text-[13px] transition-colors duration-150 ease-out [&_svg:first-child]:size-3.5",
+    active ? "selected-fill font-medium [&_svg_[fill]]:fill-current" : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
   );
 }
 

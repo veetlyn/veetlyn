@@ -50,7 +50,7 @@ function CardFacts({ card }: { card: Card }) {
             Total, delivered in {card.delivery}
             {card.freelancer ? ` by ${card.freelancer}` : ""}
           </span>
-          <span className="font-tabular text-[15px] whitespace-nowrap">{card.total}</span>
+          <span className="font-tabular text-[14px] whitespace-nowrap">{card.total}</span>
         </div>
         <div className="flex items-baseline justify-between gap-4 border-t px-3.5 py-2.5 text-muted-foreground">
           <span>
@@ -65,7 +65,7 @@ function CardFacts({ card }: { card: Card }) {
     return (
       <div className="frame frame-body flex items-baseline justify-between gap-4 px-3.5 py-3 text-[13px]">
         <span>{card.member}</span>
-        <span className="font-tabular text-[15px] font-medium">{card.amount}</span>
+        <span className="font-tabular text-[14px] font-medium">{card.amount}</span>
       </div>
     );
   if (card.kind === "assign")

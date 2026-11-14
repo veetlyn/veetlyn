@@ -301,6 +301,11 @@
   box-shadow: inset 0 2px 0 -1px rgb(255 255 255 / 0.35), inset 0 -2px 0 -1px rgb(0 0 0 / 0.16),
     inset 0 0 0 1px color-mix(in oklab, var(--brand) 78%, black), 0 1px 1px rgb(16 16 24 / 0.12);
 }
+/* A selected item: the quiet neutral fill with strong ink (the dash sets --selected; elsewhere it falls back to accent). */
+@utility selected-fill {
+  color: var(--foreground);
+  background: var(--selected, var(--accent));
+}
 /* Headings: Cal Sans UI at semibold with its geometric shapes, slightly tight. Never bold or black. */
 @utility font-heading {
   font-family: var(--font-display);

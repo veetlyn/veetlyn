@@ -19,10 +19,12 @@ re-install drops them. `.tsx` lib files need an explicit entry in `package.json`
 `./lib/presence-gate`).
 
 Tokens: beUI reads the shadcn semantic tokens. The dash sets beUI's neutral values with the platform's brand in
-`apps/web/src/dash.css` (ink primary, mint `--brand` in place of beUI's cyan, Cal Sans / Inter / Geist Mono).
+`apps/web/src/dash.css` (neutral greys, mint `--brand` only for the primary call to action, SF Pro with Inter fallback, Geist Mono). Selected states use the `selected-fill` utility, not mint. Compose screens from beUI's catalog before writing a control by hand.
 
 In use:
-- `motion/tabs`: the project conversation's Request / Project switch.
+- `motion/tabs`: the project conversation's Request / Project switch, finance ranges, and every list's views (segment).
+- `motion/input`: list search (with the `/` shortcut hint as its right icon).
+- `motion/select`: list filters.
 - `agents/prompt-input`: the assistant composer (`apps/web/src/components/composer-box.tsx`).
 - `motion/command-palette`: top-bar search (`app-frame.tsx`); focus returns to the trigger on close.
 - `motion/table` + `motion/pagination`: every entity list, through `apps/web/src/components/data-list.tsx` (search, filters, sort over all rows, pages).

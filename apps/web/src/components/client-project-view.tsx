@@ -361,7 +361,7 @@ export function ClientProjectView({
   return (
     <div className="space-y-6 text-sm">
       <div className="space-y-2">
-        <h1 className="font-heading text-[26px] leading-[1.1] tracking-[-0.03em]">{project.title}</h1>
+        <h1 className="font-heading text-[24px] leading-[1.2]">{project.title}</h1>
         <p className="text-sm text-muted-foreground">From {project.teamName}</p>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge tone={CLIENT_PROJECT_TONES[project.status]}>{projectStatusLabel(project.status)}</Badge>

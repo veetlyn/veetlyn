@@ -21,7 +21,7 @@ export default function RecentCalls({ calls, callsPath, newThreadHref = callsPat
             >
               <span className="truncate">{call.title}</span>
               {/* A repeated name carries when it was opened on its own line, so the name keeps the full width. */}
-              {when.has(call.id) ? <span className="text-[11px] leading-4 font-normal text-muted-foreground tabular-nums">{when.get(call.id)}</span> : null}
+              {when.has(call.id) ? <span className="text-[12px] leading-4 font-normal text-muted-foreground tabular-nums">{when.get(call.id)}</span> : null}
             </Link>
           </li>
         ))}
