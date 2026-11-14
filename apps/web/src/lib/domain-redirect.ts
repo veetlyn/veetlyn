@@ -2,6 +2,8 @@ import { shouldForwardToApi } from "./host-routing";
 
 // The seller domain's root has no store of its own, so it sends visitors to the platform site.
 export function domainRedirect(request: Request, domains: { platformDomain: string; storeDomain: string }): Response | null {
+  // Locally both zones are localhost: the store root is the platform site, and redirecting would loop.
+  if (domains.storeDomain === domains.platformDomain) return null;
   const url = new URL(request.url);
   if (!["GET", "HEAD"].includes(request.method) || shouldForwardToApi(url)) return null;
   if (url.hostname !== domains.storeDomain && url.hostname !== `www.${domains.storeDomain}`) return null;

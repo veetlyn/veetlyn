@@ -22,3 +22,9 @@ export const QUOTING_MODE_LABELS = {
   assigned: "Assigned quotes",
   team: "Team quotes",
 } satisfies Record<QuotingMode, string>;
+
+export const QUOTING_MODE_DESCRIPTIONS = {
+  open: "Any freelancer quotes their own work; admins and managers can quote for a freelancer they name.",
+  assigned: "Only the freelancer assigned to the project sends its quote.",
+  team: "Admins and managers quote, naming the freelancer who will do the work.",
+} satisfies Record<QuotingMode, string>;

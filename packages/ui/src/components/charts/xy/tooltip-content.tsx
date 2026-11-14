@@ -59,7 +59,7 @@ export function XYTooltipContent({
               style={{ backgroundColor: row.color }}
             />
             <span className="min-w-0 flex-1 truncate pr-3 text-muted-foreground">{row.name}</span>
-            <span className="shrink-0 font-mono tabular-nums">
+            <span className="shrink-0 tabular-nums">
               {row.value === null ? t("noData") : <Value value={row.value} format={formatValue} />}
             </span>
           </span>
@@ -67,7 +67,7 @@ export function XYTooltipContent({
         {total !== undefined && total !== null ? (
           <span className="mt-0.5 flex items-center gap-2 border-t border-border pt-1.5 text-[11px]">
             <span className="flex-1 text-muted-foreground">{t("total")}</span>
-            <span className="font-mono font-medium tabular-nums">
+            <span className="font-medium tabular-nums">
               <Value value={total} format={formatValue} />
             </span>
           </span>

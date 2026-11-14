@@ -133,7 +133,7 @@ export function Composer({
     <form onSubmit={submit} className="grid gap-2">
       <Label htmlFor={id} className="sr-only">{label}</Label>
       <p className="px-1 text-xs text-muted-foreground">{teamOnly ? "Only the team reads this." : audience}</p>
-      <div data-composer className="rounded-xl border bg-background focus-within:border-[var(--ring)]">
+      <div data-composer className="rounded-xl border bg-card focus-within:border-[var(--ring)]">
       <Textarea
         id={id}
         value={body}

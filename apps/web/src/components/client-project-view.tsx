@@ -179,7 +179,7 @@ function Frame({
         <h2 className="font-medium">{title}</h2>
         {aside}
       </div>
-      <div className="frame frame-body grid gap-4 p-4">{children}</div>
+      <div className="frame frame-body grid gap-4 p-6">{children}</div>
     </section>
   );
 }
@@ -361,7 +361,7 @@ export function ClientProjectView({
   return (
     <div className="space-y-6 text-sm">
       <div className="space-y-2">
-        <h1 className="font-heading text-[26px] leading-[1.1] tracking-[-0.03em]">{project.title}</h1>
+        <h1 className="font-heading text-[24px] leading-[1.2]">{project.title}</h1>
         <p className="text-sm text-muted-foreground">From {project.teamName}</p>
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge tone={CLIENT_PROJECT_TONES[project.status]}>{projectStatusLabel(project.status)}</Badge>
@@ -660,7 +660,7 @@ function NextStepPanel({ step, completed, preview }: { step: NextStep | null; co
     return (
       <div className="frame frame-panel">
         <p className="frame-head text-[12px] font-medium">Your turn</p>
-        <p className="frame frame-body p-4 text-sm text-muted-foreground">
+        <p className="frame frame-body p-6 text-sm text-muted-foreground">
           {completed
             ? "This project is complete. Thank you."
             : "Nothing is waiting for you right now. The team will email you when it is your turn."}
@@ -673,7 +673,7 @@ function NextStepPanel({ step, completed, preview }: { step: NextStep | null; co
   return (
     <div className="frame frame-panel">
       <p className="frame-head text-[12px] font-medium">Your turn</p>
-      <div className="frame frame-body flex flex-wrap items-center gap-x-6 gap-y-3 p-4">
+      <div className="frame frame-body flex flex-wrap items-center gap-x-6 gap-y-3 p-6">
         <div className="min-w-0 flex-1">
           <p className="text-lg font-semibold">{step.title}</p>
           <p className="text-sm text-muted-foreground">{step.detail}</p>

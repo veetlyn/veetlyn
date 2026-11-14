@@ -99,7 +99,7 @@ export interface PaginationProps
 }
 
 const CONTROL =
-  "relative inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm tabular-nums sm:h-9 sm:min-w-9 outline-none transition-[color,background-color,transform] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.94] motion-reduce:active:scale-100";
+  "relative inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm tabular-nums sm:h-9 sm:min-w-9 outline-none transition-[color,background-color,scale] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.96] motion-reduce:active:scale-100";
 
 export function Pagination({
   totalPages,
@@ -215,13 +215,13 @@ export function Pagination({
                           {/* Hover or focus turns the dots into the jump's direction. */}
                           <span
                             aria-hidden="true"
-                            className="transition-[opacity,transform] duration-150 ease-out group-hover:scale-75 group-hover:opacity-0 group-focus-visible:scale-75 group-focus-visible:opacity-0 motion-reduce:transform-none"
+                            className="transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-25 group-hover:opacity-0 group-hover:blur-[4px] group-focus-visible:scale-25 group-focus-visible:opacity-0 group-focus-visible:blur-[4px] motion-reduce:scale-100 motion-reduce:blur-none"
                           >
                             …
                           </span>
                           <Chevrons
                             aria-hidden="true"
-                            className="absolute size-4 scale-75 opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100 motion-reduce:transform-none"
+                            className="absolute size-4 scale-25 opacity-0 blur-[4px] transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-100 group-hover:opacity-100 group-hover:blur-none group-focus-visible:scale-100 group-focus-visible:opacity-100 group-focus-visible:blur-none motion-reduce:scale-100 motion-reduce:blur-none"
                           />
                         </>
                       ),
@@ -248,7 +248,7 @@ export function Pagination({
                     label: t("page", { page: item }),
                     current: isCurrent,
                     className: isCurrent
-                      ? "font-medium text-background"
+                      ? "font-medium text-foreground"
                       : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
                     children: (
                       <>
@@ -257,7 +257,7 @@ export function Pagination({
                             aria-hidden="true"
                             layoutId={reduce ? undefined : "pagination-current"}
                             transition={SPRING_LAYOUT}
-                            className="absolute inset-0 rounded-full bg-foreground"
+                            className="absolute inset-0 rounded-full selected-fill"
                           />
                         ) : null}
                         <span className="relative">{item}</span>

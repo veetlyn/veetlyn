@@ -12,6 +12,7 @@ import { cn } from "@jendal-workspace/ui/lib/utils";
 import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@jendal-workspace/ui/components/motion/breadcrumb";
 import { CommandPalette, type CommandItem } from "@jendal-workspace/ui/components/motion/command-palette";
+import { Tabs, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
 import { ChevronsUpDown, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,6 +35,8 @@ export default function AppFrame({
   workspace,
   crumbs,
   searchItems = [],
+  tabs,
+  activeTab,
   banner,
   fill = false,
   children,
@@ -42,12 +45,16 @@ export default function AppFrame({
   workspace?: Crumb & { detail?: string };
   crumbs: Crumb[];
   searchItems?: SearchItem[];
+  /** The current place's pages, shown on the top bar in place of the breadcrumb. */
+  tabs?: { href: string; label: string }[];
+  activeTab?: string;
   banner?: React.ReactNode;
   // A conversation holds its own scrolling: it takes the height left under the banners.
   fill?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const drawer = useRef<HTMLDialogElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const [mobile, setMobile] = useState(false);
@@ -77,16 +84,19 @@ export default function AppFrame({
   return (
     <div
       data-app-shell
-      className={cn("grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] bg-tray", "md:grid-cols-[240px_minmax(0,1fr)]")}
+      data-fill={fill ? "" : undefined}
+      // The page scrolls the document, so the main surface is as tall as its content; the sidebar stays pinned at the
+      // viewport's height. A fill page (a thread with its composer) is held to the viewport instead.
+      className={cn("grid flex-1 grid-cols-[minmax(0,1fr)] items-start bg-background", "md:grid-cols-[256px_minmax(0,1fr)]", fill && "h-svh min-h-0 items-stretch")}
     >
-      {!mobile ? <aside data-scroll className="hidden min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-2 md:flex">{navigation}</aside> : null}
+      {!mobile ? <aside data-scroll className="sticky top-0 hidden h-svh min-h-0 min-w-0 flex-col gap-0.5 overflow-y-auto px-3 pt-2 pb-3 md:flex">{navigation}</aside> : null}
 
       {mobile ? <dialog
         ref={drawer}
         id="navigation-drawer"
         data-navigation-drawer
         aria-labelledby="navigation-drawer-title"
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(85vw,320px)] max-w-none bg-card p-0 text-foreground backdrop:bg-black/35"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(85vw,320px)] max-w-none bg-background p-0 text-foreground backdrop:bg-black/35"
         onClose={() => {
           setDrawerOpen(false);
           if (window.matchMedia(MOBILE_NAV_QUERY).matches) menuButton.current?.focus();
@@ -106,8 +116,8 @@ export default function AppFrame({
         </div>
       </dialog> : null}
 
-      <div className="flex min-h-0 min-w-0 flex-col bg-background md:my-2 md:mr-2 md:frame md:rounded-[10px]">
-        <div className="flex h-[52px] shrink-0 items-center gap-3 border-b px-4 md:px-5">
+      <div className={cn("flex min-w-0 flex-col bg-card md:border-l", fill ? "min-h-0 md:h-svh" : "min-h-svh")}>
+        <div className="sticky top-0 z-20 flex h-[52px] shrink-0 items-center gap-3 border-b bg-card/90 px-4 backdrop-blur-md md:px-5">
           <button
             ref={menuButton}
             type="button"
@@ -117,7 +127,13 @@ export default function AppFrame({
             className="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-accent md:hidden"
             onClick={() => { drawer.current?.showModal(); setDrawerOpen(true); }}
           ><Menu className="size-5" aria-hidden="true" /></button>
-          <Crumbs crumbs={crumbs} />
+          {tabs ? (
+            <Tabs value={activeTab} onValueChange={(href) => router.push(href)} variant="underline" className="flex min-w-0 self-stretch">
+              <TabsList aria-label="Pages in this place" wrapperClassName="self-stretch [&>div]:h-full" className="h-full border-b-0">
+                {tabs.map((tab) => <TabsTrigger key={tab.href} value={tab.href} onMouseEnter={() => router.prefetch(tab.href)} className="min-h-0 h-full px-2.5 pt-0 pb-0 text-[13px]" indicatorClassName="bg-foreground">{tab.label}</TabsTrigger>)}
+              </TabsList>
+            </Tabs>
+          ) : <Crumbs crumbs={crumbs} />}
           <div className="ml-auto flex items-center gap-2">
             <SearchBar items={searchItems} />
             <ModeToggle />
@@ -125,10 +141,10 @@ export default function AppFrame({
         </div>
         <div
           id="page-scroll"
-          data-scroll
+          data-scroll={fill ? "" : undefined}
           className={cn(
-            "min-h-0 flex-1 motion-safe:scroll-smooth",
-            fill ? "flex flex-col overflow-hidden" : "overflow-y-auto",
+            "flex-1",
+            fill && "flex min-h-0 flex-col overflow-hidden",
           )}
         >
           {banner}
@@ -157,9 +173,13 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
   );
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="mb-5 flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-3 text-left hover:bg-accent" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
-        <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-md bg-secondary text-xs font-semibold">{initialsOf(workspace.label)}</span>
-        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{workspace.label}</span>{workspace.detail ? <span className="block truncate text-xs text-muted-foreground">{workspace.detail}</span> : null}</span>
+      {/* As tall as the page's top bar, so the two line up across the frame. */}
+      <DropdownMenuTrigger className="mb-3 flex h-[52px] w-full shrink-0 items-center gap-3 rounded-[10px] px-2 text-left transition-colors duration-150 outline-none hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:outline-ring data-popup-open:bg-foreground/[0.05]" aria-label={`Workspace: ${workspace.label}. Switch workspace`}>
+        <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-[8px] bg-foreground text-[12px] font-medium text-background">{initialsOf(workspace.label)}</span>
+        <span className="grid min-w-0 flex-1">
+          <span className="truncate text-[14px] font-medium">{workspace.label}</span>
+          {workspace.detail ? <span className="truncate text-[12px] text-muted-foreground">{workspace.detail}</span> : null}
+        </span>
         <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-h-[70dvh] w-64 overflow-y-auto bg-card" align="start">
@@ -180,7 +200,8 @@ function WorkspaceSwitcher({ workspace, mobile }: { workspace: Crumb & { detail?
 function Crumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
     // beUI's breadcrumb primitives; a crumb with choices keeps our dropdown as its switcher.
-    <Breadcrumb labels={{ label: "Breadcrumb" }} className="min-w-0">
+    // A lone crumb only repeats the page title; pages with a PageHeader hide it (dash.css).
+    <Breadcrumb labels={{ label: "Breadcrumb" }} className="min-w-0" data-lone-crumb={crumbs.length === 1 && !(crumbs[0]?.options && crumbs[0].options.length > 1) ? "" : undefined}>
       <BreadcrumbList maxItems={Infinity} className="flex-nowrap text-[14px]">
         {crumbs.map((crumb, i) => {
           const last = i === crumbs.length - 1;
@@ -261,7 +282,7 @@ function SearchBar({ items }: { items: SearchItem[] }) {
       >
         <Search className="size-3.5 shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1 truncate">Search pages and places</span>
-        <kbd className="rounded-[4px] px-1 text-[11px] shadow-[inset_0_0_0_1px_var(--border)]">⌘K</kbd>
+        <kbd className="rounded-[4px] px-1 text-[12px] shadow-[inset_0_0_0_1px_var(--border)]">⌘K</kbd>
       </button>
       <CommandPalette
         items={commands}
@@ -278,11 +299,12 @@ function SearchBar({ items }: { items: SearchItem[] }) {
   );
 }
 
-// A sidebar item, raised when it is the page you are on.
+// A sidebar item: 16px icon, 15px label in the default grey; the page you are on takes the neutral selected fill and
+// strong ink.
 export function navItemClass(active: boolean) {
   return cn(
-    "flex items-center gap-2.5 rounded-[6px] px-2.5 py-[7px] text-[13px] font-medium text-foreground [&_svg:first-child]:size-[18px]",
-    active ? "raised" : "hover:bg-foreground/[0.04]",
+    "flex items-center gap-3 rounded-[8px] px-3 py-2 text-[15px] transition-colors duration-150 ease-out [&_svg:first-child]:size-4",
+    active ? "selected-fill font-medium [&_svg_[fill]]:fill-current" : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
   );
 }
 

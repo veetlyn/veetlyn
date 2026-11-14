@@ -79,7 +79,7 @@ export function Checkbox({
         aria-describedby={describedBy}
         disabled={disabled}
         onClick={() => !disabled && onCheckedChange(!checked)}
-        whileTap={reduce || disabled ? undefined : { scale: 0.92 }}
+        whileTap={reduce || disabled ? undefined : { scale: 0.96 }}
         transition={SPRING_PRESS}
         data-state={
           checked ? "checked" : indeterminate ? "indeterminate" : "unchecked"

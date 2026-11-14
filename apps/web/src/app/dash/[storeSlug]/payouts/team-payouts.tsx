@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import Loader from "@/components/loader";
+import { PageHeader } from "@/components/page-composition";
 import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { trpc } from "@/utils/trpc";
@@ -24,18 +25,16 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
   const solo = settings?.solo ?? false;
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="font-heading text-3xl">Payouts</h1>
-          {!solo ? <p className="text-sm text-muted-foreground">Members&apos; payout requests, paid from {team.name}&apos;s PayPal account.</p> : null}
-        </div>
-        {!solo && canServicesTeam(role, "approve_payouts") ? (
+    <main className="mx-auto w-full min-w-0 max-w-[1200px] space-y-8 px-4 py-6 md:px-7 md:py-7">
+      <PageHeader
+        title="Payouts"
+        description={solo ? undefined : <>Members&apos; payout requests, paid from {team.name}&apos;s PayPal account.</>}
+        actions={!solo && canServicesTeam(role, "approve_payouts") ? (
           <Link href={`/${team.slug}/payouts/rules`} className={buttonVariants({ variant: "outline" })}>
             Payout rules
           </Link>
-        ) : null}
-      </header>
+        ) : undefined}
+      />
       {solo ? (
         <p className="text-sm text-muted-foreground">
           Payouts are for teams. As a solo seller, clients pay you directly in your PayPal account.
@@ -52,10 +51,10 @@ export default function TeamPayouts({ teamSlug, viewerId }: { teamSlug: string; 
         <>
           <PayoutRequestsTable teamSlug={team.slug} viewerId={viewerId} />
           {canServicesTeam(role, "approve_payouts") ? (
-            <section aria-labelledby="payout-methods-heading" className="space-y-4">
-              <div className="space-y-1">
-                <h2 id="payout-methods-heading" className="font-heading text-lg">Ways to pay out</h2>
-                <p className="text-sm text-muted-foreground">Send approved payouts automatically from <PlatformName />, or through PayPal&apos;s own Payouts page.</p>
+            <section aria-labelledby="payout-methods-heading" className="space-y-4 border-t pt-8">
+              <div className="space-y-0.5">
+                <h2 id="payout-methods-heading" className="text-sm font-medium">How payouts are sent</h2>
+                <p className="text-[13px] text-muted-foreground">Automatically from <PlatformName />, or by a file you upload on PayPal&apos;s own Payouts page.</p>
               </div>
               <div className="grid items-start gap-4 xl:grid-cols-2">
                 <PayoutCredentialsCard teamSlug={team.slug} />

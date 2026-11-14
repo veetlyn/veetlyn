@@ -8,11 +8,12 @@ import { Package } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { CatalogTile } from "@/components/catalog/catalog-tile";
 import { DataList } from "@/components/data-list";
 import { categoryDescendantIds, flattenCategories } from "@/lib/catalog-categories";
 import DigitalProducts from "@/components/catalog/digital-products";
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import TeamNotFound from "@/components/services-team/team-not-found";
 import { productImageUrl } from "@/lib/image-url";
 import { formatMinor } from "@/lib/money";
@@ -63,23 +64,15 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
 
   return (
     <ListPage>
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="font-heading text-3xl">Premade items</h1>
-          <p className="text-sm text-muted-foreground">Ready-made items clients buy from the shop.</p>
-        </div>
-        <span className="flex gap-2">
-          <Link href={`/${storeSlug}/categories`} className={buttonVariants({ variant: "outline" })}>Categories</Link>
-          <Link href={`/${storeSlug}/products/new`} className={buttonVariants()}>Add premade item</Link>
-        </span>
-      </div>
-
-      {products.isSuccess && products.data.length > 0 ? (
-        <SummaryStrip label="Catalogue summary">
-          <p className="text-sm"><span className="font-medium">{products.data.filter((product) => product.status === "published").length} published</span> <span className="text-muted-foreground">items live in the shop</span></p>
-          <p className="text-sm text-muted-foreground">{products.data.filter((product) => product.status === "draft").length} drafts</p>
-        </SummaryStrip>
-      ) : null}
+      <PageHeader
+        title="Premade items"
+        description="Ready-made items clients buy from the shop."
+        actions={
+          <>
+            <Link href={`/${storeSlug}/products/new`} className={buttonVariants()}>Add premade item</Link>
+          </>
+        }
+      />
       {products.isError ? <div role="alert" className="space-y-3 rounded-[10px] border p-5 text-sm"><p>The premade items couldn’t be loaded.</p><Button type="button" variant="outline" size="sm" onClick={() => void products.refetch()}>Try again</Button></div> : null}
       {products.isSuccess ? (
         <DataList
@@ -89,13 +82,26 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
           getRowId={(product) => product.id}
           searchText={(product) => product.title}
           searchLabel="Search premade items"
-          filters={[
-            ...((categories.data?.length ?? 0) > 0 ? [{ key: "category", label: "Categories", options: [...flattenCategories(categories.data ?? []).map((category) => ({ value: category.id, label: category.path })), { value: "none", label: "No category" }], match: (product: Product, value: string) => value === "none" ? !product.departmentId : product.departmentId !== null && categoryDescendantIds(categories.data ?? [], value).has(product.departmentId) }] : []),
-            { key: "status", label: "Statuses", options: [{ value: "published", label: "Published" }, { value: "draft", label: "Draft" }], match: (product, value) => product.status === value },
+          views={[
+            { key: "all", label: "All" },
+            { key: "published", label: "Published", match: (product) => product.status === "published" },
+            { key: "draft", label: "Drafts", match: (product) => product.status === "draft" },
           ]}
+          filters={(categories.data?.length ?? 0) > 0 ? [{ key: "category", label: "Category", options: [...flattenCategories(categories.data ?? []).map((category) => ({ value: category.id, label: category.path })), { value: "none", label: "No category" }], match: (product: Product, value: string) => value === "none" ? !product.departmentId : product.departmentId !== null && categoryDescendantIds(categories.data ?? [], value).has(product.departmentId) }] : []}
           defaultSort={{ key: "title", direction: "asc" }}
           empty={{ title: "No premade items yet", text: "Add your first item — start from a link, a photo, or a blank form." }}
           noun={{ one: "item", many: "items" }}
+          gridItem={(product) => (
+            <CatalogTile
+              href={`/${storeSlug}/products/${product.id}`}
+              title={product.title}
+              detail={`${product.departmentId ? categoryPath.get(product.departmentId) ?? "Category" : "No category"} · ${product.totalStock} in stock`}
+              price={price(product)}
+              status={<Badge tone={product.status === "published" ? "good" : "neutral"}>{product.status === "published" ? "Published" : "Draft"}</Badge>}
+              imageUrl={product.imageKey ? productImageUrl(product.imageKey) : null}
+              icon={<Package aria-hidden="true" />}
+            />
+          )}
         />
       ) : null}
     </ListPage>
@@ -106,7 +112,7 @@ function CommerceProductsList({ storeSlug }: { storeSlug: string }) {
 function ProductThumb({ imageKey }: { imageKey: string | null }) {
   const [broken, setBroken] = useState(false);
   if (imageKey && !broken) {
-    return <img src={productImageUrl(imageKey)} alt="" onError={() => setBroken(true)} className="size-12 rounded-md border object-cover" />;
+    return <img src={productImageUrl(imageKey)} alt="" onError={() => setBroken(true)} className="size-12 rounded-md object-cover outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10" />;
   }
   return (
     <div aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground well">

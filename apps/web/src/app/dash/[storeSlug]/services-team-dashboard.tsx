@@ -10,6 +10,8 @@ import { useEffect, useRef } from "react";
 import { AgentIcon } from "@/components/agent-icon";
 
 import TurnOffStoreButton from "@/components/catalog/turn-off-store-button";
+import { Figure, StatRow } from "@/components/figure";
+import { Frame } from "@/components/frame";
 import Loader from "@/components/loader";
 import PayPalConnectCard from "@/components/paypal-connect-card";
 import PublishCard from "@/components/seller-page/publish-card";
@@ -158,6 +160,7 @@ export default function ServicesTeamDashboard({
   const onClients = (projects.data ?? []).filter(
     (p) => p.status === "awaiting_deposit" || p.status === "delivered" || p.status === "awaiting_balance",
   );
+  const hasPrepared = (prepared.data?.pending.length ?? 0) > 0;
   const needs: Need[] = [
     ...(rules.data?.memberAccepted === false
       ? [
@@ -287,7 +290,7 @@ export default function ServicesTeamDashboard({
           ) : null}
 
           {projects.isError || requests.isError || payouts.isError ? (
-            <div role="alert" className="space-y-2 rounded-[10px] border p-4 text-sm">
+            <div role="alert" className="panel space-y-2 p-4 text-sm">
               <p>Some work couldn’t be loaded. This list may be incomplete.</p>
               <Button variant="outline" size="sm" type="button" onClick={() => {
                 if (projects.isError) void projects.refetch();
@@ -297,18 +300,15 @@ export default function ServicesTeamDashboard({
             </div>
           ) : null}
 
-          {(prepared.data?.pending.length ?? 0) > 0 ? (
-            <section aria-labelledby="prepared-h" className="min-w-0">
-              <div className="mb-3 flex items-center gap-2">
-                <AgentIcon className="size-4 shrink-0" />
-                <h2 id="prepared-h" className="font-heading text-lg">
-                  Prepared by {platform}, waiting for you
-                </h2>
-                <span className="ml-auto text-muted-foreground">{prepared.data?.pending.length}</span>
-              </div>
-              <ul className="min-w-0 divide-y rounded-[10px] border">
-                {prepared.data?.pending.map((item) => (
-                  <li key={item.id} className="flex min-w-0 flex-wrap items-center gap-3 p-4 sm:flex-nowrap">
+          {hasPrepared ? (
+            <Frame
+              icon={<AgentIcon className="size-4 shrink-0" />}
+              title={`Prepared by ${platform}, waiting for you`}
+              count={prepared.data?.pending.length}
+            >
+              <ul className="min-w-0 divide-y">
+                {prepared.data?.pending.map((item, index) => (
+                  <li key={item.id} className="flex min-w-0 flex-wrap items-center gap-3 px-4 py-3.5 sm:flex-nowrap">
                     <div className="min-w-0 flex-1 basis-full sm:basis-auto">
                       <p className="break-words font-medium">{item.card.title}</p>
                       {item.note ? <p className="mt-1 line-clamp-2 break-words text-sm text-muted-foreground">{item.note}</p> : null}
@@ -317,28 +317,22 @@ export default function ServicesTeamDashboard({
                     {item.card.kind === "payout" ? <span className="font-tabular font-semibold">{item.card.amount}</span> : null}
                     <Link
                       href={`/${team.slug}/threads?thread=${item.callId}`}
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
+                      className={cn(buttonVariants({ variant: index === 0 ? "default" : "outline", size: "sm" }), "ml-auto shrink-0 px-4 sm:ml-0")}
                     >
                       Review
                     </Link>
                   </li>
                 ))}
               </ul>
-            </section>
+            </Frame>
           ) : null}
 
           {needs.length > 0 ? (
-            <section aria-labelledby="needs-h" className="min-w-0">
-              <div className="mb-3 flex items-center gap-2">
-                <h2 id="needs-h" className="font-heading text-lg">
-                  Needs you
-                </h2>
-                <span className="ml-auto text-muted-foreground">{needs.length}</span>
-              </div>
-              <ul className="min-w-0 divide-y rounded-[10px] border">
-                {needs.map((need) => (
-                  <li key={need.key} className="flex min-w-0 flex-wrap items-center gap-3 p-4 sm:flex-nowrap">
-                    <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+            <Frame title="Needs you" count={needs.length}>
+              <ul className="min-w-0 divide-y">
+                {needs.map((need, index) => (
+                  <li key={need.key} className="flex min-w-0 flex-wrap items-center gap-3 px-4 py-3.5 sm:flex-nowrap">
+                    <div className={cn("min-w-0 flex-1", need.amount && "basis-full sm:basis-auto")}>
                       <p className="break-words font-medium">{need.title}</p>
                       <p className="break-words text-sm text-muted-foreground">{need.detail}</p>
                     </div>
@@ -346,7 +340,9 @@ export default function ServicesTeamDashboard({
                     <Link
                       href={need.href}
                       className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
+                        // One mint key on the screen: the first prepared item, else the first thing that needs you. Money
+                        // waiting on a decision is the onyx key; routine opens stay grey.
+                        buttonVariants({ variant: index === 0 && !hasPrepared ? "default" : need.amount ? "dark" : "outline", size: "sm" }),
                         "ml-auto shrink-0 sm:ml-0",
                         need.primary && "px-4",
                       )}
@@ -356,12 +352,11 @@ export default function ServicesTeamDashboard({
                   </li>
                 ))}
               </ul>
-            </section>
+            </Frame>
           ) : !loading ? (
-            <section aria-labelledby="needs-h" className="space-y-3">
-              <h2 id="needs-h" className="font-heading text-lg">Needs you</h2>
-              <p className="rounded-[10px] border p-5 text-sm text-muted-foreground">Nothing needs you right now.</p>
-            </section>
+            <Frame title="Needs you" bodyClassName="p-4">
+              <p className="text-sm text-muted-foreground">Nothing needs you right now.</p>
+            </Frame>
           ) : <p role="status" className="text-sm text-muted-foreground">Looking at what needs you…</p>}
 
           {onClients.length > 0 ? (
@@ -388,7 +383,7 @@ export default function ServicesTeamDashboard({
             </p>
           ) : null}
 
-          <section aria-label="Figures" className="grid gap-3 sm:grid-cols-3">
+          <StatRow label="Figures">
             {admin ? (
               <Figure
                 label="Paid this month"
@@ -408,12 +403,12 @@ export default function ServicesTeamDashboard({
               value={projects.isPending ? "…" : projects.isError ? "Unavailable" : String(toDeliver.length)}
               note={toDeliver.length === 1 ? "project" : "projects"}
             />
-          </section>
+          </StatRow>
         </div>
 
         {admin && !setupDone ? (
           <section aria-labelledby="setup-h" className="grid min-w-0 gap-3 border-t pt-6">
-            <h2 id="setup-h" className="font-heading text-lg">Finish setup</h2>
+            <h2 id="setup-h" className="text-sm font-medium">Finish setup</h2>
           <SetupChecklist
             steps={steps}
             title={
@@ -430,11 +425,11 @@ export default function ServicesTeamDashboard({
         ) : null}
         {admin ? (
           <section aria-labelledby="manage-h" className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 border-t pt-6">
-            <h2 id="manage-h" className="font-heading text-lg">Seller page and payments</h2>
+            <h2 id="manage-h" className="text-sm font-medium">Seller page and payments</h2>
           <PublishCard teamSlug={team.slug} publicUrl={url} />
           <PayPalConnectCard teamId={team.id} />
           <section className="frame frame-panel">
-            <div className="frame-head text-[13px]">
+            <div className="frame-head">
               <h2 className="font-medium">Store</h2>
               {settings?.storeEnabled ? (
                 <div className="ml-auto flex gap-3">
@@ -449,7 +444,7 @@ export default function ServicesTeamDashboard({
                 </div>
               ) : null}
             </div>
-            <div className="frame frame-body grid gap-2 p-4">
+            <div className="frame frame-body grid gap-2 p-6">
               <p className="text-sm text-muted-foreground">
                 Sell digital downloads, such as presets, templates and icons, from your seller page. Files can be up to
                 100 MB.
@@ -482,15 +477,5 @@ export default function ServicesTeamDashboard({
         ) : null}
       </div>
     </main>
-  );
-}
-
-function Figure({ label, value, note }: { label: string; value: string; note: string }) {
-  return (
-    <div className="rounded-[10px] border bg-card px-4 py-3.5">
-      <p className="text-[13px] text-muted-foreground">{label}</p>
-      <p className="mt-1 font-tabular text-[22px] font-semibold tracking-[-0.02em]">{value}</p>
-      <p className="text-[13px] text-muted-foreground">{note}</p>
-    </div>
   );
 }

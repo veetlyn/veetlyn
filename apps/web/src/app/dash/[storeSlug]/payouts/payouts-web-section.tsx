@@ -95,10 +95,11 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
   }
 
   return (
-    <section aria-labelledby="payouts-web-heading" className="panel space-y-4 p-5">
-      <h2 id="payouts-web-heading" className="font-medium">
-        PayPal Payouts Web
-      </h2>
+    <section id="payouts-web" aria-labelledby="payouts-web-heading" className="frame frame-panel min-w-0 scroll-mt-4">
+      <div className="frame-head">
+        <h2 id="payouts-web-heading" className="font-medium">PayPal Payouts Web</h2>
+      </div>
+      <div className="frame frame-body space-y-4 px-5 py-4">
       {approved.length > 0 ? (
         <form
           className="space-y-3"
@@ -173,6 +174,7 @@ export function PayoutsWebSection({ teamSlug }: { teamSlug: string }) {
         Your PayPal account needs Payouts turned on. PayPal charges its fee to your account; <PlatformName /> takes it
         from the member's payout, as with automatic payouts.
       </p>
+      </div>
     </section>
   );
 }

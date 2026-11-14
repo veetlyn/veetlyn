@@ -1,6 +1,5 @@
 "use client";
 
-import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import {
   type Currency,
   PAYDAYS,
@@ -9,9 +8,10 @@ import {
   type PayoutRuleScope,
   presetRules,
 } from "@jendal-workspace/core";
-import { Button } from "@jendal-workspace/ui/components/button";
-import { Checkbox } from "@jendal-workspace/ui/components/checkbox";
-import { Label } from "@jendal-workspace/ui/components/label";
+import { Checkbox } from "@jendal-workspace/ui/components/motion/checkbox";
+import { RadioGroup, RadioGroupItem } from "@jendal-workspace/ui/components/motion/radio";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jendal-workspace/ui/components/motion/select";
+import { Switch } from "@jendal-workspace/ui/components/motion/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +20,8 @@ import type { AppRouter } from "@jendal-workspace/api/routers/index";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import Loader from "@/components/loader";
+import { PageHeader, WorkPage } from "@/components/page-composition";
+import { SaveBar, SettingsField, SettingsSection } from "@/components/settings-section";
 import { ValueInput } from "@/components/value-input";
 import { PlatformName } from "@/components/platform-name";
 import TeamNotFound from "@/components/services-team/team-not-found";
@@ -39,8 +41,6 @@ type TeamMember = inferRouterOutputs<AppRouter>["servicesTeam"]["listMembers"][n
 const FIXED_PRESETS = ["manual", "rules", "automatic"] as const;
 type FixedPreset = (typeof FIXED_PRESETS)[number];
 
-const SELECT_CLASS = `${nativeSelectClass}`;
-const CHOICE_CLASS = "flex items-center gap-2 text-sm";
 
 const SCOPE_LABELS = {
   requests: "Member requests",
@@ -80,93 +80,57 @@ function presetDescription(preset: FixedPreset, currency: Currency): string {
   }
 }
 
-function Group({ legend, children }: { legend: string; children: ReactNode }) {
-  return (
-    <fieldset className="space-y-5 border-b pb-7">
-      <legend className="mb-4 text-base font-medium">{legend}</legend>
-      {children}
-    </fieldset>
-  );
-}
-
-function RadioGroup<T extends string>({
-  name,
-  legend,
-  options,
-  labels,
-  value,
-  onChange,
-}: {
-  name: string;
-  legend: string;
+// A choice among a few options, laid out in a row on the right of its setting.
+function Choice<T extends string>({ label, description, options, labels, value, onChange }: {
+  label: string;
+  description?: ReactNode;
   options: readonly T[];
   labels: Record<T, string>;
   value: T;
   onChange: (value: T) => void;
 }) {
   return (
-    <fieldset className="space-y-2">
-      <legend className="text-sm font-medium">{legend}</legend>
-      <div className="flex flex-wrap gap-x-4 gap-y-2">
-        {options.map((option) => (
-          <label key={option} className={CHOICE_CLASS}>
-            <input
-              type="radio"
-              name={name}
-              value={option}
-              checked={value === option}
-              onChange={() => onChange(option)}
-              className="accent-current"
-            />
-            {labels[option]}
-          </label>
-        ))}
-      </div>
-    </fieldset>
+    <SettingsField label={label} description={description}>
+      <RadioGroup
+        aria-label={label}
+        orientation="horizontal"
+        value={value}
+        onValueChange={(next) => { const option = options.find((o) => o === next); if (option) onChange(option); }}
+        className="gap-x-5 gap-y-2 [&_label_span]:text-[14px]"
+      >
+        {options.map((option) => <RadioGroupItem key={option} value={option} label={labels[option]} />)}
+      </RadioGroup>
+    </SettingsField>
   );
 }
 
-function TextField({
-  id,
-  label,
-  value,
-  onChange,
-  hint,
-  inputMode = "decimal",
-  unit,
-}: {
+function AmountField({ id, label, description, value, onChange, unit, numeric = false }: {
   id: string;
   label: string;
+  description?: ReactNode;
   value: string;
   onChange: (value: string) => void;
-  hint?: ReactNode;
-  inputMode?: "decimal" | "numeric";
   unit: string;
+  numeric?: boolean;
 }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+    <SettingsField id={id} label={label} description={description}>
       <ValueInput
         id={id}
         unit={unit}
-        type={inputMode === "numeric" ? "number" : "text"}
-        min={inputMode === "numeric" ? 0 : undefined}
+        type={numeric ? "number" : "text"}
+        min={numeric ? 0 : undefined}
         max={id === "hold-days" ? 90 : undefined}
-        step={inputMode === "numeric" ? 1 : undefined}
+        step={numeric ? 1 : undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        inputMode={inputMode}
-        aria-describedby={hint ? `${id}-hint` : undefined}
+        inputMode={numeric ? "numeric" : "decimal"}
       />
-      {hint ? (
-        <div id={`${id}-hint`} className="space-y-1 text-sm text-muted-foreground">
-          {hint}
-        </div>
-      ) : null}
-    </div>
+    </SettingsField>
   );
 }
 
+// The three starting points, as one choice. Choosing one saves it at once.
 function PresetPicker({ teamSlug, rules, onSaved }: { teamSlug: string; rules: RulesView; onSaved: () => void }) {
   const queryClient = useQueryClient();
   const apply = useMutation(
@@ -180,50 +144,38 @@ function PresetPicker({ teamSlug, rules, onSaved }: { teamSlug: string; rules: R
   );
 
   return (
-    <section aria-labelledby="presets-heading" className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h2 id="presets-heading" className="font-medium">
-          Presets
-        </h2>
-        {rules.preset === "custom" ? (
-          <span className="text-xs text-muted-foreground">Custom</span>
-        ) : null}
-      </div>
-      <p className="text-sm text-muted-foreground">A preset replaces the rules below. Trusted members stay.</p>
-      <div className="grid gap-2 sm:grid-cols-3">
+    <SettingsSection
+      title="Start from a preset"
+      description={rules.preset === "custom" ? "Your rules are custom. Choosing a preset replaces the rules below; trusted members stay." : "Choosing a preset replaces the rules below; trusted members stay."}
+    >
+      <RadioGroup
+        aria-label="Preset"
+        value={rules.preset === "custom" ? "" : rules.preset}
+        onValueChange={(next) => {
+          const preset = FIXED_PRESETS.find((p) => p === next);
+          if (!preset || apply.isPending) return;
+          apply.reset();
+          apply.mutate({ teamSlug, preset });
+        }}
+        className="gap-0 divide-y"
+      >
         {FIXED_PRESETS.map((preset) => (
-          <button
+          <RadioGroupItem
             key={preset}
-            type="button"
-            aria-pressed={rules.preset === preset}
+            value={preset}
+            label={PRESET_LABELS[preset]}
+            description={presetDescription(preset, rules.currency)}
             disabled={apply.isPending}
-            onClick={() => {
-              apply.reset();
-              apply.mutate({ teamSlug, preset });
-            }}
-            className="panel p-3 text-left text-sm disabled:opacity-50 aria-pressed:border-foreground aria-pressed:bg-accent"
-          >
-            <span className="block font-medium">{PRESET_LABELS[preset]}</span>
-            <span className="block text-muted-foreground">{presetDescription(preset, rules.currency)}</span>
-          </button>
+            className="w-full px-6 py-4 transition-colors duration-150 hover:bg-foreground/[0.02] [&_[id$=-label]]:text-[14px] [&_[id$=-label]]:leading-5 [&_[id$=-label]]:font-medium [&_[id$=-description]]:text-[13px] [&_[id$=-description]]:leading-5"
+          />
         ))}
-      </div>
-      {apply.error ? (
-        <p role="alert" className="text-sm text-destructive">
-          {apply.error.message}
-        </p>
-      ) : null}
-    </section>
+      </RadioGroup>
+      {apply.error ? <p role="alert" className="px-6 py-4 text-[13px] text-destructive">{apply.error.message}</p> : null}
+    </SettingsSection>
   );
 }
 
-function TrustedMembers({
-  members,
-  savedIds,
-  viewerId,
-  values,
-  patch,
-}: {
+function TrustedMembers({ members, savedIds, viewerId, values, patch }: {
   members: TeamMember[];
   savedIds: readonly string[];
   viewerId: string;
@@ -231,63 +183,34 @@ function TrustedMembers({
   patch: (change: Partial<PayoutRulesFormValues>) => void;
 }) {
   return (
-    <fieldset className="space-y-3">
-      <legend className="text-sm font-medium">Trusted members</legend>
-      <p className="text-sm text-muted-foreground">Payouts to these members are approved without an admin.</p>
-      <ul className="space-y-2">
-        {members.map((member) => {
-          // The server refuses an admin adding themselves; one already added by another admin may still leave.
-          const self = member.userId === viewerId && !savedIds.includes(viewerId);
-          const checked = values.trustedMemberIds.includes(member.userId);
-          return (
-            <li key={member.userId}>
-              <label className={CHOICE_CLASS}>
-                <Checkbox
-                  checked={checked}
-                  disabled={self}
-                  aria-describedby={self ? "trusted-self-note" : undefined}
-                  onCheckedChange={(next) =>
-                    patch({
-                      trustedMemberIds:
-                        next === true
-                          ? [...values.trustedMemberIds, member.userId]
-                          : values.trustedMemberIds.filter((id) => id !== member.userId),
-                    })
-                  }
-                />
-                <span>
-                  {member.name} <span className="text-muted-foreground">({SERVICES_TEAM_ROLE_LABELS[member.role]})</span>
-                </span>
-              </label>
-              {self ? (
-                <p id="trusted-self-note" className="ml-6 text-sm text-muted-foreground">
-                  Another admin has to add you.
-                </p>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-      <RadioGroup
-        name="trusted-scope"
-        legend="Applies to"
-        options={PAYOUT_RULE_SCOPES}
-        labels={SCOPE_LABELS}
-        value={values.trustedScope}
-        onChange={(trustedScope) => patch({ trustedScope })}
-      />
-    </fieldset>
+    <>
+      <SettingsField label="Trusted members" description="Payouts to these members are approved without an admin." wide>
+        <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          {members.map((member) => {
+            // The server refuses an admin adding themselves; one already added by another admin may still leave.
+            const self = member.userId === viewerId && !savedIds.includes(viewerId);
+            const checked = values.trustedMemberIds.includes(member.userId);
+            return (
+              <Checkbox
+                key={member.userId}
+                checked={checked}
+                disabled={self}
+                label={member.name}
+                description={self ? "Another admin has to add you." : SERVICES_TEAM_ROLE_LABELS[member.role]}
+                onCheckedChange={(next) => patch({
+                  trustedMemberIds: next ? [...values.trustedMemberIds, member.userId] : values.trustedMemberIds.filter((id) => id !== member.userId),
+                })}
+              />
+            );
+          })}
+        </div>
+      </SettingsField>
+      <Choice label="Trust applies to" options={PAYOUT_RULE_SCOPES} labels={SCOPE_LABELS} value={values.trustedScope} onChange={(trustedScope) => patch({ trustedScope })} />
+    </>
   );
 }
 
-function RulesForm({
-  teamSlug,
-  viewerId,
-  rules,
-  members,
-  balanceReadable,
-  onSaved,
-}: {
+function RulesForm({ teamSlug, viewerId, rules, members, balanceReadable, onSaved }: {
   teamSlug: string;
   viewerId: string;
   rules: RulesView;
@@ -296,7 +219,8 @@ function RulesForm({
   onSaved: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [values, setValues] = useState(() => payoutRulesFormValues(rules));
+  const initial = payoutRulesFormValues(rules);
+  const [values, setValues] = useState(initial);
   const [problem, setProblem] = useState<string | null>(null);
   const save = useMutation(
     trpc.payouts.saveRules.mutationOptions({
@@ -308,6 +232,7 @@ function RulesForm({
     }),
   );
   const { currency } = rules;
+  const dirty = JSON.stringify(values) !== JSON.stringify(initial);
 
   function patch(change: Partial<PayoutRulesFormValues>) {
     setValues((current) => ({ ...current, ...change }));
@@ -325,185 +250,96 @@ function RulesForm({
     save.mutate({ teamSlug, ...result.input });
   }
 
-  const error = problem ?? save.error?.message ?? null;
+  const balanceHint = (
+    <>
+      <PlatformName /> reads your PayPal balance to apply this.
+      {balanceReadable === "reconnect" ? <> Turn on automatic payouts again so <PlatformName /> can read it.</> : balanceReadable === "off" ? <> Turn on automatic payouts so <PlatformName /> can read it.</> : null}
+    </>
+  );
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6">
-      <Group legend="Approval">
-        <RadioGroup
-          name="auto-approve"
-          legend="Auto-approve"
-          options={["off", "up_to", "any"] as const}
-          labels={AUTO_APPROVE_LABELS}
-          value={values.autoApprove}
-          onChange={(autoApprove) => patch({ autoApprove })}
-        />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <SettingsSection title="Approval" description="Who approves a payout before it is sent.">
+        <Choice label="Auto-approve" options={["off", "up_to", "any"] as const} labels={AUTO_APPROVE_LABELS} value={values.autoApprove} onChange={(autoApprove) => patch({ autoApprove })} />
         {values.autoApprove === "up_to" ? (
-          <TextField
-            id="auto-approve-up-to"
-            label="Auto-approve payouts up to"
-            unit={currency}
-            value={values.autoApproveUpTo}
-            onChange={(autoApproveUpTo) => patch({ autoApproveUpTo })}
-          />
+          <AmountField id="auto-approve-up-to" label="Auto-approve payouts up to" unit={currency} value={values.autoApproveUpTo} onChange={(autoApproveUpTo) => patch({ autoApproveUpTo })} />
         ) : null}
         {values.autoApprove !== "off" ? (
-          <RadioGroup
-            name="auto-approve-scope"
-            legend="Auto-approve applies to"
-            options={PAYOUT_RULE_SCOPES}
-            labels={SCOPE_LABELS}
-            value={values.autoApproveScope}
-            onChange={(autoApproveScope) => patch({ autoApproveScope })}
-          />
+          <Choice label="Auto-approve applies to" options={PAYOUT_RULE_SCOPES} labels={SCOPE_LABELS} value={values.autoApproveScope} onChange={(autoApproveScope) => patch({ autoApproveScope })} />
         ) : null}
-        <TrustedMembers
-          members={members}
-          savedIds={rules.trustedMemberIds}
-          viewerId={viewerId}
-          values={values}
-          patch={patch}
-        />
-        <TextField
+        <TrustedMembers members={members} savedIds={rules.trustedMemberIds} viewerId={viewerId} values={values} patch={patch} />
+        <AmountField
           id="second-approver-above"
           label="Require a second admin above"
+          description={rules.adminCount < 2 ? "Add a second admin before requiring two approvals." : "Leave it empty to need one admin."}
           unit={currency}
           value={values.secondApproverAbove}
           onChange={(secondApproverAbove) => patch({ secondApproverAbove })}
-          hint={
-            <p>
-              {rules.adminCount < 2
-                ? "Add a second admin before requiring two approvals."
-                : "Leave it empty to need one admin."}
-            </p>
-          }
         />
         {values.secondApproverAbove.trim() !== "" ? (
-          <RadioGroup
-            name="second-approver-scope"
-            legend="Second admin applies to"
-            options={PAYOUT_RULE_SCOPES}
-            labels={SCOPE_LABELS}
-            value={values.secondApproverScope}
-            onChange={(secondApproverScope) => patch({ secondApproverScope })}
-          />
+          <Choice label="Second admin applies to" options={PAYOUT_RULE_SCOPES} labels={SCOPE_LABELS} value={values.secondApproverScope} onChange={(secondApproverScope) => patch({ secondApproverScope })} />
         ) : null}
-      </Group>
+      </SettingsSection>
 
-      <Group legend="Automatic payouts">
-        <label className={CHOICE_CLASS}>
-          <Checkbox
-            checked={values.payCompletedProjects}
-            onCheckedChange={(checked) => patch({ payCompletedProjects: checked === true })}
-          />
-          Pay each completed project automatically
-        </label>
-        {values.payCompletedProjects && rules.payCompletedProjectsSince ? (
-          <p className="text-sm text-muted-foreground">
-            Pays projects completed since{" "}
-            {new Date(rules.payCompletedProjectsSince).toLocaleDateString(undefined, { dateStyle: "medium" })}.
-          </p>
-        ) : null}
-        <TextField
+      <SettingsSection title="Automatic payouts" description="Pay members when their projects complete, without a request.">
+        <SettingsField
+          label="Pay each completed project"
+          description={values.payCompletedProjects && rules.payCompletedProjectsSince
+            ? `Pays projects completed since ${new Date(rules.payCompletedProjectsSince).toLocaleDateString(undefined, { dateStyle: "medium" })}.`
+            : "Members are paid their share once a project completes."}
+        >
+          <Switch checked={values.payCompletedProjects} onCheckedChange={(payCompletedProjects) => patch({ payCompletedProjects })} ariaLabel="Pay each completed project automatically" />
+        </SettingsField>
+        <AmountField
           id="hold-days"
           label="Days to wait after a project completes"
+          description="From 0 to 90. Members can still ask for their earnings meanwhile."
           unit="days"
+          numeric
           value={values.holdDays}
           onChange={(holdDays) => patch({ holdDays })}
-          inputMode="numeric"
-          hint={<p>From 0 to 90. Members can still ask for their earnings during this time.</p>}
         />
-      </Group>
+      </SettingsSection>
 
-      <Group legend="Sending">
-        <RadioGroup
-          name="payday"
-          legend="Payday"
+      <SettingsSection title="Sending" description="When approved payouts leave the team's PayPal account.">
+        <Choice
+          label="Payday"
+          description={values.payday !== "immediate" ? "Payday starts at 00:00 UTC." : undefined}
           options={PAYDAYS}
           labels={PAYDAY_LABELS}
           value={values.payday}
           onChange={(payday) => patch({ payday })}
         />
         {values.payday === "weekly" ? (
-          <div className="space-y-2">
-            <Label htmlFor="payday-weekday">Day of the week</Label>
-            <select
-              id="payday-weekday"
-              className={`${SELECT_CLASS} w-48 max-w-full`}
-              value={values.paydayWeekday}
-              onChange={(e) => patch({ paydayWeekday: e.target.value })}
-            >
-              {WEEKDAYS.map((day, index) => (
-                <option key={day} value={index}>
-                  {day}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SettingsField label="Day of the week">
+            <Select value={values.paydayWeekday} onValueChange={(paydayWeekday) => patch({ paydayWeekday })} className="z-30 w-44">
+              <SelectTrigger aria-label="Day of the week" className="h-9 text-[14px]"><SelectValue /></SelectTrigger>
+              <SelectContent>{WEEKDAYS.map((day, index) => <SelectItem key={day} value={String(index)}>{day}</SelectItem>)}</SelectContent>
+            </Select>
+          </SettingsField>
         ) : null}
         {values.payday === "monthly" ? (
-          <div className="space-y-2">
-            <Label htmlFor="payday-month-day">Day of the month</Label>
-            <select
-              id="payday-month-day"
-              className={`${SELECT_CLASS} w-32 max-w-full`}
-              value={values.paydayMonthDay}
-              onChange={(e) => patch({ paydayMonthDay: e.target.value })}
-            >
-              {MONTH_DAYS.map((day) => (
-                <option key={day} value={day}>
-                  {day}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SettingsField label="Day of the month">
+            <Select value={values.paydayMonthDay} onValueChange={(paydayMonthDay) => patch({ paydayMonthDay })} className="z-30 w-28">
+              <SelectTrigger aria-label="Day of the month" className="h-9 text-[14px]"><SelectValue /></SelectTrigger>
+              <SelectContent>{MONTH_DAYS.map((day) => <SelectItem key={day} value={String(day)}>{String(day)}</SelectItem>)}</SelectContent>
+            </Select>
+          </SettingsField>
         ) : null}
-        {values.payday !== "immediate" ? (
-          <p className="text-sm text-muted-foreground">Payday starts at 00:00 UTC.</p>
-        ) : null}
-        <TextField
-          id="balance-floor"
-          label="Keep at least this in the team’s PayPal balance"
-          unit={currency}
-          value={values.balanceFloor}
-          onChange={(balanceFloor) => patch({ balanceFloor })}
-          hint={
-            <>
-              <p>
-                <PlatformName /> reads your PayPal balance to apply this.
-              </p>
-              {balanceReadable === "reconnect" ? (
-                <p>
-                  Turn on automatic payouts again so <PlatformName /> can read your balance.
-                </p>
-              ) : balanceReadable === "off" ? (
-                <p>
-                  Turn on automatic payouts so <PlatformName /> can read your balance.
-                </p>
-              ) : null}
-            </>
-          }
-        />
-      </Group>
+        <AmountField id="balance-floor" label="Keep in the PayPal balance" description={balanceHint} unit={currency} value={values.balanceFloor} onChange={(balanceFloor) => patch({ balanceFloor })} />
+      </SettingsSection>
 
-      <Group legend="Limits">
-        <TextField
-          id="minimum-payout"
-          label="Minimum payout"
-          unit={currency}
-          value={values.minimumPayout}
-          onChange={(minimumPayout) => patch({ minimumPayout })}
-        />
-      </Group>
+      <SettingsSection title="Limits">
+        <AmountField id="minimum-payout" label="Minimum payout" description="Smaller requests are refused, and smaller completed projects are not paid out automatically." unit={currency} value={values.minimumPayout} onChange={(minimumPayout) => patch({ minimumPayout })} />
+      </SettingsSection>
 
-      {error ? (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
-      <Button type="submit" disabled={save.isPending} className="justify-self-start">
-        {save.isPending ? "Saving…" : "Save rules"}
-      </Button>
+      <SaveBar
+        dirty={dirty}
+        saving={save.isPending}
+        canSave={dirty && !save.isPending}
+        onDiscard={() => { setValues(initial); setProblem(null); save.reset(); }}
+        error={problem ?? save.error?.message}
+      />
     </form>
   );
 }
@@ -537,7 +373,7 @@ function RulesEditor({ teamSlug, viewerId }: { teamSlug: string; viewerId: strin
   const balanceReadable = credentials.data == null ? "off" : credentials.data.canReadBalance ? "yes" : "reconnect";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PresetPicker teamSlug={teamSlug} rules={rules.data} onSaved={reload} />
       <RulesForm
         key={version}
@@ -561,20 +397,17 @@ export default function PayoutRules({ teamSlug, viewerId }: { teamSlug: string; 
   const { team, role, settings } = result.data;
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-7 md:py-8">
-      <div className="space-y-1">
-        <h1 className="font-heading text-3xl">Payout rules</h1>
-        <p className="text-sm text-muted-foreground">How this team approves and sends its members' payouts.</p>
-      </div>
+    <WorkPage>
+      <PageHeader title="Payout rules" description="How this team approves and sends its members' payouts." />
       {settings?.solo ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[14px] text-muted-foreground">
           Payouts are for teams. As a solo seller, clients pay you directly in your PayPal account.
         </p>
       ) : role !== "admin" ? (
-        <p className="text-sm text-muted-foreground">Only an admin can change the team settings.</p>
+        <p className="text-[14px] text-muted-foreground">Only an admin can change the team settings.</p>
       ) : (
         <RulesEditor teamSlug={team.slug} viewerId={viewerId} />
       )}
-    </main>
+    </WorkPage>
   );
 }

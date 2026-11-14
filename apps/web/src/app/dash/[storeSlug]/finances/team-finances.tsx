@@ -4,12 +4,14 @@ import { LineChart, LineChartLegend, LineChartPlot, type LineChartSeries, LineCh
 import { Tabs, TabsList, TabsTrigger } from "@jendal-workspace/ui/components/motion/tabs";
 import { nativeSelectClass } from "@jendal-workspace/ui/lib/native-select";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { Figure, StatRow } from "@/components/figure";
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
-import { ListPage } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import { RecordCard } from "@/components/record-card";
 import { type AnalyticsRange, collectionAnalytics } from "@/lib/finance-analytics";
 import { financeSummary } from "@/lib/finance-summary";
@@ -56,24 +58,6 @@ function periodLabel(range: AnalyticsRange, start: string | null, end: string): 
   return `${startDate.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })} – ${endLabel}`;
 }
 
-function Kpi({ label, value, note, href }: { label: string; value: string; note: string; href?: string }) {
-  const content = (
-    <>
-      <p className="text-[13px] text-muted-foreground">{label}</p>
-      <p className="mt-1 font-tabular text-[26px] leading-none font-semibold tracking-[-0.02em]">{value}</p>
-      <p className="mt-2 text-[13px] text-muted-foreground">{note}</p>
-    </>
-  );
-  const className = "rounded-[10px] border bg-card px-4 py-4";
-  return href ? (
-    <Link href={href} className={`${className} transition-colors hover:bg-accent/50`}>
-      {content}
-    </Link>
-  ) : (
-    <div className={className}>{content}</div>
-  );
-}
-
 function ReconciliationLine({ label, value, note, strong }: { label: string; value: string; note?: string; strong?: boolean }) {
   return (
     <div className={strong ? "flex items-baseline justify-between gap-4 border-t pt-4" : "flex items-baseline justify-between gap-4"}>
@@ -118,10 +102,7 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
   if (payments.isError) {
     return (
       <ListPage>
-        <h1 className="font-heading text-3xl">Finances</h1>
-        <p className="text-sm text-muted-foreground">
-          {payments.error.data?.code === "FORBIDDEN" ? "You don’t have access to the team’s finances. A team admin can change your access." : payments.error.message}
-        </p>
+        <PageHeader title="Finances" description={payments.error.data?.code === "FORBIDDEN" ? "You don’t have access to the team’s finances. A team admin can change your access." : payments.error.message} />
       </ListPage>
     );
   }
@@ -147,12 +128,10 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
 
   return (
     <ListPage>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="font-heading text-3xl">Finances</h1>
-          <p className="text-sm text-muted-foreground">Project-payment collections, PayPal costs and member payouts.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+      <PageHeader
+        title="Finances"
+        description="Project-payment collections, PayPal costs and member payouts."
+        actions={<>
           {currencies.length > 1 ? (
             <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Currency</span>
@@ -168,25 +147,52 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
               </TabsList>
             </Tabs>
           </div>
-        </div>
-      </div>
+        </>}
+      />
 
-      <p role="status" className="text-sm text-muted-foreground">
-        {periodLabel(range, analytics.currentStart, analytics.currentEnd)} · Collections are dated by PayPal capture; payouts by settlement.
-      </p>
+      <p role="status" className="sr-only">{periodLabel(range, analytics.currentStart, analytics.currentEnd)}</p>
 
       {payments.data.length === 0 && (payouts.data?.payouts.length ?? 0) === 0 ? (
-        <section className="rounded-[10px] border px-5 py-10 text-center">
-          <h2 className="font-heading text-lg">No financial activity yet</h2>
+        <section className="frame frame-panel"><div className="frame frame-body px-5 py-10 text-center">
+          <p className="font-medium">No financial activity yet</p>
           <p className="mt-2 text-sm text-muted-foreground">Collections and member payouts will appear here as money moves.</p>
-        </section>
+        </div></section>
       ) : (
         <>
-          <section aria-label="Key figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi label="Collected from project payments" value={money(current.grossMinor)} note={growthNote} href={`/${teamSlug}/payments`} />
-            <Kpi label="After PayPal fees and refunds" value={money(current.netMinor)} note={`${percent(current.feeRate)} PayPal fees · ${percent(current.refundRate)} refunded`} href={`/${teamSlug}/payments`} />
-            <Kpi label="Paid to members" value={payouts.isSuccess ? money(current.paidOutMinor) : "Unavailable"} note={payouts.isSuccess ? `${current.paidOutCount} settled ${current.paidOutCount === 1 ? "payout" : "payouts"} in this period${analytics.undatedPayouts > 0 ? ` · ${analytics.undatedPayouts} more settled without a date${analytics.undatedPaidOutMinor > 0 ? ` (${money(analytics.undatedPaidOutMinor)})` : ""}, not in the dated total` : ""}` : "Payout records are unavailable"} href={payouts.isSuccess ? `/${teamSlug}/payouts` : undefined} />
-            <Kpi label="Payments collected" value={String(current.count)} note={current.averageMinor === null ? "No dated collections in this period" : `${money(Math.round(current.averageMinor))} average payment`} href={`/${teamSlug}/payments`} />
+          {snapshot ? (
+            <section aria-labelledby="needs-attention-heading" className="space-y-4">
+              <h2 id="needs-attention-heading" className="text-sm font-medium">Needs attention now</h2>
+              <ul className="frame frame-panel divide-y">
+                {[
+                  { label: "Waiting to be paid", note: "All pending project payments", value: money(snapshot.pendingInMinor), href: `/${teamSlug}/payments` },
+                  ...(payouts.isSuccess ? [{ label: "Payouts waiting for approval", note: `${snapshot.awaitingApprovalCount} ${snapshot.awaitingApprovalCount === 1 ? "request" : "requests"} · ${money(snapshot.inFlightMinor)} being sent`, value: money(snapshot.awaitingApprovalMinor), href: `/${teamSlug}/payouts` }] : []),
+                  ...(cases.isSuccess ? [{ label: "Open disputes", note: `${money(snapshot.disputedMinor)} disputed`, value: String(snapshot.openDisputes), href: `/${teamSlug}/cases` }] : []),
+                ].map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="group grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 px-5 py-4 transition-colors duration-150 hover:bg-foreground/[0.02]">
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-medium">{item.label}</span>
+                        <span className="block truncate text-[13px] text-muted-foreground">{item.note}</span>
+                      </span>
+                      <span className="font-tabular text-[15px] font-medium">{item.value}</span>
+                      <ChevronRight aria-hidden="true" className="size-4 text-muted-foreground transition-transform duration-150 group-hover:translate-x-0.5" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          <section aria-labelledby="period-heading" className="space-y-4">
+            <div className="space-y-0.5">
+              <h2 id="period-heading" className="text-sm font-medium">{periodLabel(range, analytics.currentStart, analytics.currentEnd)}</h2>
+              <p className="text-[13px] text-muted-foreground">Collections are dated by PayPal capture; payouts by settlement.</p>
+            </div>
+          <StatRow label="Key figures">
+            <Figure label="Collected from project payments" value={money(current.grossMinor)} note={growthNote} href={`/${teamSlug}/payments`} />
+            <Figure label="After PayPal fees and refunds" value={money(current.netMinor)} note={`${percent(current.feeRate)} PayPal fees · ${percent(current.refundRate)} refunded`} href={`/${teamSlug}/payments`} />
+            <Figure label="Paid to members" value={payouts.isSuccess ? money(current.paidOutMinor) : "Unavailable"} note={payouts.isSuccess ? `${current.paidOutCount} settled ${current.paidOutCount === 1 ? "payout" : "payouts"} in this period${analytics.undatedPayouts > 0 ? ` · ${analytics.undatedPayouts} more settled without a date${analytics.undatedPaidOutMinor > 0 ? ` (${money(analytics.undatedPaidOutMinor)})` : ""}, not in the dated total` : ""}` : "Payout records are unavailable"} href={payouts.isSuccess ? `/${teamSlug}/payouts` : undefined} />
+            <Figure label="Payments collected" value={String(current.count)} note={current.averageMinor === null ? "No dated collections in this period" : `${money(Math.round(current.averageMinor))} average payment`} href={`/${teamSlug}/payments`} />
+          </StatRow>
           </section>
 
           <RecordCard
@@ -260,13 +266,9 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
             </RecordCard>
           </div>
 
-          <section aria-labelledby="top-projects-heading" className="space-y-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <h2 id="top-projects-heading" className="font-heading text-lg">Projects by collections</h2>
-              <Link href={`/${teamSlug}/projects`} className="text-sm text-muted-foreground underline underline-offset-4">All projects</Link>
-            </div>
-            <DataList
+          <DataList
               label="Projects by collections"
+              title="Projects by collections"
               rows={analytics.projects}
               columns={[
                 { key: "project", header: "Project", sortable: true, sortValue: (project) => project.projectTitle.toLocaleLowerCase(), cell: (project) => <Link href={`/${teamSlug}/projects/${project.projectId}`} className="truncate font-medium underline-offset-4 hover:underline">{project.projectTitle}</Link> },
@@ -283,18 +285,7 @@ export default function TeamFinances({ teamSlug }: { teamSlug: string }) {
               empty={{ title: "No collections in this period", text: "Projects appear here when a dated project payment is captured." }}
               noun={{ one: "project", many: "projects" }}
             />
-          </section>
 
-          {snapshot ? (
-            <section aria-labelledby="needs-attention-heading" className="space-y-3">
-              <h2 id="needs-attention-heading" className="font-heading text-lg">Needs attention now</h2>
-              <div className="grid gap-3 md:grid-cols-3">
-                <Kpi label="Waiting to be paid" value={money(snapshot.pendingInMinor)} note="All pending project payments" href={`/${teamSlug}/payments`} />
-                {payouts.isSuccess ? <Kpi label="Payouts waiting for approval" value={money(snapshot.awaitingApprovalMinor)} note={`${snapshot.awaitingApprovalCount} ${snapshot.awaitingApprovalCount === 1 ? "request" : "requests"} · ${money(snapshot.inFlightMinor)} being sent`} href={`/${teamSlug}/payouts`} /> : null}
-                {cases.isSuccess ? <Kpi label="Open disputes" value={String(snapshot.openDisputes)} note={`${money(snapshot.disputedMinor)} disputed`} href={`/${teamSlug}/cases`} /> : null}
-              </div>
-            </section>
-          ) : null}
         </>
       )}
     </ListPage>

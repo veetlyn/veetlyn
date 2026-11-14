@@ -22,7 +22,7 @@ function runs(points: readonly XYPathPoint[]) {
 // overshoots a local peak or dips below a local trough the data doesn't have.
 function tangents(run: { x: number; y: number }[]) {
   const n = run.length;
-  const t = new Array<number>(n).fill(0);
+  const t = Array.from({ length: n }, () => 0);
   for (let i = 1; i < n - 1; i++) {
     const h0 = run[i].x - run[i - 1].x;
     const h1 = run[i + 1].x - run[i].x;

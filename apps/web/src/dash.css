@@ -1,106 +1,81 @@
-/* The dashboard's token layer (the marketing site keeps the Relief tokens). It applies to the whole document while a
-   dash page is mounted, so menus, dialogs and toasts rendered at the end of the body get it too. Neutral values follow
-   beUI's "Current" palette (~/dev/refs/beui/src/styles/globals.css): near-white page, a 97% grey elevated surface,
-   6% hairlines. The platform keeps its own brand: ink primary, the mint key (--brand stands in for beUI's cyan accent), and
-   Cal Sans / Inter / Geist Mono. --accent stays a quiet hover tint because every menu and row hover reads it. */
+/* The dashboard uses the site's colours in both themes (globals.css): the darker page tone under the sidebar and in
+   the frames' strips, the lighter card tone for the main surface and the cards inside frames, the onyx and mint
+   keys and the coated edges. It adds only what work screens need: a stronger field edge, the status colours and a
+   compact type scale. It applies to the whole document while a dash page is mounted, so menus, dialogs and toasts
+   rendered at the end of the body get it too. */
 :root:has([data-dash]) {
-  /* Greys carry no hue ("none", not 0) so nothing mixed toward them can drift warm. */
-  --q-ink: 15% 0 none;
-  --q-paper: 99% 0 none;
-  --q-grey: 97% 0 none;
-  --background: oklch(var(--q-paper));
-  --foreground: oklch(var(--q-ink));
-  --card: oklch(var(--q-grey));
-  --card-foreground: oklch(var(--q-ink));
-  --popover: oklch(var(--q-grey));
-  --popover-foreground: oklch(var(--q-ink));
-  --primary: oklch(var(--q-ink));
-  --primary-foreground: oklch(var(--q-paper));
-  --secondary: oklch(var(--q-grey));
-  --secondary-foreground: oklch(var(--q-ink));
-  --muted: oklch(var(--q-grey));
-  --accent: oklch(var(--q-ink) / 0.05);
-  --accent-foreground: oklch(var(--q-ink));
-  --muted-foreground: oklch(50% 0 none);
-  --border: oklch(var(--q-ink) / 0.06);
-  /* beUI extension: the stronger hairline, used for field edges so inputs stay findable. */
-  --border-strong: oklch(var(--q-ink) / 0.12);
+  /* Neutral greys: strong ink, default text, subtle hints; hairlines and the selected fill are near-white. */
+  --background: #fcfcfc;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --foreground: #292929;
+  --card-foreground: #292929;
+  --popover-foreground: #292929;
+  --muted-foreground: #5d5d5d;
+  --subtle-foreground: #9e9e9e;
+  --border: #ebebeb;
+  --selected: #f2f2f2;
+  --accent: #f5f5f5;
+  --accent-foreground: #292929;
+  --border-strong: #dcdcdc;
   --input: var(--border-strong);
-  --ring: color-mix(in oklab, var(--brand) 62%, oklch(var(--q-ink)));
+  --dash-font: "SF Pro Text", "SF Pro", -apple-system, BlinkMacSystemFont, "Inter", ui-sans-serif, system-ui, sans-serif;
+  --dash-display: "SF Pro Display", "SF Pro", -apple-system, BlinkMacSystemFont, "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* A mint focus ring, deep enough to read 3:1 on white and on the grey page. */
+  --ring: color-mix(in oklab, var(--brand) 72%, black);
   --success: oklch(70% 0.18 155);
   --danger: var(--destructive);
-  --warning: oklch(49% 0.1 68);
-  --destructive: oklch(51% 0.18 26);
-  --tray: oklch(var(--q-paper));
-  --surface-top: oklch(var(--q-paper));
-  --surface-bottom: oklch(var(--q-paper));
-  --raise: none;
-  --well: none;
-  --drop: none;
-  --float: 0 0 0 1px oklch(var(--q-ink) / 0.14), 0 12px 24px -12px oklch(var(--q-ink) / 0.2);
-  /* The rest of the Relief set, on the same greys, so no cool Relief value leaks into a dash page. The main key is the
-     primary colour itself: a primary button must never read as disabled. */
-  --main-top: oklch(var(--q-ink));
-  --main-bottom: oklch(var(--q-ink));
-  --main-edge: oklch(var(--q-ink));
-  --edge-hi: transparent;
-  --sidebar: oklch(var(--q-grey));
-  --sidebar-foreground: oklch(var(--q-ink));
-  --sidebar-primary: oklch(var(--q-ink));
-  --sidebar-primary-foreground: oklch(var(--q-paper));
-  --sidebar-accent: oklch(var(--q-ink) / 0.06);
-  --sidebar-accent-foreground: oklch(var(--q-ink));
-  --sidebar-border: oklch(var(--q-ink) / 0.09);
-  --sidebar-ring: oklch(var(--q-ink));
-  /* The sample stage on the sign-in pages stays dark in both themes, on pure greys. */
-  --stage: oklch(19% 0 none);
-  --stage-card: oklch(23.5% 0 none);
-  --stage-ink: oklch(96.5% 0 none);
-  --stage-muted: oklch(70% 0 none);
-  --stage-line: oklch(100% 0 none / 0.09);
-  --band: oklch(22% 0 none);
-  --band-ink: oklch(96.5% 0 none);
-  --band-muted: oklch(72% 0 none);
-  --band-raise: oklch(28% 0 none);
-  --band-line: oklch(100% 0 none / 0.1);
-  --chart-4: oklch(48% 0 none);
-  --chart-5: oklch(74% 0 none);
-  --radius: 0.375rem;
-  /* Compact work-screen headings; body and control sizes use the shared scale (14px text-sm). */
+  --radius: 0.5rem;
   --text-2xl: 1.375rem;
   --text-3xl: 1.625rem;
 }
 :root.dark:has([data-dash]) {
-  /* beUI dark: #151515 page, #1c1c1c surface, 5% hairlines. */
-  --q-ink: 96% 0 none;
-  --q-paper: 19.4% 0 none;
-  --q-grey: 22.7% 0 none;
-  --sidebar: oklch(var(--q-paper));
-  --muted-foreground: oklch(62% 0 none);
-  --ring: color-mix(in oklab, var(--brand) 70%, oklch(var(--q-ink)));
-  --sidebar-border: oklch(var(--q-ink) / 0.08);
-  --stage: oklch(24% 0 none);
-  --stage-card: oklch(28.5% 0 none);
-  --band: oklch(24% 0 none);
-  --band-raise: oklch(31% 0 none);
-  --chart-4: oklch(74% 0 none);
-  --chart-5: oklch(48% 0 none);
-  --card: oklch(var(--q-grey));
-  --background: oklch(var(--q-paper));
-  --popover: oklch(var(--q-grey));
-  --tray: oklch(var(--q-paper));
-  --surface-top: oklch(var(--q-paper));
-  --surface-bottom: oklch(var(--q-paper));
-  --raise: none;
-  --well: none;
-  --drop: none;
-  --border: oklch(var(--q-ink) / 0.05);
-  --border-strong: oklch(var(--q-ink) / 0.1);
-  --input: var(--border-strong);
-  --warning: oklch(80% 0.13 68);
-  --destructive: oklch(76% 0.14 26);
-  --float: 0 0 0 1px oklch(var(--q-ink) / 0.2), 0 12px 24px -12px oklch(0% 0 0 / 0.6);
+  --background: #151515;
+  --card: #1c1c1c;
+  --popover: #222222;
+  --foreground: #ededed;
+  --card-foreground: #ededed;
+  --popover-foreground: #ededed;
+  --muted-foreground: #a3a3a3;
+  --subtle-foreground: #737373;
+  --border: rgb(255 255 255 / 0.07);
+  --selected: #2a2a2a;
+  --accent: #262626;
+  --accent-foreground: #ededed;
+  --ring: var(--brand);
+  --border-strong: rgb(255 255 255 / 0.14);
+  /* No onyx in the dark: the dark key turns a raised grey, not a light key. */
+  --main-top: #3a3a3a;
+  --main-bottom: #2c2c2c;
+  --main-edge: rgb(255 255 255 / 0.1);
 }
+:root.dark:has([data-dash]) .main-surface { color: var(--foreground); }
+
+/* Type: SF Pro on Apple devices, Inter elsewhere, regular and medium only, tracked -0.15px. Headings use the same
+   family at medium; the site's display face stays on the landing. */
+:root:has([data-dash]) body,
+[data-dash] :is(.font-sans, .font-heading, .font-tabular, button, input, textarea, select) {
+  font-family: var(--dash-font);
+  letter-spacing: -0.15px;
+}
+[data-dash] :is(.font-heading, h1, h2) { font-family: var(--dash-display); font-weight: 500; font-variation-settings: normal; }
+[data-dash] :is(.font-semibold, .font-bold, th) { font-weight: 500; }
+
+/* Icons on a light stroke; navigation sets 14px, cards 20px. */
+[data-dash] svg.lucide { stroke-width: 1.75; }
+
+/* Corners: 8px navigation and keys, 16px cards. */
+[data-dash] .key-mint { border-radius: 8px; }
+
+/* Grain over the whole dashboard, fine and faint, above every surface so the texture is one even layer. It sits on
+   top without catching the pointer; at this strength it does not shift any surface's tone. */
+:root:has([data-dash]) body::after {
+  content: ""; position: fixed; inset: 0; z-index: 2147483000; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.35' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.6 -0.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 110px 110px;
+  opacity: 0.032;
+}
+:root.dark:has([data-dash]) body::after { filter: invert(1); opacity: 0.035; }
 
 /* Scrollbars stay hidden until the area is hovered or scrolled, in a reserved gutter, so nothing shifts. The gutter
    doubles as the side gap. */
@@ -112,44 +87,18 @@
 }
 [data-dash] [data-scroll]:hover,
 [data-dash] [data-scroll]:focus-within {
-  scrollbar-color: oklch(var(--q-ink) / 0.22) transparent;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
 }
 
-/* Labels: tinted words with 4px corners, never pills or dots. */
-[data-dash] [data-slot="badge"] {
-  border-radius: 4px;
-  padding: 1px 6px;
-  background: oklch(var(--q-ink) / 0.06);
-}
-/* Only the states that ask for someone get a tint: "your move" in mint, trouble in its warm colour. Settled states
-   ("good") keep mint words on the neutral tint, so done never reads as pending. */
-[data-dash] [data-slot="badge"][data-tone="brand"] { background: color-mix(in oklab, var(--brand) 16%, transparent); }
-[data-dash] [data-slot="badge"][data-tone="warn"] { background: color-mix(in oklab, var(--warning) 12%, transparent); }
-[data-dash] [data-slot="badge"][data-tone="fail"] { background: color-mix(in oklab, var(--destructive) 12%, transparent); }
-
-/* Keep the existing screens' data and actions, but carry them on Quartz's flat, quiet chassis. */
+/* Cards carry the coated edge: a hairline, a light top and a resting drop. */
 [data-dash] .panel,
-[data-dash] [data-slot="card"] {
+[data-dash] [data-slot="card"]:not(.frame) {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--card);
-  box-shadow: none;
-}
-[data-dash] .raised {
-  background: color-mix(in oklab, var(--card) 70%, var(--secondary));
-  box-shadow: inset 0 0 0 1px var(--border);
+  box-shadow: var(--raise);
 }
 [data-dash] [data-slot="button"] { border-radius: 8px; }
-/* One mint key in the dash: flat, the same on real buttons and on the sample ones drawn in the sign-in stage. */
-[data-dash] .key-mint {
-  border-radius: 8px;
-  background: var(--brand);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-[data-dash] .key-mint::after { display: none; }
-@media (hover: hover) {
-  [data-dash] .key-mint:hover { background: color-mix(in oklab, var(--brand) 90%, var(--foreground)); }
-}
 [data-dash] [data-slot="input"],
 [data-dash] [data-slot="textarea"],
 [data-dash] select {
@@ -198,3 +147,58 @@
 :root.dark:has([data-dash]) { color-scheme: dark; }
 [data-dash] select option,
 [data-dash] select optgroup { background-color: var(--popover); color: var(--popover-foreground); }
+
+/* Mint is only the one primary call to action. Everything selected (the page you are on, the chosen tab, the current
+   page of a list) is the quiet neutral fill (`selected-fill`) with strong ink. */
+[data-dash] [role="tablist"]:has([data-tabs-fill]) { background: var(--card); }
+
+/* Inside a frame the table's header row sits on the card, divided by one hairline, not a grey band. */
+[data-dash] .frame-body thead th { background: var(--card); font-size: 12px; }
+[data-dash] .frame-body tbody td { font-size: 13px; }
+
+/* The page header names the page, so a top bar crumb that only repeats it steps aside. */
+[data-dash]:has([data-page-header]) [data-lone-crumb] { display: none; }
+
+/* Frame strips get a quarter em more room at the sides than the shared utility. */
+/* One container level. A frame is a single card: one hairline, 12px corners, the card tone. Its head, body and foot
+   are rows inside it, split by hairlines, never a card inside a card. */
+[data-dash] .frame-panel { --frame-radius: 12px; background: var(--card); box-shadow: 0 1px 2px rgb(16 16 24 / 0.03); }
+[data-dash] .frame-panel > .frame-body {
+  --frame-radius: 0px; margin: 0; background: transparent; box-shadow: none; border-top: 1px solid var(--border);
+}
+[data-dash] .frame-panel > .frame-body:first-child { border-top: 0; }
+[data-dash] .frame-panel > .frame-body::before { display: none; }
+[data-dash] .frame-head { min-height: 52px; padding: 12px 16px 12px 20px; gap: 8px 12px; font-size: 14px; }
+[data-dash] .frame-foot { min-height: 48px; padding: 10px 20px; font-size: 13px; border-top: 1px solid var(--border); }
+[data-dash] .frame-body tbody td:first-child, [data-dash] .frame-body thead th:first-child .px-4 { padding-left: 20px; }
+[data-dash] .frame-body tbody td:last-child, [data-dash] .frame-body thead th:last-child .px-4 { padding-right: 20px; }
+
+/* Anchored sections land below the sticky top bar. */
+html:has([data-app-shell]) { scroll-padding-top: 64px; }
+
+/* The rules editor (an open-source package) is styled through its opm-* hooks so it reads like the rest of the dash:
+   presets as a segmented control like the list views, rule groups as plain headed groups on the card, never boxes inside it. */
+[data-dash] .opm-presets {
+  display: inline-flex; width: max-content; max-width: 100%; gap: 2px; padding: 3px; border-radius: 10px;
+  background: var(--card); box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-dash] .opm-presets button {
+  height: 30px; padding: 0 14px; border: 0; border-radius: 7px; font-size: 13px; font-weight: 400;
+  color: var(--muted-foreground); background: transparent; transition: color 150ms ease-out, background-color 150ms ease-out;
+}
+[data-dash] .opm-presets button:hover { color: var(--foreground); }
+[data-dash] .opm-presets button[aria-pressed="true"] { background: var(--selected); color: var(--foreground); font-weight: 500; }
+[data-dash] .opm-rulebook { gap: 32px 40px; }
+[data-dash] .opm-rule-card,
+[data-dash] .opm-rulebook-editor [role="group"][aria-label^="Tier"] { background: transparent; border-radius: 0; padding: 0; box-shadow: none; }
+[data-dash] .opm-rule-card h3 { font-size: 14px; font-weight: 500; }
+[data-dash] .opm-rulebook-editor label { font-size: 13px; font-weight: 400; color: var(--muted-foreground); }
+[data-dash] .opm-rulebook-editor :is(input, select) { height: 36px; color: var(--foreground); font-size: 14px; }
+[data-dash] .opm-rulebook-summary { background: transparent; padding: 0; }
+[data-dash] .opm-rulebook-summary [role="tablist"] {
+  display: inline-flex; width: max-content; gap: 2px; padding: 3px; border-radius: 10px;
+  background: var(--card); box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-dash] .opm-rulebook-summary [role="tab"] { height: 30px; padding: 0 14px; border-radius: 7px; font-size: 13px; }
+[data-dash] .opm-rulebook-summary [role="tab"][aria-selected="true"] { background: var(--selected); font-weight: 500; }
+[data-dash] .opm-rulebook-summary :is(p, li) { font-size: 14px; line-height: 1.6; }

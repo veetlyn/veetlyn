@@ -35,8 +35,8 @@ export default function PublishCard({ teamSlug, publicUrl }: { teamSlug: string;
   }
 
   return (
-    <section id="publish" aria-labelledby="publish-heading" className="scroll-mt-6 rounded-lg border bg-card px-5 py-4">
-      <h2 id="publish-heading" className="font-heading text-base">{product === "services" ? "Seller page" : "Storefront"}</h2>
+    <section id="publish" aria-labelledby="publish-heading" className="panel scroll-mt-6 px-5 py-4">
+      <h2 id="publish-heading" className="text-sm font-medium">{product === "services" ? "Seller page" : "Storefront"}</h2>
       <div className="mt-3 grid gap-3">
         <p className="text-sm">
           {sellerStatus === "draft" ? (

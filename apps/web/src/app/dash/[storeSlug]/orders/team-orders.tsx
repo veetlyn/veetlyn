@@ -10,7 +10,7 @@ import Link from "next/link";
 
 import { DataList } from "@/components/data-list";
 import Loader from "@/components/loader";
-import { ListPage, SummaryStrip } from "@/components/page-composition";
+import { ListPage, PageHeader } from "@/components/page-composition";
 import { formatMinor } from "@/lib/money";
 import { trpc } from "@/utils/trpc";
 
@@ -91,7 +91,6 @@ const DATE: Intl.DateTimeFormatOptions = { dateStyle: "medium" };
 
 function columns(teamSlug: string): TableColumn<Row>[] {
   return [
-    { key: "kind", header: "Type", width: "140px", sortable: true, sortValue: (r) => r.kind, cell: (r) => <span className="text-muted-foreground">{r.kind === "service" ? "Service request" : "Premade item"}</span> },
     {
       key: "title",
       header: "Order",
@@ -104,11 +103,12 @@ function columns(teamSlug: string): TableColumn<Row>[] {
         </span>
       ),
     },
-    { key: "for", header: "Category / buyer", width: "200px", cell: (r) => <span className="truncate text-muted-foreground">{r.forWhom}</span> },
-    { key: "amount", header: "Amount", width: "112px", align: "right", sortable: true, sortValue: (r) => r.amount?.minor ?? -1, cell: (r) => <span className="whitespace-nowrap tabular-nums">{r.amount ? formatMinor(r.amount.minor, r.amount.currency) : "To quote"}</span> },
-    { key: "status", header: "Status", width: "190px", sortable: true, sortValue: (r) => r.status, cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{r.statusLabel}</Badge> },
-    { key: "date", header: "Received", width: "128px", sortable: true, sortValue: (r) => r.date, cell: (r) => <span className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(undefined, DATE)}</span> },
-    { key: "action", header: <span className="sr-only">Action</span>, width: "140px", align: "right", cell: (r) => (r.orderId && r.status === "paid" ? <ResendEmail teamSlug={teamSlug} orderId={r.orderId} /> : null) },
+    { key: "kind", header: "Type", width: "128px", sortable: true, sortValue: (r) => r.kind, cell: (r) => <span className="text-muted-foreground">{r.kind === "service" ? "Service request" : "Premade item"}</span> },
+    { key: "for", header: "Category / buyer", width: "176px", cell: (r) => <span className="truncate text-muted-foreground">{r.forWhom}</span> },
+    { key: "amount", header: "Amount", width: "100px", align: "right", sortable: true, sortValue: (r) => r.amount?.minor ?? -1, cell: (r) => <span className="whitespace-nowrap tabular-nums">{r.amount ? formatMinor(r.amount.minor, r.amount.currency) : "To quote"}</span> },
+    { key: "status", header: "Status", width: "176px", sortable: true, sortValue: (r) => r.status, cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{r.statusLabel}</Badge> },
+    { key: "date", header: "Received", width: "116px", sortable: true, sortValue: (r) => r.date, cell: (r) => <span className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(undefined, DATE)}</span> },
+    { key: "action", header: <span className="sr-only">Action</span>, width: "124px", align: "right", cell: (r) => (r.orderId && r.status === "paid" ? <ResendEmail teamSlug={teamSlug} orderId={r.orderId} /> : null) },
   ];
 }
 
@@ -120,8 +120,7 @@ export default function TeamOrders({ teamSlug }: { teamSlug: string }) {
   if (requests.isError && orders.isError) {
     return (
       <ListPage>
-        <h1 className="font-heading text-3xl">Orders unavailable</h1>
-        <p className="text-sm text-muted-foreground">{requests.error.message}</p>
+        <PageHeader title="Orders unavailable" description={requests.error.message} />
       </ListPage>
     );
   }
@@ -130,8 +129,6 @@ export default function TeamOrders({ teamSlug }: { teamSlug: string }) {
     ...(requests.data ?? []).map((request) => fromRequest(teamSlug, request, now)),
     ...(orders.data ?? []).map(fromItemOrder),
   ];
-  const waiting = rows.filter((r) => r.status === "answer").length;
-  const review = rows.filter((r) => r.status === "review").length;
   const kinds = [
     ...(requests.isSuccess ? [{ value: "service", label: "Service requests" }] : []),
     ...(orders.isSuccess ? [{ value: "item", label: "Premade items" }] : []),
@@ -139,16 +136,7 @@ export default function TeamOrders({ teamSlug }: { teamSlug: string }) {
 
   return (
     <ListPage>
-      <div className="space-y-1">
-        <h1 className="font-heading text-3xl">Orders</h1>
-        <p className="text-sm text-muted-foreground">What clients asked for: service requests to shape and quote, and premade items they bought.</p>
-      </div>
-      {rows.length > 0 ? (
-        <SummaryStrip label="Needs attention">
-          <p className="text-sm"><span className="font-medium">{waiting} {waiting === 1 ? "request" : "requests"}</span> <span className="text-muted-foreground">waiting for an answer</span></p>
-          <p className="text-sm text-muted-foreground">{review} {review === 1 ? "order needs" : "orders need"} review</p>
-        </SummaryStrip>
-      ) : null}
+      <PageHeader title="Orders" description="What clients asked for: service requests to shape and quote, and premade items they bought." />
       <DataList
         label="Orders"
         rows={rows}
@@ -156,20 +144,14 @@ export default function TeamOrders({ teamSlug }: { teamSlug: string }) {
         getRowId={(r) => r.id}
         searchText={(r) => `${r.title} ${r.detail} ${r.forWhom}`}
         searchLabel="Search orders"
-        filters={[
-          ...(kinds.length > 1 ? [{ key: "kind", label: "Types", options: kinds, match: (r: Row, v: string) => r.kind === v }] : []),
-          {
-            key: "status",
-            label: "Statuses",
-            options: [
-              { value: "answer", label: "Waiting for an answer" },
-              { value: "paid", label: "Paid" },
-              { value: "refunded", label: "Refunded" },
-              { value: "review", label: "Needs review" },
-            ],
-            match: (r: Row, v: string) => r.status === v,
-          },
+        views={[
+          { key: "all", label: "All" },
+          { key: "answer", label: "To answer", match: (r) => r.status === "answer" },
+          { key: "review", label: "Needs review", match: (r) => r.status === "review" },
+          { key: "paid", label: "Paid", match: (r) => r.status === "paid" },
+          { key: "refunded", label: "Refunded", match: (r) => r.status === "refunded" },
         ]}
+        filters={kinds.length > 1 ? [{ key: "kind", label: "Type", options: kinds, match: (r: Row, v: string) => r.kind === v }] : []}
         defaultSort={{ key: "date", direction: "desc" }}
         empty={{ title: "No orders yet", text: "Service requests from your seller page and premade items clients buy show here." }}
         noun={{ one: "order", many: "orders" }}

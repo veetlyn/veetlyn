@@ -2,8 +2,8 @@ import { cn } from "@jendal-workspace/ui/lib/utils";
 import { type ReactNode, useId } from "react";
 
 // A section of a record page (a project, an order, a payout): title and optional description, actions on the
-// right, the body, and an optional footer for the form that adds to it. Record pages are built from these, so
-// every record reads the same way.
+// right, the body in the white card, and an optional footer strip for the form that adds to it. Record pages are
+// built from these, so every record reads the same way.
 export function RecordCard({
   title,
   description,
@@ -26,16 +26,16 @@ export function RecordCard({
 }) {
   const headingId = useId();
   return (
-    <section id={id} aria-labelledby={headingId} className={cn("scroll-mt-4 overflow-hidden rounded-lg border bg-card", className)}>
-      <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3">
+    <section id={id} aria-labelledby={headingId} className={cn("frame frame-panel scroll-mt-4 min-w-0", className)}>
+      <header className="flex flex-wrap items-start justify-between gap-3 px-[calc(20px+0.25em)] pt-4 pb-3.5">
         <div className="min-w-0 space-y-0.5">
-          <h2 id={headingId} className="font-heading text-base">{title}</h2>
-          {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+          <h2 id={headingId} className="text-sm font-medium">{title}</h2>
+          {description ? <p className="text-[13px] text-muted-foreground">{description}</p> : null}
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
       </header>
-      {children ? <div className={flush ? "border-t" : "px-5 pb-5"}>{children}</div> : null}
-      {footer ? <div className="border-t bg-background/50 px-5 py-4">{footer}</div> : null}
+      {children ? <div className={cn("frame frame-body min-w-0", flush ? undefined : "p-6")}>{children}</div> : null}
+      {footer ? <div className={cn("px-[calc(20px+0.25em)] pt-3.5 pb-4", children ? undefined : "frame frame-body p-6")}>{footer}</div> : null}
     </section>
   );
 }

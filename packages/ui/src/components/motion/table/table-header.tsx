@@ -28,6 +28,7 @@ import { alignFlex, alignText, COLUMN_ACTIVE_SHADOW } from "./utils";
 export interface TableHeaderProps<T> {
   columns: TableColumn<T>[];
   rowHeight: number;
+  fill?: boolean;
   reduce: boolean;
   thRefs: HeaderCellRefs;
   selectable: boolean;
@@ -147,6 +148,7 @@ function ColumnHandle<T>({
 export function TableHeader<T>({
   columns,
   rowHeight,
+  fill = true,
   reduce,
   thRefs,
   selectable,
@@ -283,10 +285,10 @@ export function TableHeader<T>({
                     <span className="truncate">{column.header}</span>
                     <motion.span
                       aria-hidden
-                      className="inline-flex shrink-0"
+                      className={cn("inline-flex shrink-0", !active && "group-hover:opacity-40!")}
                       animate={{
                         rotate: active && sort?.direction === "desc" ? 180 : 0,
-                        opacity: active ? 1 : 0.35,
+                        opacity: active ? 1 : 0,
                       }}
                       transition={
                         reduce
@@ -342,10 +344,12 @@ export function TableHeader<T>({
             </th>
           );
         })}
-        <th
-          aria-hidden
-          className="sticky top-0 z-10 border-border border-b bg-muted"
-        />
+        {fill ? (
+          <th
+            aria-hidden
+            className="sticky top-0 z-10 border-border border-b bg-muted"
+          />
+        ) : null}
       </tr>
     </thead>
     </>
