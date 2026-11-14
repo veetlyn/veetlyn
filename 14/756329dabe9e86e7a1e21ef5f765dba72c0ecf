@@ -1,0 +1,28 @@
+apps/web/src/dash.css
+  s_24bba213a48bd6::t_77e5a5efa9e366 117-119
+apps/web/src/components/page-composition.tsx
+  s_24bba213a48bd6::t_77e5a5efa9e366 45
+apps/web/src/components/app-frame.tsx
+  s_24bba213a48bd6::t_77e5a5efa9e366 131
+  s_24bba213a48bd6::t_f0473d9c512c92 80-83,85,112-113,133-134
+apps/web/src/app/layout.tsx
+  s_24bba213a48bd6::t_f0473d9c512c92 40
+apps/web/src/components/page-sections-nav.tsx
+  s_24bba213a48bd6::t_77e5a5efa9e366 71,88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "14756329dabe9e86e7a1e21ef5f765dba72c0ecf",
+  "prompts": {},
+  "sessions": {
+    "s_24bba213a48bd6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ff0ea6a-9e77-4ea3-b2a9-b91edfc423f2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
