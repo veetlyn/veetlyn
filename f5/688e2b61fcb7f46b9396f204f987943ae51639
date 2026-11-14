@@ -1,0 +1,20 @@
+apps/web/src/components/recent-calls.tsx
+  s_24bba213a48bd6::t_262304c20fa0ec 19,23
+  s_24bba213a48bd6::t_b5cc840c2d190a 24-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5688e2b61fcb7f46b9396f204f987943ae51639",
+  "prompts": {},
+  "sessions": {
+    "s_24bba213a48bd6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ff0ea6a-9e77-4ea3-b2a9-b91edfc423f2",
+        "model": "unknown"
+      },
+      "human_author": "Mouhamed Bakhoum <bakhoumouhamed@gmail.com>"
+    }
+  }
+}
